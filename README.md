@@ -1,3 +1,8 @@
+# Credits
+Based on [gtaw-forms/forms](https://github.com/gtaw-forms/forms)
+© Iceheart Software LLC – GNU GPL v3.0 License
+Adpated for Pillbox Hill Medical Center France (GTAW - GTAWFr)
+
 # Welcome to the Form Generator (PHMC)!
 
 This repository has been re-written from the ground up for simplicity. I'm currently using some modules, namely Google Firebase to handle data storage.
