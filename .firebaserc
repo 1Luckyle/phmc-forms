@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "gtaw-forms"
-  }
+    "default": "phmcfr-forms",
+    "dev": "phmcfr-forms"
+  },
+  "targets": {},
+  "etags": {}
 }
