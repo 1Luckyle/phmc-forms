@@ -29,6 +29,15 @@ const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     </Button>
 );
 
+// Normalise ["Yes","No"] -> [{value:"Yes",label:"Yes"}, ...]
+const toOptions = (arr = []) =>
+  Array.isArray(arr)
+    ? arr.map(v =>
+        (v && typeof v === 'object' && 'value' in v && 'label' in v)
+          ? v
+          : { value: String(v), label: String(v) }
+      )
+    : [];
 
 const PatientAdvanced = ({
     formData,
@@ -65,10 +74,9 @@ const [activeSection, setActiveSection] = useState('general-info');
         const approximateCost = calculateCost();
 
 
-    const dnrOptions = selectOptions.dnr || [];
-    const attorneyOptions = selectOptions.attorney || [];
-    const dnrOrderOptions = selectOptions.dnrOrder || [];
-
+    const dnrOptions = toOptions(selectOptions.dnr || []);
+    const attorneyOptions = toOptions(selectOptions.attorney || []);
+    const dnrOrderOptions = toOptions(selectOptions.dnrOrder || []);
 
     return (
         
