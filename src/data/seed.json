@@ -1,0 +1,15 @@
+{
+  "staff": {
+    "phmc": [],
+    "coroner": []
+  },
+  "agencies": {},
+  "selectOptions": {
+    "physicianRecruitmentDetails": {},
+    "psychPositionDetailsData": {},
+    "adminPositionDetailsData": {},
+    "emsPositionDetailsData": {},
+    "nursePositionDetailsData": {},
+    "coronerPositionDetailsData": {}
+  }
+}

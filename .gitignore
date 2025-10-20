@@ -38,3 +38,8 @@ src/OLD-GYNE-OBY.js
 
 # firebase
 firebase-admin-key.json
+
+# .gitignore
+/node_modules
+/build
+/dist
