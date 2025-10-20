@@ -4,6 +4,16 @@ import { database } from '../firebase';
 import Select from 'react-select';
 import { ref, get } from 'firebase/database';
 
+// Normalise ["A","B"] -> [{label:"A", value:"A"}, ...] et laisse passer les objets déjà corrects
+const toOptions = (arr = []) =>
+  Array.isArray(arr)
+    ? arr.map((v) =>
+        (v && typeof v === 'object' && 'label' in v && 'value' in v)
+          ? v
+          : { label: String(v), value: String(v) }
+      )
+    : [];
+
 const DeathRecord = ({ 
     formData, 
     handleChange, 
@@ -40,11 +50,15 @@ const DeathRecord = ({
             if (snapshot.exists()) {
                 const options = snapshot.val();
                 setSelectOptions({
-                    deathRecordType: options.deathRecordType || [],
-                    caseStatusOptions: options.caseStatusOptions || [],
-                    bodyStatusOptions: options.bodyStatusOptions || [],
-                    gender: options.gender || [],
-                    mannerOfDeathOptions: options.mannerOfDeathOptions || [],
+                // essaie d'abord selectOptions.deathRecordType, sinon deathRecordTypeOptions,
+                // sinon fallback par défaut
+                deathRecordType: toOptions(
+                    options.deathRecordType || options.deathRecordTypeOptions || ['Identified', 'Unidentified']
+                ),
+                caseStatusOptions: toOptions(options.caseStatusOptions || []),
+                bodyStatusOptions: toOptions(options.bodyStatusOptions || []),
+                gender: toOptions(options.gender || []),
+                mannerOfDeathOptions: toOptions(options.mannerOfDeathOptions || []),
                 });
             }
         });

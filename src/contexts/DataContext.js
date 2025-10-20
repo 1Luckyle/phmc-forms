@@ -44,7 +44,6 @@ export const DataProvider = ({ children }) => {
 
   // --- Cache config ---
   const CACHE_PREFIX = 'firebaseCache';
-  const CACHE_VERSION = '1.0';
   const CACHE_EXPIRY = 1000 * 60 * 60 * 24 * 7; // 7 days
 
   const SEGMENT_VERSIONS = {

@@ -79,7 +79,7 @@ function HeaderInfo({ commitInfo }) {
             <div className="header-info">
                 <span className="contact-info">
                     Need help? Contact Alyson Frost on <a
-                        href="http://discord.gg/rrzJ4EeHfK"
+                        href="http://discord.gg/rrzJ4EeHfK" // https://discord.gg/4HRyjRap
                         className="discord-link"
                     >
                         Discord  <i className="fab fa-discord"></i>

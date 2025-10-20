@@ -1,3 +1,4 @@
+// src/MainApp.js
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -58,6 +59,28 @@ const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'))
 const FormImageLink = lazy(() => import('./components/FormImageLink'));
 const EmsBingoModal = lazy(() => import('./components/EmsBingoModal'));
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
+
+/** --------------------------------------------------------------------
+ *  FIX OPTIONS: transforme ["A","B"] -> [{label:"A", value:"A"}, ...]
+ *  et passe au travers des tableaux d’objets déjà corrects.
+ * -------------------------------------------------------------------*/
+const optionize = (arr) => {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((item) => {
+    if (item && typeof item === 'object' && 'label' in item && 'value' in item) return item;
+    if (typeof item === 'string' || typeof item === 'number') {
+      const s = String(item);
+      return { label: s, value: s };
+    }
+    // fallback minimal pour objets simples {name:"X"} etc.
+    if (item && typeof item === 'object') {
+      const label = item.label ?? item.name ?? item.title ?? '';
+      const value = item.value ?? item.id ?? label;
+      return { label: String(label), value: String(value) };
+    }
+    return { label: '', value: '' };
+  });
+};
 
 function MainApp({
     formData,
@@ -189,9 +212,9 @@ function MainApp({
     
     const [featureRequest, setFeatureRequest] = useState('');
     const [discordName, setDiscordName] = useState('');
-      const ER_PROTOCOL_VERSION = 19;
- const CONSULTATION_NOTES_PHMC_VERSION = 20;
- const CONSULTATION_NOTES_PBC_VERSION = 21;
+    const ER_PROTOCOL_VERSION = 19;
+    const CONSULTATION_NOTES_PHMC_VERSION = 20;
+    const CONSULTATION_NOTES_PBC_VERSION = 21;
 
     const [isRemoveStaff, setIsRemoveStaff] = useState(false);
     const [missingEmployeeData, setMissingEmployeeData] = useState({
@@ -253,9 +276,6 @@ function MainApp({
         localStorage.setItem('hideAgencyGroupSelectorPreference', hide);
     };
 
-
-
-
     const handleRecruitmentOptIn = (optIn) => {
         setPhmcRecruitmentOptIn(optIn);
         localStorage.setItem('phmcRecruitmentOptIn', optIn);
@@ -275,7 +295,6 @@ function MainApp({
                 ...prev,
                 [name]: newValue
             };
-            // Save to localStorage immediately after state update
             localStorage.setItem('formData', JSON.stringify(newFormData));
             return newFormData;
         });
@@ -308,14 +327,12 @@ function MainApp({
                     [name]: selectedOption ? selectedOption.value : ''
                 };
             }
-            // Save to localStorage immediately after state update
             localStorage.setItem('formData', JSON.stringify(newFormData));
             return newFormData;
         });
     };
 
     const handleFillCoronerPhone = () => {
-        // Logic to fill coroner phone
         showNotification("Coroner phone filled (placeholder)", 'info');
     };
 
@@ -343,7 +360,6 @@ function MainApp({
         });
     };
 
-
     const handleCopyTitle = () => {
         const title = generateTitle();
         navigator.clipboard.writeText(title);
@@ -351,73 +367,70 @@ function MainApp({
     };
 
     const generateTitle = () => {
-
         const definition = getFormDefinition(bbCodeVersion);
         if (definition && definition.titleGenerator) {
             return definition.titleGenerator(formData);
         }
         return "Untitled Report";
     };
-        useEffect(() => {
+
+    useEffect(() => {
         const timer = setTimeout(() => {
             setShowMovedNotification(false);
-        }, 5000); // Hides after 5 seconds
+        }, 5000);
         return () => clearTimeout(timer);
     }, []);
 
-const getBBCodeContent = () => {
-    const definition = getFormDefinition(bbCodeVersion);
+    const getBBCodeContent = () => {
+        const definition = getFormDefinition(bbCodeVersion);
 
-    if (definition && definition.generator) {
-        if (bbCodeVersion === 999) { // Admin Control Panel version
-            return definition.generator({
-                isAdminAuthenticated: formData.isAdminAuthenticated,
-                adminUserEmail: formData.adminUserEmail,
-                adminDisplayData: formData.adminDisplayData,
-                adminSelectedCategoryName: formData.adminSelectedCategoryName,
-            });
-        } else { // For all other forms that have a definition and generator
-            let specificPositionData = {}; // Initialize as empty
+        if (definition && definition.generator) {
+            if (bbCodeVersion === 999) { // Admin Control Panel version
+                return definition.generator({
+                    isAdminAuthenticated: formData.isAdminAuthenticated,
+                    adminUserEmail: formData.adminUserEmail,
+                    adminDisplayData: formData.adminDisplayData,
+                    adminSelectedCategoryName: formData.adminSelectedCategoryName,
+                });
+            } else {
+                let specificPositionData = {};
 
-            // Populate specificPositionData based on the form's group and titleKey
-            if (definition.group === "PHMC Recruitment") {
-                if (definition.titleKey === "phmcGeneralApplication") { // Physician (50)
-                    // physicianRecruitmentDetails is a dedicated state variable
-                    specificPositionData = physicianRecruitmentDetails || {};
-                } else if (definition.titleKey === "phmcPsychApplication") { // Psych (51)
-                    // psychRecruitmentDetails is a dedicated state variable
-                    specificPositionData = psychRecruitmentDetails || {};
-                } else if (definition.titleKey === "phmcAdminApplication") { // Admin (52)
-                    specificPositionData = selectOptions.adminPositionDetailsData || {};
-                } else if (definition.titleKey === "phmcNursingApplication") { // Nursing (53)
-                    specificPositionData = selectOptions.nursePositionDetailsData || {};
-                } else if (definition.titleKey === "phmcCoronerRecruitmentApplication") { // Coroner (54)
-                    specificPositionData = selectOptions.coronerPositionDetailsData || {};
-                } else if (definition.titleKey === "phmcEMSApplication") { // EMS (55)
-                    specificPositionData = selectOptions.emsPositionDetailsData || {};
+                if (definition.group === "PHMC Recruitment") {
+                    if (definition.titleKey === "phmcGeneralApplication") {
+                        specificPositionData = physicianRecruitmentDetails || {};
+                    } else if (definition.titleKey === "phmcPsychApplication") {
+                        specificPositionData = psychRecruitmentDetails || {};
+                    } else if (definition.titleKey === "phmcAdminApplication") {
+                        specificPositionData = selectOptions.adminPositionDetailsData || {};
+                    } else if (definition.titleKey === "phmcNursingApplication") {
+                        specificPositionData = selectOptions.nursePositionDetailsData || {};
+                    } else if (definition.titleKey === "phmcCoronerRecruitmentApplication") {
+                        specificPositionData = selectOptions.coronerPositionDetailsData || {};
+                    } else if (definition.titleKey === "phmcEMSApplication") {
+                        specificPositionData = selectOptions.emsPositionDetailsData || {};
+                    }
                 }
-            } // Closing brace moved outside the 'if' block
 
-            const generatorArgs = {
-                ...formData,
-                // Ensure positionDetailsData is always an object, even if specificPositionData is null/undefined
-                positionDetailsData: specificPositionData || {},
-                agencyDataStore: agencyDataStore, // Pass agencyDataStore
-            };
-            return definition.generator(generatorArgs);
+                const generatorArgs = {
+                    ...formData,
+                    positionDetailsData: specificPositionData || {},
+                    agencyDataStore: agencyDataStore,
+                };
+                return definition.generator(generatorArgs);
+            }
+        } else {
+            Sentry.captureMessage(`No BBCode generator found for version: ${bbCodeVersion}`);
+            const formName = (getFormDefinition(bbCodeVersion) || {}).name || `Form v${bbCodeVersion}`;
+            return `BBCode generation for form "${formName}" is not implemented.`;
         }
-    } else {
-        Sentry.captureMessage(`No BBCode generator found for version: ${bbCodeVersion}`);
-        const formName = (getFormDefinition(bbCodeVersion) || {}).name || `Form v${bbCodeVersion}`;
-        return `BBCode generation for form "${formName}" is not implemented.`;
-    }
-};
-        const initialLoadFormData = () => {
+    };
+
+    const initialLoadFormData = () => {
         const storedData = localStorage.getItem('formData');
         return storedData ? JSON.parse(storedData) : initialFormData;
     };
 
-        useEffect(() => {
+    useEffect(() => {
         const fieldsToSaveToLS = [
             'phmcEmployee', 'phmcEmployeeLastName', 'phmcRank',
             'coronerEmployee', 'coronerBadge', 'coronerRank', 'coronerDiscord', 'coronerPHNumber',
@@ -436,7 +449,6 @@ const getBBCodeContent = () => {
         localStorage.setItem('formData', JSON.stringify(formDataToPersist));
     }, [formData]);
 
-
     const getCopyButtonText = () => {
         if (selectedAgencyGroup === 'PHMC Recruitment') {
             return 'Copy Recruitment BBCode';
@@ -445,11 +457,9 @@ const getBBCodeContent = () => {
     };
     
     const getCurrentReportAuthor = useCallback((formData) => {
-        // Define which bbCodeVersions are primarily Coroner forms
         const coronerFormVersions = [1, 2, 4, 8, 11, 18, 37];
-        // Define which bbCodeVersions are primarily PHMC forms
         const phmcFormVersions = [
-            5, 6, 7, 9, 10, 12, 13, 14, 16, 19, 20, 21, 22, 23, 27, 28, 29, 35 // Added Sickness Email
+            5, 6, 7, 9, 10, 12, 13, 14, 16, 19, 20, 21, 22, 23, 27, 28, 29, 35
         ];
 
         if (coronerFormVersions.includes(bbCodeVersion)) {
@@ -458,11 +468,9 @@ const getBBCodeContent = () => {
             return formData.phmcEmployee || null;
         }
 
-        // Fallback logic for forms that are not strictly coroner or phmc
         if (formData.coronerEmployee) return formData.coronerEmployee;
         if (formData.phmcEmployee) return formData.phmcEmployee;
 
-        // Fallback for forms where patient might be considered the "author"
         if (bbCodeVersion === 25 || bbCodeVersion === 3 || bbCodeVersion === 24) {
             if (formData.patientName) return formData.patientName;
             if (formData.patientFirstName && formData.patientLastName) return `${formData.patientFirstName} ${formData.patientLastName}`;
@@ -470,8 +478,8 @@ const getBBCodeContent = () => {
             if (formData.patientLastName) return formData.patientLastName;
         }
         
-        return null; // If no author can be determined
-    }, [bbCodeVersion]); // This hook depends on the current bbCodeVersion
+        return null;
+    }, [bbCodeVersion]);
 
     const filterFormData = (formData, bbCodeVersion) => {
         const relevantFields = getRelevantFields(bbCodeVersion);
@@ -574,8 +582,6 @@ const getBBCodeContent = () => {
         selectedAgencyGroup
     );
 
-
-
     const clearForm = () => {
         setFormData(prevFormData => ({
             ...initialFormData,
@@ -597,32 +603,19 @@ const getBBCodeContent = () => {
         showNotification('Form cleared! Employee selections preserved.', 'check-circle');
     };
 
-    
-    // --- START: Data Fetching and Caching Logic ---
-    
     const handleShowCctvRequestModal = () => {
-        setShowAgencyGroupSelectorModal(false); // Hide the main selector if it's open
+        setShowAgencyGroupSelectorModal(false);
         setShowCctvRequestModal(true);
     };
     
-
-
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768); // Adjust breakpoint as needed
+            setIsMobile(window.innerWidth <= 768);
         };
-
-        // Set initial value
         handleResize();
-
-        // Listen for window resize events
         window.addEventListener('resize', handleResize);
-
-        // Clean up the event listener on unmount
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-
 
     const { imageSource: deathReportImage, className: deathReportClass, season, effect } = seasonalEffectsEnabled ? SeasonalEvents({ imageType: 'deathReport' }) : {};
     const { imageSource: civilianPaperworkImage, className: civilianPaperworkClass } = seasonalEffectsEnabled ? SeasonalEvents({ imageType: 'civilianPaperwork'  }) : {};
@@ -682,7 +675,7 @@ const getBBCodeContent = () => {
             extra: {
                 bbCodeVersion: bbCodeVersion,
                 selectedAgencyGroup: selectedAgencyGroup,
-                currentFormDefinition: currentFormDefinition || 'Not found', // Ensure currentFormDefinition is not undefined for Sentry
+                currentFormDefinition: currentFormDefinition || 'Not found',
                 isLoadingData: isLoadingData
             }
         });
@@ -717,142 +710,101 @@ const getBBCodeContent = () => {
     ];
     const civilianFormsSubGroup = [
         { version: 24, name: "Medical Record Release", icon: Civilian },
-        { version: 25, name: "Basic Patient File", icon: nurse }, // Assuming nurse icon for basic
-        { version: 3, name: "Detailed Patient File", icon: nurse }, // Assuming nurse icon for advanced
+        { version: 25, name: "Basic Patient File", icon: nurse },
+        { version: 3, name: "Detailed Patient File", icon: nurse },
         { version: 26, name: "Update Medical Records", icon: Civilian},
     ];
     const phmcInternalEmails = [
-    { version: 24, name: "Internal Email", icon: Civilian },
-    { version: 35, name: "Sick Note", icon: nurse }, // Assuming nurse icon for basic
+        { version: 24, name: "Internal Email", icon: Civilian },
+        { version: 35, name: "Sick Note", icon: nurse },
     ];
 
-// Switch Form Handling Logic
-    
- const openSwitchableModal = (title, formsArray) => {
+    const openSwitchableModal = (title, formsArray) => {
         setSwitchableModalTitle(title);
         setSwitchableFormsList(formsArray);
-        setShowPHMCModal(true); // Use the existing state to show/hide the modal
+        setShowPHMCModal(true);
     };
-
 
     // --- Updated useEffect for CoronerTipsModal ---
     useEffect(() => {
         const isCoronerForm = [1, 2, 18].includes(bbCodeVersion);
-        // Check localStorage *here* to prevent automatic showing
         const shouldHidePermanently = localStorage.getItem('hideCoronerTipsModal') === 'true';
-
-        // Only set state to show automatically if it's a coroner form AND not permanently hidden
         if (isCoronerForm && !shouldHidePermanently) {
             setShowCoronerTips(true);
         } else {
-            // Ensure it's hidden if not a coroner form or if permanently hidden
-            // This prevents it from staying open if the user switches away from a coroner form
-            // while the modal is open AND they haven't clicked "Don't show again".
             setShowCoronerTips(false);
         }
-
-    }, [bbCodeVersion]); // Re-run only when bbCodeVersion changes
-        useEffect(() => {
+    }, [bbCodeVersion]);
+    useEffect(() => {
         localStorage.setItem('bbCodeVersion', bbCodeVersion.toString());
     }, [bbCodeVersion]);
 
-
     useEffect(() => {
-        // Only save bbCodeVersion if a group has been selected
         if (selectedAgencyGroup) {
             localStorage.setItem('bbCodeVersion', bbCodeVersion.toString());
         }
     }, [bbCodeVersion, selectedAgencyGroup]);
 
-// Feature Request Handling
-const phmcRecruitmentFormsSubGroup = formDefinitions.filter(
-    form => form.group === "PHMC Recruitment"
-);
-
-    
-
-// Inside src/App.js
-
-
-const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updatedStaff) => {
-    await sendMissingEmployeeNotification(
-        actionType,
-        employeeType,
-        selectedEmployeeName,
-        newRank,
-        coronerListData, 
-        phmcListData, 
-        staffToRemove,
-        authorizedBy,
-        missingEmployeeData,
-        commitInfo,
-        showNotification, 
-        formData.coronerEmployee, 
-        formData.phmcEmployee
+    const phmcRecruitmentFormsSubGroup = formDefinitions.filter(
+        form => form.group === "PHMC Recruitment"
     );
 
-    // Trigger refresh after any action involving EmployeeModal
-    if (actionType === 'updateRank') {
-        showNotification("Refreshing staff data...", 'info-circle', 2000);
-    }
+    const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updatedStaff) => {
+        await sendMissingEmployeeNotification(
+            actionType,
+            employeeType,
+            selectedEmployeeName,
+            newRank,
+            coronerListData, 
+            phmcListData, 
+            staffToRemove,
+            authorizedBy,
+            missingEmployeeData,
+            commitInfo,
+            showNotification, 
+            formData.coronerEmployee, 
+            formData.phmcEmployee
+        );
 
-    if (actionType === 'updateRank') {
-        showNotification("Staff data refreshed.", 'check-circle', 3000);
-    }
-};
+        if (actionType === 'updateRank') {
+            showNotification("Refreshing staff data...", 'info-circle', 2000);
+        }
 
-
-
+        if (actionType === 'updateRank') {
+            showNotification("Staff data refreshed.", 'check-circle', 3000);
+        }
+    };
 
     useEffect(() => {
-        // Check for a redirect from the 404 page via sessionStorage
         const redirectPath = sessionStorage.getItem('redirectPath');
         if (redirectPath) {
-            sessionStorage.removeItem('redirectPath'); // Clear it after use
-
-            // Use history.replaceState to update the URL in the address bar
-            // without reloading the page. This makes the URL look correct to the user.
+            sessionStorage.removeItem('redirectPath');
             window.history.replaceState(null, '', redirectPath);
         }
 
-        // Now, use the current URL's pathname for routing logic.
-        // After the replaceState, window.location.pathname will be the path we want.
         const currentPath = window.location.pathname;
         const hash = window.location.hash;
 
-
         if (hash === '#bingo' || currentPath.endsWith('/bingo')) {
-            console.log("Bingo route detected. Opening Bingo modal.");
             setShowEmsBingoModal(true);
         } else if (currentPath.endsWith('/cctv')) {
-            console.log("CCTV route detected. Opening CCTV modal.");
             handleShowCctvRequestModal();
         }
-    }, []); // Empty dependency array ensures this runs only once on initial load
+    }, []);
     const handleHideEmsBingoModal = useCallback(() => {
         setShowEmsBingoModal(false);
-
         const url = new URL(window.location.href);
-
-        // Check and clean the hash.
         if (url.hash === '#bingo') {
             url.hash = '';
         }
-
-        // Check and clean the path.
         if (url.pathname.endsWith('/bingo')) {
             url.pathname = url.pathname.replace(/bingo$/, '') || '/';
         }
-
         window.history.replaceState({}, document.title, url.href);
-
     }, []);
-
-    
 
     const handleHideCctvRequestModal = useCallback(() => {
         setShowCctvRequestModal(false);
-        // When the modal is closed, remove '/cctv' from the URL if it's there
         const url = new URL(window.location.href);
         if (url.pathname.endsWith('/cctv')) {
             url.pathname = url.pathname.replace(/cctv$/, '') || '/';
@@ -877,15 +829,9 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
             newUrl.searchParams.delete('p');
             window.history.replaceState({}, document.title, newUrl.href);
         }
-    }, []); // This effect runs once on initial load
+    }, []);
 
-
-
-
-    
-
-    // --- Add state to explicitly control dropdown visibility ---
-// Separate PHMC options
+    // --- Grouped staff options stay comme avant (déjà des objets) ---
     const phmcGroupedOptions = useMemo(() => {
         const list = ensureArray(phmcListData);
         if (list.length === 0) return [];
@@ -896,18 +842,17 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
                     groups[categoryName] = [];
                 }
                 groups[categoryName].push({
-                    value: employee.name, // Or a unique ID if 'name' isn't unique
+                    value: employee.name,
                     label: employee.name,
                     category: employee.category,
                     lastName: employee.lastName
-                    // Add any other fields needed by the Select component or your logic
                 });
                 return groups;
             }, {})
         ).map(([category, options]) => ({
             label: category,
             options: options.sort((a, b) => a.label.localeCompare(b.label))
-        })).sort((a, b) => { // Your existing sorting logic for categories
+        })).sort((a, b) => {
             const order = ['Leadership', 'Hospital Supervisor', 'Chief Resident', 'Physician', 'Resident Physician', 'Physician Assistant', 'Psychiatrist', 'Psychologist', 'Dentist', 'Nursing', 'Emergency Medical Services', 'Attending Physician', 'Uncategorized'];
             return order.indexOf(a.label) - order.indexOf(b.label);
         });
@@ -923,25 +868,23 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
                     groups[categoryName] = [];
                 }
                 groups[categoryName].push({
-                    value: coroner.name, // Or a unique ID
+                    value: coroner.name,
                     label: `${coroner.name} (${coroner.rank || 'Coroner'})`,
                     badge: coroner.badge,
                     rank: coroner.rank,
                     discord: coroner.discord,
                     category: categoryName
-                    // Add other fields
                 });
                 return groups;
             }, {})
         ).map(([category, options]) => ({
             label: category,
             options: options.sort((a, b) => a.label.localeCompare(b.label))
-        })).sort((a, b) => { // Your existing sorting logic for coroner categories
+        })).sort((a, b) => {
             const order = ['Chief Boss', 'Deputy Chief Medical Examiner-Coroner,', 'Supervisor', 'Senior Medical Examiner', 'Medical Examiner', 'Senior Coroner Investigator', 'Coroner Investigator', 'Forensic Attendant', 'Trainee Forensic-Attendant', 'Developer Testing', 'Missing_Category', 'Uncategorized'];
             return order.indexOf(a.label) - order.indexOf(b.label);
         });
     }, [coronerListData]);
-
 
     const handleDoeChange = (type) => (e) => {
         const isChecked = e.target.checked;
@@ -950,7 +893,6 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
             setFormData(prev => ({ ...prev, massFatality: false }));
         }
 
-        // This part resets other modal states when a 'Doe' option is selected.
         if (isChecked) {
             setIsRemoveStaff(false);
             setMissingEmployeeData(prev => ({
@@ -974,7 +916,7 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
         } else if (type === 'jane') {
             setIsJaneDoe(isChecked);
             if (isChecked) {
-                setIsJohnDoe(false); // Uncheck the other 'Doe'
+                setIsJohnDoe(false);
                 setFormData(prev => ({ ...prev, decedentName: 'Jane Doe' }));
             } else {
                 if (formData.decedentName === 'Jane Doe') {
@@ -984,36 +926,30 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
         }
     };
 
-
-    // UTC time stuff
     useEffect(() => {
         const updateUtcTime = () => {
             const now = new Date();
 
             const pad = (num) => num.toString().padStart(2, '0');
 
-            // Get UTC date components
             const day = pad(now.getUTCDate());
             const monthName = now.toLocaleString('en-US', { timeZone: 'UTC', month: 'long' });
             const year = now.getUTCFullYear();
 
-            // Get UTC time components
             const hours = pad(now.getUTCHours());
             const minutes = pad(now.getUTCMinutes());
             const seconds = pad(now.getUTCSeconds());
 
-            // Construct the desired string format
             const utcString = `${day}/${monthName}/${year} ${hours}:${minutes}:${seconds} UTC`;
 
             setCurrentUtcTime(utcString);
         };
 
-        updateUtcTime(); // Initial update
-        const intervalId = setInterval(updateUtcTime, 1000); // Update every second
+        updateUtcTime();
+        const intervalId = setInterval(updateUtcTime, 1000);
 
         return () => clearInterval(intervalId);
     }, []); 
-    
     
     const combinedStaffOptions = [
         {
@@ -1024,17 +960,15 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
             label: 'PHMC Staff',
             options: ensureArray(phmcListData).map(p => ({ value: p.name, label: `${p.name} (${p.category || 'PHMC'})` }))
         }
-    ].filter(group => group.options.length > 0); // Filter out empty groups if any list is empty
-    // Effect to manage initial agency group selection
+    ].filter(group => group.options.length > 0);
+
     useEffect(() => {
-        // Skip if onboarding is not complete yet
         if (!onboardingComplete) return;
         
         const savedGroup = localStorage.getItem('selectedAgencyGroup');
         const hidePreference = localStorage.getItem('hideAgencyGroupSelectorPreference') === 'true';
         setHideAgencyGroupSelectorPreference(hidePreference);
 
-        // If user has onboarding preferences, respect them
         if (userOnboardingPreferences?.allowedCategories?.length === 1) {
             const preferredGroup = userOnboardingPreferences.allowedCategories[0];
             setSelectedAgencyGroup(preferredGroup);
@@ -1042,35 +976,32 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
             return;
         }
 
-        if (savedGroup && hidePreference) { // Only auto-select if preference is to hide
+        if (savedGroup && hidePreference) {
             setSelectedAgencyGroup(savedGroup);
             setShowAgencyGroupSelectorModal(false);
-        } else if (onboardingComplete) { // Only show selector after onboarding is complete
-            setShowAgencyGroupSelectorModal(true); // Show if no saved group or preference is not to hide
+        } else if (onboardingComplete) {
+            setShowAgencyGroupSelectorModal(true);
         }
     }, [onboardingComplete, userOnboardingPreferences]);
     
-    // This useEffect ensures selectedAgencyGroup is primarily driven by bbCodeVersion.
-    // It runs when bbCodeVersion changes, correcting selectedAgencyGroup if needed.
     useEffect(() => {
         localStorage.setItem('bbCodeVersion', bbCodeVersion.toString());
         const definition = getFormDefinition(bbCodeVersion);
         if (definition) {
-            if (selectedAgencyGroup !== definition.group) { // Optimization
+            if (selectedAgencyGroup !== definition.group) {
                 setSelectedAgencyGroup(definition.group);
             }
-            // Always ensure localStorage is in sync with the definition's group
             localStorage.setItem('selectedAgencyGroup', definition.group);
         } else {
-            if (selectedAgencyGroup !== null) { // Optimization
+            if (selectedAgencyGroup !== null) {
                 setSelectedAgencyGroup(null);
             }
             localStorage.removeItem('selectedAgencyGroup');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bbCodeVersion]); // This effect should primarily react to bbCodeVersion changes.
-        return ( 
-            
+    }, [bbCodeVersion]);
+
+    return ( 
         <Suspense fallback={<LoadingSpinner />}>
             <div className="App">
                 <LockdownBanner notification={lockdownConfig.notification} show={isLockdownActive} />
@@ -1085,659 +1016,642 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
                     coronerList={coronerListData}
                 />
                 <AgencyGroupSelectorModal
-                show={showAgencyGroupSelectorModal && !selectedAgencyGroup && onboardingComplete}
-                onSelectGroup={handleSelectAgencyGroup}
-                onHideSelectorPreference={handleHideAgencyGroupSelectorPreference}
-    physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails || {}}
-    psychRecruitmentDetails={selectOptions.psychPositionDetailsData || {}}
-    adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
-    emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
-                    handleFormSelect={handleAgencySelect} // This now triggers the opt-in logic
-    nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
-    coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
-                    onShowCctvRequest={handleShowCctvRequestModal} // --- MODIFICATION: Pass new handler
+                    show={showAgencyGroupSelectorModal && !selectedAgencyGroup && onboardingComplete}
+                    onSelectGroup={handleSelectAgencyGroup}
+                    onHideSelectorPreference={handleHideAgencyGroupSelectorPreference}
+                    physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails || {}}
+                    psychRecruitmentDetails={selectOptions.psychPositionDetailsData || {}}
+                    adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
+                    emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
+                    handleFormSelect={handleAgencySelect}
+                    nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
+                    coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
+                    onShowCctvRequest={handleShowCctvRequestModal}
+                />
 
-            />
+                <SwitchableFormsModal
+                    show={showPHMCModal}
+                    onHide={() => setShowPHMCModal(false)}
+                    title={switchableModalTitle}
+                    forms={switchableFormsList}
+                    handleFormSelect={(version) => {
+                        setBbCodeVersion(version);
+                        setShowPHMCModal(false);
+                    }}
+                    isMobile={isMobile}
+                    physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails}
+                    psychRecruitmentStatus={selectOptions.psychPositionDetailsData}
+                    adminRecruitmentDetails={selectOptions.adminPositionDetailsData}
+                    emsRecruitmentDetails={selectOptions.emsPositionDetailsData}
+                    nurseRecruitmentDetails={selectOptions.nursePositionDetailsData}
+                    coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData}
+                    formDefinitions={formDefinitions}
+                    userPreferences={userOnboardingPreferences}
+                />
 
-            <SwitchableFormsModal
-                show={showPHMCModal}
-                onHide={() => setShowPHMCModal(false)}
-                title={switchableModalTitle}
-                forms={switchableFormsList}
-                handleFormSelect={(version) => {
-                    setBbCodeVersion(version);
-                    setShowPHMCModal(false);
-                }}
-                isMobile={isMobile}
-                physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails}
-                psychRecruitmentStatus={selectOptions.psychPositionDetailsData}
-                adminRecruitmentDetails={selectOptions.adminPositionDetailsData}
-                emsRecruitmentDetails={selectOptions.emsPositionDetailsData}
-                nurseRecruitmentDetails={selectOptions.nursePositionDetailsData}
-                coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData}
-                formDefinitions={formDefinitions}
-                userPreferences={userOnboardingPreferences}
-            />
+                <CctvRequestWebhookModal
+                    show={showCctvRequestModal}
+                    onHide={handleHideCctvRequestModal}
+                    onSubmit={handleCctvWebhookSubmit}
+                    showNotification={showNotification}
+                />
 
-            <CctvRequestWebhookModal
-                show={showCctvRequestModal}
-                onHide={handleHideCctvRequestModal} // Ensure this uses the new handler
-                onSubmit={handleCctvWebhookSubmit}
-                showNotification={showNotification}
-            />
+                <EasterEggModal
+                    show={showEasterEggModal}
+                    type={easterEggType}
+                    onHide={() => {
+                        setShowEasterEggModal(false);
+                        setEasterEggType(null);
+                    }}
+                />
+                {seasonalEffectsEnabled && effect}
 
-            <EasterEggModal
-                show={showEasterEggModal}
-                type={easterEggType} // Pass the type ('normal' or 'rare')
-                onHide={() => {
-                    setShowEasterEggModal(false);
-                    setEasterEggType(null); // Reset type on hide
-                }}
-            />
-            {seasonalEffectsEnabled && effect}
+                <CoronerTipsModal
+                    show={showCoronerTips}
+                    onClose={() => {
+                        setShowCoronerTips(false);
+                    }}
+                />
 
+                <EmsAmaModal
+                    show={showEmsAmaModal}
+                    onHide={() => setShowEmsAmaModal(false)}
+                    showNotification={showNotification}
+                    commitInfo={commitInfo}
+                    handleImageUpload={handleImageUpload}
+                />
 
-        <CoronerTipsModal
-            show={showCoronerTips}
-            onClose={() => {
-                setShowCoronerTips(false);
-            }}
-        />
-
-        <EmsAmaModal
-                show={showEmsAmaModal}
-                onHide={() => setShowEmsAmaModal(false)}
-                showNotification={showNotification}
-                commitInfo={commitInfo}
-                handleImageUpload={handleImageUpload}
-            />
-
-                    {showAgencySelector && ( // Only show if a group is selected
-                        <AgencySelector
-                            showAgencySelector={showAgencySelector}
-                            setShowAgencySelector={setShowAgencySelector}
-                            handleAgencySelect={handleAgencySelect}
-                            isMobile={isMobile}
-                            hideAgencySelector={hideAgencySelector}
-                            setHideAgencySelector={setHideAgencySelector}
-                            selectedAgencyGroup={selectedAgencyGroup}
-                            formDefinitions={formDefinitions}
-                            physicianRecruitmentDetails={physicianRecruitmentDetails}
-                            psychRecruitmentDetails={psychRecruitmentDetails}
-                            adminRecruitmentDetails={adminRecruitmentDetails}
-                            emsRecruitmentDetails={emsRecruitmentDetails}
-                            nurseRecruitmentDetails={nurseRecruitmentDetails}
-                            coronerRecruitmentDetails={coronerRecruitmentDetails}
-                            userPreferences={userOnboardingPreferences}
-                        />
-                        
-                    )}
-
-            <div className="header-info-wrapper">
-            <HeaderInfo commitInfo={commitInfo} /> 
-            </div>
-
-            <div className="container-fluid"> 
-                
-                <div className="form-container">
-                <div className="button-group">
-  
-        <div className="floating-tools-container">
-
-            <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
-                <Dropdown.Toggle variant="secondary" id="dropdown-tools">
-                    <i className="fas fa-tools"></i> Tools
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu>
-                    <Dropdown.Item onClick={() => {setShowEmployeeModal(true); setShowToolsDropdown(false);}}>
-                        <i className="fas fa-users-cog"></i> Manage PHMC Staff
-                    </Dropdown.Item>
-                     <Dropdown.Item onClick={() => {setShowFeatureRequestModal(true); setShowToolsDropdown(false);}}>
-                        <i className="fas fa-bug"></i> Report Bug/Feature
-                    </Dropdown.Item>
-                    <Dropdown.Item onClick={() => {toggleSavedReports(); setShowToolsDropdown(false);}}>
-                        <i className="fas fa-save"></i> Saved Reports
-                    </Dropdown.Item>
-                    <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
-                        <i className="fa-solid fa-truck-medical"></i> EMS AMA
-                    </Dropdown.Item>
-                    <Dropdown.Item onClick={() => {toggleSeasonalEffects(); setShowToolsDropdown(false);}}>
-                        <i className={`fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`}></i> 
-                        {seasonalEffectsEnabled ? 'Disable' : 'Enable'} Seasonal Effects
-                    </Dropdown.Item>
-                    <Dropdown.Item onClick={() => {restartOnboarding(); setShowToolsDropdown(false);}}>
-                        <i className="fas fa-play-circle"></i> Restart Setup Guide
-                    </Dropdown.Item>
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={() => {{
-                        localStorage.removeItem('selectedAgencyGroup');
-                        setSelectedAgencyGroup(null);
-                        setShowAgencyGroupSelectorModal(true);
-                        setShowToolsDropdown(false);
-                    }}}>
-                        <i className="fas fa-users"></i> Switch Form Type
-                    </Dropdown.Item>
-                </Dropdown.Menu>
-            </Dropdown>
-        </div>
-
-            <FeatureRequestModal
-                show={showFeatureRequestModal}
-                onClose={() => setShowFeatureRequestModal(false)}
-                featureRequest={featureRequest}
-                setFeatureRequest={setFeatureRequest}
-                discordName={discordName}
-                setDiscordName={setDiscordName}
-                isBbcodeRequest={isBbcodeRequest}
-                setIsBbcodeRequest={setIsBbcodeRequest}
-                bbcodeTitleRequest={bbcodeTitleRequest}
-                setBbcodeTitleRequest={setBbcodeTitleRequest}
-                bbcodeRequestText={bbcodeRequestText}
-                setBbcodeRequestText={setBbcodeRequestText}
-                bbCodeVersion={bbCodeVersion}
-                commitInfo={commitInfo}
-                setShowFeatureRequestModal={setShowFeatureRequestModal}
-            />
-
-                 <Button
-                        variant="secondary"
-                        type="button"
-                        className="changelog-button"
-                        onClick={() => setShowBusinessCard(prev => !prev)}
-                    >
-                        <i className="fa-solid fa-address-card"></i>
-                        Business Card Tool
-                    </Button>
-            <div className="floating-top-right-tools">
-                {selectedAgencyGroup === 'PHMC Recruitment' && (
-                    <Button
-                        variant={phmcRecruitmentOptIn ? "outline-success" : "outline-secondary"}
-                        onClick={() => handleRecruitmentOptIn(!phmcRecruitmentOptIn)}
-                        className="changelog-button" // You can use existing or new class
-                        title={phmcRecruitmentOptIn ? "Click to Opt-out of PHMC Recruitment Notifications" : "Click to Opt-in to PHMC Recruitment Notifications"}
-                    > Desktop Alert Toggle
-                        <i className={`fas ${phmcRecruitmentOptIn ? 'fa-bell-slash' : 'fa-bell'}`}></i>
-                        {/* Optionally, keep text for larger screens or use icons only */}
-                        {/* {phmcRecruitmentOptIn ? " Rec. Notifs: ON" : " Rec. Notifs: OFF"} */}
-                    </Button>
-                )}
-            </div>
-
-                    {(() => {
-                        if (selectedAgencyGroup === 'PHMC Recruitment' && formData.recruitmentPosition) {
-
-                            let currentRecruitmentDetailsSource = null;
-                            let positionDisplayNameForTitle = formData.recruitmentPosition || 'selected position';
-                            const currentFormDef = getFormDefinition(bbCodeVersion);
-
-                            if (currentFormDef?.titleKey === "phmcGeneralApplication") {
-                                currentRecruitmentDetailsSource = selectOptions.physicianRecruitmentDetails;
-                            } else if (currentFormDef?.titleKey === "phmcPsychApplication") {
-                                currentRecruitmentDetailsSource = selectOptions.psychPositionDetailsData;
-                            } else if (currentFormDef?.titleKey === "phmcAdminApplication") {
-                                currentRecruitmentDetailsSource = selectOptions.adminPositionDetailsData;
-                            } else if (currentFormDef?.titleKey === "phmcNursingApplication") {
-                                currentRecruitmentDetailsSource = selectOptions.nursePositionDetailsData;
-                            } else if (currentFormDef?.titleKey === "phmcEMSApplication") {
-                                currentRecruitmentDetailsSource = selectOptions.emsPositionDetailsData;
-                            } else if (currentFormDef?.titleKey === "phmcCoronerRecruitmentApplication") {
-                                currentRecruitmentDetailsSource = selectOptions.coronerPositionDetailsData;
-                            }
-
-                            if (currentRecruitmentDetailsSource && currentRecruitmentDetailsSource[formData.recruitmentPosition]) {
-                                positionDisplayNameForTitle = currentRecruitmentDetailsSource[formData.recruitmentPosition].displayName || formData.recruitmentPosition;
-                            }
-
-                            // Only render the button if the source data for the current form type is available
-                            if (currentRecruitmentDetailsSource) {
-                                return (
-                                    <Button
-                                        variant="info"
-                                        type="button"
-                                        className="changelog-button"
-                                        onClick={() => handleShowPositionInfo(formData.recruitmentPosition)}
-                                        title={`More info about ${positionDisplayNameForTitle}`}
-                                    >
-                                        <i className="fas fa-info-circle"></i>
-                                        Position Info
-                                    </Button>
-                                );
-                            }
-                        }
-                        return null; // Return null if conditions aren't met
-                        
-                    })()}
-
-                    {(bbCodeVersion === 1 || bbCodeVersion === 2 || bbCodeVersion === 18) && (
-
-                    <Button
-                    variant="secondary"
-                type="button"
-                className="changelog-button"
-                onClick={() => setShowCoronerTips(true)} // This button click ALWAYS sets show to true
-            >
-                Coroner Tips
-            </Button>
-                    )}
-</div>
-
-                    <div className="button-group">
-
-                        <Button
-                            type="button"
-                            variant="phmc" // You might want a dynamic variant too
-                            className="changelog-button"
-                            onClick={() => window.open('https://phmc.gta.world/', '_blank')}
-                        >
-                            <i className="fas fa-hospital"></i>
-                            PHMC
-                        </Button>
-                        <Button
-                            className="changelog-button"
-                            variant='secondary'
-                            onClick={handleMainFormSelectionButtonClick} // Use the new handler
-                        >
-                            <i className="fas fa-exchange-alt"></i>
-                            {/* Update text to be more generic if no group is selected */}
-                            Select {selectedAgencyGroup || "Agency"} Form
-                        </Button>
-
-                        <SwitchableFormButtons
-                            bbCodeVersion={bbCodeVersion}
-                            openSwitchableModal={openSwitchableModal}
-                            formGroups={{
-                                coronerFormsSubGroup,
-                                physicalEvalFormsSubGroup,
-                                psychEvalFormsSubGroup,
-                                generalConsultFormsSubGroup,
-                                commentaryNoteFormsSubGroup,
-                                mentalHealthFormsSubGroup,
-                                civilianFormsSubGroup,
-                                phmcInternalEmails
-                            }}
-                        />
-                    </div>
-                            <form> 
-                                <Suspense fallback={<LoadingSpinner />}>
-                                    {FieldComponent ? (
-                                        <FieldComponent
-                                            formData={formData}
-                                            handleChange={handleChange}
-                                            commitInfo={commitInfo}
-                                            // Pass all necessary props from App.js state and selectOptions
-                                            setFormData={setFormData}                                        
-                                            typeOfDeathOptions={selectOptions.typeOfDeathOptions || []}
-                                            mannerOfDeathOptions={selectOptions.mannerOfDeathOptions || []}
-                                            requestingAgencyOptions={selectOptions.requestingAgenciesOptions || []}
-                                            // Pass other props like phmcGroupedOptions, coronerGroupedOptions, etc.
-                                            phmcGroupedOptions={phmcGroupedOptions}
-                                            coronerGroupedOptions={coronerGroupedOptions}
-                                            setShowEmployeeModal={setShowEmployeeModal}
-                                            handleSelectChange={handleSelectChange}
-                                            isUploading={isUploading}
-                                            handleImageUpload={handleImageUpload}
-                                            removeNotification={removeNotification}
-                                            patientTitleOptions={selectOptions.patientTitle || []}
-                                            patientPhoneOptions={selectOptions.patientPhone || []}
-                                            purposeOptions={selectOptions.PurposeMedicalInformationRelease || []}
-                                            formatOptions={selectOptions.PurposeMedicalInformationReleaseFormat || []}
-                                            medicalRecordOptions={selectOptions.MedicalRecordsRelease || []}
-                                            // For Surgical
-                                            phmcRank={selectOptions.phmcRank || []}
-                                            patientConsent={selectOptions.patientConsent || []}
-                                            complications={selectOptions.complications || []}
-                                            procedureGood={selectOptions.procedureGood || []}
-                                            // For PhysEval
-                                            BodyMassIndex={selectOptions.BodyMassIndex || []}
-                                            temperature={selectOptions.temperature || []}
-                                            heartRate={selectOptions.heartRate || []}
-                                            breathing={selectOptions.breathing || []}
-                                            bloodPressure={selectOptions.bloodPressure || []}
-                                            patientJob={selectOptions.patientJob || []}
-                                            patientJobRisks={selectOptions.patientJobRisks || []}
-                                            patientAllergiesRisk={selectOptions.patientAllergiesRisk || []}
-                                            patientMedicineRegular={selectOptions.patientMedicineRegular || []}
-                                            patientOther={selectOptions.patientOther || []}
-                                            predisposition={selectOptions.predisposition || []}
-                                            // For MentalHealth & ER & GeneralConsult
-                                            admission={selectOptions.admission || []}
-                                            followup={selectOptions.followup || []}
-                                            // For ER & GeneralConsult
-                                            painLevel={selectOptions.painLevel || []}
-                                            findings={selectOptions.findings || []}
-                                            lungs={selectOptions.lungs || []}
-                                            pupils={selectOptions.pupils || []}
-                                            wounds={selectOptions.wounds || []}
-                                            ecg={selectOptions.ecg || []}
-                                            sono={selectOptions.sono || []}
-                                            lab={selectOptions.lab || []}
-                                            bloodOxy={selectOptions.bloodOxy || []}
-                                            assignedDepartment={selectOptions.assignedDepartment || []}
-                                            departmentLarge={ (currentFormDefinition?.version === 23 && selectedAgencyGroup === "PHMC") ? (selectOptions.paletoClinicDepartment || []) : (selectOptions.departmentLarge || [])}
-                                            // For Shrink
-                                            Appearance={selectOptions.Appearance || []}
-                                            Behavior={selectOptions.Behavior || []}
-                                            Speech={selectOptions.Speech || []}
-                                            Mood={selectOptions.Mood || []}
-                                            Affect={selectOptions.Affect || []}
-                                            ThoughtProcess={selectOptions.ThoughtProcess || []}
-                                            ThoughtContent={selectOptions.ThoughtContent || []}
-                                            Insight={selectOptions.Insight || []}
-                                            Cognition={selectOptions.Cognition || []}
-                                            Risk={selectOptions.Risk || []}
-                                            // For CoronerEmail
-                                            fillPhoneChecked={fillPhoneChecked}
-                                            setFillPhoneChecked={setFillPhoneChecked}
-                                            handleFillCoronerPhone={handleFillCoronerPhone}
-                                            addReport={addReport}
-                                            removeReport={removeReport}
-                                            handleReportChange={handleReportChange}
-                                            toggleSavedReports={toggleSavedReports}
-                                            // For DeathReport specific
-                                            dnr={selectOptions.dnr || []}
-                                            attorney={selectOptions.attorney || []}
-                                            dnrOrder={selectOptions.dnrOrder || []}
-                                            isJohnDoe={isJohnDoe}
-                                            isJaneDoe={isJaneDoe}
-                                            handleDoeChange={handleDoeChange}
-                                            currentUtcTime={currentUtcTime}
-                                            UpdateMedicalFile={selectOptions.UpdateMedicalFile || []}
-                                            Imaging={selectOptions.Imaging || []}
-                                            patientTitleNew={selectOptions.patientTitleNew || []}
-                                            XrayResults={selectOptions.XrayResults || []}
-                                            ctResults={selectOptions.ctResults || []}
-                                            mriResults={selectOptions.mriResults || []}
-                                            ultrasoundResults={selectOptions.ultrasoundResults || []}
-                                            patientBloodType={selectOptions.patientBloodType || []} 
-                                            selectOptions={selectOptions} 
-                                            
-                                            maritalStatus={selectOptions.maritalStatus || []}
-                                            numberChildren={selectOptions.numberChildren || []}
-                                            financialStatus={selectOptions.financialStatus || []}
-                                            
-                                            physicianRecruitmentDetails={physicianRecruitmentDetails} // Renamed prop here too
-                                            psychRecruitmentDetails={psychRecruitmentDetails}
+                {showAgencySelector && (
+                    <AgencySelector
+                        showAgencySelector={showAgencySelector}
+                        setShowAgencySelector={setShowAgencySelector}
+                        handleAgencySelect={handleAgencySelect}
+                        isMobile={isMobile}
+                        hideAgencySelector={hideAgencySelector}
+                        setHideAgencySelector={setHideAgencySelector}
+                        selectedAgencyGroup={selectedAgencyGroup}
+                        formDefinitions={formDefinitions}
+                        physicianRecruitmentDetails={physicianRecruitmentDetails}
+                        psychRecruitmentDetails={psychRecruitmentDetails}
                         adminRecruitmentDetails={adminRecruitmentDetails}
                         emsRecruitmentDetails={emsRecruitmentDetails}
                         nurseRecruitmentDetails={nurseRecruitmentDetails}
                         coronerRecruitmentDetails={coronerRecruitmentDetails}
-                    showNotification={showNotification}
-                    onAttachReportSummaryRequest={onAttachReportSummaryRequest}
+                        userPreferences={userOnboardingPreferences}
+                    />
+                )}
 
+                <div className="header-info-wrapper">
+                    <HeaderInfo commitInfo={commitInfo} /> 
+                </div>
+
+                <div className="container-fluid"> 
+                    <div className="form-container">
+                        <div className="button-group">
+                            <div className="floating-tools-container">
+                                <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
+                                    <Dropdown.Toggle variant="secondary" id="dropdown-tools">
+                                        <i className="fas fa-tools"></i> Tools
+                                    </Dropdown.Toggle>
+
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item onClick={() => {setShowEmployeeModal(true); setShowToolsDropdown(false);}}>
+                                            <i className="fas fa-users-cog"></i> Manage PHMC Staff
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => {setShowFeatureRequestModal(true); setShowToolsDropdown(false);}}>
+                                            <i className="fas fa-bug"></i> Report Bug/Feature
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => {toggleSavedReports(); setShowToolsDropdown(false);}}>
+                                            <i className="fas fa-save"></i> Saved Reports
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
+                                            <i className="fa-solid fa-truck-medical"></i> EMS AMA
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => {toggleSeasonalEffects(); setShowToolsDropdown(false);}}>
+                                            <i className={`fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`}></i> 
+                                            {seasonalEffectsEnabled ? 'Disable' : 'Enable'} Seasonal Effects
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => {restartOnboarding(); setShowToolsDropdown(false);}}>
+                                            <i className="fas fa-play-circle"></i> Restart Setup Guide
+                                        </Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Item onClick={() => {{
+                                            localStorage.removeItem('selectedAgencyGroup');
+                                            setSelectedAgencyGroup(null);
+                                            setShowAgencyGroupSelectorModal(true);
+                                            setShowToolsDropdown(false);
+                                        }}}>
+                                            <i className="fas fa-users"></i> Switch Form Type
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
+
+                            <FeatureRequestModal
+                                show={showFeatureRequestModal}
+                                onClose={() => setShowFeatureRequestModal(false)}
+                                featureRequest={featureRequest}
+                                setFeatureRequest={setFeatureRequest}
+                                discordName={discordName}
+                                setDiscordName={setDiscordName}
+                                isBbcodeRequest={isBbcodeRequest}
+                                setIsBbcodeRequest={setIsBbcodeRequest}
+                                bbcodeTitleRequest={bbcodeTitleRequest}
+                                setBbcodeTitleRequest={setBbcodeTitleRequest}
+                                bbcodeRequestText={bbcodeRequestText}
+                                setBbcodeRequestText={setBbcodeRequestText}
+                                bbCodeVersion={bbCodeVersion}
+                                commitInfo={commitInfo}
+                                setShowFeatureRequestModal={setShowFeatureRequestModal}
+                            />
+
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                className="changelog-button"
+                                onClick={() => setShowBusinessCard(prev => !prev)}
+                            >
+                                <i className="fa-solid fa-address-card"></i>
+                                Business Card Tool
+                            </Button>
+
+                            <div className="floating-top-right-tools">
+                                {selectedAgencyGroup === 'PHMC Recruitment' && (
+                                    <Button
+                                        variant={phmcRecruitmentOptIn ? "outline-success" : "outline-secondary"}
+                                        onClick={() => handleRecruitmentOptIn(!phmcRecruitmentOptIn)}
+                                        className="changelog-button"
+                                        title={phmcRecruitmentOptIn ? "Click to Opt-out of PHMC Recruitment Notifications" : "Click to Opt-in to PHMC Recruitment Notifications"}
+                                    > Desktop Alert Toggle
+                                        <i className={`fas ${phmcRecruitmentOptIn ? 'fa-bell-slash' : 'fa-bell'}`}></i>
+                                    </Button>
+                                )}
+                            </div>
+
+                            {(() => {
+                                if (selectedAgencyGroup === 'PHMC Recruitment' && formData.recruitmentPosition) {
+
+                                    let currentRecruitmentDetailsSource = null;
+                                    let positionDisplayNameForTitle = formData.recruitmentPosition || 'selected position';
+                                    const currentFormDef = getFormDefinition(bbCodeVersion);
+
+                                    if (currentFormDef?.titleKey === "phmcGeneralApplication") {
+                                        currentRecruitmentDetailsSource = selectOptions.physicianRecruitmentDetails;
+                                    } else if (currentFormDef?.titleKey === "phmcPsychApplication") {
+                                        currentRecruitmentDetailsSource = selectOptions.psychPositionDetailsData;
+                                    } else if (currentFormDef?.titleKey === "phmcAdminApplication") {
+                                        currentRecruitmentDetailsSource = selectOptions.adminPositionDetailsData;
+                                    } else if (currentFormDef?.titleKey === "phmcNursingApplication") {
+                                        currentRecruitmentDetailsSource = selectOptions.nursePositionDetailsData;
+                                    } else if (currentFormDef?.titleKey === "phmcEMSApplication") {
+                                        currentRecruitmentDetailsSource = selectOptions.emsPositionDetailsData;
+                                    } else if (currentFormDef?.titleKey === "phmcCoronerRecruitmentApplication") {
+                                        currentRecruitmentDetailsSource = selectOptions.coronerPositionDetailsData;
+                                    }
+
+                                    if (currentRecruitmentDetailsSource && currentRecruitmentDetailsSource[formData.recruitmentPosition]) {
+                                        positionDisplayNameForTitle = currentRecruitmentDetailsSource[formData.recruitmentPosition].displayName || formData.recruitmentPosition;
+                                    }
+
+                                    if (currentRecruitmentDetailsSource) {
+                                        return (
+                                            <Button
+                                                variant="info"
+                                                type="button"
+                                                className="changelog-button"
+                                                onClick={() => handleShowPositionInfo(formData.recruitmentPosition)}
+                                                title={`More info about ${positionDisplayNameForTitle}`}
+                                            >
+                                                <i className="fas fa-info-circle"></i>
+                                                Position Info
+                                            </Button>
+                                        );
+                                    }
+                                }
+                                return null;
+                                
+                            })()}
+
+                            {(bbCodeVersion === 1 || bbCodeVersion === 2 || bbCodeVersion === 18) && (
+                                <Button
+                                    variant="secondary"
+                                    type="button"
+                                    className="changelog-button"
+                                    onClick={() => setShowCoronerTips(true)}
+                                >
+                                    Coroner Tips
+                                </Button>
+                            )}
+                        </div>
+
+                        <div className="button-group">
+                            <Button
+                                type="button"
+                                variant="phmc"
+                                className="changelog-button"
+                                onClick={() => window.open('https://phmc.gta.world/', '_blank')}
+                            >
+                                <i className="fas fa-hospital"></i>
+                                PHMC
+                            </Button>
+                            <Button
+                                className="changelog-button"
+                                variant='secondary'
+                                onClick={handleMainFormSelectionButtonClick}
+                            >
+                                <i className="fas fa-exchange-alt"></i>
+                                Select {selectedAgencyGroup || "Agency"} Form
+                            </Button>
+
+                            <SwitchableFormButtons
+                                bbCodeVersion={bbCodeVersion}
+                                openSwitchableModal={openSwitchableModal}
+                                formGroups={{
+                                    coronerFormsSubGroup,
+                                    physicalEvalFormsSubGroup,
+                                    psychEvalFormsSubGroup,
+                                    generalConsultFormsSubGroup,
+                                    commentaryNoteFormsSubGroup,
+                                    mentalHealthFormsSubGroup,
+                                    civilianFormsSubGroup,
+                                    phmcInternalEmails
+                                }}
+                            />
+                        </div>
+
+                        <form> 
+                            <Suspense fallback={<LoadingSpinner />}>
+                                {FieldComponent ? (
+                                    <FieldComponent
+                                        formData={formData}
+                                        handleChange={handleChange}
+                                        commitInfo={commitInfo}
+                                        setFormData={setFormData}
+                                        /* --- IMPORTANT: on passe désormais des [{label,value}] partout --- */
+                                        typeOfDeathOptions={optionize(selectOptions.typeOfDeathOptions)}
+                                        mannerOfDeathOptions={optionize(selectOptions.mannerOfDeathOptions)}
+                                        requestingAgencyOptions={optionize(selectOptions.requestingAgenciesOptions)}
+                                        phmcGroupedOptions={phmcGroupedOptions}
+                                        coronerGroupedOptions={coronerGroupedOptions}
+                                        setShowEmployeeModal={setShowEmployeeModal}
+                                        handleSelectChange={handleSelectChange}
+                                        isUploading={isUploading}
+                                        handleImageUpload={handleImageUpload}
+                                        removeNotification={removeNotification}
+                                        patientTitleOptions={optionize(selectOptions.patientTitle)}
+                                        patientPhoneOptions={optionize(selectOptions.patientPhone)}
+                                        purposeOptions={optionize(selectOptions.PurposeMedicalInformationRelease)}
+                                        formatOptions={optionize(selectOptions.PurposeMedicalInformationReleaseFormat)}
+                                        medicalRecordOptions={optionize(selectOptions.MedicalRecordsRelease)}
+                                        /* Surgical */
+                                        phmcRank={optionize(selectOptions.phmcRank)}
+                                        patientConsent={optionize(selectOptions.patientConsent)}
+                                        complications={optionize(selectOptions.complications)}
+                                        procedureGood={optionize(selectOptions.procedureGood)}
+                                        /* PhysEval */
+                                        BodyMassIndex={optionize(selectOptions.BodyMassIndex)}
+                                        temperature={optionize(selectOptions.temperature)}
+                                        heartRate={optionize(selectOptions.heartRate)}
+                                        breathing={optionize(selectOptions.breathing)}
+                                        bloodPressure={optionize(selectOptions.bloodPressure)}
+                                        patientJob={optionize(selectOptions.patientJob)}
+                                        patientJobRisks={optionize(selectOptions.patientJobRisks)}
+                                        patientAllergiesRisk={optionize(selectOptions.patientAllergiesRisk)}
+                                        patientMedicineRegular={optionize(selectOptions.patientMedicineRegular)}
+                                        patientOther={optionize(selectOptions.patientOther)}
+                                        predisposition={optionize(selectOptions.predisposition)}
+                                        /* MentalHealth & ER & GeneralConsult */
+                                        admission={optionize(selectOptions.admission)}
+                                        followup={optionize(selectOptions.followup)}
+                                        /* ER & GeneralConsult */
+                                        painLevel={optionize(selectOptions.painLevel)}
+                                        findings={optionize(selectOptions.findings)}
+                                        lungs={optionize(selectOptions.lungs)}
+                                        pupils={optionize(selectOptions.pupils)}
+                                        wounds={optionize(selectOptions.wounds)}
+                                        ecg={optionize(selectOptions.ecg)}
+                                        sono={optionize(selectOptions.sono)}
+                                        lab={optionize(selectOptions.lab)}
+                                        bloodOxy={optionize(selectOptions.bloodOxy)}
+                                        assignedDepartment={optionize(selectOptions.assignedDepartment)}
+                                        departmentLarge={
+                                            (currentFormDefinition?.version === 23 && selectedAgencyGroup === "PHMC")
+                                                ? optionize(selectOptions.paletoClinicDepartment)
+                                                : optionize(selectOptions.departmentLarge)
+                                        }
+                                        /* Shrink */
+                                        Appearance={optionize(selectOptions.Appearance)}
+                                        Behavior={optionize(selectOptions.Behavior)}
+                                        Speech={optionize(selectOptions.Speech)}
+                                        Mood={optionize(selectOptions.Mood)}
+                                        Affect={optionize(selectOptions.Affect)}
+                                        ThoughtProcess={optionize(selectOptions.ThoughtProcess)}
+                                        ThoughtContent={optionize(selectOptions.ThoughtContent)}
+                                        Insight={optionize(selectOptions.Insight)}
+                                        Cognition={optionize(selectOptions.Cognition)}
+                                        Risk={optionize(selectOptions.Risk)}
+                                        /* CoronerEmail */
+                                        fillPhoneChecked={fillPhoneChecked}
+                                        setFillPhoneChecked={setFillPhoneChecked}
+                                        handleFillCoronerPhone={handleFillCoronerPhone}
+                                        addReport={addReport}
+                                        removeReport={removeReport}
+                                        handleReportChange={handleReportChange}
+                                        toggleSavedReports={toggleSavedReports}
+                                        /* DeathReport specific */
+                                        dnr={optionize(selectOptions.dnr)}
+                                        attorney={optionize(selectOptions.attorney)}
+                                        dnrOrder={optionize(selectOptions.dnrOrder)}
+                                        isJohnDoe={isJohnDoe}
+                                        isJaneDoe={isJaneDoe}
+                                        handleDoeChange={handleDoeChange}
+                                        currentUtcTime={currentUtcTime}
+                                        UpdateMedicalFile={optionize(selectOptions.UpdateMedicalFile)}
+                                        Imaging={optionize(selectOptions.Imaging)}
+                                        patientTitleNew={optionize(selectOptions.patientTitleNew)}
+                                        XrayResults={optionize(selectOptions.XrayResults)}
+                                        ctResults={optionize(selectOptions.ctResults)}
+                                        mriResults={optionize(selectOptions.mriResults)}
+                                        ultrasoundResults={optionize(selectOptions.ultrasoundResults)}
+                                        patientBloodType={optionize(selectOptions.patientBloodType)} 
+                                        selectOptions={selectOptions}
+                                        maritalStatus={optionize(selectOptions.maritalStatus)}
+                                        numberChildren={optionize(selectOptions.numberChildren)}
+                                        financialStatus={optionize(selectOptions.financialStatus)}
+                                        physicianRecruitmentDetails={physicianRecruitmentDetails}
+                                        psychRecruitmentDetails={psychRecruitmentDetails}
+                                        adminRecruitmentDetails={adminRecruitmentDetails}
+                                        emsRecruitmentDetails={emsRecruitmentDetails}
+                                        nurseRecruitmentDetails={nurseRecruitmentDetails}
+                                        coronerRecruitmentDetails={coronerRecruitmentDetails}
+                                        showNotification={showNotification}
+                                        onAttachReportSummaryRequest={onAttachReportSummaryRequest}
                                     />
                                 ) : (
                                     <p>Please select an agency group and then a form type.</p>
                                 )}
-                                </Suspense>
-                        <div className="button-group">
+                            </Suspense>
+                            <div className="button-group">
+                                <Button
+                                    type="button"
+                                    onClick={clearForm}
+                                    className="remove-report-button"
+                                >
+                                    <i className="fas fa-trash-alt"></i>
+                                    Clear Form
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div className="output-container">
+                        <div className="floating-admin-button-container">
                             <Button
                                 type="button"
-                                onClick={clearForm}
-                                className="remove-report-button"
+                                variant="warning"
+                                className="changelog-button"
+                                onClick={() => setShowEmsBingoModal(true)}
+                                title="Open Bingo Night!"
                             >
-                                <i className="fas fa-trash-alt"></i>
-                                Clear Form
+                                <i className="fas fa-trophy"></i>
+                                Bingo Night!
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="danger"
+                                className="changelog-button"
+                                onClick={() => navigate('/admin')}
+                                title="Open Admin Control Panel"
+                            >
+                                <i className="fas fa-user-shield"></i>
+                                Admin Panel
                             </Button>
                         </div>
-                    </form>
-                </div>
-                
-                <div className="output-container">
-                <div className="floating-admin-button-container">
-                <Button
-                    type="button"
-                    variant="warning"
-                    className="changelog-button"
-                    onClick={() => setShowEmsBingoModal(true)}
-                    title="Open Bingo Night!"
-                >
-                    <i className="fas fa-trophy"></i>
-                    Bingo Night!
-                </Button>
-                <Button
-                    type="button"
-                    variant="danger"
-                    className="changelog-button"
-                    onClick={() => navigate('/admin')}
-                    title="Open Admin Control Panel"
-                >
-                    <i className="fas fa-user-shield"></i>
-                    Admin Panel
-                </Button>
-                
-            </div>
 
-<RecruitmentStatusDisplay
-    selectedAgencyGroup={selectedAgencyGroup}
-    bbCodeVersion={bbCodeVersion}
-    physicianRecruitmentDetails={physicianRecruitmentDetails} // Renamed prop here too
-    psychRecruitmentDetails={psychRecruitmentDetails}
-    adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}} // Assuming admin data is in selectOptions
-    emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}     // Assuming EMS data is in selectOptions
-    nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}} // Assuming Nurse data is in selectOptions
-    coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
-    // Pass other recruitment details objects as props when you add them
-/>
-            <EmsBingoModal
-                show={showEmsBingoModal}
-                onHide={handleHideEmsBingoModal}
-                phmcGroupedOptions={phmcGroupedOptions}
-                coronerGroupedOptions={coronerGroupedOptions}
-                currentPhmcEmployee={formData.phmcEmployee}
-                showNotification={showNotification}
-                setShowEmployeeModal={setShowEmployeeModal}
-                isAdmin={formData.isAdminAuthenticated}
-                sendBingoWebhook={({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci }) => 
-                    sendBingoNotification({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci || commitInfo })
-                }
-                sendPhraseRequestWebhook={({ requester, phrase, bingoType }) => 
-                    sendPhraseRequestNotification({ requester, phrase, bingoType, commitInfo })
-                }
-            />
-
-<EmployeeModal
-    show={showEmployeeModal}
-    onHide={() => {
-        setShowEmployeeModal(false);
-        setIsJohnDoe(false);
-        setIsJaneDoe(false);
-        setIsRemoveStaff(false);
-    }}
-    isJohnDoe={isJohnDoe}
-    coronerList={coronerListData}
-    phmcList={phmcListData}
-    isRemoveStaff={isRemoveStaff}
-    showNotification={showNotification}
-    handleDoeChange={handleDoeChange}
-    handleRemoveStaffChange={(selectedOptions) => {
-        setStaffToRemove(selectedOptions ? selectedOptions.map(option => option.value) : []);
-    }}
-    missingEmployeeData={missingEmployeeData}
-    handleMissingEmployeeChange={(e) => {
-        setMissingEmployeeData({ ...missingEmployeeData, [e.target.name]: e.target.value });
-    }}
-    phmcGroupedOptions={phmcGroupedOptions}
-    coronerGroupedOptions={coronerGroupedOptions}
-    employeeOptions={combinedStaffOptions}
-    handleMissingEmployeeSubmit={handleMissingEmployeeSubmit}
-/>            
-                                        
- <div className="bbcode-section">
-    {getBBCodeContent()?.length > 30000 && (
-        <div className={`char-counter ${getBBCodeContent()?.length > 60000 ? 'char-counter-warning' : ''}`}>
-            Character Count: {getBBCodeContent()?.length ?? 'Error'} / 60000
-            {getBBCodeContent()?.length > 60000 && (
-                <div className="char-counter-warning-message">
-                    Warning: PHPBB forums often have a character limit around 60,000. You may need to split this form.
-                </div>
-            )}
-        </div>
-    )}
-
-    <div className="modern-output-controls">
-        <Button
-            type="button"
-            onClick={() => setShowBBCode(prev => !prev)}
-            className="control-button"
-        >
-            <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-            {showBBCode ? 'Hide BBCode' : 'Show BBCode'}
-        </Button>
-        <Button
-            type="button"
-            onClick={toggleSavedReports}
-            className="control-button"
-        >
-            <i className="fas fa-save"></i>
-            Save Report
-        </Button>
-    </div>
-            <p className="generated-title-label">Generated Title</p>
-            <p className="generated-title-string">{generateTitle()}</p>
-
-    {showBBCode && (
-        <div className="generated-title-container">
-        </div>
-    )}
-    
-    <div className="modern-copy-controls">
-        <Button
-            type="button"
-            onClick={handleCopyTitle}
-            className="copy-button-modern"
-        >
-            <i className="fas fa-copy"></i>
-            Copy Title
-        </Button>
-
-        <Button
-            type="button"
-            onClick={handleCopyAndNotifyWrapper}
-            className="copy-button-modern"
-            disabled={isLockdownActive}
-            title={isLockdownActive ? 'BBCode copying is disabled during site lockdown' : ''}
-        >
-            <i className="fas fa-copy"></i>
-            {getCopyButtonText()}
-        </Button>
-
-        {/* Agency Image Row: Only show for selected department */}
-    </div>
-    
-
-    {showBBCode && (
-        <pre className="bbcode-output">
-            {getBBCodeContent()}
-        </pre>
-    )}
-        {bbCodeVersion === 2 && formData.department && agencyDataStore && agencyDataStore[formData.department] && agencyDataStore[formData.department].logo && agencyDataStore[formData.department].url && (
-            <div className="agency-buttons" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '18px 0 0 0', flexWrap: 'wrap' }}>
-                <button
-                    className="agency-button"
-                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                    onClick={() => window.open(agencyDataStore[formData.department].url, '_blank')}
-                    title={agencyDataStore[formData.department].fullName || formData.department}
-                >
-                    <img
-                        src={agencyDataStore[formData.department].logo}
-                        alt={agencyDataStore[formData.department].fullName || formData.department}
-                        style={{ height: '100px', width: 'auto', borderRadius: '6px', border: '1px solid #30363d', background: '#16202c', padding: '4px', marginBottom: '2px' }}
-                    />
-                </button>
-                <div style={{ color: '#eeeeeeb0', fontWeight: 600, fontSize: '1.1rem', textAlign: 'center', marginTop: '2px' }}>
-                    {agencyDataStore[formData.department].fullName || formData.department}
-                </div>
-            </div>
-        )}
-
-    <FormImageLink
-        bbCodeVersion={bbCodeVersion}
-        selectedAgencyGroup={selectedAgencyGroup}
-        deathReportClass={deathReportClass}
-        civilianPaperworkClass={civilianPaperworkClass}
-        deathReportImage={deathReportImage}
-        civilianPaperworkImage={civilianPaperworkImage}
-    />
-</div>
-                    {selectedAgencyGroup === 'PHMC' && (
-                        <BusinessCardModal
-                            show={showBusinessCard}
-                            onHide={() => setShowBusinessCard(false)}
-                            showNotification={showNotification}
-                            commitInfo={commitInfo}
-                            handleImageUpload={handleImageUpload}
+                        <RecruitmentStatusDisplay
+                            selectedAgencyGroup={selectedAgencyGroup}
+                            bbCodeVersion={bbCodeVersion}
+                            physicianRecruitmentDetails={physicianRecruitmentDetails}
+                            psychRecruitmentDetails={psychRecruitmentDetails}
+                            adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
+                            emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
+                            nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
+                            coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
                         />
-                    )}
-            <SwitchableFormsModal
-                show={showPHMCModal} // Your state that controls this modal's visibility
-                onHide={() => setShowPHMCModal(false)}
-                title={switchableModalTitle} // Your state for the modal title
-                forms={switchableFormsList} // Your state for the list of forms for this modal
-                handleFormSelect={handleAgencySelect} // This now triggers the opt-in logic
-                isMobile={isMobile}
-                physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails} // Renamed prop here too
-                psychRecruitmentStatus={psychRecruitmentDetails} // For Psych buttons - NEW PROP
-                formDefinitions={formDefinitions} // Pass all form definitions
-                    adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}} // Assuming admin data is in selectOptions
-                nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
-                coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
-                emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
-                userPreferences={userOnboardingPreferences}
-            />
 
-            <SavedReportsModal
-                show={showSavedReports}
-                onHide={() => setShowSavedReports(false)}
-                onClose={() => setShowSavedReports(false)}
-                savedReports={savedReports}
-                reportsForSelectedUser={savedReports}
-                loadReport={loadReportForUser}
-                deleteReport={deleteReportForUser}
-                author={getCurrentReportAuthor(formData)}
-                isLoading={isLoadingUserReports}
-                onAttachReportSelectedForAttachment={handleReportSelectedForAttachment}
-                reportSelectionFilter={reportSelectionFilter}
-                versionNames={versionNames}
-                onEmployeeSelect={(employeeValue) => {
-                    // Handle employee selection
-                    if (employeeValue) {
-                        loadUserSavedReports(employeeValue);
-                    }
-                }}
-                employeeOptions={[
-                    {
-                        label: 'PHMC Staff',
-                        options: ensureArray(phmcListData).map(p => ({
-                            value: p.name,
-                            label: `${p.name} (${p.category || 'PHMC'})`
-                        })).sort((a, b) => a.label.localeCompare(b.label))
-                    },
-                    {
-                        label: 'Coroners',
-                        options: ensureArray(coronerListData).map(c => ({
-                            value: c.name,
-                            label: `${c.name} (${c.rank || 'Coroner'})`
-                        })).sort((a, b) => a.label.localeCompare(b.label))
-                    }
-                ]}
-                currentPhmcEmployee={formData.phmcEmployee}
-                currentCoronerEmployee={formData.coronerEmployee}
-                showNotification={showNotification}
-                removeNotification={removeNotification}
-                bbCodeVersion={bbCodeVersion}
-                handleReportSelectedForAttachment={handleReportSelectedForAttachment}
-            />
+                        <EmsBingoModal
+                            show={showEmsBingoModal}
+                            onHide={handleHideEmsBingoModal}
+                            phmcGroupedOptions={phmcGroupedOptions}
+                            coronerGroupedOptions={coronerGroupedOptions}
+                            currentPhmcEmployee={formData.phmcEmployee}
+                            showNotification={showNotification}
+                            setShowEmployeeModal={setShowEmployeeModal}
+                            isAdmin={formData.isAdminAuthenticated}
+                            sendBingoWebhook={({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci }) => 
+                                sendBingoNotification({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci || commitInfo })
+                            }
+                            sendPhraseRequestWebhook={({ requester, phrase, bingoType }) => 
+                                sendPhraseRequestNotification({ requester, phrase, bingoType, commitInfo })
+                            }
+                        />
 
-            
+                        <EmployeeModal
+                            show={showEmployeeModal}
+                            onHide={() => {
+                                setShowEmployeeModal(false);
+                                setIsJohnDoe(false);
+                                setIsJaneDoe(false);
+                                setIsRemoveStaff(false);
+                            }}
+                            isJohnDoe={isJohnDoe}
+                            coronerList={coronerListData}
+                            phmcList={phmcListData}
+                            isRemoveStaff={isRemoveStaff}
+                            showNotification={showNotification}
+                            handleDoeChange={handleDoeChange}
+                            handleRemoveStaffChange={(selectedOptions) => {
+                                setStaffToRemove(selectedOptions ? selectedOptions.map(option => option.value) : []);
+                            }}
+                            missingEmployeeData={missingEmployeeData}
+                            handleMissingEmployeeChange={(e) => {
+                                setMissingEmployeeData({ ...missingEmployeeData, [e.target.name]: e.target.value });
+                            }}
+                            phmcGroupedOptions={phmcGroupedOptions}
+                            coronerGroupedOptions={coronerGroupedOptions}
+                            employeeOptions={combinedStaffOptions}
+                            handleMissingEmployeeSubmit={handleMissingEmployeeSubmit}
+                        />            
 
+                        <div className="bbcode-section">
+                            {getBBCodeContent()?.length > 30000 && (
+                                <div className={`char-counter ${getBBCodeContent()?.length > 60000 ? 'char-counter-warning' : ''}`}>
+                                    Character Count: {getBBCodeContent()?.length ?? 'Error'} / 60000
+                                    {getBBCodeContent()?.length > 60000 && (
+                                        <div className="char-counter-warning-message">
+                                            Warning: PHPBB forums often have a character limit around 60,000. You may need to split this form.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
+                            <div className="modern-output-controls">
+                                <Button
+                                    type="button"
+                                    onClick={() => setShowBBCode(prev => !prev)}
+                                    className="control-button"
+                                >
+                                    <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                    {showBBCode ? 'Hide BBCode' : 'Show BBCode'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={toggleSavedReports}
+                                    className="control-button"
+                                >
+                                    <i className="fas fa-save"></i>
+                                    Save Report
+                                </Button>
+                            </div>
+                            <p className="generated-title-label">Generated Title</p>
+                            <p className="generated-title-string">{generateTitle()}</p>
+
+                            {showBBCode && (
+                                <div className="generated-title-container">
+                                </div>
+                            )}
+                            
+                            <div className="modern-copy-controls">
+                                <Button
+                                    type="button"
+                                    onClick={handleCopyTitle}
+                                    className="copy-button-modern"
+                                >
+                                    <i className="fas fa-copy"></i>
+                                    Copy Title
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={handleCopyAndNotifyWrapper}
+                                    className="copy-button-modern"
+                                    disabled={isLockdownActive}
+                                    title={isLockdownActive ? 'BBCode copying is disabled during site lockdown' : ''}
+                                >
+                                    <i className="fas fa-copy"></i>
+                                    {getCopyButtonText()}
+                                </Button>
+                            </div>
+
+                            {showBBCode && (
+                                <pre className="bbcode-output">
+                                    {getBBCodeContent()}
+                                </pre>
+                            )}
+
+                            {bbCodeVersion === 2 && formData.department && agencyDataStore && agencyDataStore[formData.department] && agencyDataStore[formData.department].logo && agencyDataStore[formData.department].url && (
+                                <div className="agency-buttons" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '18px 0 0 0', flexWrap: 'wrap' }}>
+                                    <button
+                                        className="agency-button"
+                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                                        onClick={() => window.open(agencyDataStore[formData.department].url, '_blank')}
+                                        title={agencyDataStore[formData.department].fullName || formData.department}
+                                    >
+                                        <img
+                                            src={agencyDataStore[formData.department].logo}
+                                            alt={agencyDataStore[formData.department].fullName || formData.department}
+                                            style={{ height: '100px', width: 'auto', borderRadius: '6px', border: '1px solid #30363d', background: '#16202c', padding: '4px', marginBottom: '2px' }}
+                                        />
+                                    </button>
+                                    <div style={{ color: '#eeeeeeb0', fontWeight: 600, fontSize: '1.1rem', textAlign: 'center', marginTop: '2px' }}>
+                                        {agencyDataStore[formData.department].fullName || formData.department}
+                                    </div>
+                                </div>
+                            )}
+
+                            <FormImageLink
+                                bbCodeVersion={bbCodeVersion}
+                                selectedAgencyGroup={selectedAgencyGroup}
+                                deathReportClass={deathReportClass}
+                                civilianPaperworkClass={civilianPaperworkClass}
+                                deathReportImage={deathReportImage}
+                                civilianPaperworkImage={civilianPaperworkImage}
+                            />
+                        </div>
+
+                        {selectedAgencyGroup === 'PHMC' && (
+                            <BusinessCardModal
+                                show={showBusinessCard}
+                                onHide={() => setShowBusinessCard(false)}
+                                showNotification={showNotification}
+                                commitInfo={commitInfo}
+                                handleImageUpload={handleImageUpload}
+                            />
+                        )}
+
+                        <SwitchableFormsModal
+                            show={showPHMCModal}
+                            onHide={() => setShowPHMCModal(false)}
+                            title={switchableModalTitle}
+                            forms={switchableFormsList}
+                            handleFormSelect={handleAgencySelect}
+                            isMobile={isMobile}
+                            physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails}
+                            psychRecruitmentStatus={psychRecruitmentDetails}
+                            formDefinitions={formDefinitions}
+                            adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
+                            nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
+                            coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
+                            emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
+                            userPreferences={userOnboardingPreferences}
+                        />
+
+                        <SavedReportsModal
+                            show={showSavedReports}
+                            onHide={() => setShowSavedReports(false)}
+                            onClose={() => setShowSavedReports(false)}
+                            savedReports={savedReports}
+                            reportsForSelectedUser={savedReports}
+                            loadReport={loadReportForUser}
+                            deleteReport={deleteReportForUser}
+                            author={getCurrentReportAuthor(formData)}
+                            isLoading={isLoadingUserReports}
+                            onAttachReportSelectedForAttachment={handleReportSelectedForAttachment}
+                            reportSelectionFilter={reportSelectionFilter}
+                            versionNames={versionNames}
+                            onEmployeeSelect={(employeeValue) => {
+                                if (employeeValue) {
+                                    loadUserSavedReports(employeeValue);
+                                }
+                            }}
+                            employeeOptions={[
+                                {
+                                    label: 'PHMC Staff',
+                                    options: ensureArray(phmcListData).map(p => ({
+                                        value: p.name,
+                                        label: `${p.name} (${p.category || 'PHMC'})`
+                                    })).sort((a, b) => a.label.localeCompare(b.label))
+                                },
+                                {
+                                    label: 'Coroners',
+                                    options: ensureArray(coronerListData).map(c => ({
+                                        value: c.name,
+                                        label: `${c.name} (${c.rank || 'Coroner'})`
+                                    })).sort((a, b) => a.label.localeCompare(b.label))
+                                }
+                            ]}
+                            currentPhmcEmployee={formData.phmcEmployee}
+                            currentCoronerEmployee={formData.coronerEmployee}
+                            showNotification={showNotification}
+                            removeNotification={removeNotification}
+                            bbCodeVersion={bbCodeVersion}
+                            handleReportSelectedForAttachment={handleReportSelectedForAttachment}
+                        />
+                    </div>
                 </div>
-            </div>
-            <Footer />
+                <Footer />
             </div>
         </Suspense>
-        
     );
 }
 
@@ -1750,224 +1664,218 @@ function MainAppWrapper() {
 
     const { showNotification, removeNotification, NotificationContainer } = useNotification();
 
-    // Save form data to localStorage whenever it changes
     useEffect(() => {
         if (Object.keys(formData).length > 0) {
             localStorage.setItem('formData', JSON.stringify(formData));
         }
     }, [formData]);
 
-const initialFormData = {
-    // Core user state to preserve
-    phmcEmployee: '',
-    coronerEmployee: '',
-    coronerBadge: '',
-    coronerRank: 'Forensic Attendant',
-    coronerDiscord: '',
-    coronerPHNumber: '50056',
-    lastName: '',
-    phmcRank: '',
-    // Common form fields
-    department: '',
-    dateTime: '',
-    date: '',
-    decedentName: '',
-    decedentOOC: '',
-    synopsis: '',
-    scenePhotos: '',
-    additionalImages: '',
-    patientID: '',
-    patientName: '',
-    patientAddress: '',
-    massFatality: false,
-    patientRace: '',
-    patientGender: '',
-    patientPH: '',
-    patientDiscord: '',
-    patientEmergencyContact: '',
-    patientEmergencyContactNumber: '',
-    patientEmergencyContactRelation: '',
-    decedents: [],
-    patientEmergencyContactDiscord: '',
-    patientTitle: '',
-    patientTitleOptions: '',
-    patientAllergies: '',
-    patientCurrentMedicine: '',
-    patientChronicDiseases: '',
-    patientNotes: '',
-    patientDateOfBirth: '',
-    patientBloodType: '',
-    patientChiefComplaint: '',
-    patientProcedure: '',
-    patientDiagnosis: '',
-    patientSecondaryDiagnosis: '',
-    patientMedicine: '',
-    admission: '',
-    followup: '',
-    SubmitDate: new Date().toISOString().split('T')[0],
-    patientExercise: '',
-    // Form-specific fields
-    placeOfDeath: '',
-    evidenceLockerID: '',
-    evidenceLocker: '',
-    pronouncedTimeOfDeath: '',
-    mannerOfDeath: '',
-    typeOfDeath: '',
-    showRequestingOfficerInput: false,
-    requestingOfficer: '',
-    deathReport: '',
-    additionalReports: [],
-    autopsyDate: '',
-    autopsyTime: '',
-    autopsyDeathCauses: [''],
-    autopsyAnatomicSummaryItems: [''],
-    autopsyAlbumUrl: '',
-    autopsyPhotosUnavailable: false,
-    autopsyDiagramMarkers: [],
-    autopsyDiagramImgurUrl: '',
-    externalExamination: '',
-    RadiologyResult: '',
-    deathType: '',
-    causeOfDeath: '',
-    extraStaff: [],
-    patientSummaryConsultation: '',
-    patientSummary: '',
-    surgeryProcedures: '',
-    patientConsentOption: '',
-    patientComplicationOptions: '',
-    procedureGoodOptions: '',
-    patientHeight: '',
-    patientWeight: '',
-    BodyMassIndex: '',
-    temperature: '',
-    heartRate: '',
-    breathing: '',
-    bloodPressure: '',
-    patientJob: '',
-    patientJobRisks: '',
-    patientAllergiesRisk: '',
-    patientMedicineRegular: '',
-    patientOther: '',
-    predisposition: '',
-    patientCareer: '',
-    patientImpairments: '',
-    patientTriggers: '',
-    patientFamily: '',
-    patientFam: '',
-    patientMedicalRecord: '',
-    patientVisitReason: '',
-    patientSymptoms: '',
-    patientDrugs: '',
-    patientDrugsUsage: '',
-    patientMental: '',
-    patientFamSocial: '',
-    patientLegal: '',
-    patientRelationship: '',
-    patientFindings: '',
-    patientTreatmentPlan: '',
-    patientSafety: '',
-    patientFollowUp: '',
-    patientTreatmentMedicine: '',
-    patientTherapy: '',
-    patientRiskAssessment: '',
-    Speech: '',
-    Behavior: '',
-    Appearance: '',
-    Mood: '',
-    Affect: '',
-    Risk: '',
-    ThoughtProcess: '',
-    ThoughtContent: '',
-    Insight: '',
-    Cognition: '',
-    painLevel: '',
-    findings: '',
-    lungs: '',
-    pupils: '',
-    wounds: '',
-    ecg: '',
-    sono: '',
-    lab: [],
-    bloodOxy: '',
-    assignedDepartment: '',
-    departmentLarge: '',
-    paletoClinicDepartment: '',
-    MedicalRecordsRelease: [],
-    payNow: false,
-    paymentProofPhotos: '',
-    PurposeMedicalInformationReleaseFormat: '',
-    CarePurposeMedicalInformationRelease: '',
-    patientMedInfoReleaseOther: '',
-    MedicalRecordsReleaseOther: '',
-    patientMedInfoFormatOther: '',
-    StupidDateFrom: '',
-    StupidDateTo: '',
-    patientFirstName: '',
-    patientMiddleName: '',
-    patientLastName: '',
-    patientEmail: '',
-    patientPhoneType: '',
-    patientZIP: '',
-    dnr: '',
-    dnrOrder: '',
-    attorney: '',
-    dnrOther: '',
-    attorneyName: '',
-    attorneyRelation: '',
-    attorneyPH: '',
-    maritalStatus: '',
-    numberChildren: '',
-    financialStatus: '',
-    patientSupport: '',
-    patientHarm: '',
-    patientGenetic: '',
-    patientReligion: '',
-    patientSmoker: '',
-    patientAlcohol: '',
-    patientDiet: '',
-    patientSleep: '',
-    patientSexLife: '',
-    patientHazards: '',
-    prescriptionImage: '',
-    attachedReportSummary: '',
-    emailPurpose: '',
-    emailRecipient: '',
-    dateOfVisit: '',
-    sicknessStartDate: '',
-    sicknessEndDate: '',
-    reasonForSickness: '',
-    illnessCondition: '',
-    confirmationPurpose: '',
-    phmcEmployeeSignatureImage: '',
-
-    // Recruitment Fields
-    recruitmentPosition: '',
-    applicantContactDetails: '',
-    locationPHMC: false,
-    locationPBC: false,
-    applicantMedicalConditions: '',
-    citizenUS: false,
-    citizenPermanent: false,
-    citizenNone: false,
-    eduHighSchool: false,
-    eduCertificate: false,
-    eduDiploma: false,
-    eduAssociate: false,
-    eduBachelor: false,
-    eduMaster: false,
-    eduDoctorate: false,
-    applicantSchoolName: '',
-    applicantEnrollmentTerm: '',
-    applicantMajor: '',
-    applicantLanguages: '',
-    applicantPrevEmployment: '',
-    applicantPrevDuties: '',
-    applicantPrevDismissalReason: '',
-    applicantMotivationLetter: '',
-    exemptCheckbox: false,
-    oocMedicalExperience: '',
-    oocAdminRecordLink: '',
-    oocStatsLink: '',
+    const initialFormData = {
+        phmcEmployee: '',
+        coronerEmployee: '',
+        coronerBadge: '',
+        coronerRank: 'Forensic Attendant',
+        coronerDiscord: '',
+        coronerPHNumber: '50056',
+        lastName: '',
+        phmcRank: '',
+        department: '',
+        dateTime: '',
+        date: '',
+        decedentName: '',
+        decedentOOC: '',
+        synopsis: '',
+        scenePhotos: '',
+        additionalImages: '',
+        patientID: '',
+        patientName: '',
+        patientAddress: '',
+        massFatality: false,
+        patientRace: '',
+        patientGender: '',
+        patientPH: '',
+        patientDiscord: '',
+        patientEmergencyContact: '',
+        patientEmergencyContactNumber: '',
+        patientEmergencyContactRelation: '',
+        decedents: [],
+        patientEmergencyContactDiscord: '',
+        patientTitle: '',
+        patientTitleOptions: '',
+        patientAllergies: '',
+        patientCurrentMedicine: '',
+        patientChronicDiseases: '',
+        patientNotes: '',
+        patientDateOfBirth: '',
+        patientBloodType: '',
+        patientChiefComplaint: '',
+        patientProcedure: '',
+        patientDiagnosis: '',
+        patientSecondaryDiagnosis: '',
+        patientMedicine: '',
+        admission: '',
+        followup: '',
+        SubmitDate: new Date().toISOString().split('T')[0],
+        patientExercise: '',
+        placeOfDeath: '',
+        evidenceLockerID: '',
+        evidenceLocker: '',
+        pronouncedTimeOfDeath: '',
+        mannerOfDeath: '',
+        typeOfDeath: '',
+        showRequestingOfficerInput: false,
+        requestingOfficer: '',
+        deathReport: '',
+        additionalReports: [],
+        autopsyDate: '',
+        autopsyTime: '',
+        autopsyDeathCauses: [''],
+        autopsyAnatomicSummaryItems: [''],
+        autopsyAlbumUrl: '',
+        autopsyPhotosUnavailable: false,
+        autopsyDiagramMarkers: [],
+        autopsyDiagramImgurUrl: '',
+        externalExamination: '',
+        RadiologyResult: '',
+        deathType: '',
+        causeOfDeath: '',
+        extraStaff: [],
+        patientSummaryConsultation: '',
+        patientSummary: '',
+        surgeryProcedures: '',
+        patientConsentOption: '',
+        patientComplicationOptions: '',
+        procedureGoodOptions: '',
+        patientHeight: '',
+        patientWeight: '',
+        BodyMassIndex: '',
+        temperature: '',
+        heartRate: '',
+        breathing: '',
+        bloodPressure: '',
+        patientJob: '',
+        patientJobRisks: '',
+        patientAllergiesRisk: '',
+        patientMedicineRegular: '',
+        patientOther: '',
+        predisposition: '',
+        patientCareer: '',
+        patientImpairments: '',
+        patientTriggers: '',
+        patientFamily: '',
+        patientFam: '',
+        patientMedicalRecord: '',
+        patientVisitReason: '',
+        patientSymptoms: '',
+        patientDrugs: '',
+        patientDrugsUsage: '',
+        patientMental: '',
+        patientFamSocial: '',
+        patientLegal: '',
+        patientRelationship: '',
+        patientFindings: '',
+        patientTreatmentPlan: '',
+        patientSafety: '',
+        patientFollowUp: '',
+        patientTreatmentMedicine: '',
+        patientTherapy: '',
+        patientRiskAssessment: '',
+        Speech: '',
+        Behavior: '',
+        Appearance: '',
+        Mood: '',
+        Affect: '',
+        Risk: '',
+        ThoughtProcess: '',
+        ThoughtContent: '',
+        Insight: '',
+        Cognition: '',
+        painLevel: '',
+        findings: '',
+        lungs: '',
+        pupils: '',
+        wounds: '',
+        ecg: '',
+        sono: '',
+        lab: [],
+        bloodOxy: '',
+        assignedDepartment: '',
+        departmentLarge: '',
+        paletoClinicDepartment: '',
+        MedicalRecordsRelease: [],
+        payNow: false,
+        paymentProofPhotos: '',
+        PurposeMedicalInformationReleaseFormat: '',
+        CarePurposeMedicalInformationRelease: '',
+        patientMedInfoReleaseOther: '',
+        MedicalRecordsReleaseOther: '',
+        patientMedInfoFormatOther: '',
+        StupidDateFrom: '',
+        StupidDateTo: '',
+        patientFirstName: '',
+        patientMiddleName: '',
+        patientLastName: '',
+        patientEmail: '',
+        patientPhoneType: '',
+        patientZIP: '',
+        dnr: '',
+        dnrOrder: '',
+        attorney: '',
+        dnrOther: '',
+        attorneyName: '',
+        attorneyRelation: '',
+        attorneyPH: '',
+        maritalStatus: '',
+        numberChildren: '',
+        financialStatus: '',
+        patientSupport: '',
+        patientHarm: '',
+        patientGenetic: '',
+        patientReligion: '',
+        patientSmoker: '',
+        patientAlcohol: '',
+        patientDiet: '',
+        patientSleep: '',
+        patientSexLife: '',
+        patientHazards: '',
+        prescriptionImage: '',
+        attachedReportSummary: '',
+        emailPurpose: '',
+        emailRecipient: '',
+        dateOfVisit: '',
+        sicknessStartDate: '',
+        sicknessEndDate: '',
+        reasonForSickness: '',
+        illnessCondition: '',
+        confirmationPurpose: '',
+        phmcEmployeeSignatureImage: '',
+        recruitmentPosition: '',
+        applicantContactDetails: '',
+        locationPHMC: false,
+        locationPBC: false,
+        applicantMedicalConditions: '',
+        citizenUS: false,
+        citizenPermanent: false,
+        citizenNone: false,
+        eduHighSchool: false,
+        eduCertificate: false,
+        eduDiploma: false,
+        eduAssociate: false,
+        eduBachelor: false,
+        eduMaster: false,
+        eduDoctorate: false,
+        applicantSchoolName: '',
+        applicantEnrollmentTerm: '',
+        applicantMajor: '',
+        applicantLanguages: '',
+        applicantPrevEmployment: '',
+        applicantPrevDuties: '',
+        applicantPrevDismissalReason: '',
+        applicantMotivationLetter: '',
+        exemptCheckbox: false,
+        oocMedicalExperience: '',
+        oocAdminRecordLink: '',
+        oocStatsLink: '',
         applicantTitleAndFullName: '',
         genderMale: '',
         genderFemale: '',
@@ -1986,26 +1894,21 @@ const initialFormData = {
         dfpSanFireLink: '',
         dfpPhmcLink: '',
         dfpLegalFactionLink: '',
-
-    // Imaging Fields
-    Imaging: [],
-    XrayResults: [],
-    ctResults: [],
-    mriResults: [],
-    ultrasoundResults: [],
+        Imaging: [],
+        XrayResults: [],
+        ctResults: [],
+        mriResults: [],
+        ultrasoundResults: [],
         patientTitleNew: '',
-    patientNameNew: '',
-    patientDateOfBirthNew: '',
-    patientAddressNew: '',
-    patientPHNew: '',
-    patientDiscordNew: '',
-    patientGenderNew: '',
-    patientRaceNew: '',
-    // Death Report Type Fields
-    deathRecordType: '',
-
-
-};
+        patientNameNew: '',
+        patientDateOfBirthNew: '',
+        patientAddressNew: '',
+        patientPHNew: '',
+        patientDiscordNew: '',
+        patientGenderNew: '',
+        patientRaceNew: '',
+        deathRecordType: '',
+    };
 
     return (
         <MainApp
@@ -2019,6 +1922,5 @@ const initialFormData = {
         />
     );
 }
-
 
 export default MainAppWrapper;
