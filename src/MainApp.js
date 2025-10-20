@@ -57,6 +57,7 @@ const CctvRequestWebhookModal = lazy(() => import('./components/Admin/CctvReques
 const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'));
 const FormImageLink = lazy(() => import('./components/FormImageLink'));
 const EmsBingoModal = lazy(() => import('./components/EmsBingoModal'));
+const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
 
 function MainApp({
     formData,
@@ -886,9 +887,10 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
     // --- Add state to explicitly control dropdown visibility ---
 // Separate PHMC options
     const phmcGroupedOptions = useMemo(() => {
-        if (!phmcListData || phmcListData.length === 0) return [];
+        const list = ensureArray(phmcListData);
+        if (list.length === 0) return [];
         return Object.entries(
-            phmcListData.reduce((groups, employee) => {
+            list.reduce((groups, employee) => {
                 const categoryName = employee.category || 'Uncategorized';
                 if (!groups[categoryName]) {
                     groups[categoryName] = [];
@@ -912,9 +914,10 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
     }, [phmcListData]);
 
     const coronerGroupedOptions = useMemo(() => {
-        if (!coronerListData || coronerListData.length === 0) return [];
+        const list = ensureArray(coronerListData);
+        if (list.length === 0) return [];
         return Object.entries(
-            coronerListData.reduce((groups, coroner) => {
+            list.reduce((groups, coroner) => {
                 const categoryName = coroner.category || 'Uncategorized';
                 if (!groups[categoryName]) {
                     groups[categoryName] = [];
@@ -1015,11 +1018,11 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
     const combinedStaffOptions = [
         {
             label: 'Coroners',
-            options: coronerListData.map(c => ({ value: c.name, label: `${c.name} (${c.rank || 'Coroner'})` }))
+            options: ensureArray(coronerListData).map(c => ({ value: c.name, label: `${c.name} (${c.rank || 'Coroner'})` }))
         },
         {
             label: 'PHMC Staff',
-            options: phmcListData.map(p => ({ value: p.name, label: `${p.name} (${p.category || 'PHMC'})` }))
+            options: ensureArray(phmcListData).map(p => ({ value: p.name, label: `${p.name} (${p.category || 'PHMC'})` }))
         }
     ].filter(group => group.options.length > 0); // Filter out empty groups if any list is empty
     // Effect to manage initial agency group selection
@@ -1705,14 +1708,14 @@ const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmp
                 employeeOptions={[
                     {
                         label: 'PHMC Staff',
-                        options: phmcListData.map(p => ({
+                        options: ensureArray(phmcListData).map(p => ({
                             value: p.name,
                             label: `${p.name} (${p.category || 'PHMC'})`
                         })).sort((a, b) => a.label.localeCompare(b.label))
                     },
                     {
                         label: 'Coroners',
-                        options: coronerListData.map(c => ({
+                        options: ensureArray(coronerListData).map(c => ({
                             value: c.name,
                             label: `${c.name} (${c.rank || 'Coroner'})`
                         })).sort((a, b) => a.label.localeCompare(b.label))
