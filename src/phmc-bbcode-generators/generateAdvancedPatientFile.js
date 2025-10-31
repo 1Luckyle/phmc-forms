@@ -47,13 +47,13 @@
         // Payment/Exempt logic
         let paymentSection = '';
         if (formData.isExempt === true || formData.isExempt === 'true') {
-            paymentSection = 'I am exempt from paying this service in accordance with the PHMC policies.';
+            paymentSection = 'Je suis exempté de payer ce service conformément aux politiques du PHMC.';
         } else {
-            paymentSection = `[url=${paymentProofPhotos}]Proof Of Payment [/url]`;
+            paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
         }
         const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n') : '';
 
-        let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Patient Information[/b]
+        let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]
 
 [size=110]PATIENT ${patientID}
 
@@ -61,82 +61,82 @@ ${patientName}
 [/size]
 
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img]
-[b][size=150]ADVANCED PATIENT INFORMATION[/size][/center][/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]General Information[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Title: ${patientTitle}[/td][td] Full Name: ${patientName}
-[tr][td] Date of Birth: ${patientDateOfBirth} [/td][td] Home Address: ${patientAddress}
-[tr][td] Gender Identity: ${patientGender} [/td][td] Ethnicity: ${patientRace}
-[tr][td] Phone Number: ${patientPH} [/td][td] (( Discord ID: ${patientDiscord}))
+[b][size=150]INFORMATIONS AVANCÉES DU PATIENT[/size][/center][/table]
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations générales[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td] Titre: ${patientTitle}[/td][td] Nom complet: ${patientName}
+[tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
+[tr][td] Identité de genre: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Discord ID: ${patientDiscord}))
 [/table]
-    [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Emergency Contact[/b][/color][/size][/center][/divboxcolor]
-    [table][tr][td] Full Name: ${patientEmergencyContact} [/td][td] Relationship: ${patientEmergencyContactRelation}
-    [tr][td] Phone Number: ${patientEmergencyContactNumber} [/td][td] (( Discord ID: ${patientEmergencyContactDiscord}))
+    [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Contact d'urgence[/b][/color][/size][/center][/divboxcolor]
+    [table][tr][td] Nom complet: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
+    [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Discord ID: ${patientEmergencyContactDiscord}))
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Medical History[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Past History[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
-[tr][td] Blood Type: [/td][td] [cb${formData.patientBloodType === 'A+' ? 'c' : ''}] A+ [cb${formData.patientBloodType === 'A-' ? 'c' : ''}] A- [cb${formData.patientBloodType === 'B+' ? 'c' : ''}] B+ [cb${formData.patientBloodType === 'B-' ? 'c' : ''}] B- [cb${formData.patientBloodType === 'O+' ? 'c' : ''}] O+ [cb${formData.patientBloodType === 'O-' ? 'c' : ''}] O- [cb${formData.patientBloodType === 'AB+' ? 'c' : ''}] AB+ [cb${formData.patientBloodType === 'AB-' ? 'c' : ''}] AB-
-[tr][td] Known Allergies: [/td][td] ${patientAllergies}
-[tr][td] Current Medications: [/td][td] ${patientCurrentMedicine}
-[tr][td] Chronic Conditions: [/td][td] ${patientChronicDiseases}
-[tr][td] Traumas & Injuries: [/td][td] ${patientNotes}
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[tr][td] Groupe sanguin: [/td][td] [cb${formData.patientBloodType === 'A+' ? 'c' : ''}] A+ [cb${formData.patientBloodType === 'A-' ? 'c' : ''}] A- [cb${formData.patientBloodType === 'B+' ? 'c' : ''}] B+ [cb${formData.patientBloodType === 'B-' ? 'c' : ''}] B- [cb${formData.patientBloodType === 'O+' ? 'c' : ''}] O+ [cb${formData.patientBloodType === 'O-' ? 'c' : ''}] O- [cb${formData.patientBloodType === 'AB+' ? 'c' : ''}] AB+ [cb${formData.patientBloodType === 'AB-' ? 'c' : ''}] AB-
+[tr][td] Allergies connues: [/td][td] ${patientAllergies}
+[tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
+[tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}
+[tr][td] Traumatismes et blessures: [/td][td] ${patientNotes}
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Mental Health History[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Past History[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
-[tr][td] Diagnosed Mental Health Conditions: [/td][td] ${patientMental}
-[tr][td] Therapies & Counseling: [/td][td] ${patientTherapy}
-[tr][td] Triggers or Sensors: [/td][td] ${patientTriggers}
-[tr][td] Support & Coping Systems: [/td][td] ${patientSupport}
-[tr][td] Self-Harm History or Tendencies: [/td][td] ${patientHarm}
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents de santé mentale[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[tr][td] Troubles de santé mentale diagnostiqués: [/td][td] ${patientMental}
+[tr][td] Thérapies et conseils: [/td][td] ${patientTherapy}
+[tr][td] Déclencheurs ou sensibilités: [/td][td] ${patientTriggers}
+[tr][td] Systèmes de soutien et d'adaptation: [/td][td] ${patientSupport}
+[tr][td] Antécédents ou tendances d'automutilation: [/td][td] ${patientHarm}
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Family Medical History[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Past History[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
-[tr][td] Immediate Family Members: [/td][td] ${patientFam}
-[tr][td] Known Genetic Conditions: [/td][td] ${patientGenetic}
-[tr][td] Family Social History: [/td][td] ${patientFamSocial}
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux familiaux[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[tr][td] Membres de la famille immédiate: [/td][td] ${patientFam}
+[tr][td] Maladies génétiques connues: [/td][td] ${patientGenetic}
+[tr][td] Antécédents sociaux familiaux: [/td][td] ${patientFamSocial}
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Social Information[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Marital Status: [cb${formData.maritalStatus === 'Single' ? 'c' : ''}] Single [cb${formData.maritalStatus === 'Married' ? 'c' : ''}] Married [cb${formData.maritalStatus === 'Divorced' ? 'c' : ''}] Divorced/Widowed [/td][td] Number of Children: [cb${formData.numberChildren === '0' ? 'c' : ''}] 0 [cb${formData.numberChildren === '1' ? 'c' : ''}] 1 or more
-[tr][td] Cultural and/or Religious Considerations: ${patientReligion} [/td][td] Financial Status: [cb${formData.financialStatus === 'LowIncome' ? 'c' : ''}] Low Income [cb${formData.financialStatus === 'MiddleIncome' ? 'c' : ''}] Average Income [cb${formData.financialStatus === 'HighIncome' ? 'c' : ''}] High Income
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations sociales[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td] Statut marital: [cb${formData.maritalStatus === 'Single' ? 'c' : ''}] Célibataire [cb${formData.maritalStatus === 'Married' ? 'c' : ''}] Marié(e) [cb${formData.maritalStatus === 'Divorced' ? 'c' : ''}] Divorcé(e)/Veuf(ve) [/td][td] Nombre d'enfants: [cb${formData.numberChildren === '0' ? 'c' : ''}] 0 [cb${formData.numberChildren === '1' ? 'c' : ''}] 1 ou plus
+[tr][td] Considérations culturelles et/ou religieuses: ${patientReligion} [/td][td] Situation financière: [cb${formData.financialStatus === 'LowIncome' ? 'c' : ''}] Faible revenu [cb${formData.financialStatus === 'MiddleIncome' ? 'c' : ''}] Revenu moyen [cb${formData.financialStatus === 'HighIncome' ? 'c' : ''}] Revenu élevé
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Lifestyle Information[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Smoking Status: ${patientSmoker} [/td][td] Alcohol Use: ${patientAlcohol}[/td][td] Other Substances: ${patientDrugs}
-[tr][td] Exercise Habits: ${patientExercise}[/td][td] Dietary Information: ${patientDiet}[/td][td] Sleep Patterns: ${patientSleep}
-[tr][td] Sexual Health: ${patientSexLife}[/td][td] Occupational Hazards: ${patientJobRisks}[/td][td] Environmental Hazards: ${patientHazards}[/table]
-[table][tr][td] Other Information & Preferences: ${patientOther}
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations sur le mode de vie[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td] Statut tabagique: ${patientSmoker} [/td][td] Consommation d'alcool: ${patientAlcohol}[/td][td] Autres substances: ${patientDrugs}
+[tr][td] Habitudes d'exercice: ${patientExercise}[/td][td] Informations diététiques: ${patientDiet}[/td][td] Habitudes de sommeil: ${patientSleep}
+[tr][td] Santé sexuelle: ${patientSexLife}[/td][td] Risques professionnels: ${patientJobRisks}[/td][td] Risques environnementaux: ${patientHazards}[/table]
+[table][tr][td] Autres informations et préférences: ${patientOther}
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Advanced Directives[/b][/color][/size][/center][/divboxcolor]
-[divbox=transparent][list=none]I, ${patientName}, hereby provide the following advance directives regarding my healthcare, to be followed in the event that I become unable to make decisions about my medical treatment:
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Directives anticipées[/b][/color][/size][/center][/divboxcolor]
+[divbox=transparent][list=none]Je soussigné(e), ${patientName}, fournis par la présente les directives anticipées suivantes concernant mes soins de santé, à suivre dans l'éventualité où je deviendrais incapable de prendre des décisions concernant mon traitement médical:
 
-[list=1][*] [size=110]Living Will[/size]: In the event I am unable to communicate, I direct the following regarding life-sustaining treatments:
-[cb${formData.dnr === 'ProlongLife' ? 'c' : ''}][/cb${formData.dnr === 'ProlongLife' ? 'c' : ''}]I want all available measures taken to prolong my life.
-[cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}][/cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}]I want only treatments focused on comfort and quality of life, even if it means not prolonging life.
-[cb${formData.dnr === 'other' ? 'c' : ''}][/cb${formData.dnr === 'other' ? 'c' : ''}]Other instructions: ${dnrOther}
+[list=1][*] [size=110]Testament de vie[/size]: Dans l'éventualité où je serais incapable de communiquer, je demande ce qui suit concernant les traitements de maintien de la vie:
+[cb${formData.dnr === 'ProlongLife' ? 'c' : ''}][/cb${formData.dnr === 'ProlongLife' ? 'c' : ''}]Je veux que toutes les mesures disponibles soient prises pour prolonger ma vie.
+[cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}][/cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}]Je ne veux que des traitements axés sur le confort et la qualité de vie, même si cela signifie ne pas prolonger la vie.
+[cb${formData.dnr === 'other' ? 'c' : ''}][/cb${formData.dnr === 'other' ? 'c' : ''}]Autres instructions: ${dnrOther}
 
-[*][size=110]Healthcare Power of Attorney[/size]:
-[cb${formData.attorney === 'Yes' ? 'c' : ''}][/cb${formData.attorney === 'Yes' ? 'c' : ''}]have appointed the following person as my Healthcare Proxy/Agent to make medical decisions on my behalf:
-[list=none]Full Name: ${attorneyName}
-Relationship to Patient: ${attorneyRelation}
-Phone Number: ${attorneyPH}[/list]
+[*][size=110]Procuration en matière de soins de santé[/size]:
+[cb${formData.attorney === 'Yes' ? 'c' : ''}][/cb${formData.attorney === 'Yes' ? 'c' : ''}]J'ai désigné la personne suivante comme mon mandataire/représentant en matière de soins de santé pour prendre des décisions médicales en mon nom:
+[list=none]Nom complet: ${attorneyName}
+Relation avec le patient: ${attorneyRelation}
+Numéro de téléphone: ${attorneyPH}[/list]
 
-[cb${formData.attorney === 'No' ? 'c' : ''}][/cb${formData.attorney === 'No' ? 'c' : ''}]I have not appointed a Healthcare Proxy/Agent at this time.
-[*] [size=110]Do Not Resuscitate (DNR) Order[/size]:
-[cb${formData.dnrOrder === 'Yes' ? 'c' : ''}][/cb${formData.dnrOrder === 'Yes' ? 'c' : ''}]I have a DNR order in place, instructing medical staff not to perform CPR or other life-saving measures if my heart stops.
-[cb${formData.dnrOrder === 'No' ? 'c' : ''}][/cb${formData.dnrOrder === 'No' ? 'c' : ''}]I do not have a DNR order in place at this time.
+[cb${formData.attorney === 'No' ? 'c' : ''}][/cb${formData.attorney === 'No' ? 'c' : ''}]Je n'ai pas désigné de mandataire/représentant en matière de soins de santé pour le moment.
+[*] [size=110]Ordre de non-réanimation (DNR)[/size]:
+[cb${formData.dnrOrder === 'Yes' ? 'c' : ''}][/cb${formData.dnrOrder === 'Yes' ? 'c' : ''}]J'ai un ordre DNR en place, demandant au personnel médical de ne pas effectuer de RCR ou d'autres mesures de sauvetage si mon cœur s'arrête.
+[cb${formData.dnrOrder === 'No' ? 'c' : ''}][/cb${formData.dnrOrder === 'No' ? 'c' : ''}]Je n'ai pas d'ordre DNR en place pour le moment.
 
-[*] [size=110]Consent to Share Advance Directives[/size]:
-I authorize Pillbox Hill Medical Center to keep a copy of my advance directives in my medical record and to share this information with medical staff and emergency personnel as needed to ensure my healthcare wishes are respected.[/list]
-I understand that I may revise or revoke these directives at any time by providing written notice.
+[*] [size=110]Consentement au partage des directives anticipées[/size]:
+J'autorise le Pillbox Hill Medical Center à conserver une copie de mes directives anticipées dans mon dossier médical et à partager cette information avec le personnel médical et les services d'urgence au besoin pour garantir le respect de mes volontés en matière de soins de santé.[/list]
+Je comprends que je peux réviser ou révoquer ces directives à tout moment en fournissant un avis écrit.
 
 Signature: [i][u]${patientName}[/u][/i]
 Date: ${date}[/divbox]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Disclaimer[/b][/color][/size][/center][/divboxcolor]
-[divbox=transparent][list=none]I, ${patientName}, hereby declare that the information provided in this medical history form is true, accurate, and complete to the best of my knowledge. I understand that this information will be stored securely within the systems of Pillbox Hill Medical Center and may be accessed by authorized healthcare professionals involved in my care.
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Clause de non-responsabilité[/b][/color][/size][/center][/divboxcolor]
+[divbox=transparent][list=none]Je soussigné(e), ${patientName}, déclare par la présente que les informations fournies dans ce formulaire d'antécédents médicaux sont vraies, exactes et complètes selon mes meilleures connaissances. Je comprends que ces informations seront stockées en toute sécurité dans les systèmes du Pillbox Hill Medical Center et peuvent être consultées par les professionnels de la santé autorisés impliqués dans mes soins.
 
-I, ${patientName}, upon submitting this form, consent to the sharing of my medical information among healthcare professionals within Pillbox Hill Medical Center for the purpose of providing comprehensive and coordinated healthcare services. I acknowledge that this information may be used for diagnosis, treatment, and other healthcare-related activities in accordance with applicable laws and regulations, including the Health Insurance Portability and Accountability Act (HIPAA).
+Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partage de mes informations médicales entre les professionnels de la santé du Pillbox Hill Medical Center dans le but de fournir des services de soins de santé complets et coordonnés. Je reconnais que ces informations peuvent être utilisées pour le diagnostic, le traitement et d'autres activités liées aux soins de santé conformément aux lois et règlements applicables, y compris la loi sur la portabilité et la responsabilité en matière d'assurance maladie (HIPAA).
 
-I, ${patientName}, retain the right to revoke this consent at any time by notifying Pillbox Hill Medical Center in writing. However, I also understand that revoking consent may limit the ability of healthcare professionals to provide me with optimal and coordinated care.[/list][/divbox]
-    [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Payment[/b][/color][/size][/center][/divboxcolor]
-    [table][tr][td] Please attach an unedited confirmation of your payment, unless you are exempt. [size=70](see question 14 in the FAQ thread on how to pay)[/size][/td][td]
+Je soussigné(e), ${patientName}, conserve le droit de révoquer ce consentement à tout moment en avisant le Pillbox Hill Medical Center par écrit. Cependant, je comprends également que la révocation du consentement peut limiter la capacité des professionnels de la santé à me fournir des soins optimaux et coordonnés.[/list][/divbox]
+    [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Paiement[/b][/color][/size][/center][/divboxcolor]
+    [table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté. [size=70](voir la question 14 dans le fil FAQ sur la façon de payer)[/size][/td][td]
     ${paymentSection}
     [/table]`
             return bbCode;

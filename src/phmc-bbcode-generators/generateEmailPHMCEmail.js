@@ -10,18 +10,18 @@ const generateEmailPHMCEmail = (formData) => {
     } = formData;
     const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
 
-    let bbCode = `[divbox=na][br][/br][imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
+    let bbCode = `[divbox=na][br][/br][imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Centre Médical Pillbox Hill[/size][/b] 
 [center][/center][br][/br]
 [center][size=130][/center][/size]
 [center][size=150][b]RE: ${patientNotes} [/b][/size][/center]
 
 [hr][/hr][br][/br][list=none]
-Dear ${decedentName},
+Cher(ère) ${decedentName},
 
 ${synopsis}
 
 
-Respectfully submitted,
+Respectueusement soumis,
 ${scenePhotosBBCode} 
 [/list][hr][/hr][list=none]
 [b][size=105]${phmcEmployee}[/size][/b]
@@ -29,15 +29,15 @@ ${scenePhotosBBCode}
 ${patientCareer}
 [/size]
 
-[b]Pillbox Hill Medical Center[/b]
+[b]Centre Médical Pillbox Hill[/b]
 [size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
-Phone: 50056
-Mail: [url=https://phmc.gta.world/ucp.php?i=pm&mode=compose&g=40]info@phmc.health[/url]
-Website: [url=https://phmc.gta.world/index.php]www.phmc.health[/url]
+Téléphone: 50056
+Courriel: [url=https://phmc.gta.world/ucp.php?i=pm&mode=compose&g=40]info@phmc.health[/url]
+Site web: [url=https://phmc.gta.world/index.php]www.phmc.health[/url]
 
-Follow us on Facebrowser: [url=https://face.gta.world/pages/PHMC?ref=qs]Pillbox Hill Medical Center[/url][/size]
+Suivez-nous sur Facebrowser: [url=https://face.gta.world/pages/PHMC?ref=qs]Centre Médical Pillbox Hill[/url][/size]
 
-[size=70][i]The contents of this message and any attachments are confidential. They are intended for the named recipient(s) only.  If you have received this email by mistake, please notify the sender immediately and do not disclose the contents to anyone or make copies thereof.[/i][/size][/divbox] 
+[size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/divbox] 
 `
     return bbCode;
     };

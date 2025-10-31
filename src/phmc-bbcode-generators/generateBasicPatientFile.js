@@ -22,12 +22,12 @@ const generateBasicPatientFile = (formData) => {
             // Payment/Exempt logic
         let paymentSection = '';
         if (formData.isExempt === true || formData.isExempt === 'true') {
-            paymentSection = 'I am exempt from paying this service in accordance with the PHMC policies.';
+            paymentSection = 'Je suis exempté de payer ce service conformément aux politiques du PHMC.';
         } else if (paymentProofPhotos) {
-            paymentSection = `[url=${paymentProofPhotos}]Proof Of Payment [/url]`;
+            paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
         }
 
-    let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Patient Information[/b]
+    let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]
 
 [size=110]PATIENT ${patientID}
 
@@ -35,28 +35,28 @@ ${patientName}
 [/size]
 
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img]
-[b][size=150]BASIC PATIENT INFORMATION[/size][/center][/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]General Information[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Title: ${patientTitle}[/td][td] Full Name: ${patientName}
-[tr][td] Date of Birth: ${patientDateOfBirth}  [/td][td] Home Address: ${patientAddress}
-[tr][td] Gender Identity: ${patientGender} [/td][td] Ethnicity: ${patientRace}
-[tr][td] Phone Number: ${patientPH} [/td][td] (( Discord ID: ${patientDiscord}))
+[b][size=150]INFORMATIONS DE BASE DU PATIENT[/size][/center][/table]
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations générales[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td] Titre: ${patientTitle}[/td][td] Nom complet: ${patientName}
+[tr][td] Date de naissance: ${patientDateOfBirth}  [/td][td] Adresse: ${patientAddress}
+[tr][td] Identité de genre: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Discord ID: ${patientDiscord}))
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Emergency Contact[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Full Name: ${patientEmergencyContact} [/td][td] Relationship: ${patientEmergencyContactRelation}
-[tr][td] Phone Number: ${patientEmergencyContactNumber} [/td][td] (( Discord ID: ${patientEmergencyContactDiscord}))
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Contact d'urgence[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td] Nom complet: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
+[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Discord ID: ${patientEmergencyContactDiscord}))
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Medical History[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Past History[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
-[tr][td] Blood Type: [/td][td] [cb${formData.patientBloodType === 'A+' ? 'c' : ''}] A+ [cb${formData.patientBloodType === 'A-' ? 'c' : ''}] A- [cb${formData.patientBloodType === 'B+' ? 'c' : ''}] B+ [cb${formData.patientBloodType === 'B-' ? 'c' : ''}] B- [cb${formData.patientBloodType === 'O+' ? 'c' : ''}] O+ [cb${formData.patientBloodType === 'O-' ? 'c' : ''}] O- [cb${formData.patientBloodType === 'AB+' ? 'c' : ''}] AB+ [cb${formData.patientBloodType === 'AB-' ? 'c' : ''}] AB-
-[tr][td] Known Allergies: [/td][td] ${patientAllergies}
-[tr][td] Current Medications: [/td][td] ${patientCurrentMedicine}
-[tr][td] Chronic Conditions: [/td][td] ${patientChronicDiseases}
-[tr][td] Traumas & Injuries: [/td][td] ${patientNotes}
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[tr][td] Groupe sanguin: [/td][td] [cb${formData.patientBloodType === 'A+' ? 'c' : ''}] A+ [cb${formData.patientBloodType === 'A-' ? 'c' : ''}] A- [cb${formData.patientBloodType === 'B+' ? 'c' : ''}] B+ [cb${formData.patientBloodType === 'B-' ? 'c' : ''}] B- [cb${formData.patientBloodType === 'O+' ? 'c' : ''}] O+ [cb${formData.patientBloodType === 'O-' ? 'c' : ''}] O- [cb${formData.patientBloodType === 'AB+' ? 'c' : ''}] AB+ [cb${formData.patientBloodType === 'AB-' ? 'c' : ''}] AB-
+[tr][td] Allergies connues: [/td][td] ${patientAllergies}
+[tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
+[tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}
+[tr][td] Traumatismes et blessures: [/td][td] ${patientNotes}
 [/table] 
 
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Payment[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Please attach an unedited confirmation of your payment, unless you are exempt. [size=70](see question 14 in the FAQ thread on how to pay)[/size][/td][td]
+[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Paiement[/b][/color][/size][/center][/divboxcolor]
+[table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté. [size=70](voir la question 14 dans le fil FAQ sur la façon de payer)[/size][/td][td]
     ${paymentSection}
 [/table]
 

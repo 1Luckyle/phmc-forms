@@ -14,7 +14,7 @@ const generateConsultationNotesPHMC = (formData) => {
     } = formData;
 
     // --- Custom Handling for scenePhotos (Medication) ---
-    let medicationBBCode = '[i]No medication details provided.[/i]'; // Default fallback
+    let medicationBBCode = '[i]Aucun détail sur les médicaments fourni.[/i]'; // Default fallback
 
     if (scenePhotos && scenePhotos.trim()) {
         const items = scenePhotos.split(',')
@@ -35,61 +35,61 @@ const generateConsultationNotesPHMC = (formData) => {
     // --- End Custom Handling ---
 
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Consultation Notes[/b]
+    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de consultation[/b]
 
-PATIENT ID: ${patientID || 'N/A'}
+ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signed: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]PILLBOX HILL MEDICAL CENTER[/b]
+Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
+[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
-PO BOX 742
+BP 742
 LOS SANTOS, SAN ANDREAS
-P: 50056[/size][/center][/table][/divbox]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnesis[/b][/color][/center][/divboxcolor]
-[table][tr][td][left][list=none][u]Reason for Visit: [/u][br][/br]
+T: 50056[/size][/center][/table][/divbox]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+[table][tr][td][left][list=none][u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
 [br][/br]
-[u]Assigned Department: [/u][br][/br]
-[cb${formData.assignedDepartment === 'InternalMedicine' ? 'c' : ''}] Internal Medicine
-[cb${formData.assignedDepartment === 'SurgicalDepartment' ? 'c' : ''}] Surgical Department
-[cb${formData.assignedDepartment === 'Midwifery' ? 'c' : ''}] Midwifery
-[cb${formData.assignedDepartment === 'Dialysis' ? 'c' : ''}] Dialysis
+[u]Département assigné: [/u][br][/br]
+[cb${formData.assignedDepartment === 'InternalMedicine' ? 'c' : ''}] Médecine interne
+[cb${formData.assignedDepartment === 'SurgicalDepartment' ? 'c' : ''}] Département chirurgical
+[cb${formData.assignedDepartment === 'Midwifery' ? 'c' : ''}] Maïeutique
+[cb${formData.assignedDepartment === 'Dialysis' ? 'c' : ''}] Dialyse
 [/list][/td][/tr][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Vitals[/b][/color][/center][/divboxcolor]
-[table][tr][td][center]Temperature: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normal [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermic [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermic[/center]
-[td][center]Heart Rate: [cb${formData.heartRate === 'patientHeartRateNormal' ? 'c' : ''}] Normal [cb${formData.heartRate === 'patientHeartRateBradycardia' ? 'c' : ''}] Bradycardia [cb${formData.heartRate === 'patientHeartRateTachycardia' ? 'c' : ''}] Tachycardia[/center][/table]
-[table][tr][td][center]Breathing: [cb${formData.breathing === 'patientBreathingNormal' ? 'c' : ''}] Normal [cb${formData.breathing === 'patientBreathingSlow' ? 'c' : ''}] Slow [cb${formData.breathing === 'patientBreathingFast' ? 'c' : ''}] Fast [cb${formData.breathing === 'patientBreathingObstructed' ? 'c' : ''}] Obstructed[/center]
-[td][center]Blood Pressure: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normal [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Findings[/b][/color][/center][/divboxcolor]
-[table][tr][td][center]General Health Condition (GHC): [cb${formData.findings === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientImpared' ? 'c' : ''}] Impaired[/center]
-[td][center]Lungs (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientRhonchi' ? 'c' : ''}] Rhonchi [cb${formData.findings === 'patientCrack' ? 'c' : ''}] Crackles [/center][/table]
-[table][tr][td][center]Pupils: [cb${formData.pupils === 'patientPupilsNormal' ? 'c' : ''}] Normal [cb${formData.pupils === 'patientPupilsAbnormal' ? 'c' : ''}] Abnormal [/center]
-[td][center]Wounds: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Bleeding [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hematoma [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] None [/center][/table]
-[table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Sinus rhythm [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arrhythmia [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarct [/center]
-[td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluids [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Tissue Change[/center][/table]
-[table][tr][td][center]Lab: [cb${formData.lab?.includes('WNL') ? 'c' : ''}] WNL  [cb${formData.lab?.includes('Anemia') ? 'c' : ''}] Anemia [cb${formData.lab?.includes('Inflammation/Infection') ? 'c' : ''}] Inflammation/Infection [cb${formData.lab?.includes('Dysfunction') ? 'c' : ''}] Dysfunction/Disorder [cb${formData.lab?.includes('ElectrolyteImbalance') ? 'c' : ''}] Electrolyte Imbalance [cb${formData.lab?.includes('Infarct') ? 'c' : ''}] Infarct/Embolism [cb${formData.lab?.includes('Tumor') ? 'c' : ''}] Tumor [/center][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Preliminary Diagnosis[/b][/color][/center][/divboxcolor]
-[table][tr][td][left][list=none][u]Primary Diagnosis: [/u][br][/br]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Signes vitaux[/b][/color][/center][/divboxcolor]
+[table][tr][td][center]Température: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normale [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermique [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermique[/center]
+[td][center]Fréquence cardiaque: [cb${formData.heartRate === 'patientHeartRateNormal' ? 'c' : ''}] Normale [cb${formData.heartRate === 'patientHeartRateBradycardia' ? 'c' : ''}] Bradycardie [cb${formData.heartRate === 'patientHeartRateTachycardia' ? 'c' : ''}] Tachycardie[/center][/table]
+[table][tr][td][center]Respiration: [cb${formData.breathing === 'patientBreathingNormal' ? 'c' : ''}] Normale [cb${formData.breathing === 'patientBreathingSlow' ? 'c' : ''}] Lente [cb${formData.breathing === 'patientBreathingFast' ? 'c' : ''}] Rapide [cb${formData.breathing === 'patientBreathingObstructed' ? 'c' : ''}] Obstruée[/center]
+[td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
+[table][tr][td][center]État de santé général (ESG): [cb${formData.findings === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientImpared' ? 'c' : ''}] Altéré[/center]
+[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.findings === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
+[table][tr][td][center]Pupilles: [cb${formData.pupils === 'patientPupilsNormal' ? 'c' : ''}] Normales [cb${formData.pupils === 'patientPupilsAbnormal' ? 'c' : ''}] Anormales [/center]
+[td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]
+[table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]
+[td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluides [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Changement tissulaire[/center][/table]
+[table][tr][td][center]Labo: [cb${formData.lab?.includes('WNL') ? 'c' : ''}] DLN  [cb${formData.lab?.includes('Anemia') ? 'c' : ''}] Anémie [cb${formData.lab?.includes('Inflammation/Infection') ? 'c' : ''}] Inflammation/Infection [cb${formData.lab?.includes('Dysfunction') ? 'c' : ''}] Dysfonctionnement/Trouble [cb${formData.lab?.includes('ElectrolyteImbalance') ? 'c' : ''}] Déséquilibre électrolytique [cb${formData.lab?.includes('Infarct') ? 'c' : ''}] Infarctus/Embolie [cb${formData.lab?.includes('Tumor') ? 'c' : ''}] Tumeur [/center][/table]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Diagnostic préliminaire[/b][/color][/center][/divboxcolor]
+[table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis || 'N/A'}
-[br][/br][u]Secondary Diagnosis: [/u][br][/br]
+[br][/br][u]Diagnostic secondaire: [/u][br][/br]
 ${patientSecondaryDiagnosis || 'N/A'}[/left][/list][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Therapy[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Thérapie[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-[cb${formData.admission === 'Yes' ? 'c' : ''}] Yes
-[cb${formData.admission === 'No' ? 'c' : ''}] No
+[cb${formData.admission === 'Yes' ? 'c' : ''}] Oui
+[cb${formData.admission === 'No' ? 'c' : ''}] Non
 [br][/br]
-[u]Treatment plan/Free Text: [/u][br][/br]
+[u]Plan de traitement/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-[u]Medication: [/u][br][/br]
+[u]Médicaments: [/u][br][/br]
 ${medicationBBCode} 
 [br][/br]
-[u]Follow-Up: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] As needed
-[cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommended
-[cb${formData.followup === 'ElectiveProcedure' ? 'c' : ''}] Elective procedure
+[u]Suivi: [/u][br][/br]
+[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
+[cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
+[cb${formData.followup === 'ElectiveProcedure' ? 'c' : ''}] Procédure élective
 [/left][/list][/table]`;
     return bbCode;
 };

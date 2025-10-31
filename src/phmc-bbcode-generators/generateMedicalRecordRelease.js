@@ -34,78 +34,78 @@ const generateMedicalRecordRelease = (formData) => {
 
     let bbCode = `[divbox=white] [center] [img]https://i.ibb.co/0pgw9hHm/phmc.png[/img] [/center] [/divbox]
 [divbox=white]
-[br][/br][color=#800000][size=150][b]I. PATIENT INFORMATION[/b][/size][/color][hr][/hr]
-[list=none][b]Title:[/b] [i](select one)[/i]
-[list=none][${formData.patientTitle === 'Mr' ? 'x' : ''}] Mr.
-[*][${formData.patientTitle === 'Mrs' ? 'x' : ''}] Mrs.
-[*][${formData.patientTitle === 'Ms' ? 'x' : ''}] Ms.
-[*][${formData.patientTitle === 'Other' ? 'x' : ''}] Other[/list]
-[b]First Name:[/b]
+[br][/br][color=#800000][size=150][b]I. INFORMATIONS DU PATIENT[/b][/size][/color][hr][/hr]
+[list=none][b]Titre:[/b] [i](sélectionnez-en un)[/i]
+[list=none][${formData.patientTitle === 'Mr' ? 'x' : ''}] M.
+[*][${formData.patientTitle === 'Mrs' ? 'x' : ''}] Mme
+[*][${formData.patientTitle === 'Ms' ? 'x' : ''}] Mlle
+[*][${formData.patientTitle === 'Other' ? 'x' : ''}] Autre[/list]
+[b]Prénom:[/b]
 [i]${patientFirstName}[/i][br][/br]
-[b]Middle Name:[/b] [i](optional)[/i]
+[b]Deuxième prénom:[/b] [i](optionnel)[/i]
 [i]${patientMiddleName}[/i][br][/br]
-[b]Last Name:[/b]
+[b]Nom de famille:[/b]
 [i]${patientLastName}[/i][br][/br]
-[b]Gender:[/b] [i](select one)[/i]
+[b]Genre:[/b] [i](sélectionnez-en un)[/i]
 [list=none]
-[*][${formData.patientGender === 'Male' ? 'X' : ''}] Male
-[*][${formData.patientGender === 'Female' ? 'X' : ''}] Female[/list]
-[b]Date of Birth:[/b]
+[*][${formData.patientGender === 'Male' ? 'X' : ''}] Masculin
+[*][${formData.patientGender === 'Female' ? 'X' : ''}] Féminin[/list]
+[b]Date de naissance:[/b]
 [i]${patientDateOfBirth}[/i][br][/br]
-[b]Address:[/b]
+[b]Adresse:[/b]
 [i]${patientAddress}[/i][br][/br]
-[b]ZIP / Postal Code:[/b]
+[b]Code postal:[/b]
 [i]${patientZIP}[/i][br][/br][/list]
-[br][/br][color=#800000][size=150][b]II. CONTACT INFORMATION[/b][/size][/color][hr][/hr]
+[br][/br][color=#800000][size=150][b]II. COORDONNÉES[/b][/size][/color][hr][/hr]
 [list=none]
-[b]Phone Type:[/b] [i](select one)[/i]
+[b]Type de téléphone:[/b] [i](sélectionnez-en un)[/i]
 [list=none]
 [*][${formData.patientPhoneType === 'Mobile' ? 'X' : ''}] Mobile
-[*][${formData.patientPhoneType === 'Home' ? 'X' : ''}] Home
-[*][${formData.patientPhoneType === 'Work' ? 'X' : ''}] Work
-[*][${formData.patientPhoneType === 'Other' ? 'X' : ''}] Other[/list][b]Phone Number:[/b]
+[*][${formData.patientPhoneType === 'Home' ? 'X' : ''}] Domicile
+[*][${formData.patientPhoneType === 'Work' ? 'X' : ''}] Travail
+[*][${formData.patientPhoneType === 'Other' ? 'X' : ''}] Autre[/list][b]Numéro de téléphone:[/b]
 [i]${patientPH}[/i][br][/br]
-[b]Email:[/b]
+[b]Courriel:[/b]
 [i]${patientEmail}[/i][br][/br][/list]
-[br][/br][color=#800000][size=150][b]III. RELEASE INFORMATION[/b][/size][/color][hr][/hr]
-[list=none][b]Purpose of Medical Information Release:[/b]
+[br][/br][color=#800000][size=150][b]III. INFORMATIONS DE DIVULGATION[/b][/size][/color][hr][/hr]
+[list=none][b]Motif de la divulgation des informations médicales:[/b]
 [list=none]
-[*][${formData.CarePurposeMedicalInformationRelease === 'Further Treatment' ? 'X' : ''}] Further Treatment / Continued 
-[*][${formData.CarePurposeMedicalInformationRelease === 'Personal' ? 'X' : ''}] Personal Use
-[*][${formData.CarePurposeMedicalInformationRelease === 'Attorney' ? 'X' : ''}] Attorney / Client
-[*][${formData.CarePurposeMedicalInformationRelease === 'Other' ? 'X' : ''}] Other: ${patientMedInfoReleaseOther}[/list][/list]
-[list=none][b]Format of Medical Information Release:[/b]
+[*][${formData.CarePurposeMedicalInformationRelease === 'Further Treatment' ? 'X' : ''}] Traitement ultérieur / Suite de soins
+[*][${formData.CarePurposeMedicalInformationRelease === 'Personal' ? 'X' : ''}] Usage personnel
+[*][${formData.CarePurposeMedicalInformationRelease === 'Attorney' ? 'X' : ''}] Avocat / Client
+[*][${formData.CarePurposeMedicalInformationRelease === 'Other' ? 'X' : ''}] Autre: ${patientMedInfoReleaseOther}[/list][/list]
+[list=none][b]Format de divulgation des informations médicales:[/b]
 [list=none]
-[*][${formData.PurposeMedicalInformationReleaseFormat === 'CopyofRecords' ? 'X' : ''}] Copy of Record to be picked up
-[*][${formData.PurposeMedicalInformationReleaseFormat === 'VerbalRelease' ? 'X' : ''}] Verbal Release (e.g. phone conversation)
-[*][${formData.PurposeMedicalInformationReleaseFormat === 'ElectronicRelease' ? 'X' : ''}] Electronical Release (sent via email)
-[*][${formData.PurposeMedicalInformationReleaseFormat === 'Other' ? 'X' : ''}] Other: ${patientMedInfoFormatOther}[/list][/list]
-[list=none][b]Date Range:[/b]
-[i]I authorize the release of information covering the period(s) of treatment:[/i]
+[*][${formData.PurposeMedicalInformationReleaseFormat === 'CopyofRecords' ? 'X' : ''}] Copie du dossier à récupérer
+[*][${formData.PurposeMedicalInformationReleaseFormat === 'VerbalRelease' ? 'X' : ''}] Divulgation verbale (ex: conversation téléphonique)
+[*][${formData.PurposeMedicalInformationReleaseFormat === 'ElectronicRelease' ? 'X' : ''}] Divulgation électronique (envoyée par courriel)
+[*][${formData.PurposeMedicalInformationReleaseFormat === 'Other' ? 'X' : ''}] Autre: ${patientMedInfoFormatOther}[/list][/list]
+[list=none][b]Période concernée:[/b]
+[i]J'autorise la divulgation des informations couvrant la ou les période(s) de traitement:[/i]
 [list=none]
-[*][b]From:[/b] [i]${StupidDateFrom}[/i]    
-[*][b]To:[/b] [i]${StupidDateTo}[/i][/list][/list]
-[list=none][b]Medical Records to be Released:[/b] [i](check all that apply)[/i]
+[*][b]Du:[/b] [i]${StupidDateFrom}[/i]    
+[*][b]Au:[/b] [i]${StupidDateTo}[/i][/list][/list]
+[list=none][b]Dossiers médicaux à divulguer:[/b] [i](cochez tout ce qui s'applique)[/i]
 [list=none]
-[*][${formData.MedicalRecordsRelease?.includes('ERVisit') ? 'X' : ''}] [b]Emergency Room Visit[/b] (ER notes, progress notes, consultations, procedure notes, test results)
-[*][${formData.MedicalRecordsRelease?.includes('HospitalStay') ? 'X' : ''}] [b]Hospital Stay[/b] (History and physical, progress notes, consultations, operative reports, discharge summary, test results)
-[*][${formData.MedicalRecordsRelease?.includes('Outpatient') ? 'X' : ''}] [b]Outpatient Surgery/Procedure[/b] (History and physical, progress notes, consultations, procedure notes, test results)
-[*][${formData.MedicalRecordsRelease?.includes('OfficeClinic') ? 'X' : ''}] [b]Clinic, Office Visit or Immediate Care[/b] (Office notes, progress notes, procedure notes, test results)
-[*][${formData.MedicalRecordsRelease?.includes('PsychologyVisits') ? 'X' : ''}] [b]Psychology Visits[/b] (Office notes, progress notes, procedure notes, evaluation results)
-[*][${formData.MedicalRecordsRelease?.includes('Other') ? 'X' : ''}] [b]Other Records:[/b] ${MedicalRecordsReleaseOther}[/list][/list]
-[list=none][b]Practitioner's name seen by:[/b]
+[*][${formData.MedicalRecordsRelease?.includes('ERVisit') ? 'X' : ''}] [b]Visite aux urgences[/b] (notes des urgences, notes d'évolution, consultations, notes de procédure, résultats de tests)
+[*][${formData.MedicalRecordsRelease?.includes('HospitalStay') ? 'X' : ''}] [b]Séjour hospitalier[/b] (Anamnèse et examen physique, notes d'évolution, consultations, rapports opératoires, résumé de sortie, résultats de tests)
+[*][${formData.MedicalRecordsRelease?.includes('Outpatient') ? 'X' : ''}] [b]Chirurgie/Procédure ambulatoire[/b] (Anamnèse et examen physique, notes d'évolution, consultations, notes de procédure, résultats de tests)
+[*][${formData.MedicalRecordsRelease?.includes('OfficeClinic') ? 'X' : ''}] [b]Visite à la clinique, au cabinet ou soins immédiats[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats de tests)
+[*][${formData.MedicalRecordsRelease?.includes('PsychologyVisits') ? 'X' : ''}] [b]Visites de psychologie[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats d'évaluation)
+[*][${formData.MedicalRecordsRelease?.includes('Other') ? 'X' : ''}] [b]Autres dossiers:[/b] ${MedicalRecordsReleaseOther}[/list][/list]
+[list=none][b]Nom du praticien consulté:[/b]
 [i]${phmcEmployee}[/i]
 [br][/br][/list]
-[color=#800000][size=150][b]IV. AUTHORIZATION FOR RELEASE INFORMATION[/b][/size][/color][hr][/hr][br][/br]
-[list=none]I, ${patientFirstName} ${patientMiddleName} ${patientLastName}, hereby authorize Pillbox Hill Medical Center to disclose my individually identifiable health information. I understand that this authorization is voluntary and I may refuse to sign this authorization. I further understand that my health care will not be affected if I do not sign this form.
+[color=#800000][size=150][b]IV. AUTORISATION DE DIVULGATION DES INFORMATIONS[/b][/size][/color][hr][/hr][br][/br]
+[list=none]Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, autorise par la présente le Pillbox Hill Medical Center à divulguer mes informations de santé individuellement identifiables. Je comprends que cette autorisation est volontaire et que je peux refuser de signer cette autorisation. Je comprends également que mes soins de santé ne seront pas affectés si je ne signe pas ce formulaire.
 
-I, ${patientFirstName} ${patientMiddleName} ${patientLastName}, understand that if the recipient authorized to receive the information is not a covered entity, the released information may no longer be protected by federal and state privacy regulations.
+Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, comprends que si le destinataire autorisé à recevoir les informations n'est pas une entité couverte, les informations divulguées peuvent ne plus être protégées par les réglementations fédérales et étatiques sur la vie privée.
 
-I, ${patientFirstName} ${patientMiddleName} ${patientLastName}, further understand that I may revoke this authorization at any time by notifying, in writing, the Pillbox Hill Medical Center facility where this authorization is being signed. I also understand the revocation must be signed and dated with a date that is later than the date on this authorization. The revocation will not affect any releases made prior to the receipt of the written revocation.
+Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, comprends en outre que je peux révoquer cette autorisation à tout moment en avisant par écrit l'établissement du Pillbox Hill Medical Center où cette autorisation est signée. Je comprends également que la révocation doit être signée et datée d'une date postérieure à celle figurant sur cette autorisation. La révocation n'affectera pas les divulgations effectuées avant la réception de la révocation écrite.
 
-I, ${patientFirstName} ${patientMiddleName} ${patientLastName}, understand the record might not be complete, if it is a recent visit, and additional documentation could be added after submitting this request. 
+Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, comprends que le dossier peut ne pas être complet s'il s'agit d'une visite récente, et qu'une documentation supplémentaire pourrait être ajoutée après la soumission de cette demande.
 
-By typing my name below, I, ${patientFirstName} ${patientMiddleName} ${patientLastName}, certify that this information can be used for the purpose of processing my Authorization for Medical Records Release request. I consider this as my electronic signature for this request.
+En tapant mon nom ci-dessous, je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, certifie que ces informations peuvent être utilisées dans le but de traiter ma demande d'autorisation de divulgation de dossiers médicaux. Je considère ceci comme ma signature électronique pour cette demande.
 [br][/br]
 [/list]
 [list=none][b]Signature:[/b] 
@@ -113,7 +113,7 @@ By typing my name below, I, ${patientFirstName} ${patientMiddleName} ${patientLa
 [b]Date:[/b]
 [i]${SubmitDate}[/i]
 ${(payNow === true || payNow === 'true') && approximateCost > 0 ? `
-    I, ${patientFullName || 'the undersigned'}, enclose this payment of $${approximateCost.toLocaleString()} for the Medical Records Release Fees. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Enclosed Image[/url]` : 'i[/i]'}` : ''}
+    Je soussigné(e), ${patientFullName || 'le soussigné'}, joins ce paiement de ${approximateCost.toLocaleString()}$ pour les frais de divulgation des dossiers médicaux. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Image jointe[/url]` : 'i[/i]'}` : ''}
 [/list]
     [/divbox]`; // <-- Moved the closing divbox tag here
     return bbCode;

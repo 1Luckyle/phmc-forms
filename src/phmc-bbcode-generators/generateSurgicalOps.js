@@ -13,61 +13,61 @@ const generateSurgicalOps = (formData) => {
     } = formData;
     const extraStaffNames = Array.isArray(extraStaff) ? extraStaff.join(', ') : extraStaff;
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]SURGICAL REPORT[/b]
+    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]RAPPORT CHIRURGICAL[/b]
 
 PATIENT ${patientID}
 
 Date: ${date}
-Signed: ${phmcRank} ${lastName}
+Signé: ${phmcRank} ${lastName}
 
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]PILLBOX HILL MEDICAL CENTER[/b]
+[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
-PO BOX 742
+BP 742
 LOS SANTOS, SAN ANDREAS
-P: 50056[/size][/center][/table][/divbox]
+T: 50056[/size][/center][/table][/divbox]
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Personnel[/b][/color][/center][/divboxcolor]
-[table][tr][td]Lead Surgeon[/td][td]
+[table][tr][td]Chirurgien principal[/td][td]
 ${phmcEmployee}
 [/td][/tr]
-[tr][td]Additional Staff [i](leave empty if none)[/i][/td][td]
+[tr][td]Personnel supplémentaire [i](laisser vide si aucun)[/i][/td][td]
 ${extraStaff}
 [/td][/tr][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Surgical Inquiry[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Enquête chirurgicale[/b][/color][/center][/divboxcolor]
 [table]
 
-[tr][td]Name of the procedure[/td][td]
+[tr][td]Nom de la procédure[/td][td]
 ${surgeryProcedures}
 
-[tr][td]Did the patient or their family consent, or did they have a life threatening or severe injury that requires immediate surgical intervention?[/td][td]
-[cb${formData.patientConsentOption === 'Yes' ? 'c' : ''}] Yes
-[cb${formData.patientConsentOption === 'No' ? 'c' : ''}] No
+[tr][td]Le patient ou sa famille a-t-il donné son consentement, ou avait-il une blessure potentiellement mortelle ou grave nécessitant une intervention chirurgicale immédiate?[/td][td]
+[cb${formData.patientConsentOption === 'Yes' ? 'c' : ''}] Oui
+[cb${formData.patientConsentOption === 'No' ? 'c' : ''}] Non
 
 
 [/td][/tr]
 
-[tr][td]Did any medical complications occur during the surgery?[/td][td]
-[cb${formData.patientComplicationOptions === 'Yes' ? 'c' : ''}] Yes
-[cb${formData.patientComplicationOptions === 'No' ? 'c' : ''}] No
+[tr][td]Des complications médicales sont-elles survenues pendant la chirurgie?[/td][td]
+[cb${formData.patientComplicationOptions === 'Yes' ? 'c' : ''}] Oui
+[cb${formData.patientComplicationOptions === 'No' ? 'c' : ''}] Non
 [/td][/tr]
 
-[tr][td]Was the procedure completed successfully, and did it result in the desired clinical outcome?[/td][td]
-[cb${formData.procedureGoodOptions === 'Yes' ? 'c' : ''}] Yes
-[cb${formData.procedureGoodOptions === 'No' ? 'c' : ''}] No
+[tr][td]La procédure a-t-elle été complétée avec succès et a-t-elle abouti au résultat clinique souhaité?[/td][td]
+[cb${formData.procedureGoodOptions === 'Yes' ? 'c' : ''}] Oui
+[cb${formData.procedureGoodOptions === 'No' ? 'c' : ''}] Non
 [/td][/tr]
 [/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Post-Anesthesia Report[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Rapport post-anesthésie[/b][/color][/center][/divboxcolor]
 [table]
 
-[tr][td]Type & Dosage of Anesthesia Administered[/td][td] ${patientSummaryConsultation}
+[tr][td]Type et dosage d'anesthésie administrée[/td][td] ${patientSummaryConsultation}
 [/td][/tr]
 
-[tr][td]Post-Operative Anesthesia Details[/td][td]${patientAddress}
+[tr][td]Détails d'anesthésie post-opératoire[/td][td]${patientAddress}
 [/td][/tr]
 
 [/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Summary of Surgical Procedure[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Résumé de la procédure chirurgicale[/b][/color][/center][/divboxcolor]
 [table]
 
 [tr][td]

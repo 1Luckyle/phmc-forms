@@ -51,76 +51,76 @@ const generateAutopsy = (formData) => {
     // --- Autopsy Diagram Logic ---
     let autopsyDiagramBBCode = '';
     if (autopsyDiagramImgurUrl && autopsyDiagramImgurUrl.trim() !== '') {
-        autopsyDiagramBBCode = `[b]Autopsy Diagram[/b]:\n[img]${autopsyDiagramImgurUrl.trim()}[/img]\n`;
+        autopsyDiagramBBCode = `[b]Diagramme d'autopsie[/b]:\n[img]${autopsyDiagramImgurUrl.trim()}[/img]\n`;
     } else {
         // Option 1: Omit the line if no diagram
         // autopsyDiagramBBCode = ''; 
         // Option 2: Indicate no diagram is available
-        autopsyDiagramBBCode = `[b]Autopsy Diagram[/b]: N/A\n`;
+        autopsyDiagramBBCode = `[b]Diagramme d'autopsie[/b]: N/A\n`;
     }
 
     // --- Photography Link/Image Logic ---
     let photographySectionBBCode = '';
     if (autopsyPhotosUnavailable) {
-        photographySectionBBCode = 'Photographs are unavailable for this autopsy.';
+        photographySectionBBCode = 'Les photographies ne sont pas disponibles pour cette autopsie.';
     } else if (autopsyAlbumUrl && autopsyAlbumUrl.trim() !== '') {
         const photoUrls = autopsyAlbumUrl.split(',')
             .map(url => url.trim())
             .filter(url => url); // Filter out empty strings
 
         if (photoUrls.length > 0) {
-            photographySectionBBCode = `At scene photos are available: ${photoUrls.map((url, index) => `[url=${url}]Photo ${index + 1}[/url]`).join(' | ')} Photographs have been taken prior to and during course of the autopsy.`;
+            photographySectionBBCode = `Les photos sur les lieux sont disponibles: ${photoUrls.map((url, index) => `[url=${url}]Photo ${index + 1}[/url]`).join(' | ')} Des photographies ont été prises avant et pendant le déroulement de l'autopsie.`;
         } else {
-            photographySectionBBCode = 'No valid photo URLs provided.';
+            photographySectionBBCode = 'Aucune URL de photo valide fournie.';
         }
     } else {
-        photographySectionBBCode = 'No photographs provided for this autopsy.';
+        photographySectionBBCode = 'Aucune photographie fournie pour cette autopsie.';
     }
 
     // --- Format date and time for the report ---
-    let finalAutopsyDate = 'DD/MMM/YYYY';
+    let finalAutopsyDate = 'JJ/MMM/AAAA';
     if (formAutopsyDate) {
         const dateParts = formAutopsyDate.split('-'); // YYYY-MM-DD
         if (dateParts.length === 3) {
             const dateObj = new Date(dateParts[0], parseInt(dateParts[1], 10) - 1, dateParts[2]); // Month is 0-indexed
-            finalAutopsyDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            finalAutopsyDate = dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
         }
     }
     const finalAutopsyTime = formAutopsyTime || 'HH:MM';
 
     let bbCode = `[divbox=white][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
 
-[divbox=white][b][size=150][br][/br][center]DEPARTMENT OF PATHOLOGY AND FORENSIC MEDICINE[/size][/b][/center]
-[center][size=120]Autopsy Report by Medical Examiner[/size][/center][hr][/hr][justify][br][/br]I performed an autopsy on the body of [b]${decedentName || 'John Doe'} ((${decedentOOC || 'OOC Name'}))[/b] at PHMC's Department of Pathology and Forensic Medicine on ${finalAutopsyDate}, ${finalAutopsyTime}.
-From the anatomic findings and pertinent history, I ascribe the death to:
+[divbox=white][b][size=150][br][/br][center]DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/size][/b][/center]
+[center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Nom OOC'}))[/b] au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.
+D'après les constatations anatomiques et les antécédents pertinents, j'attribue le décès à:
 ${deathCausesListItems}
-[b]MANNER OF DEATH:[/b] ${deathType || 'Undetermined'}
-[b]HOW INJURY OCCURRED:[/b] ${causeOfDeath || 'Unknown'}
+[b]MANIÈRE DU DÉCÈS:[/b] ${deathType || 'Indéterminée'}
+[b]COMMENT LA BLESSURE S'EST PRODUITE:[/b] ${causeOfDeath || 'Inconnue'}
 ${autopsyDiagramBBCode} 
-[b]Anatomic Summary:[/b]
+[b]Résumé anatomique:[/b]
 ${anatomicSummaryListItems}
-[b]External Examination:[/b]
-${externalExamination || 'No external examination details provided.'}[br][/br]
-[b]Clothing:[/b]
-The body was not clothed and the clothing was not available at the time of autopsy.[br][/br]
-[b]Initial Incision:[/b]
-The body cavities are entered through the standard coronal and the standard Y-shaped incisions.[br][/br]
-[b]Internal Examination:[/b]
-Consistent with the stated cause of death, nothing out of the ordinary was observed.[br][/br]
-[b]Histologic Sections:[/b]
-Representative sections from various organs are preserved in one storage jar in %10 formalin.[br][/br]
-[b]Toxicology:[/b]
-Chest blood, femoral blood, EDTA blood, urine, stomach contents and vitreous have been submitted to the lab. A comprehensive screen was requested.[br][/br]
-[b]Photography:[/b]
+[b]Examen externe:[/b]
+${externalExamination || 'Aucun détail d\'examen externe fourni.'}[br][/br]
+[b]Vêtements:[/b]
+Le corps n'était pas vêtu et les vêtements n'étaient pas disponibles au moment de l'autopsie.[br][/br]
+[b]Incision initiale:[/b]
+Les cavités corporelles sont ouvertes par l'incision coronale standard et l'incision en forme de Y standard.[br][/br]
+[b]Examen interne:[/b]
+Conformément à la cause du décès indiquée, rien d'inhabituel n'a été observé.[br][/br]
+[b]Sections histologiques:[/b]
+Des sections représentatives de divers organes sont conservées dans un bocal de stockage dans du formol à 10%.[br][/br]
+[b]Toxicologie:[/b]
+Du sang thoracique, du sang fémoral, du sang EDTA, de l'urine, du contenu gastrique et du vitré ont été soumis au laboratoire. Un dépistage complet a été demandé.[br][/br]
+[b]Photographie:[/b]
 ${photographySectionBBCode}[br][/br]
-[b]Radiology:[/b]
-The body is fluoroscoped and two x-rays were taken; ${RadiologyResult || 'No specific radiology results noted.'}[br][/br]
-[b]Opinion:[/b]
-${synopsis || 'No opinion provided.'}[br][/br]
-[b]Performed by:[/b]
-${coronerRank || 'Medical Examiner'} ${coronerEmployee || 'Unknown Coroner'} [br][/br]
-[b]Approved by:[/b]
-Chief Medical Examiner-Coroner Anne Carter[/justify][/divbox]`
+[b]Radiologie:[/b]
+Le corps est fluoroscopé et deux radiographies ont été prises; ${RadiologyResult || 'Aucun résultat radiologique spécifique noté.'}[br][/br]
+[b]Avis:[/b]
+${synopsis || 'Aucun avis fourni.'}[br][/br]
+[b]Effectué par:[/b]
+${coronerRank || 'Médecin légiste'} ${coronerEmployee || 'Coroner inconnu'} [br][/br]
+[b]Approuvé par:[/b]
+Chef médecin légiste-Coroner Anne Carter[/justify][/divbox]`
 
     return bbCode;
 };
