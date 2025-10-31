@@ -21,7 +21,7 @@ const MentalHealth = ({
                     name="patientID"
                     value={formData.patientID}
                     onChange={handleChange}
-                    placeholder="Patient ID"
+                    placeholder="ID Patient"
                     required
                     className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
                 />
@@ -42,7 +42,7 @@ const MentalHealth = ({
                 required
                 className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>PHMC Rank</option>
+                <option value="" disabled>Rang PHMC</option>
                 {phmcRank.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -65,7 +65,7 @@ const MentalHealth = ({
                 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Search or select doctor..."
+                placeholder="Rechercher ou sélectionner un médecin..."
                 className="form-control"
                 styles={{
                     control: (base) => ({
@@ -108,7 +108,7 @@ const MentalHealth = ({
                     name="patientChiefComplaint"
                     value={formData.patientChiefComplaint}
                     onChange={handleChange}
-                    placeholder="Patient Chief Complaint"
+                    placeholder="Plainte principale du patient"
                     rows="3"
                     required
                     className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
@@ -121,7 +121,7 @@ const MentalHealth = ({
                     name="patientNotes"
                     value={formData.patientNotes}
                     onChange={handleChange}
-                    placeholder="Patient Notes"
+                    placeholder="Notes du patient"
                     required
                     className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
                 />
@@ -137,7 +137,7 @@ const MentalHealth = ({
                 }}
                 options={admission}
                 isClearable
-                placeholder="Was Patient Admitted?"
+                placeholder="Patient admis?"
                 className="form-control"
                 styles={{
                     control: (base) => ({
@@ -181,7 +181,7 @@ const MentalHealth = ({
                 name="patientDiagnosis"
                 value={formData.patientDiagnosis}
                 onChange={handleChange}
-                placeholder="Diagnosis"
+                placeholder="Diagnostic"
                 rows="3"
                 required
                 className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
@@ -193,7 +193,7 @@ const MentalHealth = ({
                     name="patientProcedure"
                     value={formData.patientProcedure}
                     onChange={handleChange}
-                    placeholder="Patient Procedure"
+                    placeholder="Procédure du patient"
                     rows="2"
                     className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`}
 
@@ -204,7 +204,7 @@ const MentalHealth = ({
                     name="patientMedicine"
                     value={formData.patientMedicine}
                     onChange={handleChange}
-                    placeholder="Patient Medicine"
+                    placeholder="Médicament du patient"
                     rows="2"
                     className={`form-control ${!formData.patientMedicine ? 'is-invalid' : ''}`}
                 />
@@ -220,7 +220,7 @@ const MentalHealth = ({
                 }}
                 options={followup}
                 isClearable
-                placeholder="Select Followup Process..."
+                placeholder="Sélectionner le processus de suivi..."
                 className="form-control"
                 styles={{
                     control: (base) => ({

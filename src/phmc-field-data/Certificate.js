@@ -16,11 +16,11 @@ const Certificate = ({
 }) => {
     return (
         <>
-            <p>This form is used to generate a Certificate of Death. Please fill out all required fields accurately.</p>
+            <p>Ce formulaire est utilisé pour générer un certificat de décès. Veuillez remplir tous les champs obligatoires avec précision.</p>
 
             {/* Coroner Employee Selection */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Coroner Issuing Certificate</Form.Label>
+                <Form.Label style={{ marginBottom: 0 }}>Coroner délivrant le certificat</Form.Label>
                 <button
                     type="button"
                     onClick={() => setShowEmployeeModal(true)}
@@ -28,7 +28,7 @@ const Certificate = ({
                     style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', lineHeight: '1.2' }}
                 >
                     <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Missing Name?
+                    Nom manquant?
                 </button>
             </div>
             <Select
@@ -39,7 +39,7 @@ const Certificate = ({
                 onChange={(selectedOption, actionMeta) => handleSelectChange(selectedOption, actionMeta)}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Search or select coroner..."
+                placeholder="Rechercher ou sélectionner un coroner..."
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{
                     control: (base, state) => ({
@@ -67,17 +67,17 @@ const Certificate = ({
             <Form.Label></Form.Label>
 
             {/* Decedent Information */}
-            <Form.Label>Decedent Information</Form.Label>
+            <Form.Label>Informations sur le défunt</Form.Label>
             <Form.Control
                 type="text"
                 name="decedentName"
                 value={formData.decedentName}
                 onChange={handleChange}
-                placeholder="Decedent's Full Name"
+                placeholder="Nom complet du défunt"
                 required
                 className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
             />
-                        <Form.Label>Decedent Age | Date of Birth (If available)</Form.Label>
+                        <Form.Label>Âge du défunt | Date de naissance (si disponible)</Form.Label>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <Form.Control
@@ -85,7 +85,7 @@ const Certificate = ({
                     name="patientAge"
                     value={formData.patientAge}
                     onChange={handleChange}
-                    placeholder="Decedent's Age"
+                    placeholder="Âge du défunt"
                     required
                     className={`form-control ${!formData.patientAge ? 'is-invalid' : ''}`}
                 />
@@ -94,7 +94,7 @@ const Certificate = ({
                     name="patientDateOfBirth"
                     value={formData.patientDateOfBirth}
                     onChange={handleChange}
-                    placeholder="Decedent's Date of Birth"
+                    placeholder="Date de naissance du défunt"
                     required
                     className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
                 />
@@ -106,11 +106,11 @@ const Certificate = ({
                 name="probableCauseOfDeath"
                 value={formData.probableCauseOfDeath}
                 onChange={handleChange}
-                placeholder="Probable Cause of Death"
+                placeholder="Cause probable du décès"
                 required
                 className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`}
             />
-                        <Form.Label>Time of Death | Deate of Death</Form.Label>
+                        <Form.Label>Heure du décès | Date du décès</Form.Label>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 
@@ -119,7 +119,7 @@ const Certificate = ({
                     name="TimeofDeath"
                     value={formData.TimeofDeath}
                     onChange={handleChange}
-                    placeholder="Time of Death"
+                    placeholder="Heure du décès"
                     required
                     className={`form-control ${!formData.TimeofDeath ? 'is-invalid' : ''}`}
                 />
@@ -128,7 +128,7 @@ const Certificate = ({
                     name="dateofdeath"
                     value={formData.dateofdeath}
                     onChange={handleChange}
-                    placeholder="Date of Death"
+                    placeholder="Date du décès"
                     required
                     className={`form-control ${!formData.dateofdeath ? 'is-invalid' : ''}`}
                 />
@@ -136,13 +136,13 @@ const Certificate = ({
             </div>
 
             {/* Witness and Certificate Date */}
-            <Form.Label>Witness and Certificate Date</Form.Label>
+            <Form.Label>Témoin et date du certificat</Form.Label>
             <Form.Control
                 type="text"
                 name="witnessName"
                 value={formData.witnessName}
                 onChange={handleChange}
-                placeholder="Witness Name"
+                placeholder="Nom du témoin"
                 required
                 className={`form-control ${!formData.witnessName ? 'is-invalid' : ''}`}
             />
@@ -151,13 +151,13 @@ const Certificate = ({
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                placeholder="Certificate Issue Date"
+                placeholder="Date de délivrance du certificat"
                 required
                 className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
                 style={{ marginTop: '10px' }}
             />
             <span style={{ fontSize: '0.8em', color: '#6c757d', marginLeft: '10px' }}>
-                (Current Server Time: {currentUtcTime})
+                (Heure actuelle du serveur: {currentUtcTime})
             </span>
         </>
     );

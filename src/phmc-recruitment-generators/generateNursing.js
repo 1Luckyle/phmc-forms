@@ -1,29 +1,29 @@
 const generateNursing = (formData) => {
     const {
-        // Section 1: Personal Information
+        // Section 1: Informations personnelles
         recruitmentPosition,
         applicantTitleAndFullName,
-        applicantGenderOtherText, // Used if genderOther is true
+        applicantGenderOtherText, // Utilisé si genderOther est vrai
         applicantDOBAndPlace,
         applicantAddress,
         applicantContactDetails,
         applicantMedicalConditions,
 
-        // Section 2: Educational Background
+        // Section 2: Parcours éducatif
         applicantSchoolName,
         applicantEnrollmentTerm,
         applicantMajor,
         applicantLanguages,
 
-        // Section 3: Employment History
+        // Section 3: Historique d'emploi
         applicantPrevEmployment,
         applicantPrevDuties,
         applicantPrevDismissalReason,
 
-        // Section 4: Motivational Letter
+        // Section 4: Lettre de motivation
         applicantMotivationLetter,
 
-        // Section 5: OOC Information
+        // Section 5: Informations HRP
         oocUcpName,
         oocForumName,
         oocDiscord,
@@ -32,18 +32,18 @@ const generateNursing = (formData) => {
         oocAdminRecordLink,
         oocStatsLink,
         charBackground,
-        // Gender
+        // Genre
         genderMale,
         genderFemale,
         genderOther,
-        // Location (Needed for some Nursing roles)
+        // Emplacement (Nécessaire pour certains rôles infirmiers)
         locationPHMC,
         locationPBC,
-        // Citizenship
+        // Citoyenneté
         citizenUS,
         citizenPermanent,
         citizenNone,
-        // Education
+        // Éducation
         eduHighSchool,
         eduCertificate,
         eduDiploma,
@@ -52,17 +52,17 @@ const generateNursing = (formData) => {
         eduMaster,
         eduDoctorate,
 
-        // Nursing specific position details from formData
+        // Détails de poste spécifiques aux infirmiers depuis formData
         positionDetailsData,
 
     } = formData;
 
-    // Use nursing-specific position details
-    const positionDetailsMap = positionDetailsData || {}; // MODIFIED: Use the corrected variable
+    // Utiliser les détails de poste spécifiques aux infirmiers
+    const positionDetailsMap = positionDetailsData || {}; // MODIFIÉ: Utiliser la variable corrigée
 
-    // Determine the dynamic display name and URL
-    let dynamicDisplayPosition = "Position (Please Select)";
-    let dynamicJobPostingUrl = "https://phmc.gta.world/viewforum.php?f=17"; // Default to Nursing Department forum
+    // Déterminer le nom d'affichage dynamique et l'URL
+    let dynamicDisplayPosition = "Position (Veuillez sélectionner)";
+    let dynamicJobPostingUrl = "https://phmc.gta.world/viewforum.php?f=17"; // Par défaut au forum du département infirmier
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
@@ -70,15 +70,15 @@ const generateNursing = (formData) => {
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].displayName || selectedPositionKey;
             dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].url || dynamicJobPostingUrl;
         } else {
-            dynamicDisplayPosition = selectedPositionKey; // Fallback to the key itself
-            console.warn(`Nursing Position "${selectedPositionKey}" not found in nursePositionDetailsData. Using default URL.`);
+            dynamicDisplayPosition = selectedPositionKey; // Repli sur la clé elle-même
+            console.warn(`Position infirmière "${selectedPositionKey}" non trouvée dans nursePositionDetailsData. Utilisation de l'URL par défaut.`);
         }
     } else if (recruitmentPosition) {
-        dynamicDisplayPosition = recruitmentPosition; // Fallback if positionDetailsMap is empty
-        console.warn(`nursePositionDetailsData is empty or not provided. Using default URL for "${recruitmentPosition}".`);
+        dynamicDisplayPosition = recruitmentPosition; // Repli si positionDetailsMap est vide
+        console.warn(`nursePositionDetailsData est vide ou non fourni. Utilisation de l'URL par défaut pour "${recruitmentPosition}".`);
     }
 
-    // --- Conditional BBCode for sections 1.6 onwards ---
+    // --- BBCode conditionnel pour les sections 1.6 et suivantes ---
     let personalInfoContinuation = '';
 
     const isSpecificNurseRole =
@@ -86,95 +86,95 @@ const generateNursing = (formData) => {
         recruitmentPosition === "Nurse Practitioner";
 
     if (isSpecificNurseRole) {
-        // Structure for 'Registered Nurse' OR 'Nurse Practitioner'
-        personalInfoContinuation = `[b][color=#FF0000]1.6[/color]  Desired Employment Location:[/b] [i](add a c, where applicable like so cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${locationPHMC ? 'c' : ''}] Pillbox Hill Medical Center (City of Los Santos)
-[cb${locationPBC ? 'c' : ''}] PHMC Paleto Bay Clinic (Paleto Bay)
+        // Structure pour 'Registered Nurse' OU 'Nurse Practitioner'
+        personalInfoContinuation = `[b][color=#FF0000]1.6[/color]  Lieu d'emploi souhaité:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
+[list=none][cb${locationPHMC ? 'c' : ''}] Centre médical de Pillbox Hill (Ville de Los Santos)
+[cb${locationPBC ? 'c' : ''}] Clinique PHMC de Paleto Bay (Paleto Bay)
 [/list]
-[b][color=#FF0000]1.7[/color] Have you been diagnosed with a medical condition, allergies, or prescribed any medication:[/b] [i]${applicantMedicalConditions || 'ANSWER'}[/i]
-[b][color=#FF0000]1.8[/color]  Citizenship:[/b] [i](add a c, where applicable like so cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${citizenUS ? 'c' : ''}] United States Citizen
-[cb${citizenPermanent ? 'c' : ''}] Permanent resident alien status and applied for U.S. Citizenship 
-[cb${citizenNone ? 'c' : ''}] None of the above
+[b][color=#FF0000]1.7[/color] Avez-vous été diagnostiqué avec une condition médicale, des allergies, ou vous a-t-on prescrit des médicaments:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.8[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
+[list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
+[cb${citizenPermanent ? 'c' : ''}] Statut de résident permanent et demande de citoyenneté américaine déposée
+[cb${citizenNone ? 'c' : ''}] Aucune des réponses ci-dessus
 [br][/br][/list]`;
     } else {
-        // Structure for other Nursing positions
-        personalInfoContinuation = `[b][color=#FF0000]1.6[/color] Have you been diagnosed with a medical condition, allergies, or prescribed any medication:[/b] [i]${applicantMedicalConditions || 'ANSWER'}[/i]
-[b][color=#FF0000]1.7[/color]  Citizenship:[/b] [i](add a c, where applicable like so cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${citizenUS ? 'c' : ''}] United States Citizen
-[cb${citizenPermanent ? 'c' : ''}] Permanent resident alien status and applied for U.S. Citizenship 
-[cb${citizenNone ? 'c' : ''}] None of the above
+        // Structure pour les autres postes infirmiers
+        personalInfoContinuation = `[b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale, des allergies, ou vous a-t-on prescrit des médicaments:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
+[list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
+[cb${citizenPermanent ? 'c' : ''}] Statut de résident permanent et demande de citoyenneté américaine déposée
+[cb${citizenNone ? 'c' : ''}] Aucune des réponses ci-dessus
 [br][/br][/list]`;
     }
-    // --- End Conditional BBCode ---
+    // --- Fin BBCode conditionnel ---
 
-    // Helper for education checkboxes
+    // Aide pour les cases à cocher d'éducation
     const eduCheck = (field) => field ? 'c' : '';
 
-    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
-Career Center [center][/center]
-[center]Applying as:[/center]
+    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Centre médical de Pillbox Hill[/size][/b] 
+Centre de carrière [center][/center]
+[center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]
-[divboxcolor=black][url=${dynamicJobPostingUrl}][color=#FF0000]>[/color] [color=#FFFFFF]Back to the job posting[/color][/url][/divboxcolor]
+[divboxcolor=black][url=${dynamicJobPostingUrl}][color=#FF0000]>[/color] [color=#FFFFFF]Retour à l'offre d'emploi[/color][/url][/divboxcolor]
 [br][/br]
-[divbox=na][list=none][b][size=110][color=#FF0000]1[/color].  Personal Information[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]1[/color].  Informations personnelles[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]1.1[/color]  Title & Full Name:[/b] [i]${applicantTitleAndFullName || 'ANSWER'}[/i]
-[b][color=#FF0000]1.2[/color]  Gender:[/b] [i](add a c, where applicable like so cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${genderMale ? 'c' : ''}] Male
-[cb${genderFemale ? 'c' : ''}] Female
-[cb${genderOther ? 'c' : ''}] Other: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
+[list=none][b][color=#FF0000]1.1[/color]  Titre et nom complet:[/b] [i]${applicantTitleAndFullName || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.2[/color]  Genre:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
+[list=none][cb${genderMale ? 'c' : ''}] Homme
+[cb${genderFemale ? 'c' : ''}] Femme
+[cb${genderOther ? 'c' : ''}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
-[b][color=#FF0000]1.3[/color] Date & Place of Birth:[/b] [i]${applicantDOBAndPlace || 'DD/MMM/YYYY in CITY'}[/i]
-[b][color=#FF0000]1.4[/color]  Address:[/b] [i]${applicantAddress || 'ANSWER'}[/i]
-[b][color=#FF0000]1.5[/color]  Contact Details:[/b] [i]${applicantContactDetails || 'ANSWER'}[/i]
+[b][color=#FF0000]1.3[/color] Date et lieu de naissance:[/b] [i]${applicantDOBAndPlace || 'JJ/MMM/AAAA à VILLE'}[/i]
+[b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
 ${personalInfoContinuation}
 [/list][/divbox]
 [br][/br]
-[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Educational Background[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Parcours éducatif[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]2.1[/color] Highest Level of Education:[/b] [i](add a c, where applicable like so cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
+[list=none][b][color=#FF0000]2.1[/color] Niveau d'éducation le plus élevé:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none]
-[cb${eduCheck(eduHighSchool)}] High School Diploma
-[cb${eduCheck(eduCertificate)}] Certificate (Sub-bachelor or vocational)
-[cb${eduCheck(eduDiploma)}] Diploma (Sub-bachelor or vocational)
-[cb${eduCheck(eduAssociate)}] Associate Degree
-[cb${eduCheck(eduBachelor)}] Bachelor's Degree
-[cb${eduCheck(eduMaster)}] Master's Degree
-[cb${eduCheck(eduDoctorate)}] Doctorate
+[cb${eduCheck(eduHighSchool)}] Diplôme d'études secondaires
+[cb${eduCheck(eduCertificate)}] Certificat (Inférieur au baccalauréat ou professionnel)
+[cb${eduCheck(eduDiploma)}] Diplôme (Inférieur au baccalauréat ou professionnel)
+[cb${eduCheck(eduAssociate)}] Diplôme d'associé
+[cb${eduCheck(eduBachelor)}] Licence
+[cb${eduCheck(eduMaster)}] Master
+[cb${eduCheck(eduDoctorate)}] Doctorat
 [/list]
-[b][color=#FF0000]2.2[/color] School of Attendance:[/b] 
-[list=none][color=#FF0000][b]2.2.1[/color] School Name:[/b]  [i]${applicantSchoolName || 'ANSWER'}[/i]
-[color=#FF0000][b]2.2.2[/color] Enrollment Term:[/b]  [i]${applicantEnrollmentTerm || 'DD/MMM/YYYY to DD/MMM/YYYY'}[/i]
-[color=#FF0000][b]2.2.3[/color] Major Course of Study:[/b] [i]${applicantMajor || 'ANSWER'}[/i]
+[b][color=#FF0000]2.2[/color] Établissement fréquenté:[/b] 
+[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
+[color=#FF0000][b]2.2.2[/color] Période d'inscription:[/b]  [i]${applicantEnrollmentTerm || 'JJ/MMM/AAAA à JJ/MMM/AAAA'}[/i]
+[color=#FF0000][b]2.2.3[/color] Domaine d'études principal:[/b] [i]${applicantMajor || 'RÉPONSE'}[/i]
 [/list]
-[b][color=#FF0000]2.3[/color] Additional Languages:[/b] [i]${applicantLanguages || 'ANSWER'}[/i][/list]
+[b][color=#FF0000]2.3[/color] Langues supplémentaires:[/b] [i]${applicantLanguages || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
-[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Employment History[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Historique d'emploi[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]3.1[/color] Previous Employment:[/b] [i]${applicantPrevEmployment || 'ROLE at COMPANY between DD/MMM/YYYY to DD/MMM/YYYY'}[/i]
-[b][color=#FF0000]3.2[/color] Duties:[/b] [i]${applicantPrevDuties || 'ANSWER'}[/i]
-[b][color=#FF0000]3.3[/color] Reason for Dismissal:[/b] [i]${applicantPrevDismissalReason || 'ANSWER'}[/i][/list]
+[list=none][b][color=#FF0000]3.1[/color] Emploi précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE entre JJ/MMM/AAAA et JJ/MMM/AAAA'}[/i]
+[b][color=#FF0000]3.2[/color] Fonctions:[/b] [i]${applicantPrevDuties || 'RÉPONSE'}[/i]
+[b][color=#FF0000]3.3[/color] Raison du licenciement:[/b] [i]${applicantPrevDismissalReason || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
-[divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  Motivational Letter[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  Lettre de motivation[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]4.1[/color] Submit your motivational letter, describing why you wish to join us, why we should choose you rather than someone else, and why the qualities required from this job correspond to you :[/b] i[/i]
-[quote][i]${applicantMotivationLetter || 'ANSWER HERE'}[/i][/quote][/list]
+[list=none][b][color=#FF0000]4.1[/color] Soumettez votre lettre de motivation, décrivant pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt que quelqu'un d'autre, et pourquoi les qualités requises pour ce poste vous correspondent :[/b] i[/i]
+[quote][i]${applicantMotivationLetter || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]
-[divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Out of Character information ))[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations hors personnage ))[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]5.1[/color] User Control Panel (UCP) Username:[/b] [i]${oocUcpName || 'ANSWER'}[/i]
-[b][color=#FF0000]5.2[/color] GTA:W Forum Account Name:[/b] [i]${oocForumName || 'ANSWER'}[/i]
-[b][color=#FF0000]5.3[/color] Discord Name:[/b] [i]${oocDiscord || 'ANSWER'}[/i]
-[b][color=#FF0000]5.4[/color] Timezone:[/b] [i]${oocTimezone || 'ANSWER'}[/i]
-[b][color=#FF0000]5.5[/color] Do you have any real life medical experience or have you roleplayed in medical factions in the past? Describe in detail:[/b] [i]${oocMedicalExperience || 'ANSWER'}[/i]
-[b][color=#FF0000]5.6[/color] [u]Unedited[/u] Screenshot of your Admin Record with the current date & time displayed:[/b]
-[list=none][altspoiler=Admin Record][img]${oocAdminRecordLink || 'LINK'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Provide a screenshot of your character's statistics (/stats) which you're applying with:[/b] 
-[list=none][altspoiler=Stats][img]${oocStatsLink || 'LINK'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Provide your character's background story:[/b]
-[quote][i]${charBackground || 'ANSWER HERE'}[/i][/quote][/list][/divbox]
-[divboxcolor=black][center][url=https://phmc.gta.world/viewforum.php?f=17][color=#FF0000]>[/color] [color=#FFFFFF]Nursing Department[/url] |[/color]  [url=https://phmc.gta.world/viewtopic.php?t=14][color=#FF0000]>[/color] [color=#FFFFFF]Employment Information[/url] |[/color] [url=https://phmc.gta.world/viewforum.php?f=111][color=#FF0000]>[/color]  [color=#FFFFFF]Visitor Guidelines[/color][/url][/center][/divboxcolor]`;
+[list=none][b][color=#FF0000]5.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.2[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous fait du roleplay dans des factions médicales par le passé ? Décrivez en détail:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.6[/color] Capture d'écran [u]non éditée[/u] de votre dossier administrateur avec la date et l'heure actuelles affichées:[/b]
+[list=none][altspoiler=Dossier administrateur][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
+[b][color=#FF0000]5.7[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
+[b][color=#FF0000]5.8[/color] Fournissez l'histoire de votre personnage:[/b]
+[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]
+[divboxcolor=black][center][url=https://phmc.gta.world/viewforum.php?f=17][color=#FF0000]>[/color] [color=#FFFFFF]Département infirmier[/url] |[/color]  [url=https://phmc.gta.world/viewtopic.php?t=14][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'emploi[/url] |[/color] [url=https://phmc.gta.world/viewforum.php?f=111][color=#FF0000]>[/color]  [color=#FFFFFF]Directives pour les visiteurs[/color][/url][/center][/divboxcolor]`;
 
     return bbCode;
 };

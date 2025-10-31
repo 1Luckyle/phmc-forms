@@ -14,19 +14,19 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         }) => {
     return (
     <>
-    <p>The FORM below must be used and added to the file for each surgery appointment, following the others.</p>
-    <Form.Label>Patient ID, leave blank if unsure</Form.Label>
+    <p>Le FORMULAIRE ci-dessous doit être utilisé et ajouté au dossier pour chaque rendez-vous de chirurgie, à la suite des autres.</p>
+    <Form.Label>ID Patient, laisser vide si incertain</Form.Label>
     <Form.Control
                 type="text"
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="Patient ID  (Optional)"
+                placeholder="ID Patient (Optionnel)"
                 className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
 
             />
 
-        <Form.Label>Appointment Date</Form.Label>
+        <Form.Label>Date du rendez-vous</Form.Label>
         <Form.Control
             type="date"
             name="date"
@@ -44,7 +44,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
                 required
                 className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>PHMC Rank</option>
+                <option value="" disabled>Rang PHMC</option>
                 {phmcRank.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -68,7 +68,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         }}
         options={phmcGroupedOptions}
         isClearable
-        placeholder="Search or select Surgeon..."
+        placeholder="Rechercher ou sélectionner un chirurgien..."
         className="form-control"
         styles={{
             control: (base) => ({
@@ -126,7 +126,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             });
         }}
         className="form-control"
-        placeholder="Enter staff present (( Leave empty if none)  )) "
+        placeholder="Entrer le personnel présent (( Laisser vide si aucun )) "
         styles={{                                        
             control: (base) => ({
         ...base,
@@ -182,13 +182,13 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
 }}
 />                                
     <Form.Label></Form.Label>
-        <Form.Label>Surgical Inquiry   </Form.Label>
+        <Form.Label>Enquête chirurgicale</Form.Label>
         <Form.Control
             type="text"
             name="surgeryProcedures"
             value={formData.surgeryProcedures}
             onChange={handleChange}
-            placeholder="Name of the procedure	"
+            placeholder="Nom de la procédure"
             required
         />
 
@@ -208,7 +208,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         required
         className={`form-control ${!formData.patientConsentOption ? 'is-invalid' : ''}`}
     >
-        <option value="" disabled>Patient Consented?</option>
+        <option value="" disabled>Patient consentant?</option>
         {patientConsent.map((option) => (
             <option key={option.value} value={option.value}>{option.value}</option>
         ))}
@@ -228,7 +228,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         required
         className={`form-control ${!formData.patientComplicationOptions ? 'is-invalid' : ''}`}
     >
-        <option value="" disabled>Surgery Complications?</option>
+        <option value="" disabled>Complications chirurgicales?</option>
         {complications.map((option) => (
             <option key={option.value} value={option.value}>{option.value}</option>
         ))}
@@ -248,21 +248,21 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         required
         className={`form-control ${!formData.procedureGoodOptions ? 'is-invalid' : ''}`}
     >
-        <option value="" disabled>Procedure Good?</option>
+        <option value="" disabled>Procédure réussie?</option>
         {procedureGood.map((option) => (
             <option key={option.value} value={option.value}>{option.value}</option>
         ))}
     </Form.Select>
     </div>
 
-        <Form.Label> Post-Anesthesia Report</Form.Label>
+        <Form.Label>Rapport post-anesthésie</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
         <Form.Control
             as="textarea"
             name="patientSummaryConsultation"
             value={formData.patientSummaryConsultation}
             onChange={handleChange}
-            placeholder="Summary of Consultation"
+            placeholder="Résumé de la consultation"
             rows="4"
             required
             className={`form-control ${!formData.patientSummaryConsultation ? 'is-invalid' : ''}`}
@@ -275,9 +275,9 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             rows="4"
             required
             className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
-            placeholder="Post-Operative Anesthesia Details	"
+            placeholder="Détails de l'anesthésie post-opératoire"
         /></div>
-        <Form.Label> Summary of Surgical Procedure</Form.Label>
+        <Form.Label>Résumé de la procédure chirurgicale</Form.Label>
         <Form.Control
             as="textarea"
             name="patientSummary"
@@ -286,7 +286,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             rows="4"
             required
             className={`form-control ${!formData.patientSummary ? 'is-invalid' : ''}`}
-            placeholder="Summary of Surgical Procedure	"
+            placeholder="Résumé de la procédure chirurgicale"
         />
 </>
     );

@@ -48,9 +48,9 @@ useEffect(() => {
 
     return (
         <>
-            <p>The Coroner Report Generated needs to be filled out fully, you can upload images locally or link pictures. </p>
+            <p>Le rapport de coroner généré doit être rempli complètement, vous pouvez télécharger des images localement ou lier des images. </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Employee Credentials</Form.Label>
+                <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                 <button
                     type="button"
                     onClick={() => setShowEmployeeModal(true)}
@@ -62,7 +62,7 @@ useEffect(() => {
                     }}
                 >
                     <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Missing Name?
+                    Nom manquant?
                 </button>
             </div>
             <Select
@@ -74,7 +74,7 @@ useEffect(() => {
                 onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Search or select coroner..."
+                placeholder="Rechercher ou sélectionner un coroner..."
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{ 
                     control: (base, state) => ({
@@ -101,7 +101,7 @@ useEffect(() => {
             />
             <Form.Label></Form.Label>
                 <span style={{ fontSize: '0.8em', color: '#6c757d', marginLeft: '10px' }}>
-                    Current Server Time: {currentUtcTime}
+                    Heure actuelle du serveur: {currentUtcTime}
                 </span>
 
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -125,7 +125,7 @@ useEffect(() => {
                             handleChange({ target: { name: 'dateTime', value: utc } });
                         }}
                     >
-                        Dispatched to scene    
+                        Envoyé sur la scène    
                     </Button>
                 </div>
 
@@ -150,14 +150,14 @@ useEffect(() => {
                             handleChange({ target: { name: 'pronouncedTimeOfDeath', value: time } });
                         }}
                     >
-                        Decedent Time Of Death
+                        Heure du décès du défunt
                     </Button>
                 </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
             <Form.Check
                 type="checkbox"
-                label="Report Requested?"
+                label="Rapport demandé?"
                 name="showRequestingOfficerInput"
                 checked={formData.showRequestingOfficerInput || false}
                 onChange={handleChange}
@@ -172,14 +172,14 @@ useEffect(() => {
                 required
                 className={`form-control ${!formData.department ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Select Requesting Agency</option>
+                <option value="" disabled>Sélectionner l'agence demandeur</option>
                 {requestingAgencyOptions.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
             {formData.showRequestingOfficerInput && (
                     <Form.Control
-                        type="text" name="requestingOfficer" value={formData.requestingOfficer || ''} onChange={handleChange} placeholder="e.g: Officer John Doe, LSPD"/>
+                        type="text" name="requestingOfficer" value={formData.requestingOfficer || ''} onChange={handleChange} placeholder="ex: Officier John Doe, LSPD"/>
             )}
             </div>
 
@@ -187,12 +187,12 @@ useEffect(() => {
                 <div className="radio-button-group">
                     <Form.Check type="radio" id="johnDoe" label="   John Doe" checked={isJohnDoe} onChange={handleDoeChange('john')} inline />
                     <Form.Check type="radio" id="janeDoe" label="   Jane Doe" checked={isJaneDoe} onChange={handleDoeChange('jane')} inline />
-                    <Form.Check type="radio" id="massFatality" name="massFatality" label="   Mass Fatality?" checked={formData.massFatality || false} onChange={handleChange} inline />
+                    <Form.Check type="radio" id="massFatality" name="massFatality" label="   Fatalité de masse?" checked={formData.massFatality || false} onChange={handleChange} inline />
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Decedent's IC name" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
-                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="Decedent's OOC name" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Nom IC du défunt" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="Nom HRP du défunt" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
 
@@ -203,7 +203,7 @@ useEffect(() => {
                 required
                 className={`form-control ${!formData.typeOfDeath ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Select Type of Death</option>
+                <option value="" disabled>Sélectionner le type de décès</option>
                 {/* --- Updated to use typeOfDeathOptions --- */}
                 {typeOfDeathOptions.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
@@ -214,7 +214,7 @@ useEffect(() => {
                 name="placeOfDeath"
                 value={formData.placeOfDeath}
                 onChange={handleChange}
-                placeholder="Place of death"
+                placeholder="Lieu du décès"
                 required
                 className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}
             />
@@ -229,7 +229,7 @@ useEffect(() => {
                                 value={formData.decedentAttributes}
                                 onChange={handleChange}
                                 className={`form-control`}
-                                placeholder="Decedent /attributes (comma-separated)"
+                                placeholder="Défunt /attributes (séparés par des virgules)"
                             />
                             <Button variant="success" disabled={isUploading} onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.multiple = true; input.onchange = (e) => handleImageUpload(e, 'decedentAttributes'); input.click(); }}>
                                 <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? '...' : ''}
@@ -247,19 +247,19 @@ useEffect(() => {
                 required
                 className={`form-control ${!formData.mannerOfDeath ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Select Manner of Death</option>
+                <option value="" disabled>Sélectionner le mode de décès</option>
                 {mannerOfDeathOptions.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
-            <Form.Control type="text" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Probable cause of death" required className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`} />
+            <Form.Control type="text" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" required className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`} />
 </div>
-            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Brief Summary" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
-            <label>Evidence Locker Submission:</label>
+            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé bref" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
+            <label>Soumission au casier à preuves:</label>
             <Form.Check
                 type="checkbox"
                 id="evidenceLocker"
-                label="       I have submitted evidence to the evidence locker"
+                label="       J'ai soumis des preuves au casier à preuves"
                 checked={evidenceLockerChecked}
                 onChange={(e) => {
                     setEvidenceLockerChecked(e.target.checked);
@@ -285,7 +285,7 @@ useEffect(() => {
                     name="evidenceLockerID"
                     value={formData.evidenceLockerID || generateEvidenceLockerID()}
                     onChange={handleChange}
-                    placeholder={generateEvidenceLockerID() + " Your Submission Number Here"}
+                    placeholder={generateEvidenceLockerID() + " Votre numéro de soumission ici"}
                     required
                     className={`form-control ${!formData.evidenceLockerID ? 'is-invalid' : ''}`}
                 />
@@ -302,7 +302,7 @@ useEffect(() => {
                         rows="2"
                         // Removed 'required' to allow empty if not applicable, or add validation if always needed
                         className={`form-control ${!formData.scenePhotos && formData.evidenceLocker !== 'true' ? '' : ''}`} // Adjusted validation logic if needed
-                        placeholder="Upload Scene Photos (comma-separated)"
+                        placeholder="Télécharger les photos de la scène (séparées par des virgules)"
                         onPaste={(e) => {
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -331,10 +331,10 @@ useEffect(() => {
                         }}
                     />
                     <Button variant="success" disabled={isUploading} onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.multiple = true; input.onchange = (e) => handleImageUpload(e, 'scenePhotos'); input.click(); }}>
-                        <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Uploading...' : 'Upload Images'}
+                        <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Téléchargement...' : 'Télécharger images'}
                     </Button>
                 </InputGroup>
-                <span className="helper-text">This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></span>
+                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
 <ImagePreview 
     imageUrls={formData.scenePhotos} 
     showPreviews={true}
@@ -352,7 +352,7 @@ useEffect(() => {
                         rows="2"
                         // Removed 'required' for flexibility
                         className={`form-control`}
-                        placeholder="Morgue Screen, Cinjuries, CDNA Links (comma-separated)"
+                        placeholder="Écran de morgue, Cinjuries, liens CDNA (séparés par des virgules)"
                         onPaste={(e) => {
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -381,10 +381,10 @@ useEffect(() => {
                         }}
                     />
                     <Button variant="success" disabled={isUploading} onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.multiple = true; input.onchange = (e) => handleImageUpload(e, 'additionalImages'); input.click(); }}>
-                        <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Uploading...' : 'Upload Images'}
+                        <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Téléchargement...' : 'Télécharger images'}
                     </Button>
                 </div>
-                <span className="helper-text">This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></span>
+                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
 <ImagePreview 
     imageUrls={formData.additionalImages} 
     showPreviews={true}
@@ -392,11 +392,11 @@ useEffect(() => {
         setFormData(prev => ({ ...prev, additionalImages: updatedUrls }));
     }}
 />   
-             <label>Morgue Bugs:</label>
+             <label>Bugs de la morgue:</label>
                 <Form.Check
                     type="checkbox"
                     id="morgueStatus"
-                    label="       Tick if Morgue Screen is unavailable / broken / inaccesssable"
+                    label="       Cochez si l'écran de morgue est indisponible / cassé / inaccessible"
                     checked={formData.morgueStatus === 'true'}
                     onChange={(e) => setFormData(prev => ({ ...prev, morgueStatus: e.target.checked.toString() }))}
                 />        

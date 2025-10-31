@@ -20,7 +20,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="Patient ID"
+                placeholder="ID Patient"
                 required
                 className="form-control"
             />
@@ -39,7 +39,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="patientNotes"
                 value={formData.patientNotes}
                 onChange={handleChange}
-                placeholder="Patient Notes"
+                placeholder="Notes du patient"
                 rows="6"
                 required
                 className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
@@ -47,7 +47,7 @@ const PHMCCommentaryNoteQuestions = ({
 
             <Form.Label></Form.Label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Employee Credentials</Form.Label>
+                <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                 <button
                     type="button"
                     onClick={() => setShowEmployeeModal(true)}
@@ -59,7 +59,7 @@ const PHMCCommentaryNoteQuestions = ({
                     }}
                 >
                     <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Missing Name?
+                    Nom manquant?
                 </button>
             </div>
 
@@ -82,7 +82,7 @@ onChange={(selectedOption) => {
 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Search or select doctor..."
+                placeholder="Rechercher ou sélectionner un médecin..."
                 className="form-control"
                 styles={{ // Keep the styles for react-select
                     control: (base) => ({
@@ -133,7 +133,7 @@ onChange={(selectedOption) => {
                 }}
                 options={departmentLarge}
                 isClearable
-                placeholder="Select Department..."
+                placeholder="Sélectionner un département..."
                 className="form-control"
                 styles={{ // Keep the styles for react-select
                     control: (base) => ({

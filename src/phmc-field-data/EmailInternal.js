@@ -20,7 +20,7 @@ const EmailInternal = ({
                 name="patientNotes"
                 value={formData.patientNotes}
                 onChange={handleChange}
-                placeholder="Email Subject"
+                placeholder="Sujet de l'email"
                 required
                 className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
 
@@ -30,7 +30,7 @@ const EmailInternal = ({
                 name="decedentName"
                 value={formData.decedentName}
                 onChange={handleChange}
-                placeholder="Email Recipient"
+                placeholder="Destinataire de l'email"
                 required
                 className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
 
@@ -43,7 +43,7 @@ const EmailInternal = ({
             value={formData.synopsis}
             onChange={handleChange}
             rows="4"
-            placeholder="Email Body"
+            placeholder="Corps de l'email"
             required
             className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`}
         />
@@ -58,7 +58,7 @@ const EmailInternal = ({
                 onChange={handleChange}
                 required
                 className={`form-control ${!formData.scenePhotos ? 'is-invalid' : ''}`}
-                placeholder="Employee Signature Image"
+                placeholder="Image de signature de l'employé"
                 onPaste={(e) => {
                     const clipboardData = e.clipboardData || window.clipboardData;
                     const pastedData = clipboardData.getData('text');
@@ -123,12 +123,12 @@ const EmailInternal = ({
                 }}
             >
                 <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                {isUploading ? 'Uploading...' : 'Upload Images'}
+                {isUploading ? 'Téléchargement...' : 'Télécharger images'}
             </Button>
 
         </InputGroup>
         <span className="helper-text">
-        This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+        Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
         </span>
         <ImagePreview imageUrls={formData.scenePhotos} />
     </Form.Group>
@@ -149,7 +149,7 @@ const EmailInternal = ({
         }}
         options={phmcGroupedOptions}
         isClearable
-        placeholder="Search or select doctor..."
+        placeholder="Rechercher ou sélectionner un médecin..."
         className="form-control"
         styles={{
             control: (base) => ({
@@ -192,7 +192,7 @@ const EmailInternal = ({
                 name="decedentOOC"
                 value={formData.decedentOOC}
                 onChange={handleChange}
-                placeholder="PHMC Rank / Position"
+                placeholder="Rang / Position PHMC"
                 required
                 className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
 
@@ -202,7 +202,7 @@ const EmailInternal = ({
                 name="patientCareer"
                 value={formData.patientCareer}
                 onChange={handleChange}
-                placeholder="Assigned Department"
+                placeholder="Département assigné"
                 required
                 className={`form-control ${!formData.patientCareer ? 'is-invalid' : ''}`}
 
@@ -212,4 +212,4 @@ const EmailInternal = ({
 );
 };
 
-export default EmailInternal; 
+export default EmailInternal;

@@ -30,7 +30,7 @@ const MedicalRelease = ({
     return (
         <>        <Form.Group className="mb-3">
 
-        <Form.Label>Title / First Name / Middle Name / Lastname / Date of Birth</Form.Label>
+        <Form.Label>Titre / Prénom / Deuxième prénom / Nom de famille / Date de naissance</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Select
                     name="patientTitle"
@@ -39,7 +39,7 @@ const MedicalRelease = ({
                     required
                     className={`form-control ${!formData.patientTitle ? 'is-invalid' : ''}`}
                 >
-                    <option value="" disabled>Title</option>
+                    <option value="" disabled>Titre</option>
                     {/* Updated to use patientTitleOptions prop */}
                     {(patientTitleOptions || []).map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -50,7 +50,7 @@ const MedicalRelease = ({
                     name="patientFirstName"
                     value={formData.patientFirstName}
                     onChange={handleChange}
-                    placeholder="First Name"
+                    placeholder="Prénom"
                     required
                     className={`form-control ${!formData.patientFirstName ? 'is-invalid' : ''}`}
 
@@ -61,7 +61,7 @@ const MedicalRelease = ({
                     name="patientMiddleName"
                     value={formData.patientMiddleName}
                     onChange={handleChange}
-                    placeholder="Middle Name (Optional)"
+                    placeholder="Deuxième prénom (Optionnel)"
                     className={`form-control ${!formData.patientMiddleName ? 'is-invalid' : ''}`}
 
                 />
@@ -70,7 +70,7 @@ const MedicalRelease = ({
                     name="patientLastName"
                     value={formData.patientLastName}
                     onChange={handleChange}
-                    placeholder="Last Name"
+                    placeholder="Nom de famille"
                     required
                     className={`form-control ${!formData.patientLastName ? 'is-invalid' : ''}`}
 
@@ -80,17 +80,17 @@ const MedicalRelease = ({
                     name="patientDateOfBirth"
                     value={formData.patientDateOfBirth}
                     onChange={handleChange}
-                    placeholder="Date of Birth"
+                    placeholder="Date de naissance"
                     required
                     className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
 
                 />
 
             </div>
-            <Form.Label>Gender:</Form.Label>
+            <Form.Label>Genre:</Form.Label>
                 <Form.Check
                     type="radio"
-                    label="   Male"
+                    label="   Homme"
                     name="patientGender"
                     value="Male"
                     checked={formData.patientGender === 'Male'}
@@ -98,7 +98,7 @@ const MedicalRelease = ({
                 />
                 <Form.Check
                     type="radio"
-                    label="   Female"
+                    label="   Femme"
                     name="patientGender"
                     value="Female"
                     checked={formData.patientGender === 'Female'}
@@ -107,14 +107,14 @@ const MedicalRelease = ({
 
         </Form.Group>
         <Form.Group className="mb-3">
-            <Form.Label>Address & ZIP / Postal Code</Form.Label>
+            <Form.Label>Adresse & Code postal</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
                     type="text"
                     name="patientAddress"
                     value={formData.patientAddress}
                     onChange={handleChange}
-                    placeholder="Address (Number, Floor, Street)"
+                    placeholder="Adresse (Numéro, Étage, Rue)"
                     required
                     className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
 
@@ -124,14 +124,14 @@ const MedicalRelease = ({
                     name="patientZIP"
                     value={formData.patientZIP}
                     onChange={handleChange}
-                    placeholder="ZIP / Postal Code ((You can make this up))"
+                    placeholder="Code postal (Vous pouvez inventer)"
                     required
                     className={`form-control ${!formData.patientZIP ? 'is-invalid' : ''}`}
 
                 />
             </div>
         </Form.Group>
-            <Form.Label>Contact Information</Form.Label>
+            <Form.Label>Informations de contact</Form.Label>
             <div className="input-group">
             <Form.Select
             name="patientPhoneType"
@@ -150,7 +150,7 @@ const MedicalRelease = ({
             required
             className={`form-control ${!formData.patientPhoneType ? 'is-invalid' : ''}`}
         >
-            <option value="" disabled>Phone Type</option>
+            <option value="" disabled>Type de téléphone</option>
             {/* Updated to use patientPhoneOptions prop */}
             {(patientPhoneOptions || []).map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option> 
@@ -162,7 +162,7 @@ const MedicalRelease = ({
                     name="patientPH"
                     value={formData.patientPH}
                     onChange={handleChange}
-                    placeholder="Phone Number"
+                    placeholder="Numéro de téléphone"
                     required
                     className={`form-control ${!formData.patientPH ? 'is-invalid' : ''}`}
 
@@ -172,13 +172,13 @@ const MedicalRelease = ({
                     name="patientEmail"
                     value={formData.patientEmail}
                     onChange={handleChange}
-                    placeholder="Email Address"
+                    placeholder="Adresse email"
                     required
                     className={`form-control ${!formData.patientEmail ? 'is-invalid' : ''}`}
 
                 />
             </div>
-            <Form.Label>Purpose of Medical Information Release</Form.Label>
+            <Form.Label>Objectif de la divulgation des informations médicales</Form.Label>
             <Form.Select
                 name="CarePurposeMedicalInformationRelease"
                 value={formData.CarePurposeMedicalInformationRelease}
@@ -196,7 +196,7 @@ const MedicalRelease = ({
                 required
                 className={`form-control ${!formData.CarePurposeMedicalInformationRelease ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Release Information</option>
+                <option value="" disabled>Divulguer les informations</option>
                 {(purposeOptions || []).map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -207,14 +207,14 @@ const MedicalRelease = ({
                 name="patientMedInfoReleaseOther"
                 value={formData.patientMedInfoReleaseOther}
                 onChange={handleChange}
-                placeholder="Add a different release reason (Ex: Insurance / Courts)"
+                placeholder="Ajouter une raison de divulgation différente (Ex: Assurance / Tribunaux)"
                 required
                 className={`form-control ${!formData.patientMedInfoReleaseOther ? 'is-invalid' : ''}`}
 
             />
         )}
 
-            <Form.Label>Format of Medical Information Release </Form.Label>
+            <Form.Label>Format de divulgation des informations médicales </Form.Label>
             <Form.Select
             name="PurposeMedicalInformationReleaseFormat"
             value={formData.PurposeMedicalInformationReleaseFormat}
@@ -232,7 +232,7 @@ const MedicalRelease = ({
             required
             className={`form-control ${!formData.PurposeMedicalInformationReleaseFormat ? 'is-invalid' : ''}`}
         >
-            <option value="" disabled>Release Information</option>
+            <option value="" disabled>Divulguer les informations</option>
             {/* Updated to use formatOptions prop */}
             {(formatOptions || []).map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -244,13 +244,13 @@ const MedicalRelease = ({
                 name="patientMedInfoFormatOther"
                 value={formData.patientMedInfoFormatOther}
                 onChange={handleChange}
-                placeholder="Add a different release option (Ex: FAX)"
+                placeholder="Ajouter une option de divulgation différente (Ex: FAX)"
                 required
                 className={`form-control ${!formData.patientMedInfoFormatOther ? 'is-invalid' : ''}`}
 
             />
         )}
-          <Form.Label>Record Release Time Frame </Form.Label>
+          <Form.Label>Période de divulgation des dossiers </Form.Label>
 
         <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
@@ -258,7 +258,7 @@ const MedicalRelease = ({
                     name="StupidDateFrom"
                     value={formData.StupidDateFrom}
                     onChange={handleChange}
-                    placeholder="Treatment Date From"
+                    placeholder="Date de traitement du"
                     required
                     className={`form-control ${!formData.StupidDateFrom ? 'is-invalid' : ''}`}
                 />
@@ -267,13 +267,13 @@ const MedicalRelease = ({
                 name="StupidDateTo"
                 value={formData.StupidDateTo}
                 onChange={handleChange}
-                placeholder="Treatment Date To"
+                placeholder="Date de traitement au"
                 required
                 className={`form-control ${!formData.StupidDateTo ? 'is-invalid' : ''}`}
                 />
             </div>
 
-            <Form.Label>Medical Records to be Released </Form.Label>
+            <Form.Label>Dossiers médicaux à divulguer </Form.Label>
             <Select
                     isMulti
                     name="MedicalRecordsRelease"
@@ -290,7 +290,7 @@ const MedicalRelease = ({
                     }}
                     options={medicalRecordOptions || []} // Updated to use medicalRecordOptions prop
                     className={`form-control ${!formData.MedicalRecordsRelease || formData.MedicalRecordsRelease.length === 0 ? 'is-invalid' : ''}`}
-                    placeholder="Select Release Options (Multiple Choice)"
+                    placeholder="Sélectionner les options de divulgation (Choix multiples)"
                     styles={{
                         control: (base, state) => ({ 
                             ...base,
@@ -347,7 +347,7 @@ const MedicalRelease = ({
             />
                         {approximateCost > 0 && (
                 <Form.Label style={{ marginTop: '5px', color: '#28a745', fontWeight: 'bold' }}>
-                    This service will cost approximately ${approximateCost.toLocaleString()}
+                    Ce service coûtera environ ${approximateCost.toLocaleString()}
                 </Form.Label>
             )}
             {approximateCost > 0 && ( 
@@ -355,7 +355,7 @@ const MedicalRelease = ({
                     <Form.Check
                         type="checkbox"
                         id="payNowCheckbox"
-                        label=" Pay Now?"
+                        label=" Payer maintenant?"
                         checked={formData.payNow === true || formData.payNow === 'true'} 
                         onChange={(e) => {
                             setFormData(prev => ({
@@ -365,14 +365,14 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Tick this box if you wish to provide proof of payment now. Routing: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>
+                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Acheminement: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>
                     </span>
                 </Form.Group>
             )}
 
             {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
                 <Form.Group className="mb-3 upload-container">
-                    <Form.Label>Proof of Payment Image Upload</Form.Label>
+                    <Form.Label>Téléchargement de l'image de preuve de paiement</Form.Label>
                     <InputGroup>
                         <Form.Control
                             as="textarea" 
@@ -380,7 +380,7 @@ const MedicalRelease = ({
                             name="paymentProofPhotos"
                             value={formData.paymentProofPhotos || ''}
                             onChange={handleChange} 
-                            placeholder="Paste image URL or Upload"
+                            placeholder="Coller l'URL de l'image ou télécharger"
                             required 
                             className={`form-control ${!formData.paymentProofPhotos ? 'is-invalid' : ''}`}
                             onPaste={(e) => { 
@@ -426,14 +426,14 @@ const MedicalRelease = ({
                             }}
                         >
                             <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                            {isUploading ? ' Uploading...' : ' Upload Image(s)'}
+                            {isUploading ? ' Téléchargement...' : ' Télécharger image(s)'}
                         </Button>
                     </InputGroup>
                     <span className="helper-text">
-                        Upload proof of payment. Supports clipboard pasting (Ctrl+V). Hosted by ImgBB.
+                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                     </span>
                     {formData.paymentProofPhotos && formData.paymentProofPhotos.split(',').map((url, index) => (
-                         url.trim() && <img key={index} src={url.trim()} alt={`Payment Proof ${index + 1}`} style={{ maxWidth: '100px', maxHeight: '100px', marginTop: '5px', marginRight: '5px', border: '1px solid #30363d' }} />
+                         url.trim() && <img key={index} src={url.trim()} alt={`Preuve de paiement ${index + 1}`} style={{ maxWidth: '100px', maxHeight: '100px', marginTop: '5px', marginRight: '5px', border: '1px solid #30363d' }} />
                     ))}
                 </Form.Group>
             )}
@@ -445,13 +445,13 @@ const MedicalRelease = ({
                 name="MedicalRecordsReleaseOther"
                 value={formData.MedicalRecordsReleaseOther}
                 onChange={handleChange}
-                placeholder="Please specify other records to be released"
+                placeholder="Veuillez spécifier d'autres dossiers à divulguer"
                 required
                 className={`form-control ${!formData.MedicalRecordsReleaseOther ? 'is-invalid' : ''}`} 
             />
         )}
             <Form.Label></Form.Label>
-            <Form.Label>Practitioner Seen By:</Form.Label> 
+            <Form.Label>Praticien consulté:</Form.Label> 
     <Select
             name="phmcEmployee"
             value={phmcGroupedOptions
@@ -478,7 +478,7 @@ const MedicalRelease = ({
             }}
             options={phmcGroupedOptions}
             isClearable
-            placeholder="Which Doctor Treated You? (You can type to search!)"
+            placeholder="Quel médecin vous a traité? (Vous pouvez taper pour rechercher!)"
             className="form-control" 
             styles={{ 
                 control: (base) => ({
@@ -529,7 +529,7 @@ const MedicalRelease = ({
         />
             <Form.Label></Form.Label>
 
-            <Form.Label>Authorization For Release Information</Form.Label>
+            <Form.Label>Autorisation de divulgation des informations</Form.Label>
             <Form.Control
 type="date"
 name="SubmitDate"

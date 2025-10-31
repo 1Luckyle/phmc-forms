@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form } from 'react-bootstrap';
+import { Form, Button, InputGroup } from 'react-bootstrap';
 import Select from 'react-select'; // Make sure react-select is imported
 import ImagePreview from '../components/ImagePreview';
 
@@ -21,12 +21,12 @@ const PHMCCommentaryNoteQuestions = ({
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="Patient ID (If available)"
+                placeholder="ID Patient (Si disponible)"
                 required
                 className="form-control"
             />
 
-            <Form.Label>Perscription Issued Date:</Form.Label>
+            <Form.Label>Date d'émission de l'ordonnance:</Form.Label>
             <Form.Control
                 type="date"
                 name="date"
@@ -40,7 +40,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="drugName"
                 value={formData.drugName}
                 onChange={handleChange}
-                placeholder="Drug Name"
+                placeholder="Nom du médicament"
                 required
                 className={`form-control ${!formData.drugName ? 'is-invalid' : ''}`}
             />
@@ -49,7 +49,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="drugDiag"
                 value={formData.drugDiag}
                 onChange={handleChange}
-                placeholder="Diagnosis / Reasoning for Drug"
+                placeholder="Diagnostic / Raison du médicament"
                 required
                 className={`form-control ${!formData.drugDiag ? 'is-invalid' : ''}`}
             />
@@ -58,7 +58,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="drugStr"
                 value={formData.drugStr}
                 onChange={handleChange}
-                placeholder="Drug Strength"
+                placeholder="Dosage du médicament"
                 required
                 className={`form-control ${!formData.drugStr ? 'is-invalid' : ''}`}
             />
@@ -67,7 +67,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="drugCourse"
                 value={formData.drugCourse}
                 onChange={handleChange}
-                placeholder="Drug Course"
+                placeholder="Durée du traitement"
                 required
                 className={`form-control ${!formData.drugCourse ? 'is-invalid' : ''}`}
             />
@@ -81,7 +81,7 @@ const PHMCCommentaryNoteQuestions = ({
                         rows="2"
                         required
                         className={`form-control ${!formData.scenePhotos ? 'is-invalid' : ''}`}
-                        placeholder="Upload Scene Photos (comma-separated)"
+                        placeholder="Télécharger les photos de la scène (séparées par des virgules)"
                         onPaste={(e) => { // Keep the paste logic
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -127,12 +127,12 @@ const PHMCCommentaryNoteQuestions = ({
                         }}
                     >
                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                        {isUploading ? 'Uploading...' : 'Upload Images'}
+                        {isUploading ? 'Téléchargement...' : 'Télécharger images'}
                     </Button>
                 </InputGroup>
                 <ImagePreview imageUrls={formData.scenePhotos} />
                 <span className="helper-text">
-                    This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
                 </span>
             </Form.Group>
             <Form.Group className="mb-3 upload-container">
@@ -145,7 +145,7 @@ const PHMCCommentaryNoteQuestions = ({
                         rows="2"
                         required
                         className={`form-control ${!formData.additionalImages ? 'is-invalid' : ''}`}
-                        placeholder="Morgue Screen, Cinjuries, CDNA Links (comma-separated)"
+                        placeholder="Écran de la morgue, blessures, liens CDNA (séparés par des virgules)"
                         onPaste={(e) => { // Keep the paste logic
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -191,18 +191,18 @@ const PHMCCommentaryNoteQuestions = ({
                         }}
                     >
                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                        {isUploading ? 'Uploading...' : 'Upload Images'}
+                        {isUploading ? 'Téléchargement...' : 'Télécharger images'}
                     </Button>
                 </div>
                 <ImagePreview imageUrls={formData.additionalImages} />
                 <span className="helper-text">
-                    This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
                 </span>
-                <label>Morgue Bugs:</label> {/* Use <Form.Label> ? */}
+                <label>Bugs de la morgue:</label> {/* Use <Form.Label> ? */}
                 <Form.Check
                     type="checkbox"
                     id="morgueStatus"
-                    label="       Tick if Morgue Screen is unavailable / broken / inaccesssable"
+                    label="       Cocher si l'écran de la morgue est indisponible / cassé / inaccessible"
                     checked={formData.morgueStatus === 'true'}
                     onChange={(e) => setFormData(prev => ({ // Use setFormData passed as prop
                         ...prev,
@@ -213,7 +213,7 @@ const PHMCCommentaryNoteQuestions = ({
 
             <Form.Label></Form.Label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Employee Credentials</Form.Label>
+                <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                 <button
                     type="button"
                     onClick={() => setShowEmployeeModal(true)}
@@ -225,7 +225,7 @@ const PHMCCommentaryNoteQuestions = ({
                     }}
                 >
                     <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Missing Name?
+                    Nom manquant?
                 </button>
             </div>
 
@@ -245,7 +245,7 @@ const PHMCCommentaryNoteQuestions = ({
                 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Search or select doctor..."
+                placeholder="Rechercher ou sélectionner un médecin..."
                 className="form-control"
                 styles={{ // Keep the styles for react-select
                     control: (base) => ({

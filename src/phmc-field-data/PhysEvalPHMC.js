@@ -25,8 +25,8 @@ const PhysEval = ({
         }) => {
     return (
     <>
-                                <p>The FORM below must be used and added to the file for each medical appointment, following the others.</p>
-                                <Form.Label>Patient ID | Date:</Form.Label>
+                                <p>Le FORMULAIRE ci-dessous doit être utilisé et ajouté au dossier pour chaque rendez-vous médical, à la suite des autres.</p>
+                                <Form.Label>ID Patient | Date:</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
                                 <Form.Control
@@ -34,7 +34,7 @@ const PhysEval = ({
                                     name="patientID"
                                     value={formData.patientID}
                                     onChange={handleChange}
-                                    placeholder="Patient ID"
+                                    placeholder="ID Patient"
                                     required
                                     className="form-control"
                                 />
@@ -56,13 +56,13 @@ const PhysEval = ({
                                             required
                                             className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
                                         >
-                                            <option value="" disabled>PHMC Rank</option>
+                                            <option value="" disabled>Rang PHMC</option>
                                             {phmcRank.map((option) => (
                                                 <option key={option.value} value={option.value}>{option.label}</option>
                                             ))}
                                         </Form.Select>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                                    <Form.Label style={{ marginBottom: 0 }}>Employee Credentials</Form.Label>
+                                    <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                                     <button
                                         type="button"
                                         onClick={() => setShowEmployeeModal(true)}
@@ -74,7 +74,7 @@ const PhysEval = ({
                                         }}
                                     >
                                         <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i> {/* Changed icon */}
-                                        Missing Name?
+                                        Nom manquant?
                                     </button>
                                 </div>
 
@@ -97,7 +97,7 @@ onChange={(selectedOption) => {
 }}
                                     options={phmcGroupedOptions}
                                     isClearable
-                                    placeholder="Search or select doctor..."
+                                    placeholder="Rechercher ou sélectionner un médecin..."
                                     className="form-control"
                                     styles={{
                                         control: (base) => ({
@@ -136,7 +136,7 @@ onChange={(selectedOption) => {
                                 <Form.Label></Form.Label>
 
 
-                                    <Form.Label>Patient Measurements</Form.Label>
+                                    <Form.Label>Mesures du patient</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
 
                                     <Form.Control
@@ -144,14 +144,14 @@ onChange={(selectedOption) => {
                                         name="patientHeight"
                                         value={formData.patientHeight}
                                         onChange={handleChange}
-                                        placeholder="Height"
+                                        placeholder="Taille"
                                     />
                                     <Form.Control
                                         type="text"
                                         name="patientWeight"
                                         value={formData.patientWeight}
                                         onChange={handleChange}
-                                        placeholder="Weight"
+                                        placeholder="Poids"
                                     />
 
                                     <Form.Select
@@ -165,14 +165,14 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Body Mass Index</option>
+                                        <option value="" disabled>Indice de masse corporelle</option>
                                         {BodyMassIndex.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
                                     </Form.Select></div>
 
 
-                                    <Form.Label>Vitals</Form.Label>
+                                    <Form.Label>Signes vitaux</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     <Form.Select
                                         name="temperature"
@@ -185,7 +185,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Select Temperature</option>
+                                        <option value="" disabled>Sélectionner la température</option>
                                         {temperature.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -201,7 +201,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Select Heart Rate</option>
+                                        <option value="" disabled>Sélectionner la fréquence cardiaque</option>
                                         {heartRate.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -217,7 +217,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Breathing</option>
+                                        <option value="" disabled>Respiration</option>
                                         {breathing.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -233,14 +233,14 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Blood Pressure</option>
+                                        <option value="" disabled>Pression artérielle</option>
                                         {bloodPressure.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
                                     </Form.Select></div>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Anamnesis</Form.Label>
+                                    <Form.Label>Anamnèse</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     <Form.Select
                                         name="patientJob"
@@ -253,7 +253,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Patient Job</option>
+                                        <option value="" disabled>Emploi du patient</option>
                                         {patientJob.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -269,7 +269,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Job Risks (Optional) </option>
+                                        <option value="" disabled>Risques professionnels (Optionnel) </option>
                                         {patientJobRisks.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -285,7 +285,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Patient Allergies Risk</option>
+                                        <option value="" disabled>Risques d'allergies du patient</option>
                                         {patientAllergiesRisk.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -298,7 +298,7 @@ onChange={(selectedOption) => {
                                     name="patientCareer"
                                     value={formData.patientCareer}
                                     onChange={handleChange}
-                                    placeholder="Patient Job"
+                                    placeholder="Emploi du patient"
                                     required
                                     className="form-control"
                                     />
@@ -309,7 +309,7 @@ onChange={(selectedOption) => {
                                     name="patientCareer"
                                     value={formData.patientCareer}
                                     onChange={handleChange}
-                                    placeholder="Patient Job No"
+                                    placeholder="Emploi du patient Non"
                                     required
                                     className="form-control"
                                     />
@@ -320,7 +320,7 @@ onChange={(selectedOption) => {
                                     name="careerRisks"
                                     value={formData.careerRisks}
                                     onChange={handleChange}
-                                    placeholder="Patient Job Risks"
+                                    placeholder="Risques professionnels du patient"
                                     required
                                     className="form-control"
                                     />
@@ -331,7 +331,7 @@ onChange={(selectedOption) => {
                                     name="patientAllergies"
                                     value={formData.patientAllergies}
                                     onChange={handleChange}
-                                    placeholder="Patient Allergies Risks"
+                                    placeholder="Risques d'allergies du patient"
                                     required
                                     className="form-control"
                                     />
@@ -352,7 +352,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Patient Current Medications</option>
+                                        <option value="" disabled>Médicaments actuels du patient</option>
                                         {patientMedicineRegular.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -368,7 +368,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Patient Imparements?</option>
+                                        <option value="" disabled>Déficiences du patient?</option>
                                         {patientOther.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -384,7 +384,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Predisposition</option>
+                                        <option value="" disabled>Prédisposition</option>
                                         {predisposition.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -397,7 +397,7 @@ onChange={(selectedOption) => {
                                     name="patientMedicine"
                                     value={formData.patientMedicine}
                                     onChange={handleChange}
-                                    placeholder="What medication(s) is the patient currently taking?"
+                                    placeholder="Quel(s) médicament(s) le patient prend-il actuellement?"
                                     required
                                     className="form-control"
                                     />
@@ -408,7 +408,7 @@ onChange={(selectedOption) => {
                                     name="patientImpairments"
                                     value={formData.patientImpairments}
                                     onChange={handleChange}
-                                    placeholder="Patient Imparements"
+                                    placeholder="Déficiences du patient"
                                     required
                                     className="form-control"
                                     />
@@ -421,11 +421,11 @@ onChange={(selectedOption) => {
                                         rows="4"
                                         required
                                         className={`form-control ${!formData.patientSummary ? 'is-invalid' : ''}`}
-                                        placeholder="Assessment Statement"
+                                        placeholder="Déclaration d'évaluation"
                                     />
                                 </Form.Group>
                             </>
     );
 };
 
-export default PhysEval; 
+export default PhysEval;
