@@ -34,168 +34,168 @@ const generatePsychEvalPHMC = (formData) => {
         patientTherapyMedicine,
     } = formData;
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Session Notes[/b]
+    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
 PATIENT ${patientID}
 Date: ${date}
-Signed: ${phmcRank} ${lastName}
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]PILLBOX HILL MEDICAL CENTER[/b]
+Signé: ${phmcRank} ${lastName}
+[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
-PO BOX 742
+BP 742
 LOS SANTOS, SAN ANDREAS
-P: 50056[/size][/center][/table][/divbox]
+T: 50056[/size][/center][/table][/divbox]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnesis[/b][/color][/center][/divboxcolor]
-[table][tr][td][left][list=none][u]Chief Complaint: [/u][br][/br]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+[table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint}
 [br][/br]
-[u]Assigned Department: [/u][br][/br]
-[cbc] Mental Health
+[u]Département assigné: [/u][br][/br]
+[cbc] Santé mentale
 [br][/br][/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Presenting Problem[/b][/color][/center][/divboxcolor]
-[table][tr][td][left][list=none][u]Description of the issue (e.g., anxiety, depression, psychosis): [/u][br][/br]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Problème présenté[/b][/color][/center][/divboxcolor]
+[table][tr][td][left][list=none][u]Description du problème (ex: anxiété, dépression, psychose): [/u][br][/br]
 ${patientVisitReason}
 [br][/br]
-[u]Onset and duration of symptoms: [/u][br][/br]
+[u]Apparition et durée des symptômes: [/u][br][/br]
 ${patientSymptoms}
 [br][/br]
-[u]Triggers or stressors: [/u][br][/br]
+[u]Déclencheurs ou facteurs de stress: [/u][br][/br]
 ${patientTriggers}
 [br][/br]
-[u]Impact on daily life: [/u][br][/br]
+[u]Impact sur la vie quotidienne: [/u][br][/br]
 ${patientStress}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Mental Status Examination (MSE)[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Examen de l'état mental (EEM)[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Appearance: [/u][br][/br]
-[cb${formData.Appearance === 'Good' ? 'c' : ''}] Well-groomed [cb${formData.Appearance === 'Disheveled' ? 'c' : ''}] Disheveled [cb${formData.Appearance === 'Inappropriate' ? 'c' : ''}] Inappropriate
+[u]Apparence: [/u][br][/br]
+[cb${formData.Appearance === 'Good' ? 'c' : ''}] Soigné [cb${formData.Appearance === 'Disheveled' ? 'c' : ''}] Négligé [cb${formData.Appearance === 'Inappropriate' ? 'c' : ''}] Inapproprié
 [br][/br]
-[u]Behavior: [/u][br][/br]
-[cb${formData.Behavior === 'Cooperative' ? 'c' : ''}] Cooperative [cb${formData.Behavior === 'Agitated' ? 'c' : ''}] Agitated [cb${formData.Behavior === 'Withdrawn' ? 'c' : ''}] Withdrawn
+[u]Comportement: [/u][br][/br]
+[cb${formData.Behavior === 'Cooperative' ? 'c' : ''}] Coopératif [cb${formData.Behavior === 'Agitated' ? 'c' : ''}] Agité [cb${formData.Behavior === 'Withdrawn' ? 'c' : ''}] Replié
 [br][/br]
-[u]Speech: [/u][br][/br]
-[cb${formData.Speech === 'Normal' ? 'c' : ''}] Normal [cb${formData.Speech === 'Pressured' ? 'c' : ''}] Pressured [cb${formData.Speech === 'Slurred' ? 'c' : ''}] Slurred [cbcb${formData.Speech === 'Slow' ? 'c' : ''}] Slow
+[u]Élocution: [/u][br][/br]
+[cb${formData.Speech === 'Normal' ? 'c' : ''}] Normale [cb${formData.Speech === 'Pressured' ? 'c' : ''}] Pressée [cb${formData.Speech === 'Slurred' ? 'c' : ''}] Indistincte [cbcb${formData.Speech === 'Slow' ? 'c' : ''}] Lente
 [br][/br]
-[u]Mood: [/u][br][/br]
-[cb${formData.Mood === 'Euthymic' ? 'c' : ''}] Euthymic [cb${formData.Mood === 'Depressed' ? 'c' : ''}] Depressed [cb${formData.Mood === 'Anxious' ? 'c' : ''}] Anxious [cb${formData.Mood === 'Angry' ? 'c' : ''}] Angry
+[u]Humeur: [/u][br][/br]
+[cb${formData.Mood === 'Euthymic' ? 'c' : ''}] Euthymique [cb${formData.Mood === 'Depressed' ? 'c' : ''}] Déprimé [cb${formData.Mood === 'Anxious' ? 'c' : ''}] Anxieux [cb${formData.Mood === 'Angry' ? 'c' : ''}] Colérique
 [br][/br]
 [u]Affect: [/u][br][/br]
-[cb${formData.Affect === 'Congruent' ? 'c' : ''}] Congruent [cb${formData.Affect === 'Flat' ? 'c' : ''}] Flat [cb${formData.Affect === 'Inappropriate' ? 'c' : ''}] Inappropriate
+[cb${formData.Affect === 'Congruent' ? 'c' : ''}] Congruent [cb${formData.Affect === 'Flat' ? 'c' : ''}] Émoussé [cb${formData.Affect === 'Inappropriate' ? 'c' : ''}] Inapproprié
 [br][/br]
-[u]Thought Process: [/u][br][/br]
-[cb${formData.ThoughtProcess === 'Logical' ? 'c' : ''}] Logical [cb${formData.ThoughtProcess === 'Organized' ? 'c' : ''}] Organized [cb${formData.ThoughtProcess === 'Tangential' ? 'c' : ''}] Tangential [cb${formData.ThoughtProcess === 'Disorganized' ? 'c' : ''}] Disorganized
+[u]Processus de pensée: [/u][br][/br]
+[cb${formData.ThoughtProcess === 'Logical' ? 'c' : ''}] Logique [cb${formData.ThoughtProcess === 'Organized' ? 'c' : ''}] Organisé [cb${formData.ThoughtProcess === 'Tangential' ? 'c' : ''}] Tangentiel [cb${formData.ThoughtProcess === 'Disorganized' ? 'c' : ''}] Désorganisé
 [br][/br]
-[u]Thought Content: [/u][br][/br]
-[cb${formData.ThoughtContent === 'Nodelusions' ? 'c' : ''}] No delusions [cb${formData.ThoughtContent === 'Delusions' ? 'c' : ''}] Delusions [cb${formData.ThoughtContent === 'Hallucinations' ? 'c' : ''}] Hallucinations [cb${formData.ThoughtContent === 'Suicidal' ? 'c' : ''}] Suicidal thoughts [cb${formData.ThoughtContent === 'Homicidal' ? 'c' : ''}] Homicidal thoughts
+[u]Contenu de la pensée: [/u][br][/br]
+[cb${formData.ThoughtContent === 'Nodelusions' ? 'c' : ''}] Pas de délires [cb${formData.ThoughtContent === 'Delusions' ? 'c' : ''}] Délires [cb${formData.ThoughtContent === 'Hallucinations' ? 'c' : ''}] Hallucinations [cb${formData.ThoughtContent === 'Suicidal' ? 'c' : ''}] Pensées suicidaires [cb${formData.ThoughtContent === 'Homicidal' ? 'c' : ''}] Pensées homicidaires
 [br][/br]
-[u]Insight and Judgment: [/u][br][/br]
-[cb${formData.Insight === 'Intact' ? 'c' : ''}] Intact [cb${formData.Insight === 'Limited' ? 'c' : ''}] Limited [cb${formData.Insight === 'Poor' ? 'c' : ''}] Poor
+[u]Perspicacité et jugement: [/u][br][/br]
+[cb${formData.Insight === 'Intact' ? 'c' : ''}] Intact [cb${formData.Insight === 'Limited' ? 'c' : ''}] Limité [cb${formData.Insight === 'Poor' ? 'c' : ''}] Pauvre
 [br][/br]
 [u]Cognition: [/u][br][/br]
-[cb${formData.Cognition === 'Oriented' ? 'c' : ''}] Oriented to time, place, person [cb${formData.Cognition === 'Memory' ? 'c' : ''}] Memory intact [cb${formData.Cognition === 'Attention' ? 'c' : ''}] Attention intact
+[cb${formData.Cognition === 'Oriented' ? 'c' : ''}] Orienté dans le temps, l'espace, la personne [cb${formData.Cognition === 'Memory' ? 'c' : ''}] Mémoire intacte [cb${formData.Cognition === 'Attention' ? 'c' : ''}] Attention intacte
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Psychiatric History[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents psychiatriques[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Past psychiatric diagnoses and treatments: [/u][br][/br]
+[u]Diagnostics et traitements psychiatriques passés: [/u][br][/br]
 ${patientTreatment}
 [br][/br]
-[u]Hospitalizations: [/u][br][/br]
+[u]Hospitalisations: [/u][br][/br]
 ${patientMedicalRecord}
 [br][/br]
-[u]Family psychiatric history: [/u][br][/br]
+[u]Antécédents psychiatriques familiaux: [/u][br][/br]
 ${patientFamily}
 [br][/br]
-[u]History of self-harm or suicide attempts: [/u][br][/br]
+[u]Antécédents d'automutilation ou de tentatives de suicide: [/u][br][/br]
 ${patientJobRisks}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Medical History[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Current and past medical conditions: [/u][br][/br]
+[u]Conditions médicales actuelles et passées: [/u][br][/br]
 ${patientCondition}
 [br][/br]
-[u]Medications (including psychiatric and non-psychiatric): [/u][br][/br]
+[u]Médicaments (y compris psychiatriques et non psychiatriques): [/u][br][/br]
 ${patientChronicDiseases}
 [br][/br]
 [u]Allergies: [/u][br][/br]
 ${patientAllergies}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Substance Use History[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents de consommation de substances[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Use of alcohol, drugs, nicotine, and other substances: [/u][br][/br]
+[u]Utilisation d'alcool, drogues, nicotine et autres substances: [/u][br][/br]
 ${patientDrugs}
 [br][/br]
-[u]Frequency and duration of use: [/u][br][/br]
+[u]Fréquence et durée d'utilisation: [/u][br][/br]
 ${patientDrugsUsage}
 [br][/br]
-[u]Impact on mental health: [/u][br][/br]
+[u]Impact sur la santé mentale: [/u][br][/br]
 ${patientMental}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Psychosocial History[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents psychosociaux[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Childhood and family background: [/u][br][/br]
+[u]Enfance et contexte familial: [/u][br][/br]
 ${patientFam}
 [br][/br]
-[u]Education and employment history: [/u][br][/br]
+[u]Parcours éducatif et professionnel: [/u][br][/br]
 ${patientJob}
 [br][/br]
-[u]Relationships and support system: [/u][br][/br]
+[u]Relations et système de soutien: [/u][br][/br]
 ${patientRelationship}
 [br][/br]
-[u]Legal issues: [/u][br][/br]
+[u]Problèmes juridiques: [/u][br][/br]
 ${patientLegal}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Risk Assessment[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Évaluation des risques[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[cb${formData.Risk === 'Suicidal' ? 'c' : ''}] Suicidal ideation or attempts [cb${formData.Risk === 'Homicidal' ? 'c' : ''}] Homicidal thoughts or violent behavior [cb${formData.Risk === 'Self' ? 'c' : ''}] Self-injury or harm to others
+[cb${formData.Risk === 'Suicidal' ? 'c' : ''}] Idées ou tentatives suicidaires [cb${formData.Risk === 'Homicidal' ? 'c' : ''}] Pensées homicidaires ou comportement violent [cb${formData.Risk === 'Self' ? 'c' : ''}] Automutilation ou danger pour autrui
 [br][/br]
-[u]Details: [/u][br][/br]
+[u]Détails: [/u][br][/br]
 ${patientRiskAssessment}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Findings[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
 [table][tr][td][list=none]
 Notes: ${patientFindings}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Discharge Diagnosis[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Diagnostic de sortie[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Primary Diagnosis: [/u][br][/br]
+[u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Therapy[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Thérapie[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-[cb${formData.admission === 'Yes' ? 'c' : ''}] Yes [cb${formData.admission === 'No' ? 'c' : ''}] No
+[cb${formData.admission === 'Yes' ? 'c' : ''}] Oui [cb${formData.admission === 'No' ? 'c' : ''}] Non
 [br][/br]
-[u]Treatment Plan: [/u][br][/br]
+[u]Plan de traitement: [/u][br][/br]
 ${patientTreatmentPlan}
 [br][/br]
-[u]Medication: [/u][br][/br]
+[u]Médicaments: [/u][br][/br]
 ${patientTherapyMedicine}
 [br][/br]
-[u]Follow-Up: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] As needed [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommended
+[u]Suivi: [/u][br][/br]
+[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
 
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Treatment Plan/Recommendations[/b][/color][/center][/divboxcolor]
+[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Plan de traitement/Recommandations[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none]
-[u]Medications: [/u][br][/br]
+[u]Médicaments: [/u][br][/br]
 ${patientTreatmentMedicine}
 [br][/br]
-[u]Therapy (e.g., CBT, DBT): [/u][br][/br]
+[u]Thérapie (ex: TCC, TCD): [/u][br][/br]
 ${patientTherapy}
 [br][/br]
-[u]Follow-up appointments: [/u][br][/br]
+[u]Rendez-vous de suivi: [/u][br][/br]
 ${patientFollowUp}
 [br][/br]
-[u]Safety planning (if at risk): [/u][br][/br]
+[u]Planification de la sécurité (si à risque): [/u][br][/br]
 ${patientSafety}
 [/list][/td][/tr][/table]`
     return bbCode;

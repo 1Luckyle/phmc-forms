@@ -21,39 +21,39 @@ const generateSicknessEmail = (formData) => {
     let subject = '';
     let emailBody = '';
 
-    const formattedDateOfVisit = dateOfVisit ? new Date(dateOfVisit).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+    const formattedDateOfVisit = dateOfVisit ? new Date(dateOfVisit).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
 
     if (emailPurpose === 'Sickness Note') {
-        subject = `RE: Sickness Note for ${patientName || 'Patient'}`;
-        emailBody = `Dear ${emailRecipient || 'Recipient'},
+        subject = `RE: Certificat médical pour ${patientName || 'Patient'}`;
+        emailBody = `Cher(ère) ${emailRecipient || 'Destinataire'},
 
-This email serves as a sickness note for ${patientName || 'the patient'} from ${sicknessStartDate || 'N/A'} to ${sicknessEndDate || 'N/A'}.
+Ce courriel sert de certificat médical pour ${patientName || 'le patient'} du ${sicknessStartDate || 'N/A'} au ${sicknessEndDate || 'N/A'}.
 
-${patientName || 'The patient'} was seen at Pillbox Hill Medical Center on ${formattedDateOfVisit} and was advised to rest due to ${reasonForSickness || 'a medical condition'}.
+${patientName || 'Le patient'} a été vu au Pillbox Hill Medical Center le ${formattedDateOfVisit} et a reçu conseil de se reposer en raison de ${reasonForSickness || 'une condition médicale'}.
 
-We anticipate ${patientName || 'they'} will be able to resume normal activities after the specified period.
+Nous anticipons que ${patientName || 'il/elle'} pourra reprendre ses activités normales après la période spécifiée.
 
-Please do not hesitate to contact us if you require further information.`;
+N'hésitez pas à nous contacter si vous avez besoin d'informations supplémentaires.`;
     } else if (emailPurpose === 'Illness Confirmation') {
-        subject = `RE: Illness Confirmation for ${patientName || 'Patient'}`;
-        emailBody = `Dear ${emailRecipient || 'Recipient'},
+        subject = `RE: Confirmation de maladie pour ${patientName || 'Patient'}`;
+        emailBody = `Cher(ère) ${emailRecipient || 'Destinataire'},
 
-This email confirms that ${patientName || 'the patient'} was seen at Pillbox Hill Medical Center on ${formattedDateOfVisit}.
+Ce courriel confirme que ${patientName || 'le patient'} a été vu au Pillbox Hill Medical Center le ${formattedDateOfVisit}.
 
-${patientName || 'The patient'} was diagnosed with ${illnessCondition || 'a medical condition'}. This confirmation is provided for ${confirmationPurpose || 'their records'}.
+${patientName || 'Le patient'} a été diagnostiqué avec ${illnessCondition || 'une condition médicale'}. Cette confirmation est fournie pour ${confirmationPurpose || 'ses dossiers'}.
 
-Please do not hesitate to contact us if you require further information.`;
+N'hésitez pas à nous contacter si vous avez besoin d'informations supplémentaires.`;
     } else {
-        subject = 'PHMC Email - Subject Missing';
-        emailBody = 'Please select an email purpose (Sickness Note or Illness Confirmation).';
+        subject = 'Courriel PHMC - Objet manquant';
+        emailBody = 'Veuillez sélectionner un objet de courriel (Certificat médical ou Confirmation de maladie).';
     }
     const reportSection = attachedReportSummary
-        ? `\n\n[b]Attached Medical Report Summary:[/b]\n[altspoiler=Medical Report Summary][quote]${attachedReportSummary}[/quote][/altspoiler]`
+        ? `\n\n[b]Résumé du rapport médical joint:[/b]\n[altspoiler=Résumé du rapport médical][quote]${attachedReportSummary}[/quote][/altspoiler]`
         : '';
 
     const signatureBBCode = phmcEmployeeSignatureImage ? `[img]${phmcEmployeeSignatureImage.trim()}[/img]` : '';
 
-    const bbCode = `[divbox=na][br][/br][imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
+    const bbCode = `[divbox=na][br][/br][imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Centre Médical Pillbox Hill[/size][/b] 
 [center][/center][br][/br]
 [center][size=130][/center][/size]
 [center][size=150][b]${subject}[/b][/size][/center]
@@ -63,22 +63,22 @@ ${emailBody}
 
 ${reportSection}
 
-Respectfully submitted,
+Respectueusement soumis,
 ${signatureBBCode} 
 [/list][hr][/hr][list=none]
-[b][size=105]${phmcEmployee || 'PHMC Employee'}[/size][/b]
+[b][size=105]${phmcEmployee || 'Employé PHMC'}[/size][/b]
 [size=85]${phmcRank || 'N/A'}
 [/size]
 
-[b]Pillbox Hill Medical Center[/b]
+[b]Centre Médical Pillbox Hill[/b]
 [size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
-Phone: 50056
-Mail: [url=https://phmc.gta.world/ucp.php?i=pm&mode=compose&g=40]info@phmc.health[/url]
-Website: [url=https://phmc.gta.world/index.php]www.phmc.health[/url]
+Téléphone: 50056
+Courriel: [url=https://phmc.gta.world/ucp.php?i=pm&mode=compose&g=40]info@phmc.health[/url]
+Site web: [url=https://phmc.gta.world/index.php]www.phmc.health[/url]
 
-Follow us on Facebrowser: [url=https://face.gta.world/pages/PHMC?ref=qs]Pillbox Hill Medical Center[/url][/size]
+Suivez-nous sur Facebrowser: [url=https://face.gta.world/pages/PHMC?ref=qs]Centre Médical Pillbox Hill[/url][/size]
 
-[size=70][i]The contents of this message and any attachments are confidential. They are intended for the named recipient(s) only.  If you have received this email by mistake, please notify the sender immediately and do not disclose the contents to anyone or make copies thereof.[/i][/size][/divbox]`;
+[size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/divbox]`;
 
     return bbCode;
 };

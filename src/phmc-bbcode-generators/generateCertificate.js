@@ -17,42 +17,42 @@ const generateCertificate = (formData) => {
 
 
 [hr][/hr]
-[center][size=125][b]DEPARTMENT OF PATHOLOGY AND FORENSIC MEDICINE ISSUED
-CERTIFICATE OF DEATH[/center][/b][/size]
+[center][size=125][b]CERTIFICAT DE DÉCÈS ÉMIS PAR LE
+DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/center][/b][/size]
 [hr][/hr][br]
 
-[center]I, [b]${coronerEmployee}[/b], on behalf of the Department of Pathology and Forensic Medicine of Pillbox Hill Medical Center, in the State of San Andreas, document, record, seal and hereby certify the death of [b]${decedentName}[/b]. I confirm the following information is factual to the best of my abilities:[/center][br][/br]
+[center]Je soussigné(e), [b]${coronerEmployee}[/b], au nom du Département de Pathologie et de Médecine Légale du Pillbox Hill Medical Center, dans l'État de San Andreas, documente, enregistre, scelle et certifie par la présente le décès de [b]${decedentName}[/b]. Je confirme que les informations suivantes sont exactes au meilleur de mes capacités:[/center][br][/br]
 
-[table][tr][td]NAME[/td][td]
-${decedentName || 'INSERT DECEDENT NAME HERE'}
+[table][tr][td]NOM[/td][td]
+${decedentName || 'INSÉRER LE NOM DU DÉFUNT ICI'}
 
-[tr][td]AGE[/td][td]
+[tr][td]ÂGE[/td][td]
 ${patientAge}	
 
-[tr][td]DATE OF BIRTH[/td][td]
-${patientDateOfBirth || 'INSERT DATE OF BIRTH HERE'}	
+[tr][td]DATE DE NAISSANCE[/td][td]
+${patientDateOfBirth || 'INSÉRER LA DATE DE NAISSANCE ICI'}	
 
-[tr][td]CAUSE OF DEATH[/td][td]
-${probableCauseOfDeath || 'INSERT CAUSE OF DEATH HERE'}	
+[tr][td]CAUSE DU DÉCÈS[/td][td]
+${probableCauseOfDeath || 'INSÉRER LA CAUSE DU DÉCÈS ICI'}	
 
-[tr][td]TIME OF DEATH[/td][td]
-${TimeofDeath || 'INSERT TIME OF DEATH HERE'}	
+[tr][td]HEURE DU DÉCÈS[/td][td]
+${TimeofDeath || 'INSÉRER L\'HEURE DU DÉCÈS ICI'}	
 
-[tr][td]DATE OF DEATH[/td][td]
-${dateofdeath || 'INSERT DATE OF DEATH HERE'}	
+[tr][td]DATE DU DÉCÈS[/td][td]
+${dateofdeath || 'INSÉRER LA DATE DU DÉCÈS ICI'}	
 [/table][br][/br]
 [list=none][left]
-SIGNATURE OF MEDICAL-EXAMINER:
-PRINT NAME: Dr. Anne Carter
+SIGNATURE DU MÉDECIN LÉGISTE:
+NOM IMPRIMÉ: Dr. Anne Carter
 
-SIGNATURE OF WITNESS:
-PRINT NAME: ${witnessName || 'INSERT WITNESS NAME HERE'}
+SIGNATURE DU TÉMOIN:
+NOM IMPRIMÉ: ${witnessName || 'INSÉRER LE NOM DU TÉMOIN ICI'}
 
-DATE CERTIFICATE ISSUED: ${date}
+DATE D'ÉMISSION DU CERTIFICAT: ${date}
 [/list]
 
 [br][hr][/hr]
-[center]Note: This is the master copy of the death certificate. Additional copies can be requested at an additional fee[/center][br][/br]`
+[center]Note: Ceci est la copie originale du certificat de décès. Des copies supplémentaires peuvent être demandées moyennant des frais additionnels[/center][br][/br]`
     return bbCode;
     };
 export default generateCertificate;
