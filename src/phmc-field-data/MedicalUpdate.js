@@ -102,7 +102,7 @@ const MedicalRelease = ({
 
     return (
         <>
-        <Form.Label>Title / Patient Name  / Date of Birth</Form.Label>
+        <Form.Label>Titre / Nom du patient / Date de naissance</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select
             name="patientTitleOptions"
@@ -111,7 +111,7 @@ const MedicalRelease = ({
             required
             className={`form-control ${!formData.patientTitleOptions ? 'is-invalid' : ''}`}
         >
-            <option value="" disabled>Title</option>
+            <option value="" disabled>Titre</option>
             {/* Ensure patientTitle (the options array) is not null/undefined before mapping */}
             {(patientTitleOptions || []).map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -122,7 +122,7 @@ const MedicalRelease = ({
                     name="patientName"
                     value={formData.patientName}
                     onChange={handleChange}
-                    placeholder="Patient Name"
+                    placeholder="Nom du patient"
                     required
                     className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
 
@@ -132,7 +132,7 @@ const MedicalRelease = ({
       name="date"
       value={formData.date}
       onChange={handleChange}
-      placeholder="Date of Birth"
+      placeholder="Date de naissance"
       required
       className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
     />
@@ -146,7 +146,7 @@ const MedicalRelease = ({
     name="patientAddress"
     value={formData.patientAddress}
     onChange={handleChange}
-    placeholder="Patient Home Address"
+    placeholder="Adresse du domicile du patient"
     required
     className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
   />
@@ -156,7 +156,7 @@ const MedicalRelease = ({
                     name="patientPH"
                     value={formData.patientPH}
                     onChange={handleChange}
-                    placeholder="Patient Phone Number"
+                    placeholder="Numéro de téléphone du patient"
                     required
                     className={`form-control ${!formData.patientPH ? 'is-invalid' : ''}`}
 
@@ -166,14 +166,14 @@ const MedicalRelease = ({
                     name="patientDiscord"
                     value={formData.patientDiscord}
                     onChange={handleChange}
-                    placeholder="(( Patient Discord ID )) "
+                    placeholder="(( ID Discord du patient )) "
                     required
                     className={`form-control ${!formData.patientDiscord ? 'is-invalid' : ''}`}
 
                 />
             </div>
 
-            <Form.Label>Update Medical File Options</Form.Label>
+            <Form.Label>Options de mise à jour du dossier médical</Form.Label>
             <Select
                 isMulti
                 name="UpdateMedicalFile"
@@ -188,7 +188,7 @@ const MedicalRelease = ({
                 }}
                 options={UpdateMedicalFile || []}
                 className={`form-control ${!formData.UpdateMedicalFile || formData.UpdateMedicalFile.length === 0 ? 'is-invalid' : ''}`}
-                placeholder="Which fields do you want to update? (You can type to search!)"
+                placeholder="Quels champs souhaitez-vous mettre à jour? (Vous pouvez taper pour rechercher!)"
                 styles={customSelectStyles}           
                  />
 
@@ -198,7 +198,7 @@ const MedicalRelease = ({
 
                 <>
 
-        <Form.Label>Update General Information </Form.Label>
+        <Form.Label>Mettre à jour les informations générales </Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select
             name="patientTitleNew"
@@ -207,7 +207,7 @@ const MedicalRelease = ({
             required
             className={`form-control ${!formData.patientTitleNew ? 'is-invalid' : ''}`}
         >
-            <option value="" disabled>Title</option>
+            <option value="" disabled>Titre</option>
             {(patientTitleNew || []).map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
             ))}
@@ -217,7 +217,7 @@ const MedicalRelease = ({
                     name="patientNameNew"
                     value={formData.patientNameNew}
                     onChange={handleChange}
-                    placeholder="Patient Name"
+                    placeholder="Nom du patient"
                     required
                     className={`form-control ${!formData.patientNameNew ? 'is-invalid' : ''}`}
 
@@ -228,7 +228,7 @@ const MedicalRelease = ({
                     name="patientDateOfBirthNew"
                     value={formData.patientDateOfBirthNew}
                     onChange={handleChange}
-                    placeholder="Date of Birth"
+                    placeholder="Date de naissance"
                     required
                     className={`form-control ${!formData.patientDateOfBirthNew ? 'is-invalid' : ''}`}
 
@@ -240,7 +240,7 @@ const MedicalRelease = ({
                     name="patientAddressNew"
                     value={formData.patientAddressNew}
                     onChange={handleChange}
-                    placeholder="Patient Home Address"
+                    placeholder="Adresse du domicile du patient"
                     required
                     className={`form-control ${!formData.patientAddressNew ? 'is-invalid' : ''}`}
 
@@ -250,7 +250,7 @@ const MedicalRelease = ({
                     name="patientAddressNew"
                     value={formData.patientGenderNew}
                     onChange={handleChange}
-                    placeholder="Patient Gender"
+                    placeholder="Genre du patient"
                     required
                     className={`form-control ${!formData.patientGenderNew ? 'is-invalid' : ''}`}
 
@@ -260,7 +260,7 @@ const MedicalRelease = ({
                     name="patientRaceNew"
                     value={formData.patientRaceNew}
                     onChange={handleChange}
-                    placeholder="Patient Race"
+                    placeholder="Race du patient"
                     required
                     className={`form-control ${!formData.patientRaceNew ? 'is-invalid' : ''}`}
 
@@ -274,7 +274,7 @@ const MedicalRelease = ({
                     name="patientPHNew"
                     value={formData.patientPHNew}
                     onChange={handleChange}
-                    placeholder="Patient Phone Number"
+                    placeholder="Numéro de téléphone du patient"
                     required
                     className={`form-control ${!formData.patientPHNew ? 'is-invalid' : ''}`}
 
@@ -284,7 +284,7 @@ const MedicalRelease = ({
                     name="patientDiscordNew"
                     value={formData.patientDiscordNew}
                     onChange={handleChange}
-                    placeholder="(( Patient Discord ID )) "
+                    placeholder="(( ID Discord du patient )) "
                     required
                     className={`form-control ${!formData.patientDiscordNew ? 'is-invalid' : ''}`}
 
@@ -298,7 +298,7 @@ const MedicalRelease = ({
             {formData.UpdateMedicalFile?.includes('MentalHealth') && (
                     <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
 
-<>                    <Form.Label>Update Mental Health History</Form.Label>
+<>                    <Form.Label>Mettre à jour l'historique de santé mentale</Form.Label>
 
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
@@ -307,21 +307,21 @@ const MedicalRelease = ({
                         name="patientMental"
                         value={formData.patientMental}
                         onChange={handleChange}
-                        placeholder="Diagnosed Mental Health Conditions"
+                        placeholder="Conditions de santé mentale diagnostiquées"
                     />
                     <Form.Control
                         type="text"
                         name="patientTherapy"
                         value={formData.patientTherapy}
                         onChange={handleChange}
-                        placeholder="Therapies & Counseling Sessions"
+                        placeholder="Thérapies et séances de conseil"
                     />
                 <Form.Control
                         type="text"
                         name="patientTriggers"
                         value={formData.patientTriggers}
                         onChange={handleChange}
-                        placeholder="Triggers or Sensory Issues"
+                        placeholder="Déclencheurs ou problèmes sensoriels"
                     />
 
                                 </div>
@@ -332,14 +332,14 @@ const MedicalRelease = ({
                         name="patientSupport"
                         value={formData.patientSupport}
                         onChange={handleChange}
-                        placeholder="Support & Self Coping Mechanisms"
+                        placeholder="Soutien et mécanismes d'adaptation personnels"
                     />
                     <Form.Control
                         type="text"
                         name="patientHarm"
                         value={formData.patientHarm}
                         onChange={handleChange}
-                        placeholder="Self Harm History or Attempts"
+                        placeholder="Historique d'automutilation ou tentatives"
                     />
 
                                 </div>
@@ -351,14 +351,14 @@ const MedicalRelease = ({
             {formData.UpdateMedicalFile?.includes('EmergencyContact') && (
                                     <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
 
-<>                    <Form.Label>Update Emergency Contact Information</Form.Label>
+<>                    <Form.Label>Mettre à jour les informations de contact d'urgence</Form.Label>
                         <div style={{ display: 'flex', gap: '10px'}}> {/* Added marginTop */}
                         <Form.Control
                             type="text"
                             name="patientEmergencyContact"
                             value={formData.patientEmergencyContact}
                             onChange={handleChange}
-                            placeholder="Emergency Contact Full Name"
+                            placeholder="Nom complet du contact d'urgence"
                             required
                             className={`form-control ${!formData.patientEmergencyContact ? 'is-invalid' : ''}`}
                         />
@@ -367,7 +367,7 @@ const MedicalRelease = ({
                             name="patientEmergencyContactRelation"
                             value={formData.patientEmergencyContactRelation}
                             onChange={handleChange}
-                            placeholder="Emergency Contact Relation to Patient"
+                            placeholder="Relation du contact d'urgence avec le patient"
                             required
                             className={`form-control ${!formData.patientEmergencyContactRelation ? 'is-invalid' : ''}`}
                         />
@@ -378,7 +378,7 @@ const MedicalRelease = ({
                             name="patientEmergencyContactNumber"
                             value={formData.patientEmergencyContactNumber}
                             onChange={handleChange}
-                            placeholder="Emergency Contact Contact Number"
+                            placeholder="Numéro de contact du contact d'urgence"
                             required
                             className={`form-control ${!formData.patientEmergencyContactNumber ? 'is-invalid' : ''}`}
                         />
@@ -387,7 +387,7 @@ const MedicalRelease = ({
                             name="patientEmergencyContactDiscord"
                             value={formData.patientEmergencyContactDiscord}
                             onChange={handleChange}
-                            placeholder="(( Patient Emergency Contact Discord )) "
+                            placeholder="(( Discord du contact d'urgence du patient )) "
                             required
                             className={`form-control ${!formData.patientEmergencyContactDiscord ? 'is-invalid' : ''}`}
                         />
@@ -397,7 +397,7 @@ const MedicalRelease = ({
 
             {formData.UpdateMedicalFile?.includes('Medical History') && (
         <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
-                    <Form.Label>Update Medical History</Form.Label>
+                    <Form.Label>Mettre à jour l'historique médical</Form.Label>
 
                 <>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
@@ -408,7 +408,7 @@ const MedicalRelease = ({
                             required
                             className={`form-control ${!formData.patientBloodType ? 'is-invalid' : ''}`}
                         >
-                            <option value="" disabled>Patient Blood Type</option>
+                            <option value="" disabled>Groupe sanguin du patient</option>
                             {patientBloodType.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
@@ -420,7 +420,7 @@ const MedicalRelease = ({
                             name="patientAllergies"
                             value={formData.patientAllergies}
                             onChange={handleChange}
-                            placeholder="Patient Known Allergies"
+                            placeholder="Allergies connues du patient"
                             required
                             className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
                         />
@@ -429,7 +429,7 @@ const MedicalRelease = ({
                             name="patientCurrentMedicine"
                             value={formData.patientCurrentMedicine}
                             onChange={handleChange}
-                            placeholder="Patient Current Medicine"
+                            placeholder="Médicaments actuels du patient"
                             required
                             className={`form-control ${!formData.patientCurrentMedicine ? 'is-invalid' : ''}`}
                         />
@@ -440,7 +440,7 @@ const MedicalRelease = ({
                             name="patientChronicDiseases"
                             value={formData.patientChronicDiseases}
                             onChange={handleChange}
-                            placeholder="Patient Chronic Conditions"
+                            placeholder="Conditions chroniques du patient"
                             required
                             className={`form-control ${!formData.patientChronicDiseases ? 'is-invalid' : ''}`}
                         />
@@ -449,7 +449,7 @@ const MedicalRelease = ({
                             name="patientNotes"
                             value={formData.patientNotes}
                             onChange={handleChange}
-                            placeholder="Patient Traumas & Injuries"
+                            placeholder="Traumatismes et blessures du patient"
                             required
                             className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
                         />
@@ -458,7 +458,7 @@ const MedicalRelease = ({
             )}
             {formData.UpdateMedicalFile?.includes('FamilyHistory') && (
         <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
-                    <Form.Label>Update Medical History</Form.Label>
+                    <Form.Label>Mettre à jour l'historique médical</Form.Label>
                     <>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
 
@@ -467,27 +467,27 @@ const MedicalRelease = ({
                         name="patientFam"
                         value={formData.patientFam}
                         onChange={handleChange}
-                        placeholder="Immediate Family Members"
+                        placeholder="Membres de la famille immédiate"
                     />
                     <Form.Control
                         type="text"
                         name="patientGenetic"
                         value={formData.patientGenetic}
                         onChange={handleChange}
-                        placeholder="Genetic Conditions"
+                        placeholder="Conditions génétiques"
                     />
                     <Form.Control
                         type="text"
                         name="patientFamSocial"
                         value={formData.patientFamSocial}
                         onChange={handleChange}
-                        placeholder="Family Social History"
+                        placeholder="Historique social familial"
                     />
                 </div></></div>
             )}
             {formData.UpdateMedicalFile?.includes('SocialInformation') && (
                 <>
-                    <Form.Label>Update Social Information</Form.Label>
+                    <Form.Label>Mettre à jour les informations sociales</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
 
                     <Form.Select
@@ -497,7 +497,7 @@ const MedicalRelease = ({
                         required
                         className={`form-control ${!formData.maritalStatus ? 'is-invalid' : ''}`}
                     >
-                        <option value="" disabled>Marital Status</option>
+                        <option value="" disabled>État civil</option>
                         {maritalStatus.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
@@ -509,7 +509,7 @@ const MedicalRelease = ({
                         required
                         className={`form-control ${!formData.numberChildren ? 'is-invalid' : ''}`}
                     >
-                        <option value="" disabled>Number of Children</option>
+                        <option value="" disabled>Nombre d'enfants</option>
                         {numberChildren.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
@@ -521,7 +521,7 @@ const MedicalRelease = ({
                         name="patientReligion"
                         value={formData.patientReligion}
                         onChange={handleChange}
-                        placeholder="Cultural and/or Religious Considerations"
+                        placeholder="Considérations culturelles et/ou religieuses"
                     />
                     <Form.Select
                         name="financialStatus"
@@ -530,7 +530,7 @@ const MedicalRelease = ({
                         required
                         className={`form-control ${!formData.financialStatus ? 'is-invalid' : ''}`}
                     >
-                        <option value="" disabled>Financial Status</option>
+                        <option value="" disabled>Situation financière</option>
                         {financialStatus.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
@@ -539,7 +539,7 @@ const MedicalRelease = ({
             )}
             {formData.UpdateMedicalFile?.includes('Lifestyle') && (
                 <>
-                                    <Form.Label>Update Lifestyle Information</Form.Label>
+                                    <Form.Label>Mettre à jour les informations sur le mode de vie</Form.Label>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Control
@@ -547,7 +547,7 @@ const MedicalRelease = ({
                     name="patientSmoker"
                     value={formData.patientSmoker}
                     onChange={handleChange}
-                    placeholder="Smoking Habits"
+                    placeholder="Habitudes de tabagisme"
                     required
                     className={`form-control ${!formData.patientSmoker ? 'is-invalid' : ''}`}
 
@@ -557,7 +557,7 @@ const MedicalRelease = ({
                     name="patientAlcohol"
                     value={formData.patientAlcohol}
                     onChange={handleChange}
-                    placeholder="Alcohol Consumption"
+                    placeholder="Consommation d'alcool"
                     required
                     className={`form-control ${!formData.patientAlcohol ? 'is-invalid' : ''}`}
 
@@ -567,7 +567,7 @@ const MedicalRelease = ({
                     name="Other Substances"
                     value={formData.patientDrugs}
                     onChange={handleChange}
-                    placeholder="Drug Use and Other Substances"
+                    placeholder="Consommation de drogue et autres substances"
                     required
                     className={`form-control ${!formData.patientDrugs ? 'is-invalid' : ''}`}
 
@@ -580,7 +580,7 @@ const MedicalRelease = ({
                     name="patientExercise"
                     value={formData.patientExercise}
                     onChange={handleChange}
-                    placeholder="Patient Exercise Habits"
+                    placeholder="Habitudes d'exercice du patient"
                     required
                     className={`form-control ${!formData.patientExercise ? 'is-invalid' : ''}`}
 
@@ -590,7 +590,7 @@ const MedicalRelease = ({
                     name="patientDiet"
                     value={formData.patientDiet}
                     onChange={handleChange}
-                    placeholder="Dietary Information"
+                    placeholder="Informations alimentaires"
                     required
                     className={`form-control ${!formData.patientDiet ? 'is-invalid' : ''}`}
 
@@ -600,7 +600,7 @@ const MedicalRelease = ({
                     name="patientSleep"
                     value={formData.patientSleep}
                     onChange={handleChange}
-                    placeholder="Sleeping Patterns"
+                    placeholder="Habitudes de sommeil"
                     required
                     className={`form-control ${!formData.patientSleep ? 'is-invalid' : ''}`}
 
@@ -613,7 +613,7 @@ const MedicalRelease = ({
                     name="patientSexLife"
                     value={formData.patientSexLife}
                     onChange={handleChange}
-                    placeholder="Sexual Health (eg. Healthy)"
+                    placeholder="Santé sexuelle (ex: Saine)"
                     required
                     className={`form-control ${!formData.patientSexLife ? 'is-invalid' : ''}`}
 
@@ -623,7 +623,7 @@ const MedicalRelease = ({
                     name="patientJobRisks"
                     value={formData.patientJobRisks}
                     onChange={handleChange}
-                    placeholder="Job risks or hazards"
+                    placeholder="Risques ou dangers professionnels"
                     required
                     className={`form-control ${!formData.patientJobRisks ? 'is-invalid' : ''}`}
 
@@ -633,7 +633,7 @@ const MedicalRelease = ({
                     name="patientHazards"
                     value={formData.patientHazards}
                     onChange={handleChange}
-                    placeholder="Enviromental Hazards or Risks"
+                    placeholder="Dangers ou risques environnementaux"
                     required
                     className={`form-control ${!formData.patientHazards ? 'is-invalid' : ''}`}
 
@@ -643,7 +643,7 @@ const MedicalRelease = ({
                     name="patientOther"
                     value={formData.patientOther}
                     onChange={handleChange}
-                    placeholder="Other information or preferences"
+                    placeholder="Autres informations ou préférences"
                     required
                     className={`form-control ${!formData.patientOther ? 'is-invalid' : ''}`}
 
@@ -657,7 +657,7 @@ const MedicalRelease = ({
                             <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
 
                             <>
-                                                <Form.Label>Update Advanced Directives</Form.Label>
+                                                <Form.Label>Mettre à jour les directives anticipées</Form.Label>
 
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
                         <Form.Select
@@ -667,7 +667,7 @@ const MedicalRelease = ({
                             required
                             className={`form-control ${!formData.dnr ? 'is-invalid' : ''}`}
                         >
-                            <option value="" disabled>Living Will</option>
+                            <option value="" disabled>Testament de vie</option>
                             {dnr.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
@@ -679,7 +679,7 @@ const MedicalRelease = ({
                             required
                             className={`form-control ${!formData.attorney ? 'is-invalid' : ''}`}
                         >
-                            <option value="" disabled>Healthcare Power of Attorney</option>
+                            <option value="" disabled>Procuration pour soins de santé</option>
                             {attorney.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
@@ -691,7 +691,7 @@ const MedicalRelease = ({
                             required
                             className={`form-control ${!formData.dnrOrder ? 'is-invalid' : ''}`}
                         >
-                            <option value="" disabled>Do Not Resuscitate Order </option>
+                            <option value="" disabled>Ordre de non-réanimation </option>
                             {dnrOrder.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
@@ -704,7 +704,7 @@ const MedicalRelease = ({
                                 name="dnrOther"
                                 value={formData.dnrOther}
                                 onChange={handleChange}
-                                placeholder="Other DNR Instructions"
+                                placeholder="Autres instructions de non-réanimation"
                                 required
                                 className="form-control"
                             />
@@ -717,7 +717,7 @@ const MedicalRelease = ({
                                     name="attorneyName"
                                     value={formData.attorneyName}
                                     onChange={handleChange}
-                                    placeholder="Attorney Name"
+                                    placeholder="Nom du mandataire"
                                     required
                                     className="form-control"
                                 />
@@ -726,7 +726,7 @@ const MedicalRelease = ({
                                     name="attorneyRelation"
                                     value={formData.attorneyRelation}
                                     onChange={handleChange}
-                                    placeholder="Power of Attorney Relation"
+                                    placeholder="Relation du mandataire"
                                     required
                                     className={`form-control ${!formData.attorneyRelation ? 'is-invalid' : ''}`}
                                 />
@@ -735,7 +735,7 @@ const MedicalRelease = ({
                                     name="attorneyPH"
                                     value={formData.attorneyPH}
                                     onChange={handleChange}
-                                    placeholder="Attorney Phone Number"
+                                    placeholder="Numéro de téléphone du mandataire"
                                     required
                                     className="form-control"
                                 />
@@ -748,7 +748,7 @@ const MedicalRelease = ({
 
             {approximateCost > 0 && (
                 <Form.Label style={{ marginTop: '5px', color: '#28a745', fontWeight: 'bold' }}>
-                    This service will cost ${approximateCost.toLocaleString()}.
+                    Ce service coûtera ${approximateCost.toLocaleString()}.
                 </Form.Label>
             )}
             {approximateCost > 0 && (
@@ -756,7 +756,7 @@ const MedicalRelease = ({
                     <Form.Check
                         type="checkbox"
                         id="payNowCheckbox"
-                        label=" Pay Now?"
+                        label=" Payer maintenant?"
                         checked={formData.payNow === true || formData.payNow === 'true'}
                         onChange={(e) => {
                             setFormData(prev => ({
@@ -766,14 +766,14 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Tick this box if you wish to provide proof of payment now. Routing: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>
+                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Acheminement: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>
                     </span>
                 </Form.Group>
             )}
 
             {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
                 <Form.Group className="mb-3 upload-container">
-                    <Form.Label>Proof of Payment Image Upload</Form.Label>
+                    <Form.Label>Téléchargement de l'image de preuve de paiement</Form.Label>
                     <InputGroup>
                         <Form.Control
                             as="textarea"
@@ -781,7 +781,7 @@ const MedicalRelease = ({
                             name="paymentProofPhotos"
                             value={formData.paymentProofPhotos || ''}
                             onChange={handleChange}
-                            placeholder="Paste image URL or Upload"
+                            placeholder="Coller l'URL de l'image ou télécharger"
                             required
                             className={`form-control ${!formData.paymentProofPhotos ? 'is-invalid' : ''}`}
                             onPaste={(e) => {
@@ -827,14 +827,14 @@ const MedicalRelease = ({
                             }}
                         >
                             <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                            {isUploading ? ' Uploading...' : ' Upload Image(s)'}
+                            {isUploading ? ' Téléchargement...' : ' Télécharger image(s)'}
                         </Button>
                     </InputGroup>
                     <span className="helper-text">
-                        Upload proof of payment. Supports clipboard pasting (Ctrl+V). Hosted by ImgBB.
+                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                     </span>
                     {formData.paymentProofPhotos && formData.paymentProofPhotos.split(',').map((url, index) => (
-                        url.trim() && <img key={index} src={url.trim()} alt={`Payment Proof ${index + 1}`} style={{ maxWidth: '100px', maxHeight: '100px', marginTop: '5px', marginRight: '5px', border: '1px solid #30363d' }} />
+                        url.trim() && <img key={index} src={url.trim()} alt={`Preuve de paiement ${index + 1}`} style={{ maxWidth: '100px', maxHeight: '100px', marginTop: '5px', marginRight: '5px', border: '1px solid #30363d' }} />
                     ))}
                 </Form.Group>
             )}

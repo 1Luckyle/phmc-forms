@@ -106,10 +106,10 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
 
     return (
         <>
-            <p>Please be careful when Attaching Reports, it may take some time to process. Also attaching reports will automatically add the decedent name and decedent OOC!!!</p>
+            <p>Veuillez faire attention lors de l'ajout de rapports, cela peut prendre un certain temps à traiter. De plus, l'ajout de rapports ajoutera automatiquement le nom du défunt et le HRP du défunt !!!</p>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                                    <Form.Label style={{ marginBottom: 0 }}>Employee Credentials</Form.Label>
+                                    <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                                     <button
                                         type="button"
                                         onClick={() => setShowEmployeeModal(true)}
@@ -121,7 +121,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         }}
                                     >
                                         <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i> {/* Changed icon */}
-                                        Missing Name?
+                                        Nom manquant?
                                     </button>
 
                                 </div>
@@ -133,7 +133,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                 onChange={(selectedOption, actionMeta) => handleSelectChange(selectedOption, actionMeta)}
                                     options={coronerGroupedOptions}
                                     isClearable
-                                    placeholder="Search or select coroner..."
+                                    placeholder="Rechercher ou sélectionner un coroner..."
                                     className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                                 styles={customSelectStyles}
                                 />
@@ -144,7 +144,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         name="requestingOfficer"
                                         value={formData.requestingOfficer}
                                         onChange={handleChange}
-                                        placeholder="Requesting Officer Name"
+                                        placeholder="Nom de l'officier demandeur"
                                         required
                                         className={`form-control ${!formData.requestingOfficer ? 'is-invalid' : ''}`}
                                         />
@@ -157,7 +157,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                     disabled={isLoadingData || !agencyDataStore || Object.keys(agencyDataStore).length === 0}
                                 >
                                     <option value="" disabled>
-                                        {isLoadingData ? 'Loading departments...' : 'Select Department'}
+                                        {isLoadingData ? 'Chargement des départements...' : 'Sélectionner un département'}
                                     </option>
                                     {agencyDataStore && Object.entries(agencyDataStore).map(([key, agency]) => (
                                         <option key={key} value={key}>
@@ -168,7 +168,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
 </div>
 <Form.Group className="mb-3">
     <Form.Label>
-        Coroner Contact Number:
+        Numéro de contact du coroner:
     </Form.Label>
     {/* Keep the input field */}
     <Form.Control
@@ -177,7 +177,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         value={formData.coronerPHNumber}
         onChange={handleChange}
         required
-        placeholder="Coroner Phone Number"
+        placeholder="Numéro de téléphone du coroner"
         className={`form-control ${!formData.coronerPHNumber ? 'is-invalid' : ''}`}
     />
 </Form.Group>
@@ -188,7 +188,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                             name="decedentName"
                                             value={formData.decedentName}
                                             onChange={handleChange}
-                                            placeholder="Decedent's IC name"
+                                            placeholder="Nom IC du défunt"
                                             required
                                             className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
                                         />
@@ -197,27 +197,27 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         name="decedentOOC"
                                         value={formData.decedentOOC}
                                         onChange={handleChange}
-                                        placeholder="Decedent's OOC name"
+                                        placeholder="Nom HRP du défunt"
                                         required
                                         className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
                                         />
                                     </div>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Paste Form BBCode:</Form.Label>
+                                    <Form.Label>Coller le BBCode du formulaire:</Form.Label>
                                     <Form.Control
                                         as="textarea"
                                         name="deathReport"
                                         value={formData.deathReport}
                                         onChange={handleChange}
-                                        placeholder="Paste Paperwork (Death Report, Mass Fatality) BBCode here"
+                                        placeholder="Collez ici le BBCode de la paperasse (Rapport de décès, Fatalité de masse)"
                                         rows="2"
                                         className={`form-control ${!formData.deathReport ? 'is-invalid' : ''}`}
 
                                     />
                                 </Form.Group>
             <Form.Group className="mb-3">
-                <Form.Label>Additional Reports:</Form.Label>
+                <Form.Label>Rapports supplémentaires:</Form.Label>
                 <div className="reports-container">
                     {(formData.additionalReports || []).map((report, index) => (
                         <div key={index} className="report-input">
@@ -225,7 +225,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                 as="textarea"
                                 value={report}
                                 onChange={(e) => handleReportChange(index, e.target.value)}
-                                placeholder="Paste additional coroner report here"
+                                placeholder="Collez ici le rapport de coroner supplémentaire"
                                 rows="4"
                                 className={`form-control ${!report ? 'is-invalid' : ''}`}
                             />
@@ -234,7 +234,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                 onClick={() => removeReport(index)}
                                 className="remove-report-button"
                             >
-                                Remove Report
+                                Retirer le rapport
                             </Button>
                         </div>
                     ))}
@@ -244,7 +244,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                             onClick={addReport}
                             className="add-report-button"
                         >
-                            Add Another Report
+                            Ajouter un autre rapport
                         </Button>
 
                         <Button
@@ -263,7 +263,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                             })}
                             className="email-button"
                         >
-                            <i className="fas fa-save"></i> Attach Paperwork (Death Reports, Mass Fatality)
+                            <i className="fas fa-save"></i> Joindre la paperasse (Rapports de décès, Fatalité de masse)
                         </Button>
 
                     </div>

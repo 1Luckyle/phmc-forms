@@ -19,7 +19,7 @@ const SicknessEmail = ({
     return (
         <>
             <Form.Group className="mb-3">
-                <Form.Label>Email Purpose</Form.Label>
+                <Form.Label>Objet de l'email</Form.Label>
                 <Form.Select
                     name="emailPurpose"
                     value={formData.emailPurpose}
@@ -27,40 +27,40 @@ const SicknessEmail = ({
                     required
                     className={`form-control ${!formData.emailPurpose ? 'is-invalid' : ''}`}
                 >
-                    <option value="" disabled>Select Email Type</option>
-                    <option value="Sickness Note">Sickness Note</option>
-                    <option value="Illness Confirmation">Illness Confirmation</option>
+                    <option value="" disabled>Sélectionner le type d'email</option>
+                    <option value="Sickness Note">Certificat de maladie</option>
+                    <option value="Illness Confirmation">Confirmation de maladie</option>
                 </Form.Select>
             </Form.Group>
 
             <Form.Group className="mb-3">
-                <Form.Label>Recipient Name</Form.Label>
+                <Form.Label>Nom du destinataire</Form.Label>
                 <Form.Control
                     type="text"
                     name="emailRecipient"
                     value={formData.emailRecipient}
                     onChange={handleChange}
-                    placeholder="e.g., Employer, School, Individual"
+                    placeholder="ex: Employeur, École, Individu"
                     required
                     className={`form-control ${!formData.emailRecipient ? 'is-invalid' : ''}`}
                 />
             </Form.Group>
 
             <Form.Group className="mb-3">
-                <Form.Label>Patient Name</Form.Label>
+                <Form.Label>Nom du patient</Form.Label>
                 <Form.Control
                     type="text"
                     name="patientName"
                     value={formData.patientName}
                     onChange={handleChange}
-                    placeholder="Full Name of Patient"
+                    placeholder="Nom complet du patient"
                     required
                     className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
                 />
             </Form.Group>
 
             <Form.Group className="mb-3">
-                <Form.Label>Date Patient Was Seen at PHMC</Form.Label>
+                <Form.Label>Date de consultation du patient au PHMC</Form.Label>
                 <Form.Control
                     type="date"
                     name="dateOfVisit"
@@ -74,7 +74,7 @@ const SicknessEmail = ({
             {formData.emailPurpose === 'Sickness Note' && (
                 <>
                     <Form.Group className="mb-3">
-                        <Form.Label>Sickness Start Date</Form.Label>
+                        <Form.Label>Date de début de la maladie</Form.Label>
                         <Form.Control
                             type="date"
                             name="sicknessStartDate"
@@ -85,7 +85,7 @@ const SicknessEmail = ({
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Sickness End Date</Form.Label>
+                        <Form.Label>Date de fin de la maladie</Form.Label>
                         <Form.Control
                             type="date"
                             name="sicknessEndDate"
@@ -96,14 +96,14 @@ const SicknessEmail = ({
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Reason for Sickness (Brief)</Form.Label>
+                        <Form.Label>Raison de la maladie (Bref)</Form.Label>
                         <Form.Control
                             as="textarea"
                             rows={2}
                             name="reasonForSickness"
                             value={formData.reasonForSickness}
                             onChange={handleChange}
-                            placeholder="e.g., Influenza, common cold, minor injury"
+                            placeholder="ex: Grippe, rhume, blessure mineure"
                             required
                             className={`form-control ${!formData.reasonForSickness ? 'is-invalid' : ''}`}
                         />
@@ -114,25 +114,25 @@ const SicknessEmail = ({
             {formData.emailPurpose === 'Illness Confirmation' && (
                 <>
                     <Form.Group className="mb-3">
-                        <Form.Label>Diagnosed Illness/Condition</Form.Label>
+                        <Form.Label>Maladie/Condition diagnostiquée</Form.Label>
                         <Form.Control
                             type="text"
                             name="illnessCondition"
                             value={formData.illnessCondition}
                             onChange={handleChange}
-                            placeholder="e.g., Strep Throat, Fractured Arm, Anxiety Disorder"
+                            placeholder="ex: Angine streptococcique, Bras fracturé, Trouble anxieux"
                             required
                             className={`form-control ${!formData.illnessCondition ? 'is-invalid' : ''}`}
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Purpose of Confirmation</Form.Label>
+                        <Form.Label>Objet de la confirmation</Form.Label>
                         <Form.Control
                             type="text"
                             name="confirmationPurpose"
                             value={formData.confirmationPurpose}
                             onChange={handleChange}
-                            placeholder="e.g., For employment records, school attendance, insurance claim"
+                            placeholder="ex: Pour dossiers d'emploi, présence scolaire, réclamation d'assurance"
                             required
                             className={`form-control ${!formData.confirmationPurpose ? 'is-invalid' : ''}`}
                         />
@@ -142,7 +142,7 @@ const SicknessEmail = ({
 
             {/* NEW: Attach Report Summary Section with Consent Confirmation */}
             <Form.Group className="mb-3">
-                <Form.Label>Attached Report Summary (from ER Protocol or Consultation Notes)</Form.Label>
+                <Form.Label>Résumé de rapport joint (du protocole ER ou notes de consultation)</Form.Label>
                 <InputGroup>
                     <Form.Control
                         as="textarea"
@@ -152,8 +152,8 @@ const SicknessEmail = ({
                         onChange={handleChange}
                         placeholder={
                             consentConfirmed
-                                ? "BBCode summary of an attached report will appear here."
-                                : "Click 'Confirm Consent' to enable attaching reports. YOU MUST GET PATIENT CONSENT BEFORE ATTACHING A REPORT SUMMARY!!! BIG HIPAA VIOLATION IF NO APPROVAL AND YOU INCLUDE IMPORTANT MEDICAL INFORMATION"
+                                ? "Le résumé BBCode d'un rapport joint apparaîtra ici."
+                                : "Cliquez sur 'Confirmer le consentement' pour activer la pièce jointe de rapports. VOUS DEVEZ OBTENIR LE CONSENTEMENT DU PATIENT AVANT DE JOINDRE UN RAPPORT!!! GROSSE VIOLATION HIPAA SI AUCUNE APPROBATION ET VOUS INCLUEZ DES INFORMATIONS MÉDICALES IMPORTANTES"
                         }
                         readOnly={!consentConfirmed} // Make textarea read-only until consent is confirmed
                     />
@@ -162,7 +162,7 @@ const SicknessEmail = ({
                             variant="warning" // Use a warning color to draw attention
                             onClick={() => setConsentConfirmed(true)}
                         >
-                            <i className="fas fa-check-circle"></i> Confirm Consent
+                            <i className="fas fa-check-circle"></i> Confirmer le consentement
                         </Button>
                     ) : (
                         <Button
@@ -176,17 +176,17 @@ const SicknessEmail = ({
                                 }));
                             })}
                         >
-                            <i className="fas fa-paperclip"></i> Attach Report
+                            <i className="fas fa-paperclip"></i> Joindre un rapport
                         </Button>
                     )}
                 </InputGroup>
                 <span className="helper-text">
-                    First, confirm you have patient consent. Then, click "Attach Report" to select a saved ER Protocol or Consultation Notes report. Its BBCode will be inserted here.
+                    D'abord, confirmez que vous avez le consentement du patient. Ensuite, cliquez sur "Joindre un rapport" pour sélectionner un rapport de protocole ER ou de notes de consultation sauvegardé. Son BBCode sera inséré ici.
                 </span>
             </Form.Group>
 
             <Form.Group className="mb-3">
-                <Form.Label>PHMC Employee Sending Email</Form.Label>
+                <Form.Label>Employé PHMC envoyant l'email</Form.Label>
                 <Select
                     name="phmcEmployee"
                     value={phmcGroupedOptions
@@ -197,7 +197,7 @@ const SicknessEmail = ({
                     }}
                     options={phmcGroupedOptions}
                     isClearable
-                    placeholder="Search or select PHMC employee..."
+                    placeholder="Rechercher ou sélectionner un employé PHMC..."
                     className={`form-control ${!formData.phmcEmployee ? 'is-invalid' : ''}`}
                     styles={{
                         control: (base) => ({
@@ -234,7 +234,7 @@ const SicknessEmail = ({
             </Form.Group>
 
             <Form.Group className="mb-3 upload-container">
-                <Form.Label>Employee Signature Image (Optional)</Form.Label>
+                <Form.Label>Image de signature de l'employé (Optionnel)</Form.Label>
                 <InputGroup>
                     <Form.Control
                         as="textarea"
@@ -242,7 +242,7 @@ const SicknessEmail = ({
                         name="phmcEmployeeSignatureImage"
                         value={formData.phmcEmployeeSignatureImage || ''}
                         onChange={handleChange}
-                        placeholder="Paste image URL or Upload"
+                        placeholder="Coller l'URL de l'image ou télécharger"
                         className="form-control"
                         onPaste={(e) => {
                             const clipboardData = e.clipboardData || window.clipboardData;
@@ -287,12 +287,12 @@ const SicknessEmail = ({
                         }}
                     >
                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                        {isUploading ? ' Uploading...' : ' Upload Image'}
+                        {isUploading ? ' Téléchargement...' : ' Télécharger image'}
                     </Button>
                 </InputGroup>
                 <ImagePreview imageUrls={formData.phmcEmployeeSignatureImage} />
                 <span className="helper-text">
-                    Upload your signature image. Supports clipboard pasting (Ctrl+V). Hosted by ImgBB.
+                    Télécharger votre image de signature. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                 </span>
             </Form.Group>
                         <Form.Control

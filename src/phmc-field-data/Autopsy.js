@@ -31,9 +31,9 @@ const Autopsy = ({
         }));
         handleCloseDiagramModal();
         if (showNotification) {
-            showNotification("Autopsy diagram marker data saved!", "save");
+            showNotification("Données des marqueurs du diagramme d'autopsie enregistrées!", "save");
         } else {
-            console.warn("[Autopsy.js] showNotification is not available in handleSaveAutopsyDiagram");
+            console.warn("[Autopsy.js] showNotification n'est pas disponible dans handleSaveAutopsyDiagram");
         }
     };
 
@@ -67,12 +67,12 @@ const Autopsy = ({
     const handleAutopsyImageUpload = async (event) => {
         const files = event.target.files;
         if (!files || files.length === 0) {
-            showNotification('No files selected for autopsy photos.', 'warning');
+            showNotification('Aucun fichier sélectionné pour les photos d\'autopsie.', 'warning');
             return;
         }
 
         let indefiniteNotificationId = null;
-        indefiniteNotificationId = showNotification('Processing autopsy photos, please wait...', 'info-circle', 0);
+        indefiniteNotificationId = showNotification('Traitement des photos d\'autopsie, veuillez patienter...', 'info-circle', 0);
 
         const uploadedImageLinks = [];
 
@@ -95,15 +95,15 @@ const Autopsy = ({
                         autopsyPhotosUnavailable: false
                     };
                 });
-                showNotification(`Successfully uploaded ${uploadedImageLinks.length}/${files.length} image(s). Links added to the photography field.`, 'check-circle', 7000);
+                showNotification(`${uploadedImageLinks.length}/${files.length} image(s) téléchargée(s) avec succès. Liens ajoutés au champ photographie.`, 'check-circle', 7000);
             } else if (files.length > 0) {
-                showNotification(`No images were successfully uploaded.`, 'warning', 5000);
+                showNotification(`Aucune image n'a été téléchargée avec succès.`, 'warning', 5000);
             }
 
         } catch (error) {
-            console.error('[Autopsy Photos] An error occurred during image upload:', error);
+            console.error('[Photos d\'autopsie] Une erreur s\'est produite lors du téléchargement de l\'image:', error);
             Sentry.captureException(error, { extra: { context: 'handleAutopsyImageUpload' } });
-            showNotification(`Error uploading images: ${error.message}`, 'exclamation-triangle', 7000);
+            showNotification(`Erreur lors du téléchargement des images: ${error.message}`, 'exclamation-triangle', 7000);
         } finally {
             if (indefiniteNotificationId) {
                 removeNotification(indefiniteNotificationId);
@@ -148,7 +148,7 @@ const Autopsy = ({
                     name="decedentName"
                     value={formData.decedentName || ''}
                     onChange={handleChange}
-                    placeholder="Decedent's IC name"
+                    placeholder="Nom IC du défunt"
                     required
                     className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
                 />
@@ -157,19 +157,19 @@ const Autopsy = ({
                     name="decedentOOC"
                     value={formData.decedentOOC || ''}
                     onChange={handleChange}
-                    placeholder="Decedent's OOC name"
+                    placeholder="Nom HRP du défunt"
                     required
                     className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
                 />
             </div>
-            <Form.Label style={{ marginBottom: 0 }}>Date & Time of Autopsy </Form.Label>
+            <Form.Label style={{ marginBottom: 0 }}>Date et heure de l'autopsie </Form.Label>
              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
                 <Form.Control
                     type="date"
                     name="autopsyDate"
                     value={formData.autopsyDate || ''}
                     onChange={handleChange}
-                    placeholder="Autopsy Date"
+                    placeholder="Date de l'autopsie"
                     required
                     className={`form-control ${!formData.autopsyDate ? 'is-invalid' : ''}`}
                 />
@@ -178,7 +178,7 @@ const Autopsy = ({
                     name="autopsyTime"
                     value={formData.autopsyTime || ''}
                     onChange={handleChange}
-                    placeholder="Autopsy Time"
+                    placeholder="Heure de l'autopsie"
                     required
                     className={`form-control ${!formData.autopsyTime ? 'is-invalid' : ''}`}
                 />
@@ -186,16 +186,16 @@ const Autopsy = ({
 
             {/* Button to open the Autopsy Diagram Modal */}
             <Form.Group className="mb-3">
-                <Form.Label>Autopsy Injury Diagram</Form.Label>
+                <Form.Label>Diagramme des blessures de l'autopsie</Form.Label>
                 <div>
                     <Button variant="info" onClick={handleOpenDiagramModal}>
                         <i className="fas fa-male" style={{ marginRight: '5px' }}></i>
-                        Open Injury Diagram Tool ({formData.autopsyDiagramMarkers?.length || 0} markers)
+                        Ouvrir l'outil de diagramme des blessures ({formData.autopsyDiagramMarkers?.length || 0} marqueurs)
                     </Button>
                 </div>
             </Form.Group>
 
-            <Form.Label>Cause(s) of Death:</Form.Label>
+            <Form.Label>Cause(s) du décès:</Form.Label>
             {(formData.autopsyDeathCauses || ['']).map((cause, index) => (
                 <div key={`deathcause-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <Form.Control
@@ -203,7 +203,7 @@ const Autopsy = ({
                         value={cause}
                         rows={2}
                         onChange={(e) => handleDeathCauseChange(index, e.target.value)}
-                        placeholder={`Cause of Death ${index + 1}`}
+                        placeholder={`Cause du décès ${index + 1}`}
                         required={index === 0 && !cause.trim()}
                         className={`form-control ${index === 0 && !cause.trim() && (formData.autopsyDeathCauses?.length > 0) ? 'is-invalid' : ''}`}
                     />
@@ -213,7 +213,7 @@ const Autopsy = ({
                             onClick={() => handleRemoveDeathCause(index)}
                             style={{ marginLeft: '8px', transform: 'translateY(-11px)' }}
                             size="sm"
-                            title="Remove Cause"
+                            title="Retirer la cause"
                         >
                             <i className="fas fa-times"></i>
                         </Button>
@@ -221,40 +221,40 @@ const Autopsy = ({
                 </div>
             ))}
             <Button variant="secondary" onClick={handleAddDeathCause} size="sm" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
-                <i className="fas fa-plus"></i> Add New Death Cause
+                <i className="fas fa-plus"></i> Ajouter une nouvelle cause de décès
             </Button>
 
-            <Form.Label>Manner of Death:</Form.Label>
+            <Form.Label>Mode de décès:</Form.Label>
             <Form.Control
                 type="text"
                 name="deathType"
                 value={formData.deathType || ''}
                 onChange={handleChange}
-                placeholder="e.g., Homicide, Accident, Natural"
+                placeholder="ex: Homicide, Accident, Naturel"
                 className={`form-control mb-2 ${!formData.deathType ? 'is-invalid' : ''}`}
             />
 
-            <Form.Label>How Injury Occurred:</Form.Label>
+            <Form.Label>Comment la blessure s'est produite:</Form.Label>
             <Form.Control
                 type="text"
                 name="causeOfDeath"
                 value={formData.causeOfDeath || ''}
                 onChange={handleChange}
-                placeholder="e.g., Multiple gunshot wounds"
+                placeholder="ex: Multiples blessures par balle"
                 className={`form-control mb-2 ${!formData.causeOfDeath ? 'is-invalid' : ''}`}
             />
-            <Form.Label>External Examination:</Form.Label>
+            <Form.Label>Examen externe:</Form.Label>
             <Form.Control
                 as="textarea" // Changed to textarea for potentially longer descriptions
                 rows={3}
                 name="externalExamination"
                 value={formData.externalExamination || ''}
                 onChange={handleChange}
-                placeholder="Detailed external examination findings (e.g., identifying marks, condition of the body, specific injuries observed externally)"
+                placeholder="Résultats détaillés de l'examen externe (ex: marques d'identification, état du corps, blessures spécifiques observées extérieurement)"
                 className={`form-control mb-2 ${!formData.externalExamination ? 'is-invalid' : ''}`}
             />
 
-            <Form.Label>Anatomic Summary Items:</Form.Label>
+            <Form.Label>Éléments du résumé anatomique:</Form.Label>
             {(formData.autopsyAnatomicSummaryItems || ['']).map((item, index) => (
                 <div key={`anatomic-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <Form.Control
@@ -262,7 +262,7 @@ const Autopsy = ({
                         rows={2}
                         value={item}
                         onChange={(e) => handleAnatomicSummaryItemChange(index, e.target.value)}
-                        placeholder={`Anatomic Summary Item ${index + 1}`}
+                        placeholder={`Élément du résumé anatomique ${index + 1}`}
                         className={`form-control ${index === 0 && !item.trim() && (formData.autopsyAnatomicSummaryItems?.length > 0) ? 'is-invalid' : ''}`}
                     />
                     {formData.autopsyAnatomicSummaryItems && formData.autopsyAnatomicSummaryItems.length > 0 && (
@@ -271,7 +271,7 @@ const Autopsy = ({
                             onClick={() => handleRemoveAnatomicSummaryItem(index)}
                             style={{ marginLeft: '8px', transform: 'translateY(-11px)' }}
                             size="sm"
-                            title="Remove Summary Item"
+                            title="Retirer l'élément du résumé"
                         >
                             <i className="fas fa-times"></i>
                         </Button>
@@ -279,21 +279,21 @@ const Autopsy = ({
                 </div>
             ))}
             <Button variant="secondary" onClick={handleAddAnatomicSummaryItem} size="sm" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
-                <i className="fas fa-plus"></i> Add Anatomic Summary Item
+                <i className="fas fa-plus"></i> Ajouter un élément de résumé anatomique
             </Button>
 
-            <Form.Label>Radiology Result:</Form.Label>
+            <Form.Label>Résultat de radiologie:</Form.Label>
             <Form.Control
                 as="textarea" // Changed to textarea for potentially longer descriptions
                 rows={2}
                 name="RadiologyResult"
                 value={formData.RadiologyResult || ''}
                 onChange={handleChange}
-                placeholder="e.g., No foreign objects detected. X-rays show three projectiles in the body."
+                placeholder="ex: Aucun objet étranger détecté. Les radiographies montrent trois projectiles dans le corps."
                 className={`form-control mb-2 ${!formData.RadiologyResult ? 'is-invalid' : ''}`}
             />
 
-            <Form.Label>Photography (Comma-separated URLs):</Form.Label>
+            <Form.Label>Photographie (URLs séparées par des virgules):</Form.Label>
             <InputGroup className="mb-1">
                 <Form.Control
                     as="textarea" // Changed to textarea for better visibility of multiple URLs
@@ -301,7 +301,7 @@ const Autopsy = ({
                     name="autopsyAlbumUrl" // Keeping name for consistency, though it's not an album URL anymore
                     value={formData.autopsyAlbumUrl || ''}
                     onChange={handleChange}
-                    placeholder="Paste ImgBB URLs here, separated by commas, or use upload button."
+                    placeholder="Collez les URLs ImgBB ici, séparées par des virgules, ou utilisez le bouton de téléchargement."
                     className={`form-control ${!formData.autopsyPhotosUnavailable && !(formData.autopsyAlbumUrl || '').trim() ? 'is-invalid' : ''}`}
                     disabled={formData.autopsyPhotosUnavailable}
                 />
@@ -318,13 +318,13 @@ const Autopsy = ({
                     }}
                 >
                     <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                    {isUploading ? ' Processing...' : ' Upload Photo(s)'}
+                    {isUploading ? ' Traitement...' : ' Télécharger photo(s)'}
                 </Button>
             </InputGroup>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                 <Form.Check
                     type="checkbox"
-                    label="Photographs are unavailable for this case"
+                    label="Les photographies ne sont pas disponibles pour ce cas"
                     name="autopsyPhotosUnavailable"
                     checked={formData.autopsyPhotosUnavailable || false}
                     onChange={handleChange}
@@ -332,18 +332,18 @@ const Autopsy = ({
                 />
             </div>
 
-            <Form.Label>Opinion (Medical Examiner's Synopsis):</Form.Label>
+            <Form.Label>Opinion (Synopsis de l'examinateur médical):</Form.Label>
             <Form.Control
                 as="textarea"
                 name="synopsis"
                 value={formData.synopsis || ''}
                 onChange={handleChange}
                 rows="5"
-                placeholder="Medical Examiner's opinion on the decedent's condition and cause of death"
+                placeholder="Opinion de l'examinateur médical sur l'état du défunt et la cause du décès"
                 className={`form-control mb-2 ${!formData.synopsis ? 'is-invalid' : ''}`}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Medical Examiner Performing Autopsy</Form.Label>
+                <Form.Label style={{ marginBottom: 0 }}>Examinateur médical effectuant l'autopsie</Form.Label>
                 <button
                     type="button"
                     onClick={() => setShowEmployeeModal(true)}
@@ -351,7 +351,7 @@ const Autopsy = ({
                     style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', lineHeight: '1.2' }}
                 >
                     <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Missing Name?
+                    Nom manquant?
                 </button>
             </div>
             <Select
@@ -362,7 +362,7 @@ const Autopsy = ({
                 onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Search or select coroner..."
+                placeholder="Rechercher ou sélectionner un coroner..."
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{
                     control: (base, state) => ({

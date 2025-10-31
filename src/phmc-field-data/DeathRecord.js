@@ -67,7 +67,7 @@ const DeathRecord = ({
     return (
         <>
             <Form.Group className="mb-3">
-                <Form.Label>Death Record Type</Form.Label>
+                <Form.Label>Type de dossier de décès</Form.Label>
                 <Form.Select
                     name="deathRecordType"
                     value={formData.deathRecordType}
@@ -75,7 +75,7 @@ const DeathRecord = ({
                     required
                     className={`form-control ${!formData.deathRecordType ? 'is-invalid' : ''}`}
                 >
-                    <option value="" disabled>Select Public Death Case Record Type </option>
+                    <option value="" disabled>Sélectionner le type de dossier de cas de décès public</option>
                     {selectOptions.deathRecordType.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -85,75 +85,72 @@ const DeathRecord = ({
             {formData.deathRecordType && (
                 <>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Control type="text" name="deathReportPostId" value={formData.deathReportPostId} onChange={handleUrlChange} placeholder="Decedent Death Report URL" className={`form-control ${!formData.deathReportPostId ? 'is-invalid' : ''}`} />
-                                            <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Enter Full Decedent Name" className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
-                                            <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="Decedent OOC name" className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
-
-</div>
-                        <Form.Label>Date of Death</Form.Label>
+                        <Form.Control type="text" name="deathReportPostId" value={formData.deathReportPostId} onChange={handleUrlChange} placeholder="URL du rapport de décès du défunt" className={`form-control ${!formData.deathReportPostId ? 'is-invalid' : ''}`} />
+                        <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Entrez le nom complet du défunt" className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
+                        <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="Nom HRP du défunt" className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                    </div>
+                    <Form.Label>Date du décès</Form.Label>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Control type="date" name="dateOfDeath" value={formData.dateOfDeath} onChange={handleChange} className={`form-control ${!formData.dateOfDeath ? 'is-invalid' : ''}`} />
 
                         <Form.Select name="caseStatus" value={formData.caseStatus} onChange={handleChange} className={`form-control ${!formData.caseStatus ? 'is-invalid' : ''}`}>
-                            <option value="">Case Status</option>
+                            <option value="">Statut du cas</option>
                             {selectOptions.caseStatusOptions.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>
-</div>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Select name="bodyStatus" value={formData.bodyStatus} onChange={handleChange} className={`form-control ${!formData.bodyStatus ? 'is-invalid' : ''}`}>
-                            <option value="">Body Release Status</option>
+                            <option value="">Statut de libération du corps</option>
                             {selectOptions.bodyStatusOptions.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>
 
                         <Form.Select name="sex" value={formData.sex} onChange={handleChange} className={`form-control ${!formData.sex ? 'is-invalid' : ''}`}>
-                            <option value="">Gender</option>
+                            <option value="">Genre</option>
                             {selectOptions.gender.map(option => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>
-                        </div>
+                    </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-
-                        <Form.Control type="text" name="ethnicity" value={formData.ethnicity} onChange={handleChange} placeholder="Enter Ethnicity"className={`form-control ${!formData.ethnicity ? 'is-invalid' : ''}`}/>
-                        <Form.Control type="text" name="placeOfDeath" value={formData.placeOfDeath} onChange={handleChange} placeholder="Enter Place of Death" className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}/>
-                        </div>
-                                            <div style={{ display: 'flex', gap: '10px' }}>
-
-                        <Form.Control type="text" name="age" value={formData.age} onChange={handleChange} placeholder="Decedent's age" className={`form-control ${!formData.age ? 'is-invalid' : ''}`} />
+                        <Form.Control type="text" name="ethnicity" value={formData.ethnicity} onChange={handleChange} placeholder="Entrez l'ethnicité" className={`form-control ${!formData.ethnicity ? 'is-invalid' : ''}`}/>
+                        <Form.Control type="text" name="placeOfDeath" value={formData.placeOfDeath} onChange={handleChange} placeholder="Entrez le lieu du décès" className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}/>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <Form.Control type="text" name="age" value={formData.age} onChange={handleChange} placeholder="Âge du défunt" className={`form-control ${!formData.age ? 'is-invalid' : ''}`} />
 
                         <Form.Select name="manner" value={formData.manner} onChange={handleChange} className={`form-control ${!formData.manner ? 'is-invalid' : ''}`}>
-                            <option value="">Manner of Death</option>
+                            <option value="">Mode de décès</option>
                             {selectOptions.mannerOfDeathOptions.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>
-                        </div>
+                    </div>
 
 
                     {formData.deathRecordType === 'Unidentified' && (
                         <>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="hairColor" value={formData.hairColor} onChange={handleChange} placeholder="Enter Hair Color" className={`form-control ${!formData.hairColor ? 'is-invalid' : ''}`}/>
-                                <Form.Control type="text" name="eyeColor" value={formData.eyeColor} onChange={handleChange} placeholder="Enter Eye Color" className={`form-control ${!formData.eyeColor ? 'is-invalid' : ''}`}/>
-                                <Form.Control type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="Enter Weight" className={`form-control ${!formData.weight ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="hairColor" value={formData.hairColor} onChange={handleChange} placeholder="Entrez la couleur des cheveux" className={`form-control ${!formData.hairColor ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="eyeColor" value={formData.eyeColor} onChange={handleChange} placeholder="Entrez la couleur des yeux" className={`form-control ${!formData.eyeColor ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="Entrez le poids" className={`form-control ${!formData.weight ? 'is-invalid' : ''}`}/>
                             </div>
 
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="height" value={formData.height} onChange={handleChange} placeholder="Enter Height" className={`form-control ${!formData.height ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="height" value={formData.height} onChange={handleChange} placeholder="Entrez la taille" className={`form-control ${!formData.height ? 'is-invalid' : ''}`}/>
 
-                                <Form.Control as="textarea" rows={1} name="tattoos" value={formData.tattoos} onChange={handleChange} placeholder="Enter Tattoos or None" className={`form-control ${!formData.tattoos ? 'is-invalid' : ''}`} />
+                                <Form.Control as="textarea" rows={1} name="tattoos" value={formData.tattoos} onChange={handleChange} placeholder="Entrez les tatouages ou Aucun" className={`form-control ${!formData.tattoos ? 'is-invalid' : ''}`} />
 
-                                <Form.Control as="textarea" rows={1} name="jewelry" value={formData.jewelry} onChange={handleChange} placeholder="Enter Jewelry or None" className={`form-control ${!formData.jewelry ? 'is-invalid' : ''}`}/>
+                                <Form.Control as="textarea" rows={1} name="jewelry" value={formData.jewelry} onChange={handleChange} placeholder="Entrez les bijoux ou Aucun" className={`form-control ${!formData.jewelry ? 'is-invalid' : ''}`}/>
                             </div>
 
                             <Form.Group className="mb-3">
-                                <Form.Control as="textarea" rows={3} name="comments" value={formData.comments} onChange={handleChange} placeholder="Enter Comments" className={`form-control ${!formData.comments ? 'is-invalid' : ''}`} />
+                                <Form.Control as="textarea" rows={3} name="comments" value={formData.comments} onChange={handleChange} placeholder="Entrez des commentaires" className={`form-control ${!formData.comments ? 'is-invalid' : ''}`} />
                             </Form.Group>
                         </>
                     )}
@@ -161,81 +158,81 @@ const DeathRecord = ({
                     {formData.deathRecordType !== 'Unidentified' && (
                         <>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="causeA" value={formData.causeA} onChange={handleChange} placeholder="Enter Cause A" className={`form-control ${!formData.causeA ? 'is-invalid' : ''}`} />
-                                <Form.Control type="text" name="causeB" value={formData.causeB} onChange={handleChange} placeholder="Enter Cause B" className={`form-control ${!formData.causeB ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="causeA" value={formData.causeA} onChange={handleChange} placeholder="Entrez la cause A" className={`form-control ${!formData.causeA ? 'is-invalid' : ''}`} />
+                                <Form.Control type="text" name="causeB" value={formData.causeB} onChange={handleChange} placeholder="Entrez la cause B" className={`form-control ${!formData.causeB ? 'is-invalid' : ''}`}/>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="causeC" value={formData.causeC} onChange={handleChange} placeholder="Enter Cause C" className={`form-control ${!formData.causeC ? 'is-invalid' : ''}`}/>
-                                <Form.Control type="text" name="causeD" value={formData.causeD} onChange={handleChange} placeholder="Enter Cause D" className={`form-control ${!formData.causeD ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="causeC" value={formData.causeC} onChange={handleChange} placeholder="Entrez la cause C" className={`form-control ${!formData.causeC ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="causeD" value={formData.causeD} onChange={handleChange} placeholder="Entrez la cause D" className={`form-control ${!formData.causeD ? 'is-invalid' : ''}`}/>
                             </div>
-                            <Form.Control as="textarea" rows={3} name="otherSignificantConditions" value={formData.otherSignificantConditions} onChange={handleChange} placeholder="Enter Other Significant Conditions" className={`form-control ${!formData.otherSignificantConditions ? 'is-invalid' : ''}`} />
+                            <Form.Control as="textarea" rows={3} name="otherSignificantConditions" value={formData.otherSignificantConditions} onChange={handleChange} placeholder="Entrez d'autres conditions significatives" className={`form-control ${!formData.otherSignificantConditions ? 'is-invalid' : ''}`} />
                         </>
                     )}
-                    <Form.Label>Investigator</Form.Label>
-                                <Select
-                                    name="coronerEmployee"
-                                    value={coronerGroupedOptions
-                                        .flatMap(group => group.options)
-                                        .find(option => option.value === formData.coronerEmployee) || null}
-                                    // Corrected onChange handler:
-                                    onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
-                                    options={coronerGroupedOptions}
-                                    isClearable
-                                    placeholder="Search or select coroner..."
-                                    className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
-                                    styles={{ 
-                                        control: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: '#16202c',
-                                            color: '#eeeeeeb0',
-                                            borderColor: !formData.coronerEmployee ? '#dc3545' : (state.isFocused ? '#86b7fe' : '#6c757d'),
-                                            '&:hover': {
-                                                borderColor: !formData.coronerEmployee ? '#dc3545' : '#86b7fe'
-                                            },
-                                            boxShadow: !formData.coronerEmployee ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' : (state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null),
-                                        }),
-                                        menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                                        option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                                        singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                                        input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                                        placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                                        group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                                        groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
-                                    }}
-                                />
-                                <Form.Label></Form.Label>
-                        <Form.Label>Chief Medical Examiner or Deputy Chief Medical Examiner</Form.Label>
-                                <Select
-                name="chiefMedicalExaminer"
-                value={coronerGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.chiefMedicalExaminer) || null}
-                onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'chiefMedicalExaminer' })}
-                options={coronerGroupedOptions.filter(group => group.label === 'Chief Boss' || group.label === 'Deputy Chief Medical Examiner-Coroner')}
-                isClearable
-                placeholder="Select a Chief Medical Examiner..."
-                className={`form-control ${!formData.chiefMedicalExaminer ? 'is-invalid' : ''}`}
-                styles={{ 
-                    control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: !formData.chiefMedicalExaminer ? '#dc3545' : (state.isFocused ? '#86b7fe' : '#6c757d'),
-                        '&:hover': {
-                            borderColor: !formData.chiefMedicalExaminer ? '#dc3545' : '#86b7fe'
-                        },
-                        boxShadow: !formData.chiefMedicalExaminer ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' : (state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null),
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
-                }}
-            />
-            <Form.Label></Form.Label>
+                    <Form.Label>Enquêteur</Form.Label>
+                    <Select
+                        name="coronerEmployee"
+                        value={coronerGroupedOptions
+                            .flatMap(group => group.options)
+                            .find(option => option.value === formData.coronerEmployee) || null}
+                        // Corrected onChange handler:
+                        onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
+                        options={coronerGroupedOptions}
+                        isClearable
+                        placeholder="Rechercher ou sélectionner un coroner..."
+                        className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                        styles={{ 
+                            control: (base, state) => ({
+                                ...base,
+                                backgroundColor: '#16202c',
+                                color: '#eeeeeeb0',
+                                borderColor: !formData.coronerEmployee ? '#dc3545' : (state.isFocused ? '#86b7fe' : '#6c757d'),
+                                '&:hover': {
+                                    borderColor: !formData.coronerEmployee ? '#dc3545' : '#86b7fe'
+                                },
+                                boxShadow: !formData.coronerEmployee ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' : (state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null),
+                            }),
+                            menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
+                            option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
+                            singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                            input: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                            placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                            group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
+                            groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
+                        }}
+                    />
+                    <Form.Label></Form.Label>
+                    <Form.Label>Examinateur médical en chef ou Examinateur médical en chef adjoint</Form.Label>
+                    <Select
+                        name="chiefMedicalExaminer"
+                        value={coronerGroupedOptions
+                            .flatMap(group => group.options)
+                            .find(option => option.value === formData.chiefMedicalExaminer) || null}
+                        onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'chiefMedicalExaminer' })}
+                        options={coronerGroupedOptions.filter(group => group.label === 'Chief Boss' || group.label === 'Deputy Chief Medical Examiner-Coroner')}
+                        isClearable
+                        placeholder="Sélectionner un examinateur médical en chef..."
+                        className={`form-control ${!formData.chiefMedicalExaminer ? 'is-invalid' : ''}`}
+                        styles={{ 
+                            control: (base, state) => ({
+                                ...base,
+                                backgroundColor: '#16202c',
+                                color: '#eeeeeeb0',
+                                borderColor: !formData.chiefMedicalExaminer ? '#dc3545' : (state.isFocused ? '#86b7fe' : '#6c757d'),
+                                '&:hover': {
+                                    borderColor: !formData.chiefMedicalExaminer ? '#dc3545' : '#86b7fe'
+                                },
+                                boxShadow: !formData.chiefMedicalExaminer ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' : (state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null),
+                            }),
+                            menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
+                            option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
+                            singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                            input: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                            placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                            group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
+                            groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
+                        }}
+                    />
+                    <Form.Label></Form.Label>
 
                 </>
             )}

@@ -130,7 +130,7 @@ const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId, onRemove, showR
         <span style={{ display: 'flex', alignItems: 'center' }}>
             {showRemoveButton && (
                 <Button variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); onRemove(); }} style={{ marginRight: '10px' }}>
-                    Remove
+                    Retirer
                 </Button>
             )}
             <i className={`fas ${isOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
@@ -244,7 +244,7 @@ const MassFatality = ({
     return (
         <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Employee Credentials</Form.Label>
+                <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                 <button
                     type="button"
                     onClick={() => setShowEmployeeModal(true)}
@@ -256,7 +256,7 @@ const MassFatality = ({
                     }}
                 >
                     <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Missing Name?
+                    Nom manquant?
                 </button>
             </div>
             <Select
@@ -268,7 +268,7 @@ const MassFatality = ({
                 onChange={(selectedOption) => handleSelectChange(selectedOption, 'coronerEmployee')}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Search or select coroner..."
+                placeholder="Rechercher ou sélectionner un coroner..."
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{ 
                     control: (base, state) => ({
@@ -295,9 +295,9 @@ const MassFatality = ({
             />
             <Form.Label></Form.Label>
             <Form.Label>
-                Dispatch Time | Incident Location
+                Heure d'envoi | Lieu de l'incident
                 <span style={{ fontSize: '0.8em', color: '#6c757d', marginLeft: '10px' }}>
-                    (Current Server Time: {currentUtcTime})
+                    (Heure actuelle du serveur: {currentUtcTime})
                 </span>
             </Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -314,7 +314,7 @@ const MassFatality = ({
                 name="placeOfDeath"
                 value={formData.placeOfDeath}
                 onChange={handleChange}
-                placeholder="Mass Fatality Incident Location "
+                placeholder="Lieu de l'incident de fatalité de masse"
                 required
                 className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}
             />
@@ -323,7 +323,7 @@ const MassFatality = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                     <Form.Check
                         type="checkbox"
-                        label="Report Requested?"
+                        label="Rapport demandé?"
                         name="showRequestingOfficerInput"
                         checked={formData.showRequestingOfficerInput || false}
                         onChange={handleChange}
@@ -338,7 +338,7 @@ const MassFatality = ({
                         required
                         className={`form-control ${!formData.department ? 'is-invalid' : ''}`}
                     >
-                        <option value="" disabled>Select Requesting Agency</option>
+                        <option value="" disabled>Sélectionner l'agence demandeur</option>
                         {/* --- Updated to use requestingAgencyOptions --- */}
                         {requestingAgencyOptions.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
@@ -350,21 +350,21 @@ const MassFatality = ({
                             name="requestingOfficer"
                             value={formData.requestingOfficer || ''}
                             onChange={handleChange}
-                            placeholder="e.g: Officer John Doe, LSPD"
+                            placeholder="ex: Officier John Doe, LSPD"
                         />
                     )}
                 </div>
-                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Brief Summary - (This covers what you initially located on scene and the overview of the patients) " required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
+                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé bref - (Ceci couvre ce que vous avez initialement trouvé sur les lieux et l'aperçu des patients)" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
                 
             </Form.Group>
 
             <Button variant="primary" onClick={addDecedent} style={{ marginBottom: '1rem' }}>
-                Add New Decedent
+                Ajouter un nouveau défunt
             </Button>
             {(formData.decedents || []).map((dec, idx) => (
                 <div key={idx}>
                     <CollapsibleHeader
-                        title={`Decedent #${idx + 1} Information`}
+                        title={`Informations du défunt #${idx + 1}`}
                         isOpen={!dec.collapsed}
                         onToggle={() => toggleCollapse(idx)}
                         sectionId={`decedent-${idx}`}
@@ -378,17 +378,17 @@ const MassFatality = ({
                                             <Form.Check type="radio" id={`janeDoe-${idx}`} name={`decedentName-${idx}`} label="Jane Doe" checked={dec.decedentName === 'Jane Doe'} onChange={handleDoeChange(idx, 'jane')} inline />
                                         </div>
                                         <div style={{ display: 'flex', gap: '10px' }}>
-                                            <Form.Control type="text" value={dec.decedentName} placeholder="Decedent Name (IC)" onChange={e => updateDecedent(idx, 'decedentName', e.target.value)} />
-                                            <Form.Control type="text" value={dec.decedentOOC} placeholder="Decedent Name (OOC)" onChange={e => updateDecedent(idx, 'decedentOOC', e.target.value)} />
+                                            <Form.Control type="text" value={dec.decedentName} placeholder="Nom du défunt (IC)" onChange={e => updateDecedent(idx, 'decedentName', e.target.value)} />
+                                            <Form.Control type="text" value={dec.decedentOOC} placeholder="Nom du défunt (HRP)" onChange={e => updateDecedent(idx, 'decedentOOC', e.target.value)} />
                                         </div>
-                                                            <Form.Label>Pronounced Time of Death</Form.Label>
+                                                            <Form.Label>Heure du décès prononcée</Form.Label>
 
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                 <Form.Control type="datetime-local" value={dec.pronouncedTimeOfDeath} onChange={e => updateDecedent(idx, 'pronouncedTimeOfDeath', e.target.value)} />
-                                      <Form.Control type="text" value={dec.probableCauseOfDeath} placeholder="Probable cause of Death" onChange={e => updateDecedent(idx, 'probableCauseOfDeath', e.target.value)} />
+                                      <Form.Control type="text" value={dec.probableCauseOfDeath} placeholder="Cause probable du décès" onChange={e => updateDecedent(idx, 'probableCauseOfDeath', e.target.value)} />
 
                              <Form.Select value={dec.typeOfDeath} onChange={e => updateDecedent(idx, 'typeOfDeath', e.target.value)}>
-                                    <option value="" disabled>Select Type of Death</option>
+                                    <option value="" disabled>Sélectionner le type de décès</option>
                                     {typeOfDeathOptions.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                     ))}
@@ -396,24 +396,24 @@ const MassFatality = ({
                                 </div>   
                                                                         <div style={{ display: 'flex', gap: '10px' }}>
 
-                                <Form.Control type="text" value={dec.placeOfDeath} placeholder='Place of Death' onChange={e => updateDecedent(idx, 'placeOfDeath', e.target.value)} />
+                                <Form.Control type="text" value={dec.placeOfDeath} placeholder='Lieu du décès' onChange={e => updateDecedent(idx, 'placeOfDeath', e.target.value)} />
                                 <Form.Select value={dec.mannerOfDeath} onChange={e => updateDecedent(idx, 'mannerOfDeath', e.target.value)}>
-                                    <option value="" disabled>Select Manner of Death</option>
+                                    <option value="" disabled>Sélectionner le mode de décès</option>
                                     {mannerOfDeathOptions.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                     ))}
                                 </Form.Select>
                                 </div>
                             <Form.Group className="mb-3">
-                                <Form.Label>Decedent Injuries / Things of Note</Form.Label>
+                                <Form.Label>Blessures du défunt / Points à noter</Form.Label>
                                 <Form.Control as="textarea" rows={3} value={dec.synopsis} onChange={e => updateDecedent(idx, 'synopsis', e.target.value)} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <label>Evidence Locker Submission:</label>
+                                <label>Soumission au casier à preuves:</label>
                                 <Form.Check
                                     type="checkbox"
                                     id="evidenceLocker"
-                                    label="       I have submitted evidence to the evidence locker"
+                                    label="       J'ai soumis des preuves au casier à preuves"
                                     checked={evidenceLockerChecked}
                                     onChange={(e) => {
                                         setEvidenceLockerChecked(e.target.checked);
@@ -439,21 +439,21 @@ const MassFatality = ({
                                         name="evidenceLockerID"
                                         value={formData.evidenceLockerID || generateEvidenceLockerID()}
                                         onChange={handleChange}
-                                        placeholder={generateEvidenceLockerID() + " Your Submission Number Here"}
+                                        placeholder={generateEvidenceLockerID() + " Votre numéro de soumission ici"}
                                         required
                                         className={`form-control ${!formData.evidenceLockerID ? 'is-invalid' : ''}`}
                                     />
                                 )}
                             </Form.Group>
                             <Form.Group className="mb-3 upload-container">
-                                <Form.Label>Scene Photos</Form.Label>
+                                <Form.Label>Photos de la scène</Form.Label>
                                 <InputGroup>
                                     <Form.Control
                                         as="textarea"
                                         rows={2}
                                         value={dec.scenePhotos}
                                         onChange={e => updateDecedent(idx, 'scenePhotos', e.target.value)}
-                                        placeholder="Paste image URL or Upload"
+                                        placeholder="Coller l'URL de l'image ou télécharger"
                                         onPaste={e => {
                                             const clipboardData = e.clipboardData || window.clipboardData;
                                             const pastedData = clipboardData.getData('text');
@@ -496,21 +496,21 @@ const MassFatality = ({
                                         }}
                                     >
                                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                                        {isUploading ? ' Uploading...' : ' Upload Image(s)'}
+                                        {isUploading ? ' Téléchargement...' : ' Télécharger image(s)'}
                                     </Button>
                                 </InputGroup>
                                 <ImagePreview imageUrls={dec.scenePhotos} />
-                                <span className="helper-text">This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></span>
+                                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
                             </Form.Group>
                             <Form.Group className="mb-3 upload-container">
-                                <Form.Label>Morgue and CDNA Images</Form.Label>
+                                <Form.Label>Images de la morgue et CDNA</Form.Label>
                                 <InputGroup>
                                     <Form.Control
                                         as="textarea"
                                         rows={2}
                                         value={dec.additionalImages}
                                         onChange={e => updateDecedent(idx, 'additionalImages', e.target.value)}
-                                        placeholder="Paste image URL or Upload"
+                                        placeholder="Coller l'URL de l'image ou télécharger"
                                         onPaste={e => {
                                             const clipboardData = e.clipboardData || window.clipboardData;
                                             const pastedData = clipboardData.getData('text');
@@ -553,11 +553,11 @@ const MassFatality = ({
                                         }}
                                     >
                                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                                        {isUploading ? ' Uploading...' : ' Upload Image(s)'}
+                                        {isUploading ? ' Téléchargement...' : ' Télécharger image(s)'}
                                     </Button>
                                 </InputGroup>
                                 <ImagePreview imageUrls={dec.additionalImages} />
-                                <span className="helper-text">This supports clipboard uploading, ctrl + V! | Hosted by ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></span>
+                                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
                             </Form.Group>
                             
                         </div>
