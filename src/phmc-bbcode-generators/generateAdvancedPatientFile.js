@@ -51,7 +51,7 @@
         } else {
             paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
         }
-        const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n') : '';
+        const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `${photo.trim()}`).join('\n') : '';
 
         let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]
 
@@ -63,17 +63,17 @@ ${patientName}
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img]
 [b][size=150]INFORMATIONS AVANCÉES DU PATIENT[/size][/center][/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations générales[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Titre: ${patientTitle}[/td][td] Nom complet: ${patientName}
+[table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
-[tr][td] Identité de genre: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Discord ID: ${patientDiscord}))
+[tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
     [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Contact d'urgence[/b][/color][/size][/center][/divboxcolor]
-    [table][tr][td] Nom complet: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-    [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Discord ID: ${patientEmergencyContactDiscord}))
+    [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
+    [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Groupe sanguin: [/td][td] [cb${formData.patientBloodType === 'A+' ? 'c' : ''}] A+ [cb${formData.patientBloodType === 'A-' ? 'c' : ''}] A- [cb${formData.patientBloodType === 'B+' ? 'c' : ''}] B+ [cb${formData.patientBloodType === 'B-' ? 'c' : ''}] B- [cb${formData.patientBloodType === 'O+' ? 'c' : ''}] O+ [cb${formData.patientBloodType === 'O-' ? 'c' : ''}] O- [cb${formData.patientBloodType === 'AB+' ? 'c' : ''}] AB+ [cb${formData.patientBloodType === 'AB-' ? 'c' : ''}] AB-
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
 [tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
@@ -81,28 +81,28 @@ ${patientName}
 [tr][td] Traumatismes et blessures: [/td][td] ${patientNotes}
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents de santé mentale[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Troubles de santé mentale diagnostiqués: [/td][td] ${patientMental}
-[tr][td] Thérapies et conseils: [/td][td] ${patientTherapy}
-[tr][td] Déclencheurs ou sensibilités: [/td][td] ${patientTriggers}
-[tr][td] Systèmes de soutien et d'adaptation: [/td][td] ${patientSupport}
-[tr][td] Antécédents ou tendances d'automutilation: [/td][td] ${patientHarm}
+[tr][td] Thérapies et séances de conseil: [/td][td] ${patientTherapy}
+[tr][td] Déclencheurs ou phobies sensoriels: [/td][td] ${patientTriggers}
+[tr][td] Systèmes de soutien et mécanismes d'adaptation personnels: [/td][td] ${patientSupport}
+[tr][td] Antécédents d'automutilation / tentatives ou danger pour autrui: [/td][td] ${patientHarm}
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux familiaux[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]
+[table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Membres de la famille immédiate: [/td][td] ${patientFam}
 [tr][td] Maladies génétiques connues: [/td][td] ${patientGenetic}
 [tr][td] Antécédents sociaux familiaux: [/td][td] ${patientFamSocial}
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations sociales[/b][/color][/size][/center][/divboxcolor]
-[table][tr][td] Statut marital: [cb${formData.maritalStatus === 'Single' ? 'c' : ''}] Célibataire [cb${formData.maritalStatus === 'Married' ? 'c' : ''}] Marié(e) [cb${formData.maritalStatus === 'Divorced' ? 'c' : ''}] Divorcé(e)/Veuf(ve) [/td][td] Nombre d'enfants: [cb${formData.numberChildren === '0' ? 'c' : ''}] 0 [cb${formData.numberChildren === '1' ? 'c' : ''}] 1 ou plus
+[table][tr][td] État civil: [cb${formData.maritalStatus === 'Single' ? 'c' : ''}] Célibataire [cb${formData.maritalStatus === 'DomesticPartnership' ? 'c' : ''}] En couple / Union civile [cb${formData.maritalStatus === 'Married' ? 'c' : ''}] Marié(e) [cb${formData.maritalStatus === 'Divorced' ? 'c' : ''}] Divorcé(e) [cb${formData.maritalStatus === 'Widowed' ? 'c' : ''}] Veuf(ve) [/td][td] Nombre d'enfants: [cb${formData.numberChildren === '0' ? 'c' : ''}] 0 [cb${formData.numberChildren === '1' ? 'c' : ''}] 1 [cb${formData.numberChildren === '2' ? 'c' : ''}] 2 [cb${formData.numberChildren === '3+' ? 'c' : ''}] 3 ou plus
 [tr][td] Considérations culturelles et/ou religieuses: ${patientReligion} [/td][td] Situation financière: [cb${formData.financialStatus === 'LowIncome' ? 'c' : ''}] Faible revenu [cb${formData.financialStatus === 'MiddleIncome' ? 'c' : ''}] Revenu moyen [cb${formData.financialStatus === 'HighIncome' ? 'c' : ''}] Revenu élevé
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations sur le mode de vie[/b][/color][/size][/center][/divboxcolor]
 [table][tr][td] Statut tabagique: ${patientSmoker} [/td][td] Consommation d'alcool: ${patientAlcohol}[/td][td] Autres substances: ${patientDrugs}
 [tr][td] Habitudes d'exercice: ${patientExercise}[/td][td] Informations diététiques: ${patientDiet}[/td][td] Habitudes de sommeil: ${patientSleep}
 [tr][td] Santé sexuelle: ${patientSexLife}[/td][td] Risques professionnels: ${patientJobRisks}[/td][td] Risques environnementaux: ${patientHazards}[/table]
-[table][tr][td] Autres informations et préférences: ${patientOther}
+[table][tr][td] Autres informations: ${patientOther}
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Directives anticipées[/b][/color][/size][/center][/divboxcolor]
 [divbox=transparent][list=none]Je soussigné(e), ${patientName}, fournis par la présente les directives anticipées suivantes concernant mes soins de santé, à suivre dans l'éventualité où je deviendrais incapable de prendre des décisions concernant mon traitement médical:
@@ -136,8 +136,8 @@ Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partag
 
 Je soussigné(e), ${patientName}, conserve le droit de révoquer ce consentement à tout moment en avisant le Pillbox Hill Medical Center par écrit. Cependant, je comprends également que la révocation du consentement peut limiter la capacité des professionnels de la santé à me fournir des soins optimaux et coordonnés.[/list][/divbox]
     [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Paiement[/b][/color][/size][/center][/divboxcolor]
-    [table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté. [size=70](voir la question 14 dans le fil FAQ sur la façon de payer)[/size][/td][td]
-    ${paymentSection}
+    [table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.[/td][td]
+    ${scenePhotosBBCode ? `[url=${scenePhotosBBCode}]Preuve de paiement[/url]` : 'Aucune preuve de paiement fournie'}
     [/table]`
             return bbCode;
             };

@@ -258,7 +258,7 @@ const MedicalRelease = ({
                     name="StupidDateFrom"
                     value={formData.StupidDateFrom}
                     onChange={handleChange}
-                    placeholder="Date de traitement du jj / mm / aaaa"
+                    placeholder="Date de traitement du jj/mm/aaaa"
                     required
                     className={`form-control ${!formData.StupidDateFrom ? 'is-invalid' : ''}`}
                 />
@@ -267,7 +267,7 @@ const MedicalRelease = ({
                 name="StupidDateTo"
                 value={formData.StupidDateTo}
                 onChange={handleChange}
-                placeholder="Date de traitement au jj / mm / aaaa"
+                placeholder="Date de traitement au jj/mm/aaaa"
                 required
                 className={`form-control ${!formData.StupidDateTo ? 'is-invalid' : ''}`}
                 />
