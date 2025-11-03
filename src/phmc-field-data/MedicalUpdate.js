@@ -217,7 +217,7 @@ const MedicalRelease = ({
                     name="patientNameNew"
                     value={formData.patientNameNew}
                     onChange={handleChange}
-                    placeholder="Nom du patient"
+                    placeholder="Prénom & Nom du patient"
                     required
                     className={`form-control ${!formData.patientNameNew ? 'is-invalid' : ''}`}
 
@@ -250,7 +250,7 @@ const MedicalRelease = ({
                     name="patientAddressNew"
                     value={formData.patientGenderNew}
                     onChange={handleChange}
-                    placeholder="Genre du patient"
+                    placeholder="Genre à l'état civil du patient"
                     required
                     className={`form-control ${!formData.patientGenderNew ? 'is-invalid' : ''}`}
 
@@ -260,7 +260,7 @@ const MedicalRelease = ({
                     name="patientRaceNew"
                     value={formData.patientRaceNew}
                     onChange={handleChange}
-                    placeholder="Race du patient"
+                    placeholder="Ethnicité du patient"
                     required
                     className={`form-control ${!formData.patientRaceNew ? 'is-invalid' : ''}`}
 
@@ -284,7 +284,7 @@ const MedicalRelease = ({
                     name="patientDiscordNew"
                     value={formData.patientDiscordNew}
                     onChange={handleChange}
-                    placeholder="(( ID Discord du patient )) "
+                    placeholder="(( Pseudo Discord du patient )) "
                     required
                     className={`form-control ${!formData.patientDiscordNew ? 'is-invalid' : ''}`}
 
@@ -307,7 +307,7 @@ const MedicalRelease = ({
                         name="patientMental"
                         value={formData.patientMental}
                         onChange={handleChange}
-                        placeholder="Conditions de santé mentale diagnostiquées"
+                        placeholder="Troubles de santé mentale diagnostiqués"
                     />
                     <Form.Control
                         type="text"
@@ -321,7 +321,7 @@ const MedicalRelease = ({
                         name="patientTriggers"
                         value={formData.patientTriggers}
                         onChange={handleChange}
-                        placeholder="Déclencheurs ou problèmes sensoriels"
+                        placeholder="Déclencheurs ou phobies sensoriels"
                     />
 
                                 </div>
@@ -358,7 +358,7 @@ const MedicalRelease = ({
                             name="patientEmergencyContact"
                             value={formData.patientEmergencyContact}
                             onChange={handleChange}
-                            placeholder="Nom complet du contact d'urgence"
+                            placeholder="Prénom & Nom complet du contact d'urgence"
                             required
                             className={`form-control ${!formData.patientEmergencyContact ? 'is-invalid' : ''}`}
                         />
@@ -378,7 +378,7 @@ const MedicalRelease = ({
                             name="patientEmergencyContactNumber"
                             value={formData.patientEmergencyContactNumber}
                             onChange={handleChange}
-                            placeholder="Numéro de contact du contact d'urgence"
+                            placeholder="Numéro de téléphone du contact d'urgence"
                             required
                             className={`form-control ${!formData.patientEmergencyContactNumber ? 'is-invalid' : ''}`}
                         />
@@ -387,7 +387,7 @@ const MedicalRelease = ({
                             name="patientEmergencyContactDiscord"
                             value={formData.patientEmergencyContactDiscord}
                             onChange={handleChange}
-                            placeholder="(( Discord du contact d'urgence du patient )) "
+                            placeholder="(( Pseudo Discord du contact d'urgence )) "
                             required
                             className={`form-control ${!formData.patientEmergencyContactDiscord ? 'is-invalid' : ''}`}
                         />
@@ -420,7 +420,7 @@ const MedicalRelease = ({
                             name="patientAllergies"
                             value={formData.patientAllergies}
                             onChange={handleChange}
-                            placeholder="Allergies connues du patient"
+                            placeholder="Allergies connues"
                             required
                             className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
                         />
@@ -429,7 +429,7 @@ const MedicalRelease = ({
                             name="patientCurrentMedicine"
                             value={formData.patientCurrentMedicine}
                             onChange={handleChange}
-                            placeholder="Médicaments actuels du patient"
+                            placeholder="Médicaments actuels"
                             required
                             className={`form-control ${!formData.patientCurrentMedicine ? 'is-invalid' : ''}`}
                         />
@@ -440,7 +440,7 @@ const MedicalRelease = ({
                             name="patientChronicDiseases"
                             value={formData.patientChronicDiseases}
                             onChange={handleChange}
-                            placeholder="Conditions chroniques du patient"
+                            placeholder="Maladies chroniques"
                             required
                             className={`form-control ${!formData.patientChronicDiseases ? 'is-invalid' : ''}`}
                         />
@@ -449,7 +449,7 @@ const MedicalRelease = ({
                             name="patientNotes"
                             value={formData.patientNotes}
                             onChange={handleChange}
-                            placeholder="Traumatismes et blessures du patient"
+                            placeholder="Traumatismes et blessures"
                             required
                             className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
                         />
@@ -474,14 +474,14 @@ const MedicalRelease = ({
                         name="patientGenetic"
                         value={formData.patientGenetic}
                         onChange={handleChange}
-                        placeholder="Conditions génétiques"
+                        placeholder="Maladies génétiques connues"
                     />
                     <Form.Control
                         type="text"
                         name="patientFamSocial"
                         value={formData.patientFamSocial}
                         onChange={handleChange}
-                        placeholder="Historique social familial"
+                        placeholder="Antécédents sociaux familiaux"
                     />
                 </div></></div>
             )}
@@ -572,7 +572,6 @@ const MedicalRelease = ({
                     className={`form-control ${!formData.patientDrugs ? 'is-invalid' : ''}`}
 
                 />
-
             </div>          
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Control
@@ -590,7 +589,7 @@ const MedicalRelease = ({
                     name="patientDiet"
                     value={formData.patientDiet}
                     onChange={handleChange}
-                    placeholder="Informations alimentaires"
+                    placeholder="Habitudes alimentaires"
                     required
                     className={`form-control ${!formData.patientDiet ? 'is-invalid' : ''}`}
 
@@ -613,7 +612,7 @@ const MedicalRelease = ({
                     name="patientSexLife"
                     value={formData.patientSexLife}
                     onChange={handleChange}
-                    placeholder="Santé sexuelle (ex: Saine)"
+                    placeholder="Santé sexuelle"
                     required
                     className={`form-control ${!formData.patientSexLife ? 'is-invalid' : ''}`}
 
@@ -633,7 +632,7 @@ const MedicalRelease = ({
                     name="patientHazards"
                     value={formData.patientHazards}
                     onChange={handleChange}
-                    placeholder="Dangers ou risques environnementaux"
+                    placeholder="Dangers environnementaux ou expositions"
                     required
                     className={`form-control ${!formData.patientHazards ? 'is-invalid' : ''}`}
 
@@ -643,7 +642,7 @@ const MedicalRelease = ({
                     name="patientOther"
                     value={formData.patientOther}
                     onChange={handleChange}
-                    placeholder="Autres informations ou préférences"
+                    placeholder="Autres informations"
                     required
                     className={`form-control ${!formData.patientOther ? 'is-invalid' : ''}`}
 
@@ -704,7 +703,7 @@ const MedicalRelease = ({
                                 name="dnrOther"
                                 value={formData.dnrOther}
                                 onChange={handleChange}
-                                placeholder="Autres instructions de non-réanimation"
+                                placeholder="Autres instructions de testament de vie"
                                 required
                                 className="form-control"
                             />
@@ -717,7 +716,7 @@ const MedicalRelease = ({
                                     name="attorneyName"
                                     value={formData.attorneyName}
                                     onChange={handleChange}
-                                    placeholder="Nom du mandataire"
+                                    placeholder="Prénom & Nom du mandataire"
                                     required
                                     className="form-control"
                                 />
@@ -766,7 +765,7 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Acheminement: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>
+                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Redirection: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a> Veuillez vous connecter à Fleeca avant le paiement.
                     </span>
                 </Form.Group>
             )}

@@ -148,7 +148,7 @@ const BasicPatientFile = ({
                             </OverlayTrigger>
                             <OverlayTrigger
                                 placement="top"
-                                overlay={<Tooltip id="tooltip-patientGender" className="phmc-tooltip">Genre à l'état civildu patient (Masculin / Féminin / Autre).</Tooltip>}
+                                overlay={<Tooltip id="tooltip-patientGender" className="phmc-tooltip">Genre à l'état civil du patient (Masculin / Féminin).</Tooltip>}
                             >
                                 <Form.Control
                                     type="text"
@@ -258,7 +258,7 @@ const BasicPatientFile = ({
                                 name="patientEmergencyContactNumber"
                                 value={formData.patientEmergencyContactNumber}
                                 onChange={handleChange}
-                                placeholder="Numéro de contact du contact d'urgence"
+                                placeholder="Numéro de téléphone du contact d'urgence"
                                 required
                                 className={`form-control ${!formData.patientEmergencyContactNumber ? 'is-invalid' : ''}`}
                             />
@@ -419,7 +419,7 @@ const BasicPatientFile = ({
             </Form.Group>
                          {isExempt && (
                                             <span className="helper-text">
-                    Informations sur l'exemption : Les citoyens qui sont soit mineurs (moins de 18 ans), soit des citoyens de l'État à faible revenu sont exemptés du paiement de ce service.
+                    Informations sur l'exemption: Les citoyens qui sont soit mineurs (moins de 18 ans), soit des citoyens de l'État à faible revenu sont exemptés du paiement de ce service.
                 </span>
 
             )}

@@ -14,7 +14,7 @@ const generateDeathReport = (formData) => {
         mannerOfDeath,
         typeOfDeath,
         scenePhotos,
-                agencyDataStore,
+        agencyDataStore,
         additionalImages,
         evidenceLockerID,
         morgueStatus,
@@ -90,7 +90,7 @@ const getDepartmentFullName = (shortCode) => {
 
 Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à l'emplacement de [bold]${placeOfDeath || 'Lieu inconnu'}[/bold]. Après avoir reçu l'appel de[bold] ${getDepartmentFullName(department) || 'Département inconnu'}[/bold], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [bold]${dateTime || 'Date/Heure inconnue'}[/bold].
 
-Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Numéro de série [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié l'individu comme étant [bold]${decedentName || 'Défunt non identifié'}[/bold], qui est estimé être décédé à [bold]${pronouncedTimeOfDeath || 'Heure inconnue'}[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
+Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Identifiant de badge [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié l'individu comme étant [bold]${decedentName || 'Défunt non identifié'}[/bold], qui est estimé être décédé à [bold]${pronouncedTimeOfDeath || 'Heure inconnue'}[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
 
 D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [bold]${probableCauseOfDeath || 'Indéterminée'}[/bold]. La manière du décès a été classée comme [bold]${mannerOfDeath || 'Indéterminée'}[/bold].
 [/divbox]
