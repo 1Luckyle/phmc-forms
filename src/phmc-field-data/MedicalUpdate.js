@@ -102,7 +102,7 @@ const MedicalRelease = ({
 
     return (
         <>
-        <Form.Label>Titre / Nom du patient / Date de naissance</Form.Label>
+        <Form.Label>Titre / Prénom (Deuxième Prénom) & Nom du patient / Date de naissance</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select
             name="patientTitleOptions"
@@ -122,7 +122,7 @@ const MedicalRelease = ({
                     name="patientName"
                     value={formData.patientName}
                     onChange={handleChange}
-                    placeholder="Nom du patient"
+                    placeholder="Prénom & Nom du patient"
                     required
                     className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
 
@@ -166,7 +166,7 @@ const MedicalRelease = ({
                     name="patientDiscord"
                     value={formData.patientDiscord}
                     onChange={handleChange}
-                    placeholder="(( ID Discord du patient )) "
+                    placeholder="(( Pseudo Discord du patient )) "
                     required
                     className={`form-control ${!formData.patientDiscord ? 'is-invalid' : ''}`}
 

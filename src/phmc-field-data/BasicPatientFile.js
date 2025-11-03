@@ -87,7 +87,7 @@ const BasicPatientFile = ({
 
                             <OverlayTrigger
                                 placement="top"
-                                overlay={<Tooltip id="tooltip-patientTitle" className="phmc-tooltip">Sélectionnez le titre du patient (M., Mme, etc.).</Tooltip>}
+                                overlay={<Tooltip id="tooltip-patientTitle" className="phmc-tooltip">Sélectionner le titre du patient (M., Mme, etc.).</Tooltip>}
                             >
                                 <Form.Select
                                     name="patientTitle"
@@ -104,14 +104,14 @@ const BasicPatientFile = ({
                             </OverlayTrigger>
                             <OverlayTrigger
                                 placement="top"
-                                overlay={<Tooltip id="tooltip-patientName" className="phmc-tooltip">Entrez le nom complet du patient.</Tooltip>}
+                                overlay={<Tooltip id="tooltip-patientName" className="phmc-tooltip">Entrer le nom complet du patient (Prénom / Deuxième Prénom / Nom de famille).</Tooltip>}
                             >
                                 <Form.Control
                                     type="text"
                                     name="patientName"
                                     value={formData.patientName}
                                     onChange={handleChange}
-                                    placeholder="Nom du patient"
+                                    placeholder="Prénom & Nom du patient"
                                     required
                                     className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
                                 />
@@ -148,28 +148,28 @@ const BasicPatientFile = ({
                             </OverlayTrigger>
                             <OverlayTrigger
                                 placement="top"
-                                overlay={<Tooltip id="tooltip-patientGender" className="phmc-tooltip">Genre du patient.</Tooltip>}
+                                overlay={<Tooltip id="tooltip-patientGender" className="phmc-tooltip">Genre à l'état civildu patient (Masculin / Féminin / Autre).</Tooltip>}
                             >
                                 <Form.Control
                                     type="text"
                                     name="patientGender"
                                     value={formData.patientGender}
                                     onChange={handleChange}
-                                    placeholder="Genre du patient"
+                                    placeholder="Genre à l'état civil du patient"
                                     required
                                     className={`form-control ${!formData.patientGender ? 'is-invalid' : ''}`}
                                 />
                             </OverlayTrigger>
                             <OverlayTrigger
                                 placement="top"
-                                overlay={<Tooltip id="tooltip-patientRace" className="phmc-tooltip">Race/ethnicité du patient.</Tooltip>}
+                                overlay={<Tooltip id="tooltip-patientRace" className="phmc-tooltip">Ethnicité du patient.</Tooltip>}
                             >
                                 <Form.Control
                                     type="text"
                                     name="patientRace"
                                     value={formData.patientRace}
                                     onChange={handleChange}
-                                    placeholder="Race du patient"
+                                    placeholder="Ethnicité du patient"
                                     required
                                     className={`form-control ${!formData.patientRace ? 'is-invalid' : ''}`}
                                 />
@@ -192,14 +192,14 @@ const BasicPatientFile = ({
                         </OverlayTrigger>
                         <OverlayTrigger
                             placement="top"
-                            overlay={<Tooltip id="tooltip-patientDiscord" className="phmc-tooltip">ID Discord du patient (HRP).</Tooltip>}
+                            overlay={<Tooltip id="tooltip-patientDiscord" className="phmc-tooltip">Pseudo Discord du patient (HRP).</Tooltip>}
                         >
                             <Form.Control
                                 type="text"
                                 name="patientDiscord"
                                 value={formData.patientDiscord}
                                 onChange={handleChange}
-                                placeholder="(( ID Discord du patient )) "
+                                placeholder="(( Pseudo Discord du patient )) "
                                 required
                                 className={`form-control ${!formData.patientDiscord ? 'is-invalid' : ''}`}
                             />
@@ -221,7 +221,7 @@ const BasicPatientFile = ({
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <OverlayTrigger
                             placement="top"
-                            overlay={<Tooltip id="tooltip-emergencyContact" className="phmc-tooltip">Nom complet du contact d'urgence.</Tooltip>}
+                            overlay={<Tooltip id="tooltip-emergencyContact" className="phmc-tooltip">Entrer le nom complet du contact d'urgence (Prénom / Deuxième Prénom / Nom de famille).</Tooltip>}
                         >
                             <Form.Control
                                 type="text"
@@ -235,7 +235,7 @@ const BasicPatientFile = ({
                         </OverlayTrigger>
                         <OverlayTrigger
                             placement="top"
-                            overlay={<Tooltip id="tooltip-emergencyContactRelation" className="phmc-tooltip">Relation du contact d'urgence avec le patient.</Tooltip>}
+                            overlay={<Tooltip id="tooltip-emergencyContactRelation" className="phmc-tooltip">Relation du contact d'urgence avec le patient (Ex: parent, ami, etc.).</Tooltip>}
                         >
                             <Form.Control
                                 type="text"
@@ -265,14 +265,14 @@ const BasicPatientFile = ({
                         </OverlayTrigger>
                         <OverlayTrigger
                             placement="top"
-                            overlay={<Tooltip id="tooltip-emergencyContactDiscord" className="phmc-tooltip">ID Discord du contact d'urgence (HRP).</Tooltip>}
+                            overlay={<Tooltip id="tooltip-emergencyContactDiscord" className="phmc-tooltip">Pseudo Discord du contact d'urgence (HRP).</Tooltip>}
                         >
                             <Form.Control
                                 type="text"
                                 name="patientEmergencyContactDiscord"
                                 value={formData.patientEmergencyContactDiscord}
                                 onChange={handleChange}
-                                placeholder="(( Discord du contact d'urgence du patient )) "
+                                placeholder="(( Pseudo Discord du contact d'urgence du patient )) "
                                 required
                                 className={`form-control ${!formData.patientEmergencyContactDiscord ? 'is-invalid' : ''}`}
                             />
@@ -426,7 +426,7 @@ const BasicPatientFile = ({
 
             {isPayNow && approximateCost > 0 && (
                 <span className="helper-text">
-                    Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Routage: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>. Veuillez vous connecter à Fleeca avant le paiement.
+                    Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Redirection: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>. Veuillez vous connecter à Fleeca avant le paiement.
                 </span>
             )}
                  
@@ -440,7 +440,7 @@ const BasicPatientFile = ({
                             name="paymentProofPhotos"
                             value={formData.paymentProofPhotos || ''}
                             onChange={handleChange}
-                            placeholder="Collez l'URL de l'image ou téléchargez"
+                            placeholder="Coller l'URL de l'image ou télécharger"
                             required
                             className={`form-control ${!formData.paymentProofPhotos ? 'is-invalid' : ''}`}
                             onPaste={(e) => {
@@ -490,7 +490,7 @@ const BasicPatientFile = ({
                         </Button>
                     </InputGroup>
                     <span className="helper-text">
-                        Téléchargez une preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                     </span>
                     <ImagePreview imageUrls={formData.paymentProofPhotos} />
                 </Form.Group>

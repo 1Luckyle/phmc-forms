@@ -36,7 +36,8 @@ const generateMedicalRecordRelease = (formData) => {
 [divbox=white]
 [br][/br][color=#800000][size=150][b]I. INFORMATIONS DU PATIENT[/b][/size][/color][hr][/hr]
 [list=none][b]Titre:[/b] [i](sélectionnez-en un)[/i]
-[list=none][${formData.patientTitle === 'Mr' ? 'x' : ''}] M.
+[list=none][${formData.patientTitle === 'Mineur' ? 'x' : ''}] Mineur
+[*][${formData.patientTitle === 'Mr' ? 'x' : ''}] M.
 [*][${formData.patientTitle === 'Mrs' ? 'x' : ''}] Mme
 [*][${formData.patientTitle === 'Ms' ? 'x' : ''}] Mlle
 [*][${formData.patientTitle === 'Other' ? 'x' : ''}] Autre[/list]
@@ -46,7 +47,7 @@ const generateMedicalRecordRelease = (formData) => {
 [i]${patientMiddleName}[/i][br][/br]
 [b]Nom de famille:[/b]
 [i]${patientLastName}[/i][br][/br]
-[b]Genre:[/b] [i](sélectionnez-en un)[/i]
+[b]Genre à l'état civil :[/b] [i](sélectionnez-en un)[/i]
 [list=none]
 [*][${formData.patientGender === 'Male' ? 'X' : ''}] Masculin
 [*][${formData.patientGender === 'Female' ? 'X' : ''}] Féminin[/list]
@@ -87,7 +88,7 @@ const generateMedicalRecordRelease = (formData) => {
 [*][b]Au:[/b] [i]${StupidDateTo}[/i][/list][/list]
 [list=none][b]Dossiers médicaux à divulguer:[/b] [i](cochez tout ce qui s'applique)[/i]
 [list=none]
-[*][${formData.MedicalRecordsRelease?.includes('ERVisit') ? 'X' : ''}] [b]Visite aux urgences[/b] (notes des urgences, notes d'évolution, consultations, notes de procédure, résultats de tests)
+[*][${formData.MedicalRecordsRelease?.includes('ERVisit') ? 'X' : ''}] [b]Visite aux urgences[/b] (Notes des urgences, notes d'évolution, consultations, notes de procédure, résultats de tests)
 [*][${formData.MedicalRecordsRelease?.includes('HospitalStay') ? 'X' : ''}] [b]Séjour hospitalier[/b] (Anamnèse et examen physique, notes d'évolution, consultations, rapports opératoires, résumé de sortie, résultats de tests)
 [*][${formData.MedicalRecordsRelease?.includes('Outpatient') ? 'X' : ''}] [b]Chirurgie/Procédure ambulatoire[/b] (Anamnèse et examen physique, notes d'évolution, consultations, notes de procédure, résultats de tests)
 [*][${formData.MedicalRecordsRelease?.includes('OfficeClinic') ? 'X' : ''}] [b]Visite à la clinique, au cabinet ou soins immédiats[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats de tests)
@@ -113,7 +114,7 @@ En tapant mon nom ci-dessous, je soussigné(e), ${patientFirstName} ${patientMid
 [b]Date:[/b]
 [i]${SubmitDate}[/i]
 ${(payNow === true || payNow === 'true') && approximateCost > 0 ? `
-    Je soussigné(e), ${patientFullName || 'le soussigné'}, joins ce paiement de ${approximateCost.toLocaleString()}$ pour les frais de divulgation des dossiers médicaux. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Image jointe[/url]` : 'i[/i]'}` : ''}
+    Je soussigné(e), ${patientFullName || 'le soussigné'}, joins ce paiement de ${approximateCost.toLocaleString()}$ pour les frais de divulgation des dossiers médicaux. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Image jointe[/url]` : '[i][/i]'}` : ''}
 [/list]
     [/divbox]`; // <-- Moved the closing divbox tag here
     return bbCode;
