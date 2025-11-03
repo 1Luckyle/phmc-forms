@@ -87,7 +87,7 @@ const MedicalRelease = ({
                 />
 
             </div>
-            <Form.Label>Genre:</Form.Label>
+            <Form.Label>Genre à l'état civil :</Form.Label>
                 <Form.Check
                     type="radio"
                     label="   Homme"
@@ -124,7 +124,7 @@ const MedicalRelease = ({
                     name="patientZIP"
                     value={formData.patientZIP}
                     onChange={handleChange}
-                    placeholder="Code postal (Vous pouvez inventer)"
+                    placeholder="LS : 90012 | BC : 92311 | SS : 92274 | PB : 95437"
                     required
                     className={`form-control ${!formData.patientZIP ? 'is-invalid' : ''}`}
 
@@ -258,7 +258,7 @@ const MedicalRelease = ({
                     name="StupidDateFrom"
                     value={formData.StupidDateFrom}
                     onChange={handleChange}
-                    placeholder="Date de traitement du"
+                    placeholder="Date de traitement du jj / mm / aaaa"
                     required
                     className={`form-control ${!formData.StupidDateFrom ? 'is-invalid' : ''}`}
                 />
@@ -267,7 +267,7 @@ const MedicalRelease = ({
                 name="StupidDateTo"
                 value={formData.StupidDateTo}
                 onChange={handleChange}
-                placeholder="Date de traitement au"
+                placeholder="Date de traitement au jj / mm / aaaa"
                 required
                 className={`form-control ${!formData.StupidDateTo ? 'is-invalid' : ''}`}
                 />
@@ -365,7 +365,7 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Acheminement: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>
+                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Redirection: <a href="https://banking.gta.world/transfer" target="_blank" rel="noopener noreferrer">020000062</a>. Veuillez vous connecter à Fleeca avant le paiement.
                     </span>
                 </Form.Group>
             )}

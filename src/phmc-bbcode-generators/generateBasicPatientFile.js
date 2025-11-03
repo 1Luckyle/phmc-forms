@@ -39,12 +39,12 @@ ${patientName}
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations générales[/b][/color][/size][/center][/divboxcolor]
 [table][tr][td] Titre: ${patientTitle}[/td][td] Nom complet: ${patientName}
 [tr][td] Date de naissance: ${patientDateOfBirth}  [/td][td] Adresse: ${patientAddress}
-[tr][td] Identité de genre: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Discord ID: ${patientDiscord}))
+[tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Contact d'urgence[/b][/color][/size][/center][/divboxcolor]
 [table][tr][td] Nom complet: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Discord ID: ${patientEmergencyContactDiscord}))
+[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux[/b][/color][/size][/center][/divboxcolor]
 [table][tr][td][b][size=105]Historique passé[/size][/b][color=transparent]youarecool[/color][/td][td][color=transparent]ifyoureadthisyouareawesomebutdontdeletemeplease![/color]

@@ -122,7 +122,7 @@ const temperature = [
     { value: 'patientHyperthermic', label: 'Hyperthermic' }
 ];
 const patientTitle = [
-    { value: 'Mstr', label: 'Master (Child <18 Y/O)' },
+    { value: 'Mineur', label: 'Mineur <18 ans' },
     { value: 'Mr', label: 'Mr' },
     { value: 'Mrs', label: 'Mrs' },
     { value: 'Ms', label: 'Ms' },
@@ -130,7 +130,7 @@ const patientTitle = [
     { value: 'Other', label: 'Other' }
 ];
 const patientTitleNew = [
-    { value: 'Mstr', label: 'Master (Child <18 Y/O)' },
+    { value: 'Mineur', label: 'Mineur <18 ans' },
     { value: 'Mr', label: 'Mr' },
     { value: 'Mrs', label: 'Mrs' },
     { value: 'Ms', label: 'Ms' },
