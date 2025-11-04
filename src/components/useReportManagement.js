@@ -4,6 +4,23 @@ import { database } from '../firebase'; // Assuming this path
 import { ref, get, set, remove } from 'firebase/database';
 import * as Sentry from "@sentry/react";
 
+function sanitizeForFirebase(obj) {
+  if (obj === undefined) return undefined;
+  if (obj === null) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirebase).filter(v => v !== undefined);
+  }
+  if (typeof obj === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const sv = sanitizeForFirebase(v);
+      if (sv !== undefined) out[k] = sv;
+    }
+    return out;
+  }
+  return obj;
+}
+
 const comprehensiveSanitize = (str) => {
     if (!str) return '';
     let sanitized = str.trim().replace(/[.#$[\/ \]]+/g, '_');
@@ -252,21 +269,27 @@ export const useReportManagement = (
         }
         // --- End Easter Egg Logic ---
 
-
         const reportDataToSave = {
-            bbCodeVersion: bbCodeVersion,
-            data: filterFormData(formData, bbCodeVersion),
-            bbCode: bbCodeContent,
-            timestamp: Date.now(),
-            originalKey: key,
-            authorName: currentAuthor
+        bbCodeVersion: bbCodeVersion,
+        data: filterFormData(formData, bbCodeVersion),
+        bbCode: bbCodeContent,
+        timestamp: Date.now(),
+        originalKey: key,
+        authorName: currentAuthor
         };
 
+        // Fallbacks anti-undefined sur les champs sensibles
+        if (reportDataToSave.data && reportDataToSave.data.coronerRank === undefined) {
+        reportDataToSave.data.coronerRank = null;
+        }
+
+        // Supprime toute autre clé undefined profondément
+        const cleanPayload = sanitizeForFirebase(reportDataToSave);
         const reportPath = `savedReports/${sanitizedAuthorId}/${sanitizedKey}`;
 
         try {
-            const reportRef = ref(database, reportPath);
-            await set(reportRef, reportDataToSave);
+            const reportRef = ref(database, reportPath);    
+            await set(reportRef, cleanPayload);
             showNotification(`Report "${key}" saved for ${currentAuthor} to Firebase!`, 'save');
 
             // Log the webhook
@@ -372,6 +395,15 @@ export const useReportManagement = (
             return { success: false, message: 'User ID or Report Key is missing.' };
         }
 
+        // Normalize coroner and phmc list data to arrays
+        const coronersArray = Array.isArray(coronerListData)
+        ? coronerListData
+        : Object.values(coronerListData || {});
+
+        const phmcArray = Array.isArray(phmcListData)
+        ? phmcListData
+        : Object.values(phmcListData || {});
+
         const sanitizedUserId = comprehensiveSanitize(userId);
         const reportPath = `savedReports/${sanitizedUserId}/${reportFirebaseKey}`;
         const reportRef = ref(database, reportPath);
@@ -406,11 +438,11 @@ export const useReportManagement = (
                     const currentTimestamp = Date.now().toString();
 
                     if (loadedCoronerEmployee) {
-                        const coronerDetails = coronerListData.find(c => c.name === loadedCoronerEmployee);
+                        const coronerDetails = coronersArray.find(c => c.name === loadedCoronerEmployee);
                         if (coronerDetails) {
                             loadedFormData.coronerEmployee = loadedCoronerEmployee;
                             loadedFormData.coronerBadge = coronerDetails.badge || '';
-                            loadedFormData.coronerRank = coronerDetails.rank || '';
+                            loadedFormData.coronerRank     = loadedFormData.coronerRank || inferCoronerRank(coronerDetails);
                             loadedFormData.coronerDiscord = coronerDetails.discord || '';
                             loadedFormData.coronerPHNumber = coronerDetails.phNumber || '50056';
                             if (!returnOnly) {
@@ -444,7 +476,7 @@ export const useReportManagement = (
                     }
 
                     if (loadedPhmcEmployee) {
-                        const phmcDetails = phmcListData.find(p => p.name === loadedPhmcEmployee);
+                        const phmcDetails = phmcArray.find(p => p.name === loadedPhmcEmployee);
                         if (phmcDetails) {
                             loadedFormData.phmcEmployee = loadedPhmcEmployee;
                             loadedFormData.phmcEmployeeLastName = phmcDetails.lastName || '';

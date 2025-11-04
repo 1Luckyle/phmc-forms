@@ -1613,7 +1613,7 @@ function MainApp({
                             savedReports={savedReports}
                             reportsForSelectedUser={savedReports}
                             loadReport={loadReportForUser}
-                            deleteReport={deleteReportForUser}
+                            deleteReportForUser={deleteReportForUser}
                             author={getCurrentReportAuthor(formData)}
                             isLoading={isLoadingUserReports}
                             onAttachReportSelectedForAttachment={handleReportSelectedForAttachment}

@@ -53,7 +53,7 @@ const getDepartmentFullName = (shortCode) => {
         : '[i]Aucune image supplémentaire fournie.[/i]'; // Provide fallback text
 
     const decedentAttributesBBCode = decedentAttributesArray.length > 0
-        ? `[b]Attributs du défunt /attributes:[/b]\n${decedentAttributesArray.map(photo => `[img]${photo}[/img]`).join('\n')}`
+        ? `[b]Apparence du défunt (( /attributes )):[/b]\n${decedentAttributesArray.map(photo => `[img]${photo}[/img]`).join('\n')}`
         : '';
 
     // --- Evidence Locker Logic ---

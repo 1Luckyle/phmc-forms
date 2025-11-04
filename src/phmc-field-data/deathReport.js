@@ -74,7 +74,7 @@ useEffect(() => {
                 onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un coroner..."
+                placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{ 
                     control: (base, state) => ({
@@ -179,7 +179,7 @@ useEffect(() => {
             </Form.Select>
             {formData.showRequestingOfficerInput && (
                     <Form.Control
-                        type="text" name="requestingOfficer" value={formData.requestingOfficer || ''} onChange={handleChange} placeholder="ex: Officier John Doe, LSPD"/>
+                        type="text" name="requestingOfficer" value={formData.requestingOfficer || ''} onChange={handleChange} placeholder="ex: Officier John Doe, LSSD"/>
             )}
             </div>
 
@@ -191,7 +191,7 @@ useEffect(() => {
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Nom IC du défunt" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom IC du défunt" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
                 <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="Nom HRP du défunt" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -229,12 +229,15 @@ useEffect(() => {
                                 value={formData.decedentAttributes}
                                 onChange={handleChange}
                                 className={`form-control`}
-                                placeholder="Défunt /attributes (séparés par des virgules)"
+                                placeholder="(( Apparence du défunt (( /attributes )) )) (séparés par des virgules)"
                             />
                             <Button variant="success" disabled={isUploading} onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.multiple = true; input.onchange = (e) => handleImageUpload(e, 'decedentAttributes'); input.click(); }}>
                                 <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? '...' : ''}
                             </Button>
                         </InputGroup>
+                        <span className="helper-text">
+                            Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                        </span>
                     </Form.Group>
                 </>
             )}
@@ -254,7 +257,7 @@ useEffect(() => {
             </Form.Select>
             <Form.Control type="text" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" required className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`} />
 </div>
-            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé bref" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
+            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé..." required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
             <label>Soumission au casier à preuves:</label>
             <Form.Check
                 type="checkbox"
@@ -334,7 +337,9 @@ useEffect(() => {
                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Téléchargement...' : 'Télécharger images'}
                     </Button>
                 </InputGroup>
-                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
+                <span className="helper-text">
+                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                </span>
 <ImagePreview 
     imageUrls={formData.scenePhotos} 
     showPreviews={true}
@@ -352,7 +357,7 @@ useEffect(() => {
                         rows="2"
                         // Removed 'required' for flexibility
                         className={`form-control`}
-                        placeholder="Écran de morgue, Cinjuries, liens CDNA (séparés par des virgules)"
+                        placeholder="(( Écran de morgue, photos des liaisons, rapport de test ADN )) (séparés par des virgules)"
                         onPaste={(e) => {
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -384,7 +389,9 @@ useEffect(() => {
                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Téléchargement...' : 'Télécharger images'}
                     </Button>
                 </div>
-                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
+                <span className="helper-text">
+                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                </span>
 <ImagePreview 
     imageUrls={formData.additionalImages} 
     showPreviews={true}
@@ -396,7 +403,7 @@ useEffect(() => {
                 <Form.Check
                     type="checkbox"
                     id="morgueStatus"
-                    label="       Cochez si l'écran de morgue est indisponible / cassé / inaccessible"
+                    label="       Cocher si l'écran de morgue est indisponible / cassé / inaccessible"
                     checked={formData.morgueStatus === 'true'}
                     onChange={(e) => setFormData(prev => ({ ...prev, morgueStatus: e.target.checked.toString() }))}
                 />        
