@@ -59,7 +59,7 @@ const generateDeathRecord = (formData) => {
 [td bgcolor=#E6E6E6][bold]Cause D[/bold]: ${causeD || ''}[/td]
 [/tr]
 [tr]
-[td bgcolor=#E6E6E6][bold]Autres conditions significatives[/bold]: ${otherSignificantConditions || 'Aucune'}[/td]
+[td bgcolor=#E6E6E6][bold]Autres informations significatives[/bold]: ${otherSignificantConditions || 'Aucune'}[/td]
 [/tr]
 [/table]`;
     }
@@ -84,9 +84,9 @@ const generateDeathRecord = (formData) => {
 
 [divbox=#4D4D4D][center][bold][size=150]DOSSIER PUBLIC DU DÉFUNT[/size][/bold][/center][/divbox]
 
-[divbox=#000000][center][size=130]${decedentName || 'NOM COMPLET ICI'}[/size][/center]
+[divbox=#000000][center][size=130]${decedentName || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/size][/center]
 [center]Date du décès: ${formattedDateOfDeath}[/center]
-[center]${deathRecordType === 'Unidentified' ? 'Âge approx' : 'Âge'}: ${age || '[ÂGE ICI]'}[/center][/divbox]
+[center]${deathRecordType === 'Unidentified' ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'}[/center][/divbox]
 
 [table]
 [tr]
@@ -95,7 +95,7 @@ const generateDeathRecord = (formData) => {
 [td bgcolor=#E6E6E6][bold]Statut du corps[/bold]: ${bodyStatus || ''}[/td]
 [/tr]
 [tr]
-[td bgcolor=#E6E6E6][bold]Sexe[/bold]: ${sex || ''}[/td]
+[td bgcolor=#E6E6E6][bold]Genre à l'état civil[/bold]: ${sex || ''}[/td]
 [td bgcolor=#E6E6E6][bold]Origine ethnique[/bold]: ${ethnicity || ''}[/td]
 [/tr]
 [/table]
@@ -103,10 +103,10 @@ const generateDeathRecord = (formData) => {
 [table]
 [tr]
 [td bgcolor=#E6E6E6][bold]Lieu du décès[/bold]: ${placeOfDeath || ''}[/td]
-[td bgcolor=#E6E6E6][bold]Manière[/bold]: ${manner || ''}[/td]
+[td bgcolor=#E6E6E6][bold]Mode de décès[/bold]: ${manner || ''}[/td]
 [/tr]
 [tr]
-[td bgcolor=#E6E6E6][bold]Enquêteur[/bold]: ${coronerEmployee || ''}[/td]
+[td bgcolor=#E6E6E6][bold]Examinateur médical[/bold]: ${coronerEmployee || ''}[/td]
 [td bgcolor=#E6E6E6][bold]Chef médecin légiste[/bold]: ${chiefMedicalExaminer || ''}[/td]
 [/tr]
 [/table]
@@ -117,7 +117,7 @@ ${detailsBlock}
 Il ne s'agit pas des dossiers de tous les décès survenus dans le comté de Los Santos.
 
 Pour toute demande d'information sur les dossiers ou pour obtenir de la documentation supplémentaire:
-Le Chef/Chef adjoint médecin légiste-Coroner peut être contacté par courriel via le portail en ligne du PHMC [url=https://phmc.gta.world/ucp.php?i=pm&mode=compose]ICI[/url].
+Le Chef/Chef adjoint médecin légiste-Coroner peut être contacté par courriel via le portail en ligne du PHMC [url=]ICI[/url].
 La ligne fixe du PHMC peut être jointe au numéro 50056 pour tout dossier physique ou pour le processus des proches parents.[/b][/center][/divbox]`;
 
     return bbCode;

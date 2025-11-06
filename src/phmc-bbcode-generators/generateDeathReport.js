@@ -90,7 +90,7 @@ const getDepartmentFullName = (shortCode) => {
 
 Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à l'emplacement de [bold]${placeOfDeath || 'Lieu inconnu'}[/bold]. Après avoir reçu l'appel de[bold] ${getDepartmentFullName(department) || 'Département inconnu'}[/bold], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [bold]${dateTime || 'Date/Heure inconnue'}[/bold].
 
-Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Identifiant de badge [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié l'individu comme étant [bold]${decedentName || 'Défunt non identifié'}[/bold], qui est estimé être décédé à [bold]${pronouncedTimeOfDeath || 'Heure inconnue'}[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
+Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Numéro de badge [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié l'individu comme étant [bold]${decedentName || 'Défunt non identifié'}[/bold], qui est estimé être décédé à [bold]${pronouncedTimeOfDeath || 'Heure inconnue'}[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
 
 D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [bold]${probableCauseOfDeath || 'Indéterminée'}[/bold]. La manière du décès a été classée comme [bold]${mannerOfDeath || 'Indéterminée'}[/bold].
 [/divbox]
@@ -122,7 +122,7 @@ Ce document est fourni à des fins officielles uniquement et ne doit pas être i
 Cette section précise si le joueur a été tué de manière permanente (character killed) ou temporaire (player killed).
 Dans ce cas, le joueur a été; ${typeOfDeath || 'Inconnu'}
 Nom OOC du joueur: ${decedentOOC || 'Inconnu'}
-Écran de morgue, cinjuries, liens cdna: ${morgueStatusMessage || ''}
+Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN: ${morgueStatusMessage || ''}
 [size=85][u] CES IMAGES SONT [bold]HORS PERSONNAGE[/bold] POUR LES DOSSIERS INTERNES, NE PAS LES UTILISER COMME PREUVE. [/u][/size]
 ${additionalImagesBBCode}
 

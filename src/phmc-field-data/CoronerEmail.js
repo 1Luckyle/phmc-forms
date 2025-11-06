@@ -106,7 +106,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
 
     return (
         <>
-            <p>Veuillez faire attention lors de l'ajout de rapports, cela peut prendre un certain temps à traiter. De plus, l'ajout de rapports ajoutera automatiquement le nom du défunt et le HRP du défunt !!!</p>
+            <p>Veuillez faire attention lors de l'ajout de rapports, cela peut prendre un certain temps à traiter. De plus, l'ajout de rapports ajoutera automatiquement le nom du défunt et le nom HRP du défunt !!!</p>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                                     <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
@@ -133,7 +133,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                 onChange={(selectedOption, actionMeta) => handleSelectChange(selectedOption, actionMeta)}
                                     options={coronerGroupedOptions}
                                     isClearable
-                                    placeholder="Rechercher ou sélectionner un coroner..."
+                                    placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
                                     className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                                 styles={customSelectStyles}
                                 />
@@ -144,7 +144,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         name="requestingOfficer"
                                         value={formData.requestingOfficer}
                                         onChange={handleChange}
-                                        placeholder="Nom de l'officier demandeur"
+                                        placeholder="Matricule & Prénom & Nom de l'officier demandeur"
                                         required
                                         className={`form-control ${!formData.requestingOfficer ? 'is-invalid' : ''}`}
                                         />
@@ -188,7 +188,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                             name="decedentName"
                                             value={formData.decedentName}
                                             onChange={handleChange}
-                                            placeholder="Nom IC du défunt"
+                                            placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)"
                                             required
                                             className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
                                         />
@@ -197,7 +197,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         name="decedentOOC"
                                         value={formData.decedentOOC}
                                         onChange={handleChange}
-                                        placeholder="Nom HRP du défunt"
+                                        placeholder="(( Nom du défunt (HRP) ))"
                                         required
                                         className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
                                         />
@@ -210,12 +210,15 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         name="deathReport"
                                         value={formData.deathReport}
                                         onChange={handleChange}
-                                        placeholder="Collez ici le BBCode de la paperasse (Rapport de décès, Fatalité de masse)"
+                                        placeholder="Joindre la paperasse (Rapport de décès, Fatalité de masse)"
                                         rows="2"
                                         className={`form-control ${!formData.deathReport ? 'is-invalid' : ''}`}
 
                                     />
                                 </Form.Group>
+                                <span className="helper-text">
+                                Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                                </span>
             <Form.Group className="mb-3">
                 <Form.Label>Rapports supplémentaires:</Form.Label>
                 <div className="reports-container">
@@ -225,7 +228,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                 as="textarea"
                                 value={report}
                                 onChange={(e) => handleReportChange(index, e.target.value)}
-                                placeholder="Collez ici le rapport de coroner supplémentaire"
+                                placeholder="Joindre le rapport de coroner supplémentaire"
                                 rows="4"
                                 className={`form-control ${!report ? 'is-invalid' : ''}`}
                             />

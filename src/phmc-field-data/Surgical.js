@@ -15,13 +15,13 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
     return (
     <>
     <p>Le FORMULAIRE ci-dessous doit être utilisé et ajouté au dossier pour chaque rendez-vous de chirurgie, à la suite des autres.</p>
-    <Form.Label>ID Patient, laisser vide si incertain</Form.Label>
+    <Form.Label>Identifiant unique du patient.</Form.Label>
     <Form.Control
                 type="text"
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="ID Patient (Optionnel)"
+                placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
                 className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
 
             />
@@ -44,7 +44,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
                 required
                 className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Rang PHMC</option>
+                <option value="" disabled>Fonction au sein du PHMC</option>
                 {phmcRank.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -68,7 +68,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         }}
         options={phmcGroupedOptions}
         isClearable
-        placeholder="Rechercher ou sélectionner un chirurgien..."
+        placeholder="Sélectionner un chirurgien. (Vous pouvez taper pour rechercher!)"
         className="form-control"
         styles={{
             control: (base) => ({
@@ -262,7 +262,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             name="patientSummaryConsultation"
             value={formData.patientSummaryConsultation}
             onChange={handleChange}
-            placeholder="Résumé de la consultation"
+            placeholder="Type et dosage d'anesthésie administrée"
             rows="4"
             required
             className={`form-control ${!formData.patientSummaryConsultation ? 'is-invalid' : ''}`}

@@ -30,7 +30,7 @@ OBJET: Documents du rapport de décès
 Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel. 
 
 [b]INFORMATIONS / DEMANDE(S) D'AUTOPSIE[/B] 
-Si vous avez besoin d'une autopsie, veuillez suivre ce lien et suivre les instructions: [url=https://phmc.gta.world/viewforum.php?f=265]Portail d'autopsie[/url].
+Si vous avez besoin d'une autopsie, veuillez suivre ce lien et suivre les instructions: [url=]Portail d'autopsie[/url].
 
 
 [altspoiler=FAQ sur la demande d'autopsie]
@@ -43,13 +43,13 @@ Oui, il y a des frais de 2 000 $ associés à la demande. Ces frais couvrent les
 
 
 3) Comment payer les frais de demande de 2 000 $?
-Pour payer vos frais de demande de 2 000 $, veuillez vous connecter au site web bancaire et naviguer vers la section "Paiement". Sélectionnez votre méthode de paiement préférée (par exemple, carte de crédit, carte de débit), insérez notre numéro d'acheminement (020000062), entrez les détails de paiement requis, examinez la transaction et confirmez votre paiement. (( Tapez /transfer 2000 020000062 ))
+Pour payer vos frais de demande de 2 000 $, veuillez vous connecter au site web bancaire et naviguer vers la section "Paiement". Sélectionnez votre méthode de paiement préférée (par exemple, carte de crédit, carte de débit), insérez notre RIB (020000062), entrez les détails de paiement requis, examinez la transaction et confirmez votre paiement. (( Tapez /transfer 2000 020000062 ))
 
 (( Les autopsies pour les Player Kills (PK) et Character Kills (CK) ne seront acceptées que si elles sont jugées strictement nécessaires et pertinentes pour un cas ou une enquête importante. Avant de faire une demande pour une telle autopsie, un membre des médecins légistes doit être notifié et consulté. De plus, il est obligatoire de fournir des informations sur /cdamages et /cexamine. Dans le cas où ces informations ne seraient pas disponibles, n'hésitez pas à contacter un administrateur en jeu, qui pourra les fournir. Si ces étapes ne sont pas suivies, un refus automatique entraînera l'archivage de votre demande.
 
 De plus, s'il s'agit d'un PK, veuillez utiliser John/Jane Doe avec le nom de leur personnage entre parenthèses OOC. Ex: John Doe (( James Smith ))
 
-[url=https://phmc.gta.world/ucp.php?i=pm&mode=compose&g=50]Cliquez ici pour contacter un médecin légiste afin d'obtenir le feu vert![/url] ))
+[url=]Cliquez ici pour contacter un médecin légiste afin d'obtenir le feu vert![/url] ))
 [/altspoiler]
 Si vous avez d'autres questions, n'hésitez pas à contacter la personne suivante:
 [list] ${coronerEmployee}

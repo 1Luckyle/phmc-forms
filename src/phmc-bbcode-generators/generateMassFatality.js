@@ -36,9 +36,9 @@ const numberToWords = (num) => {
 
 [center][bold]A. RAPPORT ÉCRIT[/bold][/center]
 
-Le Bureau du Coroner du Comté a été appelé concernant un incident de catastrophe mortelle survenu à l'emplacement de [bold]${placeOfDeath || 'Lieu inconnu'}[/bold]. Après avoir reçu l'appel de[bold] ${getDepartmentFullName(department) || 'Département inconnu'}[/bold], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [bold]${dateTime || 'Date/Heure inconnue'}[/bold].
+Le Bureau du Coroner du Comté a été appelé concernant un incident tuerie/accident de masse survenu à l'emplacement de [bold]${placeOfDeath || 'Lieu inconnu'}[/bold]. Après avoir reçu l'appel de[bold] ${getDepartmentFullName(department) || 'Département inconnu'}[/bold], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [bold]${dateTime || 'Date/Heure inconnue'}[/bold].
 
-Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Numéro de série [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié un total de [bold]${numberToWords(Array.isArray(decedents) ? decedents.length : 0)} Défunts.[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
+Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Numéro de badge [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié un total de [bold]${numberToWords(Array.isArray(decedents) ? decedents.length : 0)} Défunts[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
 
 ${showRequestingOfficerInput ? `
 Un représentant du ${getDepartmentFullName(department) || 'Département inconnu'} a demandé que le rapport soit transmis via l'Intranet sécurisé à [b]${requestingOfficer}[/b], il a depuis été envoyé à l'officier pour un traitement et un examen plus approfondis.` : ''}
@@ -72,7 +72,7 @@ Un représentant du ${getDepartmentFullName(department) || 'Département inconnu
             bbCode += `
 [divbox=transparent][altspoiler=${idx + 1} - ${dec.decedentName} - OOC ${dec.decedentOOC || 'Inconnu'}]
 [divbox=transparent][center][bold]INFORMATIONS SUR LE DÉFUNT[/bold][/center]
-[b] NOM DU DÉFUNT: [/b] ${dec.decedentName || 'Défunt non identifié'}
+[b] (( NOM DU DÉFUNT: )) [/b] ${dec.decedentName || 'Défunt non identifié'}
 [b] NOM OOC DU DÉFUNT: [/b] (( ${dec.decedentOOC || 'Inconnu'} ))
 [b] HEURE DE DÉCÈS PRONONCÉE: [/b] ${dec.pronouncedTimeOfDeath || 'Heure inconnue'}
 [b] CAUSE PROBABLE DU DÉCÈS: [/b] ${dec.probableCauseOfDeath || 'Cause inconnue'}
@@ -91,7 +91,7 @@ ${scenePhotosBBCode}
 
 Cette section précise si le joueur a été tué de manière permanente (character killed) ou temporaire (player killed).
 Dans ce cas, le joueur a été; ${dec.typeOfDeath || 'Inconnu'}
-Écran de morgue, cinjuries, liens cdna: ${morgueStatusMessage || ''}
+Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN: ${morgueStatusMessage || ''}
 [size=85][u] CES IMAGES SONT [bold]HORS PERSONNAGE[/bold] POUR LES DOSSIERS INTERNES, NE PAS LES UTILISER COMME PREUVE. [/u][/size]
 ${additionalImagesBBCode}
 

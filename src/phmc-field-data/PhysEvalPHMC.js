@@ -26,7 +26,7 @@ const PhysEval = ({
     return (
     <>
                                 <p>Le FORMULAIRE ci-dessous doit être utilisé et ajouté au dossier pour chaque rendez-vous médical, à la suite des autres.</p>
-                                <Form.Label>ID Patient | Date:</Form.Label>
+                                <Form.Label>Identifiant unique du patient | Date:</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
                                 <Form.Control
@@ -34,7 +34,7 @@ const PhysEval = ({
                                     name="patientID"
                                     value={formData.patientID}
                                     onChange={handleChange}
-                                    placeholder="ID Patient"
+                                    placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
                                     required
                                     className="form-control"
                                 />
@@ -56,7 +56,7 @@ const PhysEval = ({
                                             required
                                             className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
                                         >
-                                            <option value="" disabled>Rang PHMC</option>
+                                            <option value="" disabled>Fonction au sein du PHMC</option>
                                             {phmcRank.map((option) => (
                                                 <option key={option.value} value={option.value}>{option.label}</option>
                                             ))}
@@ -97,7 +97,7 @@ onChange={(selectedOption) => {
 }}
                                     options={phmcGroupedOptions}
                                     isClearable
-                                    placeholder="Rechercher ou sélectionner un médecin..."
+                                    placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                                     className="form-control"
                                     styles={{
                                         control: (base) => ({
@@ -185,7 +185,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Sélectionner la température</option>
+                                        <option value="" disabled>Température</option>
                                         {temperature.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -201,7 +201,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Sélectionner la fréquence cardiaque</option>
+                                        <option value="" disabled>Fréquence cardiaque</option>
                                         {heartRate.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
@@ -306,10 +306,10 @@ onChange={(selectedOption) => {
                                     {formData.patientJob === 'No' && (
                                     <Form.Control
                                     type="text"
-                                    name="patientCareer"
-                                    value={formData.patientCareer}
+                                    name="patientcareerNo"
+                                    value={formData.patientcareerNo}
                                     onChange={handleChange}
-                                    placeholder="Emploi du patient Non"
+                                    placeholder="Description de l'activité sans emploi"
                                     required
                                     className="form-control"
                                     />

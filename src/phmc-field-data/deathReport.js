@@ -187,12 +187,12 @@ useEffect(() => {
                 <div className="radio-button-group">
                     <Form.Check type="radio" id="johnDoe" label="   John Doe" checked={isJohnDoe} onChange={handleDoeChange('john')} inline />
                     <Form.Check type="radio" id="janeDoe" label="   Jane Doe" checked={isJaneDoe} onChange={handleDoeChange('jane')} inline />
-                    <Form.Check type="radio" id="massFatality" name="massFatality" label="   Fatalité de masse?" checked={formData.massFatality || false} onChange={handleChange} inline />
+                    <Form.Check type="radio" id="massFatality" name="massFatality" label="   Tuerie/accident de masse?" checked={formData.massFatality || false} onChange={handleChange} inline />
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom IC du défunt" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
-                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="Nom HRP du défunt" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
 
@@ -214,7 +214,7 @@ useEffect(() => {
                 name="placeOfDeath"
                 value={formData.placeOfDeath}
                 onChange={handleChange}
-                placeholder="Lieu du décès"
+                placeholder="Lieu du décès (Numéro, Étage, Rue)"
                 required
                 className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}
             />
@@ -236,7 +236,7 @@ useEffect(() => {
                             </Button>
                         </InputGroup>
                         <span className="helper-text">
-                            Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                            Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                         </span>
                     </Form.Group>
                 </>
@@ -338,7 +338,7 @@ useEffect(() => {
                     </Button>
                 </InputGroup>
                 <span className="helper-text">
-                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                        Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                 </span>
 <ImagePreview 
     imageUrls={formData.scenePhotos} 
@@ -357,7 +357,7 @@ useEffect(() => {
                         rows="2"
                         // Removed 'required' for flexibility
                         className={`form-control`}
-                        placeholder="(( Écran de morgue, photos des liaisons, rapport de test ADN )) (séparés par des virgules)"
+                        placeholder="(( Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN )) (séparés par des virgules)"
                         onPaste={(e) => {
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -390,7 +390,7 @@ useEffect(() => {
                     </Button>
                 </div>
                 <span className="helper-text">
-                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                        Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                 </span>
 <ImagePreview 
     imageUrls={formData.additionalImages} 

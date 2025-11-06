@@ -23,8 +23,8 @@ DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/center][/b][/size]
 
 [center]Je soussigné(e), [b]${coronerEmployee}[/b], au nom du Département de Pathologie et de Médecine Légale du Pillbox Hill Medical Center, dans l'État de San Andreas, documente, enregistre, scelle et certifie par la présente le décès de [b]${decedentName}[/b]. Je confirme que les informations suivantes sont exactes au meilleur de mes capacités:[/center][br][/br]
 
-[table][tr][td]NOM[/td][td]
-${decedentName || 'INSÉRER LE NOM DU DÉFUNT ICI'}
+[table][tr][td]PRÉNOM (DEUXIÈME PRÉNOM) & NOM[/td][td]
+${decedentName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU DÉFUNT ICI'}
 
 [tr][td]ÂGE[/td][td]
 ${patientAge}	
@@ -43,10 +43,10 @@ ${dateofdeath || 'INSÉRER LA DATE DU DÉCÈS ICI'}
 [/table][br][/br]
 [list=none][left]
 SIGNATURE DU MÉDECIN LÉGISTE:
-NOM IMPRIMÉ: Dr. Anne Carter
+NOM IMPRIMÉ: ${coronerEmployee}
 
 SIGNATURE DU TÉMOIN:
-NOM IMPRIMÉ: ${witnessName || 'INSÉRER LE NOM DU TÉMOIN ICI'}
+NOM IMPRIMÉ: ${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}
 
 DATE D'ÉMISSION DU CERTIFICAT: ${date}
 [/list]
