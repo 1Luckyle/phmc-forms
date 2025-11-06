@@ -39,7 +39,7 @@ const Certificate = ({
                 onChange={(selectedOption, actionMeta) => handleSelectChange(selectedOption, actionMeta)}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un coroner..."
+                placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{
                     control: (base, state) => ({
@@ -73,7 +73,7 @@ const Certificate = ({
                 name="decedentName"
                 value={formData.decedentName}
                 onChange={handleChange}
-                placeholder="Nom complet du défunt"
+                placeholder="Prénom (Deuxième Prénom) & Nom du défunt"
                 required
                 className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
             />
@@ -142,7 +142,7 @@ const Certificate = ({
                 name="witnessName"
                 value={formData.witnessName}
                 onChange={handleChange}
-                placeholder="Nom du témoin"
+                placeholder="Prénom (Deuxième Prénom) & Nom du témoin"
                 required
                 className={`form-control ${!formData.witnessName ? 'is-invalid' : ''}`}
             />

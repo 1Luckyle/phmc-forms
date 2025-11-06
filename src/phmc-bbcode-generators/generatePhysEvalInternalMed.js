@@ -68,7 +68,7 @@ Poids: ${patientWeight}
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Résumé de l'évaluation[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Déclaration d'évaluation: [/u][br][/br]
 ${patientSummary}
-[br][/br][/left][/list][/table>
+[br][/br][/left][/list][/table]
 
 `;
 

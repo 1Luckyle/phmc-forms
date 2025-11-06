@@ -148,7 +148,7 @@ const Autopsy = ({
                     name="decedentName"
                     value={formData.decedentName || ''}
                     onChange={handleChange}
-                    placeholder="Nom IC du défunt"
+                    placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)"
                     required
                     className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
                 />
@@ -157,7 +157,7 @@ const Autopsy = ({
                     name="decedentOOC"
                     value={formData.decedentOOC || ''}
                     onChange={handleChange}
-                    placeholder="Nom HRP du défunt"
+                    placeholder="(( Nom du défunt (HRP) ))"
                     required
                     className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
                 />
@@ -186,7 +186,7 @@ const Autopsy = ({
 
             {/* Button to open the Autopsy Diagram Modal */}
             <Form.Group className="mb-3">
-                <Form.Label>Diagramme des blessures de l'autopsie</Form.Label>
+                <Form.Label>Diagramme des blessures</Form.Label>
                 <div>
                     <Button variant="info" onClick={handleOpenDiagramModal}>
                         <i className="fas fa-male" style={{ marginRight: '5px' }}></i>
@@ -250,7 +250,7 @@ const Autopsy = ({
                 name="externalExamination"
                 value={formData.externalExamination || ''}
                 onChange={handleChange}
-                placeholder="Résultats détaillés de l'examen externe (ex: marques d'identification, état du corps, blessures spécifiques observées extérieurement)"
+                placeholder="Résultats détaillés de l'examen externe (ex: marques d'identification, état du corps, blessures spécifiques observées extérieurement (les liaisons non mortelles))"
                 className={`form-control mb-2 ${!formData.externalExamination ? 'is-invalid' : ''}`}
             />
 
@@ -293,7 +293,7 @@ const Autopsy = ({
                 className={`form-control mb-2 ${!formData.RadiologyResult ? 'is-invalid' : ''}`}
             />
 
-            <Form.Label>Photographie (URLs séparées par des virgules):</Form.Label>
+            <Form.Label>Photographies & Radiographies:</Form.Label>
             <InputGroup className="mb-1">
                 <Form.Control
                     as="textarea" // Changed to textarea for better visibility of multiple URLs
@@ -301,7 +301,7 @@ const Autopsy = ({
                     name="autopsyAlbumUrl" // Keeping name for consistency, though it's not an album URL anymore
                     value={formData.autopsyAlbumUrl || ''}
                     onChange={handleChange}
-                    placeholder="Collez les URLs ImgBB ici, séparées par des virgules, ou utilisez le bouton de téléchargement."
+                    placeholder="Télécharger les photographies & radiographies (séparées par des virgules)"
                     className={`form-control ${!formData.autopsyPhotosUnavailable && !(formData.autopsyAlbumUrl || '').trim() ? 'is-invalid' : ''}`}
                     disabled={formData.autopsyPhotosUnavailable}
                 />
@@ -321,10 +321,13 @@ const Autopsy = ({
                     {isUploading ? ' Traitement...' : ' Télécharger photo(s)'}
                 </Button>
             </InputGroup>
+            <span className="helper-text">
+            Télécharger le(s) fichier(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                 <Form.Check
                     type="checkbox"
-                    label="Les photographies ne sont pas disponibles pour ce cas"
+                    label="Les photographies & radiographies ne sont pas disponibles pour ce cas"
                     name="autopsyPhotosUnavailable"
                     checked={formData.autopsyPhotosUnavailable || false}
                     onChange={handleChange}

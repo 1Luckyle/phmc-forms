@@ -146,7 +146,7 @@ const MedicalRelease = ({
     name="patientAddress"
     value={formData.patientAddress}
     onChange={handleChange}
-    placeholder="Adresse du domicile du patient"
+    placeholder="Adresse (Numéro, Étage, Rue)"
     required
     className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
   />
@@ -240,7 +240,7 @@ const MedicalRelease = ({
                     name="patientAddressNew"
                     value={formData.patientAddressNew}
                     onChange={handleChange}
-                    placeholder="Adresse du domicile du patient"
+                    placeholder="Adresse (Numéro, Étage, Rue)"
                     required
                     className={`form-control ${!formData.patientAddressNew ? 'is-invalid' : ''}`}
 

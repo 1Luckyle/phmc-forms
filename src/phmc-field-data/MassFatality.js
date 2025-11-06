@@ -268,7 +268,7 @@ const MassFatality = ({
                 onChange={(selectedOption) => handleSelectChange(selectedOption, 'coronerEmployee')}
                 options={coronerGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un coroner..."
+                placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
                 className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
                 styles={{ 
                     control: (base, state) => ({
@@ -314,7 +314,7 @@ const MassFatality = ({
                 name="placeOfDeath"
                 value={formData.placeOfDeath}
                 onChange={handleChange}
-                placeholder="Lieu de l'incident de fatalité de masse"
+                placeholder="Lieu de l'incident (Numéro, Étage, Rue)"
                 required
                 className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}
             />
@@ -354,7 +354,7 @@ const MassFatality = ({
                         />
                     )}
                 </div>
-                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé bref - (Ceci couvre ce que vous avez initialement trouvé sur les lieux et l'aperçu des patients)" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
+                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé - (Ceci couvre ce que vous avez initialement trouvé sur les lieux et l'aperçu des patients)" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
                 
             </Form.Group>
 
@@ -378,7 +378,7 @@ const MassFatality = ({
                                             <Form.Check type="radio" id={`janeDoe-${idx}`} name={`decedentName-${idx}`} label="Jane Doe" checked={dec.decedentName === 'Jane Doe'} onChange={handleDoeChange(idx, 'jane')} inline />
                                         </div>
                                         <div style={{ display: 'flex', gap: '10px' }}>
-                                            <Form.Control type="text" value={dec.decedentName} placeholder="Nom du défunt (IC)" onChange={e => updateDecedent(idx, 'decedentName', e.target.value)} />
+                                            <Form.Control type="text" value={dec.decedentName} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" onChange={e => updateDecedent(idx, 'decedentName', e.target.value)} />
                                             <Form.Control type="text" value={dec.decedentOOC} placeholder="Nom du défunt (HRP)" onChange={e => updateDecedent(idx, 'decedentOOC', e.target.value)} />
                                         </div>
                                                             <Form.Label>Heure du décès prononcée</Form.Label>
@@ -396,7 +396,7 @@ const MassFatality = ({
                                 </div>   
                                                                         <div style={{ display: 'flex', gap: '10px' }}>
 
-                                <Form.Control type="text" value={dec.placeOfDeath} placeholder='Lieu du décès' onChange={e => updateDecedent(idx, 'placeOfDeath', e.target.value)} />
+                                <Form.Control type="text" value={dec.placeOfDeath} placeholder='Lieu du décès (Numéro, Étage, Rue)' onChange={e => updateDecedent(idx, 'placeOfDeath', e.target.value)} />
                                 <Form.Select value={dec.mannerOfDeath} onChange={e => updateDecedent(idx, 'mannerOfDeath', e.target.value)}>
                                     <option value="" disabled>Sélectionner le mode de décès</option>
                                     {mannerOfDeathOptions.map(opt => (
@@ -453,7 +453,7 @@ const MassFatality = ({
                                         rows={2}
                                         value={dec.scenePhotos}
                                         onChange={e => updateDecedent(idx, 'scenePhotos', e.target.value)}
-                                        placeholder="Coller l'URL de l'image ou télécharger"
+                                        placeholder="Télécharger les photos de la scène (séparées par des virgules)"
                                         onPaste={e => {
                                             const clipboardData = e.clipboardData || window.clipboardData;
                                             const pastedData = clipboardData.getData('text');
@@ -500,17 +500,19 @@ const MassFatality = ({
                                     </Button>
                                 </InputGroup>
                                 <ImagePreview imageUrls={dec.scenePhotos} />
-                                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
+                                <span className="helper-text">
+                                    Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                                </span>
                             </Form.Group>
                             <Form.Group className="mb-3 upload-container">
-                                <Form.Label>Images de la morgue et CDNA</Form.Label>
+                                <Form.Label>Images de la morgue, des liaisons et DNA</Form.Label>
                                 <InputGroup>
                                     <Form.Control
                                         as="textarea"
                                         rows={2}
                                         value={dec.additionalImages}
                                         onChange={e => updateDecedent(idx, 'additionalImages', e.target.value)}
-                                        placeholder="Coller l'URL de l'image ou télécharger"
+                                        placeholder="(( Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN )) (séparés par des virgules)"
                                         onPaste={e => {
                                             const clipboardData = e.clipboardData || window.clipboardData;
                                             const pastedData = clipboardData.getData('text');
@@ -557,7 +559,9 @@ const MassFatality = ({
                                     </Button>
                                 </InputGroup>
                                 <ImagePreview imageUrls={dec.additionalImages} />
-                                <span className="helper-text">Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a></span>
+                                <span className="helper-text">
+                                    Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                                </span>
                             </Form.Group>
                             
                         </div>

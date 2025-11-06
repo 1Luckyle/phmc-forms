@@ -21,7 +21,7 @@ const MentalHealth = ({
                     name="patientID"
                     value={formData.patientID}
                     onChange={handleChange}
-                    placeholder="ID Patient"
+                    placeholder="ID Patient (Prénom & Nom du patient si incertain)"
                     required
                     className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
                 />
@@ -42,7 +42,7 @@ const MentalHealth = ({
                 required
                 className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Rang PHMC</option>
+                <option value="" disabled>Fonction au sein du PHMC</option>
                 {phmcRank.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -65,7 +65,7 @@ const MentalHealth = ({
                 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un médecin..."
+                placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                 className="form-control"
                 styles={{
                     control: (base) => ({
@@ -193,7 +193,7 @@ const MentalHealth = ({
                     name="patientProcedure"
                     value={formData.patientProcedure}
                     onChange={handleChange}
-                    placeholder="Procédure du patient"
+                    placeholder="Procédure(s) effectuée(s) / mise(s) en place"
                     rows="2"
                     className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`}
 
@@ -204,7 +204,7 @@ const MentalHealth = ({
                     name="patientMedicine"
                     value={formData.patientMedicine}
                     onChange={handleChange}
-                    placeholder="Médicament du patient"
+                    placeholder="Médicament(s) prescrit(s) / administré(s)"
                     rows="2"
                     className={`form-control ${!formData.patientMedicine ? 'is-invalid' : ''}`}
                 />
