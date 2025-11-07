@@ -182,13 +182,14 @@ const EmergencyForm = ({
     return (
         <>
             {/* ... (Your existing form fields up to the Findings section) ... */}
-            <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://phmc.gta.world/viewforum.php?f=66" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il devrait contenir les informations dont vous avez besoin.  </a> Si vous avez encore besoin d'aide, utilisez le Discord PHMC. </p>
+            <p>Ce formulaire est utilisé pour documenter une consultation d'urgence. Il doit être ajouté au dossier pour chaque visite aux urgences, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
+            <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/SAd4NxU9VJ" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
             <Form.Control
                 type="text"
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="ID Patient"
+                placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
                 required
                 className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
             />
@@ -210,7 +211,7 @@ const EmergencyForm = ({
                 required
                 className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
             >
-                <option value="" disabled>Rang PHMC</option>
+                <option value="" disabled>Fonction au sein du PHMC</option>
                 {phmcRank.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -247,7 +248,7 @@ const EmergencyForm = ({
                 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un médecin..."
+                placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                 className={`form-control p-0 ${!formData.phmcEmployee ? 'is-invalid' : ''}`}
                 classNamePrefix="react-select"
                 styles={customSelectStyles}
@@ -263,7 +264,7 @@ const EmergencyForm = ({
                     required
                     className={`form-control ${!formData.painLevel ? 'is-invalid' : ''}`}
                 >
-                    <option value="" disabled>Échelle de douleur </option>
+                    <option value="" disabled>Échelle de douleur (EVA) </option>
                     {painLevel.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -282,16 +283,16 @@ const EmergencyForm = ({
                     name="patientInjuryMechanism"
                     value={formData.patientInjuryMechanism}
                     onChange={handleChange}
-                    placeholder="Mécanisme de blessure du patient (si applicable)"
+                    placeholder="Comment le patient a été blessé?"
                     required
                     className={`form-control ${!formData.patientInjuryMechanism ? 'is-invalid' : ''}`}
                 />
 
             </div>
-            <Form.Label>Section des signes vitaux </Form.Label>
+            <Form.Label>Section des signes vitaux (T° | FC | FR | TA | SpO2)</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Select name="temperature" value={formData.temperature} onChange={handleChange} required className={`form-control ${!formData.temperature ? 'is-invalid' : ''}`}>
-                    <option value="" disabled>Signes vitaux</option>
+                    <option value="" disabled>Température</option>
                     {temperature.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
                 <Form.Select name="heartRate" value={formData.heartRate} onChange={handleChange} required className={`form-control ${!formData.heartRate ? 'is-invalid' : ''}`}>
@@ -336,7 +337,7 @@ const EmergencyForm = ({
                     {ecg.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
                 <Form.Select name="sono" value={formData.sono} onChange={handleChange} required className={`form-control ${!formData.sono ? 'is-invalid' : ''}`}>
-                    <option value="" disabled>Sono</option>
+                    <option value="" disabled>Résultats échographie</option>
                     {sono.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
             </div>
@@ -398,7 +399,7 @@ const EmergencyForm = ({
                         options={groupedImagingResultsOptions}
                         className={`form-control p-0 mb-2`}
                         classNamePrefix="react-select"
-                        placeholder="Sélectionner le(s) résultat(s) d'imagerie..."
+                        placeholder="Sélectionner le(s) résultat(s) d'imagerie... (Multi-sélection | Scroller jusqu'en bas pour voir tous les résultats)"
                         styles={customSelectStyles}
                     />
                 </>
@@ -442,7 +443,7 @@ const EmergencyForm = ({
                 <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Notes du plan de traitement (conseils verbaux/recommandations supplémentaires/notes additionnelles)" required className={`form-control mb-2 ${!formData.patientMedicine ? 'is-invalid' : ''}`} />
                 <Form.Group className="mb-2 upload-container">
                     <InputGroup>
-                        <Form.Control as="textarea" rows={2} name="prescriptionImage" value={formData.prescriptionImage || ''} onChange={handleChange} placeholder="Vous DEVEZ télécharger une image du bon de prescription dans cette section à des fins d'archivage. (Si applicable)" className={`form-control`}
+                        <Form.Control as="textarea" rows={2} name="prescriptionImage" value={formData.prescriptionImage || ''} onChange={handleChange} placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)" className={`form-control`}
                             onPaste={(e) => {
                                 const clipboardData = e.clipboardData || window.clipboardData;
                                 const pastedData = clipboardData.getData('text');
@@ -473,7 +474,7 @@ const EmergencyForm = ({
                             <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Téléchargement...' : 'Télécharger ordonnance'}
                         </Button>
                     </InputGroup>
-                    <span className="helper-text">Téléchargez une image du bon de prescription si applicable.</span>
+                    <span className="helper-text">Télécharger une image du bon de prescription si applicable. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.</span>
                 </Form.Group>
                 {formData.admission === 'No' && (
                     <Form.Select name="followup" value={formData.followup} onChange={handleChange} required className={`form-control ${!formData.followup ? 'is-invalid' : ''}`}>

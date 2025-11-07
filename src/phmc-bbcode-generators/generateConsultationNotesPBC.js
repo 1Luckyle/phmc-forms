@@ -61,13 +61,13 @@ ${patientProcedure}
 [u]Notes supplémentaires: [/u][br][/br]
 ${patientNotes}
 [br][/br]
-[u]Médicaments: [/u][br][/br]
+[u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine}
 [br][/br]
 [u]Suivi: [/u][br][/br]
 [cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
 [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
-[cb${formData.followup === 'ElectiveProcedure' ? 'c' : ''}] Procédure élective 
+[cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
 [/left][/list][/table]`
             return bbCode;
             };

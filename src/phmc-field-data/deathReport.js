@@ -48,7 +48,7 @@ useEffect(() => {
 
     return (
         <>
-            <p>Le rapport de coroner généré doit être rempli complètement, vous pouvez télécharger des images localement ou lier des images. </p>
+            <p>Ce formulaire est utilisé pour rédiger un rapport d’événement. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                 <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                 <button

@@ -6,7 +6,7 @@ const generateCommentaryNotePBC = (formData) => {
         patientNotes
     } = formData;
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
+    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]
 
 ID PATIENT: ${patientID}
 
@@ -18,21 +18,21 @@ BP 685
 PALETO BAY, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
 [divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Note de commentaire[/b][/color][/center][/divboxcolor]
-[table][tr][td][left][list=none][u]Prénom Nom: [/u][br][/br]
+[table][tr][td][left][list=none][u]Identifiants de l'employé: [/u][br][/br]
 ${phmcEmployee}
 [br][/br]
 [u]Notes du patient: [/u]
 ${patientNotes}
 [br][/br]
 [u]Département: [/u][br][/br]
-[cb${formData.departmentLarge === 'EmergencyMedicine' ? 'c' : ''}] Médecine d'urgence
-[cb${formData.departmentLarge === 'InternalMedicine' ? 'c' : ''}] Médecine interne
-[cb${formData.departmentLarge === 'Surgical' ? 'c' : ''}] Département chirurgical
-[cb${formData.departmentLarge === 'Midwifery' ? 'c' : ''}] Maïeutique
-[cb${formData.departmentLarge === 'PhysicalTherapy' ? 'c' : ''}] Thérapie physique
-[cb${formData.departmentLarge === 'Dentistry' ? 'c' : ''}] Dentisterie
-[cb${formData.departmentLarge === 'MentalHealth' ? 'c' : ''}] Santé mentale
-[cb${formData.departmentLarge === 'Administration' ? 'c' : ''}] Administration
+[cb${formData.departmentLarge === 'EmergencyMedicine' ? 'c' : ''}] Service de Médecine d'Urgence
+[cb${formData.departmentLarge === 'InternalMedicine' ? 'c' : ''}] Service de Médecine Interne
+[cb${formData.departmentLarge === 'Surgical' ? 'c' : ''}] Département Chirurgical
+[cb${formData.departmentLarge === 'Midwifery' ? 'c' : ''}] Service de Maternité-Obstétrique
+[cb${formData.departmentLarge === 'PhysicalTherapy' ? 'c' : ''}] Service de Thérapie Physique
+[cb${formData.departmentLarge === 'Dentistry' ? 'c' : ''}] Service de Dentisterie
+[cb${formData.departmentLarge === 'MentalHealth' ? 'c' : ''}] Service de Psychiatrie / Psychologie
+[cb${formData.departmentLarge === 'Administration' ? 'c' : ''}] Administration / Direction
 [br][/br][/left]
 [/table]
     `

@@ -81,7 +81,7 @@ ${patientStress}
 [u]Humeur: [/u][br][/br]
 [cb${formData.Mood === 'Euthymic' ? 'c' : ''}] Euthymique [cb${formData.Mood === 'Depressed' ? 'c' : ''}] Déprimé [cb${formData.Mood === 'Anxious' ? 'c' : ''}] Anxieux [cb${formData.Mood === 'Angry' ? 'c' : ''}] Colérique
 [br][/br]
-[u]Affect: [/u][br][/br]
+[u]Aspect: [/u][br][/br]
 [cb${formData.Affect === 'Congruent' ? 'c' : ''}] Congruent [cb${formData.Affect === 'Flat' ? 'c' : ''}] Émoussé [cb${formData.Affect === 'Inappropriate' ? 'c' : ''}] Inapproprié
 [br][/br]
 [u]Processus de pensée: [/u][br][/br]
@@ -144,7 +144,7 @@ ${patientFam}
 [u]Parcours éducatif et professionnel: [/u][br][/br]
 ${patientJob}
 [br][/br]
-[u]Relations et système de soutien: [/u][br][/br]
+[u]Relations et système de soutien social: [/u][br][/br]
 ${patientRelationship}
 [br][/br]
 [u]Problèmes juridiques: [/u][br][/br]
@@ -181,7 +181,7 @@ ${patientTreatmentPlan}
 ${patientTherapyMedicine}
 [br][/br]
 [u]Suivi: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
+[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé [cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
 
 [/list][/td][/tr][/table]
 

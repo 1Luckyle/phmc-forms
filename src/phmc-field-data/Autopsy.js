@@ -142,6 +142,7 @@ const Autopsy = ({
 
     return (
         <>
+            <p>Ce formulaire est utilisé pour documenter une procédure d'autopsie. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
                 <Form.Control
                     type="text"

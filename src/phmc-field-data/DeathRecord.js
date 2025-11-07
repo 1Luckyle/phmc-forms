@@ -66,6 +66,7 @@ const DeathRecord = ({
 
     return (
         <>
+            <p>Ce formulaire est utilisé pour documenter un décès. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
             <Form.Group className="mb-3">
                 <Form.Label>Type de dossier de décès</Form.Label>
                 <Form.Select

@@ -21,7 +21,7 @@ const PHMCCommentaryNoteQuestions = ({
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="ID Patient (Si disponible)"
+                placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
                 required
                 className="form-control"
             />
@@ -81,7 +81,7 @@ const PHMCCommentaryNoteQuestions = ({
                         rows="2"
                         required
                         className={`form-control ${!formData.scenePhotos ? 'is-invalid' : ''}`}
-                        placeholder="Télécharger les photos de la scène (séparées par des virgules)"
+                        placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)"
                         onPaste={(e) => { // Keep the paste logic
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -131,9 +131,7 @@ const PHMCCommentaryNoteQuestions = ({
                     </Button>
                 </InputGroup>
                 <ImagePreview imageUrls={formData.scenePhotos} />
-                <span className="helper-text">
-                    Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
-                </span>
+                <span className="helper-text">Télécharger une image du bon de prescription si applicable. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.</span>
             </Form.Group>
             <Form.Group className="mb-3 upload-container">
                 <div className="input-group">
@@ -145,7 +143,7 @@ const PHMCCommentaryNoteQuestions = ({
                         rows="2"
                         required
                         className={`form-control ${!formData.additionalImages ? 'is-invalid' : ''}`}
-                        placeholder="Écran de la morgue, blessures, liens CDNA (séparés par des virgules)"
+                        placeholder="(( Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN )) (séparés par des virgules)"
                         onPaste={(e) => { // Keep the paste logic
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -196,7 +194,7 @@ const PHMCCommentaryNoteQuestions = ({
                 </div>
                 <ImagePreview imageUrls={formData.additionalImages} />
                 <span className="helper-text">
-                    Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
+                        Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                 </span>
                 <label>Bugs de la morgue:</label> {/* Use <Form.Label> ? */}
                 <Form.Check
@@ -245,7 +243,7 @@ const PHMCCommentaryNoteQuestions = ({
                 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un médecin..."
+                placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                 className="form-control"
                 styles={{ // Keep the styles for react-select
                     control: (base) => ({

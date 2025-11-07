@@ -18,6 +18,7 @@ const SicknessEmail = ({
 
     return (
         <>
+        <p>Ce formulaire est utilisé pour créer des emails externes. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
             <Form.Group className="mb-3">
                 <Form.Label>Objet de l'email</Form.Label>
                 <Form.Select
@@ -53,7 +54,7 @@ const SicknessEmail = ({
                     name="patientName"
                     value={formData.patientName}
                     onChange={handleChange}
-                    placeholder="Nom complet du patient"
+                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
                     required
                     className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
                 />
@@ -197,7 +198,7 @@ const SicknessEmail = ({
                     }}
                     options={phmcGroupedOptions}
                     isClearable
-                    placeholder="Rechercher ou sélectionner un employé PHMC..."
+                    placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                     className={`form-control ${!formData.phmcEmployee ? 'is-invalid' : ''}`}
                     styles={{
                         control: (base) => ({
@@ -242,7 +243,7 @@ const SicknessEmail = ({
                         name="phmcEmployeeSignatureImage"
                         value={formData.phmcEmployeeSignatureImage || ''}
                         onChange={handleChange}
-                        placeholder="Coller l'URL de l'image ou télécharger"
+                        placeholder="Image de signature de l'employé"
                         className="form-control"
                         onPaste={(e) => {
                             const clipboardData = e.clipboardData || window.clipboardData;
