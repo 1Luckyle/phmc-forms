@@ -16,8 +16,7 @@ const Certificate = ({
 }) => {
     return (
         <>
-            <p>Ce formulaire est utilisé pour générer un certificat de décès. Veuillez remplir tous les champs obligatoires avec précision.</p>
-
+            <p>Ce formulaire est utilisé pour créer un certificat de décès. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
             {/* Coroner Employee Selection */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                 <Form.Label style={{ marginBottom: 0 }}>Coroner délivrant le certificat</Form.Label>

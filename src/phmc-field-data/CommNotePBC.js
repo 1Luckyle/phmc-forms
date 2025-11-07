@@ -12,13 +12,14 @@ const CommNotePBC = ({
 }) => {
     return (
         <>
+            <p>Ce formulaire est utilisé pour créer des notes de service. Il doit être ajouté au dossier pour chaque rendez-vous patient concerné, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
             {/* The JSX code block for bbCodeVersion === 22 */}
             <Form.Control
                 type="text"
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="ID Patient"
+                placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
                 required
                 className="form-control"
             />
@@ -77,7 +78,7 @@ const CommNotePBC = ({
                 }}
                 options={phmcGroupedOptions}
                 isClearable
-                placeholder="Rechercher ou sélectionner un médecin..."
+                placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                 className="form-control"
                 styles={{ // Keep the styles for react-select
                     control: (base) => ({

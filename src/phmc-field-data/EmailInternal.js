@@ -14,6 +14,7 @@ const EmailInternal = ({
 }) => {
     return (
         <>
+        <p>Ce formulaire est utilisé pour créer des emails internes. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 type="text"
@@ -128,7 +129,7 @@ const EmailInternal = ({
 
         </InputGroup>
         <span className="helper-text">
-        Cela prend en charge le téléchargement depuis le presse-papiers, ctrl + V! | Hébergé par ImgBB! - <a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
+            Télécharger l'image de signature. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
         </span>
         <ImagePreview imageUrls={formData.scenePhotos} />
     </Form.Group>
@@ -149,7 +150,7 @@ const EmailInternal = ({
         }}
         options={phmcGroupedOptions}
         isClearable
-        placeholder="Rechercher ou sélectionner un médecin..."
+        placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
         className="form-control"
         styles={{
             control: (base) => ({
@@ -192,7 +193,7 @@ const EmailInternal = ({
                 name="decedentOOC"
                 value={formData.decedentOOC}
                 onChange={handleChange}
-                placeholder="Rang / Position PHMC"
+                placeholder="Fonction au sein du PHMC"
                 required
                 className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
 

@@ -32,14 +32,15 @@ const GeneralConsult = ({
 }) => {
     return (
                             <> 
-                                <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://phmc.gta.world/viewforum.php?f=66" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il devrait contenir les informations dont vous avez besoin.  </a> Si vous avez encore besoin d'aide, utilisez le Discord PHMC. </p>
+                                <p>Ce formulaire est utilisé pour documenter une consultation médicale. Il doit être ajouté au dossier pour chaque rendez-vous médical, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
+                                <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/SAd4NxU9VJ" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
 
                                 <Form.Control
                                     type="text"
                                     name="patientID"
                                     value={formData.patientID}
                                     onChange={handleChange}
-                                    placeholder="ID Patient"
+                                    placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
                                     required
                                     className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
                                 />
@@ -61,7 +62,7 @@ const GeneralConsult = ({
                                             required
                                             className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
                                         >
-                                            <option value="" disabled>Rang PHMC</option>
+                                            <option value="" disabled>Fonction au sein du PHMC</option>
                                             {phmcRank.map((option) => (
                                                 <option key={option.value} value={option.value}>{option.label}</option>
                                             ))}
@@ -101,7 +102,7 @@ onChange={(selectedOption) => {
 }}
                                     options={phmcGroupedOptions}
                                     isClearable
-                                    placeholder="Rechercher ou sélectionner un médecin..."
+                                    placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
                                     className="form-control"
                                     styles={{
                                         control: (base) => ({
@@ -165,7 +166,7 @@ onChange={(selectedOption) => {
                                 </div> 
 
 
-                                <Form.Label>Section des signes vitaux </Form.Label>
+                                <Form.Label>Section des signes vitaux (T° | FC | FR | TA | SpO2)</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                         <Form.Select
                                                 name="temperature"
@@ -174,7 +175,7 @@ onChange={(selectedOption) => {
                                                 required
                                                 className={`form-control ${!formData.temperature ? 'is-invalid' : ''}`}
                                             >
-                                                <option value="" disabled>Signes vitaux</option>
+                                                <option value="" disabled>Température</option>
                                                 {temperature.map((option) => (
                                                     <option key={option.value} value={option.value}>{option.label}</option>
                                                 ))}
@@ -322,7 +323,7 @@ onChange={(selectedOption) => {
                                     }}
                                     options={lab}
                                     className="form-control"
-                                    placeholder="Sélectionner les résultats de laboratoire..."
+                                    placeholder="Sélectionner les résultats de laboratoire... (Multi-sélection)"
                                     styles={{
                                         control: (base) => ({
                                             ...base,
@@ -437,7 +438,7 @@ onChange={(selectedOption) => {
                         rows="2"
                         required
                         className={`form-control ${!formData.scenePhotos ? 'is-invalid' : ''}`}
-                        placeholder="Vous DEVEZ télécharger une image du bon de prescription dans cette section à des fins d'archivage. (Si applicable)"
+                        placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)"
                         onPaste={(e) => { // Keep the paste logic
                             const clipboardData = e.clipboardData || window.clipboardData;
                             const pastedData = clipboardData.getData('text');
@@ -487,6 +488,7 @@ onChange={(selectedOption) => {
                     </Button>
                 </InputGroup>
                 <ImagePreview imageUrls={formData.scenePhotos} />
+                <span className="helper-text">Télécharger une image du bon de prescription si applicable. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.</span>
             </Form.Group>
 
                                 <Form.Select

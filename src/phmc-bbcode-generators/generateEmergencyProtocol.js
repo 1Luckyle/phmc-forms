@@ -98,13 +98,14 @@ ${patientSecondaryDiagnosis || 'N/A'}[/left][/list][/table]
 [u]Procédure/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-[u]Médicaments: [/u][br][/br]
+[u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine || 'N/A'}
 ${prescriptionImageBBCode}
 [u]Suivi: [/u][br][/br]
 [cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
 [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
-    
+[cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
+
 [/left][/list][/table]`;
     return bbCode;
 };

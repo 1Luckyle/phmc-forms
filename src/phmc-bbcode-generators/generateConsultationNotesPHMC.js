@@ -52,10 +52,10 @@ T: 50056[/size][/center][/table][/divbox]
 ${patientChiefComplaint || 'N/A'}
 [br][/br]
 [u]Département assigné: [/u][br][/br]
-[cb${formData.assignedDepartment === 'InternalMedicine' ? 'c' : ''}] Médecine interne
-[cb${formData.assignedDepartment === 'SurgicalDepartment' ? 'c' : ''}] Département chirurgical
-[cb${formData.assignedDepartment === 'Midwifery' ? 'c' : ''}] Maïeutique
-[cb${formData.assignedDepartment === 'Dialysis' ? 'c' : ''}] Dialyse
+[cb${formData.assignedDepartment === 'InternalMedicine' ? 'c' : ''}] Service de Médecine Interne
+[cb${formData.assignedDepartment === 'SurgicalDepartment' ? 'c' : ''}] Département Chirurgical
+[cb${formData.assignedDepartment === 'Midwifery' ? 'c' : ''}] Service de Maternité-Obstétrique
+[cb${formData.assignedDepartment === 'Dialysis' ? 'c' : ''}] Service de Néphrologie
 [/list][/td][/tr][/table]
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Signes vitaux[/b][/color][/center][/divboxcolor]
 [table][tr][td][center]Température: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normale [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermique [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermique[/center]
@@ -83,13 +83,13 @@ ${patientSecondaryDiagnosis || 'N/A'}[/left][/list][/table]
 [u]Plan de traitement/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-[u]Médicaments: [/u][br][/br]
+[u]Médicaments/Traitements: [/u][br][/br]
 ${medicationBBCode} 
 [br][/br]
 [u]Suivi: [/u][br][/br]
 [cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
 [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
-[cb${formData.followup === 'ElectiveProcedure' ? 'c' : ''}] Procédure élective
+[cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
 [/left][/list][/table]`;
     return bbCode;
 };

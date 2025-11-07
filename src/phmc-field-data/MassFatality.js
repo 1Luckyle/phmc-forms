@@ -243,6 +243,7 @@ const MassFatality = ({
 
     return (
         <>
+            <p>Ce formulaire est utilisé pour documenter une tuerie/accident de masse. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                 <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
                 <button
