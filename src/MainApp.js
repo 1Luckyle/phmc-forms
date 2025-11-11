@@ -31,6 +31,7 @@ import tombstone from './assets/tombstone.png'
 import phmcpaletobay from './assets/phmcpaletobaylogo.png'
 import './assets/fonts/Poppins-Medium.ttf';
 import { sendMissingEmployeeNotification } from './components/notificationService';
+import SimpleAdminAuth from './components/SimpleAdminAuth';
 
 // css fun
 import './App.css';
@@ -279,7 +280,7 @@ function MainApp({
     const handleRecruitmentOptIn = (optIn) => {
         setPhmcRecruitmentOptIn(optIn);
         localStorage.setItem('phmcRecruitmentOptIn', optIn);
-        showNotification(`PHMC Recruitment Notifications ${optIn ? 'enabled' : 'disabled'}.`, 'info');
+        showNotification(`Notification de Recrutement du PHMC ${optIn ? 'activé' : 'désactivé'}.`, 'info');
     };
 
     const handleMainFormSelectionButtonClick = () => {
@@ -333,7 +334,7 @@ function MainApp({
     };
 
     const handleFillCoronerPhone = () => {
-        showNotification("Coroner phone filled (placeholder)", 'info');
+        showNotification("Numéro de téléphone du coroner rempli (espace réservé)", 'info');
     };
 
     const addReport = () => {
@@ -363,7 +364,7 @@ function MainApp({
     const handleCopyTitle = () => {
         const title = generateTitle();
         navigator.clipboard.writeText(title);
-        showNotification('Title copied to clipboard!', 'check-circle');
+        showNotification('Titre copié dans le presse-papiers !', 'check-circle');
     };
 
     const generateTitle = () => {
@@ -371,7 +372,7 @@ function MainApp({
         if (definition && definition.titleGenerator) {
             return definition.titleGenerator(formData);
         }
-        return "Untitled Report";
+        return "Rapport Sans Titre";
     };
 
     useEffect(() => {
@@ -451,9 +452,9 @@ function MainApp({
 
     const getCopyButtonText = () => {
         if (selectedAgencyGroup === 'PHMC Recruitment') {
-            return 'Copy Recruitment BBCode';
+            return 'Copie BBCode de Recrutement';
         }
-        return 'Copy BBCode';
+        return 'Copie BBCode';
     };
     
     const getCurrentReportAuthor = useCallback((formData) => {
@@ -600,7 +601,7 @@ function MainApp({
             localStorage.removeItem(`${field}_timestamp`);
         });
         setLastWebhookIdentifier(null);
-        showNotification('Form cleared! Employee selections preserved.', 'check-circle');
+        showNotification('Formulaire vidé ! Sélections des employés conservées.', 'check-circle');
     };
 
     const handleShowCctvRequestModal = () => {
@@ -614,7 +615,6 @@ function MainApp({
         };
         handleResize();
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const { imageSource: deathReportImage, className: deathReportClass, season, effect } = seasonalEffectsEnabled ? SeasonalEvents({ imageType: 'deathReport' }) : {};
@@ -681,42 +681,42 @@ function MainApp({
         });
     }
     const coronerFormsSubGroup = [
-        { version: 1, name: "Decedent Services", icon: corpse },
-        { version: 2, name: "Email Generator", icon: email },
-        { version: 4, name: "Autopsy Report", icon: corpse },
-        { version: 8, name: "Death Certificate", icon: PHMCLogo },
-        { version: 11, name: "Mass Fatality Report", icon: corpse },
-        { version: 37, name: "Public Death Record ", icon: tombstone }
+        { version: 1, name: "Services de Médecine Légale", icon: corpse },
+        { version: 2, name: "Générateur d'Email", icon: email },
+        { version: 4, name: "Rapport d'Autopsie", icon: corpse },
+        { version: 8, name: "Certificat de Décès", icon: PHMCLogo },
+        { version: 11, name: "Rapport de Tuerie/Accident de Masse", icon: corpse },
+        { version: 37, name: "Rapport Public de Décès", icon: tombstone }
     ];
     const physicalEvalFormsSubGroup = [
-        { version: 6, name: "Physical Evaluation PHMC", icon: PHMCLogo },
-        { version: 7, name: "Physical Evaluation PBC", icon: phmcpaletobay }
+        { version: 6, name: "Évaluation Physique | PHMC", icon: PHMCLogo },
+        { version: 7, name: "Évaluation Physique | PBC", icon: phmcpaletobay }
     ];
     const psychEvalFormsSubGroup = [
-        { version: 28, name: "Psychological Evaluation | PHMC", icon: PHMCLogo },
-        { version: 29, name: "Psychological Evaluation | PBC", icon: phmcpaletobay }
+        { version: 28, name: "Évaluation Psychologique | PHMC", icon: PHMCLogo },
+        { version: 29, name: "Évaluation Psychologique | PBC", icon: phmcpaletobay }
     ];
     const generalConsultFormsSubGroup = [
-        { version: 20, name: "General Consultation | PHMC", icon: PHMCLogo },
-        { version: 21, name: "General Consultation | PBC", icon: phmcpaletobay }
+        { version: 20, name: "Consultation Générale | PHMC", icon: PHMCLogo },
+        { version: 21, name: "Consultation Générale | PBC", icon: phmcpaletobay }
     ];
     const commentaryNoteFormsSubGroup = [
-        { version: 22, name: "Commentary Note | PHMC", icon: PHMCLogo },
-        { version: 23, name: "Commentary Note | PBC", icon: phmcpaletobay }
+        { version: 22, name: "Note de Service | PHMC", icon: PHMCLogo },
+        { version: 23, name: "Note de Service | PBC", icon: phmcpaletobay }
     ];
     const mentalHealthFormsSubGroup = [
-        { version: 14, name: "Mental Health - PHMC", icon: PHMCLogo },
-        { version: 16, name: "Mental Health | PBC", icon: phmcpaletobay }
+        { version: 14, name: "Consultation psychiatrique | PHMC", icon: PHMCLogo },
+        { version: 16, name: "Consultation psychiatrique | PBC", icon: phmcpaletobay }
     ];
     const civilianFormsSubGroup = [
-        { version: 24, name: "Medical Record Release", icon: Civilian },
-        { version: 25, name: "Basic Patient File", icon: nurse },
-        { version: 3, name: "Detailed Patient File", icon: nurse },
-        { version: 26, name: "Update Medical Records", icon: Civilian},
+        { version: 24, name: "Remise de Dossier Médical", icon: Civilian },
+        { version: 25, name: "Dossier Médical Basique", icon: nurse },
+        { version: 3, name: "Dossier Médical Avancé", icon: nurse },
+        { version: 26, name: "Mise à Jour du Dossier Médical", icon: Civilian},
     ];
     const phmcInternalEmails = [
-        { version: 24, name: "Internal Email", icon: Civilian },
-        { version: 35, name: "Sick Note", icon: nurse },
+        { version: 24, name: "Note Interne", icon: Civilian },
+        { version: 35, name: "Certificat de Maladie", icon: nurse },
     ];
 
     const openSwitchableModal = (title, formsArray) => {
@@ -767,11 +767,11 @@ function MainApp({
         );
 
         if (actionType === 'updateRank') {
-            showNotification("Refreshing staff data...", 'info-circle', 2000);
+            showNotification("Mise à jour des données du personnel...", 'info-circle', 2000);
         }
 
         if (actionType === 'updateRank') {
-            showNotification("Staff data refreshed.", 'check-circle', 3000);
+            showNotification("Mise à jour des données du personnel...", 'check-circle', 3000);
         }
     };
 
@@ -1111,28 +1111,28 @@ function MainApp({
                             <div className="floating-tools-container">
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
-                                        <i className="fas fa-tools"></i> Tools
+                                        <i className="fas fa-tools"></i> Boite d'Outils
                                     </Dropdown.Toggle>
 
                                     <Dropdown.Menu>
                                         <Dropdown.Item onClick={() => {setShowEmployeeModal(true); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-users-cog"></i> Manage PHMC Staff
+                                            <i className="fas fa-users-cog"></i> Gérer le Personnel
                                         </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {setShowFeatureRequestModal(true); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-bug"></i> Report Bug/Feature
+                                            <i className="fas fa-bug"></i> Rapport de Bug/Ajout
                                         </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {toggleSavedReports(); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-save"></i> Saved Reports
+                                            <i className="fas fa-save"></i> Rapports Sauvegardés
                                         </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
-                                            <i className="fa-solid fa-truck-medical"></i> EMS AMA
+                                            <i className="fa-solid fa-truck-medical"></i> EMS Contre Avis Médical
                                         </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {toggleSeasonalEffects(); setShowToolsDropdown(false);}}>
                                             <i className={`fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`}></i> 
-                                            {seasonalEffectsEnabled ? 'Disable' : 'Enable'} Seasonal Effects
+                                            {seasonalEffectsEnabled ? ' Désactiver' : ' Activer'} Effet de Saison
                                         </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {restartOnboarding(); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-play-circle"></i> Restart Setup Guide
+                                            <i className="fas fa-play-circle"></i> Guide de Configuration
                                         </Dropdown.Item>
                                         <Dropdown.Divider />
                                         <Dropdown.Item onClick={() => {{
@@ -1141,7 +1141,7 @@ function MainApp({
                                             setShowAgencyGroupSelectorModal(true);
                                             setShowToolsDropdown(false);
                                         }}}>
-                                            <i className="fas fa-users"></i> Switch Form Type
+                                            <i className="fas fa-users"></i> Changer de Formulaire
                                         </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
@@ -1172,7 +1172,7 @@ function MainApp({
                                 onClick={() => setShowBusinessCard(prev => !prev)}
                             >
                                 <i className="fa-solid fa-address-card"></i>
-                                Business Card Tool
+                                Carte de Visite
                             </Button>
 
                             <div className="floating-top-right-tools">
@@ -1182,7 +1182,7 @@ function MainApp({
                                         onClick={() => handleRecruitmentOptIn(!phmcRecruitmentOptIn)}
                                         className="changelog-button"
                                         title={phmcRecruitmentOptIn ? "Click to Opt-out of PHMC Recruitment Notifications" : "Click to Opt-in to PHMC Recruitment Notifications"}
-                                    > Desktop Alert Toggle
+                                    > Activer/désactiver l'alerte de bureau
                                         <i className={`fas ${phmcRecruitmentOptIn ? 'fa-bell-slash' : 'fa-bell'}`}></i>
                                     </Button>
                                 )}
@@ -1223,7 +1223,7 @@ function MainApp({
                                                 title={`More info about ${positionDisplayNameForTitle}`}
                                             >
                                                 <i className="fas fa-info-circle"></i>
-                                                Position Info
+                                                Information sur le Poste
                                             </Button>
                                         );
                                     }
@@ -1239,7 +1239,7 @@ function MainApp({
                                     className="changelog-button"
                                     onClick={() => setShowCoronerTips(true)}
                                 >
-                                    Coroner Tips
+                                    Conseils pour les Coroners
                                 </Button>
                             )}
                         </div>
@@ -1260,7 +1260,7 @@ function MainApp({
                                 onClick={handleMainFormSelectionButtonClick}
                             >
                                 <i className="fas fa-exchange-alt"></i>
-                                Select {selectedAgencyGroup || "Agency"} Form
+                                Sélectionner {selectedAgencyGroup || "Agence"} Formulaire
                             </Button>
 
                             <SwitchableFormButtons
@@ -1388,7 +1388,7 @@ function MainApp({
                                         onAttachReportSummaryRequest={onAttachReportSummaryRequest}
                                     />
                                 ) : (
-                                    <p>Please select an agency group and then a form type.</p>
+                                    <p>Veuillez sélectionner une agence, puis un type de formulaire.</p>
                                 )}
                             </Suspense>
                             <div className="button-group">
@@ -1398,7 +1398,7 @@ function MainApp({
                                     className="remove-report-button"
                                 >
                                     <i className="fas fa-trash-alt"></i>
-                                    Clear Form
+                                    Vider le Formulaire
                                 </Button>
                             </div>
                         </form>
@@ -1412,9 +1412,10 @@ function MainApp({
                                 className="changelog-button"
                                 onClick={() => setShowEmsBingoModal(true)}
                                 title="Open Bingo Night!"
+                                // disabled // [BINGO DISABLED]
                             >
                                 <i className="fas fa-trophy"></i>
-                                Bingo Night!
+                                Bingo
                             </Button>
                             <Button
                                 type="button"
@@ -1424,7 +1425,7 @@ function MainApp({
                                 title="Open Admin Control Panel"
                             >
                                 <i className="fas fa-user-shield"></i>
-                                Admin Panel
+                                Panneau Admin
                             </Button>
                         </div>
 
@@ -1489,7 +1490,7 @@ function MainApp({
                                     Character Count: {getBBCodeContent()?.length ?? 'Error'} / 60000
                                     {getBBCodeContent()?.length > 60000 && (
                                         <div className="char-counter-warning-message">
-                                            Warning: PHPBB forums often have a character limit around 60,000. You may need to split this form.
+                                            Attention : les forums PHPBB ont souvent une limite de caractères d’environ 60 000. Vous devrez peut-être scinder ce formulaire.
                                         </div>
                                     )}
                                 </div>
@@ -1502,7 +1503,7 @@ function MainApp({
                                     className="control-button"
                                 >
                                     <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                                    {showBBCode ? 'Hide BBCode' : 'Show BBCode'}
+                                    {showBBCode ? 'Cacher BBCode' : 'Montrer BBCode'}
                                 </Button>
                                 <Button
                                     type="button"
@@ -1510,10 +1511,10 @@ function MainApp({
                                     className="control-button"
                                 >
                                     <i className="fas fa-save"></i>
-                                    Save Report
+                                    Rapports Sauvegardés
                                 </Button>
                             </div>
-                            <p className="generated-title-label">Generated Title</p>
+                            <p className="generated-title-label">Titre du Formulaire</p>
                             <p className="generated-title-string">{generateTitle()}</p>
 
                             {showBBCode && (
@@ -1528,7 +1529,7 @@ function MainApp({
                                     className="copy-button-modern"
                                 >
                                     <i className="fas fa-copy"></i>
-                                    Copy Title
+                                    Copier le Titre
                                 </Button>
 
                                 <Button

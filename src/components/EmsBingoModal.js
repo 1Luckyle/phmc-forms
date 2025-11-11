@@ -174,17 +174,17 @@ useEffect(() => {
             setLastSeenLogId(null);
             setShowNewMessagesIndicator(false);
             setCompletedBingoLines(new Set());
-            showNotification(`New ${selectedBingoType.name} Bingo card loaded!`, "info-circle");
+            showNotification(`Nouvelle carte de bingo ${selectedBingoType.name} chargée !`, "info-circle");
         } else {
             setPhrases([]);
-            showNotification(`No active ${selectedBingoType.name} Bingo card. Admin needs to generate one.`, "warning");
+            showNotification(`Aucune carte de bingo active ${selectedBingoType.name}. Un administrateur doit en générer une.`, "warning");
         }
         setIsLoadingPhrases(false);
     }).catch((error) => {
         console.error("Error listening to current bingo card:", error);
         setIsLoadingPhrases(false);
         setPhrases([]);
-        showNotification("Error loading Bingo card. Please try again.", "error");
+        showNotification("Erreur lors du chargement de la carte de bingo. Veuillez réessayer.", "error");
     });
 
     return () => {
@@ -414,11 +414,11 @@ setCompletedBingoLines(prevCompletedLines => {
 
     const handleSquareClick = useCallback(async (index, phrase) => {
         if (!selectedEmployee) {
-            showNotification('Please select your name from the dropdown before marking a square!', 'warning');
+            showNotification('Veuillez sélectionner votre nom dans le menu déroulant avant de marquer un carré !', 'warning');
             return;
         }
         if (!selectedBingoType) {
-            showNotification('Please select a Bingo type first!', 'warning');
+            showNotification('Veuillez sélectionner un type de Bingo.', 'warning');
             return;
         }
 
@@ -443,7 +443,7 @@ setCompletedBingoLines(prevCompletedLines => {
                     });
                 } catch (error) {
                     console.error("Error unmarking square in Firebase:", error);
-                    showNotification("Failed to unmark square. Please try again.", "error");
+                    showNotification("Impossible de désélectionner le carré. Veuillez réessayer.", "error");
                 }
             }
         } else {
@@ -496,21 +496,21 @@ setCompletedBingoLines(prevCompletedLines => {
         console.log("[Admin] handleGenerateNewCard initiated.");
         if (!isAdmin) {
             console.log("[Admin] User is not admin. Aborting card generation.");
-            showNotification("You are not authorized to perform this action.", "error");
+            showNotification("Vous n'êtes pas autorisé à effectuer cette action.", "error");
             return;
         }
         if (!selectedBingoType) {
             console.log("[Admin] No bingo type selected. Aborting card generation.");
-            showNotification("Please select a bingo type to generate a card for.", "warning");
+            showNotification("Veuillez sélectionner un type de bingo pour générer une carte.", "warning");
             return;
         }
         if (masterPhraseList.length < 24) {
             console.log(`[Admin] Not enough phrases in master list for ${selectedBingoType.name}. Found: ${masterPhraseList.length}, Needed: 24. Aborting.`);
-            showNotification(`Not enough phrases in the master list for ${selectedBingoType.name} to generate a new card (found ${masterPhraseList.length}, need 24).`, "error");
+            showNotification(`Pas assez de phrases dans la liste principale pour ${selectedBingoType.name} pour générer une nouvelle carte (trouvé ${masterPhraseList.length}, besoin de 24).`, "error");
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to generate a new ${selectedBingoType.name} Bingo card? This will clear the current card and all progress.`)) {
+        if (!window.confirm(`Êtes-vous sûr de vouloir générer une nouvelle carte de bingo ${selectedBingoType.name}? Cela effacera la carte actuelle et tous les progrès.`)) {
             console.log("[Admin] User cancelled card generation.");
             return;
         }
@@ -530,19 +530,19 @@ setCompletedBingoLines(prevCompletedLines => {
             await set(cardPhrasesRef, newCardPhrases);
             
             console.log(`[Admin] New ${selectedBingoType.name} Bingo card generated successfully!`);
-            showNotification(`New ${selectedBingoType.name} Bingo card generated successfully!`, 'check-circle');
+            showNotification(`Nouvelle carte de bingo ${selectedBingoType.name} générée avec succès !`, 'check-circle');
         } catch (error) {
             console.error("[Admin] Error generating new card:", error);
-            showNotification("Failed to generate new card. See console for details.", "error");
+            showNotification("Échec de la génération de la nouvelle carte. Voir la console pour plus de détails.", "error");
         }
     };
 
     const renderGrid = () => {
         if (isLoadingPhrases) {
-            return <div className="bingo-loading"><Spinner animation="border" /> Loading Bingo Card...</div>;
+            return <div className="bingo-loading"><Spinner animation="border" /> Chargement de la carte de bingo...</div>;
         }
         if (phrases.length === 0) {
-            return <div className="bingo-loading">No active bingo card found for this type. An admin needs to generate one.</div>;
+            return <div className="bingo-loading">Aucune carte de bingo active n'a été trouvée pour ce type. Un administrateur doit en générer une.</div>;
         }
 
         const grid = [];
@@ -654,11 +654,11 @@ setCompletedBingoLines(prevCompletedLines => {
                         onClick={handleBackToSelection}
                         className="bingo-back-button"
                     >
-                        <i className="fas fa-arrow-left"></i> Back
+                        <i className="fas fa-arrow-left"></i> Retour
                     </Button>
                 )}
                 <Modal.Title className="bingo-title w-100 text-center">
-                    {selectedBingoType ? `${selectedBingoType.name} Bingo!` : "Select Bingo Type"}
+                    {selectedBingoType ? `${selectedBingoType.name} Bingo!` : "Sélectionner le type de Bingo"}
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body className={isEmsBingoActive ? 'ems-bingo-body-background' : ''}>
@@ -671,18 +671,18 @@ setCompletedBingoLines(prevCompletedLines => {
                         </div>
                         <div className="bingo-sidebar">
                             {selectedEmployee && (
-                                <h5 className="welcome-message">Welcome {selectedEmployee.value}!</h5>
+                                <h5 className="welcome-message">Bienvenue {selectedEmployee.value}!</h5>
                             )}
                             {!selectedEmployee && (
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Select Your Name to Play:</Form.Label>
+                                    <Form.Label>Sélectionner votre nom :</Form.Label>
                                     <Select
                                         name="phmcEmployeeBingo"
                                         value={selectedEmployee}
                                         onChange={handleEmployeeSelect}
                                         options={filteredEmployeeOptions}
                                         isClearable
-                                        placeholder="Select your name..."
+                                        placeholder="Sélectionner votre nom..."
                                         className="react-select-container"
                                         classNamePrefix="react-select"
                                         styles={{
@@ -699,12 +699,12 @@ setCompletedBingoLines(prevCompletedLines => {
                                             onClick={handleOpenEmployeeModal}
                                             style={{ cursor: 'pointer', textDecoration: 'underline' }}
                                         >
-                                            Missing Name?
+                                            Nom Manquant?
                                         </span>
                                     </small>
                                 </Form.Group>
                             )}
-                            <h5>Recent Activity</h5>
+                            <h5>Activité Récente</h5>
                             <div className="activity-log" ref={activityLogRef}>
                                 {bingoActivityLog.length > 0 ? (
                                     bingoActivityLog.map(entry => (
@@ -720,9 +720,9 @@ setCompletedBingoLines(prevCompletedLines => {
                                                 <>
                                                     <strong>{entry.employee}</strong>{' '}
                                                     {entry.type === 'unmarked' ? (
-                                                        <span className="unmarked-text">unmarked</span>
+                                                        <span className="unmarked-text">non marqué</span>
                                                     ) : (
-                                                        <span>marked</span>
+                                                        <span>marqué</span>
                                                     )}{' '}
                                                     "{entry.phrase}"
                                                 </>
@@ -733,12 +733,12 @@ setCompletedBingoLines(prevCompletedLines => {
                                         </div>
                                     ))
                                 ) : (
-                                    <p>No activity yet. Be the first to mark a square!</p>
+                                    <p>Aucune activité pour le moment. Soyez le premier à marquer une case !</p>
                                 )}
                             </div>
                             {showNewMessagesIndicator && (
                                 <button className="new-messages-indicator show" onClick={scrollToBottom}>
-                                    New Messages
+                                    Nouveaux Messages
                                 </button>
                             )}
                             {/* Removed Admin Controls Section from sidebar */}
@@ -746,7 +746,7 @@ setCompletedBingoLines(prevCompletedLines => {
                     </div>
                 ) : (
                     <div className="bingo-type-selection">
-                        <p>Please select a Bingo type to start:</p>
+                        <p>Veuillez sélectionner un type de Bingo pour commencer :</p>
                         <div className="bingo-type-buttons">
                             {BINGO_TYPES.map(type => (
                                 <Button
@@ -764,7 +764,7 @@ setCompletedBingoLines(prevCompletedLines => {
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="info" onClick={() => setShowPhraseRequestModal(true)} className="me-auto">
-                    Request a Phrase
+                    Suggérer une Phrase
                 </Button>
                 {/* Re-instated isAdmin check for security */}
                 {isAdmin && selectedBingoType && (
@@ -779,11 +779,11 @@ setCompletedBingoLines(prevCompletedLines => {
                                 : `Generate a new ${selectedBingoType?.name || 'Bingo'} Card.`
                         }
                     >
-                        Generate New {selectedBingoType?.name || 'Bingo'} Card
+                        Générer une nouvelle carte {selectedBingoType?.name || 'Bingo'}
                     </Button>
                 )}
                 <Button variant="secondary" onClick={onHide} className="ms-2">
-                    Close
+                    Fermer
                 </Button>
             </Modal.Footer>
 

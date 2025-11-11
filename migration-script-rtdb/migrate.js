@@ -4,7 +4,7 @@ const admin = require('firebase-admin');
 // Path to your service account key
 const serviceAccount = require('../firebase-admin-key.json'); // Adjust if needed
 
-const DATABASE_URL = "https://gtaw-forms-default-rtdb.europe-west1.firebasedatabase.app";
+const DATABASE_URL = "https://console.firebase.google.com/u/0/project/phmcfr-forms/database/phmcfr-forms-default-rtdb/data";
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),

@@ -64,8 +64,8 @@ const generateEMS = (formData) => {
     const positionDetailsMap = selectOptions?.emsPositionDetailsData || {};
     console.log("DEBUG: positionDetailsMap in generateEMS.js:", positionDetailsMap);
 
-    let dynamicDisplayPosition = "Position (Veuillez sélectionner)";
-    let dynamicJobPostingUrl = "https://phmc.gta.world/viewforum.php?f=168";
+    let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
+    let dynamicJobPostingUrl = "";
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition.toUpperCase();
@@ -76,12 +76,12 @@ const generateEMS = (formData) => {
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             // Ce console.warn fera maintenant correctement référence au nom de la source de données
-            console.warn(`Position EMS "${selectedPositionKey}" non trouvée dans positionDetailsMap. Utilisation de l'URL par défaut.`);
+            console.warn(`Position EMS "${selectedPositionKey}" not found in positionDetailsMap. Using default URL and position key as display name.`);
         }
     } else if (recruitmentPosition) {
         dynamicDisplayPosition = recruitmentPosition;
         // Ce console.warn fera maintenant correctement référence au nom de la source de données
-        console.warn(`positionDetailsMap est vide ou non fourni. Utilisation de l'URL par défaut pour "${recruitmentPosition}".`);
+        console.warn(`positionDetailsMap is empty or not provided. Using default URL for "${recruitmentPosition}".`);
     }
 
     const eduCheck = (field) => field ? 'c' : '';
@@ -90,44 +90,44 @@ const generateEMS = (formData) => {
     // ... le reste de votre logique generateEMS.js reste identique ...
     // (commonSections3And4, blocs if/else if pour Ambulancier, Technicien médical d'urgence, Stagiaire technicien médical d'urgence, Autre EMS)
 
-    const commonSections3And4 = `[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Historique d'emploi[/size][/b][/list]
+    const commonSections3And4 = `[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Expérience Professionnelle[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]3.1[/color] Emploi précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE entre JJ/MMM/AAAA et JJ/MMM/AAAA'}[/i]
-[b][color=#FF0000]3.2[/color] Fonctions:[/b] [i]${applicantPrevDuties || 'RÉPONSE'}[/i]
-[b][color=#FF0000]3.3[/color] Raison du licenciement:[/b] [i]${applicantPrevDismissalReason || 'RÉPONSE'}[/i][/list]
+[list=none][b][color=#FF0000]3.1[/color] Emploi précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE entre jj/mm/aaaa et jj/mm/aaaa'}[/i]
+[b][color=#FF0000]3.2[/color] Responsabilités:[/b] [i]${applicantPrevDuties || 'RÉPONSE'}[/i]
+[b][color=#FF0000]3.3[/color] Motif du Départ:[/b] [i]${applicantPrevDismissalReason || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  Lettre de motivation[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]4.1[/color] Soumettez votre lettre de motivation, décrivant pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt que quelqu'un d'autre, et pourquoi les qualités requises pour ce poste vous correspondent :[/b] i[/i]
+[list=none][b][color=#FF0000]4.1[/color] Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent:[/b] i[/i]
 [quote][i]${applicantMotivationLetter || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]`;
 
     if (recruitmentPosition === "Paramedic") {
         sections3onwardsBBCode = commonSections3And4 +
-`[divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations hors personnage ))[/size][/b][/list]
+`[divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]5.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.2[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous fait du roleplay dans des factions médicales par le passé ?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.6[/color] Capture d'écran [u]non éditée[/u] de votre dossier administrateur avec la date et l'heure actuelles affichées:[/b]
-[list=none][altspoiler=Dossier administrateur][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
+[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
+[b][color=#FF0000]5.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Fournissez l'histoire de votre personnage:[/b]
+[b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
     } else if (recruitmentPosition === "EMT") { // Technicien médical d'urgence régulier
         const oocFieldsBBCode = `[b][color=#FF0000]5.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.2[/color] Capture d'écran [u]non éditée[/u] de votre dossier administrateur:[/b]
-[list=none][altspoiler=Dossier administrateur][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
+[b][color=#FF0000]5.2[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
+[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
 [b][color=#FF0000]5.3[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.4[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.5[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.6[/color] Avez-vous une expérience médicale réelle ou avez-vous fait du roleplay dans des factions médicales par le passé ?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.7[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[b][color=#FF0000]5.6[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Fournissez l'histoire de votre personnage:[/b]
+[b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote]`;
 
         sections3onwardsBBCode = commonSections3And4 +
@@ -135,53 +135,53 @@ const generateEMS = (formData) => {
 [hr][/hr]
 [list=none]${oocFieldsBBCode}[/list][/divbox]`;
     } else if (recruitmentPosition === "EMT Trainee") { // Stagiaire technicien médical d'urgence - HRP commence à la section 4
-        sections3onwardsBBCode = `[divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  (( Informations hors personnage ))[/size][/b][/list]
+        sections3onwardsBBCode = `[divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]4.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.2[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.5[/color] Avez-vous une expérience médicale réelle ou avez-vous fait du roleplay dans des factions médicales par le passé ?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.6[/color] Capture d'écran [u]non éditée[/u] de votre dossier administrateur avec la date et l'heure actuelles affichées:[/b]
-[list=none][altspoiler=Dossier administrateur][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]4.7[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[b][color=#FF0000]4.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
+[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
+[b][color=#FF0000]4.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
 [b][color=#FF0000]4.8[/color] Si vous faites partie d'une autre faction officielle, veuillez poster un lien vers votre demande DFP de la part de [b]Pillbox Hill Medical Center[/b] [u]et[/u] de votre faction actuelle. Si vous utilisez le même personnage, les autorisations du LFM doivent être acquises et fournies également:[/b] [i]${oocOtherFactionDfpLfm || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.9[/color] Fournissez l'histoire de votre personnage:[/b]
+[b][color=#FF0000]4.9[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
     } else { // Autres rôles EMS (par exemple, programme à temps partiel)
-        const section3Licensing = `[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Informations sur les licences et la demande[/size][/b][/list]
+        const section3Licensing = `[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Informations sur les Licences et la Demande[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]3.1[/color] Fournissez une copie de votre licence de technicien médical d'urgence (( /licenses )):[/b] [i]${emsLicenseLink || 'RÉPONSE/LIEN'}[/i]
+[list=none][b][color=#FF0000]3.1[/color] Copie de votre licence de technicien médical d'urgence (( /licenses )):[/b] [i]${emsLicenseLink || 'RÉPONSE/LIEN'}[/i]
 [b][color=#FF0000]3.2[/color][/color] Veuillez écrire un court paragraphe expliquant pourquoi vous pensez que vous devriez obtenir une place dans notre programme à temps partiel:
 [quote][i]${emsPartTimeReason || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]`;
 
         // HRP pour "Autre EMS" commence également à la section 4
-        const section4OOC_OtherEMS = `[divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  (( Informations hors personnage ))[/size][/b][/list]
+        const section4OOC_OtherEMS = `[divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]4.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.2[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.5[/color] Avez-vous une expérience médicale réelle ou avez-vous fait du roleplay dans des factions médicales par le passé ?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.6[/color] Capture d'écran [u]non éditée[/u] de votre dossier administrateur avec la date et l'heure actuelles affichées:[/b]
-[list=none][altspoiler=Dossier administrateur][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]4.7[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[b][color=#FF0000]4.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
+[b][color=#FF0000]4.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
+[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
+[b][color=#FF0000]4.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
 [b][color=#FF0000]4.8[/color] Si vous faites partie d'une autre faction officielle, veuillez poster un lien vers votre demande DFP de la part de [b]Pillbox Hill Medical Center[/b] [u]et[/u] de votre faction actuelle. Si vous utilisez le même personnage, les autorisations du LFM doivent être acquises et fournies également:[/b] [i]${oocOtherFactionDfpLfm || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.9[/color] Fournissez l'histoire de votre personnage:[/b]
+[b][color=#FF0000]4.9[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
         sections3onwardsBBCode = section3Licensing + section4OOC_OtherEMS;
     }
     
-    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Centre médical de Pillbox Hill[/size][/b] 
+    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Medical Center[/size][/b] 
 Centre de carrière [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]
 [divboxcolor=black][url=${dynamicJobPostingUrl}][color=#FF0000]>[/color] [color=#FFFFFF]Retour à l'offre d'emploi[/color][/url][/divboxcolor]
 [br][/br]
-[divbox=na][list=none][b][size=110][color=#FF0000]1[/color].  Informations personnelles[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]1[/color].  Informations Personnelles[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]1.1[/color]  Titre et nom complet:[/b] [i]${applicantTitleAndFullName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.2[/color]  Genre:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
@@ -189,37 +189,37 @@ Centre de carrière [center][/center]
 [cb${genderFemale ? 'c' : ''}] Femme
 [cb${genderOther ? 'c' : ''}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
-[b][color=#FF0000]1.3[/color] Date et lieu de naissance:[/b] [i]${applicantDOBAndPlace || 'JJ/MMM/AAAA à VILLE'}[/i]
+[b][color=#FF0000]1.3[/color] Date et lieu de naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
-[b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale, des allergies, ou vous a-t-on prescrit des médicaments:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
-[cb${citizenPermanent ? 'c' : ''}] Statut de résident permanent et demande de citoyenneté américaine déposée
+[cb${citizenPermanent ? 'c' : ''}] Résident permanent et demande de citoyenneté en cours
 [cb${citizenNone ? 'c' : ''}] Aucune des réponses ci-dessus
 [br][/br][/list][/list][/divbox]
 [br][/br]
-[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Parcours éducatif[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation Académique[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'éducation le plus élevé:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none]
-[cb${eduCheck(eduHighSchool)}] Diplôme d'études secondaires
-[cb${eduCheck(eduCertificate)}] Certificat (Inférieur au baccalauréat ou professionnel)
-[cb${eduCheck(eduDiploma)}] Diplôme (Inférieur au baccalauréat ou professionnel)
-[cb${eduCheck(eduAssociate)}] Diplôme d'associé
-[cb${eduCheck(eduBachelor)}] Licence
-[cb${eduCheck(eduMaster)}] Master
-[cb${eduCheck(eduDoctorate)}] Doctorat
+[cb${eduCheck(eduHighSchool)}] Diplôme d’Études Secondaires (High School Diploma)
+[cb${eduCheck(eduCertificate)}] Certificat (Sous-licence ou Professionnel/Technique)
+[cb${eduCheck(eduDiploma)}] Diplôme (Sous-licence ou Professionnel/Technique)
+[cb${eduCheck(eduAssociate)}] Diplôme d’Associé (Associate Degree)
+[cb${eduCheck(eduBachelor)}] Licence/Baccalauréat (Bachelor’s Degree)
+[cb${eduCheck(eduMaster)}] Master (Master’s Degree)
+[cb${eduCheck(eduDoctorate)}] Doctorat (PhD)
 [/list]
-[b][color=#FF0000]2.2[/color] Établissement fréquenté:[/b] 
-[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
-[color=#FF0000][b]2.2.2[/color] Période d'inscription:[/b]  [i]${applicantEnrollmentTerm || 'JJ/MMM/AAAA à JJ/MMM/AAAA'}[/i]
-[color=#FF0000][b]2.2.3[/color] Domaine d'études principal:[/b] [i]${applicantMajor || 'RÉPONSE'}[/i]
+[b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
+[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
+[color=#FF0000][b]2.2.2[/color] Période de Scolarité:[/b]  [i]${applicantEnrollmentTerm || 'jj/mm/aaaa au jj/mm/aaaa'}[/i]
+[color=#FF0000][b]2.2.3[/color] Spécialisation:[/b] [i]${applicantMajor || 'RÉPONSE'}[/i]
 [/list]
-[b][color=#FF0000]2.3[/color] Langues supplémentaires:[/b] [i]${applicantLanguages || 'RÉPONSE'}[/i][/list]
+[b][color=#FF0000]2.3[/color] Langues Supplémentaires:[/b] [i]${applicantLanguages || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
 ${sections3onwardsBBCode}
-[divboxcolor=black][center][url=https://phmc.gta.world/viewforum.php?f=168][color=#FF0000]>[/color] [color=#FFFFFF]Services médicaux d'urgence[/url] |[/color]  [url=https://phmc.gta.world/viewtopic.php?t=14][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'emploi[/url] |[/color] [url=https://phmc.gta.world/viewforum.php?f=111][color=#FF0000]>[/color]  [color=#FFFFFF]Directives pour les visiteurs[/color][/url][/center][/divboxcolor]`;
+[divboxcolor=black][center][url=][color=#FF0000]>[/color] [color=#FFFFFF]Service des Urgences[/url] |[/color]  [url=][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'Emploi[/url] |[/color] [url=][color=#FF0000]>[/color]  [color=#FFFFFF]Guide des Visiteurs[/color][/url][/center][/divboxcolor]`;
 
     return bbCode;
 };

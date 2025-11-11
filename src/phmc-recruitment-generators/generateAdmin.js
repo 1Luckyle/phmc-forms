@@ -53,8 +53,8 @@ const generateAdmin = (formData) => {
 
     const positionDetailsMap = positionDetailsData || {}; // MODIFIED: Use the corrected variable
 
-    let dynamicDisplayPosition = "Position (Please Select)";
-    let dynamicJobPostingUrl = "https://phmc.gta.world/viewforum.php?f=14"; // Default/fallback employment forum
+    let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)"; // Default/fallback position name
+    let dynamicJobPostingUrl = ""; // Default/fallback employment forum
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
@@ -71,7 +71,7 @@ const generateAdmin = (formData) => {
     }
 
     // --- BBCode for Admin Application ---
-    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Centre Médical de Pillbox Hill[/size][/b] 
+    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 Centre de Carrières [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]
@@ -85,7 +85,7 @@ Centre de Carrières [center][/center]
 [cb${genderFemale ? 'c' : ''}] Femme
 [cb${genderOther ? 'c' : ''}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
-[b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOBAndPlace || 'JJ/MMM/AAAA à VILLE'}[/i]
+[b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
@@ -95,34 +95,34 @@ Centre de Carrières [center][/center]
 [cb${citizenNone ? 'c' : ''}] Aucun des deux
 [br][/br][/list][/list][/divbox]
 [br][/br]
-[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation académique[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'Études le Plus Élevé:[/b]
 [list=none]
-[cb${eduHighSchool ? 'c' : ''}] Diplôme d'Études Secondaires
-[cb${eduCertificate ? 'c' : ''}] Certificat (Professionnel)
-[cb${eduDiploma ? 'c' : ''}] Diplôme (Professionnel)
-[cb${eduAssociate ? 'c' : ''}] DEC/DUT
-[cb${eduBachelor ? 'c' : ''}] Licence/Baccalauréat
-[cb${eduMaster ? 'c' : ''}] Master
-[cb${eduDoctorate ? 'c' : ''}] Doctorat
+[cb${eduHighSchool ? 'c' : ''}] Diplôme d’Études Secondaires (High School Diploma)
+[cb${eduCertificate ? 'c' : ''}] Certificat (Sous-licence ou Professionnel/Technique)
+[cb${eduDiploma ? 'c' : ''}] Diplôme (Sous-licence ou Professionnel/Technique)
+[cb${eduAssociate ? 'c' : ''}] Diplôme d’Associé (Associate Degree)
+[cb${eduBachelor ? 'c' : ''}] Licence/Baccalauréat (Bachelor’s Degree)
+[cb${eduMaster ? 'c' : ''}] Master (Master’s Degree)
+[cb${eduDoctorate ? 'c' : ''}] Doctorat (PhD)
 [/list]
 [b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
-[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'École:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
-[color=#FF0000][b]2.2.2[/color] Période de Scolarité:[/b]  [i]${applicantEnrollmentTerm || 'JJ/MMM/AAAA à JJ/MMM/AAAA'}[/i]
+[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
+[color=#FF0000][b]2.2.2[/color] Période de Scolarité:[/b]  [i]${applicantEnrollmentTerm || 'jj/mm/aaaa au jj/mm/aaaa'}[/i]
 [color=#FF0000][b]2.2.3[/color] Spécialisation:[/b] [i]${applicantMajor || 'RÉPONSE'}[/i]
 [/list]
 [b][color=#FF0000]2.3[/color] Langues Supplémentaires:[/b] [i]${applicantLanguages || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Expérience Professionnelle[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]3.1[/color] Emploi Précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE de JJ/MMM/AAAA à JJ/MMM/AAAA'}[/i]
+[list=none][b][color=#FF0000]3.1[/color] Emploi Précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE du jj/mm/aaaa au jj/mm/aaaa'}[/i]
 [b][color=#FF0000]3.2[/color] Responsabilités:[/b] [i]${applicantPrevDuties || 'RÉPONSE'}[/i]
 [b][color=#FF0000]3.3[/color] Motif de Départ:[/b] [i]${applicantPrevDismissalReason || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  Lettre de Motivation[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]4.1[/color] Présentez votre lettre de motivation, décrivant pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'un autre candidat, et en quoi les qualités requises pour ce poste vous correspondent :[/b]
+[list=none][b][color=#FF0000]4.1[/color] Décriver pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent:[/b]
 [quote][i]${applicantMotivationLetter || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]
@@ -131,13 +131,13 @@ Centre de Carrières [center][/center]
 [b][color=#FF0000]5.2[/color] Nom sur le Forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.4[/color] Fuseau Horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.5[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif avec la date et l'heure actuelles:[/b]
+[b][color=#FF0000]5.5[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
 [list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.6[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[b][color=#FF0000]5.6[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Présentez l'histoire de votre personnage:[/b]
+[b][color=#FF0000]5.7[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]
-[divboxcolor=black][center][url=https://phmc.gta.world/viewforum.php?f=14][color=#FF0000]>[/color] [color=#FFFFFF]Administration[/url] |[/color]  [url=https://phmc.gta.world/viewtopic.php?t=14][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'Emploi[/url] |[/color] [url=https://phmc.gta.world/viewforum.php?f=111][color=#FF0000]>[/color]  [color=#FFFFFF]Guide des Visiteurs[/color][/url][/center][/divboxcolor]`;
+[divboxcolor=black][center][url=][color=#FF0000]>[/color] [color=#FFFFFF]Administration[/url] |[/color]  [url=][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'Emploi[/url] |[/color] [url=][color=#FF0000]>[/color]  [color=#FFFFFF]Guide des Visiteurs[/color][/url][/center][/divboxcolor]`;
 
     return bbCode;
 };

@@ -240,7 +240,7 @@ const AutopsyDiagramModal = ({
             const lastLabeledMarkerIndex = prevMarkers.slice().reverse().findIndex(m => m.label && m.label.trim() !== '');
 
             if (lastLabeledMarkerIndex === -1) {
-                 if (showNotification) showNotification("No labeled marker to toggle side for. Add a label first.", "info");
+                 if (showNotification) showNotification("Aucun marqueur étiqueté pour inverser le côté. Ajoutez d'abord une étiquette.", "info");
                 return prevMarkers;
             }
             const originalIndex = prevMarkers.length - 1 - lastLabeledMarkerIndex;

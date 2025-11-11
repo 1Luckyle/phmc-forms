@@ -95,9 +95,8 @@ export const sendDiscordErrorWebhook = (errorDetails) => {
     processDiscordErrorQueue(); // Start processing the queue if it's not already running
 };
 
-
 init({
-  dsn: "https://5dfa5683e8dc9adbc7f30e44757995c7@o4509126124765184.ingest.de.sentry.io/4509126125813840",
+  dsn: "https://965cbe7aac6ced00a3097177c2be471f@o4510345492234240.ingest.de.sentry.io/4510345505407056",
   sendDefaultPii: true,
   integrations: [
     Sentry.browserTracingIntegration(),
@@ -109,9 +108,11 @@ init({
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  tracePropagationTargets: ["localhost", "https://forms.phmc.io", /^\//],
+  tracePropagationTargets: ["localhost", "https://1luckyle.github.io/", /^\//],
 });
 console.log("Sentry has been initialized.");
+window.Sentry = Sentry;
+console.log("Sentry has been initialized and exposed on window.Sentry");
 
 // --- Global Error Handling Setup ---
 window.onerror = (message, source, lineno, colno, errorObject) => {

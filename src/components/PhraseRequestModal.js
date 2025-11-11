@@ -13,15 +13,15 @@ const PhraseRequestModal = ({ show, onHide, showNotification, selectedEmployee, 
     const handleSubmit = async () => {
         setError('');
         if (!phraseText.trim()) {
-            setError('Phrase cannot be empty.');
-            showNotification('Phrase cannot be empty.', 'warning');
+            setError('La phrase ne peut pas être vide.');
+            showNotification('Phrase ne peut pas être vide.', 'warning');
             return;
         }
 
         // Check if a bingo type is selected before allowing a request
         if (!selectedBingoType) {
-            setError('You must be in a specific Bingo game (e.g., EMS, Coroner) to request a phrase.');
-            showNotification('Please select a Bingo type first.', 'warning');
+            setError('Veuillez sélectionner un type de Bingo avant de demander une phrase (ER, EMS, Coroner).');
+            showNotification('Veuillez sélectionner un type de Bingo d\'abord.', 'warning');
             return;
         }
 
@@ -52,12 +52,12 @@ const PhraseRequestModal = ({ show, onHide, showNotification, selectedEmployee, 
 
             }
 
-            showNotification('Phrase request submitted successfully!', 'check-circle');
+            showNotification('Phrase demandée soumise avec succès!', 'check-circle');
             setPhraseText('');
         } catch (err) {
             console.error("Error submitting phrase request:", err);
-            setError("Failed to submit request: " + err.message);
-            showNotification('Failed to submit phrase request.', 'error');
+            setError("Échec de la soumission de la demande: " + err.message);
+            showNotification('Échec de la soumission de la demande de phrase.', 'error');
             Sentry.captureException(err, { extra: { context: 'PhraseRequestModal Submit' } });
         } finally {
             setIsSubmitting(false);
@@ -81,33 +81,33 @@ const PhraseRequestModal = ({ show, onHide, showNotification, selectedEmployee, 
             dialogClassName="bingo-modal-dialog"
         >
             <Modal.Header closeButton closeVariant="white">
-                <Modal.Title>Request a New Bingo Phrase</Modal.Title>
+                <Modal.Title>Demander une nouvelle phrase de bingo</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <Form.Group className="mb-3">
-                    <Form.Label>Your Phrase Idea:</Form.Label>
+                    <Form.Label>Entrer votre idée de phrase</Form.Label>
                     <Form.Control
                         as="textarea"
                         rows={3}
                         value={phraseText}
                         onChange={(e) => setPhraseText(e.target.value)}
-                        placeholder="Enter your phrase idea here (e.g., 'Patient asks for a ride to the store')"
+                        placeholder="Saisissez ici votre idée de phrase (ex. « Le patient demande à être conduit à la cafétéria »)."
                         disabled={isSubmitting}
                         className="bingo-phrases-textarea"
                     />
                     <Form.Text className="text-muted">
-                        This phrase will be reviewed by an admin before being added to the master list.
-                        {selectedBingoType && ` It will be considered for the ${selectedBingoType.name} Bingo.`}
+                       Cette phrase sera examinée par un administrateur avant d'être ajoutée à la liste principale.
+                        {selectedBingoType && ` Elle sera considérée pour le Bingo ${selectedBingoType.name}.`}
                     </Form.Text>
                 </Form.Group>
                 {error && <p className="text-danger">{error}</p>}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>
-                    Cancel
+                    Annuler
                 </Button>
                 <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting || !phraseText.trim()}>
-                    {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : 'Submit Request'}
+                    {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : 'Soumettre la demande'}
                 </Button>
             </Modal.Footer>
         </Modal>

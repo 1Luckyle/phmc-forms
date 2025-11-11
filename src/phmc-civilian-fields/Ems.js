@@ -92,7 +92,7 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                             name="applicantTitleAndFullName"
                             value={formData.applicantTitleAndFullName || ''}
                             onChange={handleChange}
-                            placeholder="ex: M. John Smith, Mme Jane Doe"
+                            placeholder="Prénom (Deuxième Prénom) & Nom"
                             required
                             className={`form-control ${!formData.applicantTitleAndFullName ? 'is-invalid' : ''} mb-4`}
                         />
@@ -130,19 +130,19 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                         <Form.Control
                             type="text" name="applicantDOBAndPlace" value={formData.applicantDOBAndPlace || ''}
                             onChange={handleChange}
-                            placeholder="JJ/MMM/AAAA à VILLE" required
+                            placeholder="jj/mm/aaaa à VILLE" required
                             className={`form-control ${!formData.applicantDOBAndPlace ? 'is-invalid' : ''} mb-4`}
                         />
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>1.4 Adresse</Form.Label>
+                        <Form.Label>1.4 Adresse du domicile</Form.Label>
                     <Form.Control
                         type="text"
                         name="applicantAddress" //This must be identical to relevantFields
                         value={formData.applicantAddress || ''}
                         onChange={handleChange} //This is important too
-                        placeholder="Votre adresse résidentielle" required
+                        placeholder="Adresse (Numéro, Étage, Rue)" required
                         className={`form-control ${!formData.applicantAddress ? 'is-invalid' : ''} mb-4`}
                     />
                     </Form.Group>
@@ -199,31 +199,31 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                     <Form.Group className="mb-3">
                         <Form.Label>2.1 Niveau d'éducation le plus élevé</Form.Label>
                         <div className="mb-4">
-                            <Form.Check inline type="checkbox" label="Diplôme d'études secondaires" name="eduHighSchool" checked={formData.eduHighSchool || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Certificat (Pré-baccalauréat ou professionnel)" name="eduCertificate" checked={formData.eduCertificate || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Diplôme (Pré-baccalauréat ou professionnel)" name="eduDiploma" checked={formData.eduDiploma || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Diplôme d'associé" name="eduAssociate" checked={formData.eduAssociate || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Licence" name="eduBachelor" checked={formData.eduBachelor || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Master" name="eduMaster" checked={formData.eduMaster || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Doctorat" name="eduDoctorate" checked={formData.eduDoctorate || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Diplôme d’Études Secondaires (High School Diploma)" name="eduHighSchool" checked={formData.eduHighSchool || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Certificat (Sous-licence ou Professionnel/Technique)" name="eduCertificate" checked={formData.eduCertificate || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Diplôme (Sous-licence ou Professionnel/Technique)" name="eduDiploma" checked={formData.eduDiploma || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Diplôme d’Associé (Associate Degree)" name="eduAssociate" checked={formData.eduAssociate || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Licence/Baccalauréat (Bachelor’s Degree)" name="eduBachelor" checked={formData.eduBachelor || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Master (Master’s Degree)" name="eduMaster" checked={formData.eduMaster || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Doctorat (PhD)" name="eduDoctorate" checked={formData.eduDoctorate || false} onChange={handleChange} />
                         </div>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>2.2.1 Nom de l'école</Form.Label>
+                        <Form.Label>2.2.1 Nom de l'établissement</Form.Label>
                         <Form.Control type="text" name="applicantSchoolName" value={formData.applicantSchoolName || ''} onChange={handleChange} placeholder="Nom de l'établissement" required className={`form-control ${!formData.applicantSchoolName ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>2.2.2 Période d'inscription</Form.Label>
-                        <Form.Control type="text" name="applicantEnrollmentTerm" value={formData.applicantEnrollmentTerm || ''} onChange={handleChange} placeholder="JJ/MMM/AAAA à JJ/MMM/AAAA" required className={`form-control ${!formData.applicantEnrollmentTerm ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantEnrollmentTerm" value={formData.applicantEnrollmentTerm || ''} onChange={handleChange} placeholder="jj/mm/aaaa au jj/mm/aaaa" required className={`form-control ${!formData.applicantEnrollmentTerm ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>2.2.3 Domaine d'études principal</Form.Label>
-                        <Form.Control type="text" name="applicantMajor" value={formData.applicantMajor || ''} onChange={handleChange} placeholder="Votre spécialisation ou domaine d'études" required className={`form-control ${!formData.applicantMajor ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantMajor" value={formData.applicantMajor || ''} onChange={handleChange} placeholder="Spécialisation ou domaine d'études" required className={`form-control ${!formData.applicantMajor ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>2.3 Langues supplémentaires</Form.Label>
-                        <Form.Control type="text" name="applicantLanguages" value={formData.applicantLanguages || ''} onChange={handleChange} placeholder="Listez toutes les langues supplémentaires parlées (ou N/A)" required className={`form-control ${!formData.applicantLanguages ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantLanguages" value={formData.applicantLanguages || ''} onChange={handleChange} placeholder="Langues supplémentaires parlées (ou N/A)" required className={`form-control ${!formData.applicantLanguages ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                 </div>
             )}
@@ -234,7 +234,7 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
             {(isParamedic || isEMT) && (
                 <div>
                     <CollapsibleHeader
-                        title="3. Historique d'emploi"
+                        title="3. Expérience professionnelle"
                         isOpen={openSections.employmentInfo}
                         onToggle={() => toggleSection('employmentInfo')}
                         sectionId="ems-employment-info"
@@ -243,15 +243,15 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                         <div id="collapse-ems-employment-info" style={{ paddingTop: '0.5rem' }}>
                             <Form.Group className="mb-3">
                                 <Form.Label>3.1 Emploi précédent</Form.Label>
-                                <Form.Control type="text" name="applicantPrevEmployment" value={formData.applicantPrevEmployment || ''} onChange={handleChange} placeholder="RÔLE chez ENTREPRISE entre JJ/MMM/AAAA et JJ/MMM/AAAA (ou N/A)" required className={`form-control ${!formData.applicantPrevEmployment ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Control type="text" name="applicantPrevEmployment" value={formData.applicantPrevEmployment || ''} onChange={handleChange} placeholder="RÔLE chez ENTREPRISE entre jj/mm/aaaa et jj/mm/aaaa (ou N/A)" required className={`form-control ${!formData.applicantPrevEmployment ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
                                 <Form.Label>3.2 Fonctions</Form.Label>
-                                <Form.Control as="textarea" rows={3} name="applicantPrevDuties" value={formData.applicantPrevDuties || ''} onChange={handleChange} placeholder="Décrivez vos fonctions (ou N/A)" required className={`form-control ${!formData.applicantPrevDuties ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Control as="textarea" rows={3} name="applicantPrevDuties" value={formData.applicantPrevDuties || ''} onChange={handleChange} placeholder="Description de la fonction précédente (ou N/A)" required className={`form-control ${!formData.applicantPrevDuties ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>3.3 Raison du licenciement (le cas échéant)</Form.Label>
-                                <Form.Control as="textarea" rows={2} name="applicantPrevDismissalReason" value={formData.applicantPrevDismissalReason || ''} onChange={handleChange} placeholder="Raison du départ de l'emploi précédent (ou N/A)" className="form-control mb-4" />
+                                <Form.Label>3.3 Motif de départ (le cas échéant)</Form.Label>
+                                <Form.Control as="textarea" rows={2} name="applicantPrevDismissalReason" value={formData.applicantPrevDismissalReason || ''} onChange={handleChange} placeholder="Motif du départ de l'emploi précédent (ou N/A)" className="form-control mb-4" />
                             </Form.Group>
                         </div>
                     )}
@@ -270,7 +270,7 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                     {openSections.licensingInfo && (
                         <div id="collapse-ems-licensing-info" style={{ paddingTop: '0.5rem' }}>
                             <Form.Group className="mb-3">
-                                <Form.Label>3.1 Fournir une copie de votre licence de technicien médical d'urgence (( /licenses ))</Form.Label>
+                                <Form.Label>3.1 Copie de votre licence de technicien médical d'urgence (( /licenses ))</Form.Label>
                                 <Form.Control type="text" name="emsLicenseLink" value={formData.emsLicenseLink || ''} onChange={handleChange} placeholder="Lien vers la capture d'écran de la licence" required className={`form-control ${!formData.emsLicenseLink ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
@@ -298,7 +298,7 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                                 <Form.Control
                                     as="textarea" rows={8} name="applicantMotivationLetter" value={formData.applicantMotivationLetter || ''}
                                     onChange={handleChange}
-                                    placeholder="Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent."
+                                    placeholder="Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent"
                                     required className={`form-control ${!formData.applicantMotivationLetter ? 'is-invalid' : ''} mb-4`}
                                 />
                             </Form.Group>
@@ -331,14 +331,14 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                             )}
                             {isEMT && (
                                 <Form.Group className="mb-3">
-                                    <Form.Label>5.2 Capture d'écran non modifiée de votre dossier administratif:</Form.Label>
+                                    <Form.Label>5.2 Capture d'écran non modifiée de votre dossier administratif</Form.Label>
                                     <Form.Control type="text" name="oocAdminRecordLink" value={formData.oocAdminRecordLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''} mb-4`} />
                                 </Form.Group>
                             )}
 
                             <Form.Group className="mb-3">
                                 <Form.Label>{isParamedic ? '5.3' : '5.3'} Nom Discord</Form.Label>
-                                <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} placeholder="nomutilisateur#1234 ou nouveau format de nom d'utilisateur" required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
 
                             <Form.Group className="mb-3">
@@ -351,29 +351,29 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label>{isParamedic ? '5.5' : (isEMT ? '5.5 Fuseau horaire' : '5.5 Avez-vous une expérience médicale réelle...?')}</Form.Label>
+                                <Form.Label>{isParamedic ? '5.5' : (isEMT ? '5.5 Fuseau horaire' : '5.5 Expérience médicale réelle ou RP médical passé')}</Form.Label>
                                 {isEMT ? (
                                     <Form.Control type="text" name="oocTimezone" value={formData.oocTimezone || ''} onChange={handleChange} placeholder="ex: UTC+0, EST, PST" required className={`form-control ${!formData.oocTimezone ? 'is-invalid' : ''} mb-4`} />
                                 ) : (
-                                    <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décrivez en détail (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
+                                    <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décrivez toute expérience pertinente (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
                                 )}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label>{isParamedic ? '5.6 Capture d\'écran non modifiée de votre dossier administratif avec la date et l\'heure actuelles affichées:' : (isEMT ? '5.6 Avez-vous une expérience médicale réelle...?' : '5.6 Dossier administratif')}</Form.Label>
+                                <Form.Label>{isParamedic ? '5.6 Capture d\'écran non modifiée de votre dossier administratif' : (isEMT ? '5.6 Expérience médicale réelle ou RP médical passé' : '5.6 Dossier administratif')}</Form.Label>
                                 {isEMT ? (
-                                    <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décrivez en détail (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
+                                    <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décriver toute expérience pertinente (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
                                 ) : (
                                     <Form.Control type="text" name="oocAdminRecordLink" value={formData.oocAdminRecordLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''} mb-4`} />
                                 )}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label>5.7 Fournir une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:</Form.Label>
+                                <Form.Label>5.7 Capture d'écran des statistiques du personnage (/stats)</Form.Label>
                                 <Form.Control type="text" name="oocStatsLink" value={formData.oocStatsLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocStatsLink ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>5.8 Fournir l'histoire de fond de votre personnage:</Form.Label>
+                                <Form.Label>5.8 Background du personnage (Bref résumé)</Form.Label>
                                 <Form.Control as="textarea" rows={5} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} required className={`form-control ${!formData.charBackground ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                         </div>
@@ -396,7 +396,7 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                                 <Form.Control type="text" name="oocUcpName" value={formData.oocUcpName || ''} onChange={handleChange} required className={`form-control ${!formData.oocUcpName ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.2 Capture d'écran non modifiée de votre dossier administratif:</Form.Label>
+                                <Form.Label>4.2 Capture d'écran non modifiée de votre dossier administratif</Form.Label>
                                 <Form.Control type="text" name="oocAdminRecordLink" value={formData.oocAdminRecordLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
@@ -405,18 +405,18 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                             </Form.Group>
                             <Form.Group className="mb-3">
                                 <Form.Label>4.4 Nom Discord</Form.Label>
-                                <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} placeholder="nomutilisateur#1234 ou nouveau format de nom d'utilisateur" required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange}required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
                                 <Form.Label>4.5 Fuseau horaire</Form.Label>
                                 <Form.Control type="text" name="oocTimezone" value={formData.oocTimezone || ''} onChange={handleChange} placeholder="ex: UTC+0, EST, PST" required className={`form-control ${!formData.oocTimezone ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.6 Détenez-vous une licence BLS/ALS valide sur un autre personnage? Si oui, fournir une preuve via /licenses:</Form.Label>
+                                <Form.Label>4.6 Détenez-vous une licence BLS/ALS valide sur un autre personnage? Si oui, fournir une preuve via /licenses</Form.Label>
                                 <Form.Control type="text" name="oocOtherCharLicenseProof" value={formData.oocOtherCharLicenseProof || ''} onChange={handleChange} placeholder="RÉPONSE/LIEN (SI APPLICABLE)" className="form-control mb-4" />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.7 Fournir une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:</Form.Label>
+                                <Form.Label>4.7 Capture d'écran des statistiques du personnage (/stats)</Form.Label>
                                 <Form.Control type="text" name="oocStatsLink" value={formData.oocStatsLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocStatsLink ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
@@ -426,7 +426,7 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                                 <Form.Control type="text" name="dfpLegalFactionLink" value={formData.dfpLegalFactionLink || ''} onChange={handleChange} placeholder="Lien DFP Legal Faction Management (ou N/A)" className="form-control mb-4" />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.9 Fournir l'histoire de fond de votre personnage:</Form.Label>
+                                <Form.Label>4.9 Background du personnage (Bref résumé)</Form.Label>
                                 <Form.Control as="textarea" rows={5} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} required className={`form-control ${!formData.charBackground ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                         </div>

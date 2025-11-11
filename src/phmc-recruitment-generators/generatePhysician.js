@@ -66,7 +66,7 @@ const generatePhysician = (formData) => {
     const positionDetailsMap = positionDetailsData || {}; // Changed variable name
 
     // Determine the dynamic display name and URL
-    let dynamicDisplayPosition = "Position (Please Select)";
+    let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
     let dynamicJobPostingUrl = ""; // Default employment forum [Changer l'URL par défaut de l'emploi]
 
     if (formData.recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
@@ -85,7 +85,7 @@ const generatePhysician = (formData) => {
         console.warn(`positionDetailsData is empty or not provided. Using default URL for "${formData.recruitmentPosition}".`);
     }
 
-    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Centre Médical de Pillbox Hill[/size][/b] 
+    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 Centre de Carrières [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]
@@ -102,45 +102,45 @@ Centre de Carrières [center][/center]
 [b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOB || 'JJ/MMM/AAAA'} à ${applicantBirthPlace || 'Lieu de Naissance'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
-[b][color=#FF0000]1.6[/color]  Lieu d'Emploi Souhaité:[/b]
-[list=none][cb${locationPHMC ? 'c' : ''}] Centre Médical de Pillbox Hill (Ville de Los Santos)
+[b][color=#FF0000]1.6[/color]  Lieu d'Emploi Souhaité:[/b] [color=#FF0000][u][b]LES POSTES SONT UNIQUEMENT OUVERT SUR LE PHMC DE LOS SANTOS[/b][/u][/color]
+[list=none][cbc${locationPHMC ? 'c' : ''}] Pillbox Hill Medical Center(Ville de Los Santos)
 [cb${locationPBC ? 'c' : ''}] Clinique PHMC de Paleto Bay (Paleto Bay)
 [/list]
-[b][color=#FF0000]1.7[/color] Avez-vous été diagnostiqué avec une condition médicale, des allergies, ou prenez-vous des médicaments:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.7[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.8[/color]  Citoyenneté:[/b]
 [list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
 [cb${citizenPermanent ? 'c' : ''}] Résident permanent et demande de citoyenneté en cours
 [cb${citizenNone ? 'c' : ''}] Aucun des deux
 [br][/br][/list][/list][/divbox]
 [br][/br]
-[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation[/size][/b][/list]
+[divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation Académique[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'Études le Plus Élevé:[/b]
 [list=none]
-[cb${eduHighSchool ? 'c' : ''}] Diplôme d'Études Secondaires
-[cb${eduCertificate ? 'c' : ''}] Certificat (Professionnel)
-[cb${eduDiploma ? 'c' : ''}] Diplôme (Professionnel)
-[cb${eduAssociate ? 'c' : ''}] DEC/DUT
-[cb${eduBachelor ? 'c' : ''}] Licence/Baccalauréat
-[cb${eduMaster ? 'c' : ''}] Master
-[cb${eduDoctorate ? 'c' : ''}] Doctorat
+[cb${eduHighSchool ? 'c' : ''}] Diplôme d’Études Secondaires (High School Diploma)
+[cb${eduCertificate ? 'c' : ''}] Certificat (Sous-licence ou Professionnel/Technique)
+[cb${eduDiploma ? 'c' : ''}] Diplôme (Sous-licence ou Professionnel/Technique)
+[cb${eduAssociate ? 'c' : ''}] Diplôme d’Associé (Associate Degree)
+[cb${eduBachelor ? 'c' : ''}] Licence/Baccalauréat (Bachelor’s Degree)
+[cb${eduMaster ? 'c' : ''}] Master (Master’s Degree)
+[cb${eduDoctorate ? 'c' : ''}] Doctorat (PhD)
 [/list]
 [b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
-[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'École:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
-[color=#FF0000][b]2.2.2[/color] Période de Scolarité:[/b]  [i]${applicantEnrollmentTerm || 'JJ/MMM/AAAA à JJ/MMM/AAAA'}[/i]
+[list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
+[color=#FF0000][b]2.2.2[/color] Période de Scolarité:[/b]  [i]${applicantEnrollmentTerm || 'jj/mm/aaaa au jj/mm/aaaa'}[/i]
 [color=#FF0000][b]2.2.3[/color] Spécialisation:[/b] [i]${applicantMajor || 'RÉPONSE'}[/i]
 [/list]
 [b][color=#FF0000]2.3[/color] Langues Supplémentaires:[/b] [i]${applicantLanguages || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Expérience Professionnelle[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]3.1[/color] Emploi Précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE de JJ/MMM/AAAA à JJ/MMM/AAAA'}[/i]
+[list=none][b][color=#FF0000]3.1[/color] Emploi Précédent:[/b] [i]${applicantPrevEmployment || 'POSTE chez ENTREPRISE du jj/mm/aaaa au jj/mm/aaaa'}[/i]
 [b][color=#FF0000]3.2[/color] Responsabilités:[/b] [i]${applicantPrevDuties || 'RÉPONSE'}[/i]
 [b][color=#FF0000]3.3[/color] Motif de Départ:[/b] [i]${applicantPrevDismissalReason || 'RÉPONSE'}[/i][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  Lettre de Motivation[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]4.1[/color] Présentez votre lettre de motivation, décrivant pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'un autre candidat, et en quoi les qualités requises pour ce poste vous correspondent :[/b]
+[list=none][b][color=#FF0000]4.1[/color] Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent:[/b]
 [quote][i]${applicantMotivationLetter || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]
@@ -150,11 +150,11 @@ Centre de Carrières [center][/center]
 [b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.4[/color] Fuseau Horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif avec la date et l'heure actuelles:[/b]
+[b][color=#FF0000]5.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
 [list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Fournissez une capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
+[b][color=#FF0000]5.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Présentez l'histoire de votre personnage:[/b]
+[b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]
 [divboxcolor=black][center][url=][color=#FF0000]>[/color] [color=#FFFFFF]Faculté Médicale[/url] |[/color]  [url=][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'Emploi[/url] |[/color] [url=][color=#FF0000]>[/color]  [color=#FFFFFF]Guide des Visiteurs[/color][/url][/center][/divboxcolor]`
     return bbCode;
