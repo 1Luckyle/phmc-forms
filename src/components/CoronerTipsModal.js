@@ -98,48 +98,48 @@ const closeButtonStyle = {
 const LOCAL_STORAGE_KEY = 'hideCoronerTipsModal';
 
 // --- Content Definitions (Keep as they are) ---
-const tipsContent = `Welcome to the Coroner Information Page
+const tipsContent = `Bienvenue sur la page d'information du coroner
 
-**Basic Information**
-- If your name is missing from this website, click the 'Missing Employee Data' button.
-- Handbooks can be located here: https://phmc.gta.world/viewtopic.php?t=3930
+**Informations de base**
+- Si votre nom est manquant sur ce site web, cliquez sur le bouton 'Données employé manquantes'.
+- Les manuels peuvent être trouvés ici : Indisponible actuellement.
 
-**Radio Handling **
-- The highest rank on duty will usually handle the radio.
-- You can /setdep (faction) and /dep to reply to factions.
-- Example: /setdep LSPD | /dep Coroner's Office, you have a unit dispatched, ETA is 5 minutes.
-- If you NPC a unit, inform the LEOs that the unit is NPC'd and tell them to /sendtomorgue.
+**Gestion de la radio**
+- Le grade le plus élevé en service gérera généralement la radio.
+- Vous pouvez utiliser /choixdep (faction) et /departement pour répondre aux factions.
+- Exemple : /choixdep LSPD | /departement Bureau du coroner, vous avez une unité dépêchée, ETA est 5 minutes.
+- Si vous NPC une unité (envoyer une unité par /do), informez les agents des forces de l'ordre que l'unité est en NPC et dites-leur de /envoyermorgue.
 
-More tips coming soon!`;
+Plus de conseils à venir bientôt !`;
 
-const commandsContent = `**Duty Commands:**
-/cduty | /duty - Go on/off duty as Coroner.
-/trunk - Opens the trunk
-/ctrunk | /cremove - Stores a body into the trunk, removes a body from the trunk.
-/cdrag - Drag a body to the Coroner Van - NOTE: You must right click to stop dragging otherwise you become a space ship
-/cdamages | /cexamine | /cdna - Examine the decedent for damages, DNA, and body attributes.
-/cloot - Check the decedent's for items on the body.
+const commandsContent = `**Commandes de service :**
+/cduty | /duty - Prendre/quitter le service en tant que coroner.
+/trunk - Ouvre le coffre
+/ctrunk | /cremove - Range un corps dans le coffre, retire un corps du coffre.
+/cdrag - Traîner un corps jusqu'au fourgon du coroner - NOTE : Vous devez faire un clic droit pour arrêter de traîner sinon vous devenez un vaisseau spatial
+/cdamages | /cexamine | /cdna - Examiner le défunt pour les dommages, l'ADN et les attributs du corps.
+/cloot - Vérifier les objets sur le corps du défunt.
 
-**Roleplay Commands:**
-/createscene - Creates a AOE /do for others to see.
-/rb - Spawns a item on the ground, you can use Legal Factions - Gurney or Bodybag.
-More commands coming soon!`;
+**Commandes de Roleplay :**
+/createscene - Crée un /do de zone pour que les autres puissent voir.
+/rb - Fait apparaître un objet au sol, vous pouvez utiliser Legal Factions - Gurney ou Bodybag.
+Plus de commandes à venir bientôt !`;
 
-const sceneInfoContent = `**Initial Approach:**
-<ul>- Ensure the scene is secure before entering.
-- Observe the overall scene layout without disturbing evidence.
-- Identify the handling Law Enforcement Officer and ask to be cleared to move the body.</ul>**Documentation:**
-<ul>- Take brief notes of the scene and fill out the Brief Summary as you go.
-- Photograph important details (/camera): (Decedent, blood splatters or pools, evidence).</ul>**Decedent Examination (On Scene):**
-<ul>- Note the decedent's position and attire.
-- Examine the Decedent and determine the causes of death (/cdamages & /cdna - Take a screenshot of this as you'll need it for report).
-- Check for identification, personal effects (/cloot).</ul>**Evidence Handling:**
-<ul>- Do not move any evidence prior to collecting photographs.
-- If evidence must be moved, document its original location first.
-- Inform LEOs if firearms/drugs are located, if none present, store in the Evidence Locker (/el).</ul>**Final Steps:**
-<ul>- Move the Decedent to the Coroner Van (/cdrag). When at the van, right click to stop dragging and (/ctrunk) to store the Decedent inside.
-- Return to the Morgue and open the trunk (/trunk) and take the Decedent out (/cremove) and place them into the morgue (/cmorgue).
-- Fill out the Decedent Report and file it on the forums.
+const sceneInfoContent = `**Approche initiale :**
+<ul>- Assurez-vous que la scène est sécurisée avant d'entrer.
+- Observez la disposition générale de la scène sans déranger les preuves.
+- Identifiez l'agent des forces de l'ordre responsable et demandez l'autorisation de déplacer le corps.</ul>**Documentation :**
+<ul>- Prenez de brèves notes de la scène et remplissez le résumé succinct au fur et à mesure.
+- Photographiez les détails importants (/camera) : (défunt, éclaboussures ou flaques de sang, preuves).</ul>**Examen du défunt (sur la scène) :**
+<ul>- Notez la position et la tenue du défunt.
+- Examinez le défunt et déterminez les causes du décès (/cdamages & /cdna - Prenez une capture d'écran car vous en aurez besoin pour le rapport).
+- Vérifiez l'identification, les effets personnels (/cloot).</ul>**Gestion des preuves :**
+<ul>- Ne déplacez aucune preuve avant de collecter des photographies.
+- Si une preuve doit être déplacée, documentez d'abord son emplacement d'origine.
+- Informez les agents des forces de l'ordre si des armes à feu/drogues sont trouvées, si aucune n'est présente, rangez-les dans le casier à preuves (/el).</ul>**Étapes finales :**
+<ul>- Déplacez le défunt vers le fourgon du coroner (/cdrag). Une fois au fourgon, faites un clic droit pour arrêter de traîner et (/ctrunk) pour ranger le défunt à l'intérieur.
+- Retournez à la morgue et ouvrez le coffre (/trunk) et sortez le défunt (/cremove) et placez-le dans la morgue (/cmorgue).
+- Remplissez le rapport du défunt et déposez-le sur le forum.
 `;
 // --- End Content ---
 
@@ -216,13 +216,13 @@ const CoronerTipsModal = ({ show, onClose }) => {
                 className="coroner-tips-modal-content"
                 onClick={(e) => e.stopPropagation()}
             >
-                <button onClick={handleClose} style={closeButtonStyle} aria-label="Close modal">
+                <button onClick={handleClose} style={closeButtonStyle} aria-label="Fermer la fenêtre">
                     &times;
                 </button>
                 <div style={modalHeaderStyle}>
-                    Coroner Quick Reference Guide
+                    Guide d'astuce des coroners
                 </div>
-                <img src={coroner} alt="Coroner Logo" style={logoStyle} />
+                <img src={coroner} alt="Logo du coroner" style={logoStyle} />
 
                 <div style={buttonContainerStyle}>
                     {/* ... section buttons ... */}
@@ -230,19 +230,19 @@ const CoronerTipsModal = ({ show, onClose }) => {
                         onClick={() => setDisplayMode('tips')}
                         style={displayMode === 'tips' ? activeSectionButtonStyle : sectionButtonStyle}
                     >
-                        Tips & Tricks
+                        Conseils et astuces
                     </button>
                     <button
                         onClick={() => setDisplayMode('commands')}
                         style={displayMode === 'commands' ? activeSectionButtonStyle : sectionButtonStyle}
                     >
-                        Useful Commands
+                        Commandes utiles
                     </button>
                     <button
                         onClick={() => setDisplayMode('scene')}
                         style={displayMode === 'scene' ? activeSectionButtonStyle : sectionButtonStyle}
                     >
-                        Scene Handling Summary
+                        Résumé de la gestion de scène
                     </button>
                 </div>
 
@@ -254,7 +254,7 @@ const CoronerTipsModal = ({ show, onClose }) => {
                 {/* --- Updated Footer with Checkbox --- */}
                 <div style={modalFooterStyle}>
                     <label htmlFor="dontShowAgainCheckbox" style={footerLabelStyle}>
-                        Don't show this again automatically?
+                        Ne plus afficher automatiquement ?
                     </label>
                     <input
                         type="checkbox"
@@ -262,7 +262,7 @@ const CoronerTipsModal = ({ show, onClose }) => {
                         checked={dontShowAgain} // <-- Control checked state
                         onChange={handleDontShowAgainChange} // <-- Use updated handler
                         style={checkboxStyle}
-                        title="Prevent this modal from showing automatically" // Updated title
+                        title="Empêcher cette fenêtre de s'afficher automatiquement" // Updated title
                     />
                 </div>
                 {/* --- End Updated Footer --- */}

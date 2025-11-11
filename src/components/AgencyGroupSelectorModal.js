@@ -181,9 +181,9 @@ const AgencyGroupSelectorModal = ({
     return (
         <div style={overlayStyle}>
             <div style={modalContentStyle}>
-                 <div style={titleStyle}>Welcome!</div>
+                 <div style={titleStyle}>Bienvenue!</div>
                 <div style={textContainerStyle}>
-                   Please select the set of forms you'd like to work with:
+                   Veuillez sélectionner l'ensemble de formulaires avec lesquels vous souhaitez travailler :
 
                 </div>
                 <div
@@ -202,7 +202,7 @@ const AgencyGroupSelectorModal = ({
                             onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                         >
                             <Image src={phmcLogo} alt="PHMC Logo" style={imageStyle} />
-                            PHMC Tools
+                            Outils - PHMC
                         </Button>
                     </div>
 
@@ -224,7 +224,7 @@ const AgencyGroupSelectorModal = ({
                             onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                         >
                             <Image src={phmcLogo} alt="Development Logo" style={{...imageStyle, maxHeight: '35px', marginBottom: '0.25rem'}} />
-                            PHMC Recruitment
+                            Centre de Carrière - PHMC
                             <span style={{ fontSize: '0.8rem', color: '#ced4da', marginTop: '0.25rem', display: 'block', width: '100%', textAlign: 'center' }}>
                                 {recruitmentData.overallSummaryText}
                             </span>
@@ -278,7 +278,7 @@ const AgencyGroupSelectorModal = ({
                         onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                         <i className="fas fa-shield-alt" style={{...imageStyle, fontSize: '40px'}}></i>
-                        Law Enforcement Section
+                        Section des Forces de l'Ordre [ACTUELLEMENT INDISPONIBLE]
                     </Button>
                 </div>
                 <div style={checkboxContainerStyle}>
@@ -287,7 +287,7 @@ const AgencyGroupSelectorModal = ({
                         id="hideAgencyGroupSelector"
                         label={
                             <span style={labelStyle}>
-                                Remember my choice and don't show this again.
+                                Se souvenir de mon choix et ne plus me montrer.
                             </span>
                         }
                         checked={hidePreference}

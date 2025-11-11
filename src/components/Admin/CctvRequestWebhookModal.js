@@ -62,7 +62,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification }) =
 
     const handleSubmit = async () => {
         if (!officer.trim() || !department.trim() || !location.trim() || !description.trim() || !incidentDateTime.trim() || !requestReason.trim()) {
-            showNotification('Please fill out all required fields.', 'warning');
+            showNotification('Veuillez remplir tous les champs obligatoires.', 'warning');
             return;
         }
 
@@ -79,7 +79,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification }) =
         } catch (error) {
             console.error("Error submitting CCTV webhook:", error);
             Sentry.captureException(error, { extra: { context: 'CctvRequestWebhookModal Submit' } });
-            showNotification('An error occurred during submission.', 'error');
+            showNotification('Une erreur s\'est produite lors de la soumission.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -92,71 +92,71 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification }) =
         <div style={modalOverlayStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
                 <div style={modalHeaderStyle}>
-                    <h5 style={modalTitleStyle}>CCTV Request </h5>
-                    <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
+                    <h5 style={modalTitleStyle}>Demande de vidéosurveillance</h5>
+                    <button onClick={onHide} style={closeButtonStyle} aria-label="Fermer la fenêtre">&times;</button>
                 </div>
                 <div style={modalBodyStyle}>
-                    <p className="text-muted small">This form is sent directly to PHMC Supervisors to request CCTV Footage. It will be handled within the next 24 hours and you'll be contacted via Cell Phone or Departmental. (( Abuse of this form will be reported to Legal Faction Management )) </p>
+                    <p className="text-muted small">Ce formulaire est envoyé directement aux superviseurs du PHMC pour demander des images de vidéosurveillance. Il sera traité dans les 24 heures suivantes et vous serez contacté par téléphone portable ou par le département. (( L'abus de ce formulaire sera signalé à la direction des factions légales ))</p>
                     <Form>
                         {/* --- MODIFICATION START: Reorganized form layout --- */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                             <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Requesting Officer Rank</Form.Label>
-                                <Form.Control type="text" value={rank} onChange={(e) => setRank(e.target.value)} placeholder="e.g., Sergeant I" disabled={isSubmitting} />
+                                <Form.Label>Grade de l'agent demandeur</Form.Label>
+                                <Form.Control type="text" value={rank} onChange={(e) => setRank(e.target.value)} placeholder="Grade de l'agent" disabled={isSubmitting} />
                             </Form.Group>
                             <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Requesting Officer *</Form.Label>
-                                <Form.Control type="text" value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="e.g., John Smith" required disabled={isSubmitting} />
+                                <Form.Label>Agent demandeur *</Form.Label>
+                                <Form.Control type="text" value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="Matricule, Prénom & Nom" required disabled={isSubmitting} />
                             </Form.Group>
                             <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Officer Phone Number</Form.Label>
-                                <Form.Control type="text" value={officerPH} onChange={(e) => setOfficerPH(e.target.value)} placeholder="(Optional)" disabled={isSubmitting} />
-                            </Form.Group>
-                        </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                            <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Requesting Department *</Form.Label>
-                                <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g., LSPD, LSSD" required disabled={isSubmitting} />
-                            </Form.Group>
-                            <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Discord Username</Form.Label>
-                                <Form.Control type="text" value={discordUsername} onChange={(e) => setDiscordUsername(e.target.value)} placeholder="e.g., frosty.js" disabled={isSubmitting} />
+                                <Form.Label>Numéro de téléphone de l'agent</Form.Label>
+                                <Form.Control type="text" value={officerPH} onChange={(e) => setOfficerPH(e.target.value)} placeholder="(Optionnel)" disabled={isSubmitting} />
                             </Form.Group>
                         </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                             <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Date & Time of Incident *</Form.Label>
-                                <Form.Control type="text" value={incidentDateTime} onChange={(e) => setIncidentDateTime(e.target.value)} placeholder="e.g., 15/JAN/2024 around 23:00" required disabled={isSubmitting} />
+                                <Form.Label>Département demandeur *</Form.Label>
+                                <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="ex. LSPD, LSSD" required disabled={isSubmitting} />
                             </Form.Group>
                             <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
-                                <Form.Label>Reason for Request *</Form.Label>
+                                <Form.Label>Nom d'utilisateur Discord</Form.Label>
+                                <Form.Control type="text" value={discordUsername} onChange={(e) => setDiscordUsername(e.target.value)} disabled={isSubmitting} />
+                            </Form.Group>
+                        </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                            <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
+                                <Form.Label>Date et heure de l'incident *</Form.Label>
+                                <Form.Control type="text" value={incidentDateTime} onChange={(e) => setIncidentDateTime(e.target.value)} placeholder="jj/mm/aaaa vers xx:xx" required disabled={isSubmitting} />
+                            </Form.Group>
+                            <Form.Group className="flex-fill" style={{ minWidth: '200px' }}>
+                                <Form.Label>Raison de la demande *</Form.Label>
                                 <Form.Select value={requestReason} onChange={(e) => setRequestReason(e.target.value)} required disabled={isSubmitting}>
-                                    <option value="">Select a reason...</option>
-                                    <option value="Criminal Investigation">Criminal Investigation</option>
-                                    <option value="Internal Affairs Investigation">Internal Affairs Investigation</option>
-                                    <option value="Traffic Incident Review">Traffic Incident Review</option>
-                                    <option value="General Security Review">General Security Review</option>
-                                    <option value="Other">Other (Specify in Description)</option>
+                                    <option value="">Sélectionnez une raison...</option>
+                                    <option value="Criminal Investigation">Enquête criminelle</option>
+                                    <option value="Internal Affairs Investigation">Enquête des affaires internes</option>
+                                    <option value="Traffic Incident Review">Examen d'incident de circulation</option>
+                                    <option value="General Security Review">Examen de sécurité générale</option>
+                                    <option value="Other">Autre (Précisez dans la description)</option>
                                 </Form.Select>
                             </Form.Group>
                         </div>
 
-                            <Form.Label>Requesting CCTV Location *</Form.Label>
-                                                    <Form.Control type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Pillbox Hill Medical Center - Main Entrance" required disabled={isSubmitting} />
-                                                    <Form.Label>Requesting Description & OOC Information </Form.Label>
+                            <Form.Label>Emplacement de la vidéosurveillance demandée *</Form.Label>
+                                                    <Form.Control type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="ex., Pillbox Hill Medical Center - Entrée principale" required disabled={isSubmitting} />
+                                                    <Form.Label>Description de la demande (( et informations HRP ))</Form.Label>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                            <Form.Control as="textarea" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Provide a brief description of the events and the timeframe for the footage request." required disabled={isSubmitting} />
-                            <Form.Control as="textarea" rows={4} value={oocNotes} onChange={(e) => setOocNotes(e.target.value)} placeholder="(( If you know names (or masked names) involved, as this will help us narrow our search of CCTV Logs (which can be very large) ))" disabled={isSubmitting} />
+                            <Form.Control as="textarea" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brève description des événements et de la période pour la demande d'images." required disabled={isSubmitting} />
+                            <Form.Control as="textarea" rows={4} value={oocNotes} onChange={(e) => setOocNotes(e.target.value)} placeholder="(( Si vous connaissez les noms (ou noms masqués) impliqués, car cela nous aidera à affiner notre recherche dans les journaux de vidéosurveillance (qui peuvent être très volumineux) ))" disabled={isSubmitting} />
 </div>                        {/* --- MODIFICATION END --- */}
                     </Form>
                 </div>
                 <div style={modalFooterStyle}>
-                    <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>Cancel</Button>
+                    <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>Annuler</Button>
                     <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} style={{ marginLeft: '10px' }}>
-                        {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : 'Send CCTV Request'}
+                        {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : 'Envoyer la demande de vidéosurveillance'}
                     </Button>
                 </div>
             </div>

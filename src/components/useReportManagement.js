@@ -35,6 +35,16 @@ const parseCaseNumber = (url) => {
     return match ? match[0] : '';
 };
 
+const inferCoronerRank = (coronerDetails) => {
+    if (!coronerDetails) return '';
+    // Check if rank exists in the details object
+    if (coronerDetails.rank) return coronerDetails.rank;
+    // Check if category exists (alternative field name)
+    if (coronerDetails.category) return coronerDetails.category;
+    // Return empty string as fallback
+    return '';
+};
+
 export const useReportManagement = (
     formData,
     setFormData,
@@ -709,9 +719,9 @@ export const useReportManagement = (
 
         } else {
             if (!result.success) {
-                showNotification('Failed to load the selected report.', 'error');
+                showNotification('Échec du chargement du rapport sélectionné.', 'error');
             } else if (!pendingReportAttachmentCallback.current) {
-                showNotification('Attachment process could not be completed (no callback).', 'error');
+                showNotification('Le processus de pièce jointe n’a pas pu être terminé (no callback).', 'error');
                 Sentry.captureMessage('handleReportSelectedForAttachment was called but pendingReportAttachmentCallback.current was null.');
             }
         }
@@ -732,7 +742,7 @@ export const useReportManagement = (
 
         if (!author) {
             // If no author is determined, show a notification and prevent the modal from opening
-            showNotification('Please select a PHMC employee in the form before attaching a report.', 'warning');
+            showNotification('Veuillez sélectionner un employé PHMC dans le formulaire avant de joindre un rapport.', 'warning');
             return; // Stop execution here
         }
 
@@ -745,7 +755,7 @@ export const useReportManagement = (
 
     const deleteReportForUser = useCallback(async (reportFirebaseKey, userId) => {
         if (!userId || !reportFirebaseKey) {
-            showNotification('Cannot delete report: User ID or Report Key is missing.', 'error');
+            showNotification('Impossible de supprimer le rapport : l’identifiant utilisateur ou la clé du rapport est manquant.', 'error');
             return;
         }
 
@@ -761,7 +771,7 @@ export const useReportManagement = (
 
         try {
             await remove(reportRef);
-            showNotification(`Report deleted successfully from Firebase.`, 'trash');
+            showNotification(`Rapport supprimé avec succès de Firebase.`, 'trash');
             // Refresh the list of saved reports for the current user
             if (selectedUserForSavedReports === userId) {
                 loadUserSavedReports(userId);
@@ -769,7 +779,7 @@ export const useReportManagement = (
         } catch (error) {
             console.error(`Error deleting report ${reportFirebaseKey} for user ${userId}:`, error);
             Sentry.captureException(error, { extra: { context: 'deleteReportForUser', userId, reportFirebaseKey } });
-            showNotification(`Failed to delete report: ${error.message}`, 'error');
+            showNotification(`Impossible de supprimer le rapport: ${error.message}`, 'error');
         }
     }, [loadUserSavedReports, selectedUserForSavedReports, showNotification]);
 
@@ -800,7 +810,7 @@ export const useReportManagement = (
             setReportSelectionFilter(filterVersions);
             pendingReportAttachmentCallback.current = callback;
         } else {
-            showNotification('Please select an employee in the form before viewing saved reports.', 'warning');
+            showNotification('Veuillez sélectionner un employé dans le formulaire avant de consulter les rapports enregistrés.', 'warning');
         }
     }, [getCurrentReportAuthor, formData, setPreselectedEmployeeType, setReportSelectionFilter, setShowSavedReports, showNotification, showSavedReports]);
 
@@ -809,7 +819,7 @@ export const useReportManagement = (
         const definition = getFormDefinition(bbCodeVersion);
 
         if (!positionKey) {
-            showNotification("Please select a position first.", 'warning');
+            showNotification("Veuillez sélectionner un poste d'abord.", 'warning');
             return;
         }
 
@@ -833,7 +843,7 @@ export const useReportManagement = (
             setCurrentPositionInfo(data);
             setShowPositionInfoModal(true);
         } else {
-            showNotification("Detailed information for this position is not available.", 'warning');
+            showNotification("Aucune information détaillée n'est disponible pour ce poste.", 'warning');
         }
     }, [bbCodeVersion, selectOptions, selectedAgencyGroup, showNotification]);
 

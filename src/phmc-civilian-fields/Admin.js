@@ -148,7 +148,7 @@ const AdminFields = ({
                             value={formData.applicantTitleAndFullName || ''}
                             onChange={handleChange}
                             onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="ex: M. John Smith, Mme Jane Doe"
+                            placeholder="Prénom (Deuxième Prénom) & Nom"
                             required
                             className={`form-control ${!formData.applicantTitleAndFullName ? 'is-invalid' : ''} mb-4`}
                         />
@@ -190,17 +190,17 @@ const AdminFields = ({
                         <Form.Control
                             type="text" name="applicantDOBAndPlace" value={formData.applicantDOBAndPlace || ''}
                             onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="JJ/MMM/AAAA à VILLE" required
+                            placeholder="jj/mm/aaaa à VILLE" required
                             className={`form-control ${!formData.applicantDOBAndPlace ? 'is-invalid' : ''} mb-4`}
                         />
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>1.4 Adresse</Form.Label>
+                        <Form.Label>1.4 Adresse du domicile</Form.Label>
                         <Form.Control
                             type="text" name="applicantAddress" value={formData.applicantAddress || ''}
                             onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Votre adresse résidentielle" required
+                            placeholder="Adresse (Numéro, Étage, Rue)" required
                             className={`form-control ${!formData.applicantAddress ? 'is-invalid' : ''} mb-4`}
                         />
                     </Form.Group>
@@ -263,38 +263,38 @@ const AdminFields = ({
                             onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')}
                             className="mb-4" // mb-4 on the div containing checkboxes
                         >
-                            <Form.Check inline type="checkbox" label="Diplôme d'études secondaires" name="eduHighSchool" checked={formData.eduHighSchool || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Certificat (Pré-baccalauréat ou professionnel)" name="eduCertificate" checked={formData.eduCertificate || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Diplôme (Pré-baccalauréat ou professionnel)" name="eduDiploma" checked={formData.eduDiploma || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Diplôme d'associé" name="eduAssociate" checked={formData.eduAssociate || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Licence" name="eduBachelor" checked={formData.eduBachelor || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Master" name="eduMaster" checked={formData.eduMaster || false} onChange={handleChange} />
-                            <Form.Check inline type="checkbox" label="Doctorat" name="eduDoctorate" checked={formData.eduDoctorate || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Diplôme d’Études Secondaires (High School Diploma)" name="eduHighSchool" checked={formData.eduHighSchool || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Certificat (Sous-licence ou Professionnel/Technique)" name="eduCertificate" checked={formData.eduCertificate || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Diplôme (Sous-licence ou Professionnel/Technique)" name="eduDiploma" checked={formData.eduDiploma || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Diplôme d’Associé (Associate Degree)" name="eduAssociate" checked={formData.eduAssociate || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Licence/Baccalauréat (Bachelor’s Degree)" name="eduBachelor" checked={formData.eduBachelor || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Master (Master’s Degree)" name="eduMaster" checked={formData.eduMaster || false} onChange={handleChange} />
+                            <Form.Check inline type="checkbox" label="Doctorat (PhD)" name="eduDoctorate" checked={formData.eduDoctorate || false} onChange={handleChange} />
                         </div>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>2.2.1 Nom de l'école</Form.Label>
+                        <Form.Label>2.2.1 Nom de l'établissement</Form.Label>
                         <Form.Control type="text" name="applicantSchoolName" value={formData.applicantSchoolName || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="Nom de l'établissement" required className={`form-control ${!formData.applicantSchoolName ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>2.2.2 Période d'inscription</Form.Label>
-                        <Form.Control type="text" name="applicantEnrollmentTerm" value={formData.applicantEnrollmentTerm || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="JJ/MMM/AAAA à JJ/MMM/AAAA" required className={`form-control ${!formData.applicantEnrollmentTerm ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantEnrollmentTerm" value={formData.applicantEnrollmentTerm || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="jj/mm/aaaa au jj/mm/aaaa" required className={`form-control ${!formData.applicantEnrollmentTerm ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>2.2.3 Domaine d'études principal</Form.Label>
-                        <Form.Control type="text" name="applicantMajor" value={formData.applicantMajor || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="Votre spécialisation ou domaine d'études" required className={`form-control ${!formData.applicantMajor ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantMajor" value={formData.applicantMajor || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="Spécialisation ou domaine d'études" required className={`form-control ${!formData.applicantMajor ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>2.3 Langues supplémentaires</Form.Label>
-                        <Form.Control type="text" name="applicantLanguages" value={formData.applicantLanguages || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="Listez toutes les langues supplémentaires parlées (ou N/A)" required className={`form-control ${!formData.applicantLanguages ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantLanguages" value={formData.applicantLanguages || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('educationalInfo', isEducationalInfoOpen, setIsEducationalInfoOpen, 'educationalInfo')} placeholder="Langues supplémentaires parlées (ou N/A)" required className={`form-control ${!formData.applicantLanguages ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                 </div>
             )}
 
             {/* --- 3. Employment History --- */}
             <CollapsibleHeader
-                title="3. Historique d'emploi"
+                title="3. Expérience professionnelle"
                 isOpen={isEmploymentInfoOpen}
                 onToggle={() => setIsEmploymentInfoOpen(!isEmploymentInfoOpen)}
                 sectionId="admin-employment-info"
@@ -303,15 +303,15 @@ const AdminFields = ({
                 <div id="collapse-admin-employment-info" style={{ paddingTop: '0.5rem' }}>
                     <Form.Group className="mb-3">
                         <Form.Label>3.1 Emploi précédent</Form.Label>
-                        <Form.Control type="text" name="applicantPrevEmployment" value={formData.applicantPrevEmployment || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('employmentInfo', isEmploymentInfoOpen, setIsEmploymentInfoOpen, 'employmentInfo')} placeholder="RÔLE chez ENTREPRISE entre JJ/MMM/AAAA et JJ/MMM/AAAA (ou N/A)" required className={`form-control ${!formData.applicantPrevEmployment ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="applicantPrevEmployment" value={formData.applicantPrevEmployment || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('employmentInfo', isEmploymentInfoOpen, setIsEmploymentInfoOpen, 'employmentInfo')} placeholder="RÔLE chez ENTREPRISE entre jj/mm/aaaa et jj/mm/aaaa (ou N/A)" required className={`form-control ${!formData.applicantPrevEmployment ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>3.2 Fonctions</Form.Label>
-                        <Form.Control as="textarea" rows={3} name="applicantPrevDuties" value={formData.applicantPrevDuties || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('employmentInfo', isEmploymentInfoOpen, setIsEmploymentInfoOpen, 'employmentInfo')} placeholder="Décrivez vos fonctions (ou N/A)" required className={`form-control ${!formData.applicantPrevDuties ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control as="textarea" rows={3} name="applicantPrevDuties" value={formData.applicantPrevDuties || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('employmentInfo', isEmploymentInfoOpen, setIsEmploymentInfoOpen, 'employmentInfo')} placeholder="Description de la fonction précédente (ou N/A)" required className={`form-control ${!formData.applicantPrevDuties ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>3.3 Raison du licenciement (le cas échéant)</Form.Label>
-                        <Form.Control as="textarea" rows={2} name="applicantPrevDismissalReason" value={formData.applicantPrevDismissalReason || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('employmentInfo', isEmploymentInfoOpen, setIsEmploymentInfoOpen, 'employmentInfo')} placeholder="Raison du départ de l'emploi précédent (ou N/A)" className="form-control mb-4" />
+                        <Form.Label>3.3 Motif du départ (le cas échéant)</Form.Label>
+                        <Form.Control as="textarea" rows={2} name="applicantPrevDismissalReason" value={formData.applicantPrevDismissalReason || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('employmentInfo', isEmploymentInfoOpen, setIsEmploymentInfoOpen, 'employmentInfo')} placeholder="Motif du départ de l'emploi précédent (ou N/A)" className="form-control mb-4" />
                     </Form.Group>
                 </div>
             )}
@@ -330,7 +330,7 @@ const AdminFields = ({
                         <Form.Control
                             as="textarea" rows={8} name="applicantMotivationLetter" value={formData.applicantMotivationLetter || ''}
                             onChange={handleChange} onBlur={() => handleSectionFieldBlur('motivationalLetter', isMotivationalLetterOpen, setIsMotivationalLetterOpen, 'motivationalLetter')}
-                            placeholder="Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent."
+                            placeholder="Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent"
                             required className={`form-control ${!formData.applicantMotivationLetter ? 'is-invalid' : ''} mb-4`}
                         />
                     </Form.Group>
@@ -358,7 +358,7 @@ const AdminFields = ({
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>5.3 Nom Discord</Form.Label>
-                        <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')} placeholder="nomutilisateur#1234 ou nouveau format de nom d'utilisateur" required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
+                        <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')} required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
                         {!formData.oocDiscord && <div className="invalid-feedback d-block custom-validation-message">Le nom Discord est requis.</div>}
                     </Form.Group>
                     <Form.Group className="mb-3">
@@ -430,7 +430,7 @@ const AdminFields = ({
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>5.7 Histoire de fond du personnage</Form.Label>
+                        <Form.Label>5.7 Background du personnage (Bref résumé)</Form.Label>
                         <Form.Control as="textarea" rows={8} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')} required className={`form-control ${!formData.charBackground ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                 </div>
