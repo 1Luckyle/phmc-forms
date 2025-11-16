@@ -32,14 +32,14 @@ export const WebhookProvider = ({ children, commitInfo }) => {
             const uploadedUrls = await uploadImage(event);
             if (uploadedUrls && uploadedUrls.length > 0) {
                 setMediaUrls(prevUrls => [...prevUrls, ...uploadedUrls]);
-                showNotification(`${uploadedUrls.length} image(s) uploaded successfully!`, 'check-circle');
+                showNotification(`${uploadedUrls.length} image(s) téléchargée(s) avec succès!`, 'check-circle');
             } else {
-                showNotification('Image upload returned no URLs.', 'warning');
+                showNotification('Image téléchargée, aucune URL retournée.', 'warning');
             }
         } catch (error) {
             console.error('Error during image upload in WebhookManager:', error);
             Sentry.captureException(error, { extra: { context: 'WebhookManager handleLocalImageUpload' } });
-            showNotification('An unexpected error occurred during upload.', 'exclamation-circle');
+            showNotification('Une erreur inattendue est survenue lors du téléchargement.', 'exclamation-circle');
         } finally {
             setIsUploading(false);
             if (event.target) {
@@ -51,19 +51,19 @@ export const WebhookProvider = ({ children, commitInfo }) => {
     const addMediaUrl = (url) => {
         const urlToAdd = url.trim();
         if (!urlToAdd) {
-            showNotification('Please enter a URL.', 'warning');
+            showNotification('Veuillez entrer une URL.', 'warning');
             return;
         }
         if (!urlToAdd.startsWith('http://') && !urlToAdd.startsWith('https://')) {
-            showNotification('Invalid URL format. Must start with http:// or https://', 'warning');
+            showNotification("Format d'URL invalide. Doit commencer par http:// ou https://", 'warning');
             return;
         }
         if (mediaUrls.includes(urlToAdd)) {
-            showNotification('This URL has already been added.', 'info-circle');
+            showNotification("Cette URL a déjà été ajoutée.", 'info-circle');
             return;
         }
         setMediaUrls(prevUrls => [...prevUrls, urlToAdd]);
-        showNotification('URL added successfully!', 'check-circle');
+        showNotification("URL ajoutée avec succès !", 'check-circle');
     };
 
     const clearMedia = () => {
@@ -74,11 +74,11 @@ export const WebhookProvider = ({ children, commitInfo }) => {
         const title = webhookTitle.trim();
         const message = webhookMessage.trim();
         if (!title && !message && mediaUrls.length === 0) {
-            showNotification('Please enter a title, message, or add media (image/URL).', 'warning');
+            showNotification('Veuillez entrer un titre, un message ou ajouter des médias (image/URL).', 'warning');
             return null;
         }
         if (title.length > 256) {
-            showNotification('Embed title cannot exceed 256 characters.', 'warning');
+            showNotification("Le titre de l'embed ne peut pas dépasser 256 caractères.", 'warning');
             return null;
         }
         let description = message || '';
@@ -95,13 +95,13 @@ export const WebhookProvider = ({ children, commitInfo }) => {
             return null;
         }
         const embedFields = [
-            { name: "[Delayed Updates] Form Generator Link", value: "https://phmc-tools.gta.world/", inline: false },
-            { name: "Alternative Form Generator Link", value: "https://gtaw-forms.github.io/forms/", inline: false }
+            { name: "Lien du générateur de formulaire", value: "https://1luckyle.github.io/phmc-forms/", inline: false },
+            { name: "Lien alternatif du générateur de formulaires", value: "https://1luckyle.github.io/phmc-forms/", inline: false }
         ];
 
         const embed = {
-            title: title || "PHMC Form Generator Notification",
-            url: "https://phmc-tools.gta.world/",
+            title: title || "PHMC Notification du Générateur de Formulaires",
+            url: "https://1luckyle.github.io/phmc-forms/",
             description: description.trim() || undefined,
             color: 0x7289DA,
             timestamp: new Date().toISOString(),
@@ -113,14 +113,14 @@ export const WebhookProvider = ({ children, commitInfo }) => {
         };
 
         if (!message && !title && mediaUrls.length > 0) {
-            embed.description = `Media submitted via PHMC Form Generator - v${commitInfo?.sha || 'N/A'}`;
-            embed.description += '\n\n**Media:**\n';
+            embed.description = `Médias soumis via le Générateur de Formulaires PHMC - v${commitInfo?.sha || 'N/A'}`;
+            embed.description += '\n\n**Médias:**\n';
             mediaUrls.forEach((url, index) => {
-                const type = url.includes('streamable.com') ? 'Video' : (/".(jpg|jpeg|png|gif)$/i.test(url) || url.includes('ibb.co')) ? 'Image' : 'Link';
+                const type = url.includes('streamable.com') ? 'Vidéo' : (/".(jpg|jpeg|png|gif)$/i.test(url) || url.includes('ibb.co')) ? 'Image' : 'Lien';
                 embed.description += `- ${type} ${index + 1}: ${url}\n`;
             });
             if (embed.description.length > 4096) {
-                showNotification('Embed body (including media links) cannot exceed 4096 characters.', 'warning');
+                showNotification('Le corps de l\'embed (y compris les liens médias) ne peut pas dépasser 4096 caractères.', 'warning');
                 return null;
             }
         }

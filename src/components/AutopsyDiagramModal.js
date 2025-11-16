@@ -255,24 +255,74 @@ const AutopsyDiagramModal = ({
     };
 
     const drawDiagramOnCanvas = useCallback(async () => {
-        if (!canvasRef.current || !bodyImage) {
+        if (!canvasRef.current || !bodyImage || !imageRef.current || !imageContainerRef.current) {
             console.error("Canvas or body image not ready for drawing.");
             return null;
         }
+
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         const sourceImage = bodyImage;
 
+        // Dimension du canvas = dimension native de l'image
         canvas.width = sourceImage.naturalWidth;
         canvas.height = sourceImage.naturalHeight;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
 
+        const imgElement = imageRef.current;
+        const containerElement = imageContainerRef.current;
+
+        const imgRect = imgElement.getBoundingClientRect();
+        const containerRect = containerElement.getBoundingClientRect();
+
+        const naturalWidth = bodyImage.naturalWidth;
+        const naturalHeight = bodyImage.naturalHeight;
+        const naturalAspectRatio = naturalWidth / naturalHeight;
+        const elementAspectRatio = imgRect.width / imgRect.height;
+
+        let renderedWidth = imgRect.width;
+        let renderedHeight = imgRect.height;
+        let renderedOffsetX = 0;
+        let renderedOffsetY = 0;
+
+        // Même logique que dans handleImageClick pour trouver la zone "utile" de l'image
+        if (naturalAspectRatio > elementAspectRatio) {
+            renderedHeight = imgRect.width / naturalAspectRatio;
+            renderedOffsetY = (imgRect.height - renderedHeight) / 2;
+        } else {
+            renderedWidth = imgRect.height * naturalAspectRatio;
+            renderedOffsetX = (imgRect.width - renderedWidth) / 2;
+        }
+
+        // Convertit un marker (% du conteneur) → coord sur le canvas
+        const mapMarkerToCanvas = (marker) => {
+            // Position en px dans le conteneur
+            const markerXInContainer = (marker.x / 100) * containerRect.width;
+            const markerYInContainer = (marker.y / 100) * containerRect.height;
+
+            // Position relative à l'image rendue (on retire la position de l'image + letterboxing)
+            const xInImageContent =
+                markerXInContainer - (imgRect.left - containerRect.left) - renderedOffsetX;
+            const yInImageContent =
+                markerYInContainer - (imgRect.top - containerRect.top) - renderedOffsetY;
+
+            // Normalisation 0–1 dans l'image rendue
+            const normX = xInImageContent / renderedWidth;
+            const normY = yInImageContent / renderedHeight;
+
+            // Conversion vers le canvas (dimension native)
+            return {
+                x: normX * canvas.width,
+                y: normY * canvas.height,
+            };
+        };
+
         const markersToDraw = getGroupedLabeledMarkers(markers);
 
+        // Dessin des symboles
         markers.forEach(marker => {
-            const canvasDrawX = (marker.x / 100) * canvas.width;
-            const canvasDrawY = (marker.y / 100) * canvas.height;
+            const { x: canvasDrawX, y: canvasDrawY } = mapMarkerToCanvas(marker);
 
             if (marker.type === 'circle') {
                 ctx.beginPath();
@@ -295,9 +345,9 @@ const AutopsyDiagramModal = ({
             }
         });
 
+        // Dessin des labels
         markersToDraw.forEach(marker => {
-            const canvasDrawX = (marker.x / 100) * canvas.width;
-            const canvasDrawY = (marker.y / 100) * canvas.height;
+            const { x: canvasDrawX, y: canvasDrawY } = mapMarkerToCanvas(marker);
             const labelToDraw = marker.displayLabel;
 
             if (labelToDraw) {
@@ -332,6 +382,7 @@ const AutopsyDiagramModal = ({
                 ctx.fillText(labelToDraw, labelTextX, labelTextY);
             }
         });
+
         return canvas;
     }, [markers, bodyImage]);
 
@@ -343,20 +394,20 @@ const AutopsyDiagramModal = ({
                 if (blob) {
                     try {
                         await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
-                        if (showNotification) showNotification('Diagram copied to clipboard!', 'check-circle');
+                        if (showNotification) showNotification('Diagramme copié dans le presse-papier!', 'check-circle');
                     } catch (err) {
                         console.error('Failed to copy diagram:', err);
-                        if (showNotification) showNotification('Failed to copy diagram. See console for details.', 'exclamation-triangle');
+                        if (showNotification) showNotification('Échec de la copie du diagramme dans le presse-papier.', 'exclamation-triangle');
                     }
                 } else {
                     console.error('Failed to create image blob for clipboard.');
-                    if (showNotification) showNotification('Failed to create image blob for clipboard.', 'exclamation-triangle');
+                    if (showNotification) showNotification('Échec de la création du blob image pour le presse-papier.', 'exclamation-triangle');
                 }
                 setIsProcessingImage(false);
             }, 'image/png');
         } else {
             console.warn('Clipboard API not available or canvas drawing failed.');
-            if (showNotification) showNotification('Clipboard API not available or canvas drawing failed.', 'exclamation-triangle');
+            if (showNotification) showNotification('L\'API Presse-papiers n\'est pas disponible ou le dessin du canvas a échoué.', 'exclamation-triangle');
             setIsProcessingImage(false);
         }
     }, [drawDiagramOnCanvas, showNotification]);
@@ -365,7 +416,7 @@ const AutopsyDiagramModal = ({
         setIsProcessingImage(true);
         const canvas = await drawDiagramOnCanvas();
         if (!canvas) {
-            if (showNotification) showNotification('Failed to draw diagram on canvas.', 'exclamation-triangle');
+            if (showNotification) showNotification('Échec du dessin du diagramme sur le canvas.', 'exclamation-triangle');
             setIsProcessingImage(false);
             return;
         }
@@ -376,7 +427,7 @@ const AutopsyDiagramModal = ({
             // The handleImageUpload function now shows notifications and sets form data.
             // If you need to do something specific with the URL in this component, you can use `imageUrl`.
         } else {
-            if (showNotification) showNotification('Image upload handler is not available.', 'error');
+            if (showNotification) showNotification('Le gestionnaire de téléchargement d\'image n\'est pas disponible.', 'error');
         }
         
         setIsProcessingImage(false);
@@ -640,14 +691,14 @@ const AutopsyDiagramModal = ({
     const isToggleLabelSideDisabled = !lastLabeledMarker;
 
     const moreLabelButtons = [
-        { short: "BLUNT", full: "Blunt Force Trauma" },
-        { short: "BURN", full: "Burn Injury" },
-        { short: "LAC", full: "Laceration" },
+        { short: "BLUNT", full: "Traumatisme par contusion" },
+        { short: "BURN", full: "Brûlure" },
+        { short: "LAC", full: "Lacération" },
         { short: "FX", full: "Fracture" },
-        { short: "BITE", full: "Bite Mark" },
-        { short: "TSR", full: "Taser Probe Mark" },
-        { short: "CHEM", full: "Chemical Exposure" },
-        { short: "ENV", full: "Environmental Exposure" },
+        { short: "BITE", full: "Trace de morsure" },
+        { short: "TSR", full: "Impact de taser (sonde)" },
+        { short: "CHEM", full: "Exposition chimique" },
+        { short: "ENV", full: "Exposition environnementale" },
         { short: "AMP", full: "Amputation" },
     ];
 
@@ -657,7 +708,7 @@ const AutopsyDiagramModal = ({
             <div style={modalOverlayStyle} onClick={onHide}>
                 <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
                     <div style={modalHeaderStyle}>
-                        <h5 style={modalTitleStyle}>Autopsy Diagram</h5>
+                        <h5 style={modalTitleStyle}>Diagramme d'autopsie</h5>
                         <button onClick={onHide} style={modalCloseButtonStyle} aria-label="Close modal">&times;</button>
                     </div>
                     <div style={modalBodyStyle}>
@@ -667,25 +718,25 @@ const AutopsyDiagramModal = ({
                                     variant={selectedSilhouetteType === 'male' ? 'info' : 'outline-info'}
                                     size="sm"
                                     onClick={() => setSelectedSilhouetteType('male')}
-                                    title="Use Male Silhouette"
+                                    title="Utiliser la silhouette masculine"
                                 >
-                                    Male Body
+                                    Corps masculin
                                 </Button>
                                 <Button
                                     variant={selectedSilhouetteType === 'female' ? 'info' : 'outline-info'}
                                     size="sm"
                                     onClick={() => setSelectedSilhouetteType('female')}
-                                    title="Use Female Silhouette"
+                                    title="Utiliser la silhouette féminine"
                                 >
-                                    Female Body
+                                    Corps féminin
                                 </Button>
                                 <span style={{ borderLeft: '1px solid #30363d', height: '20px', margin: '0 5px' }}></span>
 
-                                <Button variant={selectedMarkerType === 'circle' ? 'danger' : 'outline-danger'} size="sm" onClick={() => setSelectedMarkerType('circle')}>Circle (O)</Button>
-                                <Button variant={selectedMarkerType === 'cross' ? 'danger' : 'outline-danger'} size="sm" onClick={() => setSelectedMarkerType('cross')}>Cross (X)</Button>
-                                <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('GSW')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>GSW</Button>
-                                <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('STAB')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>STAB</Button>
-                                <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('UNK')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>UNK</Button>
+                                <Button variant={selectedMarkerType === 'circle' ? 'danger' : 'outline-danger'} size="sm" onClick={() => setSelectedMarkerType('circle')}>Cercle (O)</Button>
+                                <Button variant={selectedMarkerType === 'cross' ? 'danger' : 'outline-danger'} size="sm" onClick={() => setSelectedMarkerType('cross')}>Croix (X)</Button>
+                                <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('GSW')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>PLAIE BALLE</Button>
+                                <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('STAB')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>PLAIE AB</Button>
+                                <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('UNK')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>INCONNU</Button>
                                 <Button variant="outline-light" size="sm" onClick={() => handleAddLabelToLastMarker('TRAUMA')} disabled={markers.length === 0} style={{fontSize: '0.75rem'}}>TRAUMA</Button>
                                 {moreLabelButtons.map(btn => (
                                     <OverlayTrigger
@@ -705,10 +756,10 @@ const AutopsyDiagramModal = ({
                                     </OverlayTrigger>
                                 ))}
                                 <Button variant="outline-secondary" size="sm" onClick={handleToggleLastMarkerLabelSide} disabled={isToggleLabelSideDisabled} title="Toggle Last Label's Side">
-                                    <i className={`fas fa-exchange-alt`}></i> Toggle Label Side
+                                    <i className={`fas fa-exchange-alt`}></i> Basculer l'étiquette côté
                                 </Button>
-                                <Button variant="outline-secondary" size="sm" onClick={handleUndoLastMarker} disabled={markers.length === 0}>Undo</Button>
-                                <Button variant="outline-warning" size="sm" onClick={handleClearAllMarkers} disabled={markers.length === 0}>Clear All</Button>
+                                <Button variant="outline-secondary" size="sm" onClick={handleUndoLastMarker} disabled={markers.length === 0}>Annuler</Button>
+                                <Button variant="outline-warning" size="sm" onClick={handleClearAllMarkers} disabled={markers.length === 0}>Tout effacer</Button>
                             </div>
                         </div>
 
@@ -723,19 +774,19 @@ const AutopsyDiagramModal = ({
                             {markers.map(marker => renderMarker(marker))}
                         </div>
                         <small style={{ color: '#8b949e', flexShrink: 0 }}>
-                            Click diagram to add a marker. Drag marker to reposition. Click marker symbol to remove.
+                            Cliquez sur le diagramme pour ajouter un marqueur. Faites glisser le marqueur pour le repositionner. Cliquez sur le symbole du marqueur pour le supprimer.
                         </small>
                     </div>
                     <div style={modalFooterStyle}>
                         <Button variant="outline-info" size="sm" onClick={handleCopyToClipboard} disabled={isProcessingImage || !bodyImage || !canvasRef.current} style={isProcessingImage ? processingButtonStyle : {}}>
-                            {isProcessingImage ? 'Processing...' : 'Copy Diagram'}
+                            {isProcessingImage ? 'Traitement en cours...' : 'Copier le diagramme'}
                         </Button>
                         <Button variant="outline-success" size="sm" onClick={handleUpload} disabled={isProcessingImage || !bodyImage || !canvasRef.current} style={isProcessingImage ? { ...processingButtonStyle, marginLeft: '10px' } : { marginLeft: '10px' }}>
-                            {isProcessingImage ? 'Processing...' : 'Upload'}
+                            {isProcessingImage ? 'Traitement en cours...' : 'Téléverser'}
                         </Button>
                         <div style={{ flexGrow: 1 }}></div>
-                        <Button variant="secondary" onClick={onHide} disabled={isProcessingImage}>Cancel</Button>
-                        <Button variant="primary" onClick={handleSave} disabled={isProcessingImage} style={{marginLeft: '10px'}}>Done & Save Diagram</Button>
+                        <Button variant="secondary" onClick={onHide} disabled={isProcessingImage}>Annuler</Button>
+                        <Button variant="primary" onClick={handleSave} disabled={isProcessingImage} style={{marginLeft: '10px'}}>Terminé & Enregistrer le diagramme</Button>
                     </div>
                 </div>
             </div>
