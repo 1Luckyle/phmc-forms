@@ -452,9 +452,9 @@ function MainApp({
 
     const getCopyButtonText = () => {
         if (selectedAgencyGroup === 'PHMC Recruitment') {
-            return 'Copie BBCode de Recrutement';
+            return 'Copier BBCode de Recrutement';
         }
-        return 'Copie BBCode';
+        return 'Copier BBCode';
     };
     
     const getCurrentReportAuthor = useCallback((formData) => {

@@ -25,37 +25,37 @@ const SimpleAdminAuth = ({ onAuthSuccess }) => {
                     }));
                     onAuthSuccess(adminData);
                 } else {
-                    setError('Access denied: Not an admin');
+                    setError('Accès refusé: Rôle non administrateur');
                 }
             } else {
-                setError('Invalid credentials');
+                setError('Identifiants invalides');
             }
         } catch (err) {
-            setError('Login error: ' + err.message);
+            setError('Erreur de connexion : ' + err.message);
         }
     };
 
     return (
         <div style={styles.container}>
             <div style={styles.card}>
-                <h2>Admin Login (Dev Mode)</h2>
+                <h2>Connexion Admin (Mode Dev)</h2>
                 <form onSubmit={handleLogin} style={styles.form}>
                     <input
                         type="text"
-                        placeholder="Username"
+                        placeholder="Nom d'utilisateur"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         style={styles.input}
                     />
                     <input
                         type="password"
-                        placeholder="Password"
+                        placeholder="Mot de passe"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         style={styles.input}
                     />
                     <button type="submit" style={styles.button}>
-                        Login as Admin
+                        Se connecter en tant qu'Admin
                     </button>
                     {error && <p style={styles.error}>{error}</p>}
                 </form>

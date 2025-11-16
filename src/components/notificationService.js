@@ -632,7 +632,7 @@ const sendFormInteractionWebhookInternal = async ({
         autopsyDiagramImgurUrl, // Ensure this is destructured
     } = formData;
 
-    let userValue = 'Unknown User';
+    let userValue = 'Utilisateur inconnu';
 
     const coronerFormVersions = [1, 2, 4, 8, 11, 18];
     const phmcFormVersions = [5, 6, 7, 9, 10, 12, 13, 14, 16, 19, 20, 21, 22, 23, 27, 28, 29, 35];
@@ -648,11 +648,11 @@ const sendFormInteractionWebhookInternal = async ({
         } else if (patientFirstName || patientLastName) {
             userValue = `${patientFirstName || ''} ${patientLastName || ''}`.trim();
         } else {
-            userValue = 'Civilian'; // Fallback for civilian forms if no name is provided
+            userValue = 'Civil'; // Fallback for civilian forms if no name is provided
         }
     } else if (isPhmcForm) {
         if (phmcEmployee) {
-            userValue = `Hospital Staff ${phmcEmployee}`;
+            userValue = `PHMC Employé ${phmcEmployee}`;
         } else if (patientName) { // Fallback for PHMC forms if patient name is relevant
             userValue = patientName;
         } else if (patientFirstName || patientLastName) {
@@ -667,7 +667,7 @@ const sendFormInteractionWebhookInternal = async ({
         if (coronerEmployee) {
             userValue = `${coronerRank || 'Coroner'} ${coronerEmployee}`;
         } else if (phmcEmployee) {
-            userValue = `Hospital Staff ${phmcEmployee}`;
+            userValue = `PHMC Employé ${phmcEmployee}`;
         } else if (patientFirstName || patientLastName) {
             userValue = `${patientFirstName || ''} ${patientLastName || ''}`.trim();
         } else if (patientName) {
@@ -679,11 +679,11 @@ const sendFormInteractionWebhookInternal = async ({
 
     const fields = [
         { name: "Utilisateur", value: userValue, inline: true },
-        { name: "Form Type", value: versionName, inline: true },
-        { name: "Primary Identifier", value: primaryIdentifier, inline: true },
-        ...(selectedAgencyGroup !== 'SAAA' || formData.decedentOOC ? [{ name: "OOC Name", value: decedentOOC || patientName || "N/A", inline: true }] : []),
-        ...(selectedAgencyGroup !== 'SAAA' || formData.requestingOfficer ? [{ name: "Requesting Officer", value: requestingOfficer || "N/A", inline: true }] : []),
-        { name: "Timestamp", value: new Date().toLocaleString(), inline: false },
+        { name: "Type de formulaire", value: versionName, inline: true },
+        { name: "Identifiant principal", value: primaryIdentifier, inline: true },
+        ...(selectedAgencyGroup !== 'SAAA' || formData.decedentOOC ? [{ name: "Nom OOC", value: decedentOOC || patientName || "N/A", inline: true }] : []),
+        ...(selectedAgencyGroup !== 'SAAA' || formData.requestingOfficer ? [{ name: "Officier demandeur", value: requestingOfficer || "N/A", inline: true }] : []),
+        { name: "Horodatage", value: new Date().toLocaleString(), inline: false },
         { name: "Action", value: actionMessage, inline: false },
     ];
 
@@ -703,14 +703,14 @@ const sendFormInteractionWebhookInternal = async ({
         });
     }
     if (typeof actualUserSavedCount === 'number') {
-        fields.push({ name: "Saved Reports (User)", value: actualUserSavedCount.toString(), inline: true });
+        fields.push({ name: "Rapports enregistrés (Utilisateur)", value: actualUserSavedCount.toString(), inline: true });
     }
 
         if (firebaseSavedCount !== undefined) {
-            fields.push({ name: "Total Saved Reports (Firebase)", value: firebaseSavedCount.toString(), inline: true });
+            fields.push({ name: "Total des rapports enregistrés (Firebase)", value: firebaseSavedCount.toString(), inline: true });
         }
     if (errorMessage) {
-        fields.push({ name: "Error Details", value: errorMessage, inline: false });
+        fields.push({ name: "Détails de l'erreur", value: errorMessage, inline: false });
     }
 
     // Construct the embed object
@@ -725,7 +725,7 @@ const sendFormInteractionWebhookInternal = async ({
         },
         // --- MODIFICATION START ---
         // Conditionally add the image to the embed if it's an Autopsy Report and the URL exists
-        ...(versionName === "Autopsy Report" && autopsyDiagramImgurUrl && { image: { url: autopsyDiagramImgurUrl } })
+        ...(versionName === "Rapport d'Autopsie" && autopsyDiagramImgurUrl && { image: { url: autopsyDiagramImgurUrl } })
         // --- MODIFICATION END ---
     };
 
@@ -804,7 +804,7 @@ export const handleFormCopyAndNotify = async ({
     const versionName = definition ? definition.name : "Unknown Form";
 
     if (!bbCodeToCopy) {
-        showNotification(`Failed to generate BBCode for ${versionName}. Please check form data.`, 'error');
+        showNotification(`Échec de la génération du BBCode pour ${versionName}. Veuillez vérifier les données du formulaire.`, 'error');
         Sentry.captureMessage(`getBBCodeContent returned null/undefined for bbCodeVersion: ${bbCodeVersion}`, 'error');
         return;
     }
@@ -816,7 +816,7 @@ export const handleFormCopyAndNotify = async ({
     if ([3, 24, 25, 26].includes(bbCodeVersion)) { // Civilian Forms
         savingAsCivilian = true;
         const bbCodeContent = getBBCodeContent();
-        const key = `[CIVILIAN-REPORT] - ${formData.patientName || ''} ${formData.patientFirstName || ''} ${formData.patientLastName || ''} - ${new Date().toISOString()}`;
+        const key = `[CIVIL-RAPPORT] - ${formData.patientName || ''} ${formData.patientFirstName || ''} ${formData.patientLastName || ''} - ${new Date().toISOString()}`;
         const sanitizedKey = comprehensiveSanitize(key);
         const reportDataToSave = {
             bbCodeVersion: bbCodeVersion,
@@ -824,7 +824,7 @@ export const handleFormCopyAndNotify = async ({
             bbCode: bbCodeContent,
             timestamp: Date.now(),
             originalKey: key,
-            authorName: 'CIVILIAN'
+            authorName: 'CIVIL'
         };
 
         try {
@@ -839,7 +839,7 @@ export const handleFormCopyAndNotify = async ({
         } catch (error) {
             console.error("Error saving Civilian report to Firebase:", error);
             Sentry.captureException(error, { extra: { context: 'Firebase set report' } });
-            saveResult = { success: false, error: 'Failed to save Civilian report to Firebase.' };
+            saveResult = { success: false, error: 'Échec de l\'enregistrement du rapport civil dans Firebase.' };
         }
     } else {
         saveResult = await saveReport();
@@ -848,7 +848,7 @@ export const handleFormCopyAndNotify = async ({
     if (!saveResult.success && !savingAsCivilian) {
         // If there was a specific validation error message from saveReport, show it.
         // Otherwise, show a generic message.
-        const message = saveResult.error || 'Report failed to save. Copying and webhook notification will be skipped.';
+        const message = saveResult.error || 'Échec de l\'enregistrement du rapport. La copie et la notification webhook seront ignorées.';
         showNotification(message, 'error');
         return;
     }
@@ -857,7 +857,7 @@ export const handleFormCopyAndNotify = async ({
     const copySuccessful = await copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copied to clipboard!`);
 
     if (!copySuccessful) {
-        showNotification('BBCode could not be copied. Webhook notification will be skipped.', 'warning');
+        showNotification('Le BBCode n\'a pas pu être copié. La notification webhook sera ignorée.', 'warning');
         return;
     }
 
@@ -892,11 +892,11 @@ export const handleFormCopyAndNotify = async ({
             try {
                 let userKey;
                 if (savingAsCivilian) {
-                    userKey = 'CIVILIAN'; // Directly use 'CIVILIAN' for civilian forms
+                    userKey = 'CIVIL'; // Directly use 'CIVILIAN' for civilian forms
                 } else {
                     userKey = getCurrentReportAuthor(formData);
                     if (!userKey) {
-                        userKey = 'UNKNOWN';
+                        userKey = 'INCONNU';
                     }
                 }
                 
@@ -921,9 +921,9 @@ export const handleFormCopyAndNotify = async ({
                 Sentry.captureException(error, { extra: { context: 'Firebase User Saved Reports Count' } });
             }
 
-            let webhookActionMessage = "BBCode Copied";
+            let webhookActionMessage = "BBCode Copié";
             if (saveResult.success) {
-                webhookActionMessage = "BBCode Copied & Report Saved to Firebase";
+                webhookActionMessage = "BBCode Copié & Rapport enregistré dans Firebase";
             }
 
             await sendFormInteractionWebhookInternal({
@@ -932,7 +932,7 @@ export const handleFormCopyAndNotify = async ({
                 versionName,
                 bbCodeVersion,
                 selectedAgencyGroup,
-                statusTitle: "Someone has used your generator!",
+                statusTitle: "Quelqu'un a utilisé votre générateur !",
                 statusColor: 0x00FF00,
                 actionMessage: webhookActionMessage,
                 commitInfo,
@@ -951,16 +951,16 @@ export const handleFormCopyAndNotify = async ({
                                 handleAgencySelect(2);
                             } else {
                                 console.error('handleFormCopyAndNotify: Cannot switch form, the component may have unmounted.');
-                                showNotification('Action failed: The context was lost. Please navigate to the form manually.', 'error');
+                                showNotification('Action échouée : Le contexte a été perdu. Veuillez naviguer vers le formulaire manuellement.', 'error');
                             }
                         }}
                         style={{ marginLeft: '10px', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.875rem', border: '1px solid #0dcaf0', background: '#0dcaf0', color: 'white', borderRadius: '0.25rem' }}
                     >
-                        Switch to Coroner Email Form
+                        Passer au formulaire de demande de couronnement
                     </button>
                 );
                 showNotification(
-                    <>A Coroner Email was requested for this report. {buttonJSX}</>,
+                    <>Un Coroner est demandé pour ce rapport. {buttonJSX}</>,
                     'info-circle',
                     15000
                 );
@@ -971,7 +971,7 @@ export const handleFormCopyAndNotify = async ({
     } catch (error) {
         console.error('Error during webhook notification in service: ', error);
         Sentry.captureException(error, { extra: { context: 'handleFormCopyAndNotify Webhook Error', errorName: error.name, errorMessage: error.message } });
-        showNotification('Report processed, but failed to send Discord notification.', 'warning');
+        showNotification('Rapport traité, mais échec de l\'envoi de la notification Discord.', 'warning');
     }
 };
 export const sendErrorToDiscord = async (errorDetails) => {
@@ -988,23 +988,23 @@ export const sendErrorToDiscord = async (errorDetails) => {
     const stack = error?.stack || (error ? JSON.stringify(error) : 'Not available');
 
     const embedData = {
-        title: "🚨 Unhandled Application Error 🚨",
-        description: `An uncaught error was detected. This is a fallback report, likely because Sentry is blocked or failed.`, 
+        title: "🚨 Erreur d'application non gérée 🚨",
+        description: `Une erreur non interceptée a été détectée. Il s'agit d'un rapport de secours, probablement parce que Sentry est bloqué ou a échoué.`, 
         color: 0xFF0000, // Red
         fields: [
             { name: "Error Message", value: `
 ${message}
 `, 
  inline: false },
-            { name: "Source File", value: source || 'N/A', inline: true },
-            { name: "Line", value: lineno ? lineno.toString() : 'N/A', inline: true },
-            { name: "Column", value: colno ? colno.toString() : 'N/A', inline: true },
-            { name: "Stack Trace", value: `
+            { name: "Fichier source", value: source || 'N/A', inline: true },
+            { name: "Ligne", value: lineno ? lineno.toString() : 'N/A', inline: true },
+            { name: "Colonne", value: colno ? colno.toString() : 'N/A', inline: true },
+            { name: "Trace de la pile", value: `
 ${stack.substring(0, 1000)}
 `,
  inline: false },
         ],
-        footerText: "Error Fallback Reporter"
+        footerText: "Erreur Fallback Envoyée"
     };
 
     // We don't have commitInfo here, so we pass an empty object.

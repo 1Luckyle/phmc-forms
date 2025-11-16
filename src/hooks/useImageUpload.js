@@ -11,7 +11,7 @@ export const useImageUpload = (showNotification, setFormData) => {
         try {
             const imgbbApiKey = process.env.REACT_APP_IMGBB_API_KEY;
             if (!imgbbApiKey) {
-                showNotification('ImgBB API Key is not configured.', 'error');
+                showNotification('La clé API ImgBB n\'est pas configurée.', 'error');
                 setIsUploading(false);
                 return;
             }
@@ -53,12 +53,12 @@ export const useImageUpload = (showNotification, setFormData) => {
                     imageUrls.push(data.data.url);
                 } else {
                     console.error('ImgBB upload failed:', data.error.message);
-                    showNotification(`ImgBB upload failed for one of the images: ${data.error.message}`, 'exclamation-circle');
+                    showNotification(`Le téléchargement ImgBB a échoué pour l'une des images : ${data.error.message}`, 'exclamation-circle');
                 }
             }
 
             if (imageUrls.length > 0) {
-                showNotification(`${imageUrls.length} image(s) uploaded successfully!`, 'check-circle');
+                showNotification(`${imageUrls.length} image(s) téléchargée(s) avec succès!`, 'check-circle');
 
                 if (fieldName) {
                     if (fieldName.includes('-')) {
@@ -91,7 +91,7 @@ export const useImageUpload = (showNotification, setFormData) => {
         } catch (error) {
             console.error('Upload failed:', error);
             Sentry.captureException(error, { extra: { context: 'handleImageUpload' } });
-            showNotification('Upload failed!', 'exclamation-circle');
+            showNotification('Le téléchargement a échoué !', 'exclamation-circle');
         } finally {
             setIsUploading(false);
             return imageUrls;
