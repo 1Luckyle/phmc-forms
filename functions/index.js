@@ -66,15 +66,15 @@ const scheduleDeletion = async (request) => {
             console.log(`Successfully deleted request ${requestId}`);
 
              const embed = {
-                 title: "Bingo Phrase Request Deleted (Scheduled)",
-                 description: `Request ID: ${requestId} automatically deleted.`,
+                 title: "Demande de phrase de bingo supprimée (Programmée)",
+                 description: `ID de la demande : ${requestId} supprimée automatiquement.`,
                  fields: [
-                     { name: "Status", value: request.status, inline: true },
-                     { name: "Requested By", value: request.requestedBy, inline: true },
+                     { name: "Statut", value: request.status, inline: true },
+                     { name: "Demandé par", value: request.requestedBy, inline: true },
                      { name: "Phrase", value: request.phrase, inline: false },
                  ],
                  timestamp: new Date().toISOString(),
-                 footer: { text: "PHMC Tools - Scheduled Cleanup" }
+                 footer: { text: "PHMC-FR Tools - Nettoyage programmé" }
              };
              await sendWebhook({ embeds: [embed] });
 
@@ -150,10 +150,10 @@ export const dailyTaskHandler = onSchedule({
     }));
 
     let bingoDetails = '';
-    if (bingoResults.success.length > 0) bingoDetails += `✅ Regenerated: ${bingoResults.success.join(', ')}\n`;
-    if (bingoResults.noCard.length > 0) bingoDetails += `➖ Skipped (Disabled): ${bingoResults.noCard.join(', ')}\n`;
-    if (bingoResults.notEnoughPhrases.length > 0) bingoDetails += `⚠️ Skipped (Not Enough Phrases): ${bingoResults.notEnoughPhrases.join(', ')}\n`;
-    if (bingoResults.errors.length > 0) bingoDetails += `❌ Errors: ${bingoResults.errors.join(', ')}\n`;
+    if (bingoResults.success.length > 0) bingoDetails += `✅ Régénéré : ${bingoResults.success.join(', ')}\n`;
+    if (bingoResults.noCard.length > 0) bingoDetails += `➖ Ignoré (Désactivé) : ${bingoResults.noCard.join(', ')}\n`;
+    if (bingoResults.notEnoughPhrases.length > 0) bingoDetails += `⚠️ Ignoré (Pas assez de phrases) : ${bingoResults.notEnoughPhrases.join(', ')}\n`;
+    if (bingoResults.errors.length > 0) bingoDetails += `❌ Erreurs : ${bingoResults.errors.join(', ')}\n`;
 
     // --- Phrase Request Deletion Logic ---
        const requestsRef = db.ref('bingo/phraseRequests');
@@ -178,32 +178,32 @@ export const dailyTaskHandler = onSchedule({
                    .filter(Boolean);
 
                await Promise.all(deletionPromises);
-               deletionDetails = `✅ Successfully deleted ${deletionCount} phrase requests.\n`;
+               deletionDetails = `✅ ${deletionCount} demandes de phrases supprimées avec succès.\n`;
 
            } else {
-               deletionDetails = '➖ No phrase requests found to delete.\n';
+               deletionDetails = '➖ Aucune demande de phrase trouvée à supprimer.\n';
            }
        } catch (error) {
            console.error('Error during deletion scheduling:', error);
-           deletionDetails = `❌ Error during phrase request deletion: ${error.message}\n`;
+           deletionDetails = `❌ Erreur lors de la suppression des demandes de phrases : ${error.message}\n`;
        }
 
     const embed = {
-        title: "Daily Task Handler",
+        title: "Gestionnaire de tâches quotidiennes",
         color: 0x1E90FF,
         fields: [
-            { name: "Bingo Reset Status", value: `\`\`\n${bingoDetails.trim() || "No bingo actions taken."}\n\`\`
+            { name: "Statut de réinitialisation du Bingo", value: `\`\`\n${bingoDetails.trim() || "Aucune action de bingo effectuée."}\n\`\`
 `, inline: false },
-            { name: "Phrase Request Deletion", value: `\`\`\n${deletionDetails.trim() || "No phrase request actions taken."}\n\`\`
+            { name: "Suppression des demandes de phrases", value: `\`\`\n${deletionDetails.trim() || "Aucune action de demande de phrase effectuée."}\n\`\`
 `, inline: false },
         ],
         timestamp: new Date(event.timestamp).toUTCString(),
-        footer: { text: "PHMC Tools - Scheduled Cloud Function (v2)" }
+        footer: { text: "PHMC-Fr Tools - Fonction Cloud Planifiée (v2)" }
     };
 
     await sendWebhook({ embeds: [embed] });
 
-    console.log('Daily task handler finished successfully.');
+    console.log('Gestionnaire de tâches quotidiennes terminé avec succès.');
 
     return null;
 });
@@ -213,9 +213,8 @@ import { onRequest } from "firebase-functions/v2/https";
 
 const corsHandler = cors({
     origin: [
-        'https://ancad-studios.github.io',
         'http://localhost:3000',
-        'https://gtaw-forms.github.io',
+        'https://1luckyle.github.io',
     ],
     methods: ['POST', 'OPTIONS']
 });
@@ -225,7 +224,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
     if (req.method !== 'POST') {
-        res.status(405).send('Method Not Allowed');
+        res.status(405).send('Méthode non autorisée');
         return;
     }
 
@@ -241,25 +240,25 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
     // Validate required arguments
     if (!code) {
         console.error('Missing code parameter');
-        res.status(400).json({ error: 'invalid-argument', message: 'The function must be called with the "code" argument.' });
+        res.status(400).json({ error: 'invalid-argument', message: 'La fonction doit être appelée avec l\'argument « code ».' });
         return;
     }
 
     if (!redirectUri) {
         console.error('Missing redirectUri parameter');
-        res.status(400).json({ error: 'invalid-argument', message: 'The function must be called with the "redirectUri" argument.' });
+        res.status(400).json({ error: 'invalid-argument', message: 'La fonction doit être appelée avec l\'argument « redirectUri ».' });
         return;
     }
 
     if (!clientId || !clientSecret) {
         console.error('Missing client credentials');
-        res.status(500).json({ error: 'internal', message: 'OAuth client credentials not configured.' });
+        res.status(500).json({ error: 'internal', message: 'Les identifiants client OAuth ne sont pas configurés.' });
         return;
     }
 
     try {
         // Exchange auth code for access token
-        const tokenResponse = await fetch('https://ucp.gta.world/oauth/token', {
+        const tokenResponse = await fetch('https://ucp-fr.gta.world/oauth/token', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -276,12 +275,12 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         const tokenData = await tokenResponse.json();
 
         if (!tokenResponse.ok) {
-            res.status(400).json({ error: 'Failed to fetch token', details: tokenData });
+            res.status(400).json({ error: 'Échec de la récupération du token', details: tokenData });
             return;
         }
 
         // Fetch user profile
-        const userResponse = await fetch('https://ucp.gta.world/api/v1/user', {
+        const userResponse = await fetch('https://ucp-fr.gta.world/api/v1/user', {
             headers: {
                 'Authorization': `Bearer ${tokenData.access_token}`,
             },
@@ -290,7 +289,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         const userData = await userResponse.json();
 
         if (!userResponse.ok) {
-            res.status(400).json({ error: 'Failed to fetch user data', details: userData });
+            res.status(400).json({ error: 'Échec de la récupération des données utilisateur', details: userData });
             return;
         }
 
@@ -300,7 +299,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         console.error("Error stack:", error.stack);
         res.status(500).json({ 
             error: 'internal', 
-            message: 'An internal error occurred during token exchange',
+            message: 'Une erreur interne est survenue lors de l\'échange du token',
             details: error.message 
         });
     }
