@@ -11,7 +11,7 @@ function runCommand(command, returnOutput = false) {
     } catch (error) {
         const errorMessage = error.message;
         // Check for "nothing to commit" error from git
-        if (command.includes('git commit') && errorMessage.includes('nothing to commit, working tree clean')) {
+        if (command.includes('git commit') && errorMessage.includes('rien à commiter working tree propre')) {
             console.warn(`Warning: ${command} - ${errorMessage.trim()}`);
             console.warn('Proceeding as there were no changes to commit.');
             return ''; // Return empty string for no changes
