@@ -107,7 +107,7 @@ const FeatureRequestModal = ({
                 color: 0x3498DB,
                 fields: fieldsForFileEmbed,
                 timestamp: new Date().toISOString(),
-                footer: { text: `Submitted via PHMC Tools Tool - v${commitInfo.sha || 'N/A'}` }
+                footer: { text: `Submitted via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}` }
             };
 
             formDataForFile.append('payload_json', JSON.stringify({
@@ -131,7 +131,7 @@ const FeatureRequestModal = ({
                 color: 0x3498DB,
                 fields: fieldsForJsonEmbed,
                 timestamp: new Date().toISOString(),
-                footer: { text: `Submitted via PHMC Tools Tool - v${commitInfo.sha || 'N/A'}` }
+                footer: { text: `Submitted via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}` }
             };
             firstMessageBody = JSON.stringify({
                 content: `Feedback / Bug Report (Part 1${requestChunks.length > 1 ? ` of ${requestChunks.length}` : ''})`,
@@ -170,7 +170,7 @@ const FeatureRequestModal = ({
                         color: 0x3498DB,
                         timestamp: new Date().toISOString(),
                         footer: {
-                            text: `Submitted by: ${discordName || "N/A"} | PHMC Tools Tool - v${commitInfo.sha || 'N/A'}`
+                            text: `Submitted by: ${discordName || "N/A"} | l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`
                         }
                     };
                     const subsequentResponse = await fetch(webhookURL, {

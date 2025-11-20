@@ -25,7 +25,7 @@ const initialFormData = {
     phmcEmployee: '',
     coronerEmployee: '',
     coronerBadge: '',
-    coronerRank: 'Forensic Attendant',
+    coronerRank: '',
     coronerDiscord: '',
     coronerPHNumber: '50056',
     lastName: '',

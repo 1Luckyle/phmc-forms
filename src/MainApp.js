@@ -682,7 +682,7 @@ function MainApp({
     }
     const coronerFormsSubGroup = [
         { version: 1, name: "Services de Médecine Légale", icon: corpse },
-        { version: 2, name: "Générateur d'Email", icon: email },
+        { version: 2, name: "Email DMEC", icon: email },
         { version: 4, name: "Rapport d'Autopsie", icon: corpse },
         { version: 8, name: "Certificat de Décès", icon: PHMCLogo },
         { version: 11, name: "Rapport de Tuerie/Accident de Masse", icon: corpse },
@@ -709,7 +709,7 @@ function MainApp({
         { version: 16, name: "Consultation psychiatrique | PBC", icon: phmcpaletobay }
     ];
     const civilianFormsSubGroup = [
-        { version: 24, name: "Remise de Dossier Médical", icon: Civilian },
+        { version: 24, name: "Formulaire de Libération Médicale", icon: Civilian },
         { version: 25, name: "Dossier Médical Basique", icon: nurse },
         { version: 3, name: "Dossier Médical Avancé", icon: nurse },
         { version: 26, name: "Mise à Jour du Dossier Médical", icon: Civilian},
@@ -1111,7 +1111,7 @@ function MainApp({
                             <div className="floating-tools-container">
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
-                                        <i className="fas fa-tools"></i> Boite d'Outils
+                                        <i className="fas fa-tools"></i> Boite à Outils
                                     </Dropdown.Toggle>
 
                                     <Dropdown.Menu>

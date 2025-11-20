@@ -107,7 +107,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                 errorMessage ? { name: "Error", value: ```${errorMessage.substring(0, 1000)}```, inline: false } : null
             ].filter(field => field !== null),
             footer: {
-                text: `PHMC Tools Tool | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
+                text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
             },
             timestamp: new Date().toISOString()
         };
