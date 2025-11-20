@@ -1028,7 +1028,7 @@ const OnboardingModal = ({
             </p>
             <div style={privacyContentStyle}>
                 <div style={privacyPolicyBoxStyle}>
-                    <p>This policy covers the use of PHMC Tools and complies with the <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer" style={linkStyle}>GTA World Privacy Policy</a>.</p>
+                    <p>This policy covers the use of PHMC-FR Tools and complies with the <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer" style={linkStyle}>GTA World Privacy Policy</a>.</p>
                     <p>This website processes <strong>IN CHARACTER</strong> information for the usage of Pillbox Hill Medical Center (A GTA World Faction)</p>
                     <p>We are in full compliance of the <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer" style={linkStyle}>GTA World Regulations</a> by hosting this website on GTA World Servers and code is vetted by GTAW Developers.</p>
                     <p>

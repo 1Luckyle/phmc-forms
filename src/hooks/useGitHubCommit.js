@@ -22,10 +22,10 @@ export const useGitHubCommit = () => {
                 console.error("Error reading commit info from cache:", e);
             }
 
-            fetch('https://api.github.com/repos/GTAW-PHMC/forms/commits/gh-pages')
+            fetch('https://api.github.com/repos/1Luckyle/phmc-forms/commits/gh-pages')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`GitHub API responded with status: ${response.status}`);
+                        throw new Error(`GitHub API répond avec le statut: ${response.status}`);
                     }
                     return response.json();
                 })
@@ -33,7 +33,7 @@ export const useGitHubCommit = () => {
                     const commitDate = new Date(data.commit.author.date);
                     const newCommitInfo = {
                         sha: data.sha.substring(0, 7),
-                        date: commitDate.toLocaleString('en-US', {
+                        date: commitDate.toLocaleString('fr-FR', {
                             year: 'numeric', month: 'long', day: 'numeric',
                             hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
                         }),
@@ -54,7 +54,7 @@ export const useGitHubCommit = () => {
                     console.error('Error fetching commit:', error);
                     setCommitInfo(prev => ({
                         ...prev,
-                        error: 'Could not fetch latest update information.'
+                        error: 'Erreur lors de la récupération des informations de commit.'
                     }));
                 });
         };

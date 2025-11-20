@@ -107,7 +107,7 @@ const sendAdminActionWebhook = async (adminEmail, action, details, categoryName 
             { name: "Details", value: `\`\`\`${details.substring(0, 1000)}\`\`\``, inline: false },
         ],
         timestamp: new Date().toISOString(),
-        footer: { text: `PHMC Tools | ${userTimezone}` }
+        footer: { text: `PHMC-FR Tools | ${userTimezone}` }
     };
 
     try {
@@ -342,7 +342,7 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
                 ...(cctvData.oocNotes ? [{ name: "OOC Notes", value: ```${cctvData.oocNotes}```, inline: false }] : []),
  */            ],
             timestamp: new Date().toISOString(),
-            footer: { text: "PHMC Tools - Developer Notification Service" }
+            footer: { text: "PHMC-FR Tools - Developer Notification Service" }
         };
 
         try {
@@ -755,7 +755,7 @@ Key: ${savedRoleData.originalKey}`,
         }
         if (granted) {
             if (showInAppNotification) showInAppNotification("Desktop notifications enabled for this site! Please ensure your OS settings also allow notifications from your browser.", "check-circle", 7000);
-            showDesktopNotification("PHMC Tools: Notifications Enabled", { body: "You will now receive desktop notifications for important admin actions. Ensure your OS allows browser notifications.", icon: '/phmc512.png' });
+            showDesktopNotification("PHMC-FR Tools: Notifications Enabled", { body: "You will now receive desktop notifications for important admin actions. Ensure your OS allows browser notifications.", icon: '/phmc512.png' });
         } else {
             if (currentPermission === 'denied') {
                 if (showInAppNotification) showInAppNotification("Desktop notifications are blocked. Please enable them in your browser settings.", "warning");
