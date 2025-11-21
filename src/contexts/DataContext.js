@@ -183,7 +183,7 @@ export const DataProvider = ({ children }) => {
         const mod = await import('../data/seed.json');
         return mod?.default ?? mod;
       } catch (e2) {
-        console.warn('Pas de seed local ou import JSON non supporté par le bundler:', e2);
+        console.warn('No local seeding or JSON import is not supported by the bundler:', e2);
         return null;
       }
     }
@@ -302,7 +302,7 @@ export const DataProvider = ({ children }) => {
     // Sinon, on tente Firebase
     let loadingNotificationId;
     try {
-      loadingNotificationId = showNotification("Data Loading...", 'spinner fa-spin', 0);
+      loadingNotificationId = showNotification("Chargement des données...", 'spinner fa-spin', 0);
       console.log('🔄 Fetching fresh data from Firebase...');
 
       const dbRootRef = ref(database);
@@ -338,11 +338,11 @@ export const DataProvider = ({ children }) => {
 
         console.log('💾 Firebase data cached to localStorage by segments');
         updateStateWithData(allData);
-        showNotification("Data Loaded!", 'check-circle', 2000);
+        showNotification("Données chargées !", 'check-circle', 2000);
         setDataLoaded(true);
       } else {
         // 🔁 Fallback seed si Firebase n'a rien
-        console.warn('Aucune donnée trouvée sur Firebase. Tentative seed local…');
+        console.warn('No data found on Firebase. Attempting local seeding…');
         const seedData = await importLocalSeed();
         if (seedData) {
           const errors = validateImportedData(seedData);
@@ -356,21 +356,21 @@ export const DataProvider = ({ children }) => {
             return;
           }
         } else {
-          showNotification('Initial application data not found on server.', 'error', 3500);
+          showNotification('Données initiales de l\'application non trouvées sur le serveur.', 'error', 3500);
         }
       }
     } catch (error) {
       console.error("Error fetching data from Realtime Database:", error);
-      showNotification("An error has happened, contact the maintainer", 'error', 3500);
+      showNotification("Une erreur est survenue, contactez le mainteneur", 'error', 3500);
 
       // 🔁 Fallback seed si get() a échoué
       try {
-        console.warn('Tentative de chargement depuis le seed local (fallback)…');
+        console.warn('Attempting to load from local seed (fallback)…');
         const seedData = await importLocalSeed();
         if (seedData) {
           const errors = validateImportedData(seedData);
           if (errors.length) {
-            console.warn('Seed JSON invalide:', errors);
+            console.warn('Invalid JSON seed:', errors);
           } else {
             await applyImportedData(seedData);
             setDataLoaded(true);
@@ -380,7 +380,7 @@ export const DataProvider = ({ children }) => {
           }
         }
       } catch (e2) {
-        console.warn('Pas de seed local ou import échoué:', e2);
+        console.warn('No local seed or failed import:', e2);
       }
     } finally {
       setIsLoadingData(false);
@@ -464,7 +464,7 @@ export const DataProvider = ({ children }) => {
         }
       } catch (error) {
         console.error(`Failed to refresh segment ${segment}:`, error);
-        showNotification(`Failed to refresh ${segment} data`, 'error');
+        showNotification(`Échec du rafraîchissement des données de ${segment}`, 'error');
       }
     }
   }, [updateCacheSegment, showNotification]);

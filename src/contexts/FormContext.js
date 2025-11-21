@@ -24,7 +24,7 @@ export const FormProvider = ({ initialFormData, setFormData, setLastWebhookIdent
             localStorage.removeItem(`${field}_timestamp`);
         });
         setLastWebhookIdentifier(null);
-        if (showNotification) showNotification('Form cleared! Employee selections preserved.', 'check-circle');
+        if (showNotification) showNotification('Formulaire validé ! Sélections des employés conservées.', 'check-circle');
     }, [initialFormData, setFormData, setLastWebhookIdentifier, showNotification]);
 
     return (

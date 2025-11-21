@@ -95,7 +95,7 @@ export const WebhookProvider = ({ children, commitInfo }) => {
             return null;
         }
         const embedFields = [
-            { name: "Lien du générateur de formulaire", value: "https://1luckyle.github.io/phmc-forms/", inline: false },
+            { name: "Lien du générateur de formulaire", value: "https://1luckyle.github.io", inline: false },
             { name: "Lien alternatif du générateur de formulaires", value: "https://1luckyle.github.io/phmc-forms/", inline: false }
         ];
 
