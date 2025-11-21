@@ -4,8 +4,8 @@ import { ref, onValue } from 'firebase/database';
 
 const LockdownContext = createContext();
 
-const FORM_GENERATOR_URL = "https://phmc-tools.gta.world/";
-const ALTERNATIVE_FORM_GENERATOR_URL = "https://gtaw-forms.github.io/forms/";
+const FORM_GENERATOR_URL = "https://1luckyle.github.io";
+const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
 
 export const useLockdown = () => {
     const context = useContext(LockdownContext);
@@ -29,7 +29,7 @@ export const LockdownProvider = ({ children }) => {
     useEffect(() => {
         const currentUrl = window.location.href;
         if (currentUrl.startsWith(FORM_GENERATOR_URL)) {
-            setCurrentDeployment('phmc-tools');
+            setCurrentDeployment('github-pages');
         } else if (currentUrl.startsWith(ALTERNATIVE_FORM_GENERATOR_URL)) {
             setCurrentDeployment('github-pages');
         } else {

@@ -3,7 +3,7 @@ import { ref, get, set, push } from 'firebase/database';
 import { database } from '../firebase';
 import getRelevantFields from './RevelantFields';
 
-const FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
+const FORM_GENERATOR_URL = "https://1luckyle.github.io";
 const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
 const comprehensiveSanitize = (str) => {
     if (!str) return '';

@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { database } from '../firebase';
 import { ref, onValue } from 'firebase/database';
 
-const FORM_GENERATOR_URL = "https://phmc-tools.gta.world/";
-const ALTERNATIVE_FORM_GENERATOR_URL = "https://gtaw-forms.github.io/forms/";
+const FORM_GENERATOR_URL = "https://1luckyle.github.io";
+const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
 const LOCALHOST_URL = "http://localhost";
 const ServiceStatusIndicator = ({ status }) => {
     if (!status) {
@@ -80,18 +80,26 @@ function HeaderInfo({ commitInfo }) {
                 {commitInfo.date && (
                     <>
                         <span className="version-info">
-                            <a href="https://github.com/GTAW-PHMC/forms/tree/gh-pages" target="_blank" rel="noopener noreferrer">
-                                This website was last updated on {commitInfo.date} with version #{commitInfo.sha}</a>
+                            <a href="https://github.com/1Luckyle/phmc-forms/tree/gh-pages" target="_blank" rel="noopener noreferrer">
+                                Ce site web a été mis à jour pour la dernière fois le {commitInfo.date} avec la version #{commitInfo.sha}</a>
 
                         </span>
 
                         <span className="contact-info">
-                            Need help? Contact Alyson Frost on <a
+                            Remerciements à l'équipe du PHMC US pour le développement de l'outils: Alyson Frost sur <a
                                 href="http://discord.gg/rrzJ4EeHfK"
                                 className="discord-link"
                             >
-                                Discord  <i className="fab fa-discord"></i>
+                                Discord PHMC US <i className="fab fa-discord"></i>
                             </a>❄️❄️
+                        </span>
+                        <span className="contact-info">
+                            Traduction et support côté FR: Luckyle sur <a
+                                href="https://discord.gg/dffP46zFPq"
+                                className="discord-link"
+                            >
+                                Discord PHMC FR  <i className="fab fa-discord"></i>
+                        </a>🩺🩺
                         </span>
                     </>
                 )}

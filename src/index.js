@@ -74,22 +74,22 @@ export const sendDiscordErrorWebhook = (errorDetails) => {
 
     const embed = {
         
-        title: errorDetails.isButtonClickError ? "🚨 Button Click Error 🚨" : "🚨 Unhandled Application Error 🚨",
-        description: "An unhandled error was caught by the global error handler.",
+        title: errorDetails.isButtonClickError ? "🚨 Erreur de clic sur le bouton 🚨" : "🚨 Erreur d'application non gérée 🚨",
+        description: "Une erreur non gérée a été interceptée par le gestionnaire global d'erreurs.",
         color: isSentryBlocked ? 0xFFA500 : 0xDE354C, // Orange if Sentry is blocked, Red otherwise
         fields: [
-            { name: "Error Type", value: errorDetails.isButtonClickError ? "UI Button Interaction" : "General", inline: true },
-            { name: "Sentry Status", value: isSentryBlocked ? "⚠️ Blocked / Unreachable" : "✅ Active", inline: true },
-            { name: "Error Message", value: `\`${String(errorDetails.message).substring(0, 1000)}\``, inline: false },
-            { name: "Source File", value: errorDetails.source || "N/A", inline: true },
-            { name: "Line", value: errorDetails.lineno || "N/A", inline: true },
-            { name: "Column", value: errorDetails.colno || "N/A", inline: true },
-            { name: "User Agent", value: `\`${navigator.userAgent}\``, inline: false },
-            { name: "Stack Trace", value: `\`${String(errorDetails.stack).substring(0, 1000)}\``, inline: false },
+            { name: "Type d'erreur", value: errorDetails.isButtonClickError ? "Interaction UI Bouton" : "énéral", inline: true },
+            { name: "Statut Sentry", value: isSentryBlocked ? "⚠️ Bloqué / Inaccessible" : "✅ Actif", inline: true },
+            { name: "Message d'erreur", value: `\`${String(errorDetails.message).substring(0, 1000)}\``, inline: false },
+            { name: "Fichier source", value: errorDetails.source || "N/A", inline: true },
+            { name: "Ligne", value: errorDetails.lineno || "N/A", inline: true },
+            { name: "Colonne", value: errorDetails.colno || "N/A", inline: true },
+            { name: "Agent utilisateur", value: `\`${navigator.userAgent}\``, inline: false },
+            { name: "Trace de la pile", value: `\`${String(errorDetails.stack).substring(0, 1000)}\``, inline: false },
             sentryEventId ? { name: "Sentry Trace/Event ID", value: `\`${sentryEventId}\``, inline: false } : null,
         ].filter(Boolean),
         timestamp: new Date().toISOString(),
-        footer: { text: "PHMC-FR Tools - Global Error Handler" }
+        footer: { text: "PHMC-FR Tools - Gestionnaire global des erreurs" }
     };
     discordErrorWebhookQueue.push({ content: '<@228306972204597248>', embeds: [embed] });
     processDiscordErrorQueue(); // Start processing the queue if it's not already running
@@ -190,11 +190,11 @@ const Root = () => {
                 isSentryBlocked = true; // Set the flag
 
                 const adblockNotificationId = showNotification(
-                    'It looks like you have an adblocker enabled. While we understand your preference, adblockers can sometimes interfere with the functionality of this site, especially with our error tracking tools. To help us track down bugs and improve the site, please consider disabling your adblocker for this domain. Your cooperation is greatly appreciated!',
+                    'Il semble que vous ayez un bloqueur de publicités activé. Nous comprenons votre choix, mais les bloqueurs de publicités peuvent parfois perturber le fonctionnement de ce site, notamment nos outils de suivi des erreurs. Pour nous aider à corriger les bugs et à améliorer le site, merci de désactiver votre bloqueur de publicités pour ce domaine. Nous vous remercions de votre collaboration !',
                     'exclamation-triangle',
                     0, // Set duration to 0 for persistence
                     [{
-                        label: 'Dismiss',
+                        label: 'Fermer',
                         handler: () => removeNotification(adblockNotificationId)
                     }]
                 );

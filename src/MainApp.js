@@ -18,6 +18,7 @@ import { useModal } from './contexts/ModalProvider';
 import { useSettings } from './contexts/SettingsProvider';
 import { useWebhooks } from './hooks/useWebhooks';
 import { useImageUpload } from './hooks/useImageUpload';
+import { useGitHubCommit } from './hooks/useGitHubCommit';
 import { useLockdown } from './contexts/LockdownContext';
 import LockdownBanner from './components/LockdownBanner';
 import LockdownDialog from './components/LockdownDialog';
@@ -47,7 +48,7 @@ const AgencyGroupSelectorModal = lazy(() => import('./components/AgencyGroupSele
 const AgencySelector = lazy(() => import('./components/AgencySelector'));
 const OnboardingModal = lazy(() => import('./components/OnboardingModal'));
 const Footer = lazy(() => import('./components/Footer'));
-const HeaderInfo = lazy(() => import('./components/HeaderInfo'));
+import HeaderInfo from './components/HeaderInfo';
 const CoronerTipsModal = lazy(() => import('./components/CoronerTipsModal'));
 const BusinessCardModal = lazy(() => import('./components/BusinessCardModal'));
 const EmsAmaModal = lazy(() => import('./components/EmsAmaModal'));
@@ -155,13 +156,13 @@ function MainApp({
             localStorage.setItem('selectedForm', preferences.defaultForm.toString());
         }
         
-        showNotification(`Welcome! Your interface has been customized for ${preferences.userType} users.`, 'check-circle');
+        showNotification(`Bienvenue ! Votre interface a été personnalisée pour ${preferences.userType} utilisateur.`, 'check-circle');
     };
 
     const handleOnboardingSkip = () => {
         setShowOnboarding(false);
         setOnboardingComplete(true);
-        showNotification('Onboarding skipped. You can restart it anytime from the Tools menu.', 'info-circle');
+        showNotification('L\'introduction a été ignorée. Vous pouvez la relancer à tout moment depuis le menu Outils.', 'info-circle');
     };
 
     const restartOnboarding = () => {
@@ -203,7 +204,7 @@ function MainApp({
     } = useData();
     const [isJohnDoe, setIsJohnDoe] = useState(false);
     const [isJaneDoe, setIsJaneDoe] = useState(false);
-    const [commitInfo, setCommitInfo] = useState({ sha: '', date: null, error: null });
+    const commitInfo = useGitHubCommit();
     
     // Onboarding state management
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -1580,7 +1581,7 @@ function MainApp({
                             />
                         </div>
 
-                        {selectedAgencyGroup === 'PHMC' && (
+                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && (
                             <BusinessCardModal
                                 show={showBusinessCard}
                                 onHide={() => setShowBusinessCard(false)}
@@ -1675,7 +1676,7 @@ function MainAppWrapper() {
         phmcEmployee: '',
         coronerEmployee: '',
         coronerBadge: '',
-        coronerRank: 'Forensic Attendant',
+        coronerRank: '',
         coronerDiscord: '',
         coronerPHNumber: '50056',
         lastName: '',
