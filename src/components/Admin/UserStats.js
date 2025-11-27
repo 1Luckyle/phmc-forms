@@ -94,27 +94,27 @@ const UserStats = ({ currentUser }) => {
     return (
         <div>
             <div className="card">
-                <div className="card-header">User Stats</div>
+                <div className="card-header">Statistiques des utilisateurs</div>
                 <div className="card-body">
                     <div className="form-group mt-3">
-                        <label>Select Employee</label>
+                        <label>Sélectionner un employé</label>
                         <select className="form-control" value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}>
-                            <option value="">Select an employee</option>
+                            <option value="">Sélectionnez un employé</option>
                             {employees.map(emp => (
                                 <option key={emp.uid} value={emp.character_name}>{emp.character_name}</option>
                             ))}
                         </select>
                     </div>
                     <button className="btn btn-primary mt-3" onClick={handleSearch} disabled={loading}>
-                        {loading ? 'Searching...' : 'Search Reports'}
+                        {loading ? 'Recherche en cours...' : 'Rechercher des rapports'}
                     </button>
-                    {reportCount > 0 && <p className="mt-3">Total Reports: {reportCount}</p>}
+                    {reportCount > 0 && <p className="mt-3">Nombre total de rapports : {reportCount}</p>}
                 </div>
             </div>
             <div className="card mt-4">
-                <div className="card-header">Top 5 Users by Reports</div>
+                <div className="card-header">Top 5 des utilisateurs par rapports</div>
                 <div className="card-body">
-                    {loading ? <p>Loading...</p> : (
+                    {loading ? <p>Chargement...</p> : (
                         <ul className="list-group">
                             {topFive.map(user => (
                                 <li key={user.name} className="list-group-item d-flex justify-content-between align-items-center">

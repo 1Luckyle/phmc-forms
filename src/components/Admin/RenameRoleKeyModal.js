@@ -49,13 +49,13 @@ const RenameRoleKeyModal = ({
         setError('');
 
         if (!newKey.trim()) {
-            setError('New key cannot be empty.');
-            if (showInAppNotification) showInAppNotification('New key cannot be empty.', 'warning');
+            setError('La nouvelle clé ne peut pas être vide.');
+            if (showInAppNotification) showInAppNotification('La nouvelle clé ne peut pas être vide.', 'warning');
             return;
         }
         if (newKey === currentRoleKey) {
-            setError('New key cannot be the same as the current key.');
-            if (showInAppNotification) showInAppNotification('New key is the same as the current one.', 'info');
+            setError('La nouvelle clé doit être différente de l\'actuelle.');
+            if (showInAppNotification) showInAppNotification('La nouvelle clé ne peut pas être identique à l\'actuelle.', 'info');
             return;
         }
 
@@ -70,8 +70,8 @@ const RenameRoleKeyModal = ({
             const newKeyRef = ref(database, newPath);
             const snapshot = await get(newKeyRef);
             if (snapshot.exists()) {
-                setError(`The key "${newKey}" already exists in this category. Please choose a different key.`);
-                if (showInAppNotification) showInAppNotification(`Key "${newKey}" already exists.`, 'error');
+                setError(`La clé "${newKey}" existe déjà dans cette catégorie. Veuillez choisir une clé différente.`);
+                if (showInAppNotification) showInAppNotification(`La clé "${newKey}" existe déjà.`, 'error');
                 setIsProcessing(false);
                 return;
             }
@@ -82,13 +82,13 @@ const RenameRoleKeyModal = ({
             // 3. Delete the old key
             await remove(ref(database, oldPath));
 
-            if (showInAppNotification) showInAppNotification(`Role key "${currentRoleKey}" successfully renamed to "${newKey}".`, 'check-circle');
+            if (showInAppNotification) showInAppNotification(`La clé de rôle "${currentRoleKey}" a été renommée avec succès en "${newKey}".`, 'check-circle');
 
             if (sendAdminActionWebhook && adminUserEmail) {
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    "Renamed Role Key",
-                    `Category: ${categoryConfig.displayName}\nOld Key: ${currentRoleKey}\nNew Key: ${newKey}\nRole Display Name: ${currentRoleData.displayName || 'N/A'}`,
+                    "Clé de rôle renommée",
+                    `Catégorie : ${categoryConfig.displayName}\nAncienne clé : ${currentRoleKey}\nNouvelle clé : ${newKey}\nNom d'affichage du rôle : ${currentRoleData.displayName || 'N/A'}`,
                     categoryConfig.displayName
                 );
             }
@@ -98,8 +98,8 @@ const RenameRoleKeyModal = ({
             }
             onHide(); // Close modal
         } catch (dbError) {
-            setError(`Failed to rename key: ${dbError.message}`);
-            if (showInAppNotification) showInAppNotification(`Failed to rename key. ${dbError.message}`, "error");
+            setError(`Échec du renommage de la clé : ${dbError.message}`);
+            if (showInAppNotification) showInAppNotification(`FÉchec du renommage de la clé. ${dbError.message}`, "error");
             Sentry.captureException(dbError, {
                 extra: { context: 'RenameRoleKeyModal Firebase Ops', oldPath, newPath }
             });
@@ -114,19 +114,19 @@ const RenameRoleKeyModal = ({
         <div style={modalOverlayStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
                 <BootstrapModal.Header style={modalHeaderStyle} closeButton={false}> {/* Remove default closeButton if using custom */}
-                    <BootstrapModal.Title style={modalTitleStyle}>Rename Role Key: {currentRoleData?.displayName || currentRoleKey}</BootstrapModal.Title>
+                    <BootstrapModal.Title style={modalTitleStyle}>Renommer la clé de rôle : {currentRoleData?.displayName || currentRoleKey}</BootstrapModal.Title>
                     <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 </BootstrapModal.Header>
                 <BootstrapModal.Body style={modalBodyStyle}>
-                    <p>Current Key: <strong>{currentRoleKey}</strong></p>
+                    <p>Clé actuelle : <strong>{currentRoleKey}</strong></p>
                     <p className="text-warning small">
-                        Warning: Renaming the key changes its identifier in the database.
-                        This is a technical change and does not affect the "Display Name" shown to users unless you also edit the role.
-                        Ensure the new key is unique and does not contain spaces or Firebase-invalid characters (e.g., ., $, #, [, ], /).
+                        Attention : Renommer la clé modifie son identifiant dans la base de données.
+                        Il s'agit d'un changement technique et n'affecte pas le "Nom d'affichage" visible par les utilisateurs, sauf si vous modifiez également le rôle.
+                        Assurez-vous que la nouvelle clé est unique et ne contient pas d'espaces ni de caractères invalides pour Firebase (par exemple, ., $, #, [, ], /).
                     </p>
                     <Form onSubmit={handleSubmit}>
                         <Form.Group className="mb-3">
-                            <Form.Label>New Role Key *</Form.Label>
+                            <Form.Label>Nouvelle clé de rôle *</Form.Label>
                             <Form.Control
                                 type="text"
                                 value={newKey}
@@ -136,7 +136,7 @@ const RenameRoleKeyModal = ({
                                 disabled={isProcessing}
                             />
                             <Form.Text className="text-muted">
-                                Spaces will be replaced with underscores. Invalid characters will be removed.
+                                Les espaces seront remplacés par des underscores. Les caractères invalides seront supprimés.
                             </Form.Text>
                         </Form.Group>
                         {error && <p className="text-danger mt-2 mb-0">{error}</p>}
@@ -144,14 +144,14 @@ const RenameRoleKeyModal = ({
                 </BootstrapModal.Body>
                 <BootstrapModal.Footer style={modalFooterStyle}>
                     <Button variant="secondary" onClick={onHide} disabled={isProcessing}>
-                        Cancel
+                        Annuler
                     </Button>
                     <Button
                         variant="warning" // Use warning color for potentially impactful action
                         onClick={handleSubmit}
                         disabled={isProcessing || !newKey.trim() || newKey === currentRoleKey}
                     >
-                        {isProcessing ? <Spinner as="span" animation="border" size="sm" /> : 'Rename Key'}
+                        {isProcessing ? <Spinner as="span" animation="border" size="sm" /> : 'Renommer la clé'}
                     </Button>
                 </BootstrapModal.Footer>
             </div>

@@ -26,10 +26,10 @@ const Admin = ({ formData, setFormData, showNotification }) => {
             }
 
             // 2. If cache is stale or doesn't exist, fetch from API
-            fetch('https://api.github.com/repos/GTAW-PHMC/forms/commits/gh-pages')
+            fetch('https://api.github.com/repos/1Luckyle/phmc-forms/commits/gh-pages')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`GitHub API responded with status: ${response.status}`);
+                        throw new Error(`GitHub API répond avec le statut: ${response.status}`);
                     }
                     return response.json();
                 })
@@ -37,7 +37,7 @@ const Admin = ({ formData, setFormData, showNotification }) => {
                     const commitDate = new Date(data.commit.author.date);
                     const newCommitInfo = {
                         sha: data.sha.substring(0, 7),
-                        date: commitDate.toLocaleString('en-US', {
+                        date: commitDate.toLocaleString('fr-FR', {
                             year: 'numeric', month: 'long', day: 'numeric',
                             hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
                         }),
@@ -60,7 +60,7 @@ const Admin = ({ formData, setFormData, showNotification }) => {
                     // 4. On failure, set an error message but keep old data if it exists
                     setCommitInfo(prev => ({
                         ...prev,
-                        error: 'Could not fetch latest update information.'
+                        error: 'Erreur lors de la récupération des informations de commit.'
                     }));
                 });
         };

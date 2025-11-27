@@ -104,22 +104,22 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
         setError('');
 
         if (!isFormValid) {
-            setError('All fields marked with * are required, and others must also be filled.');
-            if (showNotification) showNotification('Please fill out all fields in the form.', 'warning');
+            setError('Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.');
+            if (showNotification) showNotification('Veuillez remplir tous les champs du formulaire.', 'warning');
             return;
         }
 
         const roleKeyForFirebase = roleToEdit?.originalKey || roleData.displayName.trim().replace(/[.#$[\]/]/g, '_').replace(/\s+/g, '_');
         if (!roleKeyForFirebase) {
-            setError('Display Name cannot be empty or invalid for key generation.');
-            if (showNotification) showNotification('Display Name is invalid for key.', 'warning');
+            setError('Le nom affiché ne peut pas être vide ou invalide pour la génération de la clé.');
+            if (showNotification) showNotification('Le nom d\'affichage n\'est pas valide pour cette clé.', 'warning');
             return;
         }
 
         setIsSaving(true);
         if (!categoryConfig || !categoryConfig.path) {
-            setError('Category configuration is missing or invalid.');
-            if (showNotification) showNotification('Category configuration error.', 'error');
+            setError('Configuration de catégorie invalide.');
+            if (showNotification) showNotification('Erreur de configuration de la catégorie.', 'error');
             setIsSaving(false);
             return;
         }
@@ -131,8 +131,8 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
                 const existingRoleRef = ref(database, rolePath);
                 const snapshot = await get(existingRoleRef);
                 if (snapshot.exists()) {
-                    setError(`A role with the key "${roleKeyForFirebase}" already exists.`);
-                    if (showNotification) showNotification(`Role key "${roleKeyForFirebase}" already exists.`, 'error');
+                    setError(`Un rôle clé "${roleKeyForFirebase}" existe déjà.`);
+                    if (showNotification) showNotification(`La clé de rôle "${roleKeyForFirebase}" existe déjà.`, 'error');
                     setIsSaving(false);
                     return;
                 }
@@ -152,8 +152,8 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
             }
             handleClose();
         } catch (dbError) {
-            setError(`Failed to ${roleToEdit ? 'edit' : 'add'} role: ${dbError.message}`);
-            if (showNotification) showNotification(`Failed to ${roleToEdit ? 'edit' : 'add'} role. ${dbError.message}`, "error");
+            setError(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du rôle : ${dbError.message}`);
+            if (showNotification) showNotification(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du rôle. ${dbError.message}`, "error");
         }
         setIsSaving(false);
     }, [roleData, categoryKey, categoryConfig, showNotification, onRoleSaved, handleClose, isFormValid, roleToEdit]);
@@ -168,8 +168,8 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
 
     if (!show) return null;
 
-    const modalTitleText = roleToEdit ? `Edit Role: ${roleToEdit.displayName || roleToEdit.originalKey}` : `Add New Role to ${categoryConfig?.displayName || 'Category'}`;
-    const submitButtonText = roleToEdit ? (isSaving ? 'Saving...' : 'Save Changes') : (isSaving ? 'Saving...' : 'Save Role');
+    const modalTitleText = roleToEdit ? ` ${roleToEdit.displayName || roleToEdit.originalKey}` : `Ajouter un nouveau rôle à ${categoryConfig?.displayName || 'Catégorie'}`;
+    const submitButtonText = roleToEdit ? (isSaving ? 'Enregistrement...' : 'Enregistrer les modifications') : (isSaving ? 'Enregistrement...' : 'Enregistrer le rôle');
 
     const modalPortalContent = (
         <div style={modalOverlayStyle} onClick={handleClose}>
@@ -184,64 +184,64 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
                     <BootstrapForm onSubmit={handleSubmit}>
                         {/* Display Name */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Display Name *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="displayName" value={roleData.displayName || ''} onChange={handleChange} required placeholder="e.g., Senior Paramedic" />
+                            <BootstrapForm.Label>Nom d'affichage *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" name="displayName" value={roleData.displayName || ''} onChange={handleChange} required placeholder="ex., Senior Paramedic" />
                         </BootstrapForm.Group>
 
                         {/* Group (Read-only, derived from categoryConfig.displayName) */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Group (Category) *</BootstrapForm.Label>
+                            <BootstrapForm.Label>Groupe (Catégorie) *</BootstrapForm.Label>
                             <BootstrapForm.Control type="text" name="group" value={roleData.group || ''} onChange={handleChange} required readOnly />
                         </BootstrapForm.Group>
 
                         {/* Status */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Status *</BootstrapForm.Label>
+                            <BootstrapForm.Label>Statut *</BootstrapForm.Label>
                             <BootstrapForm.Select name="status" value={roleData.status || 'OPEN'} onChange={handleChange} required>
-                                <option value="OPEN">OPEN</option>
-                                <option value="CLOSED">CLOSED</option>
+                                <option value="OPEN">OUVERT</option>
+                                <option value="CLOSED">FERMÉ</option>
                             </BootstrapForm.Select>
                         </BootstrapForm.Group>
 
                         {/* POC */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Point of Contact (POC) *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="poc" value={roleData.poc || ''} onChange={handleChange} required placeholder="e.g., John Doe (johndoe#1234)" />
+                            <BootstrapForm.Label>Point de contact (POC) *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" name="poc" value={roleData.poc || ''} onChange={handleChange} required placeholder="ex., John Doe (johndoe#1234)" />
                         </BootstrapForm.Group>
 
                         {/* Short Code */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Short Code *</BootstrapForm.Label>
+                            <BootstrapForm.Label>Code court *</BootstrapForm.Label>
                             <BootstrapForm.Control type="text" name="shortCode" value={roleData.shortCode || ''} onChange={handleChange} required placeholder="e.g., SRPARA" />
                         </BootstrapForm.Group>
 
                         {/* URL */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Application URL *</BootstrapForm.Label>
+                            <BootstrapForm.Label>URL de l'application *</BootstrapForm.Label>
                             <BootstrapForm.Control type="url" name="url" value={roleData.url || ''} onChange={handleChange} required placeholder="https://forum.example.com/link" />
                         </BootstrapForm.Group>
 
                         {/* Overview */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Overview *</BootstrapForm.Label>
-                            <BootstrapForm.Control as="textarea" rows={3} name="Overview" value={roleData.Overview || ''} onChange={handleChange} required placeholder="Brief role overview..." />
+                            <BootstrapForm.Label>Aperçu *</BootstrapForm.Label>
+                            <BootstrapForm.Control as="textarea" rows={3} name="Overview" value={roleData.Overview || ''} onChange={handleChange} required placeholder="Bref aperçu du rôle..." />
                         </BootstrapForm.Group>
 
                         {/* Skills */}
-                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Skill Requirement 1 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill1" value={roleData.skill1 || ''} onChange={handleChange} required placeholder="e.g., Advanced Life Support" /></BootstrapForm.Group>
-                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Skill Requirement 2 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill2" value={roleData.skill2 || ''} onChange={handleChange} required placeholder="e.g., Emergency Driving" /></BootstrapForm.Group>
-                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Skill Requirement 3 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill3" value={roleData.skill3 || ''} onChange={handleChange} required placeholder="e.g., Patient Assessment" /></BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Exigence de compétence 1 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill1" value={roleData.skill1 || ''} onChange={handleChange} required placeholder="ex., Advanced Life Support" /></BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Exigence de compétence 2 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill2" value={roleData.skill2 || ''} onChange={handleChange} required placeholder="ex., Emergency Driving" /></BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Exigence de compétence 3 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill3" value={roleData.skill3 || ''} onChange={handleChange} required placeholder="ex., Patient Assessment" /></BootstrapForm.Group>
 
                         {/* Education */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Education Requirement *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="EduRequirement" value={roleData.EduRequirement || ''} onChange={handleChange} required placeholder="e.g., EMT-P Certification" />
+                            <BootstrapForm.Label>Exigence d'éducation *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" name="EduRequirement" value={roleData.EduRequirement || ''} onChange={handleChange} required placeholder="ex., Certification EMT-P" />
                         </BootstrapForm.Group>
 
                         {error && <p className="text-danger mt-2 mb-0">{error}</p>}
 
                         <div style={modalFooterStyle}>
-                            <Button variant="secondary" onClick={handleClose} disabled={isSaving}>Cancel</Button>
+                            <Button variant="secondary" onClick={handleClose} disabled={isSaving}>Annuler</Button>
                             <Button variant="primary" type="submit" disabled={isSaving || !isFormValid} style={{ minWidth: '120px', marginLeft: '10px' }}>
                                 {isSaving ? <Spinner as="span" animation="border" size="sm" /> : submitButtonText}
                             </Button>

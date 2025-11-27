@@ -14,7 +14,7 @@ const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sen
     const fetchPhrases = useCallback(async () => {
         if (!bingoType?.path) {
             console.error("[EditBingoPhrasesModal] fetchPhrases: No bingoType or path provided.");
-            setError("Cannot load phrases: No Bingo Type selected.");
+            setError("Impossible de charger les phrases : aucun type de bingo sélectionné.");
             setIsLoading(false);
             return;
         }
@@ -41,13 +41,13 @@ const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sen
                 console.log(`[EditBingoPhrasesModal] fetchPhrases: Phrases set for ${bingoType.name}.`);
             } else {
                 setPhrasesText('');
-                showNotification(`No master phrases found for ${bingoType.name}. You can add them here.`, "info-circle");
+                showNotification(`Aucune phrase principale trouvée pour ${bingoType.name}. Vous pouvez les ajouter ici.`, "info-circle");
                 console.log(`[EditBingoPhrasesModal] fetchPhrases: No data found for ${bingoType.name}.`);
             }
         } catch (err) {
             console.error(`[EditBingoPhrasesModal] fetchPhrases: Error during fetch for ${bingoType.name}:`, err);
-            setError("Failed to load phrases: " + err.message);
-            showNotification("Failed to load phrases.", "error");
+            setError("Impossible de charger les phrases : " + err.message);
+            showNotification("Impossible de charger les phrases.", "error");
             Sentry.captureException(err, { extra: { context: `EditBingoPhrasesModal Fetch for ${bingoType?.name}` } });
         } finally {
             setIsLoading(false);
@@ -71,8 +71,8 @@ const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sen
 
     const handleSavePhrases = async () => {
         if (!bingoType?.path) {
-            setError("Cannot save phrases: No Bingo Type selected.");
-            showNotification("Cannot save: No Bingo Type selected.", "error");
+            setError("Impossible de sauvegarder les phrases : aucun type de bingo sélectionné.");
+            showNotification("Impossible de sauvegarder : aucun type de bingo sélectionné.", "error");
             return;
         }
         const masterPhrasesRef = ref(database, `bingo/phrases/${bingoType.path}`);
@@ -83,28 +83,28 @@ const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sen
             const newPhrasesArray = phrasesText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
             
             if (newPhrasesArray.length < 24) {
-                setError("You need at least 24 unique phrases for a full bingo card.");
-                showNotification("Not enough phrases (min 24 required).", "warning");
+                setError("Vous devez avoir au moins 24 phrases uniques pour une carte de bingo complète.");
+                showNotification("Pas assez de phrases (minimum 24 requis).", "warning");
                 setIsSaving(false);
                 return;
             }
 
             await set(masterPhrasesRef, newPhrasesArray);
-            showNotification(`Master ${bingoType.name} phrases updated successfully!`, "check-circle");
+            showNotification(`Phrases principales de ${bingoType.name} mises à jour avec succès !`, "check-circle");
             
             if (sendAdminActionWebhook && adminUserEmail) {
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    `Edited Master ${bingoType.name} Bingo Phrases`,
-                    `Updated ${newPhrasesArray.length} phrases.`,
-                    `Bingo Master Phrases (${bingoType.name})`
+                    `Phrases principales de bingo ${bingoType.name} modifiées`,
+                    `Mis à jour ${newPhrasesArray.length} phrases.`,
+                    `Phrases principales de bingo (${bingoType.name})`
                 );
             }
             onHide();
         } catch (err) {
             console.error("Error saving master phrases:", err);
-            setError("Failed to save phrases: " + err.message);
-            showNotification("Failed to save phrases.", "error");
+            setError("Impossible de sauvegarder les phrases : " + err.message);
+            showNotification("Impossible de sauvegarder les phrases.", "error");
             Sentry.captureException(err, { extra: { context: `EditBingoPhrasesModal Save for ${bingoType?.name}` } });
         } finally {
             setIsSaving(false);
@@ -119,21 +119,21 @@ const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sen
             dialogClassName="bingo-modal-dialog"
         >
             <Modal.Header closeButton closeVariant="white">
-                <Modal.Title>Edit Master {bingoType?.name || ''} Bingo Phrases</Modal.Title>
+                <Modal.Title>Modifier les phrases principales de bingo {bingoType?.name || ''}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {isLoading ? (
-                    <div className="text-center"><Spinner animation="border" /> Loading phrases...</div>
+                    <div className="text-center"><Spinner animation="border" /> Chargement des phrases...</div>
                 ) : (
                     <Form>
                         <Form.Group className="mb-3">
-                            <Form.Label>One phrase per line. Minimum 24 phrases required.</Form.Label>
+                            <Form.Label>Une phrase par ligne. Minimum 24 phrases requises.</Form.Label>
                             <Form.Control
                                 as="textarea"
                                 rows={15}
                                 value={phrasesText}
                                 onChange={(e) => setPhrasesText(e.target.value)}
-                                placeholder="Enter your bingo phrases here, one per line."
+                                placeholder="Entrez vos phrases de bingo ici, une par ligne."
                                 disabled={isSaving}
                                 className="bingo-phrases-textarea"
                             />
@@ -144,10 +144,10 @@ const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sen
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide} disabled={isSaving}>
-                    Cancel
+                    Annuler
                 </Button>
                 <Button variant="primary" onClick={handleSavePhrases} disabled={isSaving || isLoading}>
-                    {isSaving ? <Spinner as="span" animation="border" size="sm" /> : 'Save Phrases'}
+                    {isSaving ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer les phrases'}
                 </Button>
             </Modal.Footer>
         </Modal>

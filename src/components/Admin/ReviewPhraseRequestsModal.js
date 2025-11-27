@@ -35,7 +35,7 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
             }
         } catch (error) {
             console.error("Error fetching phrase requests:", error);
-            showNotification("Failed to load phrase requests.", "error");
+            showNotification("Échec du chargement des requêtes de phrases.", "error");
             Sentry.captureException(error, { extra: { context: 'ReviewPhraseRequestsModal Fetch' } });
         } finally {
             setIsLoading(false);
@@ -58,9 +58,9 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
             if (sendAdminActionWebhook && requestData) { // Check if webhook function exists and we have data
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    "Scheduled Bingo Phrase Request Deleted", // New Action Name
-                    `Request ID: ${requestId}\nPhrase: "${requestData.phrase}"\nStatus: ${requestData.status}\nRequested by: ${requestData.requestedBy}\nBingo Type: ${requestData.bingoType || 'General'}`,
-                    "Bingo Phrase Requests (Cleanup)" // New Category or adjust as needed
+                    "Demande de phrase de bingo programmée supprimée", // New Action Name
+                    `ID de la requête : ${requestId}\nPhrase: "${requestData.phrase}"\nStatut: ${requestData.status}\nDemandé par: ${requestData.requestedBy}\nType de bingo: ${requestData.bingoType || 'général'}`,
+                    "Demandes de phrases de bingo (Nettoyage)" // New Category or adjust as needed
                 );
             }
 
@@ -85,7 +85,7 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
         const bingoTypeObject = BINGO_TYPES.find(type => type.name === request.bingoType);
 
         if (!bingoTypeObject) {
-            showNotification(`Error: Unknown Bingo Type "${request.bingoType}" for phrase approval.`, 'error');
+            showNotification(`Erreur : type de bingo inconnu "${request.bingoType}" pour l'approbation de la phrase.`, 'error');
             console.error(`Could not find a matching bingo type for name: ${request.bingoType}`);
             await handleDeny(request, 'Denied (Invalid Type)');
             setIsProcessing(null);
@@ -112,7 +112,7 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
             // Check for duplicates before adding any phrases
             for (const phrase of phrasesToApprove) {
                 if (currentPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
-                    showNotification(`Phrase "${phrase}" already exists in ${bingoTypeObject.name} list. Denying request.`, 'warning');
+                    showNotification(`La phrase "${phrase}" existe déjà dans la liste ${bingoTypeObject.name}. Requête refusée.`, 'warning');
                     await handleDeny(request, 'Denied (Duplicate)');
                     return;
                 }
@@ -127,21 +127,21 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
 
             await update(requestRef, { status: 'approved', processedBy: adminUserEmail, processedAt: new Date().toISOString() });
 
-            showNotification(`Phrase(s) added to ${bingoTypeObject.name} list!`, 'check-circle');
+            showNotification(`Phrase(s) ajoutée(s) à la liste ${bingoTypeObject.name} !`, 'check-circle');
 
             if (sendAdminActionWebhook) {
                 const phraseList = phrasesToApprove.map(phrase => `"${phrase}"`).join('\n'); // Create a list of phrases
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    "Approved Bingo Phrase Request",
-                    `Phrases:\n${phraseList}\nRequested by: ${request.requestedBy}\nFor Bingo: ${request.bingoType || 'General'}`,
-                    "Bingo Phrase Requests"
+                    "Demande de phrase de bingo approuvée",
+                    `Phrases:\n${phraseList}\nDemandé par: ${request.requestedBy}\nPour le bingo: ${request.bingoType || 'énéral'}`,
+                    "Demandes de phrases de bingo"
                 );
             }
             fetchRequests();
         } catch (error) {
             console.error("Error approving phrase:", error);
-            showNotification("Failed to approve phrase.", "error");
+            showNotification("Phrase non approuvée.", "error");
             Sentry.captureException(error, { extra: { context: 'ReviewPhraseRequestsModal Approve' } });
         } finally {
             setIsProcessing(null);
@@ -153,20 +153,20 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
         const requestRef = ref(database, `bingo/phraseRequests/${request.id}`);
         try {
             await update(requestRef, { status: reason, processedBy: adminUserEmail, processedAt: new Date().toISOString() });
-            showNotification(`Request for phrase(s) has been denied.`, 'info-circle');
+            showNotification(`La demande de phrase(s) a été refusée.`, 'info-circle');
 
             if (sendAdminActionWebhook) {
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    "Denied Bingo Phrase Request",
-                    `Phrase: "${request.phrase}"\nRequested by: ${request.requestedBy}\nFor Bingo: ${request.bingoType || 'General'}\nReason: ${reason}`,
-                    "Bingo Phrase Requests"
+                    "Demande de phrase de bingo refusée",
+                    `Phrase: "${request.phrase}"\nDemandé par: ${request.requestedBy}\nPour le bingo: ${request.bingoType || 'énéral'}\nRaison: ${reason}`,
+                    "Demandes de phrases de bingo"
                 );
             }
             fetchRequests();
         } catch (error) {
             console.error("Error denying phrase:", error);
-            showNotification("Failed to deny phrase.", "error");
+            showNotification("N'a pas réussi à nier la phrase.", "error");
             Sentry.captureException(error, { extra: { context: 'ReviewPhraseRequestsModal Deny' } });
         } finally {
             setIsProcessing(null);
@@ -176,11 +176,11 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
     return (
         <Modal show={show} onHide={onHide} size="lg" dialogClassName="bingo-modal-dialog">
             <Modal.Header closeButton closeVariant="white">
-                <Modal.Title>Review Pending Bingo Phrases</Modal.Title>
+                <Modal.Title>Examiner les phrases de bingo en attente</Modal.Title>
             </Modal.Header>
             <Modal.Body style={{ overflowY: 'auto' }}> {/* ADDED SCROLL BAR */}
                 {isLoading ? (
-                    <div className="text-center"><Spinner animation="border" /> Loading requests...</div>
+                    <div className="text-center"><Spinner animation="border" /> Chargement des demandes...</div>
                 ) : requests.length > 0 ? (
                     <ListGroup variant="flush">
                         {requests.map(req => (
@@ -194,11 +194,11 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
                                     ))}
                                     {req.bingoType && (
                                         <p className="mb-1" style={{ color: '#0dcaf0' }}>
-                                            <small>For: <strong>{req.bingoType} Bingo</strong></small>
+                                            <small>Pour: <strong>{req.bingoType} Bingo</strong></small>
                                         </p>
                                     )}
                                     <small className="text-muted">
-                                        Requested by: {req.requestedBy} on {new Date(req.timestamp).toLocaleString()}
+                                        Demandé par: {req.requestedBy} le {new Date(req.timestamp).toLocaleString()}
                                     </small>
                                 </div>
                                 <div>
@@ -207,10 +207,10 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
                                     ) : (
                                         <>
                                             <Button variant="outline-success" size="sm" className="me-2" onClick={() => handleApprove(req)}>
-                                                Approve
+                                                Approuver
                                             </Button>
                                             <Button variant="outline-danger" size="sm" onClick={() => handleDeny(req)}>
-                                                Deny
+                                                Refuser
                                             </Button>
                                         </>
                                     )}
@@ -219,12 +219,12 @@ const ReviewPhraseRequestsModal = ({ show, onHide, showNotification, sendAdminAc
                         ))}
                     </ListGroup>
                 ) : (
-                    <p className="text-center text-muted">No pending phrase requests.</p>
+                    <p className="text-center text-muted">Aucune demande de phrase en attente.</p>
                 )}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide}>
-                    Close
+                    Fermer
                 </Button>
             </Modal.Footer>
         </Modal>
