@@ -11,7 +11,7 @@ const DatabaseEditor = ({ showNotification }) => {
 
     const handleFetch = async () => {
         if (!path) {
-            showNotification('Please enter a database path.', 'warning');
+            showNotification('Veuillez saisir un chemin d\'accès à la base de données.', 'warning');
             return;
         }
         setIsLoading(true);
@@ -23,11 +23,11 @@ const DatabaseEditor = ({ showNotification }) => {
                 setJsonData(JSON.stringify(snapshot.val(), null, 2));
             } else {
                 setJsonData('');
-                showNotification('No data at this path.', 'info');
+                showNotification('Aucune donnée à ce chemin.', 'info');
             }
         } catch (e) {
             setError(e.message);
-            showNotification(`Error fetching data: ${e.message}`, 'error');
+            showNotification(`Erreur lors de la récupération des données : ${e.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -35,15 +35,15 @@ const DatabaseEditor = ({ showNotification }) => {
 
     const handleSave = async () => {
         if (!path) {
-            showNotification('Please enter a database path.', 'warning');
+            showNotification('Veuillez saisir un chemin d\'accès à la base de données.', 'warning');
             return;
         }
         let dataToSave;
         try {
             dataToSave = JSON.parse(jsonData);
         } catch (e) {
-            setError('Invalid JSON format.');
-            showNotification('Invalid JSON format. Please correct it before saving.', 'error');
+            setError('Format JSON invalide.');
+            showNotification('Format JSON invalide. Veuillez le corriger avant de sauvegarder.', 'error');
             return;
         }
 
@@ -52,10 +52,10 @@ const DatabaseEditor = ({ showNotification }) => {
         try {
             const dbRef = ref(database, path);
             await set(dbRef, dataToSave);
-            showNotification('Data saved successfully!', 'check-circle');
+            showNotification('Données sauvegardées avec succès !', 'check-circle');
         } catch (e) {
             setError(e.message);
-            showNotification(`Error saving data: ${e.message}`, 'error');
+            showNotification(`Erreur lors de la sauvegarde des données : ${e.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -63,34 +63,34 @@ const DatabaseEditor = ({ showNotification }) => {
 
     return (
         <Card>
-            <Card.Header>Firebase Realtime Database Editor</Card.Header>
+            <Card.Header>Éditeur de la base de données Firebase Realtime</Card.Header>
             <Card.Body>
                 <Form.Group className="mb-3">
-                    <Form.Label>Database Path</Form.Label>
+                    <Form.Label>Chemin de la base de données</Form.Label>
                     <Form.Control
                         type="text"
                         value={path}
                         onChange={(e) => setPath(e.target.value)}
-                        placeholder="e.g., /agencies/LSSD"
+                        placeholder="ex., /agencies/LSSD"
                     />
                 </Form.Group>
                 <Button onClick={handleFetch} disabled={isLoading} className="me-2">
-                    {isLoading ? <Spinner as="span" animation="border" size="sm" /> : 'Fetch Data'}
+                    {isLoading ? <Spinner as="span" animation="border" size="sm" /> : 'Récupérer les données'}
                 </Button>
                 <hr />
                 <Form.Group className="mb-3">
-                    <Form.Label>JSON Data</Form.Label>
+                    <Form.Label>Données JSON</Form.Label>
                     <Form.Control
                         as="textarea"
                         rows={20}
                         value={jsonData}
                         onChange={(e) => setJsonData(e.target.value)}
-                        placeholder="JSON data will appear here..."
+                        placeholder="Les données JSON apparaîtront ici..."
                     />
                 </Form.Group>
                 {error && <Alert variant="danger">{error}</Alert>}
                 <Button onClick={handleSave} disabled={isLoading}>
-                    {isLoading ? <Spinner as="span" animation="border" size="sm" /> : 'Save Data'}
+                    {isLoading ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer les données'}
                 </Button>
             </Card.Body>
         </Card>

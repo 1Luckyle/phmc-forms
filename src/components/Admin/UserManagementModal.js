@@ -32,7 +32,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
                     }
                 } catch (error) {
                     console.error("Error fetching users:", error);
-                    setError("Failed to fetch users.");
+                    setError("Impossible de récupérer les utilisateurs. Veuillez réessayer plus tard.");
                 }
             };
             fetchUsers();
@@ -47,17 +47,17 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
         const payload = {
             embeds: [{
-                title: "User Data Migration",
-                description: `Successfully migrated ${count} reports from **${source}** to **${destination}**.**This is a test notification.**`,
+                title: "Migration des données utilisateur",
+                description: `Migration réussie de ${count} rapports de **${source}** vers **${destination}**.**Ceci est une notification de test.**`,
                 color: 0x00ff00, // Green
                 timestamp: new Date().toISOString(),
             }]
         };
-        await sendDiscordNotification(webhookURL, payload, "User Data Migration", null);
+        await sendDiscordNotification(webhookURL, payload, "Migration des données utilisateur", null);
     };
 
     const handleSanitizeAllUsernames = async () => {
-        if (!window.confirm("Are you sure you want to sanitize all usernames? This will clean up spaces and multiple underscores. This is a one-time operation and cannot be undone.")) {
+        if (!window.confirm("Êtes-vous sûr de vouloir nettoyer tous les noms d'utilisateur ? Cette opération supprimera les espaces et les tirets bas multiples. Il s'agit d'une opération unique et irréversible.")) {
             return;
         }
 
@@ -65,7 +65,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
         try {
             const snapshot = await get(savedReportsRef);
             if (!snapshot.exists()) {
-                showNotification("No saved reports found to sanitize.", "info");
+                showNotification("Aucun rapport enregistré trouvé à nettoyer.", "info");
                 return;
             }
 
@@ -93,9 +93,9 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
 
             if (sanitizedCount > 0) {
                 await update(ref(database), updates);
-                showNotification(`Successfully sanitized ${sanitizedCount} usernames.`, "success");
+                showNotification(`Nettoyage réussi de ${sanitizedCount} noms d'utilisateur.`, "success");
             } else {
-                showNotification("No usernames found that required sanitization.", "info");
+                showNotification("Aucun nom d'utilisateur trouvé nécessitant un nettoyage.", "info");
             }
 
             const newSnapshot = await get(savedReportsRef);
@@ -107,12 +107,12 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
 
         } catch (error) {
             console.error("Error sanitizing all usernames:", error);
-            showNotification(`Error sanitizing usernames: ${error.message}`, "error");
+            showNotification(`Erreur lors du nettoyage des noms d'utilisateur : ${error.message}`, "error");
         }
     };
 
     const handleMigrateAllUsernames = async () => {
-        if (!window.confirm("Are you sure you want to migrate all usernames with spaces to use underscores? This is a one-time operation and cannot be undone.")) {
+        if (!window.confirm("Êtes-vous sûr de vouloir migrer tous les noms d'utilisateur avec des espaces pour utiliser des tirets bas ? Il s'agit d'une opération unique et irréversible.")) {
             return;
         }
     
@@ -120,7 +120,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
         try {
             const snapshot = await get(savedReportsRef);
             if (!snapshot.exists()) {
-                showNotification("No saved reports found to migrate.", "info");
+                showNotification("Aucun rapport enregistré trouvé à migrer.", "info");
                 return;
             }
     
@@ -149,9 +149,9 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
     
             if (migratedCount > 0) {
                 await update(ref(database), updates);
-                showNotification(`Successfully migrated ${migratedCount} usernames.`, "success");
+                showNotification(`Migration réussie de ${migratedCount} noms d'utilisateur.`, "success");
             } else {
-                showNotification("No usernames with spaces found to migrate.", "info");
+                showNotification("Aucun nom d'utilisateur avec des espaces trouvé à migrer.", "info");
             }
     
             // Refresh users in the dropdown
@@ -164,18 +164,18 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
     
         } catch (error) {
             console.error("Error migrating all usernames:", error);
-            showNotification(`Error migrating usernames: ${error.message}`, "error");
+            showNotification(`Erreur lors de la migration des noms d'utilisateur : ${error.message}`, "error");
         }
     };
 
     const handleMigrate = async () => {
         if (!sourceUser || !destinationUser || !confirm) {
-            setError("Please select both users and confirm the migration.");
+            setError("Veuillez sélectionner les deux utilisateurs et confirmer la migration.");
             return;
         }
 
         if (sourceUser === destinationUser) {
-            setError("Source and destination users cannot be the same.");
+            setError("Les utilisateurs source et destination ne peuvent pas être les mêmes.");
             return;
         }
 
@@ -191,7 +191,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
         try {
             const sourceSnapshot = await get(sourceUserRef);
             if (!sourceSnapshot.exists()) {
-                showNotification("Source user has no data to migrate.", "warning");
+                showNotification("L'utilisateur source n'a pas de données à migrer.", "warning");
                 return;
             }
 
@@ -219,9 +219,9 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
             await remove(sourceUserRef);
 
             if (conflictedReports.length > 0) {
-                showNotification(`Migration complete, but ${conflictedReports.length} reports were not migrated due to conflicts.`, "warning");
+                showNotification(`Migration terminée, mais ${conflictedReports.length} rapports n'ont pas été migrés en raison de conflits.`, "warning");
             } else {
-                showNotification("User data migrated successfully.", "success");
+                showNotification("Données utilisateur migrées avec succès.", "success");
             }
             
             if (migratedCount > 0) {
@@ -232,11 +232,11 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
 
         } catch (error) {
             console.error("Error migrating data:", error);
-            showNotification(`Error migrating data: ${error.message}`, "error");
+            showNotification(`Erreur lors de la migration des données : ${error.message}`, "error");
 
             if (destinationBackup) {
                 await set(destinationUserRef, destinationBackup);
-                showNotification("Migration failed. Destination user's original data has been restored.", "info");
+                showNotification("La migration a échoué. Les données originales de l'utilisateur de destination ont été restaurées.", "info");
             }
         }
     };
@@ -244,43 +244,43 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
     return (
         <Modal show={show} onHide={onHide} className="user-management-modal">
             <Modal.Header closeButton>
-                <Modal.Title>User Management</Modal.Title>
+                <Modal.Title>Gestion des utilisateurs</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
-                <p>Migrate saved reports from one user to another.</p>
+                <p>Migration des rapports enregistrés d'un utilisateur à un autre.</p>
                 <Form>
                     <Form.Group className="mb-3">
-                        <Form.Label>Select User to Migrate From</Form.Label>
+                        <Form.Label>Sélectionnez l'utilisateur source</Form.Label>
                         <Form.Control as="select" value={sourceUser} onChange={e => setSourceUser(e.target.value)}>
-                            <option value="">Select User</option>
+                            <option value="">Sélectionnez un utilisateur</option>
                             {users.map(user => <option key={user} value={user}>{user}</option>)}
                         </Form.Control>
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Select User to Migrate To</Form.Label>
+                        <Form.Label>Sélectionnez l'utilisateur de destination</Form.Label>
                         <Form.Control as="select" value={destinationUser} onChange={e => setDestinationUser(e.target.value)}>
-                            <option value="">Select User</option>
+                            <option value="">Sélectionnez un utilisateur</option>
                             {users.map(user => <option key={user} value={user}>{user}</option>)}
                         </Form.Control>
                     </Form.Group>
                     <Form.Group className="mb-3" controlId="formBasicCheckbox">
-                        <Form.Check type="checkbox" label="I confirm I want to migrate the data." checked={confirm} onChange={e => setConfirm(e.target.checked)} />
+                        <Form.Check type="checkbox" label="Je confirme que je souhaite migrer les données." checked={confirm} onChange={e => setConfirm(e.target.checked)} />
                     </Form.Group>
                 </Form>
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide}>
-                    Close
+                    Fermer
                 </Button>
                 <Button variant="success" onClick={handleSanitizeAllUsernames}>
-                    Sanitize All Usernames
+                    Nettoyer tous les noms d'utilisateur
                 </Button>
                 <Button variant="warning" onClick={handleMigrateAllUsernames}>
-                    Migrate All Usernames
+                    Migrer tous les noms d'utilisateur
                 </Button>
                 <Button variant="primary" onClick={handleMigrate} disabled={!sourceUser || !destinationUser || !confirm}>
-                    Migrate Data
+                    Migrer les données
                 </Button>
             </Modal.Footer>
         </Modal>

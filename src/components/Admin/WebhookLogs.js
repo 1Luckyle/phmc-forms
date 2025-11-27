@@ -29,9 +29,9 @@ const WebhookLogs = ({ refreshTrigger }) => {
 
     return (
         <Card>
-            <Card.Header>Webhook Logs</Card.Header>
+            <Card.Header>Journal des Webhooks</Card.Header>
             <Card.Body style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                {loading ? <p>Loading...</p> : (
+                {loading ? <p>Chargement...</p> : (
                     <Accordion>
                         {logs.map((log, index) => (
                             <Accordion.Item key={log.id} eventKey={index.toString()}>

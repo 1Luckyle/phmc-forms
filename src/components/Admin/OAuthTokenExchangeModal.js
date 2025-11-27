@@ -10,7 +10,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         const isGithubPages = window.location.hostname.includes('github.io');
         // Always use hash-based routing for GitHub Pages and local development
         return isGithubPages 
-            ? 'https://gtaw-forms.github.io/forms/#/auth/gta/callback'
+            ? 'https://1Luckyle.github.io/phmc-forms/#/auth/gta/callback'
             : `${window.location.origin}/#/auth/gta/callback`;
     });
     const [code, setCode] = useState('');
@@ -120,7 +120,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         setResponse(null);
         setError(null);
 
-        const functionUrl = 'https://us-central1-gtaw-forms.cloudfunctions.net/exchangeAuthCodeForToken';
+        const functionUrl = 'https://us-central1-gtaw-forms.cloudfunctions.net/exchangeAuthCodeForToken'; // à changer
         console.debug('[OAuth] Using function URL:', functionUrl);
         
         try {
@@ -148,7 +148,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                 data = JSON.parse(responseText);
             } catch (parseError) {
                 console.error('[OAuth] Failed to parse response as JSON:', parseError);
-                throw new Error(`Invalid JSON response from server. Received: ${responseText.substring(0, 100)}...`);
+                throw new Error(`Réponse JSON invalide du serveur. Reçue : ${responseText.substring(0, 100)}...`);
             }
 
             if (response.ok) {
@@ -157,23 +157,23 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                 setResponse(data.token);
                 if (data.user) {
                     onUserDataReceived(data.user);
-                    showNotification(`OAuth Token Exchange successful! Welcome ${data.user.username}`, 'check-circle');
+                    showNotification(`Échange de jeton OAuth réussi ! Bienvenue ${data.user.username}`, 'check-circle');
                 }
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    'OAuth Token Exchange Success',
-                    `Success: Token and user data received`,
-                    'Developer Tools'
+                    'Échange de jetons OAuth réussi',
+                    `Succès : jeton et données utilisateur reçus`,
+                    'Outils de développement'
                 );
             } else {
                 const errorData = data;
                 setError(errorData);
-                showNotification(`OAuth Token Exchange failed: ${errorData.error || response.statusText}`, 'error');
+                showNotification(`Échec de l'échange de jeton OAuth : ${errorData.error || response.statusText}`, 'error');
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    'OAuth Token Exchange Failure',
-                    `Error: ${JSON.stringify(errorData, null, 2)}`,
-                    'Developer Tools'
+                    'Échec de l\'échange de jeton OAuth',
+                    `Erreur : ${JSON.stringify(errorData, null, 2)}`,
+                    'Outils de développement'
                 );
                 Sentry.captureMessage(`OAuth Token Exchange failed: ${functionUrl}`, {
                     level: 'error',
@@ -187,16 +187,16 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         } catch (err) {
             console.error('Network error during OAuth Token Exchange:', err);
             setError({ error: 'Network Error', error_description: err.message });
-            showNotification(`Network error: ${err.message}`, 'error');
+            showNotification(`Erreur réseau : ${err.message}`, 'error');
             sendAdminActionWebhook(
                 adminUserEmail,
-                'OAuth Token Exchange Network Error',
-                `Network Error: ${err.message}`,
-                'Developer Tools'
+                'Erreur réseau lors de l\'échange de jeton OAuth',
+                `Erreur réseau : ${err.message}`,
+                'Outils de développement'
             );
             Sentry.captureException(err, {
                 extra: {
-                    context: 'OAuth Token Exchange Network Error',
+                    context: 'Erreur réseau lors de l\'échange de jeton OAuth',
                     functionUrl,
                     redirectUri,
                 }
@@ -209,12 +209,12 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
             <Modal.Header closeButton>
-                <Modal.Title>OAuth Token Exchange</Modal.Title>
+                <Modal.Title>Échange de jeton OAuth</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">
-                        <Form.Label>Token Endpoint URL</Form.Label>
+                        <Form.Label>URL du point de terminaison du jeton</Form.Label>
                         <Form.Control
                             type="url"
                             value={tokenUrl}
@@ -224,52 +224,52 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Client ID</Form.Label>
+                        <Form.Label>ID client</Form.Label>
                         <Form.Control
                             type="text"
                             value={clientId}
                             onChange={(e) => setClientId(e.target.value)}
-                            placeholder="Your OAuth Client ID"
+                            placeholder="Votre ID client OAuth"
                             required
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Client Secret</Form.Label>
+                        <Form.Label>Secret client</Form.Label>
                         <Form.Control
                             type="password"
                             value={clientSecret}
                             onChange={(e) => setClientSecret(e.target.value)}
-                            placeholder="Your OAuth Client Secret"
+                            placeholder="Votre secret client OAuth"
                             required
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Redirect URI</Form.Label>
+                        <Form.Label>URL de redirection</Form.Label>
                         <Form.Control
                             type="url"
                             value={redirectUri}
                             onChange={(e) => setRedirectUri(e.target.value)}
-                            placeholder="Your registered Redirect URI"
+                            placeholder="Votre URL de redirection enregistrée"
                             required
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Authorization Code</Form.Label>
+                        <Form.Label>Code d'autorisation</Form.Label>
                         <div className="d-flex">
                             <Form.Control
                                 type="text"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                placeholder="Click button to get code ->"
+                                placeholder="Cliquez sur le bouton pour obtenir le code ->"
                                 required
                             />
-                            <Button variant="outline-secondary" onClick={handleGetCode} className="ms-2">Get Code</Button>
+                            <Button variant="outline-secondary" onClick={handleGetCode} className="ms-2">Obtenir le code</Button>
                         </div>
                     </Form.Group>
 
                     {error && (
                         <Alert variant="danger">
-                            <strong>Error:</strong> {error.error || 'Unknown Error'}
+                            <strong>Erreur :</strong> {error.error || 'Erreur inconnue'}
                             {error.error_description && `: ${error.error_description}`}
                             {error.message && `: ${error.message}`}
                             <pre className="mt-2">{JSON.stringify(error, null, 2)}</pre>
@@ -278,14 +278,14 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
 
                     {response && (
                         <Alert variant="success">
-                            <strong>Success!</strong> Token received.
+                            <strong>Succès !</strong> Token reçu.
                             <pre className="mt-2">{JSON.stringify(response, null, 2)}</pre>
                         </Alert>
                     )}
 
                     <Button variant="primary" type="submit" disabled={isLoading}>
                         {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : <i className="fas fa-paper-plane me-2"></i>}
-                        {isLoading ? 'Exchanging Code...' : 'Exchange Code for Token'}
+                        {isLoading ? 'Échange du code...' : 'Échanger le code contre un token'}
                     </Button>
                 </Form>
             </Modal.Body>

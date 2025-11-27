@@ -96,7 +96,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification }) =
                     <button onClick={onHide} style={closeButtonStyle} aria-label="Fermer la fenêtre">&times;</button>
                 </div>
                 <div style={modalBodyStyle}>
-                    <p className="text-muted small">Ce formulaire est envoyé directement aux superviseurs du PHMC pour demander des images de vidéosurveillance. Il sera traité dans les 24 heures suivantes et vous serez contacté par téléphone portable ou par le département. (( L'abus de ce formulaire sera signalé à la direction des factions légales ))</p>
+                    <p className="flex-fill">Ce formulaire est envoyé directement aux superviseurs du PHMC pour demander des images de vidéosurveillance. Il sera traité dans les 24 heures suivantes et vous serez contacté par téléphone portable ou par le département. (( L'abus de ce formulaire sera signalé à la direction des factions légales ))</p>
                     <Form>
                         {/* --- MODIFICATION START: Reorganized form layout --- */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>

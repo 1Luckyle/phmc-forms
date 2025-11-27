@@ -3,10 +3,10 @@ import React from 'react';
 const AdminActions = ({ formData, setFormData, showNotification, commitInfo }) => {
     return (
         <div>
-            <h4>Admin Actions</h4>
-            <p>Here you can perform admin actions.</p>
+            <h4>Actions Admin</h4>
+            <p>Vous pouvez effectuer des actions administratives ici.</p>
             {/* Example of using a prop */}
-            <p>Current Commit SHA: {commitInfo?.sha || 'N/A'}</p>
+            <p>SHA du commit actuel : {commitInfo?.sha || 'N/A'}</p>
         </div>
     );
 };

@@ -28,21 +28,21 @@ const UserDataExchangeModal = ({ show, onHide, showNotification, sendAdminAction
 
             if (res.ok) {
                 setResponse(data);
-                showNotification('User Data Exchange successful!', 'check-circle');
+                showNotification('Échange de données utilisateur réussi !', 'check-circle');
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    'User Data Exchange Success',
+                    'Échange de données utilisateur réussi',
                     `URL: ${requestUrl}\nResponse: ${JSON.stringify(data, null, 2)}`,
-                    'Developer Tools'
+                    'Outils de développement'
                 );
             } else {
                 setError(data);
-                showNotification(`User Data Exchange failed: ${data.error_description || data.error || res.statusText}`, 'error');
+                showNotification(`Échange de données utilisateur échoué : ${data.error_description || data.error || res.statusText}`, 'error');
                 sendAdminActionWebhook(
                     adminUserEmail,
-                    'User Data Exchange Failure',
+                    'Échec de l\'échange de données utilisateur',
                     `URL: ${requestUrl}\nError: ${JSON.stringify(data, null, 2)}`,
-                    'Developer Tools'
+                    'Outils de développement'
                 );
                 Sentry.captureMessage(`User Data Exchange failed: ${requestUrl}`, {
                     level: 'error',
@@ -54,13 +54,13 @@ const UserDataExchangeModal = ({ show, onHide, showNotification, sendAdminAction
             }
         } catch (err) {
             console.error('Network error during User Data Exchange:', err);
-            setError({ error: 'Network Error', error_description: err.message });
-            showNotification(`Network error: ${err.message}`, 'error');
+            setError({ error: 'Erreur réseau', error_description: err.message });
+            showNotification(`Erreur réseau: ${err.message}`, 'error');
             sendAdminActionWebhook(
                 adminUserEmail,
-                'User Data Exchange Network Error',
+                'Erreur réseau lors de l\'échange de données utilisateur',
                 `URL: ${requestUrl}\nError: ${err.message}`,
-                'Developer Tools'
+                'Outils de développement'
             );
             Sentry.captureException(err, {
                 extra: {
@@ -76,50 +76,50 @@ const UserDataExchangeModal = ({ show, onHide, showNotification, sendAdminAction
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
             <Modal.Header closeButton>
-                <Modal.Title>User Data Exchange</Modal.Title>
+                <Modal.Title>Échange de données utilisateur</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">
-                        <Form.Label>Request URL</Form.Label>
+                        <Form.Label>URL de la requête</Form.Label>
                         <Form.Control
                             type="url"
                             value={requestUrl}
                             onChange={(e) => setRequestUrl(e.target.value)}
-                            placeholder="e.g., https://api.example.com/user"
+                            placeholder="ex., https://api.example.com/user"
                             required
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Authorization Bearer Token</Form.Label>
+                        <Form.Label>Jeton d'autorisation Bearer</Form.Label>
                         <Form.Control
                             type="password"
                             value={bearerToken}
                             onChange={(e) => setBearerToken(e.target.value)}
-                            placeholder="Your Authorization Bearer Token"
+                            placeholder="Votre jeton d'autorisation Bearer"
                             required
                         />
                     </Form.Group>
 
                     {error && (
                         <Alert variant="danger">
-                            <strong>Error:</strong> {error.error || 'Unknown Error'}
-                            {error.error_description && `: ${error.error_description}`}
-                            {error.message && `: ${error.message}`}
+                            <strong>Erreur :</strong> {error.error || 'Erreur inconnue'}
+                            {error.error_description && ` : ${error.error_description}`}
+                            {error.message && ` : ${error.message}`}
                             <pre className="mt-2">{JSON.stringify(error, null, 2)}</pre>
                         </Alert>
                     )}
 
                     {response && (
                         <Alert variant="success">
-                            <strong>Success!</strong> Data received.
+                            <strong>Succès !</strong> Données reçues.
                             <pre className="mt-2">{JSON.stringify(response, null, 2)}</pre>
                         </Alert>
                     )}
 
                     <Button variant="primary" type="submit" disabled={isLoading}>
                         {isLoading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : <i className="fas fa-paper-plane me-2"></i>}
-                        {isLoading ? 'Fetching Data...' : 'Get User Data'}
+                        {isLoading ? 'Récupération des données...' : 'Obtenir les données utilisateur'}
                     </Button>
                 </Form>
             </Modal.Body>
