@@ -21,7 +21,7 @@ const getRecruitmentSummaryData = (recruitmentSources) => {
                 if (position.status === "OPEN") groupOpenCount++;
                 if (position.status === "CLOSED") groupClosedCount++;
                 positions.push({
-                    name: position.displayName + (position.status === "CLOSED" ? " [CLOSED]" : ""), // MODIFICATION HERE
+                    name: position.displayName + (position.status === "CLOSED" ? " [FERMÉ]" : ""), // MODIFICATION HERE
                     status: position.status || "N/A"
                 });
             });
