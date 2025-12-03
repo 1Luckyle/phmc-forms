@@ -364,7 +364,7 @@ const SavedReportsModal = ({
 
     const handleLoadSelected = async () => {
         if (selectedReportKeys.length === 0 || !selectedEmployee?.value) {
-            showNotification('No reports selected or no employee identified.', 'warning');
+            showNotification('Aucun rapport sélectionné ou aucun employé identifié.', 'warning');
             return;
         }
         if (isLoadingMultiple) return;
@@ -372,7 +372,7 @@ const SavedReportsModal = ({
         setIsLoadingMultiple(true);
         const numToLoad = selectedReportKeys.length;
         const calculatedDuration = numToLoad > 1 ? (numToLoad - 1) * LOAD_DELAY_MS + 500 : 3000;
-        showNotification(`Loading ${numToLoad} report(s)...`, 'info-circle', calculatedDuration);
+        showNotification(`Chargement de ${numToLoad} rapport(s)...`, 'info-circle', calculatedDuration);
 
         const reportsToLoad = sortedReports
             .filter((r) => selectedReportKeys.includes(r.key))
@@ -390,10 +390,10 @@ const SavedReportsModal = ({
                 }
             } catch (error) {
                 console.error(`Error ${isAttaching ? 'attaching' : 'loading'} report ${report.originalKey}:`, error);
-                showNotification(`Error ${isAttaching ? 'attaching' : 'loading'} report ${report.originalKey}.`, 'error');
+                showNotification(`Erreur ${isAttaching ? 'attacher' : 'chargement'} rapport ${report.originalKey}.`, 'error');
             }
         }
-        showNotification(`Finished ${isAttaching ? 'attaching' : 'loading'} ${reportsToLoad.length} report(s).`, 'check-circle');
+        showNotification(`Terminé ${isAttaching ? 'attacher' : 'chargement'} ${reportsToLoad.length} rapport(s).`, 'check-circle');
         setIsLoadingMultiple(false);
         setSelectedReportKeys([]);
         onHide(); // Close modal after operation completes
@@ -401,39 +401,39 @@ const SavedReportsModal = ({
 
     const handleDeleteSelected = () => {
         if (selectedReportKeys.length === 0 || !selectedEmployee?.value) {
-            showNotification('No reports selected or no employee identified.', 'warning');
+            showNotification('Aucun rapport sélectionné ou aucun employé identifié.', 'warning');
             return;
         }
-        if (!window.confirm(`Are you sure you want to delete ${selectedReportKeys.length} selected report(s)? This action cannot be undone.`)) {
+        if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedReportKeys.length} rapport(s) sélectionné(s) ? Cette action est irréversible.`)) {
             return;
         }
         selectedReportKeys.forEach((reportKey) => {
             deleteReportForUser(reportKey, selectedEmployee.value);
         });
-        showNotification(`${selectedReportKeys.length} report(s) deleted.`, 'trash');
+        showNotification(`${selectedReportKeys.length} rapport(s) supprimé(s).`, 'trash');
         setSelectedReportKeys([]);
     };
 
     const handleCopySelectedBBCode = async () => {
         if (selectedReportKeys.length === 0) {
-            showNotification('No reports selected to copy.', 'warning');
+            showNotification('Aucun rapport sélectionné à copier.', 'warning');
             return;
         }
         const reportsToCopy = sortedReports.filter((r) => selectedReportKeys.includes(r.key));
         const combinedBbCode = reportsToCopy.map((r) => r.bbCode).filter(Boolean).join('\n\n');
         if (combinedBbCode) {
-            await copyToClipboard(combinedBbCode, showNotification, 'BBCode copied!');
+            await copyToClipboard(combinedBbCode, showNotification, 'BBCode copié !');
         } else {
-            showNotification('No BBCode found in selected reports.', 'warning');
+            showNotification('Aucun BBCode trouvé dans les rapports sélectionnés.', 'warning');
         }
     };
 
     const handleCopyBBCode = async (reportKey) => {
         const report = sortedReports.find((r) => r.key === reportKey);
         if (report && report.bbCode) {
-            await copyToClipboard(report.bbCode, showNotification, 'BBCode copied!');
+            await copyToClipboard(report.bbCode, showNotification, 'BBCode copié !');
         } else {
-            showNotification('No BBCode found for this report.', 'warning');
+            showNotification('Aucun BBCode trouvé pour ce rapport.', 'warning');
         }
     };
 
@@ -455,7 +455,7 @@ const SavedReportsModal = ({
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <div style={modalHeaderStyle}>
-                    <h5 style={{ margin: 0 }}>Saved Reports</h5>
+                    <h5 style={{ margin: 0 }}>Rapports enregistrés</h5>
                     <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">
                         &times;
                     </button>
@@ -464,21 +464,21 @@ const SavedReportsModal = ({
                 <div style={controlsContainerStyle}>
                     <input
                         type="text"
-                        placeholder="Search reports by name/identifier..."
+                        placeholder="Rechercher des rapports par nom/identifiant..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         style={searchInputStyle}
                         disabled={!selectedEmployee || isLoadingReports}
                     />
                     <Form.Group controlId="employeeSelect" className="mb-3">
-                        <Form.Label>Select Employee to View Reports:</Form.Label>
+                        <Form.Label>Sélectionnez un employé pour voir les rapports :</Form.Label>
                         <Select
                             name="employeeSelect"
                             options={filteredEmployeeOptions}
                             value={selectedEmployee}
                             onChange={handleEmployeeSelect}
                             isClearable
-                            placeholder="Search or select employee..."
+                            placeholder="Rechercher ou sélectionner un employé..."
                             styles={reactSelectStyles}
                         />
                     </Form.Group>
@@ -492,14 +492,14 @@ const SavedReportsModal = ({
                                     .find((o) => o.value === newEmployeeValue);
                                 if (newEmployeeOption) {
                                     handleEmployeeSelect(newEmployeeOption);
-                                    showNotification(`Switched to reports for ${newEmployeeOption.label}`, 'exchange-alt');
+                                    showNotification(`Passé aux rapports pour ${newEmployeeOption.label}`, 'exchange-alt');
                                 }
                             }}
                             style={switchButtonStyle}
-                            title={`Switch to reports for ${otherEmployeeName}`}
+                            title={`Passer aux rapports pour ${otherEmployeeName}`}
                         >
                             <i className="fas fa-exchange-alt" style={{ marginRight: '5px' }}></i>
-                            Switch to {otherEmployeeName}
+                            Passer aux rapports pour {otherEmployeeName}
                         </Button>
                     )}
                 </div>
@@ -508,13 +508,13 @@ const SavedReportsModal = ({
 
                 <div style={modalHeaderStyle} key={selectedEmployee ? selectedEmployee.value : 'noEmployee'}>
                     <h5 style={{ margin: 0 }}>
-                        Saved Reports {selectedEmployee ? `for ${selectedEmployee.label}` : '(No Employee Selected)'}
+                        Rapports enregistrés {selectedEmployee ? `pour ${selectedEmployee.label}` : '(Aucun employé sélectionné)'}
                         {selectedEmployee && ` (${searchedAndFilteredReports.length} total)`}
                     </h5>
                 </div>
 
                 {isLoadingReports && selectedEmployee && (
-                    <p style={{ textAlign: 'center', flexShrink: 0 }}>Loading reports for {selectedEmployee.label}...</p>
+                    <p style={{ textAlign: 'center', flexShrink: 0 }}>Chargement des rapports pour {selectedEmployee.label}...</p>
                 )}
 
                 <div style={tableContainerStyle}>
@@ -528,11 +528,11 @@ const SavedReportsModal = ({
                                             id="selectAllCheckbox"
                                             checked={isAllCurrentPageSelected}
                                             onChange={(e) => handleSelectAllChange(e.target.checked)}
-                                            title="Select/Deselect all on this page"
+                                            title="Sélectionner/Désélectionner tout sur cette page"
                                         />
                                     </th>
-                                    <th style={thStyle}>Name / Identifier</th>
-                                    <th style={thStyle}>Saved Date & Time</th>
+                                    <th style={thStyle}>Nom / Identifiant</th>
+                                    <th style={thStyle}>Date et heure d'enregistrement</th>
                                     <th style={thStyle}>Version</th>
                                     <th style={thStyle}>Actions</th>
                                 </tr>
@@ -570,26 +570,26 @@ const SavedReportsModal = ({
                                                     }}
                                                     disabled={isLoadingReports || !selectedEmployee}
                                                 >
-                                                    {bbCodeVersion === 2 ? 'Attach' : 'Load'}
+                                                    {bbCodeVersion === 2 ? 'Attacher' : 'Charger'}
                                                 </Button>
                                                 <Button
                                                     variant="danger"
                                                     size="sm"
                                                     onClick={() => {
-                                                        if (window.confirm('Are you sure you want to delete this report?')) {
+                                                        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
                                                             deleteReportForUser(report.key, selectedEmployee.value);
                                                         }
                                                     }}
                                                     disabled={isLoadingReports || !selectedEmployee}
                                                 >
-                                                    Delete
+                                                    Supprimer
                                                 </Button>
                                                 <Button
                                                     onClick={() => handleCopyBBCode(report.key)}
                                                     style={copyButtonStyle}
-                                                    title="Copy BBCode"
+                                                    title="Copier le BBCode"
                                                 >
-                                                    Copy BBCode
+                                                    Copier le BBCode
                                                 </Button>
                                             </td>
                                         </tr>
@@ -602,14 +602,14 @@ const SavedReportsModal = ({
                         selectedEmployee && (
                             <p style={{ textAlign: 'center', marginTop: '20px' }}>
                                 {searchQuery
-                                    ? `No reports match your search for ${selectedEmployee.label}.`
-                                    : `No reports saved for ${selectedEmployee.label}.`}
+                                    ? `Aucun rapport ne correspond à votre recherche pour ${selectedEmployee.label}.`
+                                    : `Aucun rapport enregistré pour ${selectedEmployee.label}.`}
                             </p>
                         )
                     )}
                     {!isLoadingReports && !selectedEmployee && (
                         <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                            Please select an employee in the main form to view their saved reports.
+                            Veuillez sélectionner un employé dans le formulaire principal pour voir ses rapports enregistrés.
                         </p>
                     )}
                 </div>
@@ -621,14 +621,14 @@ const SavedReportsModal = ({
                             style={deleteButtonStyle}
                             disabled={selectedReportKeys.length === 0}
                         >
-                            Delete Selected ({selectedReportKeys.length})
+                            Supprimer la sélection ({selectedReportKeys.length})
                         </Button>
                         <Button
                             onClick={handleCopySelectedBBCode}
                             style={copyButtonStyle}
                             disabled={selectedReportKeys.length === 0}
                         >
-                            Copy Selected BBCode ({selectedReportKeys.length})
+                            Copier le BBCode sélectionné ({selectedReportKeys.length})
                         </Button>
                         <Button
                             style={actionButtonStyle}
@@ -638,10 +638,10 @@ const SavedReportsModal = ({
                             {isLoadingMultiple ? (
                                 <>
                                     <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
-                                    Loading...
+                                    Chargement...
                                 </>
                             ) : (
-                                `${bbCodeVersion === 2 ? 'Attach Selected' : 'Load Selected'} (${selectedReportKeys.length})`
+                                `${bbCodeVersion === 2 ? 'Attacher la sélection' : 'Charger la sélection'} (${selectedReportKeys.length})`
                             )}
                         </Button>
                     </div>
@@ -650,13 +650,13 @@ const SavedReportsModal = ({
                 {totalPages > 1 && !isLoadingReports && selectedEmployee && (
                     <div style={paginationStyle}>
                         <Button onClick={goToPreviousPage} disabled={currentPage === 1} style={actionButtonStyle}>
-                            Previous
+                            Précédent
                         </Button>
                         <span>
-                            Page {currentPage} of {totalPages}
+                            Page {currentPage} sur {totalPages}
                         </span>
                         <Button onClick={goToNextPage} disabled={currentPage === totalPages} style={actionButtonStyle}>
-                            Next
+                            Suivant
                         </Button>
                     </div>
                 )}

@@ -19,19 +19,19 @@ const RecruitmentStatusDisplay = ({
 
     if (selectedAgencyGroup === 'PHMC Recruitment') {
         const allPhmcSections = [
-            { title: "Physician Careers", data: physicianRecruitmentDetails, groupFilter: "Physician", isActive: bbCodeVersion === 50 },
-            { title: "Psychologist/Psychiatrist Careers", data: psychRecruitmentDetails, groupFilter: "Psych", isActive: bbCodeVersion === 51 },
-            { title: "Admin Careers", data: adminRecruitmentDetails, groupFilter: "Admin", isActive: bbCodeVersion === 52 },
-            { title: "Nursing Careers", data: nurseRecruitmentDetails, groupFilter: "Nurse", isActive: bbCodeVersion === 53 },
-            { title: "Coroner Careers", data: coronerRecruitmentDetails, groupFilter: "Coroner", isActive: bbCodeVersion === 54 },
-            { title: "EMS Careers", data: emsRecruitmentDetails, groupFilter: "EMS", isActive: bbCodeVersion === 55 },
+            { title: "Postes Médicaux", data: physicianRecruitmentDetails, groupFilter: "Physician", isActive: bbCodeVersion === 50 },
+            { title: "Postes Psychologue/Psychiatre", data: psychRecruitmentDetails, groupFilter: "Psych", isActive: bbCodeVersion === 51 },
+            { title: "Postes Administratifs", data: adminRecruitmentDetails, groupFilter: "Admin", isActive: bbCodeVersion === 52 },
+            { title: "Postes Infirmiers", data: nurseRecruitmentDetails, groupFilter: "Nurse", isActive: bbCodeVersion === 53 },
+            { title: "Postes DMEC", data: coronerRecruitmentDetails, groupFilter: "Coroner", isActive: bbCodeVersion === 54 },
+            { title: "Postes EMS", data: emsRecruitmentDetails, groupFilter: "EMS", isActive: bbCodeVersion === 55 },
         ];
 
         const activeSection = allPhmcSections.find(s => s.isActive);
 
         if (activeSection) {
             // A specific PHMC Recruitment form is active, show its status
-            mainTitle = `${activeSection.title} Status`;
+            mainTitle = `Statut des ${activeSection.title}`;
             sectionsToShow = [activeSection];
         } else {
             // If selectedAgencyGroup is 'PHMC Recruitment' but the current bbCodeVersion
@@ -55,7 +55,7 @@ const RecruitmentStatusDisplay = ({
                 <h5 style={{...styles.mainTitleStyle, borderColor: selectedAgencyGroup === 'SAAA' ? '#0dcaf0' : '#495057', color: selectedAgencyGroup === 'SAAA' ? '#0dcaf0' : '#f8f9fa'}}>
                     {mainTitle}
                 </h5>
-                <p style={styles.noDataText}>No recruitment data available for this group or category.</p>
+                <p style={styles.noDataText}>Aucune donnée de recrutement disponible pour ce groupe ou cette catégorie.</p>
             </div>
         );
     }
@@ -92,11 +92,11 @@ const RecruitmentStatusDisplay = ({
                         sectionsToShow.length > 1 ? (
                             <div key={section.title} style={sectionStyle}>
                                 <h6 style={styles.sectionTitleStyle}>{section.title}:</h6>
-                                <p style={styles.noDataText}>No positions currently listed or status is not set for this category.</p>
+                                <p style={styles.noDataText}>Aucun poste actuellement listé ou le statut n'est pas défini pour cette catégorie.</p>
                             </div>
                         ) : (
                             <div key={section.title} style={sectionStyle}>
-                                <p style={styles.noDataText}>No positions currently listed or status is not set for this category.</p>
+                                <p style={styles.noDataText}>Aucun poste actuellement listé ou le statut n'est pas défini pour cette catégorie.</p>
                             </div>
                         )
                     );
@@ -109,7 +109,7 @@ const RecruitmentStatusDisplay = ({
                         )}
                         {openPositions.length > 0 && (
                             <div style={{ marginBottom: '0.5rem' }}>
-                                <strong style={styles.openStrong}>Open Positions:</strong>
+                                <strong style={styles.openStrong}>Postes Ouverts :</strong>
                                 <ul style={styles.listStyle}>
                                     {openPositions.map(pos => (
                                         <li key={`${section.title}-open-${pos.displayName}`} style={styles.listItemStyle}>
@@ -121,18 +121,18 @@ const RecruitmentStatusDisplay = ({
                         )}
                         {closedPositions.length > 0 && (
                             <div>
-                                <strong style={styles.closedStrong}>Closed Positions:</strong>
+                                <strong style={styles.closedStrong}>Postes Fermés :</strong>
                                 <ul style={styles.listStyle}>
                                     {closedPositions.map(pos => (
                                         <li key={`${section.title}-closed-${pos.displayName}`} style={{ ...styles.listItemStyle, color: '#dc3545' }}>
-                                            {pos.displayName} (Applications Closed)
+                                            {pos.displayName} (Candidatures Fermées)
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                         )}
                         {openPositions.length === 0 && closedPositions.length === 0 && (
-                             <p style={styles.noDataText}>All positions are currently neither explicitly open nor closed, or status is not set for {section.title}.</p>
+                             <p style={styles.noDataText}>Tous les postes ne sont actuellement ni explicitement ouverts ni fermés, ou le statut n'est pas défini pour {section.title}.</p>
                         )}
                     </div>
                 );

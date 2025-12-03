@@ -5,14 +5,14 @@ const ServiceUnavailable = () => {
   return (
     <div className="service-unavailable-bg">
       <div className="service-unavailable-card">
-        <h1>Service Unavailable</h1>
+        <h1>Service Indisponible</h1>
         <h2>
-          As per the request of GTAW Management, this site is currently unavailable.<br />
-          We're in the slow progress of migrating to official GTAW servers.
+          À la demande de la direction de GTAW, ce site est actuellement indisponible.<br />
+          Nous sommes en cours de migration vers les serveurs officiels de GTAW.
         </h2>
         <div className="service-unavailable-emoji" role="img" aria-label="Sad face">😞</div>
         <div className="service-unavailable-footer">
-          &copy; {new Date().getFullYear()} PHMC-FR Tools &mdash; Thank you for your patience.
+          &copy; {new Date().getFullYear()} PHMC-FR Tools &mdash; Merci de votre patience.
         </div>
       </div>
     </div>

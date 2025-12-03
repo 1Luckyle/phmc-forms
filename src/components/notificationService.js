@@ -19,15 +19,15 @@ const getGeneratorName = () => {
     const currentUrl = window.location.href;
     const hostname = window.location.hostname;
     if (currentUrl.startsWith(ALTERNATIVE_FORM_GENERATOR_URL)) {
-        return "Alternative Form Generator";
+        return "Générateur de Formulaire Alternatif";
     }
     if (currentUrl.startsWith(FORM_GENERATOR_URL)) {
-        return "Form Generator";
+        return "Générateur de Formulaire";
     }
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || (hostname.startsWith('172.') && (parseInt(hostname.split('.')[1], 10) >= 16 && parseInt(hostname.split('.')[1], 10) <= 31))) {
         return "Dev Staging";
     }
-    return "Unknown Source";
+    return "Source Inconnue";
 };
 
 const logWebhookToFirebase = async (type, payload) => {

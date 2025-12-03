@@ -113,7 +113,7 @@ const CoronerRankModal = ({
         const trimmedNewRank = newRank.trim();
 
         if (!selectedEmployeeName) {
-            showNotification('Please select an employee.', 'warning');
+            showNotification('Veuillez sélectionner un employé.', 'warning');
             return;
         }
 
@@ -160,7 +160,7 @@ const CoronerRankModal = ({
                 });
 
                 if (!employeeFound) {
-                    showNotification(`Employee "${selectedEmployeeName}" not found in the database.`, 'error');
+                    showNotification(`Employé "${selectedEmployeeName}" introuvable dans la base de données.`, 'error');
                     Sentry.captureMessage(`CoronerRankModal: Attempted to update non-existent employee "${selectedEmployeeName}"`);
                     setIsSubmitting(false);
                     return;
@@ -168,7 +168,7 @@ const CoronerRankModal = ({
 
                 await set(listRef, updatedStaff);
                 updateFunction(updatedStaff); // Update state in App.js
-                showNotification(`Rank for ${selectedEmployeeName} updated to "${trimmedNewRank}" in the database.`, 'check-circle');
+                showNotification(`Le rang de ${selectedEmployeeName} a été mis à jour à "${trimmedNewRank}" dans la base de données.`, 'check-circle');
 
                 if (onSubmit) { // Trigger webhook via App.js's handler
                     onSubmit({ selectedEmployee: selectedEmployeeName, newRank: trimmedNewRank, employeeType: employeeType });
@@ -176,13 +176,13 @@ const CoronerRankModal = ({
                 onClose();
 
             } else {
-                showNotification('No employee data found in the database.', 'error');
+                showNotification('Aucune donnée sur les employés n\'est disponible dans la base de données.', 'error');
                 Sentry.captureMessage("CoronerRankModal: staff/coroner path does not exist in Firebase.");
             }
         } catch (error) {
             console.error("Error updating employee rank in Firebase:", error);
             Sentry.captureException(error, { extra: { context: 'CoronerRankModal Firebase Update', selectedEmployeeName, newRank, employeeType } });
-            showNotification('Failed to update employee rank in database. Please try again.', 'error');
+            showNotification('Échec de la mise à jour du rang de l\'employé dans la base de données. Veuillez réessayer.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -199,7 +199,7 @@ const CoronerRankModal = ({
 
     const employeeOptions = (employeeType === 'coroner' ? coronerList : phmcList).map(emp => ({
         value: emp.name,
-        label: `${emp.name} (${emp.rank || emp.category || 'Rank Missing'})`
+        label: `${emp.name} (${emp.rank || emp.category || 'Rang manquant'})`
     }));
 
     if (!show) {
@@ -210,8 +210,8 @@ const CoronerRankModal = ({
         <div style={modalOverlayStyle} onClick={onClose}>
             <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
                 <div style={modalHeaderStyle}>
-                    <h5 style={modalTitleStyle}>Update Employee Rank</h5>
-                    <button onClick={onClose} style={closeButtonStyle} aria-label="Close modal">
+                    <h5 style={modalTitleStyle}>Mettre à jour le rang de l'employé</h5>
+                    <button onClick={onClose} style={closeButtonStyle} aria-label="Fermer la fenêtre">
                         &times;
                     </button>
                 </div>
@@ -219,11 +219,11 @@ const CoronerRankModal = ({
                 <div style={modalBodyStyle}>
                     <Form>
                          <Form.Group controlId="employeeTypeRadios" className="mb-3">
-                            <Form.Label style={formLabelStyle}>Select Employee Type</Form.Label>
+                            <Form.Label style={formLabelStyle}>Sélectionner le type d'employé</Form.Label>
                             <div key={`inline-radio`} className="mb-3">
                                 <Form.Check
                                     inline
-                                    label="Coroner"
+                                    label="DMEC"
                                     name="employeeType"
                                     type="radio"
                                     id={`coroner-radio`}
@@ -233,7 +233,7 @@ const CoronerRankModal = ({
                                 />
                                 <Form.Check
                                     inline
-                                    label="Hospital Staff"
+                                    label="Personnel hospitalier"
                                     name="employeeType"
                                     type="radio"
                                     id={`hospitalStaff-radio`}
@@ -244,22 +244,22 @@ const CoronerRankModal = ({
                             </div>
                         </Form.Group>
                         <Form.Group controlId="coronerEmployeeSelect" className="mb-3">
-                            <Form.Label style={formLabelStyle}>Select Employee</Form.Label>
+                            <Form.Label style={formLabelStyle}>Sélectionner l'employé</Form.Label>
                             <Select
                                 name="coronerEmployeeSelect"
-                                aria-label="Select Coroner Employee"
+                                aria-label="Employé du DMEC sélectionné"
                                 options={employeeOptions}
                                 value={employeeOptions.find(option => option.value === selectedEmployeeName)}
                                 onChange={handleSelectChange}
                                 styles={reactSelectStyles}
                                 isDisabled={employeeOptions.length === 0 || isSubmitting}
                                 isClearable
-                                placeholder="Search or select employee..."
+                                placeholder="Rechercher ou sélectionner un employé..."
                                 classNamePrefix="react-select"
                             />
                             {employeeOptions.length === 0 && (
                                 <Form.Text className="text-muted">
-                                    No employees found for selected type.  Please add employee to form first.
+                                    Aucun employé trouvé pour le type sélectionné. Veuillez d'abord ajouter un employé au formulaire.
                                 </Form.Text>
                             )}
                         </Form.Group>
@@ -267,10 +267,10 @@ const CoronerRankModal = ({
                         <div className="text-center my-2" style={{ color: '#6c757d' }}></div>
 
                         <Form.Group controlId="newCoronerRankInput" className="mb-3">
-                            <Form.Label style={formLabelStyle}>Enter Updated Rank</Form.Label>
+                            <Form.Label style={formLabelStyle}>Entrer le rang mis à jour</Form.Label>
                             <Form.Control
                                 type="text"
-                                placeholder="Enter updated rank name..."
+                                placeholder="Entrer le nom du rang mis à jour..."
                                 value={newRank}
                                 onChange={handleNewRankChange}
                                 style={formControlStyle}
@@ -282,17 +282,17 @@ const CoronerRankModal = ({
 
                 <div style={modalFooterStyle}>
                     <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-                        Cancel
+                        Annuler
                     </Button>
                     <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting || !selectedEmployeeName}>
                         {isSubmitting ? (
                             <>
                                 <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
-                                Submitting...
+                                Envoi...
                             </>
                         ) : (
                             <>
-                                <i className="fas fa-paper-plane"></i> Submit Info
+                                <i className="fas fa-paper-plane"></i> Envoyer les informations
                             </>
                         )}
                     </Button>

@@ -7,7 +7,7 @@ function LockdownDialog({ show, onHide, message }) {
         <BaseModal
             isOpen={show}
             onClose={onHide}
-            title="System Notice"
+            title="Avis système"
             showCloseButton={false}
             closeOnOverlayClick={false}
             className="lockdown-dialog"
@@ -19,7 +19,7 @@ function LockdownDialog({ show, onHide, message }) {
                 </div>
                 <div className="lockdown-footer">
                     <button className="lockdown-button" onClick={onHide}>
-                        Acknowledge
+                        Acquitter
                     </button>
                 </div>
             </div>

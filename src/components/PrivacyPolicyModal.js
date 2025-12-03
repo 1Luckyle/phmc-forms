@@ -7,22 +7,22 @@ const PrivacyPolicyModal = ({ isOpen, onClose }) => {
     return (
         <div className="modal-overlay privacy-policy-modal">
             <div className="modal-content">
-        <h2>(( Privacy Policy )) </h2>
-        <p>This policy covers the use of PHMC-FR Tools and complies with the <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer">GTA World Privacy Policy</a>.</p>
-        <p> This website processes <strong>IN CHARACTER</strong> information for the usage of Pillbox Hill Medical Center (A GTA World Faction) </p>
-        <p>We are in full compliance of the <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer">GTA World Regulations</a>  by hosting this website on GTA World Servers and code is vetted by GTAW Developers.</p>
+        <h2>(( Politique de confidentialité )) </h2>
+        <p>Cette politique couvre l'utilisation des outils PHMC-FR et est conforme aux <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer">GTA World Privacy Policy</a>.</p>
+        <p> Ce site Web traite des informations <strong>IN CHARACTER</strong> relatives à l'utilisation du centre médical de Pillbox Hill (une faction de GTA World) </p>
+        <p>Nous sommes en pleine conformité avec les <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer">Règlements de GTA World</a> en hébergeant ce site Web sur les serveurs de GTA World et le code est vérifié par les développeurs de GTAW.</p>
         <p>
-          We utilize tools from third party providers: 
-          <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer">Sentry</a> (Error Tracking) and  
-          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer"> Google Firebase</a> (Report Saving).
+          Nous utilisons des outils de fournisseurs tiers : 
+          <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer">Sentry</a> (Suivi des erreurs) et  
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer"> Google Firebase</a> (Sauvegarde des rapports).
         </p>
-        <p>We collect the following data:</p>
-            <li>Firebase only stores Saved Reports, Dropdown Fields and Employee Names</li>
-            <li>Error Logs Device Information (Mobile / Desktop / Tablet), related error file and button pressed.</li>
-            <li>Only myself and Everett can view the Error Logs and the Firebase Database.</li>
-        <p>We do not share your data with any third parties except for the third party providers mentioned above.</p>
-        <p>Questions: Ask in the PHMC Discord Server. </p>
-                <button onClick={onClose} className="close-button">Close</button>
+        <p>Nous collectons les données suivantes :</p>
+            <li>Firebase ne stocke que les rapports sauvegardés, les champs déroulants et les noms des employés</li>
+            <li>Journaux d'erreurs Informations sur l'appareil (Mobile / Bureau / Tablette), fichier d'erreur lié et bouton pressé.</li>
+            <li>Seul moi-même peut voir les journaux d'erreurs et la base de données Firebase.</li>
+        <p>Nous ne partageons pas vos données avec des tiers, sauf les fournisseurs tiers mentionnés ci-dessus.</p>
+        <p>Questions : Posez-les sur le serveur Discord de PHMC.</p>
+                <button onClick={onClose} className="close-button">Fermer</button>
             </div>
         </div>
     );

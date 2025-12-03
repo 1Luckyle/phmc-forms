@@ -313,7 +313,7 @@ setCompletedBingoLines(prevCompletedLines => {
 
             setBingoActivityLog(filteredLogEntries.slice(0, 20)); // Set the filtered log entries
 
-            const scorer = selectedEmployee?.value || 'A Player'; // Get the player who made the last move
+            const scorer = selectedEmployee?.value || 'Un joueur'; // Get the player who made the last move
             newlyCompletedLineIndicesArray.forEach(lineIndex => {
                 const bingoMessageAlreadyPosted = logEntries.some(entry =>
                     entry.type === 'bingo' && entry.lineIndex === lineIndex
@@ -340,7 +340,7 @@ setCompletedBingoLines(prevCompletedLines => {
 
                     push(bingoLogRef, {
                         employee: "SYSTEM_ADMIN",
-                        phrase: `BINGO!!! (${lineName}) - Scorer: ${scorer}`,
+                        phrase: `BINGO!!! (${lineName}) - Score : ${scorer}`,
                         timestamp: serverTimestamp(),
                         type: 'bingo',
                         lineIndex: lineIndex

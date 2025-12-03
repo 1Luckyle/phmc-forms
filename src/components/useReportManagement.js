@@ -814,29 +814,16 @@ export const useReportManagement = (
         }
     }, [getCurrentReportAuthor, formData, setPreselectedEmployeeType, setReportSelectionFilter, setShowSavedReports, showNotification, showSavedReports]);
 
-    const handleShowPositionInfo = useCallback((positionKey) => {
+    const handleShowPositionInfo = useCallback((positionKey, recruitmentDataSource = null) => {
         let data = null;
-        const definition = getFormDefinition(bbCodeVersion);
 
         if (!positionKey) {
             showNotification("Veuillez sélectionner un poste d'abord.", 'warning');
             return;
         }
 
-        if (selectedAgencyGroup === 'PHMC Recruitment') {
-            if (definition?.titleKey === "phmcGeneralApplication" && selectOptions?.physicianRecruitmentDetails) {
-                data = selectOptions.physicianRecruitmentDetails[positionKey];
-            } else if (definition?.titleKey === "phmcPsychApplication" && selectOptions?.psychPositionDetailsData) {
-                data = selectOptions.psychPositionDetailsData[positionKey];
-            } else if (definition?.titleKey === "phmcAdminApplication" && selectOptions?.adminPositionDetailsData) {
-                data = selectOptions.adminPositionDetailsData[positionKey];
-            } else if (definition?.titleKey === "phmcNursingApplication" && selectOptions?.nursePositionDetailsData) {
-                data = selectOptions.nursePositionDetailsData[positionKey];
-            } else if (definition?.titleKey === "phmcEMSApplication" && selectOptions?.emsPositionDetailsData) {
-                data = selectOptions.emsPositionDetailsData[positionKey];
-            } else if (definition?.titleKey === "phmcCoronerRecruitmentApplication" && selectOptions?.coronerPositionDetailsData) {
-                data = selectOptions.coronerPositionDetailsData[positionKey];
-            }
+        if (recruitmentDataSource && typeof recruitmentDataSource === 'object') {
+            data = recruitmentDataSource[positionKey];
         }
 
         if (data) {
@@ -845,7 +832,7 @@ export const useReportManagement = (
         } else {
             showNotification("Aucune information détaillée n'est disponible pour ce poste.", 'warning');
         }
-    }, [bbCodeVersion, selectOptions, selectedAgencyGroup, showNotification]);
+    }, [showNotification]);
 
     return {
         saveReport,

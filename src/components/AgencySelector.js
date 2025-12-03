@@ -85,29 +85,30 @@ const AgencySelector = ({
         return allForms.filter(form => userPreferences.recommendedForms.includes(form.version));
     };
 
+    // Get forms for the selected agency group first
+    const allAgencyGroupForms = formDefinitions
+        .filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
+
     // Filter forms based on user preferences (existing functionality)
     const filteredFormDefinitions = userPreferences 
-        ? formDefinitions.filter(form => {
+        ? allAgencyGroupForms.filter(form => {
             // If no userTypes specified on form, show to everyone
             if (!form.userTypes) return true;
             
             // Check if user's type is allowed for this form
             return form.userTypes.includes(userPreferences.userType);
         })
-        : formDefinitions;
+        : allAgencyGroupForms;
 
-    // Get forms for the selected agency group - include all forms (no longer hiding sub-forms)
-    const agencyGroupForms = filteredFormDefinitions
-        .filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
-    
     // Determine which forms to show (personalized or all)
     let formsToDisplay;
     if (showPersonalizedForms && userPreferences) {
-        const personalizedForms = getPersonalizedForms(agencyGroupForms);
+        const personalizedForms = getPersonalizedForms(filteredFormDefinitions);
         // Only use personalized forms if we have any, otherwise show all
-        formsToDisplay = personalizedForms.length > 0 ? personalizedForms : agencyGroupForms;
+        formsToDisplay = personalizedForms.length > 0 ? personalizedForms : filteredFormDefinitions;
     } else {
-        formsToDisplay = agencyGroupForms;
+        // When showing all forms, show all forms from the agency group without user type filtering
+        formsToDisplay = allAgencyGroupForms;
     }
 
     const availableForms = formsToDisplay
@@ -121,11 +122,11 @@ const AgencySelector = ({
     // Helper function to generate modal title
     const getModalTitle = () => {
         if (!userPreferences) {
-            return `${selectedAgencyGroup} Form Selection (${availableForms.length})`;
+            return `Formulaires ${selectedAgencyGroup} (${availableForms.length})`;
         }
         
-        const modeText = showPersonalizedForms ? 'My' : 'All';
-        return `${modeText} ${selectedAgencyGroup} Forms (${availableForms.length})`;
+        const modeText = showPersonalizedForms ? 'Mes' : 'Tous';
+        return `${modeText} Formulaires ${selectedAgencyGroup} (${availableForms.length})`;
     };
     
         // --- Recruitment Details Mapping ---
@@ -230,25 +231,25 @@ const AgencySelector = ({
                     <>
                         {formSpecificButtonProps.openPositions.length > 0 && (
                             <div style={positionStatusListStyle}>
-                                <strong style={openStatusStyle}>Open:</strong>
+                                <strong style={openStatusStyle}>Ouvert :</strong>
                                 <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
                                     {formSpecificButtonProps.openPositions.slice(0, 3).map(pos => <li key={`open-${form.version}-${pos}`}>{pos}</li>)}
-                                    {formSpecificButtonProps.openPositions.length > 3 && <li>...and more</li>}
+                                    {formSpecificButtonProps.openPositions.length > 3 && <li>... et plus</li>}
                                 </ul>
                             </div>
                         )}
                         {formSpecificButtonProps.closedPositions.length > 0 && (
                             <div style={positionStatusListStyle}>
-                                <strong style={closedStatusStyle}>Closed:</strong>
+                                <strong style={closedStatusStyle}>Fermé :</strong>
                                 <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
                                     {formSpecificButtonProps.closedPositions.slice(0, 3).map(pos => <li key={`closed-${form.version}-${pos}`}>{pos}</li>)}
-                                    {formSpecificButtonProps.closedPositions.length > 3 && <li>...and more</li>}
+                                    {formSpecificButtonProps.closedPositions.length > 3 && <li>... et plus</li>}
                                 </ul>
                             </div>
                         )}
                         {formSpecificButtonProps.openPositions.length === 0 && formSpecificButtonProps.closedPositions.length === 0 && (
                             <div style={{...positionStatusListStyle, textAlign: 'center', color: '#6c757d'}}>
-                                No positions listed.
+                                Aucun poste listé.
                             </div>
                         )}
                     </>
@@ -294,7 +295,7 @@ const AgencySelector = ({
                                     minWidth: '80px'
                                 }}
                             >
-                                {showPersonalizedForms ? 'Show All' : 'Show My Forms'}
+                                {showPersonalizedForms ? 'Afficher tout' : 'Afficher mes formulaires'}
                             </Button>
                         )}
                         <Button
@@ -306,7 +307,7 @@ const AgencySelector = ({
                                 padding: '0.25rem 0.5rem'
                             }}
                         >
-                            Hide Selector
+                            Masquer le sélecteur
                         </Button>
                         <button
                             type="button"
@@ -331,8 +332,8 @@ const AgencySelector = ({
                             color: '#e3f2fd'
                         }}>
                             <i className="fas fa-info-circle" style={{ marginRight: '0.5rem', color: '#007bff' }}></i>
-                            Showing your personalized forms based on your onboarding preferences. 
-                            <strong>Click "Show All"</strong> to see all available forms.
+                            Affichage de vos formulaires personnalisés en fonction de vos préférences d'intégration. 
+                            <strong>Cliquez sur "Afficher tout"</strong> pour voir tous les formulaires disponibles.
                         </div>
                     )}
                     {isMobile ? (
@@ -341,7 +342,7 @@ const AgencySelector = ({
                             onChange={(e) => { if (e.target.value) handleAgencySelect(parseInt(e.target.value)); }}
                             defaultValue="" className="bg-secondary text-white border-secondary mb-3"
                         >
-                            <option value="" disabled>Select a {selectedAgencyGroup} form</option>
+                            <option value="" disabled>Sélectionnez un formulaire {selectedAgencyGroup}</option>
                             {availableForms.map(form => (
                                 <option key={form.version} value={form.version}>{form.name}</option>
                             ))}
@@ -399,13 +400,13 @@ const AgencySelector = ({
                         <Form.Check
                             type="checkbox" id="hideMainFormSelector"
 
-                            label=" Don't show this popup again (for this session)"
+                            label=" Ne plus afficher cette fenêtre contextuelle (pour cette session)"
                             checked={hideAgencySelector}
                             onChange={(e) => {
                                 setHideAgencySelector(e.target.checked);
                                 if (e.target.checked) setShowAgencySelector(false);
                             }}
-                            className="text-muted"
+                            className="text-white"
                         />
                     </div>
                 </div>

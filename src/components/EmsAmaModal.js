@@ -96,15 +96,15 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
         }
 
         const embed = {
-            title: "EMS AMA Form Creation Alert!",
-            description: "A new EMS AMA form was generated.",
+            title: "Alerte création de formulaire EMS AMA !",
+            description: "Un nouveau formulaire EMS AMA a été généré.",
             color: errorMessage ? 0xFF0000 : 0x00FF00,
             fields: [
-                { name: "Patient Signature", value: patientSig || "N/A", inline: true },
+                { name: "Signature du patient", value: patientSig || "N/A", inline: true },
                 { name: "Date", value: formDate || "N/A", inline: true },
-                { name: "Guardian Signature", value: guardianSig || "N/A", inline: true },
-                { name: "Paramedic Signature", value: paramedicSig || "N/A", inline: true },
-                errorMessage ? { name: "Error", value: ```${errorMessage.substring(0, 1000)}```, inline: false } : null
+                { name: "Signature du tuteur", value: guardianSig || "N/A", inline: true },
+                { name: "Signature du paramédic", value: paramedicSig || "N/A", inline: true },
+                errorMessage ? { name: "Erreur", value: ```${errorMessage.substring(0, 1000)}```, inline: false } : null
             ].filter(field => field !== null),
             footer: {
                 text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
@@ -115,9 +115,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
         if (generatedImageUrl) {
             embed.image = { url: generatedImageUrl };
         } else if (!errorMessage) {
-            embed.fields.push({ name: "Image Status", value: "Image uploaded, but link is missing.", inline: false });
+            embed.fields.push({ name: "Statut de l'image", value: "Image téléchargée, mais le lien est manquant.", inline: false });
         } else {
-            embed.fields.push({ name: "Image Status", value: "Image upload failed.", inline: false });
+            embed.fields.push({ name: "Statut de l'image", value: "Échec du téléchargement de l'image.", inline: false });
         }
 
         const message = { embeds: [embed] };
@@ -147,7 +147,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
 
     const handleSave = useCallback(async () => {
         setIsSaving(true);
-        showNotification('Processing AMA form...', 'upload');
+        showNotification('Traitement du formulaire AMA...', 'upload');
 
         localStorage.setItem('emsAmaPatientSignature', patientSignature);
         localStorage.setItem('emsAmaDate', date);
@@ -170,7 +170,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                 img.onerror = (err) => {
                     console.error("Failed to load base AMA image for canvas:", err);
                     Sentry.captureException(err, { extra: { context: 'AMA loadImage', imgSrc: src } });
-                    reject(new Error("Failed to load base AMA image."));
+                    reject(new Error("Impossible de charger l'image AMA de base."));
                 };
                 img.src = src;
             });
@@ -219,21 +219,21 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
 
             const dataUrl = canvas.toDataURL('image/png');
 
-            showNotification('Uploading...', 'upload');
+            showNotification('Téléchargement en cours...', 'upload');
             const link = await handleImageUpload(dataUrl);
             setImageUrl(link);
-            showNotification(`AMA Form Saved & Uploaded: ${link}`, 'save');
+            showNotification(`Formulaire AMA enregistré et téléchargé : ${link}`, 'save');
             sendDiscordWebhook(patientSignature, date, guardianSignature, paramedicSignature, link);
 
-            await copyToClipboard(link, showNotification, 'Image link copied to clipboard!');
+            await copyToClipboard(link, showNotification, 'Lien de l\'image copié dans le presse-papiers !');
         } catch (error) {
             console.error('Error in AMA handleSave:', error);
-            let errorContext = 'Error generating AMA form';
+            let errorContext = 'Erreur lors de la génération du formulaire AMA';
             let detailedMessage = error.message || String(error);
 
-            if (detailedMessage.includes('upload failed')) errorContext = 'Upload Failed';
-            else if (detailedMessage.includes('Failed to load base AMA image')) errorContext = 'Base Image Load Failed';
-            else errorContext = 'Image Generation Failed';
+            if (detailedMessage.includes('upload failed')) errorContext = 'Échec du téléchargement';
+            else if (detailedMessage.includes('Failed to load base AMA image')) errorContext = 'Échec du chargement de l\'image AMA de base';
+            else errorContext = 'Échec de la génération de l\'image';
             
             showNotification(`${errorContext}: ${detailedMessage.substring(0,100)}...`, 'error');
             Sentry.captureException(error, { extra: { context: 'EMS AMA Save', patientSignature, date, detailedMessage } });
@@ -256,12 +256,12 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
         <div className="modal-overlay">
             <div className="agency-selector-modal ems-ama-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h4>EMS - Against Medical Advice (AMA)</h4>
+                    <h4>EMS - Contre Avis Médical (AMA)</h4>
                     <Button
                         variant="secondary"
                         className="close"
                         onClick={onHide}
-                        aria-label="Close EMS AMA modal"
+                        aria-label="Fermer la fenêtre modale EMS AMA"
                     >
                         <i className="fas fa-times"></i>
                     </Button>
@@ -270,16 +270,16 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                     {imageUrl && (
                         <div className="imgur-link-container">
                             <p>
-                                <strong>Image Link: </strong>
+                                <strong>Lien de l'image : </strong>
                                 <a href={imageUrl} target="_blank" rel="noopener noreferrer">
                                     {imageUrl}
                                 </a>
                             </p>
-                            Instructions!
+                            Instructions !
                             <br />
-                            1) /note [id of the blank note item in your inventory] [amount] [name for the cards]
+                            1) /note [identifiant de l'élément de note vierge dans votre inventaire] [quantité] [nom pour les cartes]
                             <br />
-                            2) /note [id of the new note item in your inventory] [amount] [content] [URL from ImgBB]
+                            2) /note [identifiant du nouvel élément de note dans votre inventaire] [quantité] [contenu] [URL depuis ImgBB]
                         </div>
                     )}
 
@@ -288,7 +288,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                         onClick={() => setIsPreviewVisible(!isPreviewVisible)}
                         className="mb-3 w-100"
                     >
-                        {isPreviewVisible ? 'Hide Form Preview' : 'Show Form Preview'}
+                        {isPreviewVisible ? 'Masquer l\'aperçu du formulaire' : 'Afficher l\'aperçu du formulaire'}
                     </Button>
 
                     {isPreviewVisible && (
@@ -304,7 +304,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                         >
                             <img
                                 src={EMSAMAImage}
-                                alt="EMS AMA Form Preview"
+                                alt="Aperçu du formulaire EMS AMA"
                                 style={{ display: 'block', width: '100%', height: 'auto', border: '1px solid #ccc' }}
                             />
                             <div
@@ -336,25 +336,25 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
 
                     <div className="business-card-input-fields"> {/* Re-use class if styles are similar */}
                         <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Patient Signature (Type Name)</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="Enter patient's full name" value={patientSignature} onChange={handlePatientSignatureChange} />
+                            <Form.Label>Signature du patient (nom)</Form.Label>
+                            <Form.Control size="sm" type="text" placeholder="Entrer le nom complet du patient" value={patientSignature} onChange={handlePatientSignatureChange} />
                         </Form.Group>
                         <Form.Group className="mb-2 ems-ama-input-group">
                             <Form.Label>Date</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="e.g., MM/DD/YYYY" value={date} onChange={handleDateChange} />
+                            <Form.Control size="sm" type="text" placeholder="JJ/MM/AAAA / XX:XX" value={date} onChange={handleDateChange} />
                         </Form.Group>
                         <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Guardian Signature (Type Name, If Applicable)</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="Enter guardian's full name" value={guardianSignature} onChange={handleGuardianSignatureChange} />
+                            <Form.Label>Signature du tuteur (nom, si applicable)</Form.Label>
+                            <Form.Control size="sm" type="text" placeholder="Entrer le nom complet du tuteur" value={guardianSignature} onChange={handleGuardianSignatureChange} />
                         </Form.Group>
                         <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Paramedic Signature (Type Name)</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="Enter your full name" value={paramedicSignature} onChange={handleParamedicSignatureChange} />
+                            <Form.Label>Signature du paramédic (nom)</Form.Label>
+                            <Form.Control size="sm" type="text" placeholder="Entrer votre nom complet" value={paramedicSignature} onChange={handleParamedicSignatureChange} />
                         </Form.Group>
                     </div>
                 </div>
                 <Button className="ems-ama-save-button" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? 'Saving...' : 'Save & Upload AMA Form'}
+                    {isSaving ? 'Enregistrement...' : 'Enregistrer et téléverser le formulaire AMA'}
                 </Button>
             </div>
         </div>

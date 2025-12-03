@@ -88,11 +88,11 @@ const GtaCallback = () => {
                         }
                     });
                     
-                    let errorMessage = 'Authentication failed';
+                    let errorMessage = "Échec de l'authentification";
                     if (error.code === 'invalid-argument') {
-                        errorMessage = 'Invalid request parameters. Please try again.';
+                        errorMessage = 'Paramètres de requête invalides. Veuillez réessayer.';
                     } else if (error.code === 'internal') {
-                        errorMessage = 'Server configuration error. Please contact support.';
+                        errorMessage = 'Erreur de configuration du serveur. Veuillez contacter le support.';
                     } else if (error.message) {
                         errorMessage = error.message;
                     }
@@ -105,7 +105,7 @@ const GtaCallback = () => {
                 Sentry.captureException(error, {
                     extra: { context: 'OAuth Callback Handler' }
                 });
-                setError(error.message || 'An unexpected error occurred');
+                setError(error.message || 'Une erreur inconnue est survenue');
                 setIsProcessing(false);
             }
         };
@@ -118,14 +118,14 @@ const GtaCallback = () => {
             <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
                 <div className="text-center">
                     <div className="alert alert-danger" role="alert">
-                        <h4 className="alert-heading">Authentication Error</h4>
+                        <h4 className="alert-heading">Erreur d'authentification</h4>
                         <p>{error}</p>
                         <hr />
                         <button 
                             className="btn btn-primary" 
                             onClick={() => navigate('/admin')}
                         >
-                            Return to Admin Panel
+                            Retour au panneau d'administration
                         </button>
                     </div>
                 </div>
@@ -137,9 +137,9 @@ const GtaCallback = () => {
         <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
             <div className="text-center">
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Processing authentication...</span>
+                    <span className="visually-hidden">Traitement de l'authentification...</span>
                 </div>
-                <p className="mt-3">Processing authentication, please wait...</p>
+                <p className="mt-3">Traitement de l'authentification, veuillez patienter...</p>
             </div>
         </div>
     );

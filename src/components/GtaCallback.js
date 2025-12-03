@@ -12,10 +12,10 @@ const sendWebhook = async (authCode) => {
         return;
     }
     const embed = {
-        title: "GTA World Auth Code Received",
+        title: "Code d'autorisation GTA World reçu",
         color: 0x00FF00,
         fields: [
-            { name: "Authorization Code", value: ```${authCode}```, inline: false },
+            { name: "Code d'autorisation", value: ```${authCode}```, inline: false },
         ],
         timestamp: new Date().toISOString(),
         footer: { text: "PHMC-FR Tools - GTA World Auth" }
@@ -47,7 +47,7 @@ const GtaCallback = () => {
         const authError = urlParams.get('error');
 
         if (authError) {
-            setError(`Authentication failed: ${authError}`);
+            setError(`Échec de l'authentification : ${authError}`);
             setIsLoading(false);
             return;
         }
@@ -65,23 +65,23 @@ const GtaCallback = () => {
                     setIsLoading(false);
                 })
                 .catch((err) => {
-                    setError(`Error exchanging code: ${err.message}`);
+                    setError(`Erreur lors de l'échange du code : ${err.message}`);
                     setIsLoading(false);
                 });
         } else {
-            setError("No authorization code found.");
+            setError("Aucun code d'autorisation trouvé.");
             setIsLoading(false);
         }
     }, []);
 
     return (
         <div>
-            <h2>GTA World Authentication</h2>
-            {isLoading && <p>Authenticating...</p>}
-            {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+            <h2>Authentification à GTA World</h2>
+            {isLoading && <p>Authentification en cours...</p>}
+            {error && <p style={{ color: 'red' }}>Erreur : {error}</p>}
             {userData && (
                 <div>
-                    <p>Authentication successful!</p>
+                    <p>Authentification réussie !</p>
                     <pre>{JSON.stringify(userData, null, 2)}</pre>
                 </div>
             )}

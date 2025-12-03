@@ -44,6 +44,9 @@ const RECOMMENDED_FORMS = {
     [USER_TYPES.OTHER]: 'ALL_FORMS' // Show all available forms
 };
 
+// Utility function to ensure a value is an array
+const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
+
 const OnboardingModal = ({ 
     show, 
     onComplete, 
@@ -171,7 +174,7 @@ const OnboardingModal = ({
     const handleComplete = () => {
         // Get logged-in user data if available
         const loggedInUser = loggedIn ? 
-            [...(phmcList || []), ...(coronerList || [])].find(emp => emp.name === selectedEmployeeId) : null;
+            [...ensureArray(phmcList), ...ensureArray(coronerList)].find(emp => emp.name === selectedEmployeeId) : null;
         
         // Determine default form based on user type and role
         let defaultForm = 1; // Default fallback
@@ -231,24 +234,24 @@ const OnboardingModal = ({
             }
 
             const embed = {
-                title: "🎯 User Onboarding Completed",
+                title: "🎯 Intégration de l'utilisateur terminée",
                 color: 0x28a745, // Green color for success
                 fields: [
-                    { name: "User Type", value: getUserTypeLabel(preferences.userType), inline: true },
-                    { name: "Role", value: preferences.role ? getRoleLabel(preferences.role) : 'Not specified', inline: true },
-                    { name: "Recommended Forms", value: `${preferences.recommendedForms.length} forms`, inline: true },
-                    { name: "Categories Access", value: preferences.allowedCategories.join(', '), inline: false },
-                    { name: "Account Status", value: preferences.userAccount ? 'Logged In' : (preferences.accountCreated ? 'Account Created' : 'No Account'), inline: true },
-                    ...(preferences.userAccount ? [{ name: "User Account", value: `${preferences.userAccount.name} (${preferences.userAccount.category})`, inline: true }] : [])
+                    { name: "Type d'utilisateur", value: getUserTypeLabel(preferences.userType), inline: true },
+                    { name: "Rôle", value: preferences.role ? getRoleLabel(preferences.role) : 'Non spécifié', inline: true },
+                    { name: "Formulaires recommandés", value: `${preferences.recommendedForms.length} formulaires`, inline: true },
+                    { name: "Accès aux catégories", value: preferences.allowedCategories.join(', '), inline: false },
+                    { name: "Statut du compte", value: preferences.userAccount ? 'Connecté' : (preferences.accountCreated ? 'Compte créé' : 'Pas de compte'), inline: true },
+                    ...(preferences.userAccount ? [{ name: "Compte utilisateur", value: `${preferences.userAccount.name} (${preferences.userAccount.category})`, inline: true }] : [])
                 ],
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: "PHMC Forms - Onboarding System"
+                    text: "Formulaires PHMC-FR - Système d'intégration"
                 }
             };
 
             const payload = {
-                username: "Onboarding Bot",
+                username: "Bot d'Intégration",
                 embeds: [embed]
             };
 
@@ -291,12 +294,12 @@ const OnboardingModal = ({
         try {
             const isCoroner = selectedUserType === USER_TYPES.CORONER;
             const requiredFields = isCoroner
-                ? ['firstName', 'discord', 'rank', 'badge']
-                : ['firstName', 'lastName', 'rank'];
+                ? ['Prénom', 'discord', 'rang', 'badge']
+                : ['Prénom', 'Nom', 'rang'];
 
             const emptyFields = requiredFields.filter(field => !accountData[field]?.trim());
             if (emptyFields.length > 0) {
-                showNotification(`Please fill in all required fields: ${emptyFields.join(', ')}`, 'warning');
+                showNotification(`Veuillez remplir tous les champs requis : ${emptyFields.join(', ')}`, 'warning');
                 setIsCreatingAccount(false);
                 return;
             }
@@ -326,7 +329,7 @@ const OnboardingModal = ({
             const isDuplicate = currentStaff.some(member => 
                 member.name.toLowerCase() === newStaffMember.name.toLowerCase());
             if (isDuplicate) {
-                showNotification(`Staff member with name "${newStaffMember.name}" already exists.`, 'warning');
+                showNotification(`Le membre du personnel avec le nom "${newStaffMember.name}" existe déjà.`, 'warning');
                 setIsCreatingAccount(false);
                 return;
             }
@@ -338,7 +341,7 @@ const OnboardingModal = ({
             await sendAccountCreationWebhook(newStaffMember, isCoroner);
             
             setAccountCreated(true);
-            showNotification(`Successfully created account for ${newStaffMember.name}!`, 'success');
+            showNotification(`Compte créé avec succès pour ${newStaffMember.name} !`, 'success');
             
             // Auto-progress to next step after successful account creation
             setTimeout(() => {
@@ -346,7 +349,7 @@ const OnboardingModal = ({
             }, 1500);
         } catch (error) {
             console.error('Error creating account:', error);
-            showNotification(`Error creating account: ${error.message}`, 'error');
+            showNotification(`Erreur lors de la création du compte : ${error.message}`, 'error');
         } finally {
             setIsCreatingAccount(false);
         }
@@ -361,29 +364,29 @@ const OnboardingModal = ({
             }
 
             const embed = {
-                title: `👤 New ${isCoroner ? 'Coroner' : 'PHMC Staff'} Account Created`,
+                title: `👤 Nouveau compte ${isCoroner ? 'Coroner' : 'Personnel PHMC'} créé`,
                 color: isCoroner ? 0x8b0000 : 0x007bff, // Red for coroner, blue for PHMC
                 fields: [
-                    { name: "Name", value: staffMember.name, inline: true },
-                    { name: "Rank/Position", value: staffMember.rank || staffMember.category, inline: true },
+                    { name: "Nom", value: staffMember.name, inline: true },
+                    { name: "Rang/Position", value: staffMember.rank || staffMember.category, inline: true },
                     ...(isCoroner ? [
                         { name: "Discord", value: staffMember.discord, inline: true },
-                        { name: "Badge Number", value: staffMember.badge, inline: true },
-                        ...(staffMember.phNumber ? [{ name: "PH Number", value: staffMember.phNumber, inline: true }] : [])
+                        { name: "Numéro de badge", value: staffMember.badge, inline: true },
+                        ...(staffMember.phNumber ? [{ name: "Numéro PH", value: staffMember.phNumber, inline: true }] : [])
                     ] : [
-                        { name: "Last Name", value: staffMember.lastName, inline: true }
+                        { name: "Nom de famille", value: staffMember.lastName, inline: true }
                     ]),
-                    { name: "Account Type", value: isCoroner ? 'Coroner Staff' : 'Hospital Staff', inline: true },
-                    { name: "Created Via", value: 'Onboarding System', inline: true }
+                    { name: "Type de compte", value: isCoroner ? 'Personnel Coroner' : 'Personnel Hospitalier', inline: true },
+                    { name: "Créé via", value: 'Système d\'intégration', inline: true }
                 ],
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: "PHMC Forms - Account Creation"
+                    text: "Formulaires PHMC-FR - Création de compte"
                 }
             };
 
             const payload = {
-                username: "Account Bot",
+                username: "Bot de Compte",
                 embeds: [embed]
             };
 
@@ -410,7 +413,7 @@ const OnboardingModal = ({
 
     const handleLogin = async () => {
         if (!selectedEmployeeId) {
-            showNotification('Please select an employee to login as.', 'warning');
+            showNotification('Veuillez sélectionner un employé pour vous connecter.', 'warning');
             return;
         }
         
@@ -418,19 +421,19 @@ const OnboardingModal = ({
         
         try {
             // Find the selected employee
-            const allEmployees = [...(phmcList || []), ...(coronerList || [])];
+            const allEmployees = [...ensureArray(phmcList), ...ensureArray(coronerList)];
             const selectedEmployee = allEmployees.find(emp => emp.name === selectedEmployeeId);
             
             // Send webhook notification for login
             await sendAccountCreationWebhook({
-                name: selectedEmployee?.name || 'Unknown',
-                role: selectedEmployee?.category || selectedEmployee?.rank || 'Unknown',
+                name: selectedEmployee?.name || 'Inconnu',
+                role: selectedEmployee?.category || selectedEmployee?.rank || 'Inconnu',
                 userType: getUserTypeLabel(selectedUserType),
                 action: 'login'
             }, selectedUserType === USER_TYPES.CORONER);
             
             setLoggedIn(true);
-            showNotification(`Successfully logged in as ${selectedEmployee?.name || 'Employee'}!`, 'success');
+            showNotification(`Connecté avec succès en tant que ${selectedEmployee?.name || 'Employé'} !`, 'success');
             
             // Auto-progress to next step after successful login
             setTimeout(() => {
@@ -438,7 +441,7 @@ const OnboardingModal = ({
             }, 1500);
         } catch (error) {
             console.error('Error during login:', error);
-            showNotification(`Error during login: ${error.message}`, 'error');
+            showNotification(`Erreur lors de la connexion : ${error.message}`, 'error');
         } finally {
             setIsLoggingIn(false);
         }
@@ -468,7 +471,7 @@ const OnboardingModal = ({
                 <div style={progressBarStyle}>
                     <div style={{...progressFillStyle, width: `${percentage}%`}} />
                 </div>
-                <span style={progressTextStyle}>Step {current} of {total}</span>
+                <span style={progressTextStyle}>Étape {current} sur {total}</span>
             </div>
         );
     };
@@ -478,36 +481,36 @@ const OnboardingModal = ({
             <div style={welcomeIconStyle}>
                 <i className="fas fa-hand-wave" style={{fontSize: '3rem', color: '#007bff'}}></i>
             </div>
-            <h2 style={stepTitleStyle}>Welcome to PHMC Forms!</h2>
+            <h2 style={stepTitleStyle}>Bienvenue sur les formulaires PHMC !</h2>
             <p style={stepDescriptionStyle}>
-                We're here to help you get started with the right forms for your needs. 
-                This quick setup will customize your experience and show you the most relevant tools.
+                Nous sommes là pour vous aider à démarrer avec les bons formulaires pour vos besoins. 
+                Cette configuration rapide personnalisera votre expérience et vous montrera les outils les plus pertinents.
             </p>
             <div style={featureListStyle}>
                 <div style={featureItemStyle}>
                     <i className="fas fa-check-circle" style={checkIconStyle}></i>
-                    <span>Personalized form recommendations</span>
+                    <span>Recommandations personnalisées de formulaires</span>
                 </div>
                 <div style={featureItemStyle}>
                     <i className="fas fa-check-circle" style={checkIconStyle}></i>
-                    <span>Streamlined interface for your role</span>
+                    <span>Interface simplifiée pour votre rôle</span>
                 </div>
                 <div style={featureItemStyle}>
                     <i className="fas fa-check-circle" style={checkIconStyle}></i>
-                    <span>Quick access to frequently used forms</span>
+                    <span>Accès rapide aux formulaires fréquemment utilisés</span>
                 </div>
             </div>
             <p style={timeEstimateStyle}>
-                <i className="fas fa-clock"></i> This should take less than 2 minutes
+                <i className="fas fa-clock"></i> Cela devrait prendre moins de 2 minutes
             </p>
         </div>
     );
 
     const renderUserTypeStep = () => (
         <div style={stepContentStyle}>
-            <h2 style={stepTitleStyle}>What best describes your role?</h2>
+            <h2 style={stepTitleStyle}>Quelle description correspond le mieux à votre rôle ?</h2>
             <p style={stepDescriptionStyle}>
-                Select the option that best matches how you'll be using the forms system:
+                Sélectionnez l'option qui correspond le mieux à la façon dont vous utiliserez le système de formulaires :
             </p>
             <div style={userTypeGridStyle}>
                 <button
@@ -520,9 +523,9 @@ const OnboardingModal = ({
                     onClick={() => setSelectedUserType(USER_TYPES.CIVILIAN)}
                 >
                     <i className="fas fa-user" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Civilian</h4>
+                    <h4 style={userTypeButtonTitleStyle}>Civil</h4>
                     <p style={userTypeButtonDescStyle}>
-                        I need to submit a form on the forums (patient files, medical releases, etc.)
+                        J'ai besoin de soumettre un formulaire sur les forums (dossiers patients, autorisations médicales, etc.)
                     </p>
                 </button>
 
@@ -536,9 +539,9 @@ const OnboardingModal = ({
                     onClick={() => setSelectedUserType(USER_TYPES.PHMC_STAFF)}
                 >
                     <i className="fas fa-user-md" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>PHMC Staff</h4>
+                    <h4 style={userTypeButtonTitleStyle}>Personnel PHMC</h4>
                     <p style={userTypeButtonDescStyle}>
-                        I work at PHMC and create medical reports, consultations, and patient documentation
+                        Je travaille au PHMC et je crée des rapports médicaux, des consultations et de la documentation patient
                     </p>
                 </button>
 
@@ -552,9 +555,9 @@ const OnboardingModal = ({
                     onClick={() => setSelectedUserType(USER_TYPES.CORONER)}
                 >
                     <i className="fas fa-search" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Coroner</h4>
+                    <h4 style={userTypeButtonTitleStyle}>DMEC</h4>
                     <p style={userTypeButtonDescStyle}>
-                        I handle forensic services, death reports, autopsies, and coroner investigations
+                        Je m'occupe des services médico-légaux, des rapports de décès, des autopsies et des enquêtes du coroner
                     </p>
                 </button>
 
@@ -568,9 +571,9 @@ const OnboardingModal = ({
                     onClick={() => setSelectedUserType(USER_TYPES.RECRUITMENT)}
                 >
                     <i className="fas fa-clipboard-user" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Job Applicant</h4>
+                    <h4 style={userTypeButtonTitleStyle}>Candidat</h4>
                     <p style={userTypeButtonDescStyle}>
-                        I'm applying for a position at PHMC (physician, nurse, admin, etc.)
+                        Je postule pour un poste au PHMC (médecin, infirmier, administratif, etc.)
                     </p>
                 </button>
 
@@ -584,9 +587,9 @@ const OnboardingModal = ({
                     onClick={() => setSelectedUserType(USER_TYPES.OTHER)}
                 >
                     <i className="fas fa-question-circle" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Other/Multiple</h4>
+                    <h4 style={userTypeButtonTitleStyle}>Autre/Multiple</h4>
                     <p style={userTypeButtonDescStyle}>
-                        I use forms for multiple purposes or don't fit the above categories
+                        J'utilise les formulaires à plusieurs fins ou je ne corresponds pas aux catégories ci-dessus
                     </p>
                 </button>
             </div>
@@ -598,9 +601,9 @@ const OnboardingModal = ({
             if (showAccountCreation) {
                 return (
                     <div style={stepContentStyle}>
-                        <h2 style={stepTitleStyle}>Create Your PHMC Staff Account</h2>
+                        <h2 style={stepTitleStyle}>Créer un compte Personnel PHMC</h2>
                         <p style={stepDescriptionStyle}>
-                            Fill in your details to create your staff account:
+                            Remplissez vos informations pour créer votre compte personnel :
                         </p>
                         <div style={accountFormStyle}>
                             <div style={formRowStyle}>
@@ -609,7 +612,7 @@ const OnboardingModal = ({
                                     name="firstName"
                                     value={accountData.firstName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="First Name *"
+                                    placeholder="Prénom *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
@@ -617,7 +620,7 @@ const OnboardingModal = ({
                                     name="lastName"
                                     value={accountData.lastName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Last Name *"
+                                    placeholder="Nom *"
                                     style={formInputStyle}
                                 />
                             </div>
@@ -626,7 +629,7 @@ const OnboardingModal = ({
                                 name="rank"
                                 value={accountData.rank}
                                 onChange={handleAccountDataChange}
-                                placeholder="Rank/Position *"
+                                placeholder="Rang *"
                                 style={formInputStyle}
                             />
                             <div style={accountActionsStyle}>
@@ -635,7 +638,7 @@ const OnboardingModal = ({
                                     onClick={() => setShowAccountCreation(false)}
                                     style={skipAccountButtonStyle}
                                 >
-                                    Skip Account Creation
+                                    Passer la création du compte
                                 </Button>
                                 <Button 
                                     variant="primary" 
@@ -643,7 +646,7 @@ const OnboardingModal = ({
                                     disabled={isCreatingAccount}
                                     style={createAccountButtonStyle}
                                 >
-                                    {isCreatingAccount ? 'Creating...' : 'Create Account'}
+                                    {isCreatingAccount ? 'Création en cours...' : 'Créer un compte'}
                                 </Button>
                             </div>
                         </div>
@@ -655,15 +658,15 @@ const OnboardingModal = ({
             if (showLogin) {
                 return (
                     <div style={stepContentStyle}>
-                        <h2 style={stepTitleStyle}>Login to Your PHMC Staff Account</h2>
+                        <h2 style={stepTitleStyle}>Connexion à votre compte Personnel PHMC</h2>
                         <p style={stepDescriptionStyle}>
-                            Select your name from the list below:
+                            Sélectionnez votre nom dans la liste ci-dessous :
                         </p>
                         
                         <div style={{margin: '20px 0'}}>
                             <Form.Group>
                                 <Form.Label style={{fontWeight: 'bold', marginBottom: '10px'}}>
-                                    Select Your Name:
+                                    Sélectionnez votre nom :
                                 </Form.Label>
                                 <Form.Select 
                                     value={selectedEmployeeId}
@@ -675,10 +678,10 @@ const OnboardingModal = ({
                                         fontSize: '16px'
                                     }}
                                 >
-                                    <option value="">Choose your name...</option>
-                                    {phmcList && phmcList.map((employee, index) => (
+                                    <option value="">Choisissez votre nom...</option>
+                                    {ensureArray(phmcList).map((employee, index) => (
                                         <option key={index} value={employee.name}>
-                                            {employee.name} - {employee.category || employee.rank || 'PHMC Staff'}
+                                            {employee.name} - {employee.category || employee.rank || 'Personnel PHMC'}
                                         </option>
                                     ))}
                                 </Form.Select>
@@ -691,7 +694,7 @@ const OnboardingModal = ({
                                 onClick={() => setShowLogin(false)}
                                 style={{padding: '10px 20px'}}
                             >
-                                Back
+                                Retour
                             </Button>
                             <Button 
                                 variant="success" 
@@ -699,7 +702,7 @@ const OnboardingModal = ({
                                 disabled={!selectedEmployeeId || isLoggingIn}
                                 style={{padding: '10px 20px'}}
                             >
-                                {isLoggingIn ? 'Logging in...' : 'Login'}
+                                {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
                             </Button>
                         </div>
                     </div>
@@ -708,18 +711,18 @@ const OnboardingModal = ({
 
             return (
                 <div style={stepContentStyle}>
-                    <h2 style={stepTitleStyle}>What's your primary role at PHMC?</h2>
+                    <h2 style={stepTitleStyle}>Quel est votre rôle principal au sein de PHMC ?</h2>
                     <p style={stepDescriptionStyle}>
-                        This helps us show you the most relevant forms for your department:
+                        Cela nous aide à vous montrer les formulaires les plus pertinents pour votre département :
                     </p>
                     <div style={roleGridStyle}>
                         {[
-                            { id: 'physician', icon: 'fas fa-stethoscope', title: 'Physician', desc: 'Surgeon, ER Doctor, Specialist' },
-                            { id: 'nurse', icon: 'fas fa-user-nurse', title: 'Nurse', desc: 'RN, LPN, Nurse Practitioner' },
-                            { id: 'ems', icon: 'fas fa-ambulance', title: 'EMS', desc: 'Paramedic, EMT' },
-                            { id: 'admin', icon: 'fas fa-clipboard-list', title: 'Administrator', desc: 'Management, Clerical, Support' },
-                            { id: 'psych', icon: 'fas fa-brain', title: 'Mental Health', desc: 'Psychiatrist, Psychologist' },
-                            { id: 'other', icon: 'fas fa-ellipsis-h', title: 'Other', desc: 'Multiple roles or other specialty' }
+                            { id: 'physician', icon: 'fas fa-stethoscope', title: 'Médecin', desc: 'Chirurgien, Médecin urgentiste, Spécialiste' },
+                            { id: 'nurse', icon: 'fas fa-user-nurse', title: 'Infirmier', desc: 'Infirmier autorisé, Infirmier auxiliaire, Infirmier praticien' },
+                            { id: 'ems', icon: 'fas fa-ambulance', title: 'EMS', desc: 'Paramédic, Technicien ambulancier' },
+                            { id: 'admin', icon: 'fas fa-clipboard-list', title: 'Administration', desc: 'Gestion, Clerical, Support' },
+                            { id: 'psych', icon: 'fas fa-brain', title: 'Santé mentale', desc: 'Psychiatre, Psychologue' },
+                            { id: 'other', icon: 'fas fa-ellipsis-h', title: 'Autre', desc: 'Rôles multiples ou autre spécialité' }
                         ].map(role => (
                             <button
                                 key={role.id}
@@ -740,7 +743,7 @@ const OnboardingModal = ({
                     <div style={accountPromptStyle}>
                         <p style={accountPromptTextStyle}>
                             <i className="fas fa-user-plus" style={promptIconStyle}></i>
-                            Would you like to create a staff account or login with an existing one?
+                            Souhaitez-vous créer un compte personnel ou vous connecter avec un compte existant ?
                         </p>
                         <div style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
                             <Button 
@@ -760,7 +763,7 @@ const OnboardingModal = ({
                                     e.target.style.color = '#007bff';
                                 }}
                             >
-                                Create Staff Account
+                                Créer un compte personnel
                             </Button>
                             <Button 
                                 variant="outline-success" 
@@ -779,7 +782,7 @@ const OnboardingModal = ({
                                     e.target.style.color = '#28a745';
                                 }}
                             >
-                                Login
+                                Connexion
                             </Button>
                         </div>
                     </div>
@@ -791,9 +794,9 @@ const OnboardingModal = ({
             if (showAccountCreation) {
                 return (
                     <div style={stepContentStyle}>
-                        <h2 style={stepTitleStyle}>Create Your Coroner Account</h2>
+                        <h2 style={stepTitleStyle}>Créer votre compte de membre du DMEC</h2>
                         <p style={stepDescriptionStyle}>
-                            Fill in your details to create your coroner account:
+                            Remplissez vos informations pour créer votre compte de membre du DMEC :
                         </p>
                         <div style={accountFormStyle}>
                             <div style={formRowStyle}>
@@ -802,7 +805,7 @@ const OnboardingModal = ({
                                     name="firstName"
                                     value={accountData.firstName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Name *"
+                                    placeholder="Prénom Nom *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
@@ -810,7 +813,7 @@ const OnboardingModal = ({
                                     name="discord"
                                     value={accountData.discord}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Discord Name *"
+                                    placeholder="Nom Discord *"
                                     style={formInputStyle}
                                 />
                             </div>
@@ -820,7 +823,7 @@ const OnboardingModal = ({
                                     name="rank"
                                     value={accountData.rank}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Rank/Position *"
+                                    placeholder="Rang *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
@@ -828,7 +831,7 @@ const OnboardingModal = ({
                                     name="badge"
                                     value={accountData.badge}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Badge Number *"
+                                    placeholder="Numéro de Badge *"
                                     style={formInputStyle}
                                 />
                             </div>
@@ -837,7 +840,7 @@ const OnboardingModal = ({
                                 name="phNumber"
                                 value={accountData.phNumber}
                                 onChange={handleAccountDataChange}
-                                placeholder="PH Number (Optional)"
+                                placeholder="Numéro de téléphone (Optionnel)"
                                 style={formInputStyle}
                             />
                             <div style={accountActionsStyle}>
@@ -846,7 +849,7 @@ const OnboardingModal = ({
                                     onClick={() => setShowAccountCreation(false)}
                                     style={skipAccountButtonStyle}
                                 >
-                                    Skip Account Creation
+                                    Passer la création de compte
                                 </Button>
                                 <Button 
                                     variant="primary" 
@@ -854,7 +857,7 @@ const OnboardingModal = ({
                                     disabled={isCreatingAccount}
                                     style={createAccountButtonStyle}
                                 >
-                                    {isCreatingAccount ? 'Creating...' : 'Create Account'}
+                                    {isCreatingAccount ? 'Création en cours...' : 'Créer un compte'}
                                 </Button>
                             </div>
                         </div>
@@ -866,15 +869,15 @@ const OnboardingModal = ({
             if (showLogin) {
                 return (
                     <div style={stepContentStyle}>
-                        <h2 style={stepTitleStyle}>Login to Your Coroner Account</h2>
+                        <h2 style={stepTitleStyle}>Connexion à votre compte de membre du DMEC</h2>
                         <p style={stepDescriptionStyle}>
-                            Select your name from the list below:
+                            Sélectionnez votre nom dans la liste ci-dessous :
                         </p>
                         
                         <div style={{margin: '20px 0'}}>
                             <Form.Group>
                                 <Form.Label style={{fontWeight: 'bold', marginBottom: '10px'}}>
-                                    Select Your Name:
+                                    Sélectionnez votre nom :
                                 </Form.Label>
                                 <Form.Select 
                                     value={selectedEmployeeId}
@@ -886,10 +889,10 @@ const OnboardingModal = ({
                                         fontSize: '16px'
                                     }}
                                 >
-                                    <option value="">Choose your name...</option>
-                                    {coronerList && coronerList.map((employee, index) => (
+                                    <option value="">Choisissez votre nom...</option>
+                                    {ensureArray(coronerList).map((employee, index) => (
                                         <option key={index} value={employee.name}>
-                                            {employee.name} - {employee.category || employee.rank || 'Coroner'}
+                                            {employee.name} - {employee.category || employee.rank || 'Médecin légiste'}
                                         </option>
                                     ))}
                                 </Form.Select>
@@ -902,7 +905,7 @@ const OnboardingModal = ({
                                 onClick={() => setShowLogin(false)}
                                 style={{padding: '10px 20px'}}
                             >
-                                Back
+                                Retour
                             </Button>
                             <Button 
                                 variant="success" 
@@ -910,7 +913,7 @@ const OnboardingModal = ({
                                 disabled={!selectedEmployeeId || isLoggingIn}
                                 style={{padding: '10px 20px'}}
                             >
-                                {isLoggingIn ? 'Logging in...' : 'Login'}
+                                {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
                             </Button>
                         </div>
                     </div>
@@ -919,26 +922,26 @@ const OnboardingModal = ({
 
             return (
                 <div style={stepContentStyle}>
-                    <h2 style={stepTitleStyle}>Welcome, Coroner!</h2>
+                    <h2 style={stepTitleStyle}>Bienvenue, Membre du DMEC !</h2>
                     <p style={stepDescriptionStyle}>
-                        Let's set up your access to the coroner forms and services:
+                        Configurons votre accès aux formulaires et service du DMEC :
                     </p>
                     <div style={coronerWelcomeStyle}>
                         <div style={coronerInfoCardStyle}>
                             <i className="fas fa-clipboard-check" style={coronerInfoIconStyle}></i>
-                            <h4 style={coronerInfoTitleStyle}>Access to Forensic Forms</h4>
-                            <p style={coronerInfoDescStyle}>Complete access to all coroner and forensic service forms</p>
+                            <h4 style={coronerInfoTitleStyle}>Accès aux formulaires médico-légaux</h4>
+                            <p style={coronerInfoDescStyle}>Accès complet à tous les formulaires et services médico-légaux</p>
                         </div>
                         <div style={coronerInfoCardStyle}>
                             <i className="fas fa-search" style={coronerInfoIconStyle}></i>
-                            <h4 style={coronerInfoTitleStyle}>Investigation Tools</h4>
-                            <p style={coronerInfoDescStyle}>Autopsy reports, death certificates, and case management</p>
+                            <h4 style={coronerInfoTitleStyle}>Outils d'enquête</h4>
+                            <p style={coronerInfoDescStyle}>Rapports d'autopsie, certificats de décès et gestion des dossiers</p>
                         </div>
                     </div>
                     <div style={accountPromptStyle}>
                         <p style={accountPromptTextStyle}>
                             <i className="fas fa-user-plus" style={promptIconStyle}></i>
-                            Would you like to create a coroner account or login with an existing one?
+                            Souhaitez-vous créer un compte de membre du DMEC ou vous connecter avec un compte existant ?
                         </p>
                         <div style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
                             <Button 
@@ -958,7 +961,7 @@ const OnboardingModal = ({
                                     e.target.style.color = '#007bff';
                                 }}
                             >
-                                Create Coroner Account
+                                Créer un compte de membre du DMEC
                             </Button>
                             <Button 
                                 variant="outline-success" 
@@ -977,7 +980,7 @@ const OnboardingModal = ({
                                     e.target.style.color = '#28a745';
                                 }}
                             >
-                                Login
+                                Connexion
                             </Button>
                         </div>
                     </div>
@@ -990,9 +993,9 @@ const OnboardingModal = ({
 
     const renderFormPreviewStep = () => (
         <div style={stepContentStyle}>
-            <h2 style={stepTitleStyle}>Here are your recommended forms</h2>
+            <h2 style={stepTitleStyle}>Voici vos formulaires recommandés</h2>
             <p style={stepDescriptionStyle}>
-                Based on your selection, these forms will be prioritized in your interface:
+                En fonction de votre sélection, ces formulaires seront prioritaires dans votre interface :
             </p>
             <div style={formPreviewGridStyle}>
                 {recommendedForms.slice(0, 6).map(form => (
@@ -1007,12 +1010,12 @@ const OnboardingModal = ({
             </div>
             {recommendedForms.length > 6 && (
                 <p style={moreFormsTextStyle}>
-                    + {recommendedForms.length - 6} more forms available for your role
+                    + {recommendedForms.length - 6} formulaires supplémentaires disponibles pour votre rôle
                 </p>
             )}
             <div style={previewNoteStyle}>
                 <i className="fas fa-info-circle" style={noteIconStyle}></i>
-                <span>You can always access all forms through the form selector, but these will be highlighted for quick access.</span>
+                <span>Vous pouvez toujours accéder à tous les formulaires via le sélecteur de formulaires, mais ceux-ci seront mis en avant pour un accès rapide.</span>
             </div>
         </div>
     );
@@ -1022,28 +1025,28 @@ const OnboardingModal = ({
             <div style={privacyIconStyle}>
                 <i className="fas fa-shield-alt" style={{fontSize: '3rem', color: '#007bff'}}></i>
             </div>
-            <h2 style={stepTitleStyle}>Privacy Policy</h2>
+            <h2 style={stepTitleStyle}>Politique de confidentialité</h2>
             <p style={stepDescriptionStyle}>
-                Please review our privacy policy before completing your setup.
+                Veuillez consulter notre politique de confidentialité avant de terminer votre configuration.
             </p>
             <div style={privacyContentStyle}>
                 <div style={privacyPolicyBoxStyle}>
-                    <p>This policy covers the use of PHMC-FR Tools and complies with the <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer" style={linkStyle}>GTA World Privacy Policy</a>.</p>
-                    <p>This website processes <strong>IN CHARACTER</strong> information for the usage of Pillbox Hill Medical Center (A GTA World Faction)</p>
-                    <p>We are in full compliance of the <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer" style={linkStyle}>GTA World Regulations</a> by hosting this website on GTA World Servers and code is vetted by GTAW Developers.</p>
+                    <p>Cette politique couvre l'utilisation des outils PHMC-FR et est conforme à la <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer" style={linkStyle}>Politique de confidentialité de GTA World</a>.</p>
+                    <p>Ce site traite des informations <strong>IN CHARACTER</strong> pour l'utilisation du Pillbox Hill Medical Center (une faction de GTA World)</p>
+                    <p>Nous sommes en pleine conformité avec les <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer" style={linkStyle}>Règlements de GTA World</a> en hébergeant ce site sur les serveurs de GTA World et le code est vérifié par les développeurs de GTAW.</p>
                     <p>
-                        We utilize tools from third party providers: 
-                        <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer" style={linkStyle}> Sentry</a> (Error Tracking) and 
-                        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}> Google Firebase</a> (Report Saving).
+                        Nous utilisons des services tiers pour collecter et stocker certaines données, notamment : 
+                        <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer" style={linkStyle}> Sentry</a> (Error Tracking) et 
+                        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}> Google Firebase</a> (Sauvegarde des rapports).
                     </p>
-                    <p><strong>We collect the following data:</strong></p>
+                    <p><strong>Nous collectons les données suivantes :</strong></p>
                     <ul style={privacyListStyle}>
-                        <li>Firebase only stores Saved Reports, Dropdown Fields and Employee Names</li>
-                        <li>Error Logs Device Information (Mobile / Desktop / Tablet), related error file and button pressed.</li>
-                        <li>Only myself and Everett can view the Error Logs and the Firebase Database.</li>
+                        <li>Firebase ne stocke que les rapports sauvegardés, les champs déroulants et les noms des employés</li>
+                        <li>Journaux d'erreurs Informations sur l'appareil (Mobile / Bureau / Tablette), fichier d'erreur lié et bouton pressé.</li>
+                        <li>Seul moi-même peut voir les journaux d'erreurs et la base de données Firebase.</li>
                     </ul>
-                    <p>We do not share your data with any third parties except for the third party providers mentioned above.</p>
-                    <p><strong>Questions:</strong> Ask in the PHMC Discord Server.</p>
+                    <p>Nous ne partageons pas vos données avec des tiers, à l'exception des fournisseurs tiers mentionnés ci-dessus.</p>
+                    <p><strong>Questions :</strong> Posez-les sur le serveur Discord de PHMC.</p>
                 </div>
             </div>
         </div>
@@ -1054,21 +1057,21 @@ const OnboardingModal = ({
             <div style={completeIconStyle}>
                 <i className="fas fa-check-circle" style={{fontSize: '4rem', color: '#28a745'}}></i>
             </div>
-            <h2 style={stepTitleStyle}>You're all set!</h2>
+            <h2 style={stepTitleStyle}>C'est tout bon !</h2>
             <p style={stepDescriptionStyle}>
-                Your interface has been customized for your role. You can change these preferences anytime from the Tools menu.
+                Votre interface a été personnalisée pour votre rôle. Vous pouvez modifier ces préférences à tout moment depuis le menu Outils.
             </p>
             <div style={summaryBoxStyle}>
-                <h4 style={summaryTitleStyle}>Your Setup Summary:</h4>
+                <h4 style={summaryTitleStyle}>Résumé de votre configuration :</h4>
                 <div style={summaryItemStyle}>
-                    <strong>Role:</strong> {getUserTypeLabel(selectedUserType)}
+                    <strong>Rôle :</strong> {getUserTypeLabel(selectedUserType)}
                     {selectedRole && ` (${getRoleLabel(selectedRole)})`}
                 </div>
                 <div style={summaryItemStyle}>
-                    <strong>Primary Forms:</strong> {recommendedForms.length} forms recommended
+                    <strong>Formulaires principaux :</strong> {recommendedForms.length} formulaires recommandés
                 </div>
                 <div style={summaryItemStyle}>
-                    <strong>Available Categories:</strong> {FORM_CATEGORIES[selectedUserType]?.join(', ') || 'All categories'}
+                    <strong>Catégories disponibles :</strong> {FORM_CATEGORIES[selectedUserType]?.join(', ') || 'Toutes les catégories'}
                 </div>
             </div>
         </div>
@@ -1076,13 +1079,13 @@ const OnboardingModal = ({
 
     const getUserTypeLabel = (userType) => {
         const labels = {
-            [USER_TYPES.CIVILIAN]: 'Civilian',
-            [USER_TYPES.PHMC_STAFF]: 'PHMC Staff',
-            [USER_TYPES.CORONER]: 'Coroner',
-            [USER_TYPES.RECRUITMENT]: 'Job Applicant',
-            [USER_TYPES.OTHER]: 'Multiple Roles'
+            [USER_TYPES.CIVILIAN]: 'Civil',
+            [USER_TYPES.PHMC_STAFF]: 'Personnel PHMC',
+            [USER_TYPES.CORONER]: 'DMEC',
+            [USER_TYPES.RECRUITMENT]: 'Candidat',
+            [USER_TYPES.OTHER]: 'Plusieurs rôles'
         };
-        return labels[userType] || 'Unknown';
+        return labels[userType] || 'Inconnu';
     };
 
     const getRoleLabel = (role) => {
@@ -1128,13 +1131,13 @@ const OnboardingModal = ({
     const getNextButtonText = () => {
         switch (currentStep) {
             case ONBOARDING_STEPS.WELCOME:
-                return "Let's Get Started";
+                return "C'est parti";
             case ONBOARDING_STEPS.PRIVACY_POLICY:
-                return "Accept & Continue";
+                return "Accepter et continuer";
             case ONBOARDING_STEPS.COMPLETE:
-                return "Start Using Forms";
+                return "Commencer à utiliser les formulaires";
             default:
-                return "Continue";
+                return "Continuer";
         }
     };
 
@@ -1162,7 +1165,7 @@ const OnboardingModal = ({
             <div style={modalStyle}>
                 <div style={headerStyle}>
                     {renderProgressBar()}
-                    <button style={skipButtonStyle} onClick={handleSkip} title="Skip onboarding">
+                    <button style={skipButtonStyle} onClick={handleSkip} title="Passer l'intégration">
                         <i className="fas fa-times"></i>
                     </button>
                 </div>
@@ -1178,7 +1181,7 @@ const OnboardingModal = ({
                             onClick={handleBack}
                             style={backButtonStyle}
                         >
-                            <i className="fas fa-arrow-left"></i> Back
+                            <i className="fas fa-arrow-left"></i> Retour
                         </Button>
                     )}
                     

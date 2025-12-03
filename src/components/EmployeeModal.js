@@ -141,13 +141,13 @@ const EmployeeModal = ({
       get(listRef)
         .then((snapshot) => {
           if (!snapshot.exists()) {
-            showNotification('No employee data available.', 'warning');
+            showNotification('Aucune donnée sur les employés n\'est disponible.', 'warning');
             return;
           }
           const entry = findEntryByName(snapshot.val(), selectedEmployeeName);
           const employeeData = entry ? entry[1] : null;
           if (!employeeData) {
-            showNotification('Employee data not found.', 'warning');
+            showNotification('Données de l\'employé introuvables.', 'warning');
             return;
           }
           setMissingEmployeeData({
@@ -161,7 +161,7 @@ const EmployeeModal = ({
         })
         .catch((err) => {
           console.error('Error fetching employee data:', err);
-          showNotification(`Failed to fetch employee data: ${err.message}`, 'error');
+          showNotification(`Échec de la récupération des données de l'employé : ${err.message}`, 'error');
         })
         .finally(() => setIsLoading(false));
     }
@@ -174,12 +174,12 @@ const EmployeeModal = ({
     if (actionType === 'addEmployee') {
       const isCoroner = employeeType === 'coroner';
       const required = isCoroner
-        ? { coronerName: 'Coroner Name', coronerDiscord: 'Discord', coronerRank: 'Rank', coronerBadge: 'Badge' }
-        : { coronerName: 'First Name', employeeLastName: 'Last Name', coronerRank: 'Rank' };
+        ? { coronerName: 'Nom du coroner', coronerDiscord: 'Discord', coronerRank: 'Grade', coronerBadge: 'Badge' }
+        : { coronerName: 'Prénom', employeeLastName: 'Nom de famille', coronerRank: 'Grade' };
 
       const missing = Object.keys(required).filter(k => !missingEmployeeData[k]?.trim());
       if (missing.length) {
-        showNotification(`Please fill in all required fields: ${missing.map(k => required[k]).join(', ')}`, 'warning');
+        showNotification(`Veuillez remplir tous les champs obligatoires : ${missing.map(k => required[k]).join(', ')}`, 'warning');
         setIsLoading(false);
         return;
       }
@@ -212,7 +212,7 @@ const EmployeeModal = ({
         const existing = snap.exists() ? ensureArray(snap.val()) : [];
         const dup = existing.some(m => (m?.name || '').toLowerCase() === newName.toLowerCase());
         if (dup) {
-          showNotification(`Staff member with name "${newName}" already exists.`, 'warning');
+          showNotification(`Le membre du personnel avec le nom "${newName}" existe déjà.`, 'warning');
           setIsLoading(false);
           return;
         }
@@ -221,13 +221,13 @@ const EmployeeModal = ({
         await set(newRef, payload);
 
         await handleMissingEmployeeSubmit('addEmployee', employeeType, newName, null, [], authorizedBy, missingEmployeeData, payload);
-        showNotification(`Successfully added ${newName} to the ${isCoroner ? 'coroner' : 'hospital staff'} list.`, 'success');
+        showNotification(`Ajout réussi de ${newName} à la liste des ${isCoroner ? 'coroners' : 'membres du personnel hospitalier'}.`, 'success');
 
         setRefreshData(prev => !prev);
         setMissingEmployeeData({ coronerName: '', coronerDiscord: '', employeeLastName: '', coronerRank: '', coronerPHNumber: '', coronerBadge: '' });
       } catch (err) {
         console.error('Error adding staff member:', err);
-        showNotification(`Error adding staff member: ${err.message}`, 'error');
+        showNotification(`Erreur lors de l'ajout du membre du personnel : ${err.message}`, 'error');
       } finally {
         setIsLoading(false);
       }
@@ -237,7 +237,7 @@ const EmployeeModal = ({
     // --- EDIT USER ---
     if (actionType === 'editUser') {
       if (!selectedEmployeeName) {
-        showNotification('No employee selected for edit.', 'warning');
+        showNotification('Aucun employé sélectionné pour la modification.', 'warning');
         setIsLoading(false);
         return;
       }
@@ -248,7 +248,7 @@ const EmployeeModal = ({
       try {
         const snap = await get(listRef);
         if (!snap.exists()) {
-          showNotification('No employee data found in the database.', 'error');
+          showNotification('Aucune donnée sur les employés n\'est disponible dans la base de données.', 'error');
           setIsLoading(false);
           return;
         }
@@ -256,7 +256,7 @@ const EmployeeModal = ({
         const data = snap.val();
         const entry = findEntryByName(data, selectedEmployeeName);
         if (!entry) {
-          showNotification(`Employee "${selectedEmployeeName}" not found in the database.`, 'error');
+          showNotification(`Employé "${selectedEmployeeName}" introuvable dans la base de données.`, 'error');
           setIsLoading(false);
           return;
         }
@@ -280,12 +280,12 @@ const EmployeeModal = ({
         await set(ref(database, `${basePath}/${key}`), updated);
 
         await handleMissingEmployeeSubmit('editUser', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated);
-        showNotification(`Successfully updated information for ${selectedEmployeeName}.`, 'success');
+        showNotification(`Mise à jour réussie des informations pour ${selectedEmployeeName}.`, 'success');
         setSelectedEmployeeName('');
         setRefreshData(prev => !prev);
       } catch (err) {
         console.error('Error updating employee information in Firebase:', err);
-        showNotification(`Error updating employee information: ${err.message}`, 'error');
+        showNotification(`Erreur lors de la mise à jour des informations de l'employé : ${err.message}`, 'error');
       } finally {
         setIsLoading(false);
       }
@@ -295,12 +295,12 @@ const EmployeeModal = ({
     // --- REMOVE STAFF ---
     if (actionType === 'removeStaff') {
       if (!staffToRemove?.length) {
-        showNotification('No staff members selected for removal.', 'warning');
+        showNotification('Aucun membre du personnel sélectionné pour la suppression.', 'warning');
         setIsLoading(false);
         return;
       }
       if (!authorizedBy?.trim()) {
-        showNotification('Authorization is required for staff removal.', 'warning');
+        showNotification('L\'autorisation est requise pour la suppression du personnel.', 'warning');
         setIsLoading(false);
         return;
       }
@@ -308,7 +308,7 @@ const EmployeeModal = ({
       try {
         const snap = await get(ref(database, 'staff'));
         if (!snap.exists()) {
-          showNotification('No staff data found in the database.', 'error');
+          showNotification('Aucune donnée sur le personnel n\'est disponible dans la base de données.', 'error');
           setIsLoading(false);
           return;
         }
@@ -336,11 +336,11 @@ const EmployeeModal = ({
         await update(ref(database), updates);
 
         await handleMissingEmployeeSubmit('removeStaff', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updates);
-        showNotification(`Successfully removed ${staffToRemove.length} staff member(s).`, 'success');
+        showNotification(`Suppression réussie de ${staffToRemove.length} membre(s) du personnel.`, 'success');
         setRefreshData(prev => !prev);
       } catch (err) {
         console.error('Error removing staff members from Firebase:', err);
-        showNotification(`Error removing staff members: ${err.message}`, 'error');
+        showNotification(`Erreur lors de la suppression des membres du personnel : ${err.message}`, 'error');
       } finally {
         setIsLoading(false);
       }
@@ -350,7 +350,7 @@ const EmployeeModal = ({
     // --- UPDATE RANK ---
     if (actionType === 'updateRank') {
       if (!selectedEmployeeName || !newRank?.trim()) {
-        showNotification('Please select an employee and enter a new rank.', 'warning');
+        showNotification('Veuillez sélectionner un employé et entrer un nouveau grade.', 'warning');
         setIsLoading(false);
         return;
       }
@@ -362,14 +362,14 @@ const EmployeeModal = ({
       try {
         const snap = await get(listRef);
         if (!snap.exists()) {
-          showNotification('No employee data found in the database.', 'error');
+          showNotification('Aucune donnée sur les employés n\'est disponible dans la base de données.', 'error');
           setIsLoading(false);
           return;
         }
 
         const entry = findEntryByName(snap.val(), selectedEmployeeName);
         if (!entry) {
-          showNotification(`Employee "${selectedEmployeeName}" not found in the database.`, 'error');
+          showNotification(`Employé "${selectedEmployeeName}" introuvable dans la base de données.`, 'error');
           setIsLoading(false);
           return;
         }
@@ -379,11 +379,11 @@ const EmployeeModal = ({
         await set(ref(database, `${basePath}/${key}`), updated);
 
         await handleMissingEmployeeSubmit('updateRank', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated);
-        showNotification(`Successfully updated ${selectedEmployeeName}'s rank.`, 'success');
+        showNotification(`Mise à jour réussie du grade de ${selectedEmployeeName}.`, 'success');
         setRefreshData(prev => !prev);
       } catch (err) {
         console.error('Error updating employee rank in Firebase:', err);
-        showNotification(`Error updating employee rank: ${err.message}`, 'error');
+        showNotification(`Erreur lors de la mise à jour du grade de l'employé : ${err.message}`, 'error');
       } finally {
         setIsLoading(false);
       }
@@ -425,28 +425,28 @@ const EmployeeModal = ({
     <div style={modalOverlayStyle} onClick={handleClose}>
       <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
         <div style={modalHeaderStyle}>
-          <h5 style={modalTitleStyle}>Manage Employee Data</h5>
+          <h5 style={modalTitleStyle}>Gérer les données des employés</h5>
           <button onClick={handleClose} style={closeButtonStyle} aria-label="Close modal">&times;</button>
         </div>
 
         <div style={modalBodyStyle}>
           <Form>
             <Form.Group controlId="actionTypeRadios" className="mb-3">
-              <Form.Label style={formLabelStyle}>Select Action:</Form.Label>
+              <Form.Label style={formLabelStyle}>Sélectionner une action :</Form.Label>
               <div className="mb-3">
-                <Form.Check inline label="Add Employee" name="actionType" type="radio"
+                <Form.Check inline label="Ajouter un employé" name="actionType" type="radio"
                   id="addEmployee-radio" value="addEmployee"
                   checked={actionType === 'addEmployee'}
                   onChange={() => handleActionTypeChange('addEmployee')} />
-                <Form.Check inline label="Change Employee Details" name="actionType" type="radio"
+                <Form.Check inline label="Modifier les détails de l'employé" name="actionType" type="radio"
                   id="editUser-radio" value="editUser"
                   checked={actionType === 'editUser'}
                   onChange={() => handleActionTypeChange('editUser')} />
-                <Form.Check inline label="Remove Staff" name="actionType" type="radio"
+                <Form.Check inline label="Supprimer un employé" name="actionType" type="radio"
                   id="removeStaff-radio" value="removeStaff"
                   checked={actionType === 'removeStaff'}
                   onChange={() => handleActionTypeChange('removeStaff')} />
-                <Form.Check inline label="Update Rank" name="actionType" type="radio"
+                <Form.Check inline label="Mettre à jour le grade" name="actionType" type="radio"
                   id="updateRank-radio" value="updateRank"
                   checked={actionType === 'updateRank'}
                   onChange={() => handleActionTypeChange('updateRank')} />
@@ -455,13 +455,13 @@ const EmployeeModal = ({
 
             {(actionType === 'addEmployee' || actionType === 'updateRank') && (
               <Form.Group controlId="employeeTypeRadios" className="mb-3">
-                <Form.Label style={formLabelStyle}>Select Employee Type:</Form.Label>
+                <Form.Label style={formLabelStyle}>Sélectionner le type d'employé :</Form.Label>
                 <div className="mb-3">
-                  <Form.Check inline label="Coroner" name="employeeType" type="radio"
+                  <Form.Check inline label="DMEC" name="employeeType" type="radio"
                     id="coroner-radio" value="coroner"
                     checked={employeeType === 'coroner'}
                     onChange={() => handleEmployeeTypeChange('coroner')} />
-                  <Form.Check inline label="Hospital Staff" name="employeeType" type="radio"
+                  <Form.Check inline label="Personnel hospitalier" name="employeeType" type="radio"
                     id="hospitalStaff-radio" value="hospitalStaff"
                     checked={employeeType === 'hospitalStaff'}
                     onChange={() => handleEmployeeTypeChange('hospitalStaff')} />
@@ -475,27 +475,27 @@ const EmployeeModal = ({
                   <>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
-                        onChange={handleInputChange} placeholder="Coroner Name" required style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Nom du coroner" required style={formControlStyle} />
                       <Form.Control type="text" name="coronerDiscord" value={missingEmployeeData.coronerDiscord}
-                        onChange={handleInputChange} placeholder="Coroner Discord Name" required style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Nom Discord du coroner" required style={formControlStyle} />
                       <Form.Control type="text" name="coronerRank" value={missingEmployeeData.coronerRank}
-                        onChange={handleInputChange} placeholder="Coroner Rank / Position" required style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Grade / Poste du coroner" required style={formControlStyle} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                       <Form.Control type="text" name="coronerPHNumber" value={missingEmployeeData.coronerPHNumber}
-                        onChange={handleInputChange} placeholder="Coroner PH number (Optional)" style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Numéro PH du coroner (Optionnel)" style={formControlStyle} />
                       <Form.Control type="text" name="coronerBadge" value={missingEmployeeData.coronerBadge}
-                        onChange={handleInputChange} placeholder="Coroner Badge Number" required style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Numéro de badge du coroner" required style={formControlStyle} />
                     </div>
                   </>
                 ) : (
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
-                      onChange={handleInputChange} placeholder="Employee First Name" required style={formControlStyle} />
+                      onChange={handleInputChange} placeholder="Prénom de l'employé" required style={formControlStyle} />
                     <Form.Control type="text" name="employeeLastName" value={missingEmployeeData.employeeLastName}
-                      onChange={handleInputChange} placeholder="Employee Last Name" required style={formControlStyle} />
+                      onChange={handleInputChange} placeholder="Nom de l'employé" required style={formControlStyle} />
                     <Form.Control type="text" name="coronerRank" value={missingEmployeeData.coronerRank}
-                      onChange={handleInputChange} placeholder="Employee Rank / Position" required style={formControlStyle} />
+                      onChange={handleInputChange} placeholder="Grade / Poste de l'employé" required style={formControlStyle} />
                   </div>
                 )}
               </>
@@ -503,7 +503,7 @@ const EmployeeModal = ({
 
             {actionType === 'removeStaff' && (
               <>
-                <Form.Label style={formLabelStyle}>Staff to Remove:</Form.Label>
+                <Form.Label style={formLabelStyle}>Personnel à retirer :</Form.Label>
                 <Select
                   isMulti
                   name="staffToRemove"
@@ -511,15 +511,15 @@ const EmployeeModal = ({
                   value={combinedStaffOptions.filter(o => staffToRemove.includes(o.value))}
                   onChange={handleRemoveStaffChange}
                   isClearable
-                  placeholder="Select staff member(s) to remove..."
+                  placeholder="Sélectionner le(s) membre(s) du personnel à retirer..."
                   styles={reactSelectStyles}
                   className="mb-2"
                 />
-                <Form.Label style={formLabelStyle}>Authorized By:</Form.Label>
+                <Form.Label style={formLabelStyle}>Autorisé par :</Form.Label>
                 <Form.Control type="text" name="authorizedBy" value={authorizedBy}
-                  onChange={handleAuthorizedByChange} placeholder="Your Name (Authorizing Removal)" required style={formControlStyle} />
+                  onChange={handleAuthorizedByChange} placeholder="Votre nom (Autorisation de retrait)" required style={formControlStyle} />
                 <span className="helper-text" style={{ color: '#6c757d', display: 'block', marginTop: '5px' }}>
-                  (Only authorized personnel should submit removal requests.)
+                  (Seul le personnel autorisé doit soumettre les demandes de retrait.)
                 </span>
               </>
             )}
@@ -527,13 +527,13 @@ const EmployeeModal = ({
             {actionType === 'editUser' && (
               <>
                 <Form.Group controlId="employeeTypeRadios" className="mb-3">
-                  <Form.Label style={formLabelStyle}>Select Employee Type:</Form.Label>
+                  <Form.Label style={formLabelStyle}>Sélectionner le type d'employé :</Form.Label>
                   <div className="mb-3">
-                    <Form.Check inline label="Coroner" name="employeeType" type="radio"
+                    <Form.Check inline label="DMEC" name="employeeType" type="radio"
                       id="coroner-radio-2" value="coroner"
                       checked={employeeType === 'coroner'}
                       onChange={() => handleEmployeeTypeChange('coroner')} />
-                    <Form.Check inline label="Hospital Staff" name="employeeType" type="radio"
+                    <Form.Check inline label="Personnel hospitalier" name="employeeType" type="radio"
                       id="hospitalStaff-radio-2" value="hospitalStaff"
                       checked={employeeType === 'hospitalStaff'}
                       onChange={() => handleEmployeeTypeChange('hospitalStaff')} />
@@ -541,14 +541,14 @@ const EmployeeModal = ({
                 </Form.Group>
 
                 <Form.Group controlId="coronerEmployeeSelect" className="mb-3">
-                  <Form.Label style={formLabelStyle}>Select Employee</Form.Label>
+                  <Form.Label style={formLabelStyle}>Sélectionner l'employé</Form.Label>
                   <Select
                     name="coronerEmployeeSelect"
                     options={employeeOptions}
                     value={employeeOptions.find(o => o.value === selectedEmployeeName)}
                     onChange={handleSelectChange}
                     isClearable
-                    placeholder="Search or select employee..."
+                    placeholder="Rechercher ou sélectionner un employé..."
                     styles={reactSelectStyles}
                   />
                 </Form.Group>
@@ -556,32 +556,32 @@ const EmployeeModal = ({
                 {employeeType === 'coroner' ? (
                   <>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Coroner Name</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated coroner name..."
+                      <Form.Label style={formLabelStyle}>Entrer le nom mis à jour du coroner</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le nom mis à jour du coroner..."
                         value={missingEmployeeData.coronerName} onChange={handleInputChange}
                         name="coronerName" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Coroner Discord</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated coroner discord..."
+                      <Form.Label style={formLabelStyle}>Entrer le Discord mis à jour du coroner</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le Discord mis à jour du coroner..."
                         value={missingEmployeeData.coronerDiscord} onChange={handleInputChange}
                         name="coronerDiscord" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Coroner Rank</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated coroner rank..."
+                      <Form.Label style={formLabelStyle}>Entrer le rang mis à jour du coroner</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le rang mis à jour du coroner..."
                         value={missingEmployeeData.coronerRank} onChange={handleInputChange}
                         name="coronerRank" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Coroner Badge</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated coroner badge..."
+                      <Form.Label style={formLabelStyle}>Entrer le badge mis à jour du coroner</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le badge mis à jour du coroner..."
                         value={missingEmployeeData.coronerBadge} onChange={handleInputChange}
                         name="coronerBadge" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Coroner PH Number</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated coroner ph number..."
+                      <Form.Label style={formLabelStyle}>Entrer le numéro de téléphone mis à jour du coroner</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le numéro de téléphone mis à jour du coroner..."
                         value={missingEmployeeData.coronerPHNumber} onChange={handleInputChange}
                         name="coronerPHNumber" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
@@ -589,20 +589,20 @@ const EmployeeModal = ({
                 ) : (
                   <>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated First Name</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated first name..."
+                      <Form.Label style={formLabelStyle}>Entrer le prénom mis à jour</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le prénom mis à jour..."
                         value={missingEmployeeData.coronerName} onChange={handleInputChange}
                         name="coronerName" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Last Name</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated last name..."
+                      <Form.Label style={formLabelStyle}>Entrer le nom de famille mis à jour</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le nom de famille mis à jour..."
                         value={missingEmployeeData.employeeLastName} onChange={handleInputChange}
                         name="employeeLastName" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Enter Updated Rank</Form.Label>
-                      <Form.Control type="text" placeholder="Enter updated rank..."
+                      <Form.Label style={formLabelStyle}>Entrer le rang mis à jour</Form.Label>
+                      <Form.Control type="text" placeholder="Entrer le rang mis à jour..."
                         value={missingEmployeeData.coronerRank} onChange={handleInputChange}
                         name="coronerRank" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
@@ -614,23 +614,23 @@ const EmployeeModal = ({
             {actionType === 'updateRank' && (
               <>
                 <Form.Group controlId="coronerEmployeeSelect2" className="mb-3">
-                  <Form.Label style={formLabelStyle}>Select Employee</Form.Label>
+                  <Form.Label style={formLabelStyle}>Sélectionner un employé</Form.Label>
                   <Select
                     name="coronerEmployeeSelect2"
                     options={employeeOptions}
                     value={employeeOptions.find(o => o.value === selectedEmployeeName)}
                     onChange={handleSelectChange}
                     isClearable
-                    placeholder="Search or select employee..."
+                    placeholder="Rechercher ou sélectionner un employé..."
                     styles={reactSelectStyles}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label style={formLabelStyle}>Enter Updated Rank</Form.Label>
+                  <Form.Label style={formLabelStyle}>Entrer le rang mis à jour</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder={employeeType === 'coroner' ? 'Enter updated rank name...' : 'Enter updated position name...'}
+                    placeholder={employeeType === 'coroner' ? 'Entrer le rang mis à jour...' : 'Entrer le poste mis à jour...'}
                     value={newRank}
                     onChange={handleNewRankChange}
                     disabled={!selectedEmployeeName}
@@ -644,10 +644,10 @@ const EmployeeModal = ({
 
         <div style={modalFooterStyle}>
           <Button variant="primary" onClick={handleSubmit} disabled={isLoading}>
-            Submit Request
+            Soumettre la demande
           </Button>
           <Button variant="secondary" onClick={handleClose}>
-            Cancel
+            Annuler
           </Button>
         </div>
       </div>
