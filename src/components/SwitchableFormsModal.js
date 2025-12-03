@@ -120,7 +120,7 @@ const getRecruitmentButtonProps = (
     }
 
     let buttonText = baseText;
-    let buttonTitle = `${groupDisplayName || 'Recruitment'} Status`;
+    let buttonTitle = `${groupDisplayName || 'Recrutement'} Statut`;
     let dynamicStyle = { ...baseStyle };
     dynamicStyle.height = 'auto';
     dynamicStyle.minHeight = baseStyle.height || '8rem';
@@ -129,18 +129,18 @@ const getRecruitmentButtonProps = (
     dynamicStyle.paddingBottom = '0.75rem';
 
     if (!statusKnown) {
-        buttonText += " - Status Unknown"; // Changed from "Status Data Missing"
-        buttonTitle = `${groupDisplayName || 'Recruitment'} status could not be loaded or is not configured.`;
+        buttonText += " - Statut Inconnu"; // Changed from "Status Data Missing"
+        buttonTitle = `${groupDisplayName || 'Recrutement'} le statut n'a pas pu être chargé ou n'est pas configuré.`;
         dynamicStyle.color = '#6c757d';
         dynamicStyle.borderColor = '#6c757d';
     } else if (overallRecruitmentOpen) {
-        buttonText += ` - Open (${openPositionDetails.length})`;
-        buttonTitle = `Open Positions for ${groupDisplayName || 'Recruitment'}: ${openPositionDetails.join(', ') || 'None'}\n\nAll Statuses:\n${allPositionsStatusMessages.join('\n')}`;
+        buttonText += ` - Ouvert (${openPositionDetails.length})`;
+        buttonTitle = `Positions Ouvertes pour ${groupDisplayName || 'Recrutement'}: ${openPositionDetails.join(', ') || 'Aucun'}\n\nTous les Statuts:\n${allPositionsStatusMessages.join('\n')}`;
         dynamicStyle.color = '#28a745';
         dynamicStyle.borderColor = '#28a745';
     } else {
-        buttonText += " - Closed";
-        buttonTitle = `All ${groupDisplayName || 'Recruitment'} positions are currently closed or no open positions are listed.\n\nAll Statuses:\n${allPositionsStatusMessages.join('\n')}`;
+        buttonText += " - Fermé";
+        buttonTitle = `Toutes les positions de ${groupDisplayName || 'Recrutement'} sont actuellement fermées ou aucune position ouverte n'est répertoriée.\n\nTous les Statuts:\n${allPositionsStatusMessages.join('\n')}`;
         dynamicStyle.color = '#dc3545';
         dynamicStyle.borderColor = '#dc3545';
     }
@@ -194,11 +194,13 @@ const SwitchableFormsModal = ({
         // Only use personalized forms if we have any, otherwise show all
         formsToDisplay = personalizedForms.length > 0 ? personalizedForms : forms;
     } else {
+        // When showing all forms, show all forms without user type filtering
         formsToDisplay = forms;
     }
     
     // Filter forms based on user preferences (existing functionality)
-    const filteredForms = userPreferences ? formsToDisplay.filter(form => {
+    // Only apply userTypes filter when showing personalized forms
+    const filteredForms = (showPersonalizedForms && userPreferences) ? formsToDisplay.filter(form => {
         // If no userTypes specified on form, show to everyone
         if (!form.userTypes) return true;
         
@@ -233,7 +235,7 @@ const SwitchableFormsModal = ({
         }
         
         const baseTitle = title.replace(/^Select\\s+/, ''); // Remove "Select " prefix if present
-        const modeText = showPersonalizedForms ? 'My' : 'All';
+        const modeText = showPersonalizedForms ? 'Mes' : 'Tous';
         return `${modeText} ${baseTitle} (${filteredForms.length})`;
     };
 
@@ -273,14 +275,14 @@ const SwitchableFormsModal = ({
                                     minWidth: '80px'
                                 }}
                             >
-                                {showPersonalizedForms ? 'Show All' : 'Show My Forms'}
+                                {showPersonalizedForms ? 'Afficher tout' : 'Afficher mes formulaires'}
                             </Button>
                         )}
                         <button
                             type="button"
                             style={modalCloseButtonStyle}
                             onClick={onHide}
-                            aria-label="Close selector"
+                            aria-label="Fermer le sélecteur"
                         >
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -298,8 +300,8 @@ const SwitchableFormsModal = ({
                             color: '#e3f2fd'
                         }}>
                             <i className="fas fa-info-circle" style={{ marginRight: '0.5rem', color: '#007bff' }}></i>
-                            Showing your personalized forms based on your onboarding preferences. 
-                            <strong>Click "Show All"</strong> to see all available forms.
+                            Affichage de vos formulaires personnalisés en fonction de vos préférences d'intégration. 
+                            <strong>Cliquez sur "Afficher tout"</strong> pour voir tous les formulaires disponibles.
                         </div>
                     )}
                     <div style={gridContainerStyle}>
@@ -359,8 +361,8 @@ const SwitchableFormsModal = ({
                                 } else if (currentRecruitmentDataSource === undefined) {
                                     // This is the case that was causing critical logs.
                                     // We still mark it as a recruitment form for styling, but acknowledge status is unknown.
-                                    buttonDisplayProps.text = `${form.name} - Status Unknown`;
-                                    buttonDisplayProps.title = `${groupDisplayName} status could not be loaded or is not configured.`;
+                                    buttonDisplayProps.text = `${form.name} - Statut Inconnu`;
+                                    buttonDisplayProps.title = `${groupDisplayName} le statut n'a pas pu être chargé ou n'est pas configuré.`;
                                     buttonDisplayProps.style = {
                                         ...formButtonStyle,
                                         height: 'auto',
@@ -416,25 +418,25 @@ const SwitchableFormsModal = ({
                                             <>
                                                 {buttonDisplayProps.openPositions.length > 0 && (
                                                     <div style={{...positionStatusListStyle, alignSelf: 'stretch'}}>
-                                                        <strong style={openStatusStyle}>Open:</strong>
+                                                        <strong style={openStatusStyle}>Ouvert :</strong>
                                                         <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
                                                             {buttonDisplayProps.openPositions.slice(0, 9).map(pos => <li key={`open-${form.version}-${pos}`}>{pos}</li>)}
-                                                            {buttonDisplayProps.openPositions.length > 9 && <li>...and more</li>}
+                                                            {buttonDisplayProps.openPositions.length > 9 && <li>... et plus</li>}
                                                         </ul>
                                                     </div>
                                                 )}
                                                 {buttonDisplayProps.closedPositions.length > 0 && (
                                                     <div style={{...positionStatusListStyle, alignSelf: 'stretch'}}>
-                                                        <strong style={closedStatusStyle}>Closed:</strong>
+                                                        <strong style={closedStatusStyle}>Fermé :</strong>
                                                         <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
                                                             {buttonDisplayProps.closedPositions.slice(0, 3).map(pos => <li key={`closed-${form.version}-${pos}`}>{pos}</li>)}
-                                                            {buttonDisplayProps.closedPositions.length > 3 && <li>...and more</li>}
+                                                            {buttonDisplayProps.closedPositions.length > 3 && <li>... et plus</li>}
                                                         </ul>
                                                     </div>
                                                 )}
                                                 {buttonDisplayProps.openPositions.length === 0 && buttonDisplayProps.closedPositions.length === 0 && (
                                                      <div style={{...positionStatusListStyle, textAlign: 'center', color: '#6c757d', alignSelf: 'stretch'}}>
-                                                        No positions listed.
+                                                        Aucune position répertoriée.
                                                     </div>
                                                 )}
                                             </>

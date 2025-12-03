@@ -83,7 +83,7 @@ export const generateAdminView = (viewData) => {
         const statusEntries = Object.entries(viewData.adminDisplayData).map(([key, position]) => {
             const displayName = position.displayName || position.name || key;
             const status = position.status || 'N/A';
-            const statusColor = status === "OUVERT" ? "green" : "red";
+            const statusColor = status === "OPEN" ? "green" : "red";
             // Format each position and its status, using color for visual cue
             return `${displayName}: [color=${statusColor}]${status}[/color]`;
         });
@@ -177,7 +177,7 @@ export const formDefinitions = [
     { version: 35, name: "Certificat de Maladie", group: "PHMC", icon: emailIcon, generator: generateSicknessEmail, FieldComponent: SicknessEmail, titleKey: "certificatMaladie", sortOrder: 33, isHiddenInSelector: true, titleGenerator: (formData) => `Certificat de Maladie: ${formData.phmcEmployee || 'Inconnu'}`, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] }, // No FieldComponent for this one
     {
         version: 50,
-        name: "Carrières Médicales",
+        name: "Postes Médicaux",
         group: "PHMC Recruitment",
         icon: application,
         generator: generatePhysician,
@@ -190,7 +190,7 @@ export const formDefinitions = [
     },
     {
         version: 51,
-        name: "Carrières Psychologue/Psychiatre",
+        name: "Postes Psychologue/Psychiatre",
         group: "PHMC Recruitment",
         icon: application,
         generator: generatePsych,
@@ -203,7 +203,7 @@ export const formDefinitions = [
     },
     {
         version: 52,
-        name: "Carrières Administration",
+        name: "Postes Administratifs",
         group: "PHMC Recruitment",
         icon: application,
         generator: admin,
@@ -216,7 +216,7 @@ export const formDefinitions = [
     },
     {
         version: 53,
-        name: "Carrières Infirmières",
+        name: "Postes Infirmiers",
         group: "PHMC Recruitment",
         icon: application,
         generator: nursing,
@@ -229,7 +229,7 @@ export const formDefinitions = [
     },
     {
         version: 54,
-        name: "Carrières DMEC",
+        name: "Postes DMEC",
         group: "PHMC Recruitment",
         icon: application,
         generator: generateCoroner,
@@ -242,7 +242,7 @@ export const formDefinitions = [
     },
     {
         version: 55,
-        name: "Carrières EMS",
+        name: "Postes EMS",
         group: "PHMC Recruitment",
         icon: application,
         generator: generateEMS,

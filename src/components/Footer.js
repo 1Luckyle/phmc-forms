@@ -12,9 +12,9 @@ const Footer = () => {
         <div className="header-info-wrapper">
             <div className="header-info">
                 <span className="contact-info">
-                    PROUDLY PROVIDED TO GTA WORLD (EU). ICONS KINDLY PROVIDED BY FLATICON.
+                    FOURNI À GTA WORLD (EU). ICÔNES FOURNIES PAR FLATICON.
                 </span>
-                <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">View Privacy Policy</button>
+                <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">Voir la politique de confidentialité</button>
             </div>
             <PrivacyPolicyModal isOpen={isPrivacyPolicyModalOpen} onClose={togglePrivacyPolicyModal} />
         </div>

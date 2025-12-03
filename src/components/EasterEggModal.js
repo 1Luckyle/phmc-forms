@@ -34,19 +34,19 @@ const easterEggModalFooterStyle = {
 
 // --- Content Definitions ---
 const normalContent = {
-    title: "🎉 GRASS DLC: UNLOCKED! 🎉",
-    text: "Okay we need to have a talk",
+    title: "🎉 DLC TOUCHER DE L'HERBE : DÉVERROUILLÉ ! 🎉",
+    text: "Bon, il faut qu'on parle",
     imageUrl: "https://media1.tenor.com/m/cXYPZhsqJlkAAAAC/chien-perplexe.gif",
     altText: "Confused Dog GIF",
-    footerText: "Your love for paperwork concerns me... thanks for the hard work though!"
+    footerText: "Votre goût pour la paperasserie m'inquiète... merci quand même pour votre excellent travail !"
 };
 
 const rareContent = {
-    title: "✨ STOP CRIMINAL SCUM! ✨",
-    text: "So you have found something so rare, you must ping Jade Stewart and let her know she's stinky",
+    title: "✨ ARRÊTEZ, CRIMINELS ! ✨",
+    text: "Vous avez trouvé quelque chose d'aussi rare, vous devez prévenir Jade Stewart et lui faire savoir qu'elle pue",
     imageUrl: "https://media1.tenor.com/m/FPj2Ns2pFugAAAAd/oblivion-elder-scrolls.gif",
     altText: "Dean Pelton Amazed GIF",
-    footerText: "Seriously, this is a 1 in 100000 chance! But congrats on finding this!"
+    footerText: "Sérieusement, c'est une chance sur 100000 ! Mais félicitations pour l'avoir trouvé !"
 };
 const EasterEggModal = ({ show, onHide, type = 'normal' }) => { // Default to 'normal'
     if (!show) {
@@ -80,7 +80,7 @@ const EasterEggModal = ({ show, onHide, type = 'normal' }) => { // Default to 'n
 
                 <div style={easterEggModalFooterStyle}>
                     <Button variant="secondary" onClick={onHide}>
-                        Close
+                        Fermer
                     </Button>
                 </div>
             </div>

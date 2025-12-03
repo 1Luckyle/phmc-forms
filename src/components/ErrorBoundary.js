@@ -57,7 +57,7 @@ class ErrorBoundary extends Component {
             <div style={iconStyle}>
                 <i className="fas fa-exclamation-triangle"></i>
             </div>
-            <span>FATAL ERROR! Please ping Alyson in the PHMC Discord or post a Bug Report!</span>
+            <span>ERREUR FATALE ! Veuillez contacter Luckyle sur le Discord de PHMC ou signaler le bug !</span>
             <button onClick={this.handleOkClick} style={buttonStyle}>OK</button>
           </div>
           {/* We still render the children to keep the UI visible */}

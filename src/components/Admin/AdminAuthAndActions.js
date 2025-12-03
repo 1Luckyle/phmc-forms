@@ -96,15 +96,15 @@ const sendAdminActionWebhook = async (adminEmail, action, details, categoryName 
 
     // Simplified description for a cleaner look
     const description = categoryName
-        ? `**Action:** ${action || "Unknown Action"}\n**Admin:** ${adminEmail || "Unknown"}\n**Category:** ${categoryName}`
-        : `**Action:** ${action || "Unknown Action"}\n**Admin:** ${adminEmail || "Unknown"}`;
+        ? `**Action:** ${action || "Action Inconnue"}\n**Admin:** ${adminEmail || "Inconnu"}\n**Catégorie:** ${categoryName}`
+        : `**Action:** ${action || "Action Inconnue"}\n**Admin:** ${adminEmail || "Inconnu"}`;
 
     const embed = {
-        title: "Admin Action Logged",
+        title: "Action Admin Enregistrée",
         color: 0xFFA500, // Orange
         description: description,
         fields: [
-            { name: "Details", value: `\`\`\`${details.substring(0, 1000)}\`\`\``, inline: false },
+            { name: "Détails", value: `\`\`\`${details.substring(0, 1000)}\`\`\``, inline: false },
         ],
         timestamp: new Date().toISOString(),
         footer: { text: `PHMC-FR Tools | ${userTimezone}` }
@@ -148,7 +148,7 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
 
     const handleGtaWorldLogin = () => {
         // Replace with your actual client ID and callback URL
-        const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'YOUR_CLIENT_ID';
+        const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'VOTRE_ID_CLIENT';
         const redirectUri = encodeURIComponent(window.location.origin + '/auth/gta/callback');
         const authUrl = `https://ucp-fr.gta.world/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
         window.location.href = authUrl;
@@ -258,22 +258,22 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
             showInAppNotification(`Service statuses updated.`, "check-circle");
             sendAdminActionWebhook(
                 currentUser.email,
-                "Updated Service Status",
-                `Form Generator: ${formGeneratorStatus}\
-Alternative Form Generator: ${alternativeFormGeneratorStatus}\
+                "État du service mis à jour",
+                `Générateur de formulaires: ${formGeneratorStatus}\
+Générateur de formulaires alternatif: ${alternativeFormGeneratorStatus}\
 Localhost/Staging: ${localHostStatus}`,
-                "Service Status",
+                "État du service",
                 userAgent,
                 timeZone
             );
         } catch (error) {
             console.error("Error updating service status:", error);
-            showInAppNotification("Failed to update service statuses.", "error");
+            showInAppNotification("Échec de la mise à jour des états du service.", "error");
             sendAdminActionWebhook(
                 currentUser.email,
-                "Failed to Update Service Status",
-                `Error: ${error.message}`,
-                "Service Status",
+                "Échec de la mise à jour des états du service",
+                `Erreur: ${error.message}`,
+                "État du service",
                 userAgent,
                 timeZone
             );
@@ -288,26 +288,26 @@ Localhost/Staging: ${localHostStatus}`,
         const { userAgent, timeZone } = getUserContext();
         try {
             await update(lockdownRef, lockdownConfig);
-            showInAppNotification(`Lockdown status updated.`, "check-circle");
+            showInAppNotification(`État de confinement mis à jour.`, "check-circle");
             sendAdminActionWebhook(
                 currentUser.email,
-                "Updated Lockdown Status",
-                `Enabled: ${lockdownConfig.enabled}\
+                "Mise à jour sur l'état du confinement",
+                `Activé: ${lockdownConfig.enabled}\
 Notification: ${lockdownConfig.notification}\
-Dialog: ${lockdownConfig.dialog}\
-Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
-                "Lockdown Status",
+Dialogue: ${lockdownConfig.dialog}\
+Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
+                "État du confinement",
                 userAgent,
                 timeZone
             );
         } catch (error) {
             console.error("Error updating lockdown status:", error);
-            showInAppNotification("Failed to update lockdown status.", "error");
+            showInAppNotification("Échec de la mise à jour de l'état du confinement.", "error");
             sendAdminActionWebhook(
                 currentUser.email,
-                "Failed to Update Lockdown Status",
-                `Error: ${error.message}`,
-                "Lockdown Status",
+                "Échec de la mise à jour de l'état du confinement",
+                `Erreur: ${error.message}`,
+                "État du confinement",
                 userAgent,
                 timeZone
             );
@@ -321,13 +321,13 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
         const { userAgent, timeZone } = getUserContext();
 
         if (!webhookURL) {
-            if (showInAppNotification) showInAppNotification('Webhook URL (REACT_APP_LEO_WEBHOOK_URL) not configured.', 'error');
+            if (showInAppNotification) showInAppNotification('URL du webhook (REACT_APP_LEO_WEBHOOK_URL) non configurée.', 'error');
             Sentry.captureMessage("CCTV Test Webhook URL not configured", "error");
             return false; // Indicate failure
         }
 
         const embed = {
-            title: "(( 📹 Alert from the System Administrator )) ",
+            title: "(( 📹 Alerte de l'administrateur système )) ",
             color: 0x5865F2, // Discord Blurplenull
             fields: [
                 { name: "Notes:", value: cctvData.rank || "N/A", inline: true },
@@ -342,7 +342,7 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
                 ...(cctvData.oocNotes ? [{ name: "OOC Notes", value: ```${cctvData.oocNotes}```, inline: false }] : []),
  */            ],
             timestamp: new Date().toISOString(),
-            footer: { text: "PHMC-FR Tools - Developer Notification Service" }
+            footer: { text: "PHMC-FR Tools - Service de notification pour les développeurs" }
         };
 
         try {
@@ -356,17 +356,17 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
                 const errorText = await response.text();
                 console.error(`Failed to send CCTV test webhook. Status: ${response.status}`, errorText);
                 Sentry.captureMessage(`CCTV Test Webhook failed: ${response.status}`, { level: 'error', extra: { responseBody: errorText } });
-                if (showInAppNotification) showInAppNotification(`Failed to send test webhook. Status: ${response.status}`, 'error');
+                if (showInAppNotification) showInAppNotification(`Échec de l'envoi du webhook de test. Statut: ${response.status}`, 'error');
                 return false;
             } else {
-                if (showInAppNotification) showInAppNotification('CCTV Test Webhook sent successfully!', "check-circle");
-                sendAdminActionWebhook(currentUser?.email, "Sent CCTV Test Webhook", `Sent a test webhook for a CCTV request to the dev channel.`, "Developer Testing", userAgent, timeZone);
+                if (showInAppNotification) showInAppNotification('Webhook de test CCTV envoyé avec succès !', "check-circle");
+                sendAdminActionWebhook(currentUser?.email, "Webhook de test de vidéosurveillance envoyé", `Un webhook de test pour une demande de vidéosurveillance a été envoyé au canal de développement.`, "Developer Testing", userAgent, timeZone);
                 return true;
             }
         } catch (error) {
             console.error('Error sending CCTV test webhook:', error);
             Sentry.captureException(error, { extra: { context: 'CCTV Test Webhook Submission' } });
-            if (showInAppNotification) showInAppNotification('A network error occurred sending the test webhook.', "error");
+            if (showInAppNotification) showInAppNotification('Une erreur réseau est survenue lors de l\'envoi du webhook de test.', "error");
             return false;
         }
     };
@@ -401,8 +401,8 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
     const fetchRecruitmentDataForCategory = useCallback(async (categoryKey) => {
         if (!categoryKey || !recruitmentCategories[categoryKey]) {
             setCurrentRecruitmentData({});
-            setFormData(prev => ({ ...prev, adminDisplayData: null, adminSelectedCategoryName: categoryKey ? "Invalid Category" : null }));
-            if (showInAppNotification) showInAppNotification("Invalid recruitment category selected.", "error");
+            setFormData(prev => ({ ...prev, adminDisplayData: null, adminSelectedCategoryName: categoryKey ? "Catégorie invalide" : null }));
+            if (showInAppNotification) showInAppNotification("Catégorie de recrutement invalide sélectionnée.", "error");
             return;
         }
         setIsLoadingRecruitmentData(true);
@@ -417,11 +417,11 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
             } else {
                 setCurrentRecruitmentData({});
                 setFormData(prev => ({ ...prev, adminDisplayData: null, adminSelectedCategoryName: categoryConfig.displayName }));
-                if (showInAppNotification) showInAppNotification(`No data found for ${categoryConfig.displayName}.`, "warning");
+                if (showInAppNotification) showInAppNotification(`Aucune donnée trouvée pour ${categoryConfig.displayName}.`, "warning");
             }
         } catch (dbError) {
             console.error(`Error fetching data for ${categoryConfig.displayName}:`, dbError);
-            if (showInAppNotification) showInAppNotification(`Failed to load data for ${categoryConfig.displayName}.`, "error");
+            if (showInAppNotification) showInAppNotification(`Échec du chargement des données pour ${categoryConfig.displayName}.`, "error");
             setCurrentRecruitmentData({});
             setFormData(prev => ({ ...prev, adminDisplayData: null, adminSelectedCategoryName: categoryConfig.displayName }));
         } finally {
@@ -441,17 +441,17 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
                 // User just logged in
                 setCurrentUser(user);
                 setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email, adminDisplayData: null, adminSelectedCategoryName: null }));
-                sendAdminActionWebhook(user.email, "Admin Login", "User successfully logged in to the Admin Panel.", null, userAgent, timeZone);
-                if (showInAppNotification) showInAppNotification(`Welcome, ${user.email}!`, "check-circle");
+                sendAdminActionWebhook(user.email, "Connexion Admin", "L'utilisateur s'est connecté avec succès au panneau d'administration.", null, userAgent, timeZone);
+                if (showInAppNotification) showInAppNotification(`Bienvenue, ${user.email}!`, "check-circle");
             } else if (!isLoggedIn && wasLoggedIn) {
                 // User just logged out
-                const loggedOutEmail = currentUser?.email || "Unknown User";
+                const loggedOutEmail = currentUser?.email || "Inconnu";
                 setCurrentUser(null);
                 setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null, adminDisplayData: null, adminSelectedCategoryName: null }));
                 setCurrentRecruitmentData({});
                 setSelectedRecruitmentCategory('');
-                sendAdminActionWebhook(loggedOutEmail, "Admin Logout", "User successfully logged out from the Admin Panel.", null, userAgent, timeZone);
-                if (showInAppNotification) showInAppNotification(`Logged out from Admin Panel.`, "info-circle");
+                sendAdminActionWebhook(loggedOutEmail, "Déconnexion Admin", "L'utilisateur s'est déconnecté avec succès du panneau d'administration.", null, userAgent, timeZone);
+                if (showInAppNotification) showInAppNotification(`Déconnecté du panneau d'administration.`, "info-circle");
             } else if (isLoggedIn && wasLoggedIn) {
                 // User is still logged in (e.g., component re-rendered)
                 setCurrentUser(user);
@@ -485,14 +485,14 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
             await signInWithEmailAndPassword(auth, email, password);
             // onAuthStateChanged will handle the success case
         } catch (err) {
-            setError(err.message || "Failed to login.");
+            setError(err.message || "Échec de la connexion.");
             setIsLoadingAuth(false);
 
             Sentry.captureException(err, {
                 level: 'warning',
                 extra: {
                     email: email, // Log the email that was used for the attempt.
-                    context: 'Admin Login Attempt'
+                    context: "Tentative de connexion Admin"
                 },
                 tags: {
                     login_result: 'failure'
@@ -500,8 +500,8 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
             });
             // --- MODIFICATION END ---
 
-            sendAdminActionWebhook(email, "Admin Login Failed", `Attempted login with email: ${email}. Error: ${err.message}`, null, userAgent, timeZone);
-            if (showInAppNotification) showInAppNotification(`Login failed: ${err.message}`, "error");
+            sendAdminActionWebhook(email, "Échec de la connexion Admin", `Tentative de connexion avec l'email : ${email}. Erreur : ${err.message}`, null, userAgent, timeZone);
+            if (showInAppNotification) showInAppNotification(`Échec de la connexion : ${err.message}`, "error");
         }
     };
 
@@ -518,16 +518,16 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
         try {
             await signOut(auth);
         } catch (err) {
-            setError(err.message || "Failed to logout.");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Admin Logout Failed", `Failed to log out. Error: ${err.message}`, null, userAgent, timeZone);
-            if (showInAppNotification) showInAppNotification(`Logout failed: ${err.message}`, "error");
+            setError(err.message || "Échec de la déconnexion.");
+            sendAdminActionWebhook(currentUser?.email || "Inconnu", "Échec de la déconnexion Admin", `Échec de la déconnexion. Erreur : ${err.message}`, null, userAgent, timeZone);
+            if (showInAppNotification) showInAppNotification(`Échec de la déconnexion : ${err.message}`, "error");
         }
     };
 
     // Webhook Management Functions
     const handleAddWebhook = async () => {
         if (!newWebhook.name || !newWebhook.url || !newWebhook.type) {
-            if (showInAppNotification) showInAppNotification('Please fill in all webhook fields', 'error');
+            if (showInAppNotification) showInAppNotification('Veuillez remplir tous les champs du webhook', 'error');
             return;
         }
 
@@ -544,32 +544,32 @@ Affected Deployments: ${lockdownConfig.affectedDeployments.join(', ')}`,
             // Reset form
             setNewWebhook({ name: '', url: '', type: 'all' });
             
-            if (showInAppNotification) showInAppNotification('Webhook added successfully!', 'check-circle');
+            if (showInAppNotification) showInAppNotification('Webhook ajouté avec succès !', 'check-circle');
             
             // Refresh webhooks list
             await loadWebhooks();
         } catch (error) {
             console.error('Error adding webhook:', error);
-            if (showInAppNotification) showInAppNotification('Failed to add webhook', 'error');
+            if (showInAppNotification) showInAppNotification('Échec de l\'ajout du webhook', 'error');
         } finally {
             setIsUpdatingWebhooks(false);
         }
     };
 
     const handleDeleteWebhook = async (webhookId) => {
-        if (!window.confirm('Are you sure you want to delete this webhook?')) return;
+        if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce webhook ?')) return;
         
         setIsUpdatingWebhooks(true);
         try {
             const webhookRef = ref(database, `webhooks/${webhookId}`);
             await remove(webhookRef);
-            if (showInAppNotification) showInAppNotification('Webhook deleted successfully!', 'check-circle');
+            if (showInAppNotification) showInAppNotification('Webhook supprimé avec succès !', 'check-circle');
             
             // Refresh webhooks list
             await loadWebhooks();
         } catch (error) {
             console.error('Error deleting webhook:', error);
-            if (showInAppNotification) showInAppNotification('Failed to delete webhook', 'error');
+            if (showInAppNotification) showInAppNotification('Échec de la suppression du webhook', 'error');
         } finally {
             setIsUpdatingWebhooks(false);
         }
@@ -604,7 +604,7 @@ const handleTogglePositionStatus = async (positionKey, currentStatus) => {
     const positionDetails = currentRecruitmentData[positionKey];
     if (!positionDetails) {
         console.error("Position details not found for key:", positionKey);
-        showInAppNotification("Error: Position details missing.", "error");
+        showInAppNotification("Erreur : Détails du poste manquants.", "error");
         return;
     }
 
@@ -623,15 +623,15 @@ const handleTogglePositionStatus = async (positionKey, currentStatus) => {
         await update(ref(database), { [positionStatusPath]: newStatus });
 
         // --- 5. Success Path: Notifications & Webhooks ---
-        const successMessage = `${positionDisplayName} status updated to ${newStatus} for ${categoryConfig.displayName}.`;
+        const successMessage = `${positionDisplayName} est maintenant ${newStatus} pour ${categoryConfig.displayName}.`;
         showInAppNotification(successMessage, "check-circle"); // Notify user in-app.
 
         // Log the successful action to the admin webhook.
         sendAdminActionWebhook(
             currentUser.email,
-            "Toggled Recruitment Status",
-            `Position: ${positionDisplayName}\
-New Status: ${newStatus}`,
+            "Statut de recrutement modifié",
+            `Poste : ${positionDisplayName}\
+Nouveau statut : ${newStatus}`,
             categoryConfig.displayName,
             userAgent,
             timeZone
@@ -639,8 +639,8 @@ New Status: ${newStatus}`,
 
         // Show desktop notification if permission is granted.
         if (desktopNotificationPermission === "granted") {
-            showDesktopNotification(`Recruitment Status Updated: ${categoryConfig.displayName}`, {
-                body: `${positionDisplayName} is now ${newStatus}.`,
+            showDesktopNotification(`Statut de recrutement modifié : ${categoryConfig.displayName}`, {
+                body: `${positionDisplayName} est maintenant ${newStatus}.`,
                 icon: '/phmc512.png', // Ensure this path is correct and accessible.
                 tag: `status-update-${selectedRecruitmentCategory}-${positionKey}` // Unique tag to prevent duplicate notifications.
             });
@@ -652,15 +652,15 @@ New Status: ${newStatus}`,
     } catch (dbError) {
         // --- 6. Error Path: Notifications & Webhooks ---
         console.error(`Error updating status for ${positionKey}:`, dbError); // Log error to console for debugging.
-        showInAppNotification(`Failed to update status for ${positionKey}.`, "error"); // Notify user in-app.
+        showInAppNotification(`Échec de la mise à jour du statut pour ${positionKey}.`, "error"); // Notify user in-app.
 
         // Log the failed action to the admin webhook.
         sendAdminActionWebhook(
-            currentUser?.email || "Unknown User", // Fallback for email if not available.
-            "Failed to Toggle Recruitment Status",
-            `Position: ${positionDisplayName}\
-Attempted Status: ${newStatus}\
-Error: ${dbError.message}`,
+            currentUser?.email || "Utilisateur Inconnu", // Fallback for email if not available.
+            "Impossible de modifier le statut de recrutement",
+            `Poste : ${positionDisplayName}\
+Statut tenté : ${newStatus}\
+Erreur : ${dbError.message}`,
             categoryConfig.displayName,
             userAgent,
             timeZone
@@ -682,19 +682,19 @@ Error: ${dbError.message}`,
             const action = actionType === 'edited' ? "Edited Role" : "Added New Role";
             sendAdminActionWebhook(
                 currentUser.email, action,
-                `Role Name: ${savedRoleData.displayName || savedRoleData.originalKey}\
-Short Code: ${savedRoleData.shortCode || 'N/A'}\
-Status: ${savedRoleData.status || 'N/A'}\
-Key: ${savedRoleData.originalKey}`,
-                categoryConfig?.displayName || "Unknown Category",
+                `Nom du rôle : ${savedRoleData.displayName || savedRoleData.originalKey}\
+Code court : ${savedRoleData.shortCode || 'N/A'}\
+Statut : ${savedRoleData.status || 'N/A'}\
+Clé : ${savedRoleData.originalKey}`,
+                categoryConfig?.displayName || "Catégorie inconnue",
                 userAgent,
                 timeZone
             );
             if (desktopNotificationPermission === "granted" && savedRoleData?.displayName) {
-                 const notificationTitle = actionType === 'edited' ? `Role Updated: ${categoryConfig?.displayName || 'Recruitment'}` : `New Role Added: ${categoryConfig?.displayName || 'Recruitment'}`;
+                 const notificationTitle = actionType === 'edited' ? `Rôle mis à jour : ${categoryConfig?.displayName || 'Recrutement'}` : `Nouveau rôle ajouté : ${categoryConfig?.displayName || 'Recrutement'}`;
                  const notificationBody = actionType === 'edited'
-                    ? `Role \"${savedRoleData.displayName}\" (${savedRoleData.shortCode || 'N/A'}) has been updated.`
-                    : `Role \"${savedRoleData.displayName}\" (${savedRoleData.shortCode || 'N/A'}) has been added.`;
+                    ? `Rôle \"${savedRoleData.displayName}\" (${savedRoleData.shortCode || 'N/A'}) a été mis à jour.`
+                    : `Rôle \"${savedRoleData.displayName}\" (${savedRoleData.shortCode || 'N/A'}) a été ajouté.`;
                 showDesktopNotification(notificationTitle, { body: notificationBody, icon: '/phmc512.png', tag: `${actionType}-role-${selectedRecruitmentCategory}-${savedRoleData.originalKey}` });
             }
         }
@@ -704,28 +704,28 @@ Key: ${savedRoleData.originalKey}`,
         setRoleToEdit(null);
         setShowRoleModal(true);
         const { userAgent, timeZone } = getUserContext(); // Capture user context
-        sendAdminActionWebhook(currentUser?.email || "Unknown User", "Opened Add Role Modal", "Admin opened the modal to add a new role.", recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture de la fenêtre modale d'ajout de rôle", "L'administrateur a ouvert la fenêtre modale pour ajouter un nouveau rôle.", recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
     };
 
     const handleEditRoleClick = (roleKey, roleData) => {
         setRoleToEdit({ ...roleData, originalKey: roleKey });
         setShowRoleModal(true);
         const { userAgent, timeZone } = getUserContext(); // Capture user context
-        sendAdminActionWebhook(currentUser?.email || "Unknown User", "Opened Edit Role Modal", `Admin opened the modal to edit role: ${roleData.displayName || roleKey}`, recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture de la fenêtre modale de modification de rôle", `L'administrateur a ouvert la fenêtre modale pour modifier le rôle : ${roleData.displayName || roleKey}`, recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
     };
 
     const handleCloseRoleModal = () => {
         setShowRoleModal(false);
         setRoleToEdit(null);
         const { userAgent, timeZone } = getUserContext(); // Capture user context
-        sendAdminActionWebhook(currentUser?.email || "Unknown User", "Closed Role Modal", "Admin closed the role add/edit modal.", recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Fermeture de la fenêtre modale de rôle", "L'administrateur a fermé la fenêtre modale d'ajout/modification de rôle.", recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
     };
 
     const handleRenameRoleKeyClick = (roleKey, roleData) => {
         setRoleToRenameKeyDetails({ key: roleKey, data: roleData });
         setShowRenameKeyModal(true);
         const { userAgent, timeZone } = getUserContext(); // Capture user context
-        sendAdminActionWebhook(currentUser?.email || "Unknown User", "Opened Rename Role Key Modal", `Admin opened the modal to rename key for role: ${roleData.displayName || roleKey}`, recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture de la fenêtre modale de renommage de clé de rôle", `L'administrateur a ouvert la fenêtre modale pour renommer la clé du rôle : ${roleData.displayName || roleKey}`, recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
     };
 
     const handleRoleKeyRenamed = () => {
@@ -734,8 +734,8 @@ Key: ${savedRoleData.originalKey}`,
         }
         if (currentUser?.email && roleToRenameKeyDetails && desktopNotificationPermission === "granted") {
             const categoryConfig = recruitmentCategories[selectedRecruitmentCategory];
-            showDesktopNotification(`Role Key Renamed: ${categoryConfig?.displayName || 'Recruitment'}`, 
-                { body: `Key for \"${roleToRenameKeyDetails.data.displayName || roleToRenameKeyDetails.key}\" has been changed.`, 
+            showDesktopNotification(`Clé de rôle renommée : ${categoryConfig?.displayName || 'Recrutement'}`, 
+                { body: `La clé pour \"${roleToRenameKeyDetails.data.displayName || roleToRenameKeyDetails.key}\" a été modifiée.`, 
                 icon: '/phmc512.png', 
                 tag: `rename-key-${selectedRecruitmentCategory}-${roleToRenameKeyDetails.key}` 
             });
@@ -751,16 +751,16 @@ Key: ${savedRoleData.originalKey}`,
         setDesktopNotificationPermission(currentPermission);
         const { userAgent, timeZone } = getUserContext(); // Capture user context
         if (currentUser?.email) {
-            sendAdminActionWebhook(currentUser.email, "Desktop Notification Preference Changed", `Permission status: ${currentPermission}${granted ? ' (Granted by user)' : ' (Not granted or dismissed)'}`, null, userAgent, timeZone);
+            sendAdminActionWebhook(currentUser.email, "Préférence de notification de bureau modifiée", `Statut de la permission : ${currentPermission}${granted ? ' (Accordée par l\'utilisateur)' : ' (Non accordée ou ignorée)'}`, null, userAgent, timeZone);
         }
         if (granted) {
-            if (showInAppNotification) showInAppNotification("Desktop notifications enabled for this site! Please ensure your OS settings also allow notifications from your browser.", "check-circle", 7000);
-            showDesktopNotification("PHMC-FR Tools: Notifications Enabled", { body: "You will now receive desktop notifications for important admin actions. Ensure your OS allows browser notifications.", icon: '/phmc512.png' });
+            if (showInAppNotification) showInAppNotification("Les notifications de bureau sont activées pour ce site ! Veuillez vérifier que les paramètres de votre système d’exploitation autorisent également les notifications de votre navigateur.", "check-circle", 7000);
+            showDesktopNotification("PHMC-FR Tools : Notifications activées", { body: "Vous recevrez désormais des notifications de bureau pour les actions administratives importantes. Assurez-vous que votre système d'exploitation autorise les notifications du navigateur.", icon: '/phmc512.png' });
         } else {
             if (currentPermission === 'denied') {
-                if (showInAppNotification) showInAppNotification("Desktop notifications are blocked. Please enable them in your browser settings.", "warning");
+                if (showInAppNotification) showInAppNotification("Les notifications de bureau sont bloquées. Veuillez les activer dans les paramètres de votre navigateur.", "warning");
             } else {
-                if (showInAppNotification) showInAppNotification("Desktop notifications were not enabled.", "warning");
+                if (showInAppNotification) showInAppNotification("Les notifications de bureau n'ont pas été activées.", "warning");
             }
         }
     };
@@ -771,9 +771,9 @@ Key: ${savedRoleData.originalKey}`,
         const { userAgent, timeZone } = getUserContext(); // Capture user context
 
         if (!webhookURL) {
-            if (showInAppNotification) showInAppNotification('Admin Webhook URL (PHMC_DISCORD) not configured.', 'error');
+            if (showInAppNotification) showInAppNotification('URL du webhook administrateur (PHMC_DISCORD) non configurée.', 'error');
             Sentry.captureMessage("Admin Custom Webhook URL (PHMC_DISCORD) not configured for AdminAuthAndActions", "error");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Admin Custom Webhook", "Webhook URL not configured.", null, userAgent, timeZone);
+            sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé d'administration", "URL du webhook non configurée.", null, userAgent, timeZone);
             return false;
         }
         try {
@@ -789,13 +789,13 @@ Key: ${savedRoleData.originalKey}`,
                     level: 'error',
                     extra: { statusText: response.statusText, responseBody: errorText }
                 });
-                if (showInAppNotification) showInAppNotification(`Failed to send admin webhook. Status: ${response.status}`, 'error');
-                sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Admin Custom Webhook", `Status: ${response.status}, Error: ${errorText}`, null, userAgent, timeZone);
+                if (showInAppNotification) showInAppNotification(`Échec de l'envoi du webhook administrateur. Statut : ${response.status}`, 'error');
+                sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé d'administration", `Statut : ${response.status}, Erreur : ${errorText}`, null, userAgent, timeZone);
                 return false;
             } else {
-                if (showInAppNotification) showInAppNotification('Admin webhook message sent successfully!', "check-circle");
+                if (showInAppNotification) showInAppNotification('Message du webhook administrateur envoyé avec succès !', "check-circle");
                 // setShowAdminCustomWebhookModal(false); // REMOVED - state no longer exists
-                sendAdminActionWebhook(currentUser?.email || "Unknown User", "Sent Admin Custom Webhook", "Admin successfully sent a custom webhook to the Admin Action channel.", null, userAgent, timeZone);
+                sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Webhook personnalisé d'administration envoyé", "L'administrateur a envoyé avec succès un webhook personnalisé au canal d'action administrateur.", null, userAgent, timeZone);
                 logWebhookToFirebase('Admin Custom Webhook Sent', { admin: currentUser?.email, title: payloadFromModal.embeds[0].title });
                 return true;
             }
@@ -803,7 +803,7 @@ Key: ${savedRoleData.originalKey}`,
             console.error('Error sending admin custom webhook:', error);
             Sentry.captureException(error, { extra: { context: 'Admin Custom Webhook Submission Fetch (AdminAuthAndActions)' } });
             if (showInAppNotification) showInAppNotification('A network error occurred sending the admin webhook.', "error");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Admin Custom Webhook", `Network Error: ${error.message}`, null, userAgent, timeZone);
+            sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé d'administration", `Erreur réseau : ${error.message}`, null, userAgent, timeZone);
             return false;
         }
     };
@@ -818,7 +818,7 @@ Key: ${savedRoleData.originalKey}`,
         const selectedType = BINGO_TYPES.find(type => type.id === selectedAdminBingoType);
         if (!selectedType) return;
 
-        if (!window.confirm(`Are you sure you want to clear ALL ${selectedType.name} Bingo activity logs? This action cannot be undone.`)) {
+        if (!window.confirm(`Êtes-vous sûr de vouloir effacer TOUS les journaux d'activité Bingo ${selectedType.name} ? Cette action est irréversible.`)) {
             return;
         }
 
@@ -828,22 +828,22 @@ Key: ${savedRoleData.originalKey}`,
 
         try {
             await remove(bingoLogRef);
-            showInAppNotification(`${selectedType.name} Bingo activity log has been cleared.`, "check-circle");
+            showInAppNotification(`Le journal d'activité Bingo ${selectedType.name} a été effacé.`, "check-circle");
             sendAdminActionWebhook(
                 currentUser.email,
-                `Cleared ${selectedType.name} Bingo Activity`,
-                `The 'bingo/logs/${selectedType.path}/activityLog' path was deleted from Firebase.`,
+                `Journal d'activité Bingo ${selectedType.name} effacé`,
+                `Le chemin 'bingo/logs/${selectedType.path}/activityLog' a été supprimé de Firebase.`,
                 `${selectedType.name} Bingo`,
                 userAgent,
                 timeZone
             );
         } catch (dbError) {
             console.error("Error clearing bingo activity log:", dbError);
-            showInAppNotification(`Failed to clear ${selectedType.name} bingo activity log.`, "error");
+            showInAppNotification(`Échec de l'effacement du journal d'activité Bingo ${selectedType.name}.`, "error");
             sendAdminActionWebhook(
                 currentUser.email,
-                `Failed to Clear ${selectedType.name} Bingo Activity`,
-                `Error: ${dbError.message}`,
+                `Échec de l'effacement du journal d'activité Bingo ${selectedType.name}`,
+                `Erreur : ${dbError.message}`,
                 `${selectedType.name} Bingo`,
                 userAgent,
                 timeZone
@@ -858,7 +858,7 @@ Key: ${savedRoleData.originalKey}`,
         const selectedType = BINGO_TYPES.find(type => type.id === selectedAdminBingoType);
         if (!selectedType) return;
 
-        if (!window.confirm(`Are you sure you want to generate a NEW ${selectedType.name} Bingo card? This will clear the current game and activity log for ALL users.`)) {
+        if (!window.confirm(`Êtes-vous sûr de vouloir générer une NOUVELLE carte Bingo ${selectedType.name} ? Cela effacera la partie en cours et le journal d'activité pour TOUS les utilisateurs.`)) {
             return;
         }
 
@@ -872,11 +872,11 @@ Key: ${savedRoleData.originalKey}`,
             // 1. Fetch master phrases
             const snapshot = await get(masterPhrasesRef);
             if (!snapshot.exists()) {
-                showInAppNotification(`Error: Master phrases for ${selectedType.name} not found. Cannot generate new card.`, "error");
+                showInAppNotification(`Erreur : Les phrases maîtresses pour ${selectedType.name} sont introuvables. Impossible de générer une nouvelle carte.`, "error");
                 sendAdminActionWebhook(
                     currentUser.email,
-                    `Failed to Generate New ${selectedType.name} Bingo Card`,
-                    `Master phrases not found in Firebase at 'bingo/phrases/${selectedType.path}'.`,
+                    `Échec de la génération d'une nouvelle carte Bingo ${selectedType.name}`,
+                    `Les phrases maîtresses sont introuvables dans Firebase à 'bingo/phrases/${selectedType.path}'.`,
                     `${selectedType.name} Bingo`,
                     userAgent,
                     timeZone
@@ -892,11 +892,11 @@ Key: ${savedRoleData.originalKey}`,
                     : [];
 
             if (masterPhrases.length < 24) {
-                showInAppNotification(`Error: Not enough master phrases for ${selectedType.name} (need at least 24).`, "error");
+                showInAppNotification(`Erreur : Pas assez de phrases maîtresses pour ${selectedType.name} (au moins 24 nécessaires).`, "error");
                 sendAdminActionWebhook(
                     currentUser.email,
-                    `Failed to Generate New ${selectedType.name} Bingo Card`,
-                    `Not enough master phrases (${masterPhrases.length} found, need 24).`,
+                    `Échec de la génération d'une nouvelle carte Bingo ${selectedType.name}`,
+                    `Pas assez de phrases maîtresses (${masterPhrases.length} trouvées, 24 nécessaires).`,
                     `${selectedType.name} Bingo`,
                     userAgent,
                     timeZone
@@ -912,22 +912,22 @@ Key: ${savedRoleData.originalKey}`,
             // 3. Clear activity log for a fresh game
             await remove(activityLogRef);
 
-            showInAppNotification(`New ${selectedType.name} Bingo card generated and activity log cleared!`, "check-circle");
+            showInAppNotification(`Nouvelle carte Bingo ${selectedType.name} générée et journal d'activité effacé !`, "check-circle");
             sendAdminActionWebhook(
                 currentUser.email,
-                `Generated New ${selectedType.name} Bingo Card`,
-                `A new card was generated and the activity log cleared for all users.`,
+                `Nouvelle carte Bingo ${selectedType.name} générée`,
+                `Une nouvelle carte a été générée et le journal d'activité effacé pour tous les utilisateurs.`,
                 `${selectedType.name} Bingo`,
                 userAgent,
                 timeZone
             );
         } catch (dbError) {
             console.error("Error generating new bingo card:", dbError);
-            showInAppNotification("Failed to generate new bingo card.", "error");
+            showInAppNotification("Échec de la génération d'une nouvelle carte Bingo.", "error");
             sendAdminActionWebhook(
                 currentUser.email,
-                `Failed to Generate New ${selectedType.name} Bingo Card`,
-                `Error: ${dbError.message}`,
+                `Échec de la génération d'une nouvelle carte Bingo ${selectedType.name}`,
+                `Erreur : ${dbError.message}`,
                 `${selectedType.name} Bingo`,
                 userAgent,
                 timeZone
@@ -942,7 +942,7 @@ Key: ${savedRoleData.originalKey}`,
         const selectedType = BINGO_TYPES.find(type => type.id === selectedAdminBingoType);
         if (!selectedType) return;
 
-        if (!window.confirm(`Are you sure you want to DISABLE the ${selectedType.name} Bingo card? This will remove the current card and clear all progress. The game will be unavailable until a new card is generated.`)) {
+        if (!window.confirm(`Êtes-vous sûr de vouloir DÉSACTIVER la carte Bingo ${selectedType.name} ? Cela supprimera la carte actuelle et effacera tous les progrès. Le jeu sera indisponible jusqu'à ce qu'une nouvelle carte soit générée.`)) {
             return;
         }
 
@@ -957,22 +957,22 @@ Key: ${savedRoleData.originalKey}`,
             await remove(cardNodeRef);
             await remove(logNodeRef);
 
-            showInAppNotification(`${selectedType.name} Bingo has been disabled and all data cleared.`, "check-circle");
+            showInAppNotification(`La carte Bingo ${selectedType.name} a été DÉSACTIVÉE et toutes les données effacées.`, "check-circle");
             sendAdminActionWebhook(
                 currentUser.email,
-                `Disabled ${selectedType.name} Bingo Card`,
-                `The card and activity log for '${selectedType.name}' were deleted from Firebase.`,
+                `Carte Bingo ${selectedType.name} désactivée`,
+                `La carte et le journal d'activité pour '${selectedType.name}' ont été supprimés de Firebase.`,
                 `${selectedType.name} Bingo`,
                 userAgent,
                 timeZone
             );
         } catch (dbError) {
             console.error("Error disabling bingo card:", dbError);
-            showInAppNotification(`Failed to disable ${selectedType.name} bingo card.`, "error");
+            showInAppNotification(`Échec de la désactivation de la carte Bingo ${selectedType.name}.`, "error");
             sendAdminActionWebhook(
                 currentUser.email,
-                `Failed to Disable ${selectedType.name} Bingo Card`,
-                `Error: ${dbError.message}`,
+                `Échec de la désactivation de la carte Bingo ${selectedType.name}`,
+                `Erreur : ${dbError.message}`,
                 `${selectedType.name} Bingo`,
                 userAgent,
                 timeZone
@@ -983,7 +983,7 @@ Key: ${savedRoleData.originalKey}`,
     };
 
     const handleManualResetAllBingoCards = async () => {
-        if (!window.confirm("Are you sure you want to manually reset all active Bingo cards? This will clear their current progress.")) {
+        if (!window.confirm("Êtes-vous sûr de vouloir réinitialiser manuellement toutes les cartes Bingo actives ? Cela effacera leur progression actuelle.")) {
             return;
         }
 
@@ -991,7 +991,7 @@ Key: ${savedRoleData.originalKey}`,
         // We can still update the timestamp to log this manual reset
         await update(metaRef, { lastManualRegenTimestamp: serverTimestamp() });
     
-        showInAppNotification('Manual daily bingo reset initiated...', 'sync-alt', 5000);
+        showInAppNotification('Réinitialisation manuelle quotidienne des cartes Bingo initiée...', 'sync-alt', 5000);
     
         const results = {
             success: [],
@@ -1046,25 +1046,25 @@ Key: ${savedRoleData.originalKey}`,
         // --- MODIFICATION FOR MANUAL ACTION ---
         const { userAgent, timeZone } = getUserContext();
         let details = '';
-        if (results.success.length > 0) details += `✅ Regenerated: ${results.success.join(', ')}\
+        if (results.success.length > 0) details += `✅ Régénéré : ${results.success.join(', ')}\
 `;
-        if (results.noCard.length > 0) details += `➖ Skipped (Disabled): ${results.noCard.join(', ')}\
+        if (results.noCard.length > 0) details += `➖ Ignoré (Désactivé) : ${results.noCard.join(', ')}\
 `;
-        if (results.notEnoughPhrases.length > 0) details += `⚠️ Skipped (Not Enough Phrases): ${results.notEnoughPhrases.join(', ')}\
+        if (results.notEnoughPhrases.length > 0) details += `⚠️ Ignoré (Pas assez de phrases) : ${results.notEnoughPhrases.join(', ')}\
 `;
-        if (results.errors.length > 0) details += `❌ Errors: ${results.errors.join(', ')}\
+        if (results.errors.length > 0) details += `❌ Erreurs : ${results.errors.join(', ')}\
 `;
     
         sendAdminActionWebhook(
             currentUser.email, // Use the logged-in admin's email
-            "Manual Bingo Reset", // Change action text
+            "Réinitialisation manuelle des cartes Bingo", // Change action text
             details.trim(),
-            "Bingo Management",
+            "Gestion des cartes Bingo",
             userAgent,
             timeZone
         );
     
-        showInAppNotification('Manual bingo reset complete!', 'check-circle');
+        showInAppNotification('Réinitialisation manuelle des cartes Bingo terminée !', 'check-circle');
     };
 
 
@@ -1078,7 +1078,7 @@ Key: ${savedRoleData.originalKey}`,
         // setDevWebhookMessage(''); // REMOVED - state no longer exists
         // setShowDevWebhookModal(true); // REMOVED - state no longer exists
         const { userAgent, timeZone } = getUserContext();
-        sendAdminActionWebhook(currentUser?.email || "Unknown User", "Opened Dev Webhook Modal", "Admin opened the modal to send a custom webhook to the Dev channel.", null, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture de la fenêtre contextuelle Dev Webhook", "L'administrateur a ouvert la fenêtre contextuelle pour envoyer un webhook personnalisé au canal Dev.", null, userAgent, timeZone);
     };
 
     const handleDevWebhookSubmit = async (payloadFromModal) => {
@@ -1087,9 +1087,9 @@ Key: ${savedRoleData.originalKey}`,
         const { userAgent, timeZone } = getUserContext();
 
         if (!webhookURL) {
-            if (showInAppNotification) showInAppNotification('Dev Webhook URL (REACT_APP_DEV_WEBHOOK) not configured.', 'error');
+            if (showInAppNotification) showInAppNotification('URL du webhook Dev (REACT_APP_DEV_WEBHOOK) non configurée.', 'error');
             Sentry.captureMessage("Dev Webhook URL (REACT_APP_DEV_WEBHOOK) not configured", "error");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Dev Custom Webhook", "Webhook URL not configured.", null, userAgent, timeZone);
+            sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé Dev", "URL du webhook non configurée.", null, userAgent, timeZone);
             return false;
         }
         try {
@@ -1105,20 +1105,20 @@ Key: ${savedRoleData.originalKey}`,
                     level: 'error',
                     extra: { statusText: response.statusText, responseBody: errorText }
                 });
-                if (showInAppNotification) showInAppNotification(`Failed to send Dev webhook. Status: ${response.status}`, 'error');
-                sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Dev Custom Webhook", `Status: ${response.status}, Error: ${errorText}`, null, userAgent, timeZone);
+                if (showInAppNotification) showInAppNotification(`Échec de l'envoi du webhook Dev. Statut : ${response.status}`, 'error');
+                sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé Dev", `Statut : ${response.status}, Erreur : ${errorText}`, null, userAgent, timeZone);
                 return false;
             } else {
-                if (showInAppNotification) showInAppNotification('Dev webhook message sent successfully!', "check-circle");
+                if (showInAppNotification) showInAppNotification('Message du webhook Dev envoyé avec succès !', "check-circle");
                 // setShowDevWebhookModal(false); // REMOVED - state no longer exists
-                sendAdminActionWebhook(currentUser?.email || "Unknown User", "Sent Dev Custom Webhook", "Admin successfully sent a custom webhook to the Dev channel.", null, userAgent, timeZone);
+                sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Webhook personnalisé Dev envoyé", "L'administrateur a envoyé avec succès un webhook personnalisé au canal Dev.", null, userAgent, timeZone);
                 return true;
             }
         } catch (error) {
             console.error('Error sending Dev webhook:', error);
             Sentry.captureException(error, { extra: { context: 'Dev Webhook Submission Fetch' } });
-            if (showInAppNotification) showInAppNotification('A network error occurred sending the Dev webhook.', "error");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Dev Custom Webhook", `Network Error: ${error.message}`, null, userAgent, timeZone);
+            if (showInAppNotification) showInAppNotification('Une erreur réseau est survenue lors de l\'envoi du webhook Dev.', "error");
+            sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé Dev", `Erreur réseau : ${error.message}`, null, userAgent, timeZone);
             return false;
         }
     };
@@ -1129,7 +1129,7 @@ Key: ${savedRoleData.originalKey}`,
         // setCoronerWebhookMessage(''); // REMOVED - state no longer exists
         // setShowCoronerWebhookModal(true); // REMOVED - state no longer exists
         const { userAgent, timeZone } = getUserContext(); // Capture user context
-        sendAdminActionWebhook(currentUser?.email || "Unknown User", "Opened Coroner Webhook Modal", "Admin opened the modal to send a custom webhook to the Coroner Updates channel.", null, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture du modal du webhook Coroner", "L'administrateur a ouvert le modal pour envoyer un webhook personnalisé au canal des mises à jour du Coroner.", null, userAgent, timeZone);
     };
     const [showMarkdownModal, setShowMarkdownModal] = useState(false);
 
@@ -1139,9 +1139,9 @@ Key: ${savedRoleData.originalKey}`,
          const { userAgent, timeZone } = getUserContext(); // Capture user context
 
         if (!webhookURL) {
-            if (showInAppNotification) showInAppNotification('Coroner Webhook URL (CORONER_DISCORD_UPDATES) not configured.', 'error');
+            if (showInAppNotification) showInAppNotification('URL du webhook Coroner (CORONER_DISCORD_UPDATES) non configurée.', 'error');
             Sentry.captureMessage("Coroner Webhook URL (CORONER_DISCORD_UPDATES) not configured", "error");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Coroner Custom Webhook", "Webhook URL not configured.", null, userAgent, timeZone);
+            sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé du coroner", "URL du webhook non configurée.", null, userAgent, timeZone);
             return false;
         }
         try {
@@ -1157,13 +1157,13 @@ Key: ${savedRoleData.originalKey}`,
                     level: 'error',
                     extra: { statusText: response.statusText, responseBody: errorText }
                 });
-                if (showInAppNotification) showInAppNotification(`Failed to send Coroner webhook. Status: ${response.status}`, 'error');
-                sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Coroner Custom Webhook", `Status: ${response.status}, Error: ${errorText}`, null, userAgent, timeZone);
+                if (showInAppNotification) showInAppNotification(`Échec de l'envoi du webhook Coroner. Statut : ${response.status}`, 'error');
+                sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé du coroner", `Statut : ${response.status}, Erreur : ${errorText}`, null, userAgent, timeZone);
                 return false;
             } else {
-                if (showInAppNotification) showInAppNotification('Coroner webhook message sent successfully!', "check-circle");
+                if (showInAppNotification) showInAppNotification('Message du webhook Coroner envoyé avec succès !', "check-circle");
                 // setShowCoronerWebhookModal(false); // REMOVED - state no longer exists
-                sendAdminActionWebhook(currentUser?.email || "Unknown User", "Sent Coroner Custom Webhook", "Admin successfully sent a custom webhook to the Coroner Updates channel.", null, userAgent, timeZone);
+                sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Webhook personnalisé du coroner envoyé", "L'administrateur a envoyé avec succès un webhook personnalisé au canal des mises à jour du coroner.", null, userAgent, timeZone);
                 logWebhookToFirebase('Coroner Custom Webhook Sent', { admin: currentUser?.email, title: payloadFromModal.embeds[0].title });
                 return true;
             }
@@ -1171,7 +1171,7 @@ Key: ${savedRoleData.originalKey}`,
             console.error('Error sending Coroner webhook:', error);
             Sentry.captureException(error, { extra: { context: 'Coroner Webhook Submission Fetch' } });
             if (showInAppNotification) showInAppNotification('A network error occurred sending the Coroner webhook.', "error");
-            sendAdminActionWebhook(currentUser?.email || "Unknown User", "Failed to Send Coroner Custom Webhook", `Network Error: ${error.message}`, null, userAgent, timeZone);
+            sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Échec de l'envoi du webhook personnalisé du coroner", `Erreur réseau : ${error.message}`, null, userAgent, timeZone);
             return false;
         }
     };
@@ -1179,7 +1179,7 @@ Key: ${savedRoleData.originalKey}`,
 
 
     if (isLoadingAuth) {
-        return <p>Verifying authentication...</p>;
+        return <p>Vérification de l'authentification...</p>;
     }
 
     if (!currentUser) {
@@ -1189,19 +1189,19 @@ Key: ${savedRoleData.originalKey}`,
                     <div className="col-md-6 col-lg-4">
                         <div className="card">
                             <div className="card-body">
-                                <h3 className="card-title text-center mb-4">Admin Login</h3>
+                                <h3 className="card-title text-center mb-4">Connexion Admin</h3>
                                 <BootstrapForm.Group className="mb-3" controlId="adminAuthEmail">
-                                    <BootstrapForm.Label>Email address</BootstrapForm.Label>
-                                    <BootstrapForm.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Enter email" />
+                                    <BootstrapForm.Label>Adresse e-mail</BootstrapForm.Label>
+                                    <BootstrapForm.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Entrez l'adresse e-mail" />
                                 </BootstrapForm.Group>
                                 <BootstrapForm.Group className="mb-3" controlId="adminAuthPassword">
-                                    <BootstrapForm.Label>Password</BootstrapForm.Label>
-                                    <BootstrapForm.Control type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={handlePasswordKeyDown} required placeholder="Password" />
+                                    <BootstrapForm.Label>Mot de passe</BootstrapForm.Label>
+                                    <BootstrapForm.Control type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={handlePasswordKeyDown} required placeholder="Mot de passe" />
                                 </BootstrapForm.Group>
                                 {error && <p className="text-danger text-center">{error}</p>}
                                 <div className="d-grid">
                                     <Button variant="primary" type="button" onClick={handleLoginAttempt}>
-                                        Login
+                                        Connexion
                                     </Button>
                                 </div>
                             </div>
@@ -1217,22 +1217,22 @@ Key: ${savedRoleData.originalKey}`,
 
     // Helper to build rich Discord embed payload with PHMC branding
     const buildWebhookPayload = (title, message, customUrl = '') => {
-        const FORM_GENERATOR_URL = "https://phmc-tools.gta.world/";
-        const ALTERNATIVE_FORM_GENERATOR_URL = "https://gtaw-forms.github.io/forms/";
+        const FORM_GENERATOR_URL = "https://1luckyle.github.io";
+        const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
         const phmcLogoUrl = 'https://i.ibb.co/0pgw9hHm/phmc.png';
         
         // Create embed fields with form generator links
         const embedFields = [];
         if (FORM_GENERATOR_URL) {
             embedFields.push({ 
-                name: "[Delayed Updates] Form Generator Link", 
+                name: "[Mises à jour différées] Lien du générateur de formulaires", 
                 value: FORM_GENERATOR_URL, 
                 inline: false 
             });
         }
         if (ALTERNATIVE_FORM_GENERATOR_URL) {
             embedFields.push({ 
-                name: "Alternative Form Generator Link", 
+                name: "Lien alternatif du générateur de formulaires", 
                 value: ALTERNATIVE_FORM_GENERATOR_URL, 
                 inline: false 
             });
@@ -1241,21 +1241,21 @@ Key: ${savedRoleData.originalKey}`,
         // Add custom URL field if provided
         if (customUrl && customUrl.trim()) {
             embedFields.push({
-                name: "Related Link",
+                name: "Lien associé",
                 value: customUrl.trim(),
                 inline: false
             });
         }
                 
         const embed = {
-            title: title || "PHMC Admin Notification",
+            title: title || "Notification Admin PHMC",
             url: customUrl && customUrl.trim() ? customUrl.trim() : FORM_GENERATOR_URL,
             description: message || undefined,
             color: 0x7289DA, // Discord blue color matching WebhookModal
             timestamp: new Date().toISOString(),
             fields: embedFields,
             footer: {
-                text: `PHMC Form Generator v${commitInfo?.sha || 'N/A'}`
+                text: `PHMC Générateur de Formulaires v${commitInfo?.sha || 'N/A'}`
             }
         };
         
@@ -1312,7 +1312,7 @@ Key: ${savedRoleData.originalKey}`,
                 title: customWebhookTitle,
                 message: customWebhookMessage,
                 customUrl: customWebhookUrl,
-                adminUser: currentUser?.email || 'Unknown Admin',
+                adminUser: currentUser?.email || 'Admin Inconnu',
                 success: result,
                 responseStatus: responseStatus,
                 timestamp: new Date().toISOString()

@@ -110,30 +110,30 @@ const PositionInfoModal = ({
         return null;
     }
 
-    const jobInformationContent = `**Position:** ${positionData.displayName || 'N/A'}
+    const jobInformationContent = `**Poste :** ${positionData.displayName || 'N/A'}
 
-**Point of Contact:** ${positionData.poc || '[Placeholder: No contact provided]'}
+**Point de Contact:** ${positionData.poc || '[Aucun contact fourni]'}
 
-**Overview:**
-${positionData.Overview || '[Placeholder: No overview provided for this position.]'}
+**Aperçu :**
+${positionData.Overview || '[Aucune description de poste n’est disponible.]'}
 
-For more detailed information, please refer to the official posting:
-[url]${positionData.url || 'No URL provided'}[/url]
+Pour plus d'informations détaillées, veuillez consulter l'annonce officielle :
+[url]${positionData.url || 'Aucune URL fournie'}[/url]
     `;
 
     // --- MODIFIED skillsQualificationsContent ---
-    const skillsQualificationsContent = `**Position:** ${positionData.displayName || 'N/A'}
+    const skillsQualificationsContent = `**Poste :** ${positionData.displayName || 'N/A'}
 
-**Required Skills:**
-- ${positionData.skill1 || '[Placeholder: Skill 1 not specified]'}
-- ${positionData.skill2 || '[Placeholder: Skill 2 not specified]'}
-- ${positionData.skill3 || '[Placeholder: Skill 3 not specified]'}
+**Compétences requises :**
+- ${positionData.skill1 || '[Compétence 1 non spécifiée]'}
+- ${positionData.skill2 || '[Compétence 2 non spécifiée]'}
+- ${positionData.skill3 || '[Compétence 3 non spécifiée]'}
 
-**Educational Requirements:**
-- ${positionData.EduRequirement || '[Placeholder: Education requirements not specified]'}
+**Exigences éducatives :**
+- ${positionData.EduRequirement || '[Exigences éducatives non spécifiées]'}
 
-For more detailed information, please refer to the official posting:
-[url]${positionData.url || 'No URL provided'}[/url]
+Pour plus d'informations détaillées, veuillez consulter l'annonce officielle :
+[url]${positionData.url || 'Aucune URL fournie'}[/url]
     `;
     // --- END MODIFICATION ---
 
@@ -161,7 +161,7 @@ For more detailed information, please refer to the official posting:
                     &times;
                 </button>
                 <div style={modalHeaderStyle}>
-                    Information for: {positionData.displayName || "Selected Position"}
+                    Informations pour : {positionData.displayName || "Poste sélectionné"}
                 </div>
 
                 <div style={buttonContainerStyle}>
@@ -169,13 +169,13 @@ For more detailed information, please refer to the official posting:
                         onClick={() => setDisplayMode('jobInfo')}
                         style={displayMode === 'jobInfo' ? activeSectionButtonStyle : sectionButtonStyle}
                     >
-                        Job Information
+                        Informations sur le poste
                     </button>
                     <button
                         onClick={() => setDisplayMode('skills')}
                         style={displayMode === 'skills' ? activeSectionButtonStyle : sectionButtonStyle}
                     >
-                        Skills & Qualifications
+                        Compétences & Qualifications
                     </button>
                 </div>
 
@@ -186,7 +186,7 @@ For more detailed information, please refer to the official posting:
 
                 <div style={modalFooterStyle}>
                     <Button variant="secondary" onClick={onClose}>
-                        Close
+                        Fermer
                     </Button>
                 </div>
             </div>

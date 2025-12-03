@@ -102,13 +102,13 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         }
 
         const embed = {
-            title: "Business Card Creation Alert!",
-            description: "A new business card was generated.",
+            title: "Alerte création de cartes de visite !",
+            description: "Une nouvelle carte de visite a été générée.",
             color: errorMessage ? 0xFF0000 : 0x00FF00, // Red for error, Green for success
             fields: [
-                { name: "Employee Name", value: cardName || "N/A", inline: true },
-                { name: "Employee Rank", value: cardRank || "N/A", inline: true },
-                { name: "Phone Number", value: cardPhoneNumber || "N/A", inline: true }
+                { name: "Nom de l'employé", value: cardName || "N/A", inline: true },
+                { name: "Grade de l'employé", value: cardRank || "N/A", inline: true },
+                { name: "Numéro de téléphone", value: cardPhoneNumber || "N/A", inline: true }
             ],
             footer: {
                 text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
@@ -131,21 +131,21 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         if (imageUrlString && (imageUrlString.startsWith('http://') || imageUrlString.startsWith('https://'))) {
             embed.image = { url: imageUrlString };
             embed.fields.push({
-                name: "Image Status",
-                value: "Successfully uploaded and attached.",
+                name: "Statut de l'image",
+                value: "Téléchargée et attachée avec succès.",
                 inline: false
             });
         } else if (!errorMessage) {
             console.log('Invalid image URL:', { generatedImageUrl, type: typeof generatedImageUrl });
             embed.fields.push({
-                name: "Image Status",
-                value: `Image uploaded, but link is invalid or missing. Received: ${imageUrlString.substring(0, 100)}`,
+                name: "Statut de l'image",
+                value: `Image téléchargée, mais le lien est invalide ou manquant. Reçu : ${imageUrlString.substring(0, 100)}`,
                 inline: false
             });
         } else {
             embed.fields.push({
-                name: "Image Status",
-                value: "Image upload failed.",
+                name: "Statut de l'image",
+                value: "Échec du téléchargement de l'image.",
                 inline: false
             });
         }
@@ -178,7 +178,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
 
     const handleSave = useCallback(async () => {
         setIsSaving(true);
-        showNotification('Processing Business Card...', 'upload');
+        showNotification('Traitement de la carte de visite...', 'upload');
 
         localStorage.setItem('name', name);
         localStorage.setItem('rank', rank);
@@ -201,7 +201,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                 img.onload = () => resolve(img);
                 img.onerror = (err) => {
                     console.error("Failed to load base image for canvas:", err);
-                    reject(new Error("Failed to load base image."));
+                    reject(new Error("Échec du chargement de l'image de base."));
                 };
                 img.src = src;
             });
@@ -244,19 +244,19 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             console.log('Image upload result:', { link, type: typeof link });
             
             setImageUrl(link);
-            showNotification(`Business Card Saved & Uploaded: ${link}`, 'save');
+            showNotification(`Carte de visite enregistrée et téléchargée : ${link}`, 'save');
             
             sendDiscordWebhook(name, rank, phoneNumber, link);
 
-            await copyToClipboard(link, showNotification, 'Image link copied to clipboard!');
+            await copyToClipboard(link, showNotification, 'Lien de l\'image copié dans le presse-papiers !');
         } catch (error) {
             console.error('Error in Business Card handleSave:', error);
-            let errorContext = 'Error generating business card';
+            let errorContext = 'Erreur lors de la génération de la carte de visite';
             let detailedMessage = error.message || String(error);
 
-            if (detailedMessage.includes('upload failed')) errorContext = 'Upload Failed';
-            else if (detailedMessage.includes('Failed to load base image')) errorContext = 'Base Image Load Failed';
-            else errorContext = 'Image Generation Failed';
+            if (detailedMessage.includes('upload failed')) errorContext = 'Échec du téléchargement';
+            else if (detailedMessage.includes('Failed to load base image')) errorContext = 'Échec du chargement de l\'image de base';
+            else errorContext = 'Échec de la génération de l\'image';
             
             showNotification(`${errorContext}: ${detailedMessage.substring(0,100)}...`, 'error');
             Sentry.captureException(error, { extra: { context: 'Business Card Save', name, rank, detailedMessage } });
@@ -276,7 +276,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         <div className="modal-overlay">
             <div className="agency-selector-modal business-card-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h4>Business Card</h4>
+                    <h4>Carte de visite</h4>
                     <Button
                         variant="secondary"
                         className="close"
@@ -290,16 +290,16 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                     {imageUrl && (
                         <div className="image-link-container">
                             <p>
-                                <strong>Image Link: </strong>
+                                <strong>Lien de l'image : </strong>
                                 <a href={imageUrl} target="_blank" rel="noopener noreferrer">
                                     {imageUrl}
                                 </a>
                             </p>
-                            Instructions!
+                            Instructions !
                             <br />
-                            1) /note [id of the blank note item in your inventory] [amount] [name for the cards]
+                            1) /note [identifiant de l'élément de note vierge dans votre inventaire] [quantité] [nom pour les cartes]
                             <br />
-                            2) /note [id of the new note item in your inventory] [amount] [content] [URL from ImgBB]
+                            2) /note [identifiant du nouvel élément de note dans votre inventaire] [quantité] [contenu] [URL depuis ImgBB]
                         </div>
                     )}
                     <div 
@@ -339,13 +339,13 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         </div>
                     </div>
                     <div className="business-card-input-fields" style={{ marginTop: '1rem' }}>
-                        <Form.Control className="mb-2" type="text" placeholder="Name" value={name} onChange={handleNameChange} />
-                        <Form.Control className="mb-2" type="text" placeholder="Rank" value={rank} onChange={handleRankChange} />
-                        <Form.Control className="mb-2" type="text" placeholder="Phone Number" value={phoneNumber} onChange={handlePhoneNumberChange} />
+                        <Form.Control className="mb-2" type="text" placeholder="Nom" value={name} onChange={handleNameChange} />
+                        <Form.Control className="mb-2" type="text" placeholder="Grade" value={rank} onChange={handleRankChange} />
+                        <Form.Control className="mb-2" type="text" placeholder="Numéro de téléphone" value={phoneNumber} onChange={handlePhoneNumberChange} />
                     </div>
                 </div>
                 <Button className="mt-3 w-100" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? 'Saving...' : 'Save & Upload Business Card'}
+                    {isSaving ? 'Enregistrement...' : 'Enregistrer et télécharger la carte de visite'}
                 </Button>
             </div>
         </div>

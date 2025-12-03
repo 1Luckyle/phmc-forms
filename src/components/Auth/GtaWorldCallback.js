@@ -53,9 +53,9 @@ const GtaWorldCallback = () => {
         <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
             <div className="text-center">
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Processing authentication...</span>
+                    <span className="visually-hidden">Traitement de l'authentification...</span>
                 </div>
-                <p className="mt-3">Processing authentication, please wait...</p>
+                <p className="mt-3">Traitement de l'authentification, veuillez patienter...</p>
             </div>
         </div>
     );

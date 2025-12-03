@@ -28,7 +28,7 @@ const GtaLogin = () => {
 
     const handleGtaWorldLogin = () => {
         // Replace with your actual client ID and callback URL
-        const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'YOUR_CLIENT_ID';
+        const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'VOTRE_ID_CLIENT';
         const redirectUri = encodeURIComponent(window.location.origin + '/#/auth/gta/callback');
         const authUrl = `https://ucp-fr.gta.world/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
         window.location.href = authUrl;
@@ -37,8 +37,8 @@ const GtaLogin = () => {
     return (
         <div style={{ maxWidth: '400px', margin: 'auto', paddingTop: '50px' }}>
             <form onSubmit={handleLogin}>
-                <button type="button" onClick={() => navigate('/')} style={{ width: '25%', padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'pink', marginTop: '10px' }}>Home</button>
-                <h2>Login</h2>
+                <button type="button" onClick={() => navigate('/')} style={{ width: '25%', padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'pink', marginTop: '10px' }}>Accueil</button>
+                <h2>Connexion</h2>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
                 <div style={{ marginBottom: '10px' }}>
                     <label>Email</label>
@@ -50,7 +50,7 @@ const GtaLogin = () => {
                     />
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                    <label>Password</label>
+                    <label>Mot de passe</label>
                     <input
                         type="password"
                         value={password}
@@ -59,10 +59,10 @@ const GtaLogin = () => {
                     />
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                    <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: 'blue', color: 'white', border: 'none' }}>Login</button>
-                    <button type="button" onClick={handleGtaWorldLogin} style={{ flex: 1, padding: '10px', backgroundColor: '#ff8c00', color: 'white', border: 'none' }}>Login with GTA World OAuth</button>
+                    <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: 'blue', color: 'white', border: 'none' }}>Connexion</button>
+                    <button type="button" onClick={handleGtaWorldLogin} style={{ flex: 1, padding: '10px', backgroundColor: '#ff8c00', color: 'white', border: 'none' }}>Connexion avec GTA World OAuth</button>
                 </div>
-                <button type="button" onClick={() => navigate('/')} style={{ width: '100%', padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'none', marginTop: '10px' }}>Home</button>
+                <button type="button" onClick={() => navigate('/')} style={{ width: '100%', padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'none', marginTop: '10px' }}>Accueil</button>
             </form>
         </div>
     );

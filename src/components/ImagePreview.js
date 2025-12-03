@@ -131,7 +131,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
             <div className="image-preview-container" style={{ marginTop: '10px' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.85em', color: '#6c757d', marginRight: '8px' }}>
-                        Image Preview{previewUrls.length > 1 ? `s (${previewUrls.length})` : ''}:
+                        Aperçu de l'image{previewUrls.length > 1 ? `s (${previewUrls.length})` : ''}:
                     </span>
                     {previewUrls.slice(0, 3).map((url, index) => (
                         <div
@@ -150,7 +150,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                 backgroundColor: '#161b22',
                                 transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                             }}
-                            title={`Click to open gallery: ${url}`}
+                            title={`Cliquez pour ouvrir la galerie : ${url}`}
                             onMouseEnter={(e) => {
                                 const container = e.currentTarget;
                                 container.style.transform = 'scale(1.05)';
@@ -172,7 +172,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                         >
                             <img
                                 src={url}
-                                alt={`Preview ${index + 1}`}
+                                alt={`Aperçu ${index + 1}`}
                                 style={{
                                     maxWidth: '100%',
                                     maxHeight: '100%',
@@ -189,7 +189,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                     className="preview-remove-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (window.confirm('Remove this image?')) {
+                                        if (window.confirm('Supprimer cette image ?')) {
                                             removeImage(index);
                                         }
                                     }}
@@ -212,7 +212,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                         transition: 'opacity 0.2s ease',
                                         zIndex: 10
                                     }}
-                                    title="Remove image"
+                                    title="Supprimer l'image"
                                 >
                                     <i className="fas fa-times"></i>
                                 </button>
@@ -231,9 +231,9 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                 cursor: 'pointer'
                             }}
                             onClick={() => handleImageClick(previewUrls[3])}
-                            title="Click to view all images"
+                            title="Cliquez pour voir toutes les images"
                         >
-                            +{previewUrls.length - 3} more
+                            +{previewUrls.length - 3} de plus
                         </div>
                     )}
                     <Button
@@ -241,9 +241,9 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                         size="sm"
                         onClick={() => setPreviewUrls([])}
                         style={{ fontSize: '0.7em', padding: '2px 6px' }}
-                        title="Hide previews"
+                        title="Masquer les aperçus"
                     >
-                        Hide
+                        Masquer
                     </Button>
                 </div>
             </div>
@@ -293,7 +293,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                         onMouseLeave={(e) => {
                             e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
                         }}
-                        title="Close (Esc)"
+                        title="Fermer (Échap)"
                     >
                         <i className="fas fa-times"></i>
                     </button>
@@ -303,7 +303,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm('Are you sure you want to remove this image?')) {
+                                if (window.confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) {
                                     removeImage(currentImageIndex);
                                 }
                             }}
@@ -331,7 +331,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                             onMouseLeave={(e) => {
                                 e.target.style.backgroundColor = 'rgba(220, 53, 69, 0.8)';
                             }}
-                            title="Remove Image"
+                            title="Supprimer l'image"
                         >
                             <i className="fas fa-trash"></i>
                         </button>
@@ -352,7 +352,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                             zIndex: 10001
                         }}
                     >
-                        {currentImageIndex + 1} of {previewUrls.length}
+                        {currentImageIndex + 1} sur {previewUrls.length}
                     </div>
 
                     {/* Previous Button */}
@@ -387,7 +387,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                             onMouseLeave={(e) => {
                                 e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
                             }}
-                            title="Previous (←)"
+                            title="Précédent (←)"
                         >
                             <i className="fas fa-chevron-left"></i>
                         </button>
@@ -425,7 +425,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                             onMouseLeave={(e) => {
                                 e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
                             }}
-                            title="Next (→)"
+                            title="Suivant (→)"
                         >
                             <i className="fas fa-chevron-right"></i>
                         </button>
@@ -464,7 +464,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                         border-radius: 8px;
                                     ">
                                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
-                                        <div>Failed to load image</div>
+                                        <div>Échec du chargement de l'image</div>
                                         <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">${previewUrls[currentImageIndex]}</div>
                                     </div>
                                 `;
@@ -544,7 +544,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                             className="thumbnail-remove-btn"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (window.confirm('Remove this image?')) {
+                                                if (window.confirm('Supprimer cette image ?')) {
                                                     removeImage(index);
                                                 }
                                             }}
@@ -567,7 +567,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                                 transition: 'opacity 0.2s ease',
                                                 zIndex: 10002
                                             }}
-                                            title="Remove image"
+                                            title="Supprimer l'image"
                                         >
                                             <i className="fas fa-times"></i>
                                         </button>

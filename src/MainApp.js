@@ -32,12 +32,11 @@ import tombstone from './assets/tombstone.png'
 import phmcpaletobay from './assets/phmcpaletobaylogo.png'
 import './assets/fonts/Poppins-Medium.ttf';
 import { sendMissingEmployeeNotification } from './components/notificationService';
-import SimpleAdminAuth from './components/SimpleAdminAuth';
 
 // css fun
 import './App.css';
 import './buttons.css';
-
+import HeaderInfo from './components/HeaderInfo';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
@@ -48,7 +47,6 @@ const AgencyGroupSelectorModal = lazy(() => import('./components/AgencyGroupSele
 const AgencySelector = lazy(() => import('./components/AgencySelector'));
 const OnboardingModal = lazy(() => import('./components/OnboardingModal'));
 const Footer = lazy(() => import('./components/Footer'));
-import HeaderInfo from './components/HeaderInfo';
 const CoronerTipsModal = lazy(() => import('./components/CoronerTipsModal'));
 const BusinessCardModal = lazy(() => import('./components/BusinessCardModal'));
 const EmsAmaModal = lazy(() => import('./components/EmsAmaModal'));
@@ -59,6 +57,7 @@ const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStat
 const CctvRequestWebhookModal = lazy(() => import('./components/Admin/CctvRequestWebhookModal'));
 const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'));
 const FormImageLink = lazy(() => import('./components/FormImageLink'));
+const PositionInfoModal = lazy(() => import('./components/PositionInfoModal'));
 const EmsBingoModal = lazy(() => import('./components/EmsBingoModal'));
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
 
@@ -398,17 +397,17 @@ function MainApp({
                 let specificPositionData = {};
 
                 if (definition.group === "PHMC Recruitment") {
-                    if (definition.titleKey === "phmcGeneralApplication") {
-                        specificPositionData = physicianRecruitmentDetails || {};
-                    } else if (definition.titleKey === "phmcPsychApplication") {
-                        specificPositionData = psychRecruitmentDetails || {};
-                    } else if (definition.titleKey === "phmcAdminApplication") {
+                    if (definition.titleKey === "phmcCarrieresMedicales") {
+                        specificPositionData = selectOptions.physicianRecruitmentDetails || {};
+                    } else if (definition.titleKey === "phmcCarrieresPsychologue") {
+                        specificPositionData = selectOptions.psychPositionDetailsData || {};
+                    } else if (definition.titleKey === "phmcCarrieresAdministration") {
                         specificPositionData = selectOptions.adminPositionDetailsData || {};
-                    } else if (definition.titleKey === "phmcNursingApplication") {
+                    } else if (definition.titleKey === "phmcCarrieresInfirmieres") {
                         specificPositionData = selectOptions.nursePositionDetailsData || {};
-                    } else if (definition.titleKey === "phmcCoronerRecruitmentApplication") {
+                    } else if (definition.titleKey === "phmcCarrieresDMEC") {
                         specificPositionData = selectOptions.coronerPositionDetailsData || {};
-                    } else if (definition.titleKey === "phmcEMSApplication") {
+                    } else if (definition.titleKey === "phmcCarrieresEMS") {
                         specificPositionData = selectOptions.emsPositionDetailsData || {};
                     }
                 }
@@ -1082,6 +1081,12 @@ function MainApp({
                     handleImageUpload={handleImageUpload}
                 />
 
+                <PositionInfoModal
+                    show={showPositionInfoModal}
+                    onClose={() => setShowPositionInfoModal(false)}
+                    positionData={currentPositionInfo}
+                />
+
                 {showAgencySelector && (
                     <AgencySelector
                         showAgencySelector={showAgencySelector}
@@ -1196,17 +1201,17 @@ function MainApp({
                                     let positionDisplayNameForTitle = formData.recruitmentPosition || 'selected position';
                                     const currentFormDef = getFormDefinition(bbCodeVersion);
 
-                                    if (currentFormDef?.titleKey === "phmcGeneralApplication") {
+                                    if (currentFormDef?.titleKey === "phmcCarrieresMedicales") {
                                         currentRecruitmentDetailsSource = selectOptions.physicianRecruitmentDetails;
-                                    } else if (currentFormDef?.titleKey === "phmcPsychApplication") {
+                                    } else if (currentFormDef?.titleKey === "phmcCarrieresPsychologue") {
                                         currentRecruitmentDetailsSource = selectOptions.psychPositionDetailsData;
-                                    } else if (currentFormDef?.titleKey === "phmcAdminApplication") {
+                                    } else if (currentFormDef?.titleKey === "phmcCarrieresAdministration") {
                                         currentRecruitmentDetailsSource = selectOptions.adminPositionDetailsData;
-                                    } else if (currentFormDef?.titleKey === "phmcNursingApplication") {
+                                    } else if (currentFormDef?.titleKey === "phmcCarrieresInfirmieres") {
                                         currentRecruitmentDetailsSource = selectOptions.nursePositionDetailsData;
-                                    } else if (currentFormDef?.titleKey === "phmcEMSApplication") {
+                                    } else if (currentFormDef?.titleKey === "phmcCarrieresEMS") {
                                         currentRecruitmentDetailsSource = selectOptions.emsPositionDetailsData;
-                                    } else if (currentFormDef?.titleKey === "phmcCoronerRecruitmentApplication") {
+                                    } else if (currentFormDef?.titleKey === "phmcCarrieresDMEC") {
                                         currentRecruitmentDetailsSource = selectOptions.coronerPositionDetailsData;
                                     }
 
@@ -1214,13 +1219,13 @@ function MainApp({
                                         positionDisplayNameForTitle = currentRecruitmentDetailsSource[formData.recruitmentPosition].displayName || formData.recruitmentPosition;
                                     }
 
-                                    if (currentRecruitmentDetailsSource) {
+                                    if (currentRecruitmentDetailsSource && Object.keys(currentRecruitmentDetailsSource).length > 0) {
                                         return (
                                             <Button
                                                 variant="info"
                                                 type="button"
                                                 className="changelog-button"
-                                                onClick={() => handleShowPositionInfo(formData.recruitmentPosition)}
+                                                onClick={() => handleShowPositionInfo(formData.recruitmentPosition, currentRecruitmentDetailsSource)}
                                                 title={`More info about ${positionDisplayNameForTitle}`}
                                             >
                                                 <i className="fas fa-info-circle"></i>
@@ -1250,7 +1255,7 @@ function MainApp({
                                 type="button"
                                 variant="phmc"
                                 className="changelog-button"
-                                onClick={() => window.open('https://phmc.gta.world/', '_blank')}
+                                onClick={() => window.open('https://phmcfr.com/', '_blank')}
                             >
                                 <i className="fas fa-hospital"></i>
                                 PHMC
@@ -1261,7 +1266,7 @@ function MainApp({
                                 onClick={handleMainFormSelectionButtonClick}
                             >
                                 <i className="fas fa-exchange-alt"></i>
-                                Sélectionner {selectedAgencyGroup || "Agence"} Formulaire
+                                Sélectionner Formulaire {selectedAgencyGroup || "Agence"}
                             </Button>
 
                             <SwitchableFormButtons
@@ -1412,7 +1417,7 @@ function MainApp({
                                 variant="warning"
                                 className="changelog-button"
                                 onClick={() => setShowEmsBingoModal(true)}
-                                title="Open Bingo Night!"
+                                title="Ouvrir le Bingo!"
                                 // disabled // [BINGO DISABLED]
                             >
                                 <i className="fas fa-trophy"></i>
@@ -1423,7 +1428,7 @@ function MainApp({
                                 variant="danger"
                                 className="changelog-button"
                                 onClick={() => navigate('/admin')}
-                                title="Open Admin Control Panel"
+                                title="Ouvrir le Panneau Admin"
                             >
                                 <i className="fas fa-user-shield"></i>
                                 Panneau Admin
