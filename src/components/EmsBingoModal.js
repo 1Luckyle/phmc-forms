@@ -746,8 +746,8 @@ setCompletedBingoLines(prevCompletedLines => {
                     </div>
                 ) : (
                     <div className="bingo-type-selection">
-                        <p>Veuillez sélectionner un type de Bingo pour commencer :</p>
-                        <div className="bingo-type-buttons">
+                            <p style={{ color: '#ffffff' }}>Veuillez sélectionner un type de Bingo pour commencer :</p>
+                            <div className="bingo-type-buttons">
                             {BINGO_TYPES.map(type => (
                                 <Button
                                     key={type.id}
