@@ -214,9 +214,12 @@ import { onRequest } from "firebase-functions/v2/https";
 const corsHandler = cors({
     origin: [
         'http://localhost:3000',
+        'http://localhost:3000/phmc-forms',
         'https://1luckyle.github.io',
+        'https://1luckyle.github.io/phmc-forms',
     ],
-    methods: ['POST', 'OPTIONS']
+    methods: ['POST', 'OPTIONS'],
+    credentials: true
 });
 
 export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_ID", "GTAWORLD_CLIENT_SECRET"] }, async (req, res) => {
