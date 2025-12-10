@@ -259,26 +259,43 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         return;
     }
 
+    console.log('OAuth credentials loaded:', { clientId: clientId ? '✓ loaded' : '✗ missing', clientSecret: clientSecret ? '✓ loaded' : '✗ missing' });
+
     try {
         // Exchange auth code for access token
+        const requestBody = new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri,
+            code: code,
+        });
+        
+        console.log('Sending token request to GTAW with:', {
+            grant_type: 'authorization_code',
+            client_id: clientId ? clientId.substring(0, 5) + '...' : 'missing',
+            client_secret: clientSecret ? clientSecret.substring(0, 5) + '...' : 'missing',
+            redirect_uri: redirectUri,
+            code: code.substring(0, 10) + '...',
+        });
+
         const tokenResponse = await fetch('https://ucp-fr.gta.world/oauth/token', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams({
-                grant_type: 'authorization_code',
-                client_id: clientId,
-                client_secret: clientSecret,
-                redirect_uri: redirectUri,
-                code: code,
-            }),
+            body: requestBody,
         });
 
         if (!tokenResponse.ok) {
             console.error('Token response not OK:', tokenResponse.status);
             const responseText = await tokenResponse.text();
-            console.error('Token response body:', responseText);
+            console.error('GTAW token response error:', {
+                status: tokenResponse.status,
+                statusText: tokenResponse.statusText,
+                contentType: tokenResponse.headers.get('content-type'),
+                body: responseText.substring(0, 500),
+            });
             res.status(400).json({ error: 'Échec de la récupération du token', status: tokenResponse.status, details: responseText });
             return;
         }

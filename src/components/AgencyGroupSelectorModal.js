@@ -183,7 +183,7 @@ const AgencyGroupSelectorModal = ({
             <div style={modalContentStyle}>
                  <div style={titleStyle}>Bienvenue!</div>
                 <div style={textContainerStyle}>
-                   Veuillez sélectionner le groupe de formulaires avec lesquels vous souhaitez travailler :
+                   Veuillez sélectionner l'outil avec lequel vous souhaitez travailler :
 
                 </div>
                 <div
