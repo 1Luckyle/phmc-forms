@@ -10,7 +10,7 @@ const PrivacyPolicyModal = ({ isOpen, onClose }) => {
         <h2>(( Politique de confidentialité )) </h2>
         <p>Cette politique couvre l'utilisation des outils PHMC-FR et est conforme aux <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer">GTA World Privacy Policy</a>.</p>
         <p> Ce site Web traite des informations <strong>IN CHARACTER</strong> relatives à l'utilisation du centre médical de Pillbox Hill (une faction de GTA World) </p>
-        <p>Nous sommes en pleine conformité avec les <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer">Règlements de GTA World</a> en hébergeant ce site Web sur les serveurs de GTA World et le code est vérifié par les développeurs de GTAW.</p>
+        <p>Nous sommes en pleine conformité avec les <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer">Règlements de GTA World</a> en hébergeant ce site Web sur un nom de domaine autorisé par GTAW.</p>
         <p>
           Nous utilisons des outils de fournisseurs tiers : 
           <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer">Sentry</a> (Suivi des erreurs) et  
