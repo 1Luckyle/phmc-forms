@@ -53,7 +53,7 @@ const GtaCallback = () => {
 
                 // Handle actual authentication
                 try {
-                    const functions = getFunctions();
+                    const functions = getFunctions(undefined, 'europe-west1');
                     const exchangeAuthCodeForToken = httpsCallable(functions, 'exchangeAuthCodeForToken');
                     
                     console.log('Calling token exchange with:', { 
