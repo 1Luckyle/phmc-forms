@@ -120,7 +120,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         setResponse(null);
         setError(null);
 
-        const functionUrl = 'https://us-central1-gtaw-forms.cloudfunctions.net/exchangeAuthCodeForToken'; // à changer
+        const functionUrl = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/exchangeAuthCodeForToken';
         console.debug('[OAuth] Using function URL:', functionUrl);
         
         try {

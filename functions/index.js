@@ -11,7 +11,7 @@ if (admin.apps.length === 0) {
 const db = admin.database();
 
 // Set global options for all v2 functions in this file
-setGlobalOptions({ region: "us-central1" }); // Or your preferred region
+setGlobalOptions({ region: "europe-west1" }); // Deploy to Europe region
 
 // --- Helper Functions ---
 
