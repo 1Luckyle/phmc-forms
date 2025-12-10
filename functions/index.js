@@ -275,12 +275,15 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
             }),
         });
 
-        const tokenData = await tokenResponse.json();
-
         if (!tokenResponse.ok) {
-            res.status(400).json({ error: 'Échec de la récupération du token', details: tokenData });
+            console.error('Token response not OK:', tokenResponse.status);
+            const responseText = await tokenResponse.text();
+            console.error('Token response body:', responseText);
+            res.status(400).json({ error: 'Échec de la récupération du token', status: tokenResponse.status, details: responseText });
             return;
         }
+
+        const tokenData = await tokenResponse.json();
 
         // Fetch user profile
         const userResponse = await fetch('https://ucp-fr.gta.world/api/v1/user', {
