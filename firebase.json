@@ -9,7 +9,8 @@
         "firebase-debug.*.log",
         "*.local"
       ],
-      "source": "functions"
+      "source": "functions",
+      "region": "europe-west1"
     }
   ]
 }

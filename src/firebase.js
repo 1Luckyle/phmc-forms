@@ -20,6 +20,6 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 const analytics = getAnalytics(app);
-const functions = getFunctions(app);
+const functions = getFunctions(app, 'europe-west1');
 
 export { database, auth, app, analytics, functions };
