@@ -11,7 +11,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         // Always use hash-based routing for GitHub Pages and local development
         return isGithubPages 
             ? 'https://1Luckyle.github.io/phmc-forms/#/auth/gta/callback'
-            : `${window.location.origin}/#/auth/gta/callback`;
+            : `${window.location.origin}/phmc-forms/#/auth/gta/callback`;
     });
     const [code, setCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);

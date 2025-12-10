@@ -58,12 +58,12 @@ const GtaCallback = () => {
                     
                     console.log('Calling token exchange with:', { 
                         code: code.substring(0, 10) + '...', 
-                        redirectUri: window.location.origin + '/auth/gta/callback' 
+                        redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback' 
                     });
                     
                     const result = await exchangeAuthCodeForToken({ 
                         code, 
-                        redirectUri: window.location.origin + '/auth/gta/callback' 
+                        redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback' 
                     });
                     
                     console.log('Token exchange result:', result);
