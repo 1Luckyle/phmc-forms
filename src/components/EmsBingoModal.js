@@ -697,7 +697,7 @@ setCompletedBingoLines(prevCompletedLines => {
                                     <small className="form-text text-muted mt-1">
                                         <span
                                             onClick={handleOpenEmployeeModal}
-                                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                            style={{ cursor: 'pointer', textDecoration: 'underline', color: '#eeeeeeb0' }}
                                         >
                                             Nom Manquant?
                                         </span>
@@ -733,7 +733,7 @@ setCompletedBingoLines(prevCompletedLines => {
                                         </div>
                                     ))
                                 ) : (
-                                    <p>Aucune activité pour le moment. Soyez le premier à marquer une case !</p>
+                                    <p style={{ color: '#eeeeeeb0' }}>Aucune activité pour le moment. Soyez le premier à marquer une case !</p>
                                 )}
                             </div>
                             {showNewMessagesIndicator && (
