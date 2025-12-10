@@ -29,10 +29,10 @@ const GtaLogin = () => {
     const handleGtaWorldLogin = () => {
         // Replace with your actual client ID and callback URL
         const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'VOTRE_ID_CLIENT';
-        const callbackUrl = window.location.origin + '/#/auth/gta/callback';
+        const callbackUrl = window.location.origin + '/phmc-forms/#/auth/gta/callback';
         const redirectUri = encodeURIComponent(callbackUrl);
         const authUrl = `https://ucp-fr.gta.world/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
-        window.location.href = authUrl
+        window.location.href = authUrl;
     };
 
     return (
