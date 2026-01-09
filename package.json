@@ -38,12 +38,13 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "deploy": "npm run build && git add . && git commit --allow-empty -m \"Deploy\" && git push origin source && gh-pages -d build -b gh-pages -m \"Deploy\" -r https://github.com/1Luckyle/phmc-forms.git -v",
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
-    "postbuild": ""
+
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -b gh-pages -d build -m \"Updates\""
   },
   "eslintConfig": {
     "extends": [
