@@ -3,7 +3,12 @@ import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import * as Sentry from "@sentry/react";
 
 const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActionWebhook, adminUserEmail, onUserDataReceived }) => {
-    const [tokenUrl, setTokenUrl] = useState('https://ucp-fr.gta.world/oauth/token');
+    // Determine the base URL for the GTA World OAuth endpoints.  If the environment
+    // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
+    // default to the French UCP domain for backwards compatibility.  Use this
+    // base URL to initialise the default token endpoint.
+    const defaultBaseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+    const [tokenUrl, setTokenUrl] = useState(`${defaultBaseUrl}/oauth/token`);
     const [clientId, setClientId] = useState(process.env.REACT_APP_GTAWORLD_CLIENT_ID || '');
     const [clientSecret, setClientSecret] = useState('');
     const [redirectUri, setRedirectUri] = useState(() => {
@@ -109,7 +114,11 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         console.debug('[OAuth] Stored OAuth state:', { oauthState, returnPath: oauthData.returnPath });
         
         // Include state parameter in OAuth request
-        const authUrl = `https://ucp-fr.gta.world/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${oauthState}`;
+        // Determine the base URL for the GTA World OAuth endpoints.  If the environment
+        // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
+        // default to the French UCP domain for backwards compatibility.
+        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+        const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${oauthState}`;
         window.location.href = authUrl;
     };
 
@@ -130,11 +139,15 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                // Send the tokenUrl to the Cloud Function so that the backend knows
+                // which OAuth token endpoint to call.  By including this value the
+                // backend can attempt a fallback or override if needed.
                 body: JSON.stringify({ 
                     code, 
                     redirectUri,
                     clientId,
-                    clientSecret 
+                    clientSecret,
+                    tokenUrl
                 }),
             });
             console.debug('[OAuth] Token exchange response status:', response.status);
