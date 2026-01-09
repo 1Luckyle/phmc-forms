@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 // We no longer use the Firebase httpsCallable API here because the
@@ -15,9 +15,19 @@ const GtaCallback = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { login } = useAuth();
+    // In React StrictMode (development), effects may run twice. Use a ref to ensure
+    // we only process the OAuth callback once per mount. Without this guard,
+    // the code exchange could be triggered twice, causing the second call to fail
+    // because the OAuth authorization code is single-use.
+    const hasProcessedRef = useRef(false);
 
     useEffect(() => {
         const handleCallback = async () => {
+            // Prevent duplicate processing in StrictMode or multiple re-renders.
+            if (hasProcessedRef.current) {
+                return;
+            }
+            hasProcessedRef.current = true;
             try {
                 const searchParams = new URLSearchParams(location.search);
                 const code = searchParams.get('code');
