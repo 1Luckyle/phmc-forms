@@ -220,7 +220,7 @@ const corsHandler = cors({
     credentials: true
 });
 
-export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_ID", "GTAWORLD_CLIENT_SECRET"] }, async (req, res) => {
+export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_ID", "GTAWORLD_CLIENT_SECRET", "GTAWORLD_OAUTH_BASE_URL"] }, async (req, res) => {
     // Handle CORS
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
@@ -275,14 +275,25 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         let baseUrl;
         if (tokenUrl) {
             try {
+                // Extract the origin from the provided tokenUrl
                 baseUrl = new URL(tokenUrl).origin;
             } catch (e) {
                 console.warn('Invalid tokenUrl provided, ignoring:', tokenUrl);
             }
         }
-        baseUrl = baseUrl || process.env.GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
+        /*
+         * Determine the base domain for the OAuth and API calls.  If the client
+         * provides a tokenUrl, extract its origin.  Otherwise use the
+         * `GTAWORLD_OAUTH_BASE_URL` secret when defined, or fall back to the
+         * French UCP domain.  The French domain (`ucp-fr.gta.world`) is the one
+         * documented for OAuth flows in the PHMC-FR context.
+         */
+        baseUrl = baseUrl || process.env.GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+        // Construct the endpoints using the resolved baseUrl. tokenUrl, if provided,
+        // overrides only the token endpoint.  Note: the user endpoint does not
+        // include a version segment on UCP-FR.
         const tokenEndpoint = tokenUrl || `${baseUrl}/oauth/token`;
-        const userEndpoint = `${baseUrl}/api/v1/user`;
+        const userEndpoint = `${baseUrl}/api/user`;
 
         // Exchange auth code for access token
         const requestBody = new URLSearchParams({

@@ -3,12 +3,11 @@ import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import * as Sentry from "@sentry/react";
 
 const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActionWebhook, adminUserEmail, onUserDataReceived }) => {
-    // Determine the base URL for the GTA World OAuth endpoints.  If the environment
-    // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
-    // default to the French UCP domain for backwards compatibility.  Use this
-    // base URL to initialise the default token endpoint.
-    const defaultBaseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
-    const [tokenUrl, setTokenUrl] = useState(`${defaultBaseUrl}/oauth/token`);
+    // Determine default token endpoint using environment base or fallback to the French UCP domain.
+    const [tokenUrl, setTokenUrl] = useState(() => {
+        const base = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+        return `${base}/oauth/token`;
+    });
     const [clientId, setClientId] = useState(process.env.REACT_APP_GTAWORLD_CLIENT_ID || '');
     const [clientSecret, setClientSecret] = useState('');
     const [redirectUri, setRedirectUri] = useState(() => {
@@ -113,12 +112,14 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         
         console.debug('[OAuth] Stored OAuth state:', { oauthState, returnPath: oauthData.returnPath });
         
-        // Include state parameter in OAuth request
-        // Determine the base URL for the GTA World OAuth endpoints.  If the environment
-        // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
-        // default to the French UCP domain for backwards compatibility.
-        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
-        const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${oauthState}`;
+        // Include state parameter in OAuth request. Use the origin of tokenUrl or environment base to construct the authorization URL.
+        let authBase;
+        try {
+            authBase = new URL(tokenUrl).origin;
+        } catch (e) {
+            authBase = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+        }
+        const authUrl = `${authBase}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${oauthState}`;
         window.location.href = authUrl;
     };
 
@@ -139,9 +140,6 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                // Send the tokenUrl to the Cloud Function so that the backend knows
-                // which OAuth token endpoint to call.  By including this value the
-                // backend can attempt a fallback or override if needed.
                 body: JSON.stringify({ 
                     code, 
                     redirectUri,
@@ -232,7 +230,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                             type="url"
                             value={tokenUrl}
                             onChange={(e) => setTokenUrl(e.target.value)}
-                            placeholder="e.g., https://ucp.gta.world/oauth/token"
+                            placeholder="e.g., https://ucp-fr.gta.world/oauth/token"
                             required
                         />
                     </Form.Group>

@@ -56,19 +56,16 @@ const GtaCallback = () => {
                     const functions = getFunctions(undefined, 'europe-west1');
                     const exchangeAuthCodeForToken = httpsCallable(functions, 'exchangeAuthCodeForToken');
                     
+                    // Determine the token endpoint. Prefer an explicit base URL if provided via
+                    // environment variables, otherwise default to the French UCP domain.
+                    const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+                    const tokenUrl = `${baseUrl}/oauth/token`;
                     console.log('Calling token exchange with:', { 
                         code: code.substring(0, 10) + '...', 
-                        redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback' 
+                        redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback',
+                        tokenUrl
                     });
                     
-                    // Determine the base URL for the GTA World OAuth endpoints.  If the environment
-                    // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
-                    // default to the French UCP domain for backwards compatibility.  Pass
-                    // the token endpoint to the Cloud Function so that the backend can
-                    // select the correct domain.
-                    const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
-                    const tokenUrl = `${baseUrl}/oauth/token`;
-
                     const result = await exchangeAuthCodeForToken({ 
                         code, 
                         redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback',
