@@ -1376,6 +1376,9 @@ Clé : ${savedRoleData.originalKey}`,
 
                 setShowCctvWebhookModal={setShowCctvWebhookModal}
                 setShowMarkdownModal={setShowMarkdownModal}
+                // Pass handlers for OAuth Token and User Data exchange modals
+                setShowOAuthTokenExchangeModal={setShowOAuthTokenExchangeModal}
+                setShowUserDataExchangeModal={setShowUserDataExchangeModal}
                 handleLogout={handleLogout}
                 Sentry={Sentry}
                 showInAppNotification={showInAppNotification}
@@ -1440,7 +1443,7 @@ Clé : ${savedRoleData.originalKey}`,
                 database={database}
                 showNotification={showInAppNotification}
             />
-{/*             <OAuthTokenExchangeModal
+            <OAuthTokenExchangeModal
                 show={showOAuthTokenExchangeModal}
                 onHide={() => setShowOAuthTokenExchangeModal(false)}
                 showNotification={showInAppNotification}
@@ -1455,7 +1458,7 @@ Clé : ${savedRoleData.originalKey}`,
                 sendAdminActionWebhook={sendAdminActionWebhook}
                 adminUserEmail={currentUser?.email}
             />
- */}        </>
+        </>
     );
 };
 
