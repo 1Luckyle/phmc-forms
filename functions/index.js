@@ -343,9 +343,12 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         }
 
         // Fetch user profile
+        // Some endpoints may serve HTML by default unless an Accept header is provided.
+        // We explicitly request JSON to ensure the API returns a JSON response rather than an HTML page.
         const userResponse = await fetch(userEndpoint, {
             headers: {
                 'Authorization': `Bearer ${tokenData.access_token}`,
+                'Accept': 'application/json',
             },
         });
         const userText = await userResponse.text();
