@@ -38,13 +38,12 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -b gh-pages -d build",
+    "deploy": "npm run build && git add . && git commit --allow-empty -m \"Deploy\" && git push origin source && gh-pages -b gh-pages -d build -m \"Deploy\"",
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
-    "postbuild": "git add . && git commit --allow-empty -m Deploy && git push origin source"
+    "postbuild": ""
   },
   "eslintConfig": {
     "extends": [
