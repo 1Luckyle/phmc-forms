@@ -148,14 +148,11 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
 
     const handleGtaWorldLogin = () => {
         // Replace with your actual client ID and callback URL
-        // Determine the base URL for the GTA World OAuth endpoints.  If the environment
-        // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
-        // default to the French UCP domain for backwards compatibility.
-        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
-
         const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'VOTRE_ID_CLIENT';
         const callbackUrl = window.location.origin + '/phmc-forms/#/auth/gta/callback';
         const redirectUri = encodeURIComponent(callbackUrl);
+        // Prefer the configured base URL for OAuth, falling back to the French UCP domain.
+        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
         const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
         window.location.href = authUrl;
     };
