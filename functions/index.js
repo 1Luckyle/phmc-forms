@@ -226,8 +226,19 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
     // Handle CORS
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
+    // Set CORS headers explicitly for all responses
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
     if (req.method !== 'POST') {
-        res.status(405).send('Méthode non autorisée');
+        res.status(405).json({ error: 'Method not allowed' });
         return;
     }
 
@@ -263,13 +274,13 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
 
     try {
         // Exchange auth code for access token
-        const requestBody = new URLSearchParams({
+        const requestBody = {
             grant_type: 'authorization_code',
             client_id: clientId,
             client_secret: clientSecret,
             redirect_uri: redirectUri,
             code: code,
-        });
+        };
         
         console.log('Sending token request to GTAW with:', {
             grant_type: 'authorization_code',
@@ -282,9 +293,9 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         const tokenResponse = await fetch('https://ucp-fr.gta.world/oauth/token', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
             },
-            body: requestBody,
+            body: JSON.stringify(requestBody),
         });
 
         if (!tokenResponse.ok) {
