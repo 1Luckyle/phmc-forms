@@ -274,13 +274,13 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
 
     try {
         // Exchange auth code for access token
-        const requestBody = {
+        const requestBody = new URLSearchParams({
             grant_type: 'authorization_code',
             client_id: clientId,
             client_secret: clientSecret,
             redirect_uri: redirectUri,
             code: code,
-        };
+        });
         
         console.log('Sending token request to GTAW with:', {
             grant_type: 'authorization_code',
@@ -293,9 +293,9 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
         const tokenResponse = await fetch('https://ucp-fr.gta.world/oauth/token', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: JSON.stringify(requestBody),
+            body: requestBody,
         });
 
         if (!tokenResponse.ok) {
