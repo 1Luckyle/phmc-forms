@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+// We no longer use the Firebase httpsCallable API here because the
+// underlying Cloud Function `exchangeAuthCodeForToken` is an
+// HTTP-triggered function (onRequest). Using httpsCallable requires
+// an onCall function and expects a `data` field in the response. To
+// avoid the "Response is missing data field" error, we call the
+// HTTP endpoint directly via fetch.
 import * as Sentry from "@sentry/react";
 
 const GtaCallback = () => {
@@ -53,56 +58,58 @@ const GtaCallback = () => {
 
                 // Handle actual authentication
                 try {
-                    const functions = getFunctions(undefined, 'europe-west1');
-                    const exchangeAuthCodeForToken = httpsCallable(functions, 'exchangeAuthCodeForToken');
-                    
+                    // The Cloud Function `exchangeAuthCodeForToken` is deployed as an
+                    // HTTP-triggered function (onRequest). We call it directly via
+                    // fetch to avoid the `httpsCallable` requirement for a data field.
+                    const functionUrl = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/exchangeAuthCodeForToken';
                     // Determine the token endpoint. Prefer an explicit base URL if provided via
                     // environment variables, otherwise default to the French UCP domain.
                     const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
                     const tokenUrl = `${baseUrl}/oauth/token`;
-                    console.log('Calling token exchange with:', { 
-                        code: code.substring(0, 10) + '...', 
+                    console.log('Calling token exchange via fetch with:', {
+                        code: code.substring(0, 10) + '...',
                         redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback',
                         tokenUrl
                     });
-                    
-                    const result = await exchangeAuthCodeForToken({ 
-                        code, 
-                        redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback',
-                        tokenUrl
+                    const response = await fetch(functionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            code,
+                            redirectUri: window.location.origin + '/phmc-forms/#/auth/gta/callback',
+                            tokenUrl,
+                        }),
                     });
-                    
-                    console.log('Token exchange result:', result);
-                    
-                    if (result.data) {
-                        await login(result.data);
+                    const responseText = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (parseError) {
+                        throw new Error(`Réponse JSON invalide du serveur. Reçue : ${responseText.substring(0, 100)}...`);
+                    }
+                    console.log('Token exchange response:', data);
+                    if (response.ok) {
+                        // Call the login function with the full response (contains token and user)
+                        await login(data);
                         navigate('/admin');
                     } else {
-                        throw new Error('No user data received from token exchange');
+                        // The server responded with an error; include details if available
+                        const errorMessage = data.error || data.message || 'Erreur inconnue lors de l\'échange du jeton';
+                        throw new Error(errorMessage);
                     }
                 } catch (error) {
                     console.error('Token exchange error:', error);
-                    console.error('Error code:', error.code);
-                    console.error('Error message:', error.message);
-                    console.error('Error details:', error.details);
-                    
+                    // Capture the exception in Sentry with additional context
                     Sentry.captureException(error, {
-                        extra: { 
-                            context: 'OAuth Token Exchange',
-                            errorCode: error.code,
-                            errorDetails: error.details
-                        }
+                        extra: {
+                            context: 'OAuth Token Exchange via fetch',
+                            message: error.message,
+                        },
                     });
-                    
-                    let errorMessage = "Échec de l'authentification";
-                    if (error.code === 'invalid-argument') {
-                        errorMessage = 'Paramètres de requête invalides. Veuillez réessayer.';
-                    } else if (error.code === 'internal') {
-                        errorMessage = 'Erreur de configuration du serveur. Veuillez contacter le support.';
-                    } else if (error.message) {
-                        errorMessage = error.message;
-                    }
-                    
+                    // Set a user-friendly error message based on the error
+                    const errorMessage = error.message || "Échec de l'authentification";
                     setError(errorMessage);
                     setIsProcessing(false);
                 }
