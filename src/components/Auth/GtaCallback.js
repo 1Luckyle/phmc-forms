@@ -66,7 +66,7 @@ const GtaCallback = () => {
                     // default to the French UCP domain for backwards compatibility.  Pass
                     // the token endpoint to the Cloud Function so that the backend can
                     // select the correct domain.
-                    const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+                    const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
                     const tokenUrl = `${baseUrl}/oauth/token`;
 
                     const result = await exchangeAuthCodeForToken({ 

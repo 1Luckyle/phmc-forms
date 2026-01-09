@@ -2,7 +2,8 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
 import fetch from "node-fetch";
-import { onCall } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
+import cors from 'cors';
 
 // Initialize Firebase Admin SDK
 if (admin.apps.length === 0) {
@@ -87,7 +88,7 @@ const scheduleDeletion = async (request) => {
 
 // --- Scheduled Cloud Function (v2) ---
 
-// Use ESM 'export' syntax instead of 'exports.dailyTaskHandler =' 
+// Use ESM 'export' syntax instead of 'exports.dailyTaskHandler ='
 export const dailyTaskHandler = onSchedule({
     schedule: "every day 09:00",
     timeZone: "UTC",
@@ -156,46 +157,44 @@ export const dailyTaskHandler = onSchedule({
     if (bingoResults.errors.length > 0) bingoDetails += `❌ Erreurs : ${bingoResults.errors.join(', ')}\n`;
 
     // --- Phrase Request Deletion Logic ---
-       const requestsRef = db.ref('bingo/phraseRequests');
+    const requestsRef = db.ref('bingo/phraseRequests');
     let deletionDetails = '';
-       try {
-           const snapshot = await requestsRef.once('value');
-           if (snapshot.exists()) {
-               const requests = snapshot.val();
-               let deletionCount = 0;
+    try {
+        const snapshot = await requestsRef.once('value');
+        if (snapshot.exists()) {
+            const requests = snapshot.val();
+            let deletionCount = 0;
 
-               // Collect deletion promises
-               const deletionPromises = Object.entries(requests)
-                   .map(([key, value]) => {
-                       const request = { id: key, ...value };
-                       if (request.status !== 'pending' && request.processedAt) {
-                           return scheduleDeletion(request).then(() => {
-                               deletionCount++; // Increment only on successful deletion
-                           });
-                       }
-                       return null;
-                   })
-                   .filter(Boolean);
+            // Collect deletion promises
+            const deletionPromises = Object.entries(requests)
+                .map(([key, value]) => {
+                    const request = { id: key, ...value };
+                    if (request.status !== 'pending' && request.processedAt) {
+                        return scheduleDeletion(request).then(() => {
+                            deletionCount++; // Increment only on successful deletion
+                        });
+                    }
+                    return null;
+                })
+                .filter(Boolean);
 
-               await Promise.all(deletionPromises);
-               deletionDetails = `✅ ${deletionCount} demandes de phrases supprimées avec succès.\n`;
+            await Promise.all(deletionPromises);
+            deletionDetails = `✅ ${deletionCount} demandes de phrases supprimées avec succès.\n`;
 
-           } else {
-               deletionDetails = '➖ Aucune demande de phrase trouvée à supprimer.\n';
-           }
-       } catch (error) {
-           console.error('Error during deletion scheduling:', error);
-           deletionDetails = `❌ Erreur lors de la suppression des demandes de phrases : ${error.message}\n`;
-       }
+        } else {
+            deletionDetails = '➖ Aucune demande de phrase trouvée à supprimer.\n';
+        }
+    } catch (error) {
+        console.error('Error during deletion scheduling:', error);
+        deletionDetails = `❌ Erreur lors de la suppression des demandes de phrases : ${error.message}\n`;
+    }
 
     const embed = {
         title: "Gestionnaire de tâches quotidiennes",
         color: 0x1E90FF,
         fields: [
-            { name: "Statut de réinitialisation du Bingo", value: `\`\`\n${bingoDetails.trim() || "Aucune action de bingo effectuée."}\n\`\`
-`, inline: false },
-            { name: "Suppression des demandes de phrases", value: `\`\`\n${deletionDetails.trim() || "Aucune action de demande de phrase effectuée."}\n\`\`
-`, inline: false },
+            { name: "Statut de réinitialisation du Bingo", value: `\`\`\n${bingoDetails.trim() || "Aucune action de bingo effectuée."}\n\`\`\n`, inline: false },
+            { name: "Suppression des demandes de phrases", value: `\`\`\n${deletionDetails.trim() || "Aucune action de demande de phrase effectuée."}\n\`\`\n`, inline: false },
         ],
         timestamp: new Date(event.timestamp).toUTCString(),
         footer: { text: "PHMC-Fr Tools - Fonction Cloud Planifiée (v2)" }
@@ -208,8 +207,7 @@ export const dailyTaskHandler = onSchedule({
     return null;
 });
 
-import cors from 'cors';
-import { onRequest } from "firebase-functions/v2/https";
+// --- OAuth Token Exchange Function ---
 
 const corsHandler = cors({
     origin: [
@@ -244,10 +242,10 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
 
     // Handle data from both httpsCallable (req.body.data) and direct fetch (req.body)
     const data = req.body.data || req.body;
-    
+
     console.log('Received request data:', JSON.stringify(data, null, 2));
-    
-    const { code, redirectUri } = data || {};
+
+    const { code, redirectUri, tokenUrl } = data || {};
     const clientId = process.env.GTAWORLD_CLIENT_ID;
     const clientSecret = process.env.GTAWORLD_CLIENT_SECRET;
 
@@ -273,6 +271,19 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
     console.log('OAuth credentials loaded:', { clientId: clientId ? '✓ loaded' : '✗ missing', clientSecret: clientSecret ? '✓ loaded' : '✗ missing' });
 
     try {
+        // Determine the base URL from tokenUrl or environment
+        let baseUrl;
+        if (tokenUrl) {
+            try {
+                baseUrl = new URL(tokenUrl).origin;
+            } catch (e) {
+                console.warn('Invalid tokenUrl provided, ignoring:', tokenUrl);
+            }
+        }
+        baseUrl = baseUrl || process.env.GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
+        const tokenEndpoint = tokenUrl || `${baseUrl}/oauth/token`;
+        const userEndpoint = `${baseUrl}/api/v1/user`;
+
         // Exchange auth code for access token
         const requestBody = new URLSearchParams({
             grant_type: 'authorization_code',
@@ -281,16 +292,17 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
             redirect_uri: redirectUri,
             code: code,
         });
-        
+
         console.log('Sending token request to GTAW with:', {
             grant_type: 'authorization_code',
             client_id: clientId ? clientId.substring(0, 5) + '...' : 'missing',
             client_secret: clientSecret ? clientSecret.substring(0, 5) + '...' : 'missing',
             redirect_uri: redirectUri,
             code: code.substring(0, 10) + '...',
+            tokenEndpoint
         });
 
-        const tokenResponse = await fetch('https://ucp-fr.gta.world/oauth/token', {
+        const tokenResponse = await fetch(tokenEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -298,29 +310,54 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
             body: requestBody,
         });
 
-        if (!tokenResponse.ok) {
-            console.error('Token response not OK:', tokenResponse.status);
-            const responseText = await tokenResponse.text();
-            console.error('GTAW token response error:', {
+        const tokenText = await tokenResponse.text();
+        const tokenContentType = tokenResponse.headers.get('content-type') || '';
+        if (!tokenContentType.includes('application/json')) {
+            console.error('Token response is not JSON:', {
                 status: tokenResponse.status,
                 statusText: tokenResponse.statusText,
-                contentType: tokenResponse.headers.get('content-type'),
-                body: responseText.substring(0, 500),
+                contentType: tokenContentType,
+                bodySnippet: tokenText.substring(0, 500),
             });
-            res.status(400).json({ error: 'Échec de la récupération du token', status: tokenResponse.status, details: responseText });
+            res.status(400).json({ error: 'Échec de la récupération du token', status: tokenResponse.status, details: tokenText.substring(0, 500) });
+            return;
+        }
+        let tokenData;
+        try {
+            tokenData = JSON.parse(tokenText);
+        } catch (parseError) {
+            console.error('Failed to parse token response as JSON:', parseError);
+            res.status(500).json({ error: 'Échec du parsing du token', details: parseError.message });
             return;
         }
 
-        const tokenData = await tokenResponse.json();
-
         // Fetch user profile
-        const userResponse = await fetch('https://ucp-fr.gta.world/api/v1/user', {
+        const userResponse = await fetch(userEndpoint, {
             headers: {
                 'Authorization': `Bearer ${tokenData.access_token}`,
             },
         });
-
-        const userData = await userResponse.json();
+        const userText = await userResponse.text();
+        const userContentType = userResponse.headers.get('content-type') || '';
+        let userData;
+        if (!userContentType.includes('application/json')) {
+            console.error('User endpoint response is not JSON:', {
+                status: userResponse.status,
+                statusText: userResponse.statusText,
+                contentType: userContentType,
+                bodySnippet: userText.substring(0, 500),
+            });
+            userData = userText.substring(0, 500);
+            res.status(400).json({ error: 'Échec de la récupération des données utilisateur', details: userData });
+            return;
+        }
+        try {
+            userData = JSON.parse(userText);
+        } catch (err) {
+            console.error('Failed to parse user response JSON:', err);
+            res.status(500).json({ error: 'Erreur de parsing des données utilisateur', details: err.message });
+            return;
+        }
 
         if (!userResponse.ok) {
             res.status(400).json({ error: 'Échec de la récupération des données utilisateur', details: userData });
@@ -331,10 +368,10 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
     } catch (error) {
         console.error("Error exchanging auth code:", error);
         console.error("Error stack:", error.stack);
-        res.status(500).json({ 
-            error: 'internal', 
+        res.status(500).json({
+            error: 'internal',
             message: 'Une erreur interne est survenue lors de l\'échange du token',
-            details: error.message 
+            details: error.message
         });
     }
 });

@@ -7,7 +7,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
     // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
     // default to the French UCP domain for backwards compatibility.  Use this
     // base URL to initialise the default token endpoint.
-    const defaultBaseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+    const defaultBaseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
     const [tokenUrl, setTokenUrl] = useState(`${defaultBaseUrl}/oauth/token`);
     const [clientId, setClientId] = useState(process.env.REACT_APP_GTAWORLD_CLIENT_ID || '');
     const [clientSecret, setClientSecret] = useState('');
@@ -117,7 +117,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
         // Determine the base URL for the GTA World OAuth endpoints.  If the environment
         // variable `REACT_APP_GTAWORLD_OAUTH_BASE_URL` is set, use it; otherwise
         // default to the French UCP domain for backwards compatibility.
-        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp.gta.world';
         const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${oauthState}`;
         window.location.href = authUrl;
     };
@@ -232,7 +232,7 @@ const OAuthTokenExchangeModal = ({ show, onHide, showNotification, sendAdminActi
                             type="url"
                             value={tokenUrl}
                             onChange={(e) => setTokenUrl(e.target.value)}
-                            placeholder="e.g., https://ucp-fr.gta.world/oauth/token"
+                            placeholder="e.g., https://ucp.gta.world/oauth/token"
                             required
                         />
                     </Form.Group>
