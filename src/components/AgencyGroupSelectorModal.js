@@ -278,7 +278,7 @@ const AgencyGroupSelectorModal = ({
                         onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                         <i className="fas fa-shield-alt" style={{...imageStyle, fontSize: '40px'}}></i>
-                        Section des Forces de l'Ordre [ACTUELLEMENT INDISPONIBLE]
+                        Section des Forces de l'Ordre
                     </Button>
                 </div>
                 <div style={checkboxContainerStyle}>

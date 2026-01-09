@@ -99,6 +99,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
             environment: process.env.NODE_ENV
         });
 
+        const phmcWebhookURL = process.env.REACT_APP_PHMC_DISCORD;
         const devWebhookURL = process.env.REACT_APP_DEV_WEBHOOK;
         const leoWebhookURL = process.env.REACT_APP_LEO_WEBHOOK_URL;
 
@@ -133,6 +134,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
             embeds: [embed]
         });
         const webhookTargets = [];
+        if (phmcWebhookURL) webhookTargets.push({ name: 'PHMC', url: phmcWebhookURL });
         if (devWebhookURL) webhookTargets.push({ name: 'Dev', url: devWebhookURL });
         if (leoWebhookURL) webhookTargets.push({ name: 'LEO', url: leoWebhookURL });
 
