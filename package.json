@@ -43,7 +43,7 @@
     "test": "craco test",
     "eject": "react-scripts eject",
 
-    "predeploy": "npm run build",
+    "predeploy": "npm run build && node scripts/stamp-build.js",
     "deploy": "gh-pages -b gh-pages -d build -m \"Updates\""
   },
   "eslintConfig": {
