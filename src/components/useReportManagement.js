@@ -127,14 +127,11 @@ export const useReportManagement = (
         } else if (((bbCodeVersion > 3 && bbCodeVersion <= 7) && bbCodeVersion !== 4)) { // SurgicalOps (5), PhysEval PHMC/PBC (6,7)
             let patientIdMissing = !formData.patientID;
             let dateMissing = !formData.date;
-            let patientNameMissing = false;
-            if (bbCodeVersion !== 5) { // Surgical doesn't strictly require patientName for this validation step.
-                patientNameMissing = !formData.patientName;
-            }
-            if (patientIdMissing || dateMissing || patientNameMissing) {
+            
+            // Aucun de ces formulaires n'utilise patientName, seulement patientID
+            if (patientIdMissing || dateMissing) {
                 let missingFieldLabels = [];
                 if (patientIdMissing) missingFieldLabels.push('Patient ID');
-                if (patientNameMissing) missingFieldLabels.push('Patient Name');
                 if (dateMissing) missingFieldLabels.push('Date');
                 if (missingFieldLabels.length > 0) {
                     const message = `Please fill in ${missingFieldLabels.join(', ')} fields.`;
@@ -142,7 +139,15 @@ export const useReportManagement = (
                     return { success: false, error: message };
                 }
             }
-            key = `${formData.patientID || 'NO_ID'} - ${formData.patientName || 'NO_NAME'} - ${formData.date || 'NO_DATE'}`;
+            
+            // Générer la clé pour chaque version
+            if (bbCodeVersion === 5) {
+                key = `[Surgery] ${formData.patientID || 'NO_ID'} - ${formData.date || 'NO_DATE'}`;
+            } else if (bbCodeVersion === 6) {
+                key = `[PhysEval-PHMC] ${formData.patientID || 'NO_ID'} - ${formData.date || 'NO_DATE'}`;
+            } else if (bbCodeVersion === 7) {
+                key = `[PhysEval-PBC] ${formData.patientID || 'NO_ID'} - ${formData.date || 'NO_DATE'}`;
+            }
         } else if (bbCodeVersion === 19) { // EmergencyProtocol
             if (!formData.patientID || !formData.date) {
                 const message = `Please fill in Patient ID, and Date fields.`;
@@ -217,6 +222,24 @@ export const useReportManagement = (
             const formattedDate = formData.dateOfDeath ? new Date(formData.dateOfDeath).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase().replace(/,/g, '') : 'NO_DATE';
             key = `[CASE #${caseNumber}] ${formData.decedentName} (( ${formData.decedentOOC || 'N/A'} )) | [${formattedDate}]`;
         }
+        else if (bbCodeVersion === 22 || bbCodeVersion === 23) { // Commentary Note
+            if (!formData.patientID || !formData.date) {
+                const message = `Please fill in Patient ID and Date fields.`;
+                showNotification(message, 'exclamation-circle');
+                return { success: false, error: message };
+            }
+            const formattedDate = new Date(formData.date).toLocaleDateString('fr-FR');
+            key = `[Commentary Note${bbCodeVersion === 23 ? ' (PBC)' : ' (PHMC)'}] ${formData.patientID} - ${formattedDate}`;
+        }
+        else if (bbCodeVersion === 27) { // Email Forms
+            if (!formData.patientNotes || !formData.decedentName) {
+                const message = `Please fill in Email Subject and Recipient fields.`;
+                showNotification(message, 'exclamation-circle');
+                return { success: false, error: message };
+            }
+            key = `[Email Forms] ${formData.patientNotes} - À: ${formData.decedentName} - ${currentDate}`;
+            const currentDate = new Date().toLocaleDateString('fr-FR');
+        }
         else { // Default handler for any other bbCodeVersion (includes SAAA)
             const definition = getFormDefinition(bbCodeVersion); // Get current form definition
 
@@ -224,8 +247,8 @@ export const useReportManagement = (
             // Existing generic key generation for non-SAAA, non-PHMC Recruitment forms
             const formName = versionNames[bbCodeVersion] || `FormV${bbCodeVersion}`;
 
-            // MODIFIED: Prioritize decedentName, then patientName, then a generic placeholder
-            let identifier = formData.decedentName || formData.patientName || 'Unnamed Report';
+            // MODIFIED: Prioritize decedentName, then patientName, then patientID, then a generic placeholder
+            let identifier = formData.decedentName || formData.patientName || formData.patientID || 'Unnamed Report';
             if (Array.isArray(identifier)) identifier = identifier.join(', ');
 
             // MODIFIED: Ensure dateField always has a value

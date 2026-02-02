@@ -39,7 +39,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
 
     <Form.Select
                 name="phmcRank"
-                value={formData.phmcRank}
+                value={formData.phmcRank || ''}
                 onChange={handleChange}
                 required
                 className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
@@ -58,12 +58,11 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             .flatMap(group => group.options)
             .find(option => option.value === formData.phmcEmployee) || null}
         onChange={(selectedOption) => {
-            // eslint-disable-next-line no-unused-vars
             const lastName = selectedOption ? selectedOption.lastName : '';
             setFormData(prev => ({
                 ...prev,
                 phmcEmployee: selectedOption ? selectedOption.value : '',
-                lastName: selectedOption ? selectedOption.lastName : '' // Use lastName from the selected option
+                lastName: lastName
             }));
         }}
         options={phmcGroupedOptions}

@@ -164,7 +164,7 @@ const Shrink = ({
                     onChange={handleChange}
                     placeholder="Impact sur la vie quotidienne"
                     required
-                    className={`form-control ${!formData.patientCareer ? 'is-invalid' : ''}`}
+                    className={`form-control ${!formData.patientStress ? 'is-invalid' : ''}`}
 
                 />
             </div>

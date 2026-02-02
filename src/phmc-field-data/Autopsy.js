@@ -393,6 +393,53 @@ const Autopsy = ({
             />
             <Form.Label></Form.Label>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                <Form.Label style={{ marginBottom: 0 }}>Chef médecin légiste-Coroner</Form.Label>
+                <button
+                    type="button"
+                    onClick={() => setShowEmployeeModal(true)}
+                    className="close-button"
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', lineHeight: '1.2' }}
+                >
+                    <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
+                    Nom manquant?
+                </button>
+            </div>
+            <Select
+                name="chiefCoronerEmployee"
+                value={coronerGroupedOptions
+                    .flatMap(group => group.options)
+                    .find(option => option.value === formData.chiefCoronerEmployee) || null}
+                onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'chiefCoronerEmployee' })}
+                options={coronerGroupedOptions}
+                isClearable
+                placeholder="Rechercher ou sélectionner le chef coroner..."
+                className={`form-control ${!formData.chiefCoronerEmployee ? 'is-invalid' : ''}`}
+                styles={{
+                    control: (base, state) => ({
+                        ...base,
+                        backgroundColor: '#16202c',
+                        color: '#eeeeeeb0',
+                        borderColor: !formData.chiefCoronerEmployee && state.isFocused ? '#dc3545' :
+                                     !formData.chiefCoronerEmployee ? '#dc3545' :
+                                     state.isFocused ? '#86b7fe' : '#6c757d',
+                        '&:hover': {
+                            borderColor: !formData.chiefCoronerEmployee ? '#dc3545' : '#86b7fe'
+                        },
+                        boxShadow: !formData.chiefCoronerEmployee && state.isFocused ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' :
+                                   state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
+                    }),
+                    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
+                    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
+                    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
+                    group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
+                    groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
+                }}
+            />
+            <Form.Label></Form.Label>
+
             {/* Autopsy Diagram Modal Instance */}
             <AutopsyDiagramModal
                show={showAutopsyDiagramModal}

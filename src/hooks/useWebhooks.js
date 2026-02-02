@@ -130,7 +130,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
 
         const payload = JSON.stringify({
             username: "CCTV Bot",
-            content: "Nouvelle demande de vidéosurveillance ! Alerte superviseur : <@&860257102324301864> | Alerte leadership : <@&860257063182925874>",
+            content: "Nouvelle demande de vidéosurveillance ! Alerte Directrice : <@&1422251503350972517> | Alerte Administration : <@&1422251789146787920>",
             embeds: [embed]
         });
         const webhookTargets = [];

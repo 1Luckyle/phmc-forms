@@ -322,6 +322,37 @@ function MainApp({
                     coronerRank: '',
                     coronerDiscord: '',
                 };
+            } else if (name === 'chiefCoronerEmployee' && selectedOption) {
+                newFormData = {
+                    ...prev,
+                    chiefCoronerEmployee: selectedOption.value,
+                    chiefCoronerBadge: selectedOption.badge,
+                    chiefCoronerRank: selectedOption.rank,
+                    chiefCoronerDiscord: selectedOption.discord,
+                };
+            } else if (name === 'chiefCoronerEmployee' && !selectedOption) {
+                newFormData = {
+                    ...prev,
+                    chiefCoronerEmployee: '',
+                    chiefCoronerBadge: '',
+                    chiefCoronerRank: '',
+                    chiefCoronerDiscord: '',
+                };
+            } else if (name === 'phmcEmployee' && selectedOption) {
+                newFormData = {
+                    ...prev,
+                    phmcEmployee: selectedOption.value,
+                    // Ne pas écraser phmcRank ici, il est géré séparément dans Surgical
+                    // phmcRank: selectedOption.rank,
+                    phmcEmployeeLastName: selectedOption.lastName,
+                };
+            } else if (name === 'phmcEmployee' && !selectedOption) {
+                newFormData = {
+                    ...prev,
+                    phmcEmployee: '',
+                    // Ne pas écraser phmcRank lors du clear
+                    phmcEmployeeLastName: '',
+                };
             } else {
                 newFormData = {
                     ...prev,
@@ -1865,6 +1896,7 @@ function MainAppWrapper() {
         citizenPermanent: false,
         citizenNone: false,
         eduHighSchool: false,
+       
         eduCertificate: false,
         eduDiploma: false,
         eduAssociate: false,

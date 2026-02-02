@@ -175,7 +175,6 @@ const DeathRecord = ({
                         value={coronerGroupedOptions
                             .flatMap(group => group.options)
                             .find(option => option.value === formData.coronerEmployee) || null}
-                        // Corrected onChange handler:
                         onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
                         options={coronerGroupedOptions}
                         isClearable
@@ -202,16 +201,16 @@ const DeathRecord = ({
                         }}
                     />
                     <Form.Label></Form.Label>
-                    <Form.Label>Examinateur médical en chef ou Examinateur médical en chef adjoint</Form.Label>
+                    <Form.Label>Examinateur médical en chef ou Examinateur médical en chef adjoint </Form.Label>
                     <Select
                         name="chiefMedicalExaminer"
                         value={coronerGroupedOptions
                             .flatMap(group => group.options)
                             .find(option => option.value === formData.chiefMedicalExaminer) || null}
                         onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'chiefMedicalExaminer' })}
-                        options={coronerGroupedOptions.filter(group => group.label === 'Chief Boss' || group.label === 'Deputy Chief Medical Examiner-Coroner')}
+                        options={coronerGroupedOptions}
                         isClearable
-                        placeholder="Sélectionner un examinateur médical en chef. (Vous pouvez taper pour rechercher!)"
+                        placeholder="Sélectionner un examinateur médical en chef (Vous pouvez taper pour rechercher!)"
                         className={`form-control ${!formData.chiefMedicalExaminer ? 'is-invalid' : ''}`}
                         styles={{ 
                             control: (base, state) => ({
