@@ -172,6 +172,7 @@ const getRelevantFields = (bbCodeVersion) => {
                 'date',
                 'patientID',
                 'departmentLarge',
+                'patientNotes',  // AJOUTER CETTE LIGNE
             ];
         case 23: // Commentary Note (PBC)
             return [
@@ -179,6 +180,7 @@ const getRelevantFields = (bbCodeVersion) => {
                 'date',
                 'patientID',
                 'departmentLarge',
+                'patientNotes',  // AJOUTER CETTE LIGNE
             ];
         case 24: // Medical Release Records
             return [

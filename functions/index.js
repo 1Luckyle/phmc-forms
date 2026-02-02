@@ -220,7 +220,7 @@ const corsHandler = cors({
     credentials: true
 });
 
-export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_ID", "GTAWORLD_CLIENT_SECRET", "GTAWORLD_OAUTH_BASE_URL"] }, async (req, res) => {
+export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_ID", "GTAWORLD_CLIENT_SECRET"] }, async (req, res) => {
     // Handle CORS
     await new Promise((resolve) => corsHandler(req, res, resolve));
 

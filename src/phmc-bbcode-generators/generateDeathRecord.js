@@ -9,6 +9,7 @@ const generateDeathRecord = (formData) => {
         manner,
         coronerEmployee,
         chiefMedicalExaminer,
+        chiefMedicalExaminerRank,
         causeA,
         causeB,
         causeC,
@@ -70,7 +71,7 @@ const generateDeathRecord = (formData) => {
 
     let formattedDateOfDeath = '[DATE ICI]';
     if (dateOfDeath) {
-        const date = new Date(dateOfDeath + 'T00:00:00'); // Add time to avoid timezone issues
+        const date = new Date(dateOfDeath + 'T00:00:00');
         formattedDateOfDeath = date.toLocaleDateString('fr-FR', {
             year: 'numeric',
             month: 'long',
@@ -107,7 +108,7 @@ const generateDeathRecord = (formData) => {
 [/tr]
 [tr]
 [td bgcolor=#E6E6E6][bold]Examinateur médical[/bold]: ${coronerEmployee || ''}[/td]
-[td bgcolor=#E6E6E6][bold]Chef médecin légiste[/bold]: ${chiefMedicalExaminer || ''}[/td]
+[td bgcolor=#E6E6E6][bold]Chef médecin légiste[/bold]: ${chiefMedicalExaminerRank || 'Chef médecin légiste-Coroner'} ${chiefMedicalExaminer || ''}[/td]
 [/tr]
 [/table]
 

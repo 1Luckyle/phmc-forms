@@ -2,6 +2,8 @@ const generateAutopsy = (formData) => {
     const {
         coronerRank,
         coronerEmployee,
+        chiefCoronerRank,
+        chiefCoronerEmployee,
         synopsis,       // Used for Opinion
         decedentName,
         externalExamination, // Added this from your Autopsy.js
@@ -120,7 +122,7 @@ ${synopsis || 'Aucun avis fourni.'}[br][/br]
 [b]Effectué par:[/b]
 ${coronerRank || 'Médecin légiste'} ${coronerEmployee || 'Coroner inconnu'} [br][/br]
 [b]Approuvé par:[/b]
-Chef médecin légiste-Coroner Anne Carter[/justify][/divbox]`
+${chiefCoronerRank || 'Chef médecin légiste-Coroner'} ${chiefCoronerEmployee || 'Anne Carter'}[/justify][/divbox]`
 
     return bbCode;
 };
