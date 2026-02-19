@@ -22,6 +22,8 @@ import { useGitHubCommit } from './hooks/useGitHubCommit';
 import { useLockdown } from './contexts/LockdownContext';
 import LockdownBanner from './components/LockdownBanner';
 import LockdownDialog from './components/LockdownDialog';
+import { useEmployeeAuth } from './contexts/EmployeeAuthContext';
+import { useEmployeeSelector } from './hooks/useEmployeeSelector';
 // logos
 import email from './assets/email.png'
 import Civilian from './assets/Civilian.png'
@@ -53,6 +55,7 @@ const EmsAmaModal = lazy(() => import('./components/EmsAmaModal'));
 const EasterEggModal = lazy(() => import('./components/EasterEggModal'));
 const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModal'));
 const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
+const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
 const CctvRequestWebhookModal = lazy(() => import('./components/Admin/CctvRequestWebhookModal'));
 const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'));
@@ -112,6 +115,9 @@ function MainApp({
         showFeatureRequestModal, setShowFeatureRequestModal,
 
     } = useModal();
+    
+    const { currentEmployee, employeeProfile, isAdmin, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
 
     // Onboarding detection and initialization
@@ -201,6 +207,21 @@ function MainApp({
         isLoadingData,
         loading
     } = useData();
+    
+    // Filtrer les listes d'employés selon l'utilisateur connecté
+    const { 
+        filteredPhmcList, 
+        filteredCoronerList, 
+        isRestricted,
+        currentEmployeeName 
+    } = useEmployeeSelector(phmcListData, coronerListData);
+    
+    // Créer des listes non-filtrées pour extraStaff et chiefCoronerEmployee
+    const { 
+        filteredPhmcList: unrestrictedPhmcList, 
+        filteredCoronerList: unrestrictedCoronerList
+    } = useEmployeeSelector(phmcListData, coronerListData, false); // applyRestriction = false
+    
     const [isJohnDoe, setIsJohnDoe] = useState(false);
     const [isJaneDoe, setIsJaneDoe] = useState(false);
     const commitInfo = useGitHubCommit();
@@ -640,6 +661,26 @@ function MainApp({
         setShowCctvRequestModal(true);
     };
     
+    const handleEmployeeLogin = () => {
+        setShowLoginModal(true);
+        setShowToolsDropdown(false);
+    };
+    
+    const handleEmployeeLogout = async () => {
+        try {
+            await logoutEmployee();
+            showNotification('Déconnexion réussie', 'success');
+        } catch (error) {
+            console.error('Error logging out:', error);
+            showNotification('Erreur lors de la déconnexion', 'error');
+        }
+        setShowToolsDropdown(false);
+    };
+    
+    const handleLoginSuccess = () => {
+        showNotification(`Bienvenue ${employeeProfile?.name || currentEmployee?.email} !`, 'success');
+    };
+    
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 768);
@@ -780,7 +821,7 @@ function MainApp({
         form => form.group === "PHMC Recruitment"
     );
 
-    const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updatedStaff) => {
+    const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updatedStaff, adminUserEmail) => {
         await sendMissingEmployeeNotification(
             actionType,
             employeeType,
@@ -794,7 +835,8 @@ function MainApp({
             commitInfo,
             showNotification, 
             formData.coronerEmployee, 
-            formData.phmcEmployee
+            formData.phmcEmployee,
+            adminUserEmail || formData.adminUserEmail
         );
 
         if (actionType === 'updateRank') {
@@ -864,7 +906,7 @@ function MainApp({
 
     // --- Grouped staff options stay comme avant (déjà des objets) ---
     const phmcGroupedOptions = useMemo(() => {
-        const list = ensureArray(phmcListData);
+        const list = ensureArray(filteredPhmcList);
         if (list.length === 0) return [];
         return Object.entries(
             list.reduce((groups, employee) => {
@@ -887,10 +929,10 @@ function MainApp({
             const order = ['Leadership', 'Hospital Supervisor', 'Chief Resident', 'Physician', 'Resident Physician', 'Physician Assistant', 'Psychiatrist', 'Psychologist', 'Dentist', 'Nursing', 'Emergency Medical Services', 'Attending Physician', 'Uncategorized'];
             return order.indexOf(a.label) - order.indexOf(b.label);
         });
-    }, [phmcListData]);
+    }, [filteredPhmcList]);
 
     const coronerGroupedOptions = useMemo(() => {
-        const list = ensureArray(coronerListData);
+        const list = ensureArray(filteredCoronerList);
         if (list.length === 0) return [];
         return Object.entries(
             list.reduce((groups, coroner) => {
@@ -915,7 +957,62 @@ function MainApp({
             const order = ['Chief Boss', 'Deputy Chief Medical Examiner-Coroner,', 'Supervisor', 'Senior Medical Examiner', 'Medical Examiner', 'Senior Coroner Investigator', 'Coroner Investigator', 'Forensic Attendant', 'Trainee Forensic-Attendant', 'Developer Testing', 'Missing_Category', 'Uncategorized'];
             return order.indexOf(a.label) - order.indexOf(b.label);
         });
-    }, [coronerListData]);
+    }, [filteredCoronerList]);
+
+    // Versions non-filtrées pour extraStaff et chiefCoronerEmployee
+    const unrestrictedPhmcGroupedOptions = useMemo(() => {
+        const list = ensureArray(unrestrictedPhmcList);
+        if (list.length === 0) return [];
+        return Object.entries(
+            list.reduce((groups, employee) => {
+                const categoryName = employee.category || 'Uncategorized';
+                if (!groups[categoryName]) {
+                    groups[categoryName] = [];
+                }
+                groups[categoryName].push({
+                    value: employee.name,
+                    label: employee.name,
+                    category: employee.category,
+                    lastName: employee.lastName
+                });
+                return groups;
+            }, {})
+        ).map(([category, options]) => ({
+            label: category,
+            options: options.sort((a, b) => a.label.localeCompare(b.label))
+        })).sort((a, b) => {
+            const order = ['Leadership', 'Hospital Supervisor', 'Chief Resident', 'Physician', 'Resident Physician', 'Physician Assistant', 'Psychiatrist', 'Psychologist', 'Dentist', 'Nursing', 'Emergency Medical Services', 'Attending Physician', 'Uncategorized'];
+            return order.indexOf(a.label) - order.indexOf(b.label);
+        });
+    }, [unrestrictedPhmcList]);
+
+    const unrestrictedCoronerGroupedOptions = useMemo(() => {
+        const list = ensureArray(unrestrictedCoronerList);
+        if (list.length === 0) return [];
+        return Object.entries(
+            list.reduce((groups, coroner) => {
+                const categoryName = coroner.category || 'Uncategorized';
+                if (!groups[categoryName]) {
+                    groups[categoryName] = [];
+                }
+                groups[categoryName].push({
+                    value: coroner.name,
+                    label: `${coroner.name} (${coroner.rank || 'Coroner'})`,
+                    badge: coroner.badge,
+                    rank: coroner.rank,
+                    discord: coroner.discord,
+                    category: categoryName
+                });
+                return groups;
+            }, {})
+        ).map(([category, options]) => ({
+            label: category,
+            options: options.sort((a, b) => a.label.localeCompare(b.label))
+        })).sort((a, b) => {
+            const order = ['Chief Boss', 'Deputy Chief Medical Examiner-Coroner,', 'Supervisor', 'Senior Medical Examiner', 'Medical Examiner', 'Senior Coroner Investigator', 'Coroner Investigator', 'Forensic Attendant', 'Trainee Forensic-Attendant', 'Developer Testing', 'Missing_Category', 'Uncategorized'];
+            return order.indexOf(a.label) - order.indexOf(b.label);
+        });
+    }, [unrestrictedCoronerList]);
 
     const handleDoeChange = (type) => (e) => {
         const isChecked = e.target.checked;
@@ -1142,6 +1239,76 @@ function MainApp({
                     <HeaderInfo commitInfo={commitInfo} /> 
                 </div>
 
+                {/* Message d'information si restriction employé active */}
+                {isRestricted && currentEmployeeName && !isAdmin && (
+                    <div style={{
+                        backgroundColor: '#1e3a5f',
+                        color: '#fff',
+                        padding: '10px 20px',
+                        margin: '10px 20px',
+                        borderRadius: '8px',
+                        border: '1px solid #3a5a8f',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        flexWrap: 'wrap'
+                    }}>
+                        <i className="fas fa-user-lock" style={{ color: '#4a9eff' }}></i>
+                        <span>
+                            <strong>Mode Employé:</strong> Vous êtes connecté en tant que <strong>{currentEmployeeName}</strong>. 
+                            Les sélecteurs d'employés sont restreints à votre compte uniquement.
+                            {' '}<span style={{ fontStyle: 'italic', color: '#ffd700' }}>
+                                Si vous ne vous voyez pas dans les listes, 
+                                <a 
+                                    href="#debug-cache"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        const confirmed = window.confirm(
+                                            "⚠️ Vider le cache et actualiser\n\n" +
+                                            "Cette action va :\n" +
+                                            "• Vider le cache local (localStorage)\n" +
+                                            "• Vider la session (sessionStorage)\n" +
+                                            "• Recharger complètement la page\n\n" +
+                                            "Cela permet de synchroniser les données avec Firebase.\n" +
+                                            "Utilisez cette fonction si un nouvel employé n'apparaît pas ou si vos modifications ne sont pas visibles.\n\n" +
+                                            "Voulez-vous continuer ?"
+                                        );
+                                        if (confirmed) {
+                                            localStorage.clear();
+                                            sessionStorage.clear();
+                                            window.location.reload();
+                                        }
+                                    }}
+                                    style={{ color: '#4a9eff', textDecoration: 'underline', cursor: 'pointer', marginLeft: '5px' }}
+                                >
+                                    cliquez ici pour vider le cache
+                                </a>
+                            </span>
+                        </span>
+                    </div>
+                )}
+                
+                {/* Message d'information si admin */}
+                {isAdmin && currentEmployee && (
+                    <div style={{
+                        backgroundColor: '#3e2f1f',
+                        color: '#fff',
+                        padding: '10px 20px',
+                        margin: '10px 20px',
+                        borderRadius: '8px',
+                        border: '1px solid #d4a017',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                    }}>
+                        <i className="fas fa-crown" style={{ color: '#ffd700' }}></i>
+                        <span>
+                            <strong>Mode Administrateur:</strong> Vous êtes connecté en tant qu'admin <strong>{employeeProfile?.name || currentEmployee.email}</strong>. 
+                            Vous avez accès à tous les employés et toutes les fonctions.
+                        </span>
+                    </div>
+                )}
+
                 <div className="container-fluid"> 
                     <div className="form-container">
                         <div className="button-group">
@@ -1152,6 +1319,15 @@ function MainApp({
                                     </Dropdown.Toggle>
 
                                     <Dropdown.Menu>
+                                        {currentEmployee ? (
+                                            <>
+                                                <Dropdown.Header>
+                                                    <i className="fas fa-user-circle"></i> {employeeProfile?.name || currentEmployee.email}
+                                                    {isAdmin && <span style={{marginLeft: '5px', color: '#ffc107'}}><i className="fas fa-crown"></i> Admin</span>}
+                                                </Dropdown.Header>
+                                                <Dropdown.Divider />
+                                            </>
+                                        ) : null}
                                         <Dropdown.Item onClick={() => {setShowEmployeeModal(true); setShowToolsDropdown(false);}}>
                                             <i className="fas fa-users-cog"></i> Gérer le Personnel
                                         </Dropdown.Item>
@@ -1171,6 +1347,43 @@ function MainApp({
                                         <Dropdown.Item onClick={() => {restartOnboarding(); setShowToolsDropdown(false);}}>
                                             <i className="fas fa-play-circle"></i> Guide de Configuration
                                         </Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Item 
+                                            onClick={() => {
+                                                setShowToolsDropdown(false);
+                                                const confirmed = window.confirm(
+                                                    "\u26a0\ufe0f Vider le cache et actualiser\n\n" +
+                                                    "Cette action va :\n" +
+                                                    "\u2022 Vider le cache local (localStorage)\n" +
+                                                    "\u2022 Vider la session (sessionStorage)\n" +
+                                                    "\u2022 Recharger complètement la page\n\n" +
+                                                    "Cela permet de synchroniser les données avec Firebase.\n" +
+                                                    "Utilisez cette fonction si :\n" +
+                                                    "  - Un nouvel employé n'apparaît pas dans les listes\n" +
+                                                    "  - Vos modifications ne sont pas visibles\n" +
+                                                    "  - Les données semblent obsolètes\n\n" +
+                                                    "Voulez-vous continuer ?"
+                                                );
+                                                if (confirmed) {
+                                                    localStorage.clear();
+                                                    sessionStorage.clear();
+                                                    window.location.reload();
+                                                }
+                                            }}
+                                            style={{ color: '#dc3545' }}
+                                        >
+                                            <i className="fas fa-sync-alt"></i> Vider le Cache & Actualiser
+                                        </Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        {currentEmployee ? (
+                                            <Dropdown.Item onClick={handleEmployeeLogout}>
+                                                <i className="fas fa-sign-out-alt"></i> Déconnexion
+                                            </Dropdown.Item>
+                                        ) : (
+                                            <Dropdown.Item onClick={handleEmployeeLogin}>
+                                                <i className="fas fa-sign-in-alt"></i> Connexion Employé
+                                            </Dropdown.Item>
+                                        )}
                                         <Dropdown.Divider />
                                         <Dropdown.Item onClick={() => {{
                                             localStorage.removeItem('selectedAgencyGroup');
@@ -1330,6 +1543,8 @@ function MainApp({
                                         requestingAgencyOptions={optionize(selectOptions.requestingAgenciesOptions)}
                                         phmcGroupedOptions={phmcGroupedOptions}
                                         coronerGroupedOptions={coronerGroupedOptions}
+                                        unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions}
+                                        unrestrictedCoronerGroupedOptions={unrestrictedCoronerGroupedOptions}
                                         setShowEmployeeModal={setShowEmployeeModal}
                                         handleSelectChange={handleSelectChange}
                                         isUploading={isUploading}
@@ -1495,6 +1710,12 @@ function MainApp({
                             }
                         />
 
+                        <EmployeeLoginModal
+                            show={showLoginModal}
+                            onHide={() => setShowLoginModal(false)}
+                            onSuccess={handleLoginSuccess}
+                        />
+
                         <EmployeeModal
                             show={showEmployeeModal}
                             onHide={() => {
@@ -1520,6 +1741,8 @@ function MainApp({
                             coronerGroupedOptions={coronerGroupedOptions}
                             employeeOptions={combinedStaffOptions}
                             handleMissingEmployeeSubmit={handleMissingEmployeeSubmit}
+                            isAdminAuthenticated={formData.isAdminAuthenticated}
+                            adminUserEmail={formData.adminUserEmail}
                         />            
 
                         <div className="bbcode-section">

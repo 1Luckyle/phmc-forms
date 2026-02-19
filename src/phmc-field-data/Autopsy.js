@@ -9,6 +9,7 @@ const Autopsy = ({
     handleChange,
     setFormData,
     coronerGroupedOptions,
+    unrestrictedCoronerGroupedOptions,
     handleSelectChange,
     isUploading,
     setShowEmployeeModal,
@@ -407,11 +408,11 @@ const Autopsy = ({
             </div>
             <Select
                 name="chiefCoronerEmployee"
-                value={coronerGroupedOptions
+                value={unrestrictedCoronerGroupedOptions
                     .flatMap(group => group.options)
                     .find(option => option.value === formData.chiefCoronerEmployee) || null}
                 onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'chiefCoronerEmployee' })}
-                options={coronerGroupedOptions}
+                options={unrestrictedCoronerGroupedOptions}
                 isClearable
                 placeholder="Rechercher ou sélectionner le chef coroner..."
                 className={`form-control ${!formData.chiefCoronerEmployee ? 'is-invalid' : ''}`}

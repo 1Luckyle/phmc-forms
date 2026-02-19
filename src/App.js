@@ -12,6 +12,7 @@ import GtaLogin from './components/Auth/GtaLogin';
 import GtaCallback from './components/Auth/GtaCallback';
 import Admin from './components/Admin/Admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import PasswordResetHandler from './components/Auth/PasswordResetHandler';
 
 function App() {
     const [formData, setFormData] = useState({});
@@ -286,6 +287,7 @@ const initialFormData = {
                             <Router>
                                 <Routes>
                                     <Route path="/" element={<MainApp formData={formData} setFormData={setFormData} lastWebhookIdentifier={lastWebhookIdentifier} setLastWebhookIdentifier={setLastWebhookIdentifier} initialFormData={initialFormData} showNotification={showNotification} removeNotification={removeNotification} setShowAdblockNotification={setShowAdblockNotification} />} />
+                                    <Route path="/reset-password" element={<PasswordResetHandler />} />
                                     <Route path="/login" element={<GtaLogin />} />
                                     <Route path="/auth/gta/callback" element={<GtaCallback />} />
                                     <Route path="/admin" element={<ProtectedRoute><Admin formData={formData} setFormData={setFormData} showNotification={showNotification} /></ProtectedRoute>} />

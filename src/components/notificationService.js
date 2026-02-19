@@ -192,7 +192,8 @@ export const sendMissingEmployeeNotification = async (
     commitInfo,
     showNotification,
     coronerEmployee,
-    phmcEmployee
+    phmcEmployee,
+    adminUserEmail
 ) => {
     try {
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
@@ -244,6 +245,11 @@ export const sendMissingEmployeeNotification = async (
                         value: isCoronerRequest
                             ? coronerEmployee
                             : phmcEmployee,
+                        inline: false,
+                    },
+                    {
+                        name: 'Administrateur',
+                        value: adminUserEmail || 'Non authentifié',
                         inline: false,
                     },
                     {
@@ -327,6 +333,7 @@ ${JSON.stringify(debugData, null, 2)}
                 color: 0xffa500,
                 fields: [
                     { name: 'Autorisé par', value: authorizedBy, inline: false },
+                    { name: 'Administrateur', value: adminUserEmail || 'Non authentifié', inline: false },
                     {
                         name: `Personnel à retirer (${staffToRemove.length})`,
                         value: staffToRemove.join('\n') || 'Aucun sélectionné',
@@ -429,6 +436,7 @@ ${JSON.stringify(debugData, null, 2)}
                 fields: [
                     { name: 'Nom de l\'employé', value: selectedEmployeeName, inline: true },
                     { name: 'Fonction de l\'employé', value: employeeType, inline: true },
+                    { name: 'Administrateur', value: adminUserEmail || 'Non authentifié', inline: false },
                     ...updatedFields,
                     { name: 'Firebase Debug String', value: firebaseDebugString, inline: false }
                 ],
@@ -440,6 +448,44 @@ ${JSON.stringify(debugData, null, 2)}
 
             submissionValid = true;
             successMessage = `Informations mises à jour avec succès pour ${selectedEmployeeName}.`;
+        } else if (actionType === 'updateRank') {
+            requestActionTitle = '⬆️ Demande de mise à jour du grade';
+
+            if (!selectedEmployeeName || !newRank?.trim()) {
+                showNotification('Veuillez sélectionner un employé et entrer un nouveau grade.', 'warning');
+                return;
+            }
+
+            let originalData;
+            if (employeeType === 'hospitalStaff') {
+                originalData = phmcList.find(emp => emp.name === selectedEmployeeName);
+            } else {
+                originalData = coronerList.find(emp => emp.name === selectedEmployeeName);
+            }
+
+            const firebaseDebugString = `
+{ rank: '${newRank}', category: '${newRank}' }
+`;
+
+            embedData = {
+                title: requestActionTitle,
+                color: 0x28a745,
+                fields: [
+                    { name: 'Nom de l\'employé', value: selectedEmployeeName, inline: true },
+                    { name: 'Type d\'employé', value: employeeType === 'coroner' ? 'DMEC' : 'Personnel hospitalier', inline: true },
+                    { name: 'Administrateur', value: adminUserEmail || 'Non authentifié', inline: false },
+                    { name: 'Grade actuel', value: originalData?.rank || 'N/A', inline: true },
+                    { name: 'Nouveau grade', value: newRank, inline: true },
+                    { name: 'Firebase Debug String', value: firebaseDebugString, inline: false }
+                ],
+                timestamp: new Date().toISOString(),
+                footer: {
+                    text: `Envoyé via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`,
+                },
+            };
+
+            submissionValid = true;
+            successMessage = `Grade mis à jour avec succès pour ${selectedEmployeeName}.`;
         }
 
         if (submissionValid) {

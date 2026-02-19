@@ -145,6 +145,8 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
     const [error, setError] = useState('');
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [permissionChecked, setPermissionChecked] = useState(false);
 
     const handleGtaWorldLogin = () => {
         // Replace with your actual client ID and callback URL
@@ -435,34 +437,75 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
 
     useEffect(() => {
         setIsLoadingAuth(true);
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             const wasLoggedIn = prevUserUidRef.current !== null;
             const isLoggedIn = user !== null;
-            const { userAgent, timeZone } = getUserContext(); // Capture user context
+            const { userAgent, timeZone } = getUserContext();
 
-            if (isLoggedIn && !wasLoggedIn) {
-                // User just logged in
-                setCurrentUser(user);
-                setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email, adminDisplayData: null, adminSelectedCategoryName: null }));
-                sendAdminActionWebhook(user.email, "Connexion Admin", "L'utilisateur s'est connecté avec succès au panneau d'administration.", null, userAgent, timeZone);
-                if (showInAppNotification) showInAppNotification(`Bienvenue, ${user.email}!`, "check-circle");
-            } else if (!isLoggedIn && wasLoggedIn) {
-                // User just logged out
-                const loggedOutEmail = currentUser?.email || "Inconnu";
-                setCurrentUser(null);
-                setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null, adminDisplayData: null, adminSelectedCategoryName: null }));
-                setCurrentRecruitmentData({});
-                setSelectedRecruitmentCategory('');
-                sendAdminActionWebhook(loggedOutEmail, "Déconnexion Admin", "L'utilisateur s'est déconnecté avec succès du panneau d'administration.", null, userAgent, timeZone);
-                if (showInAppNotification) showInAppNotification(`Déconnecté du panneau d'administration.`, "info-circle");
-            } else if (isLoggedIn && wasLoggedIn) {
-                // User is still logged in (e.g., component re-rendered)
-                setCurrentUser(user);
-                setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email }));
+            if (isLoggedIn) {
+                // Vérifier si l'utilisateur est dans la liste des admins autorisés
+                try {
+                    const adminListRef = ref(database, 'adminUsers');
+                    const snapshot = await get(adminListRef);
+                    
+                    let userIsAdmin = false;
+                    if (snapshot.exists()) {
+                        const adminList = snapshot.val();
+                        // Vérifier si l'email ou l'UID de l'utilisateur est dans la liste
+                        userIsAdmin = Array.isArray(adminList) 
+                            ? adminList.some(admin => admin === user.email || admin === user.uid)
+                            : Object.values(adminList).some(admin => admin === user.email || admin === user.uid);
+                    }
+
+                    setIsAdmin(userIsAdmin);
+                    setPermissionChecked(true);
+
+                    if (userIsAdmin) {
+                        if (!wasLoggedIn) {
+                            // User just logged in as admin
+                            setCurrentUser(user);
+                            setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email, adminDisplayData: null, adminSelectedCategoryName: null }));
+                            sendAdminActionWebhook(user.email, "Connexion Admin", "L'utilisateur s'est connecté avec succès au panneau d'administration.", null, userAgent, timeZone);
+                            if (showInAppNotification) showInAppNotification(`Bienvenue, ${user.email}!`, "check-circle");
+                        } else {
+                            // User is still logged in as admin
+                            setCurrentUser(user);
+                            setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email }));
+                        }
+                    } else {
+                        // User is authenticated but not an admin
+                        setCurrentUser(user);
+                        setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null }));
+                        if (!wasLoggedIn) {
+                            if (showInAppNotification) showInAppNotification(`Accès refusé : Vous n'avez pas les permissions administrateur.`, "warning");
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking admin permissions:', error);
+                    setIsAdmin(false);
+                    setPermissionChecked(true);
+                    setCurrentUser(user);
+                    setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null }));
+                    if (showInAppNotification) showInAppNotification(`Erreur lors de la vérification des permissions.`, "error");
+                }
             } else {
-                // User is still logged out
-                setCurrentUser(null);
-                setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null }));
+                // User logged out
+                if (wasLoggedIn) {
+                    const loggedOutEmail = currentUser?.email || "Inconnu";
+                    setCurrentUser(null);
+                    setIsAdmin(false);
+                    setPermissionChecked(false);
+                    setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null, adminDisplayData: null, adminSelectedCategoryName: null }));
+                    setCurrentRecruitmentData({});
+                    setSelectedRecruitmentCategory('');
+                    sendAdminActionWebhook(loggedOutEmail, "Déconnexion Admin", "L'utilisateur s'est déconnecté avec succès du panneau d'administration.", null, userAgent, timeZone);
+                    if (showInAppNotification) showInAppNotification(`Déconnecté du panneau d'administration.`, "info-circle");
+                } else {
+                    setCurrentUser(null);
+                    setIsAdmin(false);
+                    setPermissionChecked(true);
+                    setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null }));
+                }
             }
 
             prevUserUidRef.current = user ? user.uid : null;
@@ -1183,6 +1226,41 @@ Clé : ${savedRoleData.originalKey}`,
 
     if (isLoadingAuth) {
         return <p>Vérification de l'authentification...</p>;
+    }
+
+    // Si l'utilisateur est connecté mais n'a pas les permissions admin
+    if (currentUser && !isAdmin && permissionChecked) {
+        return (
+            <div className="container mt-5">
+                <div className="row justify-content-center">
+                    <div className="col-md-8 col-lg-6">
+                        <div className="alert alert-danger" role="alert">
+                            <h4 className="alert-heading">
+                                <i className="fas fa-exclamation-triangle"></i> Accès Refusé
+                            </h4>
+                            <p>
+                                Vous êtes connecté en tant que <strong>{currentUser.email}</strong>, mais vous n'avez pas les permissions administrateur nécessaires pour accéder à ce panneau.
+                            </p>
+                            <hr />
+                            <p className="mb-0">
+                                Si vous pensez qu'il s'agit d'une erreur, contactez un administrateur système pour demander l'accès.
+                            </p>
+                            <div className="mt-3 d-flex gap-2">
+                                <Button 
+                                    variant="primary" 
+                                    onClick={() => window.location.hash = '#/'}
+                                >
+                                    <i className="fas fa-home"></i> Retour à l'Accueil
+                                </Button>
+                                <Button variant="secondary" onClick={() => signOut(auth)}>
+                                    <i className="fas fa-sign-out-alt"></i> Se Déconnecter
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (!currentUser) {

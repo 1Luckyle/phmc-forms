@@ -6,6 +6,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             formData,
             handleChange,
             phmcGroupedOptions, // Added this prop
+            unrestrictedPhmcGroupedOptions,
             setFormData,
             phmcRank,
             patientConsent,
@@ -108,7 +109,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
     <Select
         isMulti
         name="extraStaff"
-        options={phmcGroupedOptions.map(group => ({
+        options={unrestrictedPhmcGroupedOptions.map(group => ({
             label: group.label,
             options: group.options.map(option => ({ value: option.value, label: option.label }))
         }))}

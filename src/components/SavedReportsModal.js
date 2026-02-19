@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Button, Form } from 'react-bootstrap';
 import Select from 'react-select';
 import { copyToClipboard } from './notificationService';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 
 const modalStyle = {
     position: 'fixed',
@@ -311,12 +312,37 @@ const SavedReportsModal = ({
         }
     };
 
+    const { employeeProfile, currentEmployee, isAdmin } = useEmployeeAuth();
+
     const filteredEmployeeOptions = useMemo(() => {
+        let options = employeeOptions || [];
+        
+        // Filtrer par type si preselectedEmployeeType est défini
         if (preselectedEmployeeType === 'PHMC') {
-            return (employeeOptions || []).filter((group) => group.label === 'PHMC Staff');
+            options = options.filter((group) => group.label === 'PHMC Staff');
         }
-        return employeeOptions || [];
-    }, [employeeOptions, preselectedEmployeeType]);
+        
+        // Si admin, montrer tous les employés
+        if (isAdmin) {
+            return options;
+        }
+        
+        // Si pas connecté, ne montrer personne
+        if (!currentEmployee) {
+            return [];
+        }
+        
+        // Si employé connecté, montrer seulement cet employé
+        if (employeeProfile) {
+            const currentEmployeeName = employeeProfile.name;
+            return options.map(group => ({
+                ...group,
+                options: group.options.filter(opt => opt.value === currentEmployeeName)
+            })).filter(group => group.options.length > 0);
+        }
+        
+        return options;
+    }, [employeeOptions, preselectedEmployeeType, isAdmin, currentEmployee, employeeProfile]);
 
     const sortedReports = useMemo(() => {
         return [...(reportsForSelectedUser || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));

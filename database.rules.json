@@ -1,0 +1,139 @@
+{
+  "rules": {
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // COMMENT UTILISER CES RÈGLES
+    // ───────────────────────────────────────────────────────────────────────────
+    // La vérification admin se base sur le nœud "adminUIDs" (map UID → true).
+    // ÉTAPE OBLIGATOIRE avant de déployer :
+    //   1. Aller sur console.firebase.google.com → Authentication
+    //   2. Copier l'UID de chaque compte admin
+    //   3. Dans Realtime Database, créer manuellement :
+    //        adminUIDs: {
+    //          "UID_ADMIN_1": true,
+    //          "UID_ADMIN_2": true
+    //        }
+    //   4. Déployer ces règles : firebase deploy --only database
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ─── Map des admins (clé = Firebase Auth UID → true) ─────────────────────
+    // Source de vérité pour toutes les règles admin.
+    // Lisible par tout utilisateur connecté (nécessaire pour les vérifications côté app).
+    // Modifiable uniquement par un admin existant.
+    "adminUIDs": {
+      ".read":  "auth != null",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Liste admin legacy (emails/UIDs en array) ────────────────────────────
+    // Conservée pour la compatibilité côté app. Écrite uniquement par les admins.
+    "adminUsers": {
+      ".read":  "auth != null",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Listes du personnel ──────────────────────────────────────────────────
+    // Lecture publique : les sélecteurs d'employés dans les formulaires sont
+    // accessibles à tous (civils, recrutement, etc.).
+    // Écriture : admins uniquement.
+    "staff": {
+      ".read":  true,
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Options des formulaires & agences ───────────────────────────────────
+    "selectOptions": {
+      ".read":  true,
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+    "agencies": {
+      ".read":  true,
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Paramètres admin (lockdown, config) ──────────────────────────────────
+    // Lockdown doit être lu par tout le monde (LockdownContext / useDeploymentConfig).
+    "adminSettings": {
+      ".read":  true,
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Statut des services (bandeaux, disponibilité) ────────────────────────
+    "serviceStatus": {
+      ".read":  true,
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Demandes de création de compte en attente ────────────────────────────
+    // Écriture PUBLIQUE : la demande est soumise AVANT la création du compte
+    // Firebase Auth (flux onboarding pré-authentification).
+    // Lecture : admins uniquement.
+    "pendingAccountRequests": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": true
+    },
+
+    // ─── Demandes de modification en attente ──────────────────────────────────
+    // Soumises par les employés authentifiés, lues uniquement par les admins.
+    "pendingModificationRequests": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "auth != null"
+    },
+
+    // ─── Rapports sauvegardés ─────────────────────────────────────────────────
+    // CIVILIAN : entièrement public (formulaires civils anonymes).
+    // Autres clés : accès réservé aux utilisateurs authentifiés.
+    "savedReports": {
+      "CIVILIAN": {
+        ".read":  true,
+        ".write": true
+      },
+      "$userKey": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    // ─── Bingo ────────────────────────────────────────────────────────────────
+    "bingo": {
+      // Listes de phrases maîtres — lu par les connectés, écrit par admin
+      "phrases": {
+        ".read":  "auth != null",
+        ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+      },
+      // Cartes de bingo — lu par les connectés, généré par admin uniquement
+      "cards": {
+        ".read":  "auth != null",
+        ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+      },
+      // Logs d'activité — lu & écrit par les employés connectés (cocher les cases)
+      "logs": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      },
+      // Demandes de phrases — soumises par les connectés, lues par admin
+      "phraseRequests": {
+        ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+        ".write": "auth != null"
+      }
+    },
+
+    // ─── Logs webhook ─────────────────────────────────────────────────────────
+    "webhook_logs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "auth != null"
+    },
+
+    // ─── Configurations webhook ───────────────────────────────────────────────
+    "webhooks": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Sauvegardes de migration ─────────────────────────────────────────────
+    "migrationBackups": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    }
+  }
+}
