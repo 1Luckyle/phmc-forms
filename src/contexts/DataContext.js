@@ -305,34 +305,42 @@ export const DataProvider = ({ children }) => {
       loadingNotificationId = showNotification("Chargement des données...", 'spinner fa-spin', 0);
       console.log('🔄 Fetching fresh data from Firebase...');
 
-      const dbRootRef = ref(database);
-      const snapshot = await get(dbRootRef);
+      // Lire chaque segment individuellement (la racine "/" n'est pas accessible par règle)
+      const segmentPaths = Object.values(CACHE_SEGMENTS);
+      const segmentSnapshots = await Promise.all(
+        segmentPaths.map(path => get(ref(database, path)))
+      );
 
-      if (snapshot.exists()) {
-        const allData = snapshot.val();
+      const allData = {};
+      segmentPaths.forEach((path, i) => {
+        if (segmentSnapshots[i].exists()) {
+          allData[path] = segmentSnapshots[i].val();
+        }
+      });
 
+      const hasAnyData = Object.keys(allData).length > 0;
+
+      if (hasAnyData) {
         // Cache par segment
-        Object.entries(CACHE_SEGMENTS).forEach(([_, path]) => {
-          if (allData[path] !== undefined) {
-            dataCache.current[path] = allData[path];
-            if (!EXCLUDED_FROM_CACHE.includes(path)) {
+        Object.entries(allData).forEach(([path, data]) => {
+          dataCache.current[path] = data;
+          if (!EXCLUDED_FROM_CACHE.includes(path)) {
+            try {
+              localStorage.setItem(getCacheKey(path), JSON.stringify(data));
+              localStorage.setItem(getTimestampKey(path), Date.now().toString());
+              localStorage.setItem(getVersionKey(path), getSegmentVersion(path));
+            } catch (error) {
+              console.warn(`Failed to cache ${path} to localStorage:`, error);
               try {
-                localStorage.setItem(getCacheKey(path), JSON.stringify(allData[path]));
-                localStorage.setItem(getTimestampKey(path), Date.now().toString());
-                localStorage.setItem(getVersionKey(path), getSegmentVersion(path));
-              } catch (error) {
-                console.warn(`Failed to cache ${path} to localStorage:`, error);
-                try {
-                  localStorage.removeItem(getCacheKey(path));
-                  localStorage.removeItem(getTimestampKey(path));
-                  localStorage.removeItem(getVersionKey(path));
-                } catch (clearError) {
-                  console.error(`Failed to clear cache for ${path}:`, clearError);
-                }
+                localStorage.removeItem(getCacheKey(path));
+                localStorage.removeItem(getTimestampKey(path));
+                localStorage.removeItem(getVersionKey(path));
+              } catch (clearError) {
+                console.error(`Failed to clear cache for ${path}:`, clearError);
               }
-            } else {
-              console.log(`⏩ Skipping localStorage cache for ${path} (excluded segment)`);
             }
+          } else {
+            console.log(`⏩ Skipping localStorage cache for ${path} (excluded segment)`);
           }
         });
 

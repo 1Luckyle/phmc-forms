@@ -27,8 +27,7 @@ const getShuffledPhrases = (phrases) => {
 };
 
 const sendWebhook = async (payload) => {
-    // --- MODIFICATION: Use process.env to access the secret/environment variable
-    const webhookURL = process.env.ADMIN_ACTION_WEBHOOK_URL;
+    const webhookURL = process.env.DISCORD_WEBHOOK_URL || process.env.ADMIN_ACTION_WEBHOOK_URL;
     if (!webhookURL) {
         // --- MODIFICATION: Updated warning message
         console.warn("Webhook URL not found. Please set the ADMIN_ACTION_WEBHOOK_URL secret for this function.");
@@ -92,8 +91,6 @@ const scheduleDeletion = async (request) => {
 export const dailyTaskHandler = onSchedule({
     schedule: "every day 09:00",
     timeZone: "UTC",
-    // --- MODIFICATION: Add the 'secrets' option to grant access to the webhook URL
-    secrets: ["ADMIN_ACTION_WEBHOOK_URL"],
 }, async (event) => {
     console.log(`Running daily task handler. Event ID: ${event.id}`);
 
@@ -220,7 +217,83 @@ const corsHandler = cors({
     credentials: true
 });
 
-export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_ID", "GTAWORLD_CLIENT_SECRET"] }, async (req, res) => {
+// --- Delete User Account Function ---
+// Allows admin to delete a Firebase Auth account by UID or email
+export const deleteUserAccount = onRequest(async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const { uid, email } = data || {};
+
+    try {
+        // Verify the caller is an admin
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        
+        // Check if caller is in adminUsers list
+        const adminSnapshot = await db.ref('adminUsers').once('value');
+        if (!adminSnapshot.exists()) {
+            res.status(403).json({ error: 'No admin list found' });
+            return;
+        }
+        const adminUsers = adminSnapshot.val();
+        const adminList = Array.isArray(adminUsers) ? adminUsers : Object.values(adminUsers || {});
+        const isAdmin = adminList.some(a => 
+            a === decodedToken.email || a === decodedToken.uid ||
+            (typeof a === 'object' && (a.email === decodedToken.email || a.uid === decodedToken.uid))
+        );
+        if (!isAdmin) {
+            res.status(403).json({ error: 'Caller is not an admin' });
+            return;
+        }
+
+        // Delete user by UID or lookup by email
+        let targetUid = uid;
+        if (!targetUid && email) {
+            const userRecord = await admin.auth().getUserByEmail(email);
+            targetUid = userRecord.uid;
+        }
+
+        if (!targetUid) {
+            res.status(400).json({ error: 'Missing uid or email' });
+            return;
+        }
+
+        await admin.auth().deleteUser(targetUid);
+        console.log(`Deleted Firebase Auth user: ${targetUid}`);
+        res.status(200).json({ success: true, deletedUid: targetUid });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        if (error.code === 'auth/user-not-found') {
+            // User doesn't exist in Auth - consider it a success (already deleted)
+            res.status(200).json({ success: true, note: 'User not found in Auth (already deleted)' });
+            return;
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
+
+export const exchangeAuthCodeForToken = onRequest({}, async (req, res) => {
     // Handle CORS
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
@@ -246,8 +319,8 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: ["GTAWORLD_CLIENT_I
     console.log('Received request data:', JSON.stringify(data, null, 2));
 
     const { code, redirectUri, tokenUrl } = data || {};
-    const clientId = process.env.GTAWORLD_CLIENT_ID;
-    const clientSecret = process.env.GTAWORLD_CLIENT_SECRET;
+    const clientId = process.env.GTAW_CLIENT_ID || process.env.GTAWORLD_CLIENT_ID;
+    const clientSecret = process.env.GTAW_CLIENT_SECRET || process.env.GTAWORLD_CLIENT_SECRET;
 
     // Validate required arguments
     if (!code) {

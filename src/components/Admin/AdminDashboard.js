@@ -5,6 +5,8 @@ import './AdminDashboard.css';
 import DatabaseEditor from './DatabaseEditor';
 import UserStats from './UserStats';
 import WebhookLogs from './WebhookLogs';
+import PendingAccountRequests from './PendingAccountRequests';
+import PendingModificationRequests from './PendingModificationRequests';
 
 const AdminDashboard = ({
     currentUser,
@@ -127,6 +129,8 @@ const AdminDashboard = ({
                     <div className="nav-pills-flex-column">
                         <button className={`nav-link ${selectedSection === 'serviceStatus' ? 'active' : ''}`} onClick={() => setSelectedSection('serviceStatus')}><i className="fas fa-server me-2"></i>Statut du service</button>
                         <button className={`nav-link ${selectedSection === 'lockdown' ? 'active' : ''}`} onClick={() => setSelectedSection('lockdown')}><i className="fas fa-lock me-2"></i>Confinement</button>
+                        <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
+                        <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
                         <button className={`nav-link ${selectedSection === 'recruitment' ? 'active' : ''}`} onClick={() => setSelectedSection('recruitment')}><i className="fas fa-user-plus me-2"></i>Recrutement</button>
                         <button className={`nav-link ${selectedSection === 'bingo' ? 'active' : ''}`} onClick={() => setSelectedSection('bingo')}><i className="fas fa-dice me-2"></i>Bingo</button>
                         <button className={`nav-link ${selectedSection === 'users' ? 'active' : ''}`} onClick={() => setSelectedSection('users')}><i className="fas fa-users-cog me-2"></i>Utilisateurs</button>
@@ -188,6 +192,22 @@ const AdminDashboard = ({
                                 <Button variant="primary" onClick={handleUpdateServiceStatus} disabled={isUpdatingDb || isLoadingStatus}>
                                     {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mettre à jour le statut du service"}
                                 </Button>
+                            </div>
+                        </div>
+                    )}
+                    {selectedSection === 'pendingAccounts' && (
+                        <div className="card">
+                            <div className="card-header">Demandes de compte en attente</div>
+                            <div className="card-body">
+                                <PendingAccountRequests showNotification={showInAppNotification} />
+                            </div>
+                        </div>
+                    )}
+                    {selectedSection === 'pendingModifications' && (
+                        <div className="card">
+                            <div className="card-header">Demandes de modification en attente</div>
+                            <div className="card-body">
+                                <PendingModificationRequests showNotification={showInAppNotification} />
                             </div>
                         </div>
                     )}

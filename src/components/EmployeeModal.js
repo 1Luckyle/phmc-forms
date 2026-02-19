@@ -1,8 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
-import { database } from '../firebase';
+import { database, auth } from '../firebase';
 import { ref, get, set, push, update } from 'firebase/database';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
 
 // --- Styles ---
 const modalOverlayStyle = {
@@ -14,7 +17,9 @@ const modalContentStyle = {
   backgroundColor: '#0d1117', color: '#c9d1d9', padding: '20px',
   borderRadius: '5px', width: '90%',
   maxWidth: '750px',
-  maxHeight: '1500px', position: 'relative',
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  position: 'relative',
   border: '1px solid #30363d',
 };
 const modalHeaderStyle = {
@@ -69,6 +74,46 @@ const reactSelectStyles = {
 // map|array|null -> array
 const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
 
+// Envoie une notification webhook Discord lors d'une demande en attente (modification ou autre)
+const sendPendingRequestWebhook = async (isCoroner, type, data) => {
+  const webhookURL = isCoroner
+    ? process.env.REACT_APP_CORONER_DISCORD_UPDATES
+    : process.env.REACT_APP_PHMC_DISCORD;
+  if (!webhookURL) return;
+  try {
+    let embed;
+    if (type === 'modification') {
+      const changes = [];
+      if ((data.newData.name || '') !== (data.oldData.name || ''))
+        changes.push({ name: "Nom", value: `~~${data.oldData.name}~~ → **${data.newData.name}**`, inline: true });
+      if ((data.newData.rank || '') !== (data.oldData.rank || ''))
+        changes.push({ name: "Grade", value: `~~${data.oldData.rank || 'N/A'}~~ → **${data.newData.rank || 'N/A'}**`, inline: true });
+      if ((data.newData.badge || '') !== (data.oldData.badge || ''))
+        changes.push({ name: "Badge", value: `~~${data.oldData.badge || 'N/A'}~~ → **${data.newData.badge || 'N/A'}**`, inline: true });
+      if ((data.newData.discord || '') !== (data.oldData.discord || ''))
+        changes.push({ name: "Discord", value: `~~${data.oldData.discord || 'N/A'}~~ → **${data.newData.discord || 'N/A'}**`, inline: true });
+      if ((data.newData.phNumber || '') !== (data.oldData.phNumber || ''))
+        changes.push({ name: "Téléphone", value: `~~${data.oldData.phNumber || 'N/A'}~~ → **${data.newData.phNumber || 'N/A'}**`, inline: true });
+      embed = {
+        title: `✏️ Demande de modification — ${isCoroner ? 'DMEC' : 'PHMC'}`,
+        color: 0xFFA500,
+        description: `**${data.requestedBy}** a soumis une demande de modification de ses informations.`,
+        fields: changes.length > 0 ? changes : [{ name: "Modifications", value: "Informations mises à jour (aucun changement détecté).", inline: false }],
+        timestamp: new Date().toISOString(),
+        footer: { text: "PHMC-FR Tools — En attente d'approbation admin" }
+      };
+    }
+    if (!embed) return;
+    await fetch(webhookURL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+  } catch (err) {
+    console.warn('Failed to send pending request webhook:', err);
+  }
+};
+
 // Retourne la paire [key, obj] par name pour une map ou un array
 const findEntryByName = (data, name) => {
   if (!data || !name) return null;
@@ -90,7 +135,9 @@ const EmployeeModal = ({
   handleMissingEmployeeSubmit,
   showNotification,
   coronerList,
-  isLoadingData
+  isLoadingData,
+  isAdminAuthenticated,
+  adminUserEmail
 }) => {
   const [actionType, setActionType] = useState('addEmployee');
   const [employeeType, setEmployeeType] = useState('coroner');
@@ -100,14 +147,21 @@ const EmployeeModal = ({
   const [authorizedBy, setAuthorizedBy] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [refreshData, setRefreshData] = useState(false);
+  const [currentAdminUser, setCurrentAdminUser] = useState(null);
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const { employeeProfile, isAdmin } = useEmployeeAuth();
 
   const [missingEmployeeData, setMissingEmployeeData] = useState({
     coronerName: '',
+    coronerLastName: '',
     coronerDiscord: '',
     employeeLastName: '',
     coronerRank: '',
     coronerPHNumber: '',
     coronerBadge: '',
+    phmcDiscord: '',
+    phmcBadge: '',
+    phmcPHNumber: '',
   });
 
   const handleActionTypeChange = (type) => {
@@ -129,6 +183,37 @@ const EmployeeModal = ({
   };
 
   const handleNewRankChange = (e) => setNewRank(e.target.value);
+
+  // Écouter l'état d'authentification Firebase en temps réel
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentAdminUser(user);
+      if (user) {
+        try {
+          const adminUsersRef = ref(database, 'adminUsers');
+          const adminSnapshot = await get(adminUsersRef);
+          if (adminSnapshot.exists()) {
+            const adminUsers = adminSnapshot.val();
+            const adminList = Array.isArray(adminUsers) ? adminUsers : Object.values(adminUsers || {});
+            const isUserAdmin = adminList.some(admin => 
+              admin === user.email || 
+              admin === user.uid ||
+              (typeof admin === 'object' && (admin.email === user.email || admin.uid === user.uid))
+            );
+            setIsAdminVerified(isUserAdmin);
+          } else {
+            setIsAdminVerified(false);
+          }
+        } catch (err) {
+          console.error('Error checking admin status:', err);
+          setIsAdminVerified(false);
+        }
+      } else {
+        setIsAdminVerified(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
   const handleRemoveStaffChange = (opts) => setStaffToRemove(opts ? opts.map(o => o.value) : []);
   const handleAuthorizedByChange = (e) => setAuthorizedBy(e.target.value);
   const handleInputChange = (e) => setMissingEmployeeData({ ...missingEmployeeData, [e.target.name]: e.target.value });
@@ -150,13 +235,34 @@ const EmployeeModal = ({
             showNotification('Données de l\'employé introuvables.', 'warning');
             return;
           }
+          // Extraire uniquement les chiffres du badge stocké (format "PREFIX-XXXXX")
+          const storedBadge = employeeData.badge || '';
+          const badgeDigits = storedBadge.includes('-') ? storedBadge.split('-').slice(1).join('') : storedBadge;
+          // Séparer prénom / nom
+          // Pour PHMC : name = prénom seulement, lastName = nom → pas de découpe
+          // Pour DMEC : name = nom complet → découpe sur le dernier mot, ou firstName si disponible
+          const fullNameParts = (employeeData.name || '').split(' ');
+          const isPhmc = employeeType !== 'coroner';
+          const coronerFirstName = isPhmc
+            ? (employeeData.name || '')
+            : (employeeData.firstName
+                || (fullNameParts.length > 1 ? fullNameParts.slice(0, -1).join(' ') : (fullNameParts[0] || '')));
+          const coronerLastNamePart = isPhmc
+            ? ''
+            : (employeeData.firstName
+                ? (employeeData.name || '').slice(employeeData.firstName.length).trim()
+                : (fullNameParts.length > 1 ? fullNameParts[fullNameParts.length - 1] : ''));
           setMissingEmployeeData({
-            coronerName: employeeData.name || '',
+            coronerName: coronerFirstName,
+            coronerLastName: coronerLastNamePart,
             coronerDiscord: employeeData.discord || '',
             employeeLastName: employeeData.lastName || '',
             coronerRank: employeeData.rank || '',
             coronerPHNumber: employeeData.phNumber || '',
-            coronerBadge: employeeData.badge || '',
+            coronerBadge: badgeDigits,
+            phmcDiscord: employeeData.discord || '',
+            phmcBadge: badgeDigits,
+            phmcPHNumber: employeeData.phNumber || '',
           });
         })
         .catch((err) => {
@@ -168,14 +274,54 @@ const EmployeeModal = ({
   }, [actionType, selectedEmployeeName, employeeType, showNotification, refreshData]);
 
   const handleSubmit = async () => {
-    setIsLoading(true);
+    // Vérification de l'authentification admin avec Firebase Auth
+    if (!currentAdminUser) {
+      showNotification('Accès refusé : Vous devez être connecté en tant qu\'administrateur pour effectuer cette action.', 'error');
+      return;
+    }
+
+    // Pour editUser, permettre à l'employé de soumettre une demande de modification
+    if (actionType === 'editUser' && employeeProfile && selectedEmployeeName === employeeProfile.name && !isAdminVerified) {
+      // L'employé peut soumettre une demande de modification, pas besoin de vérifier adminUsers
+      setIsLoading(true);
+    } else {
+      // Pour toutes les autres actions, vérifier que l'utilisateur est admin
+      try {
+        const adminUsersRef = ref(database, 'adminUsers');
+        const adminSnapshot = await get(adminUsersRef);
+        
+        if (!adminSnapshot.exists()) {
+          showNotification('Accès refusé : Vous n\'êtes pas autorisé à effectuer cette action.', 'error');
+          return;
+        }
+
+        const adminUsers = adminSnapshot.val();
+        const adminList = Array.isArray(adminUsers) ? adminUsers : Object.values(adminUsers || {});
+        const isAdminAuthorized = adminList.some(admin => 
+          admin === currentAdminUser.email || 
+          admin === currentAdminUser.uid ||
+          (typeof admin === 'object' && (admin.email === currentAdminUser.email || admin.uid === currentAdminUser.uid))
+        );
+
+        if (!isAdminAuthorized) {
+          showNotification('Accès refusé : Vous n\'êtes pas dans la liste des administrateurs autorisés.', 'error');
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking admin authorization:', err);
+        showNotification(`Erreur lors de la vérification des autorisations : ${err.message}`, 'error');
+        return;
+      }
+
+      setIsLoading(true);
+    }
 
     // --- ADD EMPLOYEE ---
     if (actionType === 'addEmployee') {
       const isCoroner = employeeType === 'coroner';
       const required = isCoroner
-        ? { coronerName: 'Nom du coroner', coronerDiscord: 'Discord', coronerRank: 'Grade', coronerBadge: 'Badge' }
-        : { coronerName: 'Prénom', employeeLastName: 'Nom de famille', coronerRank: 'Grade' };
+        ? { coronerName: 'Prénom', coronerLastName: 'Nom', coronerDiscord: 'Discord', coronerRank: 'Grade', coronerBadge: 'Badge', coronerPHNumber: 'Numéro de téléphone' }
+        : { coronerName: 'Prénom', employeeLastName: 'Nom', phmcDiscord: 'Discord', coronerRank: 'Grade', phmcBadge: 'Badge', phmcPHNumber: 'Numéro de téléphone' };
 
       const missing = Object.keys(required).filter(k => !missingEmployeeData[k]?.trim());
       if (missing.length) {
@@ -184,22 +330,39 @@ const EmployeeModal = ({
         return;
       }
 
+      // Validate badge: exactly 5 digits
+      const badgeDigits = isCoroner ? missingEmployeeData.coronerBadge : missingEmployeeData.phmcBadge;
+      if (!/^\d{5}$/.test(badgeDigits)) {
+        showNotification('Le numéro de badge doit contenir exactement 5 chiffres.', 'warning');
+        setIsLoading(false);
+        return;
+      }
+
+      const rankList = isCoroner ? CORONER_RANKS : PHMC_RANKS;
+      const selectedRankData = rankList.find(r => r.value === missingEmployeeData.coronerRank);
+      const badgePrefix = selectedRankData?.badgePrefix || (isCoroner ? 'CO' : 'MD');
+      const fullBadge = `${badgePrefix}-${badgeDigits}`;
+
       const newName = isCoroner
-        ? missingEmployeeData.coronerName
+        ? `${missingEmployeeData.coronerName} ${missingEmployeeData.coronerLastName}`.trim()
         : `${missingEmployeeData.coronerName} ${missingEmployeeData.employeeLastName}`.trim();
 
       const payload = isCoroner
         ? {
             name: newName,
+            firstName: missingEmployeeData.coronerName,
             discord: missingEmployeeData.coronerDiscord,
             rank: missingEmployeeData.coronerRank,
-            badge: missingEmployeeData.coronerBadge,
+            badge: fullBadge,
             phNumber: missingEmployeeData.coronerPHNumber || '',
             category: missingEmployeeData.coronerRank
           }
         : {
             name: newName,
             lastName: missingEmployeeData.employeeLastName,
+            discord: missingEmployeeData.phmcDiscord || '',
+            phNumber: missingEmployeeData.phmcPHNumber || '',
+            badge: fullBadge,
             rank: missingEmployeeData.coronerRank,
             category: missingEmployeeData.coronerRank
           };
@@ -220,11 +383,22 @@ const EmployeeModal = ({
         const newRef = push(listRef);     // génère une clé unique
         await set(newRef, payload);
 
-        await handleMissingEmployeeSubmit('addEmployee', employeeType, newName, null, [], authorizedBy, missingEmployeeData, payload);
+        await handleMissingEmployeeSubmit('addEmployee', employeeType, newName, null, [], authorizedBy, missingEmployeeData, payload, currentAdminUser?.email);
         showNotification(`Ajout réussi de ${newName} à la liste des ${isCoroner ? 'coroners' : 'membres du personnel hospitalier'}.`, 'success');
 
         setRefreshData(prev => !prev);
-        setMissingEmployeeData({ coronerName: '', coronerDiscord: '', employeeLastName: '', coronerRank: '', coronerPHNumber: '', coronerBadge: '' });
+        setMissingEmployeeData({ 
+          coronerName: '', 
+          coronerLastName: '',
+          coronerDiscord: '', 
+          employeeLastName: '', 
+          coronerRank: '', 
+          coronerPHNumber: '', 
+          coronerBadge: '',
+          phmcDiscord: '',
+          phmcBadge: '',
+          phmcPHNumber: '',
+        });
       } catch (err) {
         console.error('Error adding staff member:', err);
         showNotification(`Erreur lors de l'ajout du membre du personnel : ${err.message}`, 'error');
@@ -264,25 +438,66 @@ const EmployeeModal = ({
 
         const updated = { ...employee };
         if (employeeType === 'coroner') {
-          updated.name = missingEmployeeData.coronerName;
+          const coronerRankData = CORONER_RANKS.find(r => r.value === missingEmployeeData.coronerRank);
+          const coronerBadgePrefix = coronerRankData?.badgePrefix || 'TF';
+          const coronerBadgeDigits = missingEmployeeData.coronerBadge.replace(/\D/g, '');
+          updated.name = `${missingEmployeeData.coronerName} ${missingEmployeeData.coronerLastName}`.trim();
+          updated.firstName = missingEmployeeData.coronerName;
           updated.discord = missingEmployeeData.coronerDiscord;
           updated.rank = missingEmployeeData.coronerRank;
-          updated.badge = missingEmployeeData.coronerBadge;
+          updated.badge = coronerBadgeDigits ? `${coronerBadgePrefix}-${coronerBadgeDigits}` : missingEmployeeData.coronerBadge;
           updated.phNumber = missingEmployeeData.coronerPHNumber;
           updated.category = missingEmployeeData.coronerRank;
         } else {
+          const phmcRankData = PHMC_RANKS.find(r => r.value === missingEmployeeData.coronerRank);
+          const phmcBadgePrefix = phmcRankData?.badgePrefix || 'MD';
+          const phmcBadgeDigits = missingEmployeeData.phmcBadge.replace(/\D/g, '');
           updated.name = missingEmployeeData.coronerName;
           updated.lastName = missingEmployeeData.employeeLastName;
+          updated.discord = missingEmployeeData.phmcDiscord || '';
+          updated.phNumber = missingEmployeeData.phmcPHNumber || '';
+          updated.badge = phmcBadgeDigits ? `${phmcBadgePrefix}-${phmcBadgeDigits}` : missingEmployeeData.phmcBadge;
           updated.rank = missingEmployeeData.coronerRank;
           updated.category = missingEmployeeData.coronerRank;
         }
 
-        await set(ref(database, `${basePath}/${key}`), updated);
+        // Si l'employé modifie ses propres informations, envoyer une demande de modification
+        if (employeeProfile && selectedEmployeeName === employeeProfile.name && !isAdminVerified) {
+          // Créer une demande de modification
+          const modificationRequest = {
+            requestId: `${Date.now()}_${selectedEmployeeName}`,
+            originalName: selectedEmployeeName,
+            oldData: employee,
+            newData: updated,
+            isCoroner: employeeType === 'coroner',
+            requestedBy: employeeProfile.name,
+            requestedAt: new Date().toISOString(),
+            status: 'pending'
+          };
 
-        await handleMissingEmployeeSubmit('editUser', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated);
-        showNotification(`Mise à jour réussie des informations pour ${selectedEmployeeName}.`, 'success');
-        setSelectedEmployeeName('');
-        setRefreshData(prev => !prev);
+          // Ajouter à la liste des demandes de modification
+          const modRequestsRef = ref(database, 'pendingModificationRequests');
+          const modSnapshot = await get(modRequestsRef);
+          const existingRequests = modSnapshot.exists() ? 
+            (Array.isArray(modSnapshot.val()) ? modSnapshot.val() : Object.values(modSnapshot.val())) : [];
+          
+          await set(modRequestsRef, [...existingRequests, modificationRequest]);
+
+          // Notifier le canal Discord correspondant
+          sendPendingRequestWebhook(employeeType === 'coroner', 'modification', modificationRequest);
+
+          showNotification(`Demande de modification envoyée ! Un administrateur doit l'approuver.`, 'info');
+          setSelectedEmployeeName('');
+          setRefreshData(prev => !prev);
+        } else {
+          // Si c'est un admin, modifier directement
+          await set(ref(database, `${basePath}/${key}`), updated);
+
+          await handleMissingEmployeeSubmit('editUser', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated, currentAdminUser?.email);
+          showNotification(`Mise à jour réussie des informations pour ${selectedEmployeeName}.`, 'success');
+          setSelectedEmployeeName('');
+          setRefreshData(prev => !prev);
+        }
       } catch (err) {
         console.error('Error updating employee information in Firebase:', err);
         showNotification(`Erreur lors de la mise à jour des informations de l'employé : ${err.message}`, 'error');
@@ -316,6 +531,16 @@ const EmployeeModal = ({
         const staffData = snap.val() || {};
         const updates = {};
 
+        // Collect data of removed employees (for Auth deletion)
+        const removedEmployees = [];
+        const collectRemoved = (listData) => {
+          if (!listData) return;
+          const arr = Array.isArray(listData) ? listData : Object.values(listData);
+          arr.forEach(m => { if (m && staffToRemove.includes(m?.name)) removedEmployees.push(m); });
+        };
+        collectRemoved(staffData.coroner);
+        collectRemoved(staffData.phmc);
+
         const removeMatches = (listPath, listData) => {
           if (!listData) return;
           if (Array.isArray(listData)) {
@@ -335,7 +560,24 @@ const EmployeeModal = ({
 
         await update(ref(database), updates);
 
-        await handleMissingEmployeeSubmit('removeStaff', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updates);
+        // Delete Firebase Auth accounts for removed employees
+        for (const emp of removedEmployees) {
+          if (emp.uid || emp.email) {
+            try {
+              const idToken = await currentAdminUser.getIdToken();
+              const functionUrl = `https://europe-west1-${process.env.REACT_APP_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteUserAccount`;
+              await fetch(functionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ uid: emp.uid, email: emp.email })
+              });
+            } catch (authErr) {
+              console.warn(`Could not delete Auth account for ${emp.name}:`, authErr);
+            }
+          }
+        }
+
+        await handleMissingEmployeeSubmit('removeStaff', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updates, currentAdminUser?.email);
         showNotification(`Suppression réussie de ${staffToRemove.length} membre(s) du personnel.`, 'success');
         setRefreshData(prev => !prev);
       } catch (err) {
@@ -378,7 +620,7 @@ const EmployeeModal = ({
         const updated = { ...employee, rank: trimmed, category: trimmed };
         await set(ref(database, `${basePath}/${key}`), updated);
 
-        await handleMissingEmployeeSubmit('updateRank', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated);
+        await handleMissingEmployeeSubmit('updateRank', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated, currentAdminUser?.email);
         showNotification(`Mise à jour réussie du grade de ${selectedEmployeeName}.`, 'success');
         setRefreshData(prev => !prev);
       } catch (err) {
@@ -398,14 +640,26 @@ const EmployeeModal = ({
     else console.error('EmployeeModal: onHide is not a function', onHide);
   };
 
-  // Options des selects (robustes map/array)
+  // Options des selects (robustes map/array) - Filtrées selon l'utilisateur connecté
   const employeeOptions = useMemo(() => {
     const src = employeeType === 'coroner' ? ensureArray(coronerList) : ensureArray(phmcList);
-    return src.map(emp => ({
+    const allOptions = src.map(emp => ({
       value: emp.name,
-      label: `${emp.name} (${emp.rank || emp.category || 'Rank Missing'})`
+      label: `${emp.name}${emp.lastName ? ' ' + emp.lastName : ''} (${emp.rank || emp.category || 'Rank Missing'})`
     }));
-  }, [employeeType, coronerList, phmcList]);
+    
+    // Si admin, montrer tous les employés
+    if (isAdminVerified) {
+      return allOptions;
+    }
+    
+    // Si employé connecté, montrer seulement cet employé
+    if (employeeProfile && actionType === 'editUser') {
+      return allOptions.filter(opt => opt.value === employeeProfile.name);
+    }
+    
+    return allOptions;
+  }, [employeeType, coronerList, phmcList, isAdminVerified, employeeProfile, actionType]);
 
   const combinedStaffOptions = useMemo(() => {
     const coronerOptions = ensureArray(coronerList).map(c => ({
@@ -429,6 +683,51 @@ const EmployeeModal = ({
           <button onClick={handleClose} style={closeButtonStyle} aria-label="Close modal">&times;</button>
         </div>
 
+        {!currentAdminUser && (
+          <div style={{
+            backgroundColor: '#dc3545',
+            color: '#fff',
+            padding: '12px 15px',
+            borderRadius: '5px',
+            marginBottom: '15px',
+            fontSize: '14px',
+            fontWeight: '500',
+            textAlign: 'center'
+          }}>
+            ⚠️ Accès Administrateur Requis : Vous devez être connecté au panneau administrateur pour effectuer des modifications.
+          </div>
+        )}
+        
+        {currentAdminUser && isAdminVerified && (
+          <div style={{
+            backgroundColor: '#28a745',
+            color: '#fff',
+            padding: '12px 15px',
+            borderRadius: '5px',
+            marginBottom: '15px',
+            fontSize: '14px',
+            fontWeight: '500',
+            textAlign: 'center'
+          }}>
+            ✅ Connecté en tant qu'administrateur : {currentAdminUser.email}
+          </div>
+        )}
+        
+        {currentAdminUser && !isAdminVerified && employeeProfile && (
+          <div style={{
+            backgroundColor: '#ffc107',
+            color: '#000',
+            padding: '12px 15px',
+            borderRadius: '5px',
+            marginBottom: '15px',
+            fontSize: '14px',
+            fontWeight: '500',
+            textAlign: 'center'
+          }}>
+            ℹ️ Connecté en tant qu'employé : {employeeProfile.name}. Vous pouvez uniquement modifier vos propres informations.
+          </div>
+        )}
+
         <div style={modalBodyStyle}>
           <Form>
             <Form.Group controlId="actionTypeRadios" className="mb-3">
@@ -446,14 +745,10 @@ const EmployeeModal = ({
                   id="removeStaff-radio" value="removeStaff"
                   checked={actionType === 'removeStaff'}
                   onChange={() => handleActionTypeChange('removeStaff')} />
-                <Form.Check inline label="Mettre à jour le grade" name="actionType" type="radio"
-                  id="updateRank-radio" value="updateRank"
-                  checked={actionType === 'updateRank'}
-                  onChange={() => handleActionTypeChange('updateRank')} />
               </div>
             </Form.Group>
 
-            {(actionType === 'addEmployee' || actionType === 'updateRank') && (
+            {(actionType === 'addEmployee') && (
               <Form.Group controlId="employeeTypeRadios" className="mb-3">
                 <Form.Label style={formLabelStyle}>Sélectionner le type d'employé :</Form.Label>
                 <div className="mb-3">
@@ -472,30 +767,70 @@ const EmployeeModal = ({
             {actionType === 'addEmployee' && (
               <>
                 {employeeType === 'coroner' ? (
-                  <>
+                  <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
-                        onChange={handleInputChange} placeholder="Nom du coroner" required style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Prénom *" required style={formControlStyle} />
+                      <Form.Control type="text" name="coronerLastName" value={missingEmployeeData.coronerLastName}
+                        onChange={handleInputChange} placeholder="Nom *" required style={formControlStyle} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="coronerDiscord" value={missingEmployeeData.coronerDiscord}
-                        onChange={handleInputChange} placeholder="Nom Discord du coroner" required style={formControlStyle} />
-                      <Form.Control type="text" name="coronerRank" value={missingEmployeeData.coronerRank}
-                        onChange={handleInputChange} placeholder="Grade / Poste du coroner" required style={formControlStyle} />
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        onChange={handleInputChange} placeholder="Discord *" required style={formControlStyle} />
                       <Form.Control type="text" name="coronerPHNumber" value={missingEmployeeData.coronerPHNumber}
-                        onChange={handleInputChange} placeholder="Numéro PH du coroner (Optionnel)" style={formControlStyle} />
-                      <Form.Control type="text" name="coronerBadge" value={missingEmployeeData.coronerBadge}
-                        onChange={handleInputChange} placeholder="Numéro de badge du coroner" required style={formControlStyle} />
+                        onChange={handleInputChange} placeholder="Numéro de téléphone *" required style={formControlStyle} />
                     </div>
-                  </>
+                    <div style={{ display: 'flex', gap: '0', alignItems: 'stretch', maxWidth: '220px' }}>
+                      <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #30363d', borderRight: 'none', padding: '6px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                        {(CORONER_RANKS.find(r => r.value === missingEmployeeData.coronerRank)?.badgePrefix || 'TF') + '-'}
+                      </span>
+                      <Form.Control type="text" name="coronerBadge" value={missingEmployeeData.coronerBadge}
+                        onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setMissingEmployeeData({ ...missingEmployeeData, coronerBadge: v }); }}
+                        placeholder="00000 *" required style={{ ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0 }} maxLength={5} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <Select
+                        name="coronerRank"
+                        options={CORONER_RANKS}
+                        value={CORONER_RANKS.find(r => r.value === missingEmployeeData.coronerRank)}
+                        onChange={(selectedOption) => setMissingEmployeeData({ ...missingEmployeeData, coronerRank: selectedOption.value })}
+                        placeholder="Grade / Poste *"
+                        styles={reactSelectStyles}
+                        required
+                      />
+                    </div>
+                  </div>
                 ) : (
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
-                      onChange={handleInputChange} placeholder="Prénom de l'employé" required style={formControlStyle} />
-                    <Form.Control type="text" name="employeeLastName" value={missingEmployeeData.employeeLastName}
-                      onChange={handleInputChange} placeholder="Nom de l'employé" required style={formControlStyle} />
-                    <Form.Control type="text" name="coronerRank" value={missingEmployeeData.coronerRank}
-                      onChange={handleInputChange} placeholder="Grade / Poste de l'employé" required style={formControlStyle} />
+                  <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
+                        onChange={handleInputChange} placeholder="Prénom *" required style={formControlStyle} />
+                      <Form.Control type="text" name="employeeLastName" value={missingEmployeeData.employeeLastName}
+                        onChange={handleInputChange} placeholder="Nom *" required style={formControlStyle} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <Form.Control type="text" name="phmcDiscord" value={missingEmployeeData.phmcDiscord}
+                        onChange={handleInputChange} placeholder="Discord *" required style={formControlStyle} />
+                      <Form.Control type="text" name="phmcPHNumber" value={missingEmployeeData.phmcPHNumber}
+                        onChange={handleInputChange} placeholder="Numéro de téléphone *" required style={formControlStyle} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0', alignItems: 'stretch', maxWidth: '220px' }}>
+                      <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #30363d', borderRight: 'none', padding: '6px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                        {(PHMC_RANKS.find(r => r.value === missingEmployeeData.coronerRank)?.badgePrefix || 'MD') + '-'}
+                      </span>
+                      <Form.Control type="text" name="phmcBadge" value={missingEmployeeData.phmcBadge}
+                        onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setMissingEmployeeData({ ...missingEmployeeData, phmcBadge: v }); }}
+                        placeholder="00000 *" required style={{ ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0 }} maxLength={5} />
+                    </div>
+                    <Select
+                      name="coronerRank"
+                      options={PHMC_RANKS}
+                      value={PHMC_RANKS.find(r => r.value === missingEmployeeData.coronerRank)}
+                      onChange={(selectedOption) => setMissingEmployeeData({ ...missingEmployeeData, coronerRank: selectedOption.value })}
+                      placeholder="Grade / Poste *"
+                      styles={reactSelectStyles}
+                      required
+                    />
                   </div>
                 )}
               </>
@@ -556,94 +891,120 @@ const EmployeeModal = ({
                 {employeeType === 'coroner' ? (
                   <>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le nom mis à jour du coroner</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le nom mis à jour du coroner..."
-                        value={missingEmployeeData.coronerName} onChange={handleInputChange}
-                        name="coronerName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      <Form.Label style={formLabelStyle}>Prénom / Nom mis à jour</Form.Label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <Form.Control type="text" placeholder="Prénom..."
+                          value={missingEmployeeData.coronerName} onChange={handleInputChange}
+                          name="coronerName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                        <Form.Control type="text" placeholder="Nom..."
+                          value={missingEmployeeData.coronerLastName} onChange={handleInputChange}
+                          name="coronerLastName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      </div>
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le Discord mis à jour du coroner</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le Discord mis à jour du coroner..."
+                      <Form.Label style={formLabelStyle}>Discord mis à jour</Form.Label>
+                      <Form.Control type="text" placeholder="Discord..."
                         value={missingEmployeeData.coronerDiscord} onChange={handleInputChange}
                         name="coronerDiscord" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le rang mis à jour du coroner</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le rang mis à jour du coroner..."
-                        value={missingEmployeeData.coronerRank} onChange={handleInputChange}
-                        name="coronerRank" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      <Form.Label style={formLabelStyle}>Rang mis à jour</Form.Label>
+                      <Select
+                        name="coronerRank"
+                        options={CORONER_RANKS}
+                        value={CORONER_RANKS.find(r => r.value === missingEmployeeData.coronerRank)}
+                        onChange={(selectedOption) => setMissingEmployeeData({ ...missingEmployeeData, coronerRank: selectedOption.value })}
+                        placeholder="Sélectionner le rang..."
+                        styles={reactSelectStyles}
+                        isDisabled={!selectedEmployeeName}
+                      />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le badge mis à jour du coroner</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le badge mis à jour du coroner..."
-                        value={missingEmployeeData.coronerBadge} onChange={handleInputChange}
-                        name="coronerBadge" disabled={!selectedEmployeeName} style={formControlStyle} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le numéro de téléphone mis à jour du coroner</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le numéro de téléphone mis à jour du coroner..."
-                        value={missingEmployeeData.coronerPHNumber} onChange={handleInputChange}
-                        name="coronerPHNumber" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      <Form.Label style={formLabelStyle}>Badge / Téléphone mis à jour</Form.Label>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                        <div style={{ display: 'flex', gap: '0', alignItems: 'stretch', maxWidth: '220px' }}>
+                          <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #30363d', borderRight: 'none', padding: '6px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', opacity: !selectedEmployeeName ? 0.5 : 1 }}>
+                            {(CORONER_RANKS.find(r => r.value === missingEmployeeData.coronerRank)?.badgePrefix || 'TF') + '-'}
+                          </span>
+                          <Form.Control type="text"
+                            value={missingEmployeeData.coronerBadge}
+                            onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setMissingEmployeeData({ ...missingEmployeeData, coronerBadge: v }); }}
+                            placeholder="00000" disabled={!selectedEmployeeName}
+                            style={{ ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0 }} maxLength={5} />
+                        </div>
+                        <Form.Control type="text" placeholder="Numéro de téléphone..."
+                          value={missingEmployeeData.coronerPHNumber} onChange={handleInputChange}
+                          name="coronerPHNumber" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      </div>
                     </Form.Group>
                   </>
                 ) : (
                   <>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le prénom mis à jour</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le prénom mis à jour..."
-                        value={missingEmployeeData.coronerName} onChange={handleInputChange}
-                        name="coronerName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      <Form.Label style={formLabelStyle}>Prénom / Nom mis à jour</Form.Label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <Form.Control type="text" placeholder="Prénom..."
+                          value={missingEmployeeData.coronerName} onChange={handleInputChange}
+                          name="coronerName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                        <Form.Control type="text" placeholder="Nom..."
+                          value={missingEmployeeData.employeeLastName} onChange={handleInputChange}
+                          name="employeeLastName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      </div>
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le nom de famille mis à jour</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le nom de famille mis à jour..."
-                        value={missingEmployeeData.employeeLastName} onChange={handleInputChange}
-                        name="employeeLastName" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      <Form.Label style={formLabelStyle}>Discord mis à jour</Form.Label>
+                      <Form.Control type="text" placeholder="Discord..."
+                        value={missingEmployeeData.phmcDiscord} onChange={handleInputChange}
+                        name="phmcDiscord" disabled={!selectedEmployeeName} style={formControlStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                      <Form.Label style={formLabelStyle}>Entrer le rang mis à jour</Form.Label>
-                      <Form.Control type="text" placeholder="Entrer le rang mis à jour..."
-                        value={missingEmployeeData.coronerRank} onChange={handleInputChange}
-                        name="coronerRank" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      <Form.Label style={formLabelStyle}>Rang mis à jour</Form.Label>
+                      <Select
+                        name="coronerRank"
+                        options={PHMC_RANKS}
+                        value={PHMC_RANKS.find(r => r.value === missingEmployeeData.coronerRank || r.label === missingEmployeeData.coronerRank) || null}
+                        onChange={(selectedOption) => setMissingEmployeeData({ ...missingEmployeeData, coronerRank: selectedOption.value })}
+                        placeholder="Sélectionner le rang..."
+                        styles={reactSelectStyles}
+                        isDisabled={!selectedEmployeeName}
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label style={formLabelStyle}>Badge / Téléphone mis à jour</Form.Label>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                        <div style={{ display: 'flex', gap: '0', alignItems: 'stretch', maxWidth: '220px' }}>
+                          <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #30363d', borderRight: 'none', padding: '6px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', opacity: !selectedEmployeeName ? 0.5 : 1 }}>
+                            {(PHMC_RANKS.find(r => r.value === missingEmployeeData.coronerRank || r.label === missingEmployeeData.coronerRank)?.badgePrefix || 'MD') + '-'}
+                          </span>
+                          <Form.Control type="text"
+                            value={missingEmployeeData.phmcBadge}
+                            onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setMissingEmployeeData({ ...missingEmployeeData, phmcBadge: v }); }}
+                            placeholder="00000" disabled={!selectedEmployeeName}
+                            style={{ ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0 }} maxLength={5} />
+                        </div>
+                        <Form.Control type="text" placeholder="Numéro de téléphone..."
+                          value={missingEmployeeData.phmcPHNumber} onChange={handleInputChange}
+                          name="phmcPHNumber" disabled={!selectedEmployeeName} style={formControlStyle} />
+                      </div>
                     </Form.Group>
                   </>
                 )}
               </>
             )}
 
-            {actionType === 'updateRank' && (
-              <>
-                <Form.Group controlId="coronerEmployeeSelect2" className="mb-3">
-                  <Form.Label style={formLabelStyle}>Sélectionner un employé</Form.Label>
-                  <Select
-                    name="coronerEmployeeSelect2"
-                    options={employeeOptions}
-                    value={employeeOptions.find(o => o.value === selectedEmployeeName)}
-                    onChange={handleSelectChange}
-                    isClearable
-                    placeholder="Rechercher ou sélectionner un employé..."
-                    styles={reactSelectStyles}
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label style={formLabelStyle}>Entrer le rang mis à jour</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder={employeeType === 'coroner' ? 'Entrer le rang mis à jour...' : 'Entrer le poste mis à jour...'}
-                    value={newRank}
-                    onChange={handleNewRankChange}
-                    disabled={!selectedEmployeeName}
-                    style={formControlStyle}
-                  />
-                </Form.Group>
-              </>
-            )}
           </Form>
         </div>
 
         <div style={modalFooterStyle}>
-          <Button variant="primary" onClick={handleSubmit} disabled={isLoading}>
+          <Button 
+            variant="primary" 
+            onClick={handleSubmit} 
+            disabled={isLoading || !currentAdminUser || (actionType !== 'editUser' && !isAdminVerified)}
+            style={{
+              opacity: (isLoading || !currentAdminUser || (actionType !== 'editUser' && !isAdminVerified)) ? 0.5 : 1,
+              cursor: (isLoading || !currentAdminUser || (actionType !== 'editUser' && !isAdminVerified)) ? 'not-allowed' : 'pointer'
+            }}
+          >
             Soumettre la demande
           </Button>
           <Button variant="secondary" onClick={handleClose}>

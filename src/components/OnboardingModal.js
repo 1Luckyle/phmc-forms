@@ -1,11 +1,14 @@
 // src/components/OnboardingModal.js
 import { useState, useEffect } from 'react';
 import { Button, Form } from 'react-bootstrap';
+import Select from 'react-select';
 import { formDefinitions } from '../formDefinitions';
-import { database } from '../firebase';
-import { ref, get, set } from 'firebase/database';
 import { useWebhooks } from '../hooks/useWebhooks';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
 import * as Sentry from "@sentry/react";
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../firebase';
 
 // Step definitions for the onboarding flow
 const ONBOARDING_STEPS = {
@@ -58,6 +61,7 @@ const OnboardingModal = ({
 }) => {
     // Initialize webhook functions
     const { logWebhookToFirebase } = useWebhooks({}, { sha: 'onboarding' }, showNotification);
+    const { requestEmployeeAccount, loginEmployee, employeeProfile } = useEmployeeAuth();
     const [currentStep, setCurrentStep] = useState(ONBOARDING_STEPS.WELCOME);
     const [selectedUserType, setSelectedUserType] = useState(null);
     const [selectedRole, setSelectedRole] = useState(null);
@@ -69,14 +73,19 @@ const OnboardingModal = ({
         discord: '',
         rank: '',
         badge: '',
-        phNumber: ''
+        phNumber: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
     });
     const [isCreatingAccount, setIsCreatingAccount] = useState(false);
     const [accountCreated, setAccountCreated] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+    const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [loggedIn, setLoggedIn] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [resetEmailSent, setResetEmailSent] = useState(false);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -87,15 +96,20 @@ const OnboardingModal = ({
             setRecommendedForms([]);
             setShowAccountCreation(false);
             setShowLogin(false);
-            setSelectedEmployeeId('');
+            setLoginData({ email: '', password: '' });
             setLoggedIn(false);
+            setResetEmailSent(false);
+            setIsResettingPassword(false);
             setAccountData({
                 firstName: '',
                 lastName: '',
                 discord: '',
                 rank: '',
                 badge: '',
-                phNumber: ''
+                phNumber: '',
+                email: '',
+                password: '',
+                confirmPassword: ''
             });
             setIsCreatingAccount(false);
             setAccountCreated(false);
@@ -172,9 +186,8 @@ const OnboardingModal = ({
     };
 
     const handleComplete = () => {
-        // Get logged-in user data if available
-        const loggedInUser = loggedIn ? 
-            [...ensureArray(phmcList), ...ensureArray(coronerList)].find(emp => emp.name === selectedEmployeeId) : null;
+        // Get logged-in user data if available (from EmployeeAuth context)
+        const loggedInUser = employeeProfile || null;
         
         // Determine default form based on user type and role
         let defaultForm = 1; // Default fallback
@@ -293,65 +306,161 @@ const OnboardingModal = ({
         setIsCreatingAccount(true);
         try {
             const isCoroner = selectedUserType === USER_TYPES.CORONER;
-            const requiredFields = isCoroner
-                ? ['Prénom', 'discord', 'rang', 'badge']
-                : ['Prénom', 'Nom', 'rang'];
-
-            const emptyFields = requiredFields.filter(field => !accountData[field]?.trim());
+            
+            // Validation des champs
+            const baseRequired = ['email', 'password', 'confirmPassword'];
+            const specificRequired = isCoroner
+                ? ['firstName', 'lastName', 'discord', 'rank', 'badge', 'phNumber']
+                : ['firstName', 'lastName', 'discord', 'rank', 'badge', 'phNumber'];
+            
+            const allRequired = [...baseRequired, ...specificRequired];
+            const emptyFields = allRequired.filter(field => !accountData[field]?.trim());
+            
             if (emptyFields.length > 0) {
-                showNotification(`Veuillez remplir tous les champs requis : ${emptyFields.join(', ')}`, 'warning');
+                const fieldLabels = {
+                    email: 'Email',
+                    password: 'Mot de passe',
+                    confirmPassword: 'Confirmation du mot de passe',
+                    firstName: 'Prénom',
+                    lastName: 'Nom',
+                    discord: 'Discord',
+                    rank: 'Rang',
+                    badge: 'Badge',
+                    phNumber: 'Numéro de téléphone'
+                };
+                const missingLabels = emptyFields.map(f => fieldLabels[f] || f);
+                showNotification(`Veuillez remplir tous les champs requis : ${missingLabels.join(', ')}`, 'warning');
                 setIsCreatingAccount(false);
                 return;
             }
 
+            // Validation du badge : exactement 5 chiffres
+            if (!/^\d{5}$/.test(accountData.badge)) {
+                showNotification('Le numéro de badge doit contenir exactement 5 chiffres.', 'warning');
+                setIsCreatingAccount(false);
+                return;
+            }
+
+            // Vérification des mots de passe
+            if (accountData.password !== accountData.confirmPassword) {
+                showNotification('Les mots de passe ne correspondent pas.', 'warning');
+                setIsCreatingAccount(false);
+                return;
+            }
+
+            // Validation mot de passe (minimum 8 caractères, majuscule, chiffre, caractère spécial)
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+            if (!passwordRegex.test(accountData.password)) {
+                showNotification('Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.', 'warning');
+                setIsCreatingAccount(false);
+                return;
+            }
+
+            // Construire le badge complet avec préfixe
+            const rankList = isCoroner ? CORONER_RANKS : PHMC_RANKS;
+            const selectedRankData = rankList.find(r => r.value === accountData.rank);
+            const badgePrefix = selectedRankData?.badgePrefix || (isCoroner ? 'CO' : 'MD');
+            const fullBadge = `${badgePrefix}-${accountData.badge}`;
+
             const newStaffMemberName = isCoroner 
-                ? accountData.firstName
+                ? `${accountData.firstName} ${accountData.lastName}`.trim()
                 : `${accountData.firstName} ${accountData.lastName}`.trim();
 
             const newStaffMember = isCoroner ? {
                 name: newStaffMemberName,
                 discord: accountData.discord,
                 rank: accountData.rank,
-                badge: accountData.badge,
+                badge: fullBadge,
                 phNumber: accountData.phNumber || "",
                 category: accountData.rank,
             } : {
                 name: newStaffMemberName,
                 lastName: accountData.lastName,
+                discord: accountData.discord,
+                phNumber: accountData.phNumber || "",
+                badge: fullBadge,
                 rank: accountData.rank,
                 category: accountData.rank,
             };
 
-            const listRef = ref(database, isCoroner ? 'staff/coroner' : 'staff/phmc');
-            const snapshot = await get(listRef);
-            const currentStaff = snapshot.exists() ? snapshot.val() : [];
+            // Envoyer une demande d'approbation de compte
+            const result = await requestEmployeeAccount(
+                newStaffMember,
+                accountData.email,
+                accountData.password,
+                isCoroner
+            );
+            
+            // Notifier le canal Discord correspondant de la nouvelle demande
+            sendPendingAccountRequestWebhook(newStaffMember, accountData.email, isCoroner);
 
-            const isDuplicate = currentStaff.some(member => 
-                member.name.toLowerCase() === newStaffMember.name.toLowerCase());
-            if (isDuplicate) {
-                showNotification(`Le membre du personnel avec le nom "${newStaffMember.name}" existe déjà.`, 'warning');
-                setIsCreatingAccount(false);
+            setAccountCreated(true);
+            showNotification(`Demande de compte envoyée ! Un administrateur doit approuver votre compte avant que vous puissiez vous connecter.`, 'info');
+            
+            // Auto-progress to next step after successful request
+            setTimeout(() => {
+                setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+            }, 2500);
+        } catch (error) {
+            console.error('Error creating account:', error);
+            let errorMessage = 'Erreur lors de la création du compte.';
+            
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'Cet email est déjà utilisé.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Email invalide.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Le mot de passe est trop faible.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            showNotification(errorMessage, 'error');
+        } finally {
+            setIsCreatingAccount(false);
+        }
+    };
+
+    const sendPendingAccountRequestWebhook = async (staffMember, email, isCoroner) => {
+        try {
+            // Utilise le webhook du canal correspondant (PHMC ou DMEC)
+            const webhookURL = isCoroner
+                ? process.env.REACT_APP_CORONER_DISCORD_UPDATES
+                : process.env.REACT_APP_PHMC_DISCORD;
+            if (!webhookURL) {
+                console.warn('Webhook URL non configurée pour la demande de création de compte.');
                 return;
             }
 
-            const updatedStaff = [...currentStaff, newStaffMember];
-            await set(listRef, updatedStaff);
-            
-            // Send webhook notification for account creation
-            await sendAccountCreationWebhook(newStaffMember, isCoroner);
-            
-            setAccountCreated(true);
-            showNotification(`Compte créé avec succès pour ${newStaffMember.name} !`, 'success');
-            
-            // Auto-progress to next step after successful account creation
-            setTimeout(() => {
-                setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
-            }, 1500);
+            const fields = [
+                { name: "Nom", value: staffMember.name || 'N/A', inline: true },
+                { name: "Fonction", value: staffMember.rank || staffMember.category || 'N/A', inline: true },
+                { name: "Badge", value: staffMember.badge || 'N/A', inline: true },
+                { name: "Discord", value: staffMember.discord || 'N/A', inline: true },
+                { name: "Téléphone", value: staffMember.phNumber || 'N/A', inline: true },
+                { name: "Email", value: email || 'N/A', inline: true },
+                ...(!isCoroner && staffMember.lastName ? [{ name: "Nom de famille", value: staffMember.lastName, inline: true }] : []),
+            ];
+
+            const embed = {
+                title: `📝 Nouvelle demande de compte — ${isCoroner ? 'DMEC' : 'PHMC'}`,
+                color: isCoroner ? 0x8b0000 : 0x007bff,
+                description: `**${staffMember.name}** a soumis une demande de création de compte.\nElle est en attente d'approbation par un administrateur.`,
+                fields,
+                timestamp: new Date().toISOString(),
+                footer: { text: "PHMC-FR Tools — En attente d'approbation admin" }
+            };
+
+            await fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embeds: [embed] })
+            });
+
+            await logWebhookToFirebase('pending_account_request', { staffMember, isCoroner });
         } catch (error) {
-            console.error('Error creating account:', error);
-            showNotification(`Erreur lors de la création du compte : ${error.message}`, 'error');
-        } finally {
-            setIsCreatingAccount(false);
+            console.error('Error sending pending account request webhook:', error);
+            Sentry.captureException(error, { extra: { context: 'Pending Account Request Webhook' } });
         }
     };
 
@@ -411,29 +520,50 @@ const OnboardingModal = ({
         }
     };
 
+    const handlePasswordReset = async () => {
+        if (!loginData.email) {
+            showNotification('Veuillez entrer votre adresse email pour réinitialiser le mot de passe.', 'warning');
+            return;
+        }
+        setIsResettingPassword(true);
+        setResetEmailSent(false);
+        try {
+            const isProd = window.location.hostname !== 'localhost';
+            const appBase = isProd
+                ? 'https://1luckyle.github.io/phmc-forms/'
+                : `${window.location.origin}/phmc-forms/`;
+            const actionCodeSettings = {
+                url: `${appBase}#/reset-password`,
+                handleCodeInApp: false,
+            };
+            await sendPasswordResetEmail(auth, loginData.email, actionCodeSettings);
+            setResetEmailSent(true);
+        } catch (error) {
+            console.error('Error sending password reset email:', error);
+            let msg = 'Erreur lors de l\'envoi de l\'email de réinitialisation.';
+            if (error.code === 'auth/user-not-found') msg = 'Aucun compte trouvé avec cette adresse email.';
+            else if (error.code === 'auth/invalid-email') msg = 'Adresse email invalide.';
+            else if (error.code === 'auth/too-many-requests') msg = 'Trop de tentatives. Réessayez plus tard.';
+            else if (error.message) msg = error.message;
+            showNotification(msg, 'error');
+        } finally {
+            setIsResettingPassword(false);
+        }
+    };
+
     const handleLogin = async () => {
-        if (!selectedEmployeeId) {
-            showNotification('Veuillez sélectionner un employé pour vous connecter.', 'warning');
+        if (!loginData.email || !loginData.password) {
+            showNotification('Veuillez remplir tous les champs.', 'warning');
             return;
         }
         
         setIsLoggingIn(true);
         
         try {
-            // Find the selected employee
-            const allEmployees = [...ensureArray(phmcList), ...ensureArray(coronerList)];
-            const selectedEmployee = allEmployees.find(emp => emp.name === selectedEmployeeId);
-            
-            // Send webhook notification for login
-            await sendAccountCreationWebhook({
-                name: selectedEmployee?.name || 'Inconnu',
-                role: selectedEmployee?.category || selectedEmployee?.rank || 'Inconnu',
-                userType: getUserTypeLabel(selectedUserType),
-                action: 'login'
-            }, selectedUserType === USER_TYPES.CORONER);
+            await loginEmployee(loginData.email, loginData.password);
             
             setLoggedIn(true);
-            showNotification(`Connecté avec succès en tant que ${selectedEmployee?.name || 'Employé'} !`, 'success');
+            showNotification(`Connecté avec succès !`, 'success');
             
             // Auto-progress to next step after successful login
             setTimeout(() => {
@@ -441,7 +571,19 @@ const OnboardingModal = ({
             }, 1500);
         } catch (error) {
             console.error('Error during login:', error);
-            showNotification(`Erreur lors de la connexion : ${error.message}`, 'error');
+            let errorMessage = 'Erreur lors de la connexion.';
+            
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                errorMessage = 'Email ou mot de passe incorrect.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Email invalide.';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Trop de tentatives. Réessayez plus tard.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            showNotification(errorMessage, 'error');
         } finally {
             setIsLoggingIn(false);
         }
@@ -624,14 +766,108 @@ const OnboardingModal = ({
                                     style={formInputStyle}
                                 />
                             </div>
-                            <Form.Control
-                                type="text"
-                                name="rank"
-                                value={accountData.rank}
-                                onChange={handleAccountDataChange}
-                                placeholder="Rang *"
-                                style={formInputStyle}
-                            />
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="text"
+                                    name="discord"
+                                    value={accountData.discord}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Nom *"
+                                    style={formInputStyle}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    name="phNumber"
+                                    value={accountData.phNumber}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Numéro de téléphone *"
+                                    style={formInputStyle}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '15px' }}>
+                                <Select
+                                    name="rank"
+                                    options={PHMC_RANKS}
+                                    value={PHMC_RANKS.find(r => r.value === accountData.rank)}
+                                    onChange={(selectedOption) => setAccountData({ ...accountData, rank: selectedOption ? selectedOption.value : '' })}
+                                    placeholder="Fonction *"
+                                    styles={{
+                                        control: (base) => ({ ...base, backgroundColor: '#2a2a2a', borderColor: '#444', color: '#fff' }),
+                                        menu: (base) => ({ ...base, backgroundColor: '#2a2a2a', zIndex: 1051 }),
+                                        option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#2a2a2a', color: '#fff' }),
+                                        singleValue: (base) => ({ ...base, color: '#fff' }),
+                                        input: (base) => ({ ...base, color: '#fff' }),
+                                        placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                    }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'stretch', gap: '0' }}>
+                                <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #444', borderRight: 'none', padding: '8px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                                    {(PHMC_RANKS.find(r => r.value === accountData.rank)?.badgePrefix || 'MD') + '-'}
+                                </span>
+                                <Form.Control
+                                    type="text"
+                                    name="badge"
+                                    value={accountData.badge}
+                                    onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setAccountData({ ...accountData, badge: v }); }}
+                                    placeholder="00000 (5 chiffres) *"
+                                    style={{ ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0 }}
+                                    maxLength={5}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '15px' }}>
+                                <Form.Control
+                                    type="email"
+                                    name="email"
+                                    value={accountData.email}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Email (pour la connexion) *"
+                                    style={formInputStyle}
+                                    autoComplete="email"
+                                />
+                                <div style={{
+                                    marginTop: '8px',
+                                    padding: '10px',
+                                    backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                                    border: '1px solid rgba(74, 158, 255, 0.3)',
+                                    borderRadius: '5px',
+                                    fontSize: '0.85em',
+                                    color: '#4a9eff',
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: '8px'
+                                }}>
+                                    <i className="fas fa-info-circle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
+                                    <span>
+                                        Vous pouvez utiliser une adresse email fictive au format <strong>prénom.nom@phmc.health</strong> ou une véritable adresse email.
+                                        {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse fictive, vous ne pourrez pas réinitialiser votre mot de passe.
+                                    </span>
+                                </div>
+                            </div>
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="password"
+                                    name="password"
+                                    value={accountData.password}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Mot de passe *"
+                                    style={formInputStyle}
+                                    autoComplete="new-password"
+                                />
+                                <Form.Control
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={accountData.confirmPassword}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Confirmer le mot de passe *"
+                                    style={formInputStyle}
+                                    autoComplete="new-password"
+                                />
+                            </div>
+                            <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
+                                <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
+                                Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
+                            </div>
                             <div style={accountActionsStyle}>
                                 <Button 
                                     variant="outline-secondary" 
@@ -660,50 +896,64 @@ const OnboardingModal = ({
                     <div style={stepContentStyle}>
                         <h2 style={stepTitleStyle}>Connexion à votre compte Personnel PHMC</h2>
                         <p style={stepDescriptionStyle}>
-                            Sélectionnez votre nom dans la liste ci-dessous :
+                            Entrez vos identifiants pour vous connecter :
                         </p>
                         
-                        <div style={{margin: '20px 0'}}>
-                            <Form.Group>
-                                <Form.Label style={{fontWeight: 'bold', marginBottom: '10px'}}>
-                                    Sélectionnez votre nom :
-                                </Form.Label>
-                                <Form.Select 
-                                    value={selectedEmployeeId}
-                                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                                    style={{
-                                        padding: '10px',
-                                        borderRadius: '5px',
-                                        border: '1px solid #ddd',
-                                        fontSize: '16px'
-                                    }}
-                                >
-                                    <option value="">Choisissez votre nom...</option>
-                                    {ensureArray(phmcList).map((employee, index) => (
-                                        <option key={index} value={employee.name}>
-                                            {employee.name} - {employee.category || employee.rank || 'Personnel PHMC'}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </div>
+                        <div style={accountFormStyle}>
+                            <Form.Control
+                                type="email"
+                                name="email"
+                                value={loginData.email}
+                                onChange={(e) => { setLoginData({...loginData, email: e.target.value}); setResetEmailSent(false); }}
+                                placeholder="Email *"
+                                style={formInputStyle}
+                                autoComplete="email"
+                            />
+                            <Form.Control
+                                type="password"
+                                name="password"
+                                value={loginData.password}
+                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                placeholder="Mot de passe *"
+                                style={formInputStyle}
+                                autoComplete="current-password"
+                            />
 
-                        <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '30px'}}>
-                            <Button 
-                                variant="secondary" 
-                                onClick={() => setShowLogin(false)}
-                                style={{padding: '10px 20px'}}
-                            >
-                                Retour
-                            </Button>
-                            <Button 
-                                variant="success" 
-                                onClick={handleLogin}
-                                disabled={!selectedEmployeeId || isLoggingIn}
-                                style={{padding: '10px 20px'}}
-                            >
-                                {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
-                            </Button>
+                            {resetEmailSent ? (
+                                <div style={{ marginBottom: '10px', padding: '8px 12px', backgroundColor: 'rgba(40, 167, 69, 0.15)', border: '1px solid rgba(40, 167, 69, 0.4)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745', textAlign: 'center' }}>
+                                    <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                    Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'right', marginBottom: '10px', marginTop: '-5px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={handlePasswordReset}
+                                        disabled={isResettingPassword}
+                                        style={{ background: 'none', border: 'none', color: '#4a9eff', fontSize: '0.85em', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                                    >
+                                        {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
+                                    </button>
+                                </div>
+                            )}
+
+                            <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px'}}>
+                                <Button 
+                                    variant="secondary" 
+                                    onClick={() => setShowLogin(false)}
+                                    style={{padding: '10px 20px'}}
+                                >
+                                    Retour
+                                </Button>
+                                <Button 
+                                    variant="success" 
+                                    onClick={handleLogin}
+                                    disabled={isLoggingIn}
+                                    style={{padding: '10px 20px'}}
+                                >
+                                    {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 );
@@ -805,44 +1055,120 @@ const OnboardingModal = ({
                                     name="firstName"
                                     value={accountData.firstName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Prénom Nom *"
+                                    placeholder="Prénom *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
                                     type="text"
-                                    name="discord"
-                                    value={accountData.discord}
+                                    name="lastName"
+                                    value={accountData.lastName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Nom Discord *"
+                                    placeholder="Nom *"
                                     style={formInputStyle}
                                 />
                             </div>
                             <div style={formRowStyle}>
                                 <Form.Control
                                     type="text"
-                                    name="rank"
-                                    value={accountData.rank}
+                                    name="discord"
+                                    value={accountData.discord}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Rang *"
+                                    placeholder="Nom *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
                                     type="text"
-                                    name="badge"
-                                    value={accountData.badge}
+                                    name="phNumber"
+                                    value={accountData.phNumber}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Numéro de Badge *"
+                                    placeholder="Numéro de téléphone *"
                                     style={formInputStyle}
                                 />
                             </div>
-                            <Form.Control
-                                type="text"
-                                name="phNumber"
-                                value={accountData.phNumber}
-                                onChange={handleAccountDataChange}
-                                placeholder="Numéro de téléphone (Optionnel)"
-                                style={formInputStyle}
-                            />
+                            <div style={{ marginBottom: '15px' }}>
+                                <Select
+                                    name="rank"
+                                    options={CORONER_RANKS}
+                                    value={CORONER_RANKS.find(r => r.value === accountData.rank)}
+                                    onChange={(selectedOption) => setAccountData({ ...accountData, rank: selectedOption ? selectedOption.value : '' })}
+                                    placeholder="Fonction *"
+                                    styles={{
+                                        control: (base) => ({ ...base, backgroundColor: '#2a2a2a', borderColor: '#444', color: '#fff' }),
+                                        menu: (base) => ({ ...base, backgroundColor: '#2a2a2a', zIndex: 1051 }),
+                                        option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#2a2a2a', color: '#fff' }),
+                                        singleValue: (base) => ({ ...base, color: '#fff' }),
+                                        input: (base) => ({ ...base, color: '#fff' }),
+                                        placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                    }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'stretch', gap: '0' }}>
+                                <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #444', borderRight: 'none', padding: '8px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                                    {(CORONER_RANKS.find(r => r.value === accountData.rank)?.badgePrefix || 'TF') + '-'}
+                                </span>
+                                <Form.Control
+                                    type="text"
+                                    name="badge"
+                                    value={accountData.badge}
+                                    onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setAccountData({ ...accountData, badge: v }); }}
+                                    placeholder="00000 (5 chiffres) *"
+                                    style={{ ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0 }}
+                                    maxLength={5}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '15px' }}>
+                                <Form.Control
+                                    type="email"
+                                    name="email"
+                                    value={accountData.email}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Email (pour la connexion) *"
+                                    style={formInputStyle}
+                                    autoComplete="email"
+                                />
+                                <div style={{
+                                    marginTop: '8px',
+                                    padding: '10px',
+                                    backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                                    border: '1px solid rgba(74, 158, 255, 0.3)',
+                                    borderRadius: '5px',
+                                    fontSize: '0.85em',
+                                    color: '#4a9eff',
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: '8px'
+                                }}>
+                                    <i className="fas fa-info-circle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
+                                    <span>
+                                        Vous pouvez utiliser une adresse email fictive au format <strong>prénom.nom@phmc.health</strong> ou une véritable adresse email.
+                                        {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse fictive, vous ne pourrez pas réinitialiser votre mot de passe.
+                                    </span>
+                                </div>
+                            </div>
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="password"
+                                    name="password"
+                                    value={accountData.password}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Mot de passe *"
+                                    style={formInputStyle}
+                                    autoComplete="new-password"
+                                />
+                                <Form.Control
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={accountData.confirmPassword}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Confirmer le mot de passe *"
+                                    style={formInputStyle}
+                                    autoComplete="new-password"
+                                />
+                            </div>
+                            <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
+                                <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
+                                Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
+                            </div>
                             <div style={accountActionsStyle}>
                                 <Button 
                                     variant="outline-secondary" 
@@ -871,50 +1197,64 @@ const OnboardingModal = ({
                     <div style={stepContentStyle}>
                         <h2 style={stepTitleStyle}>Connexion à votre compte de membre du DMEC</h2>
                         <p style={stepDescriptionStyle}>
-                            Sélectionnez votre nom dans la liste ci-dessous :
+                            Entrez vos identifiants pour vous connecter :
                         </p>
                         
-                        <div style={{margin: '20px 0'}}>
-                            <Form.Group>
-                                <Form.Label style={{fontWeight: 'bold', marginBottom: '10px'}}>
-                                    Sélectionnez votre nom :
-                                </Form.Label>
-                                <Form.Select 
-                                    value={selectedEmployeeId}
-                                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                                    style={{
-                                        padding: '10px',
-                                        borderRadius: '5px',
-                                        border: '1px solid #ddd',
-                                        fontSize: '16px'
-                                    }}
-                                >
-                                    <option value="">Choisissez votre nom...</option>
-                                    {ensureArray(coronerList).map((employee, index) => (
-                                        <option key={index} value={employee.name}>
-                                            {employee.name} - {employee.category || employee.rank || 'Médecin légiste'}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </div>
+                        <div style={accountFormStyle}>
+                            <Form.Control
+                                type="email"
+                                name="email"
+                                value={loginData.email}
+                                onChange={(e) => { setLoginData({...loginData, email: e.target.value}); setResetEmailSent(false); }}
+                                placeholder="Email *"
+                                style={formInputStyle}
+                                autoComplete="email"
+                            />
+                            <Form.Control
+                                type="password"
+                                name="password"
+                                value={loginData.password}
+                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                placeholder="Mot de passe *"
+                                style={formInputStyle}
+                                autoComplete="current-password"
+                            />
 
-                        <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '30px'}}>
-                            <Button 
-                                variant="secondary" 
-                                onClick={() => setShowLogin(false)}
-                                style={{padding: '10px 20px'}}
-                            >
-                                Retour
-                            </Button>
-                            <Button 
-                                variant="success" 
-                                onClick={handleLogin}
-                                disabled={!selectedEmployeeId || isLoggingIn}
-                                style={{padding: '10px 20px'}}
-                            >
-                                {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
-                            </Button>
+                            {resetEmailSent ? (
+                                <div style={{ marginBottom: '10px', padding: '8px 12px', backgroundColor: 'rgba(40, 167, 69, 0.15)', border: '1px solid rgba(40, 167, 69, 0.4)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745', textAlign: 'center' }}>
+                                    <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                    Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'right', marginBottom: '10px', marginTop: '-5px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={handlePasswordReset}
+                                        disabled={isResettingPassword}
+                                        style={{ background: 'none', border: 'none', color: '#4a9eff', fontSize: '0.85em', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                                    >
+                                        {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
+                                    </button>
+                                </div>
+                            )}
+
+                            <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px'}}>
+                                <Button 
+                                    variant="secondary" 
+                                    onClick={() => setShowLogin(false)}
+                                    style={{padding: '10px 20px'}}
+                                >
+                                    Retour
+                                </Button>
+                                <Button 
+                                    variant="success" 
+                                    onClick={handleLogin}
+                                    disabled={isLoggingIn}
+                                    style={{padding: '10px 20px'}}
+                                >
+                                    {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 );
@@ -1111,10 +1451,10 @@ const OnboardingModal = ({
                 return selectedUserType !== null;
             case ONBOARDING_STEPS.ROLE_SPECIFIC:
                 if (selectedUserType === USER_TYPES.PHMC_STAFF) {
-                    return selectedRole !== null || showAccountCreation || (showLogin && selectedEmployeeId) || accountCreated || loggedIn;
+                    return selectedRole !== null || showAccountCreation || showLogin || accountCreated || loggedIn;
                 }
                 if (selectedUserType === USER_TYPES.CORONER) {
-                    return true || showAccountCreation || (showLogin && selectedEmployeeId) || accountCreated || loggedIn;
+                    return true || showAccountCreation || showLogin || accountCreated || loggedIn;
                 }
                 return selectedRole !== null;
             case ONBOARDING_STEPS.FORM_PREVIEW:
