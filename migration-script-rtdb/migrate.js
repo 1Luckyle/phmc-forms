@@ -409,6 +409,12 @@ const ultrasoundResults = [
     { value: 'Ovarian Torsion', label: 'Ovarian Torsion' },
     { value: 'Pregnancy Confirmation', label: 'Pregnancy Confirmation' },
 ];
+const otherResults = [
+    { value: 'NothingFound', label: 'Nothing Found' },
+    { value: 'NeurologicalAbnormalities', label: 'Neurological Abnormalities' },
+    { value: 'CardiacAbnormalities', label: 'Cardiac Abnormalities' },
+    { value: 'PulmonaryAbnormalities', label: 'Pulmonary Abnormalities' },
+];
 
 // --- MODIFIED positionDetailsData ---
 const physicianRecruitmentDetails = {
@@ -817,6 +823,7 @@ const selectOptionsData = {
     ctResults,
     mriResults,
     ultrasoundResults,
+    otherResults,
     physicianRecruitmentDetails,
     physicianRecruitmentPositions,
     psychPositionDetailsData,

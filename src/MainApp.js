@@ -1410,6 +1410,7 @@ function MainApp({
                                         ctResults={optionize(selectOptions.ctResults)}
                                         mriResults={optionize(selectOptions.mriResults)}
                                         ultrasoundResults={optionize(selectOptions.ultrasoundResults)}
+                                        otherResults={optionize(selectOptions.otherResults)}
                                         patientBloodType={optionize(selectOptions.patientBloodType)} 
                                         selectOptions={selectOptions}
                                         maritalStatus={optionize(selectOptions.maritalStatus)}
