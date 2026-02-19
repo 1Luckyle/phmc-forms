@@ -106,7 +106,8 @@ const EmergencyForm = ({
     XrayResults,
     ctResults,
     mriResults,
-    ultrasoundResults
+    ultrasoundResults,
+    otherResults
 }) => {
 
     const imagingOptionsMapping = useMemo(() => ({
@@ -114,7 +115,8 @@ const EmergencyForm = ({
         CTScan: { options: ctResults || [], formDataKey: 'ctResults', label: 'Résultats scanner' },
         MRI: { options: mriResults || [], formDataKey: 'mriResults', label: 'Résultats IRM' },
         Ultrasound: { options: ultrasoundResults || [], formDataKey: 'ultrasoundResults', label: 'Résultats échographie' },
-    }), [XrayResults, ctResults, mriResults, ultrasoundResults]);
+        Other: { options: otherResults || [], formDataKey: 'otherImagingResults', label: 'Autres résultats d\'imagerie' },
+    }), [XrayResults, ctResults, mriResults, ultrasoundResults, otherResults]);
 
     const groupedImagingResultsOptions = useMemo(() => {
         if (!formData.Imaging || formData.Imaging.length === 0 || formData.Imaging.includes('NoneRequired')) {
