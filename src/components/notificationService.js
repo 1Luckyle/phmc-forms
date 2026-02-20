@@ -900,7 +900,7 @@ export const handleFormCopyAndNotify = async ({
     }
 
     // --- Step 3: Copy BBCode to Clipboard ---
-    const copySuccessful = await copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copied to clipboard!`);
+    const copySuccessful = await copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copier dans le presse-papiers !`);
 
     if (!copySuccessful) {
         showNotification('Le BBCode n\'a pas pu être copié. La notification webhook sera ignorée.', 'warning');

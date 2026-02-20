@@ -247,7 +247,7 @@ const MedicalRelease = ({
                 />
                 <Form.Control
                     type="text"
-                    name="patientAddressNew"
+                    name="patientGenderNew"
                     value={formData.patientGenderNew}
                     onChange={handleChange}
                     placeholder="Genre à l'état civil du patient"
@@ -564,7 +564,7 @@ const MedicalRelease = ({
                 />
                 <Form.Control
                     type="text"
-                    name="Other Substances"
+                    name="patientDrugs"
                     value={formData.patientDrugs}
                     onChange={handleChange}
                     placeholder="Consommation de drogue et autres substances"

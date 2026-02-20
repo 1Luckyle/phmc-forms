@@ -14,6 +14,10 @@ const toOptions = (arr = []) =>
       )
     : [];
 
+// Utilise le label (texte affiché) comme valeur enregistrée,
+// afin que le générateur BBcode sorte le texte français directement.
+const toLabelValues = (opts) => opts.map(o => ({ label: o.label, value: o.label }));
+
 const DeathRecord = ({ 
     formData, 
     handleChange, 
@@ -55,10 +59,10 @@ const DeathRecord = ({
                 deathRecordType: toOptions(
                     options.deathRecordType || options.deathRecordTypeOptions || ['Identified', 'Unidentified']
                 ),
-                caseStatusOptions: toOptions(options.caseStatusOptions || []),
-                bodyStatusOptions: toOptions(options.bodyStatusOptions || []),
-                gender: toOptions(options.gender || []),
-                mannerOfDeathOptions: toOptions(options.mannerOfDeathOptions || []),
+                caseStatusOptions: toLabelValues(toOptions(options.caseStatusOptions || [])),
+                bodyStatusOptions: toLabelValues(toOptions(options.bodyStatusOptions || [])),
+                gender: toLabelValues(toOptions(options.gender || [])),
+                mannerOfDeathOptions: toLabelValues(toOptions(options.mannerOfDeathOptions || [])),
                 });
             }
         });

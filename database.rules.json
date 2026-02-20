@@ -82,8 +82,10 @@
 
     // ─── Rapports sauvegardés ─────────────────────────────────────────────────
     // CIVILIAN : entièrement public (formulaires civils anonymes).
+    // Admin : lecture complète du nœud (UserStats, UserManagementModal).
     // Autres clés : accès réservé aux utilisateurs authentifiés.
     "savedReports": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       "CIVILIAN": {
         ".read":  true,
         ".write": true

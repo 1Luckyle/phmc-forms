@@ -217,7 +217,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                     />
                                 </Form.Group>
                                 <span className="helper-text">
-                                Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                                Télécharger l'image. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                                 </span>
             <Form.Group className="mb-3">
                 <Form.Label>Rapports supplémentaires:</Form.Label>
