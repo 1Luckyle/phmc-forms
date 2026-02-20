@@ -62,6 +62,7 @@ const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'))
 const FormImageLink = lazy(() => import('./components/FormImageLink'));
 const PositionInfoModal = lazy(() => import('./components/PositionInfoModal'));
 const EmsBingoModal = lazy(() => import('./components/EmsBingoModal'));
+const BbcodeToMarkdownModal = lazy(() => import('./components/BbcodeToMarkdownModal'));
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
 
 /** --------------------------------------------------------------------
@@ -118,6 +119,7 @@ function MainApp({
     
     const { currentEmployee, employeeProfile, isAdmin, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
 
 
     // Onboarding detection and initialization
@@ -1425,6 +1427,17 @@ function MainApp({
                                 Carte de Visite
                             </Button>
 
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                className="changelog-button"
+                                onClick={() => setShowBbcodeToMarkdown(true)}
+                                title="Convertir du BBcode en Markdown Discord"
+                            >
+                                <i className="fab fa-discord" style={{ color: '#5865F2' }}></i>
+                                BBcode → Discord
+                            </Button>
+
                             <div className="floating-top-right-tools">
                                 {selectedAgencyGroup === 'PHMC Recruitment' && (
                                     <Button
@@ -1911,6 +1924,11 @@ function MainApp({
                         />
                     </div>
                 </div>
+                <BbcodeToMarkdownModal
+                    show={showBbcodeToMarkdown}
+                    onHide={() => setShowBbcodeToMarkdown(false)}
+                    showNotification={showNotification}
+                />
                 <Footer />
             </div>
         </Suspense>

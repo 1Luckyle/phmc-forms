@@ -43,10 +43,10 @@ ${dateofdeath || 'INSÉRER LA DATE DU DÉCÈS ICI'}
 [/table][br][/br]
 [list=none][left]
 SIGNATURE DU MÉDECIN LÉGISTE:
-NOM IMPRIMÉ: ${coronerEmployee}
+NOM: ${coronerEmployee}
 
 SIGNATURE DU TÉMOIN:
-NOM IMPRIMÉ: ${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}
+NOM: ${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}
 
 DATE D'ÉMISSION DU CERTIFICAT: ${date}
 [/list]

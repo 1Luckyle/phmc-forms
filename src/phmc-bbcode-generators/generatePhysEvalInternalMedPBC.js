@@ -45,21 +45,21 @@ Poids: ${patientWeight}
 [td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
 [table][tr][td][list=none][u]Le patient a-t-il un emploi? [/u][br][/br]
-[cb${formData.patientJob === 'Yes' ? 'c' : ''}][/cb${formData.patientJob === 'Yes' ? 'c' : ''}] Oui: ${patientCareer}
-[cb${formData.patientJob === 'No' ? 'c' : ''}][/cb${formData.patientJob === 'No' ? 'c' : ''}] Non: ${patientcareerNo} [/list]
+[cb${formData.patientJob === 'Yes' ? 'c' : ''}][/cb${formData.patientJob === 'Yes' ? 'c' : ''}] Oui: ${formData.patientJob === 'Yes' ? patientCareer : ''}
+[cb${formData.patientJob === 'No' ? 'c' : ''}][/cb${formData.patientJob === 'No' ? 'c' : ''}] Non: ${formData.patientJob === 'No' ? patientcareerNo : ''} [/list]
 [td][list=none][u]Si oui, des facteurs de risque nocifs sont-ils présents? [/u][br][/br]
-[cb${formData.patientJobRisks === 'Yes' ? 'c' : ''}][/cb${formData.patientJobRisks === 'Yes' ? 'c' : ''}] Oui: ${careerRisks}
+[cb${formData.patientJobRisks === 'Yes' ? 'c' : ''}][/cb${formData.patientJobRisks === 'Yes' ? 'c' : ''}] Oui: ${formData.patientJobRisks === 'Yes' ? careerRisks : ''}
 [cb${formData.patientJobRisks === 'No' ? 'c' : ''}][/cb${formData.patientJobRisks === 'No' ? 'c' : ''}] Non [/list]
 [/td][/tr]
 [tr][td][list=none][u]Des allergies ou des risques (implants, cas d'incompatibilité, stimulateur cardiaque, etc.) sont-ils présents?[/u][br][/br]
-[cb${formData.patientAllergiesRisk === 'Yes' ? 'c' : ''}][/cb${formData.patientAllergiesRisk === 'Yes' ? 'c' : ''}] Oui: ${patientAllergies}
+[cb${formData.patientAllergiesRisk === 'Yes' ? 'c' : ''}][/cb${formData.patientAllergiesRisk === 'Yes' ? 'c' : ''}] Oui: ${formData.patientAllergiesRisk === 'Yes' ? patientAllergies : ''}
 [cb${formData.patientAllergiesRisk === 'No' ? 'c' : ''}][/cb${formData.patientAllergiesRisk === 'No' ? 'c' : ''}] Non [/list]
 [td][list=none][u]Le patient prend-il des médicaments de façon régulière? [/u][br][/br]
-[cb${formData.patientMedicineRegular === 'Yes' ? 'c' : ''}][/cb${formData.patientMedicineRegular === 'Yes' ? 'c' : ''}] Oui: ${patientMedicine}
+[cb${formData.patientMedicineRegular === 'Yes' ? 'c' : ''}][/cb${formData.patientMedicineRegular === 'Yes' ? 'c' : ''}] Oui: ${formData.patientMedicineRegular === 'Yes' ? patientMedicine : ''}
 [cb${formData.patientMedicineRegular === 'No' ? 'c' : ''}][/cb${formData.patientMedicineRegular === 'No' ? 'c' : ''}] Non[/list]
 [/td][/tr]
 [tr][td][list=none][u]Le patient a-t-il d'autres condition(s) médicale(s) ou déficiences physiques?[/u][br][/br]
-[cb${formData.patientOther === 'Yes' ? 'c' : ''}][/cb${formData.patientOther === 'Yes' ? 'c' : ''}] Oui: ${patientImpairments}
+[cb${formData.patientOther === 'Yes' ? 'c' : ''}][/cb${formData.patientOther === 'Yes' ? 'c' : ''}] Oui: ${formData.patientOther === 'Yes' ? patientImpairments : ''}
 [cb${formData.patientOther === 'No' ? 'c' : ''}][/cb${formData.patientOther === 'No' ? 'c' : ''}] Non [/list]
 [td][list=none][u]Prédisposition génétique[/u][br][/br]
 [cb${formData.predisposition === 'Existing' ? 'c' : ''}][/cb${formData.predisposition === 'Existing' ? 'c' : ''}] Existante

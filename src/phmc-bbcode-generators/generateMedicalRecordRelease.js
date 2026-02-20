@@ -14,7 +14,7 @@ const generateMedicalRecordRelease = (formData) => {
         patientMedInfoFormatOther,
         StupidDateFrom,
         StupidDateTo,
-        SubmitDate,
+        SubmitDate = new Date().toLocaleDateString('fr-CA'),
         paymentProofPhotos,
         MedicalRecordsRelease,
         payNow,
@@ -64,7 +64,8 @@ const generateMedicalRecordRelease = (formData) => {
 [*][${formData.patientPhoneType === 'Mobile' ? 'X' : ''}] Mobile
 [*][${formData.patientPhoneType === 'Home' ? 'X' : ''}] Domicile
 [*][${formData.patientPhoneType === 'Work' ? 'X' : ''}] Travail
-[*][${formData.patientPhoneType === 'Other' ? 'X' : ''}] Autre[/list][b]Numéro de téléphone:[/b]
+[*][${formData.patientPhoneType === 'Other' ? 'X' : ''}] Autre[/list]
+[b]Numéro de téléphone:[/b]
 [i]${patientPH}[/i][br][/br]
 [b]Courriel:[/b]
 [i]${patientEmail}[/i][br][/br][/list]
