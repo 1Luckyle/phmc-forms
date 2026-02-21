@@ -680,8 +680,23 @@ function MainApp({
     };
     
     const handleLoginSuccess = () => {
-        showNotification(`Bienvenue ${employeeProfile?.name || currentEmployee?.email} !`, 'success');
+        // employeeProfile est chargé de manière asynchrone — la notification sera
+        // affichée par le useEffect ci-dessous dès que le profil sera disponible.
     };
+
+    // Affiche la notification de bienvenue dès que le profil employé est chargé après connexion
+    const prevEmployeeRef = useRef(null);
+    useEffect(() => {
+        if (employeeProfile && !prevEmployeeRef.current) {
+            const displayName = employeeProfile.firstName && employeeProfile.lastName
+                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
+                : (employeeProfile.name && employeeProfile.lastName
+                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
+                    : (employeeProfile.name || currentEmployee?.email || ''));
+            showNotification(`Bienvenue ${displayName} !`, 'success');
+        }
+        prevEmployeeRef.current = employeeProfile;
+    }, [employeeProfile]); // eslint-disable-line react-hooks/exhaustive-deps
     
     useEffect(() => {
         const handleResize = () => {
@@ -1305,7 +1320,15 @@ function MainApp({
                     }}>
                         <i className="fas fa-crown" style={{ color: '#ffd700' }}></i>
                         <span>
-                            <strong>Mode Administrateur:</strong> Vous êtes connecté en tant qu'admin <strong>{employeeProfile?.name || currentEmployee.email}</strong>. 
+                            <strong>Mode Administrateur:</strong> Vous êtes connecté en tant qu'admin <strong>{
+                                employeeProfile
+                                    ? (employeeProfile.firstName && employeeProfile.lastName
+                                        ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
+                                        : (employeeProfile.name && employeeProfile.lastName
+                                            ? `${employeeProfile.name} ${employeeProfile.lastName}`
+                                            : (employeeProfile.name || currentEmployee.email)))
+                                    : currentEmployee.email
+                            }</strong>. 
                             Vous avez accès à tous les employés et toutes les fonctions.
                         </span>
                     </div>
@@ -1324,7 +1347,15 @@ function MainApp({
                                         {currentEmployee ? (
                                             <>
                                                 <Dropdown.Header>
-                                                    <i className="fas fa-user-circle"></i> {employeeProfile?.name || currentEmployee.email}
+                                                    <i className="fas fa-user-circle"></i> {
+                                        employeeProfile
+                                            ? (employeeProfile.firstName && employeeProfile.lastName
+                                                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
+                                                : (employeeProfile.name && employeeProfile.lastName
+                                                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
+                                                    : (employeeProfile.name || currentEmployee.email)))
+                                            : currentEmployee.email
+                                    }
                                                     {isAdmin && <span style={{marginLeft: '5px', color: '#ffc107'}}><i className="fas fa-crown"></i> Admin</span>}
                                                 </Dropdown.Header>
                                                 <Dropdown.Divider />

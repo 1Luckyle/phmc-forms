@@ -199,7 +199,7 @@ const AdminDashboard = ({
                         <div className="card">
                             <div className="card-header">Demandes de compte en attente</div>
                             <div className="card-body">
-                                <PendingAccountRequests showNotification={showInAppNotification} />
+                                <PendingAccountRequests showNotification={showInAppNotification} currentUser={currentUser} />
                             </div>
                         </div>
                     )}
@@ -207,7 +207,7 @@ const AdminDashboard = ({
                         <div className="card">
                             <div className="card-header">Demandes de modification en attente</div>
                             <div className="card-body">
-                                <PendingModificationRequests showNotification={showInAppNotification} />
+                                <PendingModificationRequests showNotification={showInAppNotification} currentUser={currentUser} />
                             </div>
                         </div>
                     )}

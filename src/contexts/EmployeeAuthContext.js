@@ -98,34 +98,24 @@ export const EmployeeAuthProvider = ({ children }) => {
      */
     const requestEmployeeAccount = async (employeeData, email, password, isCoroner) => {
         try {
-            // Vérifier si une demande existe déjà pour cet email
-            const pendingRequestsRef = ref(database, 'pendingAccountRequests');
-            const snapshot = await get(pendingRequestsRef);
-            
-            if (snapshot.exists()) {
-                const requests = snapshot.val();
-                const requestsArray = Array.isArray(requests) ? requests : Object.values(requests);
-                const existingRequest = requestsArray.find(req => req.email === email);
-                
-                if (existingRequest) {
-                    throw new Error('Une demande de compte existe déjà pour cet email.');
-                }
-            }
+            // Clé basée sur l'email (remplace les caractères interdits dans les chemins Firebase)
+            // Cela sert aussi de déduplication naturelle : même email = même clé.
+            const emailKey = email.replace(/[.#$[\]]/g, '_');
+            const requestRef = ref(database, `pendingAccountRequests/${emailKey}`);
 
             // Créer la demande
             const requestData = {
                 ...employeeData,
                 email: email,
-                password: password, // À noter: stocker les mots de passe en clair n'est pas sécurisé, mais pour une demande temporaire c'est acceptable
+                password: password,
                 isCoroner: isCoroner,
                 requestedAt: new Date().toISOString(),
                 status: 'pending'
             };
 
-            // Ajouter la demande à la base de données
-            const currentRequests = snapshot.exists() ? (Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val())) : [];
-            const newRequests = [...currentRequests, requestData];
-            await set(pendingRequestsRef, newRequests);
+            // Écriture directe par clé — ne nécessite pas de lecture préalable.
+            // Les règles DB autorisent l'écriture publique sur pendingAccountRequests.
+            await set(requestRef, requestData);
 
             return { success: true, message: 'Votre demande de compte a été envoyée aux administrateurs pour approbation.' };
         } catch (error) {
