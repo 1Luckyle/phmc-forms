@@ -617,16 +617,17 @@ const EmployeeModal = ({
     setShowTransferDialog(false);
     setIsLoading(true);
     try {
-      // 1) Transfert optionnel des rapports sauvegardés
-      if (targetEmployee) {
-        const savedReportsRef = ref(database, 'savedReports');
-        const reportsSnap = await get(savedReportsRef);
-        if (reportsSnap.exists()) {
-          const allReports = reportsSnap.val();
-          const reportsUpdates = {};
-          for (const empName of staffToRemove) {
-            const sanitized = empName.replace(/[.#$[\/ \]]/g, '_');
-            if (allReports[sanitized]) {
+      // 1) Transfert ou suppression des rapports sauvegardés
+      const savedReportsRef = ref(database, 'savedReports');
+      const reportsSnap = await get(savedReportsRef);
+      if (reportsSnap.exists()) {
+        const allReports = reportsSnap.val();
+        const reportsUpdates = {};
+        for (const empName of staffToRemove) {
+          const sanitized = empName.replace(/[.#$[\/ \]]/g, '_');
+          if (allReports[sanitized]) {
+            if (targetEmployee) {
+              // Transférer vers l'employé cible
               const targetSanitized = targetEmployee.replace(/[.#$[\/ \]]/g, '_');
               const destReports = allReports[targetSanitized] || {};
               for (const reportId in allReports[sanitized]) {
@@ -635,12 +636,13 @@ const EmployeeModal = ({
                 }
               }
               reportsUpdates[`savedReports/${targetSanitized}`] = destReports;
-              reportsUpdates[`savedReports/${sanitized}`] = null;
             }
+            // Dans tous les cas, supprimer les rapports de l'employé supprimé
+            reportsUpdates[`savedReports/${sanitized}`] = null;
           }
-          if (Object.keys(reportsUpdates).length > 0) {
-            await update(ref(database), reportsUpdates);
-          }
+        }
+        if (Object.keys(reportsUpdates).length > 0) {
+          await update(ref(database), reportsUpdates);
         }
       }
 
