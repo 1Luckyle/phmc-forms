@@ -84,7 +84,13 @@ export const useEmployeeSelector = (phmcList = [], coronerList = [], applyRestri
         filteredPhmcList,
         filteredCoronerList,
         isRestricted: !isAdmin && !!currentEmployee,
-        currentEmployeeName: employeeProfile?.name || null,
+        currentEmployeeName: employeeProfile
+            ? (employeeProfile.firstName && employeeProfile.lastName
+                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
+                : (employeeProfile.name && employeeProfile.lastName
+                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
+                    : employeeProfile.name || null))
+            : null,
         currentEmployeeType: employeeProfile?.type || null
     };
 };

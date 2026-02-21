@@ -2,13 +2,46 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Table } from 'react-bootstrap';
 import Select from 'react-select';
-import { database } from '../../firebase';
-import { ref, get, set } from 'firebase/database';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { database, app as primaryApp } from '../../firebase';
+import { ref, get, set, remove } from 'firebase/database';
+import { initializeApp, deleteApp, getApps } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS } from '../../constants/ranks';
 
-const PendingAccountRequests = ({ showNotification }) => {
+// Helper : crée un compte Firebase Auth via une instance secondaire pour ne pas
+// déconnecter l'admin qui est sur l'instance principale.
+const createUserWithSecondaryApp = async (email, password) => {
+    const secondaryAppName = 'SecondaryAccountCreation';
+    const firebaseConfig = {
+        apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+        authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+        databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+        projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    };
+
+    // Réutilise l'instance si elle existe déjà, sinon en crée une nouvelle
+    const existingApp = getApps().find(a => a.name === secondaryAppName);
+    const secondaryApp = existingApp || initializeApp(firebaseConfig, secondaryAppName);
+    const secondaryAuth = getAuth(secondaryApp);
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        return userCredential.user;
+    } finally {
+        // Déconnecte le nouveau compte de l'instance secondaire
+        await secondaryAuth.signOut();
+        // Supprime l'app secondaire si elle n'existait pas avant
+        if (!existingApp) {
+            await deleteApp(secondaryApp);
+        }
+    }
+};
+
+const PendingAccountRequests = ({ showNotification, currentUser }) => {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingRequest, setEditingRequest] = useState(null);
@@ -39,63 +72,54 @@ const PendingAccountRequests = ({ showNotification }) => {
     };
 
     const handleApprove = async (request) => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         try {
-            // Informer l'admin que cela va le déconnecter temporairement
             const confirmApprove = window.confirm(
-                `⚠️ Création du compte pour ${request.name}\n\n` +
-                `IMPORTANT: En raison des limitations de Firebase, vous serez temporairement déconnecté lors de la création du compte.\n\n` +
-                `Vous devrez vous reconnecter avec vos identifiants admin après la création.\n\n` +
-                `Voulez-vous continuer ?`
+                `Création du compte pour ${request.name}\n\nVoulez-vous confirmer l'approbation ?`
             );
-            
+
             if (!confirmApprove) {
                 return;
             }
 
-            // Sauvegarder l'email admin pour faciliter la reconnexion
-            const currentAdminUser = auth.currentUser;
-            const adminEmail = currentAdminUser?.email;
-            
-            // Créer le compte Firebase Auth
-            const userCredential = await createUserWithEmailAndPassword(auth, request.email, request.password);
-            const user = userCredential.user;
+            // Créer le compte Firebase Auth via l'instance secondaire pour ne PAS
+            // déconnecter l'admin sur l'instance principale.
+            const user = await createUserWithSecondaryApp(request.email, request.password);
 
             // Ajouter l'UID Firebase aux données de l'employé
+            const firstName = request.firstName || '';
+            const lastName = request.lastName || '';
             const employeeWithUID = {
-                name: request.name,
+                name: `${firstName} ${lastName}`.trim() || request.name,
+                firstName,
+                lastName,
                 discord: request.discord || '',
                 rank: request.rank,
                 badge: request.badge || '',
                 phNumber: request.phNumber || '',
-                lastName: request.lastName || '',
                 category: request.rank,
                 uid: user.uid,
                 email: request.email,
                 createdAt: new Date().toISOString()
             };
 
-            // Enregistrer dans la base de données
+            // Enregistrer dans la base de données (l'admin est toujours connecté)
             const listRef = ref(database, request.isCoroner ? 'staff/coroner' : 'staff/phmc');
             const snapshot = await get(listRef);
             const currentStaff = snapshot.exists() ? snapshot.val() : [];
-            
-            // Ajouter à la liste
-            const newStaffArray = Array.isArray(currentStaff) ? [...currentStaff, employeeWithUID] : [...Object.values(currentStaff), employeeWithUID];
+
+            const newStaffArray = Array.isArray(currentStaff)
+                ? [...currentStaff, employeeWithUID]
+                : [...Object.values(currentStaff), employeeWithUID];
             await set(listRef, newStaffArray);
 
             // Supprimer la demande de la liste des demandes en attente
             await removeRequest(request.email);
 
-            // Déconnecter le nouveau compte
-            await auth.signOut();
-            
-            // Afficher un message avec l'email admin pour faciliter la reconnexion
-            showNotification(
-                `✅ Compte créé avec succès pour ${request.name} !\n\n` +
-                `⚠️ Vous avez été déconnecté. Reconnectez-vous avec : ${adminEmail}`,
-                'info'
-            );
-
+            showNotification(`✅ Compte créé avec succès pour ${request.name} !`, 'success');
             loadPendingRequests();
         } catch (error) {
             console.error('Error approving request:', error);
@@ -104,6 +128,10 @@ const PendingAccountRequests = ({ showNotification }) => {
     };
 
     const handleReject = async (request) => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         try {
             await removeRequest(request.email);
             showNotification(`Demande rejetée pour ${request.email}`, 'info');
@@ -115,15 +143,8 @@ const PendingAccountRequests = ({ showNotification }) => {
     };
 
     const removeRequest = async (email) => {
-        const requestsRef = ref(database, 'pendingAccountRequests');
-        const snapshot = await get(requestsRef);
-        
-        if (snapshot.exists()) {
-            const requests = snapshot.val();
-            const requestsArray = Array.isArray(requests) ? requests : Object.values(requests);
-            const updatedRequests = requestsArray.filter(req => req.email !== email);
-            await set(requestsRef, updatedRequests);
-        }
+        const emailKey = email.replace(/[.#$[\]]/g, '_');
+        await remove(ref(database, `pendingAccountRequests/${emailKey}`));
     };
 
     const handleEdit = (request) => {
@@ -131,22 +152,22 @@ const PendingAccountRequests = ({ showNotification }) => {
     };
 
     const handleSaveEdit = async () => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         try {
-            const requestsRef = ref(database, 'pendingAccountRequests');
-            const snapshot = await get(requestsRef);
+            // Reconstruire le nom complet depuis les champs séparés
+            const rebuilt = {
+                ...editingRequest,
+                name: `${editingRequest.firstName || ''} ${editingRequest.lastName || ''}`.trim()
+            };
+            const emailKey = rebuilt.email.replace(/[.#$[\]]/g, '_');
+            await set(ref(database, `pendingAccountRequests/${emailKey}`), rebuilt);
             
-            if (snapshot.exists()) {
-                const requests = snapshot.val();
-                const requestsArray = Array.isArray(requests) ? requests : Object.values(requests);
-                const updatedRequests = requestsArray.map(req => 
-                    req.email === editingRequest.email ? editingRequest : req
-                );
-                await set(requestsRef, updatedRequests);
-                
-                showNotification('Modifications enregistrées', 'success');
-                setEditingRequest(null);
-                loadPendingRequests();
-            }
+            showNotification('Modifications enregistrées', 'success');
+            setEditingRequest(null);
+            loadPendingRequests();
         } catch (error) {
             console.error('Error saving edits:', error);
             showNotification(`Erreur lors de l'enregistrement : ${error.message}`, 'error');
@@ -186,11 +207,26 @@ const PendingAccountRequests = ({ showNotification }) => {
                     </h4>
                     <Form>
                         <Form.Group className="mb-3">
-                            <Form.Label style={{ color: '#c9d1d9' }}>Nom</Form.Label>
+                            <Form.Label style={{ color: '#c9d1d9' }}>Prénom</Form.Label>
                             <Form.Control
                                 type="text"
-                                value={editingRequest.name}
-                                onChange={(e) => setEditingRequest({...editingRequest, name: e.target.value})}
+                                value={editingRequest.firstName || ''}
+                                onChange={(e) => {
+                                    const fn = e.target.value;
+                                    setEditingRequest({ ...editingRequest, firstName: fn, name: `${fn} ${editingRequest.lastName || ''}`.trim() });
+                                }}
+                                style={{ backgroundColor: '#0d1117', color: '#c9d1d9', borderColor: '#30363d' }}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label style={{ color: '#c9d1d9' }}>Nom de famille</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editingRequest.lastName || ''}
+                                onChange={(e) => {
+                                    const ln = e.target.value;
+                                    setEditingRequest({ ...editingRequest, lastName: ln, name: `${editingRequest.firstName || ''} ${ln}`.trim() });
+                                }}
                                 style={{ backgroundColor: '#0d1117', color: '#c9d1d9', borderColor: '#30363d' }}
                             />
                         </Form.Group>
@@ -243,15 +279,6 @@ const PendingAccountRequests = ({ showNotification }) => {
                             </>
                         ) : (
                             <>
-                                <Form.Group className="mb-3">
-                                    <Form.Label style={{ color: '#c9d1d9' }}>Nom de famille</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        value={editingRequest.lastName || ''}
-                                        onChange={(e) => setEditingRequest({...editingRequest, lastName: e.target.value})}
-                                        style={{ backgroundColor: '#0d1117', color: '#c9d1d9', borderColor: '#30363d' }}
-                                    />
-                                </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Discord</Form.Label>
                                     <Form.Control

@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Table, Badge } from 'react-bootstrap';
 import Select from 'react-select';
 import { database } from '../../firebase';
-import { ref, get, set, update } from 'firebase/database';
+import { ref, get, set, update, remove } from 'firebase/database';
 import { PHMC_RANKS, CORONER_RANKS } from '../../constants/ranks';
 
-const PendingModificationRequests = ({ showNotification }) => {
+const PendingModificationRequests = ({ showNotification, currentUser }) => {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingRequest, setEditingRequest] = useState(null);
@@ -37,6 +37,10 @@ const PendingModificationRequests = ({ showNotification }) => {
     };
 
     const handleApprove = async (request) => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         try {
             const basePath = request.isCoroner ? 'staff/coroner' : 'staff/phmc';
             const listRef = ref(database, basePath);
@@ -76,6 +80,10 @@ const PendingModificationRequests = ({ showNotification }) => {
     };
 
     const handleReject = async (request) => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         try {
             await removeRequest(request.requestId);
             showNotification(`Demande de modification rejetée pour ${request.originalName}`, 'info');
@@ -87,6 +95,10 @@ const PendingModificationRequests = ({ showNotification }) => {
     };
 
     const handleDelete = async (request) => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement ${request.originalName} ?`)) {
             return;
         }
@@ -126,15 +138,7 @@ const PendingModificationRequests = ({ showNotification }) => {
     };
 
     const removeRequest = async (requestId) => {
-        const requestsRef = ref(database, 'pendingModificationRequests');
-        const snapshot = await get(requestsRef);
-        
-        if (snapshot.exists()) {
-            const requests = snapshot.val();
-            const requestsArray = Array.isArray(requests) ? requests : Object.values(requests);
-            const updatedRequests = requestsArray.filter(req => req.requestId !== requestId);
-            await set(requestsRef, updatedRequests);
-        }
+        await remove(ref(database, `pendingModificationRequests/${requestId}`));
     };
 
     const handleEdit = (request) => {
@@ -142,22 +146,16 @@ const PendingModificationRequests = ({ showNotification }) => {
     };
 
     const handleSaveEdit = async () => {
+        if (!currentUser) {
+            showNotification('Non authentifié. Veuillez vous connecter en tant qu\'administrateur.', 'error');
+            return;
+        }
         try {
-            const requestsRef = ref(database, 'pendingModificationRequests');
-            const snapshot = await get(requestsRef);
+            await set(ref(database, `pendingModificationRequests/${editingRequest.requestId}`), editingRequest);
             
-            if (snapshot.exists()) {
-                const requests = snapshot.val();
-                const requestsArray = Array.isArray(requests) ? requests : Object.values(requests);
-                const updatedRequests = requestsArray.map(req => 
-                    req.requestId === editingRequest.requestId ? editingRequest : req
-                );
-                await set(requestsRef, updatedRequests);
-                
-                showNotification('Modifications enregistrées', 'success');
-                setEditingRequest(null);
-                loadPendingRequests();
-            }
+            showNotification('Modifications enregistrées', 'success');
+            setEditingRequest(null);
+            loadPendingRequests();
         } catch (error) {
             console.error('Error saving edits:', error);
             showNotification(`Erreur lors de l'enregistrement : ${error.message}`, 'error');
@@ -236,14 +234,28 @@ const PendingModificationRequests = ({ showNotification }) => {
                         {editingRequest.isCoroner ? (
                             <>
                                 <Form.Group className="mb-3">
-                                    <Form.Label style={{ color: '#c9d1d9' }}>Nom</Form.Label>
+                                    <Form.Label style={{ color: '#c9d1d9' }}>Prénom</Form.Label>
                                     <Form.Control
                                         type="text"
-                                        value={editingRequest.newData.name}
-                                        onChange={(e) => setEditingRequest({
-                                            ...editingRequest,
-                                            newData: {...editingRequest.newData, name: e.target.value}
-                                        })}
+                                        value={editingRequest.newData.firstName || editingRequest.newData.name?.split(' ')[0] || ''}
+                                        onChange={(e) => {
+                                            const fn = e.target.value;
+                                            const ln = editingRequest.newData.lastName || editingRequest.newData.name?.split(' ').slice(1).join(' ') || '';
+                                            setEditingRequest({ ...editingRequest, newData: { ...editingRequest.newData, firstName: fn, name: `${fn} ${ln}`.trim() } });
+                                        }}
+                                        style={{ backgroundColor: '#0d1117', color: '#c9d1d9', borderColor: '#30363d' }}
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label style={{ color: '#c9d1d9' }}>Nom de famille</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={editingRequest.newData.lastName || editingRequest.newData.name?.split(' ').slice(1).join(' ') || ''}
+                                        onChange={(e) => {
+                                            const ln = e.target.value;
+                                            const fn = editingRequest.newData.firstName || editingRequest.newData.name?.split(' ')[0] || '';
+                                            setEditingRequest({ ...editingRequest, newData: { ...editingRequest.newData, lastName: ln, name: `${fn} ${ln}`.trim() } });
+                                        }}
                                         style={{ backgroundColor: '#0d1117', color: '#c9d1d9', borderColor: '#30363d' }}
                                     />
                                 </Form.Group>

@@ -149,6 +149,9 @@ const EmployeeModal = ({
   const [refreshData, setRefreshData] = useState(false);
   const [currentAdminUser, setCurrentAdminUser] = useState(null);
   const [isAdminVerified, setIsAdminVerified] = useState(false);
+  // ── Transfert de rapports lors de la suppression ──────────────────
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [transferTarget, setTransferTarget] = useState('');
   const { employeeProfile, isAdmin } = useEmployeeAuth();
 
   const [missingEmployeeData, setMissingEmployeeData] = useState({
@@ -243,8 +246,12 @@ const EmployeeModal = ({
           // Pour DMEC : name = nom complet → découpe sur le dernier mot, ou firstName si disponible
           const fullNameParts = (employeeData.name || '').split(' ');
           const isPhmc = employeeType !== 'coroner';
+          // PHMC : utiliser firstName s'il existe, sinon déduire depuis name - lastName
           const coronerFirstName = isPhmc
-            ? (employeeData.name || '')
+            ? (employeeData.firstName
+                || (employeeData.lastName && employeeData.name
+                    ? (employeeData.name || '').replace(new RegExp(`\\s*${employeeData.lastName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), '').trim()
+                    : (employeeData.name || '')))
             : (employeeData.firstName
                 || (fullNameParts.length > 1 ? fullNameParts.slice(0, -1).join(' ') : (fullNameParts[0] || '')));
           const coronerLastNamePart = isPhmc
@@ -280,9 +287,8 @@ const EmployeeModal = ({
       return;
     }
 
-    // Pour editUser, permettre à l'employé de soumettre une demande de modification
-    if (actionType === 'editUser' && employeeProfile && selectedEmployeeName === employeeProfile.name && !isAdminVerified) {
-      // L'employé peut soumettre une demande de modification, pas besoin de vérifier adminUsers
+    // Pour editUser, permettre à l'employé de soumettre une demande de modification sans vérification admin
+    if (actionType === 'editUser' && !isAdminVerified) {
       setIsLoading(true);
     } else {
       // Pour toutes les autres actions, vérifier que l'utilisateur est admin
@@ -452,8 +458,9 @@ const EmployeeModal = ({
           const phmcRankData = PHMC_RANKS.find(r => r.value === missingEmployeeData.coronerRank);
           const phmcBadgePrefix = phmcRankData?.badgePrefix || 'MD';
           const phmcBadgeDigits = missingEmployeeData.phmcBadge.replace(/\D/g, '');
-          updated.name = missingEmployeeData.coronerName;
+          updated.firstName = missingEmployeeData.coronerName;
           updated.lastName = missingEmployeeData.employeeLastName;
+          updated.name = `${missingEmployeeData.coronerName} ${missingEmployeeData.employeeLastName}`.trim();
           updated.discord = missingEmployeeData.phmcDiscord || '';
           updated.phNumber = missingEmployeeData.phmcPHNumber || '';
           updated.badge = phmcBadgeDigits ? `${phmcBadgePrefix}-${phmcBadgeDigits}` : missingEmployeeData.phmcBadge;
@@ -461,8 +468,8 @@ const EmployeeModal = ({
           updated.category = missingEmployeeData.coronerRank;
         }
 
-        // Si l'employé modifie ses propres informations, envoyer une demande de modification
-        if (employeeProfile && selectedEmployeeName === employeeProfile.name && !isAdminVerified) {
+        // Les non-admins envoient toujours une demande de modification (peu importe qui ils éditent)
+        if (!isAdminVerified) {
           // Créer une demande de modification
           const modificationRequest = {
             requestId: `${Date.now()}_${selectedEmployeeName}`,
@@ -475,13 +482,10 @@ const EmployeeModal = ({
             status: 'pending'
           };
 
-          // Ajouter à la liste des demandes de modification
-          const modRequestsRef = ref(database, 'pendingModificationRequests');
-          const modSnapshot = await get(modRequestsRef);
-          const existingRequests = modSnapshot.exists() ? 
-            (Array.isArray(modSnapshot.val()) ? modSnapshot.val() : Object.values(modSnapshot.val())) : [];
-          
-          await set(modRequestsRef, [...existingRequests, modificationRequest]);
+          // Écriture directe par clé — ne nécessite pas de lecture préalable.
+          // Les règles DB autorisent l'écriture sur pendingModificationRequests pour tout utilisateur connecté.
+          const modRequestRef = ref(database, `pendingModificationRequests/${modificationRequest.requestId}`);
+          await set(modRequestRef, modificationRequest);
 
           // Notifier le canal Discord correspondant
           sendPendingRequestWebhook(employeeType === 'coroner', 'modification', modificationRequest);
@@ -519,73 +523,9 @@ const EmployeeModal = ({
         setIsLoading(false);
         return;
       }
-
-      try {
-        const snap = await get(ref(database, 'staff'));
-        if (!snap.exists()) {
-          showNotification('Aucune donnée sur le personnel n\'est disponible dans la base de données.', 'error');
-          setIsLoading(false);
-          return;
-        }
-
-        const staffData = snap.val() || {};
-        const updates = {};
-
-        // Collect data of removed employees (for Auth deletion)
-        const removedEmployees = [];
-        const collectRemoved = (listData) => {
-          if (!listData) return;
-          const arr = Array.isArray(listData) ? listData : Object.values(listData);
-          arr.forEach(m => { if (m && staffToRemove.includes(m?.name)) removedEmployees.push(m); });
-        };
-        collectRemoved(staffData.coroner);
-        collectRemoved(staffData.phmc);
-
-        const removeMatches = (listPath, listData) => {
-          if (!listData) return;
-          if (Array.isArray(listData)) {
-            const filtered = listData.filter(m => !staffToRemove.includes(m?.name));
-            updates[listPath] = filtered; // réécrit l'array
-          } else {
-            for (const [k, v] of Object.entries(listData)) {
-              if (staffToRemove.includes(v?.name)) {
-                updates[`${listPath}/${k}`] = null; // supprime la clé
-              }
-            }
-          }
-        };
-
-        removeMatches('staff/coroner', staffData.coroner);
-        removeMatches('staff/phmc', staffData.phmc);
-
-        await update(ref(database), updates);
-
-        // Delete Firebase Auth accounts for removed employees
-        for (const emp of removedEmployees) {
-          if (emp.uid || emp.email) {
-            try {
-              const idToken = await currentAdminUser.getIdToken();
-              const functionUrl = `https://europe-west1-${process.env.REACT_APP_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteUserAccount`;
-              await fetch(functionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                body: JSON.stringify({ uid: emp.uid, email: emp.email })
-              });
-            } catch (authErr) {
-              console.warn(`Could not delete Auth account for ${emp.name}:`, authErr);
-            }
-          }
-        }
-
-        await handleMissingEmployeeSubmit('removeStaff', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updates, currentAdminUser?.email);
-        showNotification(`Suppression réussie de ${staffToRemove.length} membre(s) du personnel.`, 'success');
-        setRefreshData(prev => !prev);
-      } catch (err) {
-        console.error('Error removing staff members from Firebase:', err);
-        showNotification(`Erreur lors de la suppression des membres du personnel : ${err.message}`, 'error');
-      } finally {
-        setIsLoading(false);
-      }
+      // Affiche d'abord la boite de dialogue de transfert de rapports
+      setIsLoading(false);
+      setShowTransferDialog(true);
       return;
     }
 
@@ -643,10 +583,21 @@ const EmployeeModal = ({
   // Options des selects (robustes map/array) - Filtrées selon l'utilisateur connecté
   const employeeOptions = useMemo(() => {
     const src = employeeType === 'coroner' ? ensureArray(coronerList) : ensureArray(phmcList);
-    const allOptions = src.map(emp => ({
-      value: emp.name,
-      label: `${emp.name}${emp.lastName ? ' ' + emp.lastName : ''} (${emp.rank || emp.category || 'Rank Missing'})`
-    }));
+    const allOptions = src.map(emp => {
+      // Compose display name avoiding duplication:
+      // - Coroner: name is full name (no lastName field needed)
+      // - PHMC new format: firstName + lastName stored separately
+      // - PHMC legacy: name = firstName only, lastName separate
+      const displayName = emp.firstName && emp.lastName
+        ? `${emp.firstName} ${emp.lastName}`
+        : (emp.name && emp.lastName
+            ? `${emp.name} ${emp.lastName}`
+            : (emp.name || ''));
+      return {
+        value: emp.name,
+        label: `${displayName} (${emp.rank || emp.category || 'Rank Missing'})`
+      };
+    });
     
     // Si admin, montrer tous les employés
     if (isAdminVerified) {
@@ -661,21 +612,128 @@ const EmployeeModal = ({
     return allOptions;
   }, [employeeType, coronerList, phmcList, isAdminVerified, employeeProfile, actionType]);
 
+  // ── Exécution réelle de la suppression (appelée depuis la boite de dialogue) ─
+  const executeRemoveStaff = async (targetEmployee) => {
+    setShowTransferDialog(false);
+    setIsLoading(true);
+    try {
+      // 1) Transfert optionnel des rapports sauvegardés
+      if (targetEmployee) {
+        const savedReportsRef = ref(database, 'savedReports');
+        const reportsSnap = await get(savedReportsRef);
+        if (reportsSnap.exists()) {
+          const allReports = reportsSnap.val();
+          const reportsUpdates = {};
+          for (const empName of staffToRemove) {
+            const sanitized = empName.replace(/[.#$[\/ \]]/g, '_');
+            if (allReports[sanitized]) {
+              const targetSanitized = targetEmployee.replace(/[.#$[\/ \]]/g, '_');
+              const destReports = allReports[targetSanitized] || {};
+              for (const reportId in allReports[sanitized]) {
+                if (!destReports[reportId]) {
+                  destReports[reportId] = allReports[sanitized][reportId];
+                }
+              }
+              reportsUpdates[`savedReports/${targetSanitized}`] = destReports;
+              reportsUpdates[`savedReports/${sanitized}`] = null;
+            }
+          }
+          if (Object.keys(reportsUpdates).length > 0) {
+            await update(ref(database), reportsUpdates);
+          }
+        }
+      }
+
+      // 2) Suppression du personnel de Firebase
+      const snap = await get(ref(database, 'staff'));
+      if (!snap.exists()) {
+        showNotification('Aucune donnée sur le personnel n\'est disponible dans la base de données.', 'error');
+        return;
+      }
+
+      const staffData = snap.val() || {};
+      const updates = {};
+
+      const removedEmployees = [];
+      const collectRemoved = (listData) => {
+        if (!listData) return;
+        const arr = Array.isArray(listData) ? listData : Object.values(listData);
+        arr.forEach(m => { if (m && staffToRemove.includes(m?.name)) removedEmployees.push(m); });
+      };
+      collectRemoved(staffData.coroner);
+      collectRemoved(staffData.phmc);
+
+      const removeMatches = (listPath, listData) => {
+        if (!listData) return;
+        if (Array.isArray(listData)) {
+          const filtered = listData.filter(m => !staffToRemove.includes(m?.name));
+          updates[listPath] = filtered;
+        } else {
+          for (const [k, v] of Object.entries(listData)) {
+            if (staffToRemove.includes(v?.name)) {
+              updates[`${listPath}/${k}`] = null;
+            }
+          }
+        }
+      };
+
+      removeMatches('staff/coroner', staffData.coroner);
+      removeMatches('staff/phmc', staffData.phmc);
+
+      await update(ref(database), updates);
+
+      // 3) Suppression des comptes Firebase Auth
+      for (const emp of removedEmployees) {
+        if (emp.uid || emp.email) {
+          try {
+            const idToken = await currentAdminUser.getIdToken();
+            const functionUrl = `https://europe-west1-${process.env.REACT_APP_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteUserAccount`;
+            await fetch(functionUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+              body: JSON.stringify({ uid: emp.uid, email: emp.email })
+            });
+          } catch (authErr) {
+            console.warn(`Could not delete Auth account for ${emp.name}:`, authErr);
+          }
+        }
+      }
+
+      await handleMissingEmployeeSubmit('removeStaff', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updates, currentAdminUser?.email);
+      const msg = targetEmployee
+        ? `Suppression réussie. Rapports transférés vers ${targetEmployee}.`
+        : `Suppression réussie de ${staffToRemove.length} membre(s) du personnel.`;
+      showNotification(msg, 'success');
+      setRefreshData(prev => !prev);
+    } catch (err) {
+      console.error('Error removing staff members from Firebase:', err);
+      showNotification(`Erreur lors de la suppression : ${err.message}`, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const combinedStaffOptions = useMemo(() => {
     const coronerOptions = ensureArray(coronerList).map(c => ({
       value: c.name,
       label: `${c.name} (${c.rank || 'Coroner'})`,
       category: 'Coroner Staff'
     }));
-    const phmcOptions = ensureArray(phmcList).map(p => ({
-      value: p.name,
-      label: `${p.name} (${p.category || 'PHMC'})`,
-      category: 'Hospital Staff'
-    }));
+    const phmcOptions = ensureArray(phmcList).map(p => {
+      const displayName = p.firstName && p.lastName
+        ? `${p.firstName} ${p.lastName}`
+        : (p.name && p.lastName ? `${p.name} ${p.lastName}` : (p.name || ''));
+      return {
+        value: p.name,
+        label: `${displayName} (${p.category || 'PHMC'})`,
+        category: 'Hospital Staff'
+      };
+    });
     return [...coronerOptions, ...phmcOptions].sort((a, b) => a.category.localeCompare(b.category));
   }, [coronerList, phmcList]);
 
   return show ? (
+    <>
     <div style={modalOverlayStyle} onClick={handleClose}>
       <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
         <div style={modalHeaderStyle}>
@@ -724,7 +782,13 @@ const EmployeeModal = ({
             fontWeight: '500',
             textAlign: 'center'
           }}>
-            ℹ️ Connecté en tant qu'employé : {employeeProfile.name}. Vous pouvez uniquement modifier vos propres informations.
+            ℹ️ Connecté en tant qu'employé : {
+              (employeeProfile.firstName && employeeProfile.lastName)
+                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
+                : (employeeProfile.name && employeeProfile.lastName
+                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
+                    : employeeProfile.name)
+            }. Vous pouvez uniquement modifier vos propres informations.
           </div>
         )}
 
@@ -1013,6 +1077,63 @@ const EmployeeModal = ({
         </div>
       </div>
     </div>
+
+    {/* ── Boîte de dialogue : transfert des rapports avant suppression ── */}
+    {showTransferDialog && (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <div style={{
+          backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '8px',
+          padding: '28px 32px', maxWidth: '480px', width: '90%', color: '#c9d1d9',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
+        }}>
+          <h5 style={{ color: '#f0883e', marginBottom: '12px' }}>⚠ Transfert des rapports</h5>
+          <p>Vous êtes sur le point de supprimer&nbsp;
+            <strong>{staffToRemove.length}</strong> membre(s)&nbsp;:&nbsp;
+            <strong>{staffToRemove.join(', ')}</strong>.
+          </p>
+          <p>Souhaitez-vous transférer leurs rapports sauvegardés vers un autre employé&nbsp;?</p>
+          <Form.Select
+            value={transferTarget}
+            onChange={e => setTransferTarget(e.target.value)}
+            style={{
+              backgroundColor: '#1f2937', color: '#c9d1d9',
+              border: '1px solid #30363d', marginBottom: '20px'
+            }}
+          >
+            <option value="">— Supprimer les rapports (aucun transfert) —</option>
+            {combinedStaffOptions
+              .filter(o => !staffToRemove.includes(o.value))
+              .map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))
+            }
+          </Form.Select>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <Button
+              variant="danger"
+              disabled={isLoading}
+              onClick={() => executeRemoveStaff(transferTarget || null)}
+            >
+              {transferTarget
+                ? `Transférer vers ${transferTarget} et supprimer`
+                : 'Supprimer sans transférer'}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={isLoading}
+              onClick={() => { setShowTransferDialog(false); setTransferTarget(''); }}
+            >
+              Annuler
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   ) : null;
 };
 

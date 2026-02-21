@@ -368,6 +368,8 @@ const OnboardingModal = ({
 
             const newStaffMember = isCoroner ? {
                 name: newStaffMemberName,
+                firstName: accountData.firstName,
+                lastName: accountData.lastName,
                 discord: accountData.discord,
                 rank: accountData.rank,
                 badge: fullBadge,
@@ -375,6 +377,7 @@ const OnboardingModal = ({
                 category: accountData.rank,
             } : {
                 name: newStaffMemberName,
+                firstName: accountData.firstName,
                 lastName: accountData.lastName,
                 discord: accountData.discord,
                 phNumber: accountData.phNumber || "",
@@ -772,7 +775,7 @@ const OnboardingModal = ({
                                     name="discord"
                                     value={accountData.discord}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Nom *"
+                                    placeholder="Discord *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
@@ -1073,7 +1076,7 @@ const OnboardingModal = ({
                                     name="discord"
                                     value={accountData.discord}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Nom *"
+                                    placeholder="Discord *"
                                     style={formInputStyle}
                                 />
                                 <Form.Control
