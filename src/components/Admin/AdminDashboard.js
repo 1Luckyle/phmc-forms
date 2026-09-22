@@ -47,9 +47,7 @@ const AdminDashboard = ({
     handleLogout,
     Sentry,
     showInAppNotification,
-    setShowOAuthTokenExchangeModal,
     setShowUserDataExchangeModal,
-    handleGtaWorldLogin,
     lockdownConfig,
     setLockdownConfig,
     handleUpdateLockdownStatus,
@@ -74,7 +72,6 @@ const AdminDashboard = ({
 }) => {
 
     const [selectedSection, setSelectedSection] = useState('serviceStatus');
-    const [gtaWorldUser, setGtaWorldUser] = useState(null);
     const [testWebhookData, setTestWebhookData] = useState({ title: '', message: '', selectedWebhook: null });
     const navigate = useNavigate();
 
@@ -119,12 +116,6 @@ const AdminDashboard = ({
                     <div className="sidebar-header">
                         <h5>Admin Panel</h5>
                         <p>Connecté en tant que : {currentUser.email}</p>
-                        {gtaWorldUser && (
-                            <p className="text-info">
-                                <i className="fas fa-user me-1"></i>
-                                GTA World: {gtaWorldUser.username}
-                            </p>
-                        )}
                     </div>
                     <div className="nav-pills-flex-column">
                         <button className={`nav-link ${selectedSection === 'serviceStatus' ? 'active' : ''}`} onClick={() => setSelectedSection('serviceStatus')}><i className="fas fa-server me-2"></i>Statut du service</button>
@@ -661,21 +652,7 @@ const AdminDashboard = ({
                             <div className="card-header">Outils de développement</div>
                             <div className="card-body">
                                 <div className="mb-3">
-                                    <Button variant="primary" onClick={handleGtaWorldLogin}>
-                                        <i className="fas fa-sign-in-alt me-2"></i>
-                                        Connexion à GTA World
-                                    </Button>
-                                </div>
-                                <div className="mb-3">
-                                    <Button 
-                                        variant="info" 
-                                        onClick={() => setShowOAuthTokenExchangeModal(true)} 
-                                        title={gtaWorldUser ? `Connecté en tant que ${gtaWorldUser.username}` : 'Échanger un jeton OAuth'}
-                                    >
-                                        <i className="fas fa-exchange-alt me-2"></i>
-                                        Échange de jetons OAuth
-                                    </Button>
-                                    <Button variant="info" onClick={() => setShowUserDataExchangeModal(true)} className="ms-2">
+                                    <Button variant="info" onClick={() => setShowUserDataExchangeModal(true)}>
                                         <i className="fas fa-user-secret me-2"></i>
                                         Échange de données utilisateur
                                     </Button>

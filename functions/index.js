@@ -451,7 +451,47 @@ export const exchangeAuthCodeForToken = onRequest({}, async (req, res) => {
             return;
         }
 
-        res.status(200).json({ token: tokenData, user: userData });
+        // Détermine, parmi les personnages GTAW de l'utilisateur, lesquels sont déjà
+        // liés à un compte existant (staff/phmc, staff/coroner) ou à une demande de
+        // compte en attente (pendingAccountRequests), afin que le sélecteur de
+        // personnage côté client puisse les désactiver. Utilise l'Admin SDK, donc
+        // aucune règle de la Realtime Database n'a besoin d'être ouverte pour ça.
+        let unavailableCharacterIds = [];
+        try {
+            const characters = userData?.user?.character || [];
+            if (Array.isArray(characters) && characters.length > 0) {
+                const characterIds = new Set(characters.map((c) => String(c.id)));
+
+                const toArray = (val) => {
+                    if (!val) return [];
+                    return Array.isArray(val) ? val : Object.values(val);
+                };
+
+                const [phmcSnap, coronerSnap, pendingSnap] = await Promise.all([
+                    db.ref('staff/phmc').once('value'),
+                    db.ref('staff/coroner').once('value'),
+                    db.ref('pendingAccountRequests').once('value'),
+                ]);
+
+                const usedIds = new Set();
+                for (const entry of [...toArray(phmcSnap.val()), ...toArray(coronerSnap.val())]) {
+                    if (entry && entry.gtawCharacterId != null) usedIds.add(String(entry.gtawCharacterId));
+                }
+                for (const entry of toArray(pendingSnap.val())) {
+                    if (entry && entry.status === 'pending' && entry.gtawCharacterId != null) {
+                        usedIds.add(String(entry.gtawCharacterId));
+                    }
+                }
+
+                unavailableCharacterIds = [...characterIds].filter((id) => usedIds.has(id));
+            }
+        } catch (availabilityError) {
+            console.error('Error computing GTAW character availability:', availabilityError);
+            // Non bloquant : si cette vérification échoue, on renvoie simplement une
+            // liste vide plutôt que de faire échouer toute la connexion GTAW.
+        }
+
+        res.status(200).json({ token: tokenData, user: userData, unavailableCharacterIds });
     } catch (error) {
         console.error("Error exchanging auth code:", error);
         console.error("Error stack:", error.stack);

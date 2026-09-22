@@ -9,6 +9,9 @@ import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS } from '../../constants/ranks';
 
+// map|array|null -> array
+const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
+
 // Helper : crée un compte Firebase Auth via une instance secondaire pour ne pas
 // déconnecter l'admin qui est sur l'instance principale.
 const createUserWithSecondaryApp = async (email, password) => {
@@ -77,6 +80,24 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
             return;
         }
         try {
+            // Filet de sécurité : la vérification forte se fait déjà côté serveur au
+            // moment de la sélection du personnage GTA World (unavailableCharacterIds
+            // dans exchangeAuthCodeForToken), mais deux demandes concurrentes peuvent
+            // en théorie passer entre les deux. On revérifie ici sur les listes déjà
+            // approuvées avant de créer le compte.
+            if (request.gtawCharacterId != null) {
+                const staffSnap = await get(ref(database, 'staff'));
+                const staffData = staffSnap.exists() ? staffSnap.val() : {};
+                const allStaff = [...ensureArray(staffData.phmc), ...ensureArray(staffData.coroner)];
+                const duplicate = allStaff.find(m => m && String(m.gtawCharacterId) === String(request.gtawCharacterId));
+                if (duplicate) {
+                    const confirmDuplicate = window.confirm(
+                        `⚠️ Ce personnage GTA World semble déjà lié au compte de "${duplicate.name}".\n\nApprouver quand même cette demande pour ${request.name} ?`
+                    );
+                    if (!confirmDuplicate) return;
+                }
+            }
+
             const confirmApprove = window.confirm(
                 `Création du compte pour ${request.name}\n\nVoulez-vous confirmer l'approbation ?`
             );
@@ -103,7 +124,9 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 category: request.rank,
                 uid: user.uid,
                 email: request.email,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                ...(request.gtawCharacterId != null && { gtawCharacterId: request.gtawCharacterId }),
+                ...(request.gtawUserId != null && { gtawUserId: request.gtawUserId }),
             };
 
             // Enregistrer dans la base de données (l'admin est toujours connecté)
@@ -325,6 +348,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 <thead>
                     <tr>
                         <th>Nom</th>
+                        <th>Origine</th>
                         <th>Email</th>
                         <th>Type</th>
                         <th>Grade</th>
@@ -336,6 +360,19 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                     {pendingRequests.map((request, index) => (
                         <tr key={index}>
                             <td>{request.name}</td>
+                            <td>
+                                {request.gtawCharacterId != null ? (
+                                    <span title={`Personnage GTA World #${request.gtawCharacterId}`} style={{ color: '#ff8c00' }}>
+                                        <i className="fas fa-gamepad" style={{ marginRight: '5px' }}></i>
+                                        GTA World
+                                    </span>
+                                ) : (
+                                    <span style={{ color: '#6c757d' }}>
+                                        <i className="fas fa-keyboard" style={{ marginRight: '5px' }}></i>
+                                        Manuel
+                                    </span>
+                                )}
+                            </td>
                             <td>{request.email}</td>
                             <td>{request.isCoroner ? 'Coroner' : 'PHMC'}</td>
                             <td>{request.rank}</td>

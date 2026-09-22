@@ -126,7 +126,11 @@ function MainApp({
     useEffect(() => {
         const onboardingCompleteFlag = localStorage.getItem('onboardingComplete');
         const userPreferences = localStorage.getItem('userOnboardingPreferences');
-        
+        // Présent si l'utilisateur vient de lancer une connexion GTA World depuis la
+        // création de compte (OnboardingModal) et revient d'une redirection OAuth :
+        // il faut rouvrir l'onboarding même si elle avait déjà été complétée avant.
+        const gtawOnboardingPending = sessionStorage.getItem('gtaw-onboarding-pending');
+
         if (userPreferences) {
             try {
                 const preferences = JSON.parse(userPreferences);
@@ -137,9 +141,9 @@ function MainApp({
                 localStorage.removeItem('userOnboardingPreferences');
             }
         }
-        
-        // Show onboarding for first-time users
-        if (!onboardingCompleteFlag && !userPreferences) {
+
+        // Show onboarding for first-time users, or to resume a GTA World OAuth flow
+        if (gtawOnboardingPending || (!onboardingCompleteFlag && !userPreferences)) {
             setShowOnboarding(true);
         } else {
             setOnboardingComplete(true);

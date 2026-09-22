@@ -26,17 +26,6 @@ const GtaLogin = () => {
             });
     };
 
-    const handleGtaWorldLogin = () => {
-        // Replace with your actual client ID and callback URL
-        const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'VOTRE_ID_CLIENT';
-        const callbackUrl = window.location.origin + '/phmc-forms/#/auth/gta/callback';
-        const redirectUri = encodeURIComponent(callbackUrl);
-        // Prefer the configured base URL for OAuth, falling back to the French UCP domain.
-        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
-        const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
-        window.location.href = authUrl;
-    };
-
     return (
         <div style={{ maxWidth: '400px', margin: 'auto', paddingTop: '50px' }}>
             <form onSubmit={handleLogin}>
@@ -63,7 +52,6 @@ const GtaLogin = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                     <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: 'blue', color: 'white', border: 'none' }}>Connexion</button>
-                    <button type="button" onClick={handleGtaWorldLogin} style={{ flex: 1, padding: '10px', backgroundColor: '#ff8c00', color: 'white', border: 'none' }}>Connexion avec GTA World OAuth</button>
                 </div>
                 <button type="button" onClick={() => navigate('/')} style={{ width: '100%', padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'none', marginTop: '10px' }}>Accueil</button>
             </form>
