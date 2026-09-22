@@ -86,33 +86,93 @@ const OnboardingModal = ({
     const [loggedIn, setLoggedIn] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [resetEmailSent, setResetEmailSent] = useState(false);
+    // ── Création de compte via GTA World ──────────────────────────────
+    // 'manual' = saisie libre (comportement historique), 'gtaw' = identité
+    // vérifiée via un personnage GTA World choisi par l'utilisateur.
+    const [accountCreationMethod, setAccountCreationMethod] = useState(null);
+    const [gtawCharacters, setGtawCharacters] = useState(null);
+    const [gtawUnavailableCharacterIds, setGtawUnavailableCharacterIds] = useState([]);
+    const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
+    const [gtawUserId, setGtawUserId] = useState(null);
 
     // Reset state when modal opens
     useEffect(() => {
         if (show) {
-            setCurrentStep(ONBOARDING_STEPS.WELCOME);
-            setSelectedUserType(null);
-            setSelectedRole(null);
-            setRecommendedForms([]);
-            setShowAccountCreation(false);
-            setShowLogin(false);
-            setLoginData({ email: '', password: '' });
-            setLoggedIn(false);
-            setResetEmailSent(false);
-            setIsResettingPassword(false);
-            setAccountData({
-                firstName: '',
-                lastName: '',
-                discord: '',
-                rank: '',
-                badge: '',
-                phNumber: '',
-                email: '',
-                password: '',
-                confirmPassword: ''
-            });
-            setIsCreatingAccount(false);
-            setAccountCreated(false);
+            // Reprise après une redirection OAuth GTA World : si une demande de
+            // connexion GTAW était en cours (gtaw-onboarding-pending) et que le
+            // résultat de l'échange est disponible (gtaw-onboarding-result), on
+            // rouvre directement sur la sélection du personnage plutôt que de tout
+            // réinitialiser à l'écran de bienvenue.
+            let resumedFromGtaw = false;
+            try {
+                const pendingRaw = sessionStorage.getItem('gtaw-onboarding-pending');
+                const resultRaw = sessionStorage.getItem('gtaw-onboarding-result');
+                if (pendingRaw && resultRaw) {
+                    const pending = JSON.parse(pendingRaw);
+                    const result = JSON.parse(resultRaw);
+                    sessionStorage.removeItem('gtaw-onboarding-pending');
+                    sessionStorage.removeItem('gtaw-onboarding-result');
+
+                    if (result.error) {
+                        showNotification(`Échec de la connexion GTA World : ${result.error}`, 'error');
+                    } else if (pending.userType) {
+                        resumedFromGtaw = true;
+                        setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
+                        setSelectedUserType(pending.userType);
+                        setSelectedRole(null);
+                        setShowAccountCreation(true);
+                        setAccountCreationMethod('gtaw');
+                        setGtawCharacters(result.characters || []);
+                        setGtawUnavailableCharacterIds(result.unavailableCharacterIds || []);
+                        setSelectedGtawCharacter(null);
+                        setGtawUserId(result.gtawUserId ?? null);
+                        setAccountData({
+                            firstName: '',
+                            lastName: '',
+                            discord: '',
+                            rank: '',
+                            badge: '',
+                            phNumber: '',
+                            email: '',
+                            password: '',
+                            confirmPassword: ''
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to resume GTA World onboarding state:', err);
+            }
+
+            if (!resumedFromGtaw) {
+                setCurrentStep(ONBOARDING_STEPS.WELCOME);
+                setSelectedUserType(null);
+                setSelectedRole(null);
+                setRecommendedForms([]);
+                setShowAccountCreation(false);
+                setAccountCreationMethod(null);
+                setGtawCharacters(null);
+                setGtawUnavailableCharacterIds([]);
+                setSelectedGtawCharacter(null);
+                setGtawUserId(null);
+                setShowLogin(false);
+                setLoginData({ email: '', password: '' });
+                setLoggedIn(false);
+                setResetEmailSent(false);
+                setIsResettingPassword(false);
+                setAccountData({
+                    firstName: '',
+                    lastName: '',
+                    discord: '',
+                    rank: '',
+                    badge: '',
+                    phNumber: '',
+                    email: '',
+                    password: '',
+                    confirmPassword: ''
+                });
+                setIsCreatingAccount(false);
+                setAccountCreated(false);
+            }
         }
     }, [show]);
 
@@ -302,6 +362,39 @@ const OnboardingModal = ({
         });
     };
 
+    // Démarre la connexion OAuth GTA World depuis l'étape de création de compte.
+    // L'état React sera perdu au rechargement de la page après la redirection ;
+    // on mémorise donc le type d'utilisateur en cours dans sessionStorage pour
+    // pouvoir rouvrir l'onboarding au bon endroit dans GtaOnboardingCallback / MainApp.
+    const startGtawOnboardingLogin = () => {
+        try {
+            const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || '';
+            const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+            const callbackUrl = window.location.origin + '/phmc-forms/#/auth/gta/onboarding-callback';
+            const redirectUri = encodeURIComponent(callbackUrl);
+            sessionStorage.setItem('gtaw-onboarding-pending', JSON.stringify({ userType: selectedUserType }));
+            const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
+            window.location.href = authUrl;
+        } catch (err) {
+            console.error('Failed to start GTA World login:', err);
+            showNotification('Impossible de démarrer la connexion avec GTA World.', 'error');
+        }
+    };
+
+    const handleSelectGtawCharacter = (character) => {
+        setSelectedGtawCharacter(character);
+        setAccountData(prev => ({
+            ...prev,
+            firstName: character.firstname || '',
+            lastName: character.lastname || ''
+        }));
+    };
+
+    const handleChangeGtawCharacter = () => {
+        setSelectedGtawCharacter(null);
+        setAccountData(prev => ({ ...prev, firstName: '', lastName: '' }));
+    };
+
     const handleCreateAccount = async () => {
         setIsCreatingAccount(true);
         try {
@@ -366,6 +459,13 @@ const OnboardingModal = ({
                 ? `${accountData.firstName} ${accountData.lastName}`.trim()
                 : `${accountData.firstName} ${accountData.lastName}`.trim();
 
+            // Si l'identité vient d'un personnage GTA World, on rattache son id (et
+            // l'id du compte GTAW) à la demande : ça alimente le badge "Vérifié via
+            // GTA World" côté admin et la vérification anti-doublon de personnage.
+            const gtawFields = (accountCreationMethod === 'gtaw' && selectedGtawCharacter)
+                ? { gtawCharacterId: selectedGtawCharacter.id, gtawUserId: gtawUserId ?? null }
+                : {};
+
             const newStaffMember = isCoroner ? {
                 name: newStaffMemberName,
                 firstName: accountData.firstName,
@@ -375,6 +475,7 @@ const OnboardingModal = ({
                 badge: fullBadge,
                 phNumber: accountData.phNumber || "",
                 category: accountData.rank,
+                ...gtawFields,
             } : {
                 name: newStaffMemberName,
                 firstName: accountData.firstName,
@@ -384,6 +485,7 @@ const OnboardingModal = ({
                 badge: fullBadge,
                 rank: accountData.rank,
                 category: accountData.rank,
+                ...gtawFields,
             };
 
             // Envoyer une demande d'approbation de compte
@@ -741,8 +843,144 @@ const OnboardingModal = ({
         </div>
     );
 
+    // Étape "comment souhaitez-vous créer votre compte ?" : GTA World ou saisie
+    // manuelle. Les deux méthodes alimentent ensuite exactement le même formulaire
+    // (grade, badge, discord, téléphone, email, mot de passe) et les mêmes
+    // validations dans handleCreateAccount.
+    const renderAccountCreationChoice = (isCoroner) => (
+        <div style={stepContentStyle}>
+            <h2 style={stepTitleStyle}>
+                {isCoroner ? 'Créer votre compte de membre du DMEC' : 'Créer un compte Personnel PHMC'}
+            </h2>
+            <p style={stepDescriptionStyle}>
+                Comment souhaitez-vous renseigner votre identité ?
+            </p>
+            <div style={accountFormStyle}>
+                <div style={{
+                    display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '10px'
+                }}>
+                    <button
+                        type="button"
+                        onClick={startGtawOnboardingLogin}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '12px',
+                            backgroundColor: '#2a2a2a', border: '1px solid #ff8c00',
+                            borderRadius: '8px', padding: '15px', color: '#fff',
+                            cursor: 'pointer', textAlign: 'left'
+                        }}
+                    >
+                        <i className="fas fa-gamepad" style={{ fontSize: '1.4rem', color: '#ff8c00' }}></i>
+                        <span>
+                            <strong style={{ display: 'block' }}>Se connecter avec GTA World</strong>
+                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                Choisissez le personnage avec lequel créer votre compte. Votre prénom/nom sera vérifié automatiquement.
+                            </span>
+                        </span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setAccountCreationMethod('manual')}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '12px',
+                            backgroundColor: '#2a2a2a', border: '1px solid #444',
+                            borderRadius: '8px', padding: '15px', color: '#fff',
+                            cursor: 'pointer', textAlign: 'left'
+                        }}
+                    >
+                        <i className="fas fa-keyboard" style={{ fontSize: '1.4rem', color: '#6c757d' }}></i>
+                        <span>
+                            <strong style={{ display: 'block' }}>Saisir mes informations manuellement</strong>
+                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                Remplissez vous-même votre prénom et votre nom.
+                            </span>
+                        </span>
+                    </button>
+                </div>
+                <div style={accountActionsStyle}>
+                    <Button
+                        variant="outline-secondary"
+                        onClick={() => setShowAccountCreation(false)}
+                        style={skipAccountButtonStyle}
+                    >
+                        Passer la création de compte
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+
+    // Étape de sélection du personnage GTA World une fois l'OAuth terminé.
+    const renderGtawCharacterPicker = (isCoroner) => (
+        <div style={stepContentStyle}>
+            <h2 style={stepTitleStyle}>Choisissez votre personnage</h2>
+            <p style={stepDescriptionStyle}>
+                Voici les personnages liés à votre compte GTA World. Sélectionnez celui pour lequel vous créez ce compte.
+            </p>
+            <div style={accountFormStyle}>
+                {(!gtawCharacters || gtawCharacters.length === 0) ? (
+                    <div style={{ textAlign: 'center', color: '#ccc', padding: '20px 0' }}>
+                        <i className="fas fa-exclamation-circle" style={{ marginRight: '8px' }}></i>
+                        Aucun personnage n'a été trouvé sur ce compte GTA World.
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                        {gtawCharacters.map((character) => {
+                            const isUnavailable = gtawUnavailableCharacterIds.includes(String(character.id));
+                            return (
+                                <button
+                                    key={character.id}
+                                    type="button"
+                                    disabled={isUnavailable}
+                                    onClick={() => handleSelectGtawCharacter(character)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        backgroundColor: '#2a2a2a',
+                                        border: `1px solid ${isUnavailable ? '#5c1f1f' : '#444'}`,
+                                        borderRadius: '8px', padding: '12px 15px',
+                                        color: isUnavailable ? '#888' : '#fff',
+                                        cursor: isUnavailable ? 'not-allowed' : 'pointer',
+                                        opacity: isUnavailable ? 0.6 : 1,
+                                        textAlign: 'left'
+                                    }}
+                                >
+                                    <span>
+                                        <i className="fas fa-user" style={{ marginRight: '10px' }}></i>
+                                        {character.firstname} {character.lastname}
+                                    </span>
+                                    {isUnavailable && (
+                                        <span style={{
+                                            fontSize: '0.75em', color: '#ff6b6b', border: '1px solid #ff6b6b',
+                                            borderRadius: '4px', padding: '2px 6px', whiteSpace: 'nowrap'
+                                        }}>
+                                            Déjà utilisé
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+                <div style={accountActionsStyle}>
+                    <Button
+                        variant="outline-secondary"
+                        onClick={() => { setAccountCreationMethod(null); setGtawCharacters(null); setGtawUnavailableCharacterIds([]); }}
+                        style={skipAccountButtonStyle}
+                    >
+                        Retour
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+
     const renderRoleSpecificStep = () => {
         if (selectedUserType === USER_TYPES.PHMC_STAFF) {
+            if (showAccountCreation && !accountCreationMethod) {
+                return renderAccountCreationChoice(false);
+            }
+            if (showAccountCreation && accountCreationMethod === 'gtaw' && !selectedGtawCharacter) {
+                return renderGtawCharacterPicker(false);
+            }
             if (showAccountCreation) {
                 return (
                     <div style={stepContentStyle}>
@@ -751,6 +989,26 @@ const OnboardingModal = ({
                             Remplissez vos informations pour créer votre compte personnel :
                         </p>
                         <div style={accountFormStyle}>
+                            {accountCreationMethod === 'gtaw' && selectedGtawCharacter && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    gap: '10px', marginBottom: '15px', padding: '10px 12px',
+                                    backgroundColor: 'rgba(40, 167, 69, 0.12)', border: '1px solid rgba(40, 167, 69, 0.4)',
+                                    borderRadius: '6px', fontSize: '0.85em', color: '#28a745'
+                                }}>
+                                    <span>
+                                        <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                        Identité vérifiée via GTA World : <strong>{selectedGtawCharacter.firstname} {selectedGtawCharacter.lastname}</strong>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleChangeGtawCharacter}
+                                        style={{ background: 'none', border: 'none', color: '#4a9eff', textDecoration: 'underline', cursor: 'pointer', fontSize: '1em', whiteSpace: 'nowrap' }}
+                                    >
+                                        Changer de personnage
+                                    </button>
+                                </div>
+                            )}
                             <div style={formRowStyle}>
                                 <Form.Control
                                     type="text"
@@ -758,7 +1016,8 @@ const OnboardingModal = ({
                                     value={accountData.firstName}
                                     onChange={handleAccountDataChange}
                                     placeholder="Prénom *"
-                                    style={formInputStyle}
+                                    readOnly={accountCreationMethod === 'gtaw'}
+                                    style={{ ...formInputStyle, ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }}
                                 />
                                 <Form.Control
                                     type="text"
@@ -766,7 +1025,8 @@ const OnboardingModal = ({
                                     value={accountData.lastName}
                                     onChange={handleAccountDataChange}
                                     placeholder="Nom *"
-                                    style={formInputStyle}
+                                    readOnly={accountCreationMethod === 'gtaw'}
+                                    style={{ ...formInputStyle, ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }}
                                 />
                             </div>
                             <div style={formRowStyle}>
@@ -872,9 +1132,9 @@ const OnboardingModal = ({
                                 Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
                             </div>
                             <div style={accountActionsStyle}>
-                                <Button 
-                                    variant="outline-secondary" 
-                                    onClick={() => setShowAccountCreation(false)}
+                                <Button
+                                    variant="outline-secondary"
+                                    onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setSelectedGtawCharacter(null); setGtawCharacters(null); }}
                                     style={skipAccountButtonStyle}
                                 >
                                     Passer la création du compte
@@ -1044,6 +1304,12 @@ const OnboardingModal = ({
         }
 
         if (selectedUserType === USER_TYPES.CORONER) {
+            if (showAccountCreation && !accountCreationMethod) {
+                return renderAccountCreationChoice(true);
+            }
+            if (showAccountCreation && accountCreationMethod === 'gtaw' && !selectedGtawCharacter) {
+                return renderGtawCharacterPicker(true);
+            }
             if (showAccountCreation) {
                 return (
                     <div style={stepContentStyle}>
@@ -1052,6 +1318,26 @@ const OnboardingModal = ({
                             Remplissez vos informations pour créer votre compte de membre du DMEC :
                         </p>
                         <div style={accountFormStyle}>
+                            {accountCreationMethod === 'gtaw' && selectedGtawCharacter && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    gap: '10px', marginBottom: '15px', padding: '10px 12px',
+                                    backgroundColor: 'rgba(40, 167, 69, 0.12)', border: '1px solid rgba(40, 167, 69, 0.4)',
+                                    borderRadius: '6px', fontSize: '0.85em', color: '#28a745'
+                                }}>
+                                    <span>
+                                        <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                        Identité vérifiée via GTA World : <strong>{selectedGtawCharacter.firstname} {selectedGtawCharacter.lastname}</strong>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleChangeGtawCharacter}
+                                        style={{ background: 'none', border: 'none', color: '#4a9eff', textDecoration: 'underline', cursor: 'pointer', fontSize: '1em', whiteSpace: 'nowrap' }}
+                                    >
+                                        Changer de personnage
+                                    </button>
+                                </div>
+                            )}
                             <div style={formRowStyle}>
                                 <Form.Control
                                     type="text"
@@ -1059,7 +1345,8 @@ const OnboardingModal = ({
                                     value={accountData.firstName}
                                     onChange={handleAccountDataChange}
                                     placeholder="Prénom *"
-                                    style={formInputStyle}
+                                    readOnly={accountCreationMethod === 'gtaw'}
+                                    style={{ ...formInputStyle, ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }}
                                 />
                                 <Form.Control
                                     type="text"
@@ -1067,7 +1354,8 @@ const OnboardingModal = ({
                                     value={accountData.lastName}
                                     onChange={handleAccountDataChange}
                                     placeholder="Nom *"
-                                    style={formInputStyle}
+                                    readOnly={accountCreationMethod === 'gtaw'}
+                                    style={{ ...formInputStyle, ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }}
                                 />
                             </div>
                             <div style={formRowStyle}>
@@ -1173,9 +1461,9 @@ const OnboardingModal = ({
                                 Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
                             </div>
                             <div style={accountActionsStyle}>
-                                <Button 
-                                    variant="outline-secondary" 
-                                    onClick={() => setShowAccountCreation(false)}
+                                <Button
+                                    variant="outline-secondary"
+                                    onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setSelectedGtawCharacter(null); setGtawCharacters(null); }}
                                     style={skipAccountButtonStyle}
                                 >
                                     Passer la création de compte

@@ -14,7 +14,6 @@ import * as Sentry from "@sentry/react";
 import CctvRequestWebhookModal from './CctvRequestWebhookModal'; // Import the new modal
 import UserManagementModal from './UserManagementModal';
 import AdminDashboard from './AdminDashboard';
-import OAuthTokenExchangeModal from './OAuthTokenExchangeModal';
 import UserDataExchangeModal from './UserDataExchangeModal';
 
 
@@ -139,7 +138,6 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
     const [customWebhookSending, setCustomWebhookSending] = useState(false);
     const [customWebhookResult, setCustomWebhookResult] = useState(null);
 
-    // GTA World OAuth login handler
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -147,17 +145,6 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [permissionChecked, setPermissionChecked] = useState(false);
-
-    const handleGtaWorldLogin = () => {
-        // Replace with your actual client ID and callback URL
-        const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || 'VOTRE_ID_CLIENT';
-        const callbackUrl = window.location.origin + '/phmc-forms/#/auth/gta/callback';
-        const redirectUri = encodeURIComponent(callbackUrl);
-        // Prefer the configured base URL for OAuth, falling back to the French UCP domain.
-        const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
-        const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
-        window.location.href = authUrl;
-    };
 
     const [selectedRecruitmentCategory, setSelectedRecruitmentCategory] = useState('');
     const [currentRecruitmentData, setCurrentRecruitmentData] = useState({});
@@ -185,9 +172,7 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
     const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
     
     const [showUserManagementModal, setShowUserManagementModal] = useState(false);
-    const [showOAuthTokenExchangeModal, setShowOAuthTokenExchangeModal] = useState(false);
     const [showUserDataExchangeModal, setShowUserDataExchangeModal] = useState(false);
-    const [gtaWorldUser, setGtaWorldUser] = useState(null);
 
     const [formGeneratorStatus, setFormGeneratorStatus] = useState('');
     const [alternativeFormGeneratorStatus, setAlternativeFormGeneratorStatus] = useState('');
@@ -1419,7 +1404,6 @@ Clé : ${savedRoleData.originalKey}`,
             {/* --- Main Admin Dashboard --- */}
             <AdminDashboard
                 currentUser={currentUser}
-                gtaWorldUser={gtaWorldUser}
                 desktopNotificationPermission={desktopNotificationPermission}
                 handleEnableDesktopNotifications={handleEnableDesktopNotifications}
                 isLoadingStatus={isLoadingStatus}
@@ -1454,13 +1438,11 @@ Clé : ${savedRoleData.originalKey}`,
 
                 setShowCctvWebhookModal={setShowCctvWebhookModal}
                 setShowMarkdownModal={setShowMarkdownModal}
-                // Pass handlers for OAuth Token and User Data exchange modals
-                setShowOAuthTokenExchangeModal={setShowOAuthTokenExchangeModal}
+                // Pass handler for the User Data exchange debug modal
                 setShowUserDataExchangeModal={setShowUserDataExchangeModal}
                 handleLogout={handleLogout}
                 Sentry={Sentry}
                 showInAppNotification={showInAppNotification}
-                handleGtaWorldLogin={handleGtaWorldLogin}
                 lockdownConfig={lockdownConfig}
                 setLockdownConfig={setLockdownConfig}
                 handleUpdateLockdownStatus={handleUpdateLockdownStatus}
@@ -1520,14 +1502,6 @@ Clé : ${savedRoleData.originalKey}`,
                 onHide={() => setShowUserManagementModal(false)}
                 database={database}
                 showNotification={showInAppNotification}
-            />
-            <OAuthTokenExchangeModal
-                show={showOAuthTokenExchangeModal}
-                onHide={() => setShowOAuthTokenExchangeModal(false)}
-                showNotification={showInAppNotification}
-                sendAdminActionWebhook={sendAdminActionWebhook}
-                adminUserEmail={currentUser?.email}
-                onUserDataReceived={setGtaWorldUser}
             />
             <UserDataExchangeModal
                 show={showUserDataExchangeModal}
