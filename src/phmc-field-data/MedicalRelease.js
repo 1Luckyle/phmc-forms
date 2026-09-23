@@ -1,6 +1,7 @@
 import React from 'react';
-import { Form, Button, InputGroup } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import Select from 'react-select';
+import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
 
 const MedicalRelease = ({
     formData,
@@ -12,8 +13,6 @@ const MedicalRelease = ({
     formatOptions, // Updated: Was PurposeMedicalInformationReleaseFormat
     medicalRecordOptions, // Updated: Was MedicalRecordsRelease
     phmcGroupedOptions,
-    handleImageUpload,
-    isUploading,
 
 }) => {
 
@@ -365,77 +364,19 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case si vous souhaitez fournir une preuve de paiement maintenant. Redirection: <a href="https://fleeca.gta.world/login" target="_blank" rel="noopener noreferrer">030026639</a>. Veuillez vous connecter à Fleeca avant le paiement.
+                        Cochez cette case pour générer un lien de paiement Fleeca.
                     </span>
                 </Form.Group>
             )}
 
             {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
-                <Form.Group className="mb-3 upload-container">
-                    <Form.Label>Téléchargement de l'image de preuve de paiement</Form.Label>
-                    <InputGroup>
-                        <Form.Control
-                            as="textarea" 
-                            rows={2}
-                            name="paymentProofPhotos"
-                            value={formData.paymentProofPhotos || ''}
-                            onChange={handleChange} 
-                            placeholder="Coller l'URL de l'image ou télécharger"
-                            required 
-                            className={`form-control ${!formData.paymentProofPhotos ? 'is-invalid' : ''}`}
-                            onPaste={(e) => { 
-                                const clipboardData = e.clipboardData || window.clipboardData;
-                                const pastedData = clipboardData.getData('text');
-                                const items = clipboardData.items;
-                                let hasImageItem = false;
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                const containsUrl = urlRegex.test(pastedData);
-
-                                for (let i = 0; i < items.length; i++) {
-                                    if (items[i].type.indexOf('image') !== -1) {
-                                        hasImageItem = true;
-                                        const file = items[i].getAsFile();
-                                        handleImageUpload({ target: { files: [file] } }, 'paymentProofPhotos');
-                                        e.preventDefault();
-                                        break;
-                                    }
-                                }
-                                if (containsUrl && !hasImageItem) {
-                                    const currentValue = formData.paymentProofPhotos || '';
-                                    const cursorPos = e.target.selectionStart;
-                                    const separator = currentValue && currentValue.trim().length > 0 ? ', ' : '';
-                                    const newValue = currentValue.slice(0, cursorPos) +
-                                        (cursorPos > 0 ? separator : '') +
-                                        pastedData +
-                                        currentValue.slice(cursorPos);
-                                    setFormData(prev => ({ ...prev, paymentProofPhotos: newValue }));
-                                    e.preventDefault();
-                                }
-                            }}
-                        />
-                        <Button
-                            variant="success"
-                            disabled={isUploading}
-                            onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.multiple = true; 
-                                input.onchange = (e) => handleImageUpload(e, 'paymentProofPhotos');
-                                input.click();
-                            }}
-                        >
-                            <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                            {isUploading ? ' Téléchargement...' : ' Télécharger image(s)'}
-                        </Button>
-                    </InputGroup>
-                    <span className="helper-text">
-                        Télécharger la preuve de paiement. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
-                    </span>
-                    {formData.paymentProofPhotos && formData.paymentProofPhotos.split(',').map((url, index) => (
-                         url.trim() && <img key={index} src={url.trim()} alt={`Preuve de paiement ${index + 1}`} style={{ maxWidth: '100px', maxHeight: '100px', marginTop: '5px', marginRight: '5px', border: '1px solid #30363d' }} />
-                    ))}
-                </Form.Group>
+                <FleecaPaymentPanel
+                    amount={approximateCost}
+                    description={`Dossier médical - ${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim()}
+                    paymentId={formData.fleecaPaymentId}
+                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id }))}
+                    onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
+                />
             )}
                                                 <Form.Label></Form.Label>
 

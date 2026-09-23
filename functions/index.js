@@ -4,6 +4,7 @@ import admin from "firebase-admin";
 import fetch from "node-fetch";
 import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
+import crypto from 'crypto';
 
 // Initialize Firebase Admin SDK
 // L'URL de la Realtime Database est fournie explicitement : sans elle,
@@ -711,5 +712,233 @@ export const createGtawEmployeeAccount = onRequest({}, async (req, res) => {
             message: 'Une erreur interne est survenue lors de la création du compte.',
             details: error.message
         });
+    }
+});
+
+// --- Fleeca Payment Gateway (v2) ---
+// Remplace les liens de paiement manuels (« connectez-vous à Fleeca et payez
+// le compte X, puis collez une capture d'écran comme preuve ») par de vrais
+// paiements créés via l'API marchand Fleeca : le staff clique sur un lien de
+// paiement réel, et le statut (payé/échoué) revient tout seul via un webhook
+// signé, sans dépendre d'une capture d'écran potentiellement falsifiable.
+const FLEECA_API_BASE = 'https://fleeca.gta.world/api';
+const FLEECA_SECRETS = ['FLEECA_API_KEY'];
+
+// Crée un lien de paiement Fleeca pour le montant demandé et enregistre un
+// suivi initial dans fleecaPayments/{payment_id} (mis à jour ensuite par
+// fleecaWebhook). Mode 1 = paiement réel (voir doc Fleeca pour le mode 0,
+// bac à sable, réservé aux tests).
+export const createFleecaPayment = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const apiKey = process.env.FLEECA_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API Fleeca n\'est pas configurée.' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const { description } = data || {};
+    const amountNum = Number(data?.amount);
+
+    if (!Number.isInteger(amountNum) || amountNum < 1 || amountNum > 99999999) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Le montant doit être un nombre entier entre 1 et 99 999 999.' });
+        return;
+    }
+
+    try {
+        const fleecaResponse = await fetch(`${FLEECA_API_BASE}/v2/payment`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: amountNum,
+                mode: 1,
+                description: (description || '').toString().slice(0, 255) || undefined,
+            }),
+        });
+
+        const fleecaText = await fleecaResponse.text();
+        let fleecaData;
+        try {
+            fleecaData = JSON.parse(fleecaText);
+        } catch (parseError) {
+            console.error('Fleeca payment response is not JSON:', fleecaText.substring(0, 500));
+            res.status(502).json({ error: 'fleeca-invalid-response', message: 'Réponse invalide de Fleeca.' });
+            return;
+        }
+
+        if (!fleecaResponse.ok || !fleecaData.payment_id || !fleecaData.payment_link) {
+            console.error('Fleeca payment creation failed:', fleecaResponse.status, fleecaData);
+            res.status(fleecaResponse.status || 502).json({
+                error: 'fleeca-payment-failed',
+                message: fleecaData.message || 'Échec de la création du paiement Fleeca.',
+            });
+            return;
+        }
+
+        await db.ref(`fleecaPayments/${fleecaData.payment_id}`).set({
+            status: 'awaiting_payment',
+            amount: amountNum,
+            description: description || '',
+            paymentLink: fleecaData.payment_link,
+            createdAt: admin.database.ServerValue.TIMESTAMP,
+            updatedAt: admin.database.ServerValue.TIMESTAMP,
+        });
+
+        res.status(201).json({ payment_id: fleecaData.payment_id, payment_link: fleecaData.payment_link });
+    } catch (error) {
+        console.error('Error creating Fleeca payment:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de la création du paiement.' });
+    }
+});
+
+// Webhook serveur-à-serveur appelé par Fleeca après traitement d'un paiement
+// (URL de callback configurée dans le Merchant Center). Ne passe PAS par
+// corsHandler : c'est un appel serveur-à-serveur, pas une requête de
+// navigateur — l'authenticité est garantie par la signature HMAC ci-dessous,
+// pas par l'origine de la requête.
+export const fleecaWebhook = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
+    if (req.method !== 'POST') {
+        res.status(405).send('Method not allowed');
+        return;
+    }
+
+    const apiKey = process.env.FLEECA_API_KEY;
+    if (!apiKey) {
+        console.error('Fleeca webhook received but FLEECA_API_KEY is not configured.');
+        res.status(500).send('Not configured');
+        return;
+    }
+
+    // req.rawBody (fourni par le runtime Cloud Functions) contient les octets
+    // exacts du corps de la requête : indispensable pour recalculer le HMAC à
+    // l'identique de ce que Fleeca a signé (une ré-sérialisation de req.body en
+    // JSON pourrait différer par l'ordre des clés ou les espaces et invalider
+    // la comparaison).
+    const rawBody = req.rawBody;
+    const signatureHeader = req.get('X-Fleeca-Signature') || '';
+    const expectedSignature = 'sha256=' + crypto.createHmac('sha256', apiKey).update(rawBody).digest('hex');
+
+    const signatureValid = signatureHeader.length === expectedSignature.length
+        && crypto.timingSafeEqual(Buffer.from(signatureHeader), Buffer.from(expectedSignature));
+
+    if (!signatureValid) {
+        console.error('Invalid Fleeca webhook signature.');
+        res.status(403).send('Invalid signature');
+        return;
+    }
+
+    const payload = req.body;
+    const paymentId = payload?.payment_id;
+    if (!paymentId) {
+        res.status(400).send('Missing payment_id');
+        return;
+    }
+
+    try {
+        await db.ref(`fleecaPayments/${paymentId}`).update({
+            status: payload.status || 'pending',
+            payerRouting: payload.payer_routing || null,
+            payerName: payload.payer_name || null,
+            statusReason: payload.status_reason || null,
+            paidAt: payload.paid_at || null,
+            updatedAt: admin.database.ServerValue.TIMESTAMP,
+        });
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('Error processing Fleeca webhook:', error);
+        res.status(500).send('Internal error');
+    }
+});
+
+// Repli manuel de réconciliation (recommandé par la doc Fleeca en complément
+// du webhook, qui peut échouer côté réseau) : interroge directement l'état du
+// paiement auprès de Fleeca et met à jour notre copie locale en conséquence.
+export const getFleecaPaymentStatus = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const apiKey = process.env.FLEECA_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API Fleeca n\'est pas configurée.' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const paymentId = data?.payment_id;
+    if (!paymentId) {
+        res.status(400).json({ error: 'invalid-argument', message: 'La fonction doit être appelée avec l\'argument « payment_id ».' });
+        return;
+    }
+
+    try {
+        const fleecaResponse = await fetch(`${FLEECA_API_BASE}/v2/payments/${encodeURIComponent(paymentId)}`, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Accept': 'application/json',
+            },
+        });
+
+        const fleecaText = await fleecaResponse.text();
+        let fleecaData;
+        try {
+            fleecaData = JSON.parse(fleecaText);
+        } catch (parseError) {
+            res.status(502).json({ error: 'fleeca-invalid-response', message: 'Réponse invalide de Fleeca.' });
+            return;
+        }
+
+        if (!fleecaResponse.ok || !fleecaData.data) {
+            res.status(fleecaResponse.status || 502).json({
+                error: 'fleeca-status-fetch-failed',
+                message: fleecaData.message || 'Impossible de récupérer le statut du paiement.',
+            });
+            return;
+        }
+
+        const payment = fleecaData.data;
+        await db.ref(`fleecaPayments/${paymentId}`).update({
+            status: payment.status || 'pending',
+            payerRouting: payment.payer_routing || null,
+            payerName: payment.payer_name || null,
+            paidAt: payment.paid_at || null,
+            updatedAt: admin.database.ServerValue.TIMESTAMP,
+        });
+
+        res.status(200).json({ status: payment.status, payerName: payment.payer_name || null, paidAt: payment.paid_at || null });
+    } catch (error) {
+        console.error('Error fetching Fleeca payment status:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue.' });
     }
 });
