@@ -2,11 +2,10 @@
 //
 // Callback OAuth GTA World UNIQUE. Le client OAuth GTA World n'autorise qu'une
 // seule URL de callback (https://1luckyle.github.io/phmc-forms/#/auth/gta/callback),
-// donc TOUS les flux GTAW (onboarding, connexion employé, connexion admin,
-// ajout d'employé par un admin) passent par ce composant, qui lit le flux
-// mémorisé dans sessionStorage (voir utils/gtawOAuth.js) avant la redirection
-// pour savoir quoi faire du code d'autorisation reçu, et où renvoyer
-// l'utilisateur ensuite.
+// donc TOUS les flux GTAW (onboarding, connexion employé, connexion admin)
+// passent par ce composant, qui lit le flux mémorisé dans sessionStorage (voir
+// utils/gtawOAuth.js) avant la redirection pour savoir quoi faire du code
+// d'autorisation reçu, et où renvoyer l'utilisateur ensuite.
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -59,12 +58,6 @@ const GtaCallback = () => {
                     // vers /login si la connexion a échoué (utilisateur toujours non authentifié),
                     // où le message d'erreur ci-dessus sera affiché.
                     navigate('/admin');
-                    return;
-                }
-                if (flowType === 'admin-add') {
-                    try { sessionStorage.setItem('gtaw-admin-add-result', JSON.stringify(result)); }
-                    catch (err) { console.error('Failed to store GTA World admin-add result:', err); }
-                    navigate('/');
                     return;
                 }
                 // 'onboarding' (par défaut)
@@ -131,8 +124,8 @@ const GtaCallback = () => {
                     return;
                 }
 
-                // 'onboarding' et 'admin-add' : on a seulement besoin de la liste des
-                // personnages GTAW pour que l'utilisateur en choisisse un.
+                // 'onboarding' : on a seulement besoin de la liste des personnages GTAW
+                // pour que l'utilisateur en choisisse un.
                 const response = await fetch(EXCHANGE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

@@ -640,7 +640,7 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
         if (!match || !match.uid) {
             res.status(404).json({
                 error: 'not-linked',
-                message: 'Aucun compte PHMC-FR n\'est lié à ce personnage GTA World. Connectez-vous avec votre email et mot de passe, ou liez votre personnage GTA World lors de la création de compte.'
+                message: 'Aucun compte PHMC-FR n\'est lié à ce personnage GTA World. Créez votre compte en vous connectant avec GTA World depuis l\'écran de création de compte.'
             });
             return;
         }

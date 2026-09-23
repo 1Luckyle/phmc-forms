@@ -730,8 +730,11 @@ function MainApp({
         window.addEventListener('resize', handleResize);
     }, []);
 
-    const { imageSource: deathReportImage, className: deathReportClass, season, effect } = seasonalEffectsEnabled ? SeasonalEvents({ imageType: 'deathReport' }) : {};
-    const { imageSource: civilianPaperworkImage, className: civilianPaperworkClass } = seasonalEffectsEnabled ? SeasonalEvents({ imageType: 'civilianPaperwork'  }) : {};
+    // Quand les effets de saison sont désactivés, on force la saison "Default"
+    // plutôt que de ne pas appeler SeasonalEvents du tout : sinon imageSource
+    // vaut undefined et l'image générique (Generic.png) ne s'affiche plus.
+    const { imageSource: deathReportImage, className: deathReportClass, season, effect } = SeasonalEvents({ imageType: 'deathReport', season: seasonalEffectsEnabled ? undefined : 'Default' });
+    const { imageSource: civilianPaperworkImage, className: civilianPaperworkClass } = SeasonalEvents({ imageType: 'civilianPaperwork', season: seasonalEffectsEnabled ? undefined : 'Default' });
 
     const handleCopyAndNotifyWrapper = useCallback(() => {
         if (selectedAgencyGroup === 'PHMC Recruitment') {

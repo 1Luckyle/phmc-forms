@@ -6,7 +6,6 @@ import { ref, get, set, push, update } from 'firebase/database';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
-import { buildGtawAuthUrl } from '../utils/gtawOAuth';
 
 // --- Styles ---
 const modalOverlayStyle = {
@@ -168,96 +167,10 @@ const EmployeeModal = ({
     phmcPHNumber: '',
   });
 
-  // ── Ajout d'employé via GTA World ─────────────────────────────────
-  // 'manual' = saisie libre (comportement historique), 'gtaw' = identité
-  // vérifiée via un personnage GTA World choisi par l'admin. Même principe que
-  // dans OnboardingModal.js, mais pour la création d'un employé depuis le
-  // panneau de gestion du personnel.
-  const [addEmployeeMethod, setAddEmployeeMethod] = useState(null);
-  const [gtawCharacters, setGtawCharacters] = useState(null);
-  const [gtawUnavailableCharacterIds, setGtawUnavailableCharacterIds] = useState([]);
-  const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
-  const [gtawUserId, setGtawUserId] = useState(null);
-  // Le modal est normalement affiché/masqué via la prop `show` (contrôlée par
-  // MainApp), mais une redirection OAuth GTA World recharge toute la page : on
-  // force donc sa réouverture après coup si une demande GTAW était en cours.
-  const [gtawResumedOpen, setGtawResumedOpen] = useState(false);
-
-  const resetGtawAddState = () => {
-    setAddEmployeeMethod(null);
-    setGtawCharacters(null);
-    setGtawUnavailableCharacterIds([]);
-    setSelectedGtawCharacter(null);
-    setGtawUserId(null);
-  };
-
-  // Reprise après une redirection OAuth GTA World lancée depuis ce modal.
-  useEffect(() => {
-    try {
-      const resultRaw = sessionStorage.getItem('gtaw-admin-add-result');
-      if (!resultRaw) return;
-      sessionStorage.removeItem('gtaw-admin-add-result');
-      const result = JSON.parse(resultRaw);
-
-      setActionType('addEmployee');
-      if (result.employeeType) setEmployeeType(result.employeeType);
-      setGtawResumedOpen(true);
-
-      if (result.error) {
-        showNotification(`Échec de la connexion GTA World : ${result.error}`, 'error');
-        return;
-      }
-
-      setAddEmployeeMethod('gtaw');
-      setGtawCharacters(result.characters || []);
-      setGtawUnavailableCharacterIds(result.unavailableCharacterIds || []);
-      setGtawUserId(result.gtawUserId ?? null);
-      setSelectedGtawCharacter(null);
-    } catch (err) {
-      console.warn('Failed to parse GTA World admin-add result:', err);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleStartGtawAdd = () => {
-    try {
-      window.location.href = buildGtawAuthUrl({ type: 'admin-add', employeeType });
-    } catch (err) {
-      console.error('Failed to start GTA World login:', err);
-      showNotification('Impossible de démarrer la connexion avec GTA World.', 'error');
-    }
-  };
-
-  const handleSelectGtawCharacter = (character) => {
-    setSelectedGtawCharacter(character);
-    const isCoroner = employeeType === 'coroner';
-    // Le badge est l'ID du personnage GTA World plutôt qu'une saisie manuelle
-    // (plus de contrainte à 5 chiffres, voir la validation dans handleSubmit).
-    const badgeId = character.id != null ? String(character.id) : '';
-    setMissingEmployeeData(prev => ({
-      ...prev,
-      coronerName: character.firstname || '',
-      ...(isCoroner
-        ? { coronerLastName: character.lastname || '', coronerBadge: badgeId }
-        : { employeeLastName: character.lastname || '', phmcBadge: badgeId }),
-    }));
-  };
-
-  const handleChangeGtawCharacter = () => {
-    setSelectedGtawCharacter(null);
-    const isCoroner = employeeType === 'coroner';
-    setMissingEmployeeData(prev => ({
-      ...prev,
-      coronerName: '',
-      ...(isCoroner ? { coronerLastName: '', coronerBadge: '' } : { employeeLastName: '', phmcBadge: '' }),
-    }));
-  };
-
   const handleActionTypeChange = (type) => {
     setActionType(type);
     setSelectedEmployeeName('');
     setNewRank('');
-    if (type !== 'addEmployee') resetGtawAddState();
     // Par défaut on reste sur 'coroner' sauf si tu veux autre chose
   };
 
@@ -265,7 +178,6 @@ const EmployeeModal = ({
     setEmployeeType(type);
     setSelectedEmployeeName('');
     setNewRank('');
-    if (actionType === 'addEmployee') resetGtawAddState();
   };
 
   const handleSelectChange = (selectedOption) => {
@@ -424,10 +336,9 @@ const EmployeeModal = ({
         return;
       }
 
-      // Validate badge: exactly 5 digits — uniquement en saisie manuelle. Via
-      // GTAW, le badge est l'ID du personnage (longueur variable).
+      // Validate badge: exactly 5 digits.
       const badgeDigits = isCoroner ? missingEmployeeData.coronerBadge : missingEmployeeData.phmcBadge;
-      if (addEmployeeMethod !== 'gtaw' && !/^\d{5}$/.test(badgeDigits)) {
+      if (!/^\d{5}$/.test(badgeDigits)) {
         showNotification('Le numéro de badge doit contenir exactement 5 chiffres.', 'warning');
         setIsLoading(false);
         return;
@@ -442,14 +353,6 @@ const EmployeeModal = ({
         ? `${missingEmployeeData.coronerName} ${missingEmployeeData.coronerLastName}`.trim()
         : `${missingEmployeeData.coronerName} ${missingEmployeeData.employeeLastName}`.trim();
 
-      // Si l'identité vient d'un personnage GTA World, on rattache son id (et
-      // l'id du compte GTAW) à l'employé : ça alimente le badge "Vérifié via
-      // GTA World" et la vérification anti-doublon de personnage (voir
-      // exchangeAuthCodeForToken côté serveur).
-      const gtawFields = (addEmployeeMethod === 'gtaw' && selectedGtawCharacter)
-        ? { gtawCharacterId: selectedGtawCharacter.id, gtawUserId: gtawUserId ?? null }
-        : {};
-
       const payload = isCoroner
         ? {
             name: newName,
@@ -459,7 +362,6 @@ const EmployeeModal = ({
             badge: fullBadge,
             phNumber: missingEmployeeData.coronerPHNumber || '',
             category: missingEmployeeData.coronerRank,
-            ...gtawFields,
           }
         : {
             name: newName,
@@ -469,7 +371,6 @@ const EmployeeModal = ({
             badge: fullBadge,
             rank: missingEmployeeData.coronerRank,
             category: missingEmployeeData.coronerRank,
-            ...gtawFields,
           };
 
       const basePath = isCoroner ? 'staff/coroner' : 'staff/phmc';
@@ -504,7 +405,6 @@ const EmployeeModal = ({
           phmcBadge: '',
           phmcPHNumber: '',
         });
-        resetGtawAddState();
       } catch (err) {
         console.error('Error adding staff member:', err);
         showNotification(`Erreur lors de l'ajout du membre du personnel : ${err.message}`, 'error');
@@ -676,7 +576,6 @@ const EmployeeModal = ({
   };
 
   const handleClose = () => {
-    setGtawResumedOpen(false);
     if (typeof onHide === 'function') onHide();
     else console.error('EmployeeModal: onHide is not a function', onHide);
   };
@@ -835,7 +734,7 @@ const EmployeeModal = ({
     return [...coronerOptions, ...phmcOptions].sort((a, b) => a.category.localeCompare(b.category));
   }, [coronerList, phmcList]);
 
-  return (show || gtawResumedOpen) ? (
+  return show ? (
     <>
     <div style={modalOverlayStyle} onClick={handleClose}>
       <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
@@ -931,132 +830,15 @@ const EmployeeModal = ({
               </Form.Group>
             )}
 
-            {actionType === 'addEmployee' && !addEmployeeMethod && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                <button
-                  type="button"
-                  onClick={handleStartGtawAdd}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    backgroundColor: '#0d1117', border: '1px solid #ff8c00',
-                    borderRadius: '8px', padding: '12px 15px', color: '#fff',
-                    cursor: 'pointer', textAlign: 'left'
-                  }}
-                >
-                  <i className="fas fa-gamepad" style={{ fontSize: '1.3rem', color: '#ff8c00' }}></i>
-                  <span>
-                    <strong style={{ display: 'block' }}>Récupérer via GTA World</strong>
-                    <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                      Choisissez le personnage de l'employé. Son prénom/nom sera vérifié automatiquement.
-                    </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAddEmployeeMethod('manual')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    backgroundColor: '#0d1117', border: '1px solid #30363d',
-                    borderRadius: '8px', padding: '12px 15px', color: '#fff',
-                    cursor: 'pointer', textAlign: 'left'
-                  }}
-                >
-                  <i className="fas fa-keyboard" style={{ fontSize: '1.3rem', color: '#6c757d' }}></i>
-                  <span>
-                    <strong style={{ display: 'block' }}>Saisir les informations manuellement</strong>
-                    <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                      Remplissez vous-même le prénom et le nom.
-                    </span>
-                  </span>
-                </button>
-              </div>
-            )}
-
-            {actionType === 'addEmployee' && addEmployeeMethod === 'gtaw' && !selectedGtawCharacter && (
-              <div style={{ marginBottom: '15px' }}>
-                <Form.Label style={formLabelStyle}>Choisissez le personnage GTA World de l'employé :</Form.Label>
-                {(!gtawCharacters || gtawCharacters.length === 0) ? (
-                  <div style={{ textAlign: 'center', color: '#ccc', padding: '20px 0' }}>
-                    <i className="fas fa-exclamation-circle" style={{ marginRight: '8px' }}></i>
-                    Aucun personnage membre de la faction PHMC n'a été trouvé sur ce compte GTA World.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
-                    {gtawCharacters.map((character) => {
-                      const isUnavailable = gtawUnavailableCharacterIds.includes(String(character.id));
-                      return (
-                        <button
-                          key={character.id}
-                          type="button"
-                          disabled={isUnavailable}
-                          onClick={() => handleSelectGtawCharacter(character)}
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            backgroundColor: '#0d1117',
-                            border: `1px solid ${isUnavailable ? '#5c1f1f' : '#30363d'}`,
-                            borderRadius: '8px', padding: '10px 15px',
-                            color: isUnavailable ? '#888' : '#fff',
-                            cursor: isUnavailable ? 'not-allowed' : 'pointer',
-                            opacity: isUnavailable ? 0.6 : 1,
-                            textAlign: 'left'
-                          }}
-                        >
-                          <span>
-                            <i className="fas fa-user" style={{ marginRight: '10px' }}></i>
-                            {character.firstname} {character.lastname}
-                          </span>
-                          {isUnavailable && (
-                            <span style={{
-                              fontSize: '0.75em', color: '#ff6b6b', border: '1px solid #ff6b6b',
-                              borderRadius: '4px', padding: '2px 6px', whiteSpace: 'nowrap'
-                            }}>
-                              Déjà utilisé
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                <Button variant="outline-secondary" size="sm" onClick={resetGtawAddState}>
-                  Retour
-                </Button>
-              </div>
-            )}
-
-            {actionType === 'addEmployee' && (addEmployeeMethod === 'manual' || (addEmployeeMethod === 'gtaw' && selectedGtawCharacter)) && (
+            {actionType === 'addEmployee' && (
               <>
-                {addEmployeeMethod === 'gtaw' && selectedGtawCharacter && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: '10px', marginBottom: '15px', padding: '10px 12px',
-                    backgroundColor: 'rgba(40, 167, 69, 0.12)', border: '1px solid rgba(40, 167, 69, 0.4)',
-                    borderRadius: '6px', fontSize: '0.85em', color: '#28a745'
-                  }}>
-                    <span>
-                      <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
-                      Identité vérifiée via GTA World : <strong>{selectedGtawCharacter.firstname} {selectedGtawCharacter.lastname}</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleChangeGtawCharacter}
-                      style={{ background: 'none', border: 'none', color: '#4a9eff', textDecoration: 'underline', cursor: 'pointer', fontSize: '1em', whiteSpace: 'nowrap' }}
-                    >
-                      Changer de personnage
-                    </button>
-                  </div>
-                )}
                 {employeeType === 'coroner' ? (
                   <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
-                        onChange={handleInputChange} placeholder="Prénom *" required
-                        readOnly={addEmployeeMethod === 'gtaw'}
-                        style={{ ...formControlStyle, ...(addEmployeeMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }} />
+                        onChange={handleInputChange} placeholder="Prénom *" required style={formControlStyle} />
                       <Form.Control type="text" name="coronerLastName" value={missingEmployeeData.coronerLastName}
-                        onChange={handleInputChange} placeholder="Nom *" required
-                        readOnly={addEmployeeMethod === 'gtaw'}
-                        style={{ ...formControlStyle, ...(addEmployeeMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }} />
+                        onChange={handleInputChange} placeholder="Nom *" required style={formControlStyle} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="coronerDiscord" value={missingEmployeeData.coronerDiscord}
@@ -1070,13 +852,9 @@ const EmployeeModal = ({
                       </span>
                       <Form.Control type="text" name="coronerBadge" value={missingEmployeeData.coronerBadge}
                         onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setMissingEmployeeData({ ...missingEmployeeData, coronerBadge: v }); }}
-                        placeholder={addEmployeeMethod === 'gtaw' ? 'ID du personnage' : '00000 *'} required
-                        readOnly={addEmployeeMethod === 'gtaw'}
-                        style={{
-                          ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0,
-                          ...(addEmployeeMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {})
-                        }}
-                        maxLength={addEmployeeMethod === 'gtaw' ? undefined : 5} />
+                        placeholder="00000 *" required
+                        style={{ ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0 }}
+                        maxLength={5} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <Select
@@ -1094,13 +872,9 @@ const EmployeeModal = ({
                   <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="coronerName" value={missingEmployeeData.coronerName}
-                        onChange={handleInputChange} placeholder="Prénom *" required
-                        readOnly={addEmployeeMethod === 'gtaw'}
-                        style={{ ...formControlStyle, ...(addEmployeeMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }} />
+                        onChange={handleInputChange} placeholder="Prénom *" required style={formControlStyle} />
                       <Form.Control type="text" name="employeeLastName" value={missingEmployeeData.employeeLastName}
-                        onChange={handleInputChange} placeholder="Nom *" required
-                        readOnly={addEmployeeMethod === 'gtaw'}
-                        style={{ ...formControlStyle, ...(addEmployeeMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }} />
+                        onChange={handleInputChange} placeholder="Nom *" required style={formControlStyle} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Form.Control type="text" name="phmcDiscord" value={missingEmployeeData.phmcDiscord}
@@ -1114,13 +888,9 @@ const EmployeeModal = ({
                       </span>
                       <Form.Control type="text" name="phmcBadge" value={missingEmployeeData.phmcBadge}
                         onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setMissingEmployeeData({ ...missingEmployeeData, phmcBadge: v }); }}
-                        placeholder={addEmployeeMethod === 'gtaw' ? 'ID du personnage' : '00000 *'} required
-                        readOnly={addEmployeeMethod === 'gtaw'}
-                        style={{
-                          ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0,
-                          ...(addEmployeeMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {})
-                        }}
-                        maxLength={addEmployeeMethod === 'gtaw' ? undefined : 5} />
+                        placeholder="00000 *" required
+                        style={{ ...formControlStyle, borderRadius: '0 4px 4px 0', flex: 1, minWidth: 0 }}
+                        maxLength={5} />
                     </div>
                     <Select
                       name="coronerRank"
