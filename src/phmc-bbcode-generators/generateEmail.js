@@ -9,7 +9,12 @@ const generateEmail = (formData) => {
         deathReport,
         additionalReports,
         agencyDataStore, // Added agencyDataStore
+        autopsyPaymentLink,
     } = formData;
+
+    const paymentInstructions = autopsyPaymentLink
+        ? `Cliquez sur le lien suivant pour régler les frais de 2 000 $ via Fleeca : [url=${autopsyPaymentLink}]Payer 2 000 $ via Fleeca[/url]`
+        : `Veuillez contacter le Département de Pathologie et de Médecine Légale du PHMC pour obtenir un lien de paiement Fleeca.`;
 
     const getDepartmentFullName = (shortCode) => {
         if (agencyDataStore && agencyDataStore[shortCode]) {
@@ -43,7 +48,7 @@ Oui, il y a des frais de 2 000 $ associés à la demande. Ces frais couvrent les
 
 
 3) Comment payer les frais de demande de 2 000 $?
-Pour payer vos frais de demande de 2 000 $, veuillez vous connecter au site web bancaire et naviguer vers la section "Paiement". Sélectionnez votre méthode de paiement préférée (par exemple, carte de crédit, carte de débit), insérez notre RIB (030026639), entrez les détails de paiement requis, examinez la transaction et confirmez votre paiement. (( Tapez /transfer 2000 030026639 ))
+${paymentInstructions}
 
 (( Les autopsies pour les Player Kills (PK) et Character Kills (CK) ne seront acceptées que si elles sont jugées strictement nécessaires et pertinentes pour un cas ou une enquête importante. Avant de faire une demande pour une telle autopsie, un membre des médecins légistes doit être notifié et consulté. De plus, il est obligatoire de fournir des informations sur /cdamages et /cexamine. Dans le cas où ces informations ne seraient pas disponibles, n'hésitez pas à contacter un administrateur en jeu, qui pourra les fournir. Si ces étapes ne sont pas suivies, un refus automatique entraînera l'archivage de votre demande.
 
