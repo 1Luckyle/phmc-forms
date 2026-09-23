@@ -774,7 +774,7 @@ const MedicalRelease = ({
                     amount={approximateCost}
                     description={`Mise à jour du dossier médical${formData.patientName ? ' - ' + formData.patientName : ''}`}
                     paymentId={formData.fleecaPaymentId}
-                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id }))}
+                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id, ...(id ? {} : { paymentProofPhotos: '' }) }))}
                     onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
                 />
             )}

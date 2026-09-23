@@ -10,7 +10,7 @@
 // (payeur, montant, date) s'affiche directement dans le formulaire.
 import React, { useEffect, useState } from 'react';
 import { Button } from 'react-bootstrap';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../firebase';
 import { createFleecaPayment, checkFleecaPaymentStatus } from '../utils/fleecaPayment';
 
@@ -30,6 +30,32 @@ const FleecaPaymentPanel = ({ amount, description, paymentId, onPaymentIdChange,
             setPayment(snapshot.val());
         });
         return () => unsubscribe();
+    }, [paymentId]);
+
+    // Un paymentId peut arriver depuis les données partagées du formulaire
+    // (formData) plutôt que d'avoir été créé par CE panneau — typiquement en
+    // passant d'un document à un autre sans vider le formulaire. Dans ce cas,
+    // un paiement confirmé pour un AUTRE document (montant/description
+    // différents) ne doit surtout pas s'afficher comme preuve valide ici : on
+    // vérifie une seule fois par paymentId (pas à chaque mise à jour du statut,
+    // pour ne pas invalider un paiement légitime si l'utilisateur modifie le
+    // formulaire pendant que le paiement est en attente) que le montant et la
+    // description enregistrés correspondent bien à ce formulaire.
+    useEffect(() => {
+        if (!paymentId) return;
+        let cancelled = false;
+        get(ref(database, `fleecaPayments/${paymentId}`)).then((snapshot) => {
+            if (cancelled) return;
+            const data = snapshot.val();
+            if (!data) return;
+            const amountMatches = Number(data.amount) === Number(amount);
+            const descriptionMatches = (data.description || '') === (description || '');
+            if (!amountMatches || !descriptionMatches) {
+                onPaymentIdChange(null);
+            }
+        });
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [paymentId]);
 
     useEffect(() => {
