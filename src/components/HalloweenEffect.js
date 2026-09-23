@@ -18,7 +18,7 @@ const HalloweenEffect = () => {
         left: 0,
         zIndex: 25,
       }}
-      snowflakeCount={50}
+      snowflakeCount={28}
       images={[gravestoneImage]}
       radius={[10.0, 30.0]}
     />

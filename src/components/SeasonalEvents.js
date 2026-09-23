@@ -96,6 +96,9 @@ function seasonalEvents({ imageType, season: seasonOverride }) {
     let effect = null;
     //console.log(imageSource, className, season); // Debugging line to check values
 
+    // Nombre de particules volontairement modeste : au-delà d'une quarantaine
+    // de flocons/éléments animés en simultané sur un canvas, on observe des
+    // ralentissements sensibles sur les machines moins puissantes.
     if (season === "AprilFools") {
         className = 'april-fools';
     } else if (season === "Easter") {
@@ -103,21 +106,21 @@ function seasonalEvents({ imageType, season: seasonOverride }) {
     } else if (season === "Halloween") {
         effect = <HalloweenEffect />;
     } else if (season === "Christmas") {
-        effect = <Snowfall snowflakeCount={75} />;
-    } else if (season === "NewYear") {
-        effect = <AmbientSeasonalEffect emoji="🎉" count={40} size={26} radius={[8, 18]} />;
-    } else if (season === "Valentine") {
-        effect = <AmbientSeasonalEffect emoji="❤️" count={35} size={24} radius={[8, 16]} />;
-    } else if (season === "StPatrick") {
-        effect = <AmbientSeasonalEffect emoji="☘️" count={35} size={26} radius={[8, 18]} />;
-    } else if (season === "Winter") {
         effect = <Snowfall snowflakeCount={40} />;
+    } else if (season === "NewYear") {
+        effect = <AmbientSeasonalEffect emoji="🎉" count={22} size={26} radius={[8, 18]} />;
+    } else if (season === "Valentine") {
+        effect = <AmbientSeasonalEffect emoji="❤️" count={18} size={24} radius={[8, 16]} />;
+    } else if (season === "StPatrick") {
+        effect = <AmbientSeasonalEffect emoji="☘️" count={18} size={26} radius={[8, 18]} />;
+    } else if (season === "Winter") {
+        effect = <Snowfall snowflakeCount={22} />;
     } else if (season === "Spring") {
-        effect = <AmbientSeasonalEffect emoji="🌸" count={30} size={24} radius={[8, 16]} />;
+        effect = <AmbientSeasonalEffect emoji="🌸" count={18} size={24} radius={[8, 16]} />;
     } else if (season === "Summer") {
-        effect = <AmbientSeasonalEffect emoji="☀️" count={15} size={28} radius={[10, 20]} />;
+        effect = <AmbientSeasonalEffect emoji="☀️" count={10} size={28} radius={[10, 20]} />;
     } else if (season === "Autumn") {
-        effect = <AmbientSeasonalEffect emoji="🍁" count={35} size={26} radius={[8, 18]} />;
+        effect = <AmbientSeasonalEffect emoji="🍁" count={18} size={26} radius={[8, 18]} />;
     }
 
     return { imageSource, className, season, effect };

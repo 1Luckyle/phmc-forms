@@ -427,7 +427,7 @@ const BasicPatientFile = ({
                     amount={approximateCost}
                     description={`Dossier patient de base${formData.patientName ? ' - ' + formData.patientName : ''}`}
                     paymentId={formData.fleecaPaymentId}
-                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id }))}
+                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id, ...(id ? {} : { paymentProofPhotos: '' }) }))}
                     onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
                 />
             )}

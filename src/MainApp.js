@@ -2143,6 +2143,7 @@ function MainAppWrapper() {
         MedicalRecordsRelease: [],
         payNow: false,
         paymentProofPhotos: '',
+        fleecaPaymentId: '',
         PurposeMedicalInformationReleaseFormat: '',
         CarePurposeMedicalInformationRelease: '',
         patientMedInfoReleaseOther: '',

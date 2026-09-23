@@ -885,7 +885,7 @@ const [activeSection, setActiveSection] = useState('general-info');
                     amount={approximateCost}
                     description={`Dossier patient avancé${formData.patientName ? ' - ' + formData.patientName : ''}`}
                     paymentId={formData.fleecaPaymentId}
-                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id }))}
+                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id, ...(id ? {} : { paymentProofPhotos: '' }) }))}
                     onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
                 />
             )}

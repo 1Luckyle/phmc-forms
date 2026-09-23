@@ -374,7 +374,7 @@ const MedicalRelease = ({
                     amount={approximateCost}
                     description={`Dossier médical - ${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim()}
                     paymentId={formData.fleecaPaymentId}
-                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id }))}
+                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id, ...(id ? {} : { paymentProofPhotos: '' }) }))}
                     onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
                 />
             )}
