@@ -225,7 +225,7 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
                                 <Button
                                     variant="link"
                                     onClick={handlePasswordReset}
-                                    disabled={isResettingPassword || !loginData.email}
+                                    disabled={isResettingPassword}
                                     style={{
                                         color: '#4a9eff',
                                         textDecoration: 'none',

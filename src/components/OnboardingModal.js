@@ -905,7 +905,7 @@ const OnboardingModal = ({
                     >
                         <i className="fas fa-gamepad" style={{ fontSize: '1.4rem', color: '#ff8c00' }}></i>
                         <span>
-                            <strong style={{ display: 'block' }}>Se connecter avec GTA World</strong>
+                            <strong style={{ display: 'block' }}>Créer mon compte avec GTA World</strong>
                             <span style={{ fontSize: '0.85em', color: '#ccc' }}>
                                 Choisissez le personnage avec lequel créer votre compte. Votre prénom/nom sera vérifié automatiquement.
                             </span>
@@ -1142,7 +1142,7 @@ const OnboardingModal = ({
                                 }}>
                                     <i className="fas fa-info-circle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
                                     <span>
-                                        Vous pouvez utiliser une adresse email fictive au format <strong>prénom.nom@phmc.health</strong> ou une véritable adresse email.
+                                        Vous pouvez utiliser une adresse email Eyefind Mail (fictive) au format <strong>prénom.nom@phmc.health</strong> (pensez à bien créer cette adresse email dans Eyefind Mail. L'hôpital pourrait s'en servir pour vous contacter) ou une véritable adresse email.
                                         {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse fictive, vous ne pourrez pas réinitialiser votre mot de passe.
                                     </span>
                                 </div>
@@ -1150,7 +1150,7 @@ const OnboardingModal = ({
                             {accountCreationMethod === 'gtaw' ? (
                                 <div style={{ marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(40, 167, 69, 0.1)', border: '1px solid rgba(40, 167, 69, 0.3)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745' }}>
                                     <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
-                                    Pas besoin de mot de passe : vous vous connecterez directement avec le bouton « Se connecter avec GTA World ».
+                                    Pas besoin de mot de passe : votre compte est déjà lié à votre personnage GTA World via le bouton « Créer mon compte avec GTA World ».
                                 </div>
                             ) : (
                                 <>
@@ -1513,7 +1513,7 @@ const OnboardingModal = ({
                                 }}>
                                     <i className="fas fa-info-circle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
                                     <span>
-                                        Vous pouvez utiliser une adresse email fictive au format <strong>prénom.nom@phmc.health</strong> ou une véritable adresse email.
+                                        Vous pouvez utiliser une adresse email Eyefind Mail (fictive) au format <strong>prénom.nom@phmc.health</strong> (pensez à bien créer cette adresse email dans Eyefind Mail. L'hôpital pourrait s'en servir pour vous contacter) ou une véritable adresse email.
                                         {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse fictive, vous ne pourrez pas réinitialiser votre mot de passe.
                                     </span>
                                 </div>
@@ -1521,7 +1521,7 @@ const OnboardingModal = ({
                             {accountCreationMethod === 'gtaw' ? (
                                 <div style={{ marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(40, 167, 69, 0.1)', border: '1px solid rgba(40, 167, 69, 0.3)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745' }}>
                                     <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
-                                    Pas besoin de mot de passe : vous vous connecterez directement avec le bouton « Se connecter avec GTA World ».
+                                    Pas besoin de mot de passe : votre compte est déjà lié à votre personnage GTA World via le bouton « Créer mon compte avec GTA World ».
                                 </div>
                             ) : (
                                 <>
