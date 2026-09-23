@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { getFormDefinition } from '../formDefinitions'; // Import getFormDefinition
+import { createFleecaPayment } from '../utils/fleecaPayment';
 
 const customSelectStyles = {
     control: (base, state) => ({
@@ -103,6 +104,29 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         }));
     }, [setFormData]);
 
+    // Génère un vrai lien de paiement Fleeca (2 000$, frais fixes de la demande
+    // d'autopsie/certificat) à inclure dans l'email, à la place de l'ancien RIB
+    // et des instructions de virement manuel (voir generateEmail.js).
+    const [isCreatingPaymentLink, setIsCreatingPaymentLink] = useState(false);
+    const [paymentLinkError, setPaymentLinkError] = useState('');
+
+    const handleGeneratePaymentLink = async () => {
+        setIsCreatingPaymentLink(true);
+        setPaymentLinkError('');
+        try {
+            const { payment_link } = await createFleecaPayment({
+                amount: 2000,
+                description: `Frais de demande d'autopsie/certificat - ${formData.decedentName || 'Défunt'}`,
+            });
+            setFormData(prev => ({ ...prev, autopsyPaymentLink: payment_link }));
+        } catch (err) {
+            console.error('Failed to create Fleeca payment link:', err);
+            setPaymentLinkError(err.message || 'Impossible de générer le lien de paiement.');
+        } finally {
+            setIsCreatingPaymentLink(false);
+        }
+    };
+
 
     return (
         <>
@@ -180,6 +204,33 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         placeholder="Numéro de téléphone du coroner"
         className={`form-control ${!formData.coronerPHNumber ? 'is-invalid' : ''}`}
     />
+</Form.Group>
+<Form.Group className="mb-3">
+    <Form.Label>Lien de paiement Fleeca (frais de demande, 2 000$)</Form.Label>
+    <div>
+        <Button
+            variant="success"
+            size="sm"
+            onClick={handleGeneratePaymentLink}
+            disabled={isCreatingPaymentLink}
+        >
+            {isCreatingPaymentLink
+                ? 'Génération...'
+                : (formData.autopsyPaymentLink ? 'Régénérer le lien' : 'Générer le lien de paiement')}
+        </Button>
+        {formData.autopsyPaymentLink && (
+            <div style={{ marginTop: '8px', fontSize: '0.85em', color: '#28a745' }}>
+                <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                Lien généré : <a href={formData.autopsyPaymentLink} target="_blank" rel="noopener noreferrer">{formData.autopsyPaymentLink}</a>
+            </div>
+        )}
+        {paymentLinkError && (
+            <div style={{ marginTop: '8px', color: '#dc3545', fontSize: '0.85em' }}>{paymentLinkError}</div>
+        )}
+    </div>
+    <span className="helper-text">
+        Génère un vrai lien de paiement Fleeca à inclure dans l'email, à la place de l'ancien RIB/virement manuel.
+    </span>
 </Form.Group>
 
                                 <div style={{ display: 'flex', gap: '10px' }}>

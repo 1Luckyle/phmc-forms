@@ -2144,6 +2144,7 @@ function MainAppWrapper() {
         payNow: false,
         paymentProofPhotos: '',
         fleecaPaymentId: '',
+        autopsyPaymentLink: '',
         PurposeMedicalInformationReleaseFormat: '',
         CarePurposeMedicalInformationRelease: '',
         patientMedInfoReleaseOther: '',
