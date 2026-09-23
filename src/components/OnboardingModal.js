@@ -9,6 +9,7 @@ import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
 import * as Sentry from "@sentry/react";
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
+import { buildGtawAuthUrl } from '../utils/gtawOAuth';
 
 // Step definitions for the onboarding flow
 const ONBOARDING_STEPS = {
@@ -113,8 +114,25 @@ const OnboardingModal = ({
                     sessionStorage.removeItem('gtaw-onboarding-pending');
                     sessionStorage.removeItem('gtaw-onboarding-result');
 
+                    const phmcCharacters = result.characters || [];
                     if (result.error) {
                         showNotification(`Échec de la connexion GTA World : ${result.error}`, 'error');
+                    } else if (pending.userType && phmcCharacters.length === 0) {
+                        // Aucun personnage du compte GTA World n'appartient à la faction
+                        // PHMC (id 364) : impossible de créer un compte Personnel PHMC /
+                        // DMEC avec ce compte. On renvoie vers le choix du type
+                        // d'utilisateur — Civil et Candidat restent accessibles sans
+                        // compte pour ceux qui ne sont pas membres du PHMC.
+                        resumedFromGtaw = true;
+                        setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
+                        setSelectedUserType(null);
+                        setSelectedRole(null);
+                        setShowAccountCreation(false);
+                        setAccountCreationMethod(null);
+                        showNotification(
+                            'Aucun personnage membre de la faction PHMC n\'a été trouvé sur ce compte GTA World. Si vous n\'êtes pas membre du PHMC, utilisez plutôt les options Civil ou Candidat.',
+                            'warning'
+                        );
                     } else if (pending.userType) {
                         resumedFromGtaw = true;
                         setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
@@ -122,7 +140,7 @@ const OnboardingModal = ({
                         setSelectedRole(null);
                         setShowAccountCreation(true);
                         setAccountCreationMethod('gtaw');
-                        setGtawCharacters(result.characters || []);
+                        setGtawCharacters(phmcCharacters);
                         setGtawUnavailableCharacterIds(result.unavailableCharacterIds || []);
                         setSelectedGtawCharacter(null);
                         setGtawUserId(result.gtawUserId ?? null);
@@ -365,16 +383,11 @@ const OnboardingModal = ({
     // Démarre la connexion OAuth GTA World depuis l'étape de création de compte.
     // L'état React sera perdu au rechargement de la page après la redirection ;
     // on mémorise donc le type d'utilisateur en cours dans sessionStorage pour
-    // pouvoir rouvrir l'onboarding au bon endroit dans GtaOnboardingCallback / MainApp.
+    // pouvoir rouvrir l'onboarding au bon endroit dans GtaCallback / MainApp.
     const startGtawOnboardingLogin = () => {
         try {
-            const clientId = process.env.REACT_APP_GTAWORLD_CLIENT_ID || '';
-            const baseUrl = process.env.REACT_APP_GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
-            const callbackUrl = window.location.origin + '/phmc-forms/#/auth/gta/onboarding-callback';
-            const redirectUri = encodeURIComponent(callbackUrl);
             sessionStorage.setItem('gtaw-onboarding-pending', JSON.stringify({ userType: selectedUserType }));
-            const authUrl = `${baseUrl}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
-            window.location.href = authUrl;
+            window.location.href = buildGtawAuthUrl({ type: 'onboarding' });
         } catch (err) {
             console.error('Failed to start GTA World login:', err);
             showNotification('Impossible de démarrer la connexion avec GTA World.', 'error');
@@ -386,22 +399,29 @@ const OnboardingModal = ({
         setAccountData(prev => ({
             ...prev,
             firstName: character.firstname || '',
-            lastName: character.lastname || ''
+            lastName: character.lastname || '',
+            // Le badge est l'ID du personnage GTA World plutôt qu'une saisie
+            // manuelle : plus besoin de contrainte à 5 chiffres puisqu'il n'est
+            // plus tapé à la main (voir validation dans handleCreateAccount).
+            badge: character.id != null ? String(character.id) : ''
         }));
     };
 
     const handleChangeGtawCharacter = () => {
         setSelectedGtawCharacter(null);
-        setAccountData(prev => ({ ...prev, firstName: '', lastName: '' }));
+        setAccountData(prev => ({ ...prev, firstName: '', lastName: '', badge: '' }));
     };
 
     const handleCreateAccount = async () => {
         setIsCreatingAccount(true);
         try {
             const isCoroner = selectedUserType === USER_TYPES.CORONER;
-            
+            const isGtawAccount = accountCreationMethod === 'gtaw' && !!selectedGtawCharacter;
+
             // Validation des champs
-            const baseRequired = ['email', 'password', 'confirmPassword'];
+            // Un compte lié à GTA World se connecte uniquement via OAuth (voir
+            // gtawEmployeeLogin côté serveur) : pas besoin de mot de passe.
+            const baseRequired = isGtawAccount ? ['email'] : ['email', 'password', 'confirmPassword'];
             const specificRequired = isCoroner
                 ? ['firstName', 'lastName', 'discord', 'rank', 'badge', 'phNumber']
                 : ['firstName', 'lastName', 'discord', 'rank', 'badge', 'phNumber'];
@@ -427,26 +447,29 @@ const OnboardingModal = ({
                 return;
             }
 
-            // Validation du badge : exactement 5 chiffres
-            if (!/^\d{5}$/.test(accountData.badge)) {
+            // Validation du badge : exactement 5 chiffres — uniquement en saisie
+            // manuelle. Via GTAW, le badge est l'ID du personnage (longueur variable).
+            if (accountCreationMethod !== 'gtaw' && !/^\d{5}$/.test(accountData.badge)) {
                 showNotification('Le numéro de badge doit contenir exactement 5 chiffres.', 'warning');
                 setIsCreatingAccount(false);
                 return;
             }
 
-            // Vérification des mots de passe
-            if (accountData.password !== accountData.confirmPassword) {
-                showNotification('Les mots de passe ne correspondent pas.', 'warning');
-                setIsCreatingAccount(false);
-                return;
-            }
+            if (!isGtawAccount) {
+                // Vérification des mots de passe
+                if (accountData.password !== accountData.confirmPassword) {
+                    showNotification('Les mots de passe ne correspondent pas.', 'warning');
+                    setIsCreatingAccount(false);
+                    return;
+                }
 
-            // Validation mot de passe (minimum 8 caractères, majuscule, chiffre, caractère spécial)
-            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-            if (!passwordRegex.test(accountData.password)) {
-                showNotification('Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.', 'warning');
-                setIsCreatingAccount(false);
-                return;
+                // Validation mot de passe (minimum 8 caractères, majuscule, chiffre, caractère spécial)
+                const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+                if (!passwordRegex.test(accountData.password)) {
+                    showNotification('Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.', 'warning');
+                    setIsCreatingAccount(false);
+                    return;
+                }
             }
 
             // Construire le badge complet avec préfixe
@@ -492,7 +515,7 @@ const OnboardingModal = ({
             const result = await requestEmployeeAccount(
                 newStaffMember,
                 accountData.email,
-                accountData.password,
+                isGtawAccount ? null : accountData.password,
                 isCoroner
             );
             
@@ -920,7 +943,7 @@ const OnboardingModal = ({
                 {(!gtawCharacters || gtawCharacters.length === 0) ? (
                     <div style={{ textAlign: 'center', color: '#ccc', padding: '20px 0' }}>
                         <i className="fas fa-exclamation-circle" style={{ marginRight: '8px' }}></i>
-                        Aucun personnage n'a été trouvé sur ce compte GTA World.
+                        Aucun personnage membre de la faction PHMC n'a été trouvé sur ce compte GTA World.
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
@@ -1073,9 +1096,13 @@ const OnboardingModal = ({
                                     name="badge"
                                     value={accountData.badge}
                                     onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setAccountData({ ...accountData, badge: v }); }}
-                                    placeholder="00000 (5 chiffres) *"
-                                    style={{ ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0 }}
-                                    maxLength={5}
+                                    placeholder={accountCreationMethod === 'gtaw' ? 'ID du personnage' : '00000 (5 chiffres) *'}
+                                    readOnly={accountCreationMethod === 'gtaw'}
+                                    style={{
+                                        ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0,
+                                        ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {})
+                                    }}
+                                    maxLength={accountCreationMethod === 'gtaw' ? undefined : 5}
                                 />
                             </div>
                             <div style={{ marginBottom: '15px' }}>
@@ -1107,30 +1134,39 @@ const OnboardingModal = ({
                                     </span>
                                 </div>
                             </div>
-                            <div style={formRowStyle}>
-                                <Form.Control
-                                    type="password"
-                                    name="password"
-                                    value={accountData.password}
-                                    onChange={handleAccountDataChange}
-                                    placeholder="Mot de passe *"
-                                    style={formInputStyle}
-                                    autoComplete="new-password"
-                                />
-                                <Form.Control
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={accountData.confirmPassword}
-                                    onChange={handleAccountDataChange}
-                                    placeholder="Confirmer le mot de passe *"
-                                    style={formInputStyle}
-                                    autoComplete="new-password"
-                                />
-                            </div>
-                            <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
-                                <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
-                                Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
-                            </div>
+                            {accountCreationMethod === 'gtaw' ? (
+                                <div style={{ marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(40, 167, 69, 0.1)', border: '1px solid rgba(40, 167, 69, 0.3)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745' }}>
+                                    <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                    Pas besoin de mot de passe : vous vous connecterez directement avec le bouton « Se connecter avec GTA World ».
+                                </div>
+                            ) : (
+                                <>
+                                    <div style={formRowStyle}>
+                                        <Form.Control
+                                            type="password"
+                                            name="password"
+                                            value={accountData.password}
+                                            onChange={handleAccountDataChange}
+                                            placeholder="Mot de passe *"
+                                            style={formInputStyle}
+                                            autoComplete="new-password"
+                                        />
+                                        <Form.Control
+                                            type="password"
+                                            name="confirmPassword"
+                                            value={accountData.confirmPassword}
+                                            onChange={handleAccountDataChange}
+                                            placeholder="Confirmer le mot de passe *"
+                                            style={formInputStyle}
+                                            autoComplete="new-password"
+                                        />
+                                    </div>
+                                    <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
+                                        <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
+                                        Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
+                                    </div>
+                                </>
+                            )}
                             <div style={accountActionsStyle}>
                                 <Button
                                     variant="outline-secondary"
@@ -1402,9 +1438,13 @@ const OnboardingModal = ({
                                     name="badge"
                                     value={accountData.badge}
                                     onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setAccountData({ ...accountData, badge: v }); }}
-                                    placeholder="00000 (5 chiffres) *"
-                                    style={{ ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0 }}
-                                    maxLength={5}
+                                    placeholder={accountCreationMethod === 'gtaw' ? 'ID du personnage' : '00000 (5 chiffres) *'}
+                                    readOnly={accountCreationMethod === 'gtaw'}
+                                    style={{
+                                        ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0,
+                                        ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {})
+                                    }}
+                                    maxLength={accountCreationMethod === 'gtaw' ? undefined : 5}
                                 />
                             </div>
                             <div style={{ marginBottom: '15px' }}>
@@ -1436,30 +1476,39 @@ const OnboardingModal = ({
                                     </span>
                                 </div>
                             </div>
-                            <div style={formRowStyle}>
-                                <Form.Control
-                                    type="password"
-                                    name="password"
-                                    value={accountData.password}
-                                    onChange={handleAccountDataChange}
-                                    placeholder="Mot de passe *"
-                                    style={formInputStyle}
-                                    autoComplete="new-password"
-                                />
-                                <Form.Control
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={accountData.confirmPassword}
-                                    onChange={handleAccountDataChange}
-                                    placeholder="Confirmer le mot de passe *"
-                                    style={formInputStyle}
-                                    autoComplete="new-password"
-                                />
-                            </div>
-                            <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
-                                <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
-                                Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
-                            </div>
+                            {accountCreationMethod === 'gtaw' ? (
+                                <div style={{ marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(40, 167, 69, 0.1)', border: '1px solid rgba(40, 167, 69, 0.3)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745' }}>
+                                    <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                    Pas besoin de mot de passe : vous vous connecterez directement avec le bouton « Se connecter avec GTA World ».
+                                </div>
+                            ) : (
+                                <>
+                                    <div style={formRowStyle}>
+                                        <Form.Control
+                                            type="password"
+                                            name="password"
+                                            value={accountData.password}
+                                            onChange={handleAccountDataChange}
+                                            placeholder="Mot de passe *"
+                                            style={formInputStyle}
+                                            autoComplete="new-password"
+                                        />
+                                        <Form.Control
+                                            type="password"
+                                            name="confirmPassword"
+                                            value={accountData.confirmPassword}
+                                            onChange={handleAccountDataChange}
+                                            placeholder="Confirmer le mot de passe *"
+                                            style={formInputStyle}
+                                            autoComplete="new-password"
+                                        />
+                                    </div>
+                                    <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
+                                        <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
+                                        Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
+                                    </div>
+                                </>
+                            )}
                             <div style={accountActionsStyle}>
                                 <Button
                                     variant="outline-secondary"

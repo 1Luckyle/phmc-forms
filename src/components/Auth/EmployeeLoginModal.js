@@ -4,6 +4,7 @@ import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { buildGtawAuthUrl } from '../../utils/gtawOAuth';
 
 const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
     const { loginEmployee } = useEmployeeAuth();
@@ -74,6 +75,18 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
         onHide();
     };
 
+    // Démarre la connexion OAuth GTA World. Ne fonctionne que pour les comptes
+    // créés via l'onboarding GTAW (liés à un gtawUserId lors de leur approbation) ;
+    // voir GtaCallback.js et gtawEmployeeLogin (functions/index.js).
+    const handleGtawLogin = () => {
+        try {
+            window.location.href = buildGtawAuthUrl({ type: 'employee-login' });
+        } catch (err) {
+            console.error('Failed to start GTA World login:', err);
+            setError('Impossible de démarrer la connexion avec GTA World.');
+        }
+    };
+
     const handlePasswordReset = async () => {
         if (!loginData.email) {
             setError('Veuillez entrer votre adresse email pour réinitialiser le mot de passe.');
@@ -138,6 +151,31 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
                     </Alert>
                 )}
                 
+                <button
+                    type="button"
+                    onClick={handleGtawLogin}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+                        backgroundColor: '#1a1a1a', border: '1px solid #ff8c00',
+                        borderRadius: '8px', padding: '12px 15px', color: '#fff',
+                        cursor: 'pointer', textAlign: 'left', marginBottom: '15px'
+                    }}
+                >
+                    <i className="fas fa-gamepad" style={{ fontSize: '1.3rem', color: '#ff8c00' }}></i>
+                    <span>
+                        <strong style={{ display: 'block' }}>Se connecter avec GTA World</strong>
+                        <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                            Disponible si votre compte a été créé via GTA World
+                        </span>
+                    </span>
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 20px' }}>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                    <span style={{ color: '#888', fontSize: '0.85em' }}>ou</span>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                </div>
+
                 <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
