@@ -136,6 +136,19 @@
     "migrationBackups": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Paiements Fleeca (passerelle marchand v2) ────────────────────────────
+    // Créés et mis à jour uniquement côté serveur avec le SDK Admin (voir
+    // createFleecaPayment / fleecaWebhook / getFleecaPaymentStatus dans
+    // functions/index.js), qui contourne ces règles : ".write": false bloque
+    // donc uniquement les tentatives d'écriture directe depuis le client
+    // (falsification du statut d'un paiement).
+    // Lecture publique : les formulaires concernés (civils compris) doivent
+    // pouvoir suivre en direct le statut de leur paiement sans être connectés.
+    "fleecaPayments": {
+      ".read":  true,
+      ".write": false
     }
   }
 }
