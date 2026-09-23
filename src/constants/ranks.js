@@ -21,3 +21,22 @@ export const CORONER_RANKS = [
   { label: "Enquêteur Médico-Légal", value: "Coroner Investigator", badgePrefix: "IV" },
   { label: "Médecin Légiste", value: "Medical Examiner", badgePrefix: "ME" },
 ];
+
+// Grades pour lesquels un titre (Dr./Pr.) peut être ajouté devant le prénom.
+export const DOCTOR_RANKS = ["Physician", "Surgeon", "Medical Examiner"];
+
+export const TITLE_PREFIXES = ["Dr.", "Pr."];
+
+// Ajoute/retire le titre directement dans le champ prénom lui-même (pas de
+// champ séparé à gérer côté BBCode/affichage) : on retire d'abord tout titre
+// déjà présent avant d'appliquer le nouveau, pour éviter "Dr. Pr. Nom".
+export const applyTitlePrefix = (firstName, title) => {
+  const stripped = (firstName || '').replace(/^(Dr\.|Pr\.)\s+/, '');
+  return title ? `${title} ${stripped}`.trim() : stripped;
+};
+
+// Retourne le titre actuellement présent dans le prénom ("Dr.", "Pr." ou null).
+export const getTitlePrefix = (firstName) => {
+  const match = /^(Dr\.|Pr\.)\s+/.exec(firstName || '');
+  return match ? match[1] : null;
+};

@@ -5,7 +5,8 @@ import { database, auth } from '../firebase';
 import { ref, get, set, push, update } from 'firebase/database';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
+import TitlePrefixPicker from './TitlePrefixPicker';
 
 // --- Styles ---
 const modalOverlayStyle = {
@@ -867,6 +868,12 @@ const EmployeeModal = ({
                         required
                       />
                     </div>
+                    {DOCTOR_RANKS.includes(missingEmployeeData.coronerRank) && (
+                      <TitlePrefixPicker
+                        firstName={missingEmployeeData.coronerName}
+                        onChange={(newFirstName) => setMissingEmployeeData({ ...missingEmployeeData, coronerName: newFirstName })}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
@@ -901,6 +908,12 @@ const EmployeeModal = ({
                       styles={reactSelectStyles}
                       required
                     />
+                    {DOCTOR_RANKS.includes(missingEmployeeData.coronerRank) && (
+                      <TitlePrefixPicker
+                        firstName={missingEmployeeData.coronerName}
+                        onChange={(newFirstName) => setMissingEmployeeData({ ...missingEmployeeData, coronerName: newFirstName })}
+                      />
+                    )}
                   </div>
                 )}
               </>
@@ -989,6 +1002,12 @@ const EmployeeModal = ({
                         isDisabled={!selectedEmployeeName}
                       />
                     </Form.Group>
+                    {selectedEmployeeName && DOCTOR_RANKS.includes(missingEmployeeData.coronerRank) && (
+                      <TitlePrefixPicker
+                        firstName={missingEmployeeData.coronerName}
+                        onChange={(newFirstName) => setMissingEmployeeData({ ...missingEmployeeData, coronerName: newFirstName })}
+                      />
+                    )}
                     <Form.Group className="mb-3">
                       <Form.Label style={formLabelStyle}>Badge / Téléphone mis à jour</Form.Label>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
@@ -1039,6 +1058,12 @@ const EmployeeModal = ({
                         isDisabled={!selectedEmployeeName}
                       />
                     </Form.Group>
+                    {selectedEmployeeName && DOCTOR_RANKS.includes(missingEmployeeData.coronerRank) && (
+                      <TitlePrefixPicker
+                        firstName={missingEmployeeData.coronerName}
+                        onChange={(newFirstName) => setMissingEmployeeData({ ...missingEmployeeData, coronerName: newFirstName })}
+                      />
+                    )}
                     <Form.Group className="mb-3">
                       <Form.Label style={formLabelStyle}>Badge / Téléphone mis à jour</Form.Label>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
