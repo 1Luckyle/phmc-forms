@@ -44,6 +44,25 @@ const createUserWithSecondaryApp = async (email, password) => {
     }
 };
 
+// Helper : crée un compte Firebase Auth SANS mot de passe pour une demande liée
+// à GTA World (identité déjà vérifiée via le personnage choisi lors de
+// l'onboarding). Le SDK client (createUserWithEmailAndPassword) exige un mot de
+// passe, donc on passe par l'Admin SDK côté serveur (voir createGtawEmployeeAccount
+// dans functions/index.js) : l'employé se connectera ensuite uniquement via
+// gtawEmployeeLogin (bouton « Se connecter avec GTA World »).
+const createGtawUserAccount = async (email) => {
+    const response = await fetch('https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawEmployeeAccount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.message || 'Erreur lors de la création du compte GTA World.');
+    }
+    return { uid: data.uid };
+};
+
 const PendingAccountRequests = ({ showNotification, currentUser }) => {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -106,9 +125,12 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 return;
             }
 
-            // Créer le compte Firebase Auth via l'instance secondaire pour ne PAS
-            // déconnecter l'admin sur l'instance principale.
-            const user = await createUserWithSecondaryApp(request.email, request.password);
+            // Compte lié à GTA World (pas de mot de passe défini) : création côté
+            // serveur via l'Admin SDK. Sinon, compte classique via l'instance
+            // secondaire pour ne PAS déconnecter l'admin sur l'instance principale.
+            const user = request.gtawCharacterId != null
+                ? await createGtawUserAccount(request.email)
+                : await createUserWithSecondaryApp(request.email, request.password);
 
             // Ajouter l'UID Firebase aux données de l'employé
             const firstName = request.firstName || '';

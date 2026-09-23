@@ -150,6 +150,26 @@ function MainApp({
         }
     }, []);
 
+    // Reprise après une redirection OAuth GTA World lancée depuis EmployeeLoginModal :
+    // GtaCallback connecte déjà l'utilisateur directement (signInWithCustomToken),
+    // donc on n'a besoin ici que de signaler un éventuel échec (compte non lié, erreur
+    // OAuth, etc). Le succès est déjà couvert par la notification de bienvenue ci-dessous
+    // dès que employeeProfile se charge.
+    useEffect(() => {
+        try {
+            const resultRaw = sessionStorage.getItem('gtaw-login-result');
+            if (resultRaw) {
+                sessionStorage.removeItem('gtaw-login-result');
+                const result = JSON.parse(resultRaw);
+                if (result.error) {
+                    showNotification(`Échec de la connexion avec GTA World : ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to parse GTA World login result:', error);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const handleOnboardingComplete = (preferences) => {
         setUserOnboardingPreferences(preferences);
         setOnboardingComplete(true);
