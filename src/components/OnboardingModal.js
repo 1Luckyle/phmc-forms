@@ -5,7 +5,8 @@ import Select from 'react-select';
 import { formDefinitions } from '../formDefinitions';
 import { useWebhooks } from '../hooks/useWebhooks';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
+import TitlePrefixPicker from './TitlePrefixPicker';
 import * as Sentry from "@sentry/react";
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -1100,6 +1101,12 @@ const OnboardingModal = ({
                                     }}
                                 />
                             </div>
+                            {DOCTOR_RANKS.includes(accountData.rank) && (
+                                <TitlePrefixPicker
+                                    firstName={accountData.firstName}
+                                    onChange={(newFirstName) => setAccountData({ ...accountData, firstName: newFirstName })}
+                                />
+                            )}
                             <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'stretch', gap: '0' }}>
                                 <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #444', borderRight: 'none', padding: '8px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                                     {(PHMC_RANKS.find(r => r.value === accountData.rank)?.badgePrefix || 'MD') + '-'}
@@ -1471,6 +1478,12 @@ const OnboardingModal = ({
                                     }}
                                 />
                             </div>
+                            {DOCTOR_RANKS.includes(accountData.rank) && (
+                                <TitlePrefixPicker
+                                    firstName={accountData.firstName}
+                                    onChange={(newFirstName) => setAccountData({ ...accountData, firstName: newFirstName })}
+                                />
+                            )}
                             <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'stretch', gap: '0' }}>
                                 <span style={{ backgroundColor: '#1f2937', color: '#c9d1d9', border: '1px solid #444', borderRight: 'none', padding: '8px 10px', borderRadius: '4px 0 0 4px', fontSize: '0.9em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                                     {(CORONER_RANKS.find(r => r.value === accountData.rank)?.badgePrefix || 'TF') + '-'}
