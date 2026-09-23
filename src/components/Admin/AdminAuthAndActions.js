@@ -186,6 +186,12 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
         affectedDeployments: [],
     });
 
+    // Bascule "GTA World uniquement" pour la connexion/création de compte
+    // employé (EmployeeLoginModal, OnboardingModal). Par défaut (donnée
+    // absente), gtawOnly = true. Ne s'applique jamais à /login (connexion
+    // admin), qui garde toujours les deux méthodes.
+    const [authConfig, setAuthConfig] = useState({ gtawOnly: true });
+
     const prevUserUidRef = useRef(null);
 
     const logWebhookToFirebase = async (type, payload) => {
@@ -230,6 +236,15 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
                     affectedDeployments: lockdownData.affectedDeployments || [],
                 });
             }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const authConfigRef = ref(database, 'adminSettings/authConfig');
+        const unsubscribe = onValue(authConfigRef, (snapshot) => {
+            const data = snapshot.val();
+            setAuthConfig({ gtawOnly: data?.gtawOnly !== false });
         });
         return () => unsubscribe();
     }, []);
@@ -298,6 +313,37 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
                 "Échec de la mise à jour de l'état du confinement",
                 `Erreur: ${error.message}`,
                 "État du confinement",
+                userAgent,
+                timeZone
+            );
+        } finally {
+            setIsUpdatingDb(false);
+        }
+    };
+
+    const handleUpdateAuthConfig = async () => {
+        setIsUpdatingDb(true);
+        const authConfigRef = ref(database, 'adminSettings/authConfig');
+        const { userAgent, timeZone } = getUserContext();
+        try {
+            await update(authConfigRef, authConfig);
+            showInAppNotification(`Méthodes de connexion mises à jour.`, "check-circle");
+            sendAdminActionWebhook(
+                currentUser.email,
+                "Mise à jour des méthodes de connexion",
+                `Connexion GTA World uniquement : ${authConfig.gtawOnly ? 'Oui' : 'Non (email/mot de passe réactivé)'}`,
+                "Méthodes de connexion",
+                userAgent,
+                timeZone
+            );
+        } catch (error) {
+            console.error("Error updating auth config:", error);
+            showInAppNotification("Échec de la mise à jour des méthodes de connexion.", "error");
+            sendAdminActionWebhook(
+                currentUser.email,
+                "Échec de la mise à jour des méthodes de connexion",
+                `Erreur: ${error.message}`,
+                "Méthodes de connexion",
                 userAgent,
                 timeZone
             );
@@ -1446,6 +1492,9 @@ Clé : ${savedRoleData.originalKey}`,
                 lockdownConfig={lockdownConfig}
                 setLockdownConfig={setLockdownConfig}
                 handleUpdateLockdownStatus={handleUpdateLockdownStatus}
+                authConfig={authConfig}
+                setAuthConfig={setAuthConfig}
+                handleUpdateAuthConfig={handleUpdateAuthConfig}
                 webhooks={webhooks}
                 newWebhook={newWebhook}
                 setNewWebhook={setNewWebhook}

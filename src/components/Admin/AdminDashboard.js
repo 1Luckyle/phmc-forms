@@ -51,6 +51,9 @@ const AdminDashboard = ({
     lockdownConfig,
     setLockdownConfig,
     handleUpdateLockdownStatus,
+    authConfig,
+    setAuthConfig,
+    handleUpdateAuthConfig,
     webhooks,
     newWebhook,
     setNewWebhook,
@@ -120,6 +123,7 @@ const AdminDashboard = ({
                     <div className="nav-pills-flex-column">
                         <button className={`nav-link ${selectedSection === 'serviceStatus' ? 'active' : ''}`} onClick={() => setSelectedSection('serviceStatus')}><i className="fas fa-server me-2"></i>Statut du service</button>
                         <button className={`nav-link ${selectedSection === 'lockdown' ? 'active' : ''}`} onClick={() => setSelectedSection('lockdown')}><i className="fas fa-lock me-2"></i>Confinement</button>
+                        <button className={`nav-link ${selectedSection === 'authMethods' ? 'active' : ''}`} onClick={() => setSelectedSection('authMethods')}><i className="fas fa-key me-2"></i>Méthodes de connexion</button>
                         <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
                         <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
                         <button className={`nav-link ${selectedSection === 'recruitment' ? 'active' : ''}`} onClick={() => setSelectedSection('recruitment')}><i className="fas fa-user-plus me-2"></i>Recrutement</button>
@@ -272,6 +276,34 @@ const AdminDashboard = ({
                                 </div>
                                 <Button variant="primary" onClick={handleUpdateLockdownStatus} disabled={isUpdatingDb}>
                                     {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mise à jour sur l'état du confinement"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    {selectedSection === 'authMethods' && (
+                        <div className="card">
+                            <div className="card-header">Méthodes de connexion</div>
+                            <div className="card-body">
+                                <p className="text-muted">
+                                    Par défaut, seule la connexion/création de compte via GTA World est proposée aux employés
+                                    (modal de connexion et onboarding). La connexion au panneau admin (/login) garde toujours
+                                    les deux méthodes, quel que soit ce réglage.
+                                </p>
+                                <div className="form-check form-switch mb-3">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="authMethodsSwitch"
+                                        checked={!authConfig.gtawOnly}
+                                        onChange={(e) => setAuthConfig(prev => ({ ...prev, gtawOnly: !e.target.checked }))}
+                                    />
+                                    <label className="form-check-label" htmlFor="authMethodsSwitch">
+                                        Autoriser aussi la connexion/création de compte par email et mot de passe
+                                    </label>
+                                </div>
+                                <Button variant="primary" onClick={handleUpdateAuthConfig} disabled={isUpdatingDb}>
+                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mettre à jour les méthodes de connexion"}
                                 </Button>
                             </div>
                         </div>

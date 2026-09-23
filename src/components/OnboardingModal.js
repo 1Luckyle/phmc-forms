@@ -10,6 +10,7 @@ import * as Sentry from "@sentry/react";
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
 import { buildGtawAuthUrl } from '../utils/gtawOAuth';
+import { useAuthMethodsConfig } from '../hooks/useAuthMethodsConfig';
 
 // Step definitions for the onboarding flow
 const ONBOARDING_STEPS = {
@@ -63,6 +64,7 @@ const OnboardingModal = ({
     // Initialize webhook functions
     const { logWebhookToFirebase } = useWebhooks({}, { sha: 'onboarding' }, showNotification);
     const { requestEmployeeAccount, loginEmployee, employeeProfile } = useEmployeeAuth();
+    const { gtawOnly } = useAuthMethodsConfig();
     const [currentStep, setCurrentStep] = useState(ONBOARDING_STEPS.WELCOME);
     const [selectedUserType, setSelectedUserType] = useState(null);
     const [selectedRole, setSelectedRole] = useState(null);
@@ -679,6 +681,15 @@ const OnboardingModal = ({
         }
     };
 
+    const handleGtawEmployeeLogin = () => {
+        try {
+            window.location.href = buildGtawAuthUrl({ type: 'employee-login' });
+        } catch (err) {
+            console.error('Failed to start GTA World login:', err);
+            showNotification('Impossible de démarrer la connexion avec GTA World.', 'error');
+        }
+    };
+
     const handleLogin = async () => {
         if (!loginData.email || !loginData.password) {
             showNotification('Veuillez remplir tous les champs.', 'warning');
@@ -900,24 +911,26 @@ const OnboardingModal = ({
                             </span>
                         </span>
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => setAccountCreationMethod('manual')}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '12px',
-                            backgroundColor: '#2a2a2a', border: '1px solid #444',
-                            borderRadius: '8px', padding: '15px', color: '#fff',
-                            cursor: 'pointer', textAlign: 'left'
-                        }}
-                    >
-                        <i className="fas fa-keyboard" style={{ fontSize: '1.4rem', color: '#6c757d' }}></i>
-                        <span>
-                            <strong style={{ display: 'block' }}>Saisir mes informations manuellement</strong>
-                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                                Remplissez vous-même votre prénom et votre nom.
+                    {!gtawOnly && (
+                        <button
+                            type="button"
+                            onClick={() => setAccountCreationMethod('manual')}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '12px',
+                                backgroundColor: '#2a2a2a', border: '1px solid #444',
+                                borderRadius: '8px', padding: '15px', color: '#fff',
+                                cursor: 'pointer', textAlign: 'left'
+                            }}
+                        >
+                            <i className="fas fa-keyboard" style={{ fontSize: '1.4rem', color: '#6c757d' }}></i>
+                            <span>
+                                <strong style={{ display: 'block' }}>Saisir mes informations manuellement</strong>
+                                <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                    Remplissez vous-même votre prénom et votre nom.
+                                </span>
                             </span>
-                        </span>
-                    </button>
+                        </button>
+                    )}
                 </div>
                 <div style={accountActionsStyle}>
                     <Button
@@ -1199,59 +1212,88 @@ const OnboardingModal = ({
                         </p>
                         
                         <div style={accountFormStyle}>
-                            <Form.Control
-                                type="email"
-                                name="email"
-                                value={loginData.email}
-                                onChange={(e) => { setLoginData({...loginData, email: e.target.value}); setResetEmailSent(false); }}
-                                placeholder="Email *"
-                                style={formInputStyle}
-                                autoComplete="email"
-                            />
-                            <Form.Control
-                                type="password"
-                                name="password"
-                                value={loginData.password}
-                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                                placeholder="Mot de passe *"
-                                style={formInputStyle}
-                                autoComplete="current-password"
-                            />
+                            <button
+                                type="button"
+                                onClick={handleGtawEmployeeLogin}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+                                    backgroundColor: '#1a1a1a', border: '1px solid #ff8c00',
+                                    borderRadius: '8px', padding: '12px 15px', color: '#fff',
+                                    cursor: 'pointer', textAlign: 'left', marginBottom: '15px'
+                                }}
+                            >
+                                <i className="fas fa-gamepad" style={{ fontSize: '1.3rem', color: '#ff8c00' }}></i>
+                                <span>
+                                    <strong style={{ display: 'block' }}>Se connecter avec GTA World</strong>
+                                    <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                        Disponible si votre compte a été créé via GTA World
+                                    </span>
+                                </span>
+                            </button>
+                            {!gtawOnly && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 20px' }}>
+                                        <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                                        <span style={{ color: '#888', fontSize: '0.85em' }}>ou</span>
+                                        <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                                    </div>
+                                    <Form.Control
+                                        type="email"
+                                        name="email"
+                                        value={loginData.email}
+                                        onChange={(e) => { setLoginData({...loginData, email: e.target.value}); setResetEmailSent(false); }}
+                                        placeholder="Email *"
+                                        style={formInputStyle}
+                                        autoComplete="email"
+                                    />
+                                    <Form.Control
+                                        type="password"
+                                        name="password"
+                                        value={loginData.password}
+                                        onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                        placeholder="Mot de passe *"
+                                        style={formInputStyle}
+                                        autoComplete="current-password"
+                                    />
 
-                            {resetEmailSent ? (
-                                <div style={{ marginBottom: '10px', padding: '8px 12px', backgroundColor: 'rgba(40, 167, 69, 0.15)', border: '1px solid rgba(40, 167, 69, 0.4)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745', textAlign: 'center' }}>
-                                    <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
-                                    Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
-                                </div>
-                            ) : (
-                                <div style={{ textAlign: 'right', marginBottom: '10px', marginTop: '-5px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={handlePasswordReset}
-                                        disabled={isResettingPassword}
-                                        style={{ background: 'none', border: 'none', color: '#4a9eff', fontSize: '0.85em', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                                    >
-                                        {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
-                                    </button>
-                                </div>
+                                    {resetEmailSent ? (
+                                        <div style={{ marginBottom: '10px', padding: '8px 12px', backgroundColor: 'rgba(40, 167, 69, 0.15)', border: '1px solid rgba(40, 167, 69, 0.4)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745', textAlign: 'center' }}>
+                                            <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                            Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
+                                        </div>
+                                    ) : (
+                                        <div style={{ textAlign: 'right', marginBottom: '10px', marginTop: '-5px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={handlePasswordReset}
+                                                disabled={isResettingPassword}
+                                                style={{ background: 'none', border: 'none', color: '#4a9eff', fontSize: '0.85em', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                                            >
+                                                {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px'}}>
-                                <Button 
-                                    variant="secondary" 
+                                <Button
+                                    variant="secondary"
                                     onClick={() => setShowLogin(false)}
                                     style={{padding: '10px 20px'}}
                                 >
                                     Retour
                                 </Button>
-                                <Button 
-                                    variant="success" 
-                                    onClick={handleLogin}
-                                    disabled={isLoggingIn}
-                                    style={{padding: '10px 20px'}}
-                                >
-                                    {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
-                                </Button>
+                                {!gtawOnly && (
+                                    <Button
+                                        variant="success"
+                                        onClick={handleLogin}
+                                        disabled={isLoggingIn}
+                                        style={{padding: '10px 20px'}}
+                                    >
+                                        {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1541,59 +1583,88 @@ const OnboardingModal = ({
                         </p>
                         
                         <div style={accountFormStyle}>
-                            <Form.Control
-                                type="email"
-                                name="email"
-                                value={loginData.email}
-                                onChange={(e) => { setLoginData({...loginData, email: e.target.value}); setResetEmailSent(false); }}
-                                placeholder="Email *"
-                                style={formInputStyle}
-                                autoComplete="email"
-                            />
-                            <Form.Control
-                                type="password"
-                                name="password"
-                                value={loginData.password}
-                                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                                placeholder="Mot de passe *"
-                                style={formInputStyle}
-                                autoComplete="current-password"
-                            />
+                            <button
+                                type="button"
+                                onClick={handleGtawEmployeeLogin}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+                                    backgroundColor: '#1a1a1a', border: '1px solid #ff8c00',
+                                    borderRadius: '8px', padding: '12px 15px', color: '#fff',
+                                    cursor: 'pointer', textAlign: 'left', marginBottom: '15px'
+                                }}
+                            >
+                                <i className="fas fa-gamepad" style={{ fontSize: '1.3rem', color: '#ff8c00' }}></i>
+                                <span>
+                                    <strong style={{ display: 'block' }}>Se connecter avec GTA World</strong>
+                                    <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                        Disponible si votre compte a été créé via GTA World
+                                    </span>
+                                </span>
+                            </button>
+                            {!gtawOnly && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 20px' }}>
+                                        <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                                        <span style={{ color: '#888', fontSize: '0.85em' }}>ou</span>
+                                        <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                                    </div>
+                                    <Form.Control
+                                        type="email"
+                                        name="email"
+                                        value={loginData.email}
+                                        onChange={(e) => { setLoginData({...loginData, email: e.target.value}); setResetEmailSent(false); }}
+                                        placeholder="Email *"
+                                        style={formInputStyle}
+                                        autoComplete="email"
+                                    />
+                                    <Form.Control
+                                        type="password"
+                                        name="password"
+                                        value={loginData.password}
+                                        onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                                        placeholder="Mot de passe *"
+                                        style={formInputStyle}
+                                        autoComplete="current-password"
+                                    />
 
-                            {resetEmailSent ? (
-                                <div style={{ marginBottom: '10px', padding: '8px 12px', backgroundColor: 'rgba(40, 167, 69, 0.15)', border: '1px solid rgba(40, 167, 69, 0.4)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745', textAlign: 'center' }}>
-                                    <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
-                                    Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
-                                </div>
-                            ) : (
-                                <div style={{ textAlign: 'right', marginBottom: '10px', marginTop: '-5px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={handlePasswordReset}
-                                        disabled={isResettingPassword}
-                                        style={{ background: 'none', border: 'none', color: '#4a9eff', fontSize: '0.85em', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                                    >
-                                        {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
-                                    </button>
-                                </div>
+                                    {resetEmailSent ? (
+                                        <div style={{ marginBottom: '10px', padding: '8px 12px', backgroundColor: 'rgba(40, 167, 69, 0.15)', border: '1px solid rgba(40, 167, 69, 0.4)', borderRadius: '5px', fontSize: '0.85em', color: '#28a745', textAlign: 'center' }}>
+                                            <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                                            Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
+                                        </div>
+                                    ) : (
+                                        <div style={{ textAlign: 'right', marginBottom: '10px', marginTop: '-5px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={handlePasswordReset}
+                                                disabled={isResettingPassword}
+                                                style={{ background: 'none', border: 'none', color: '#4a9eff', fontSize: '0.85em', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                                            >
+                                                {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             <div style={{display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px'}}>
-                                <Button 
-                                    variant="secondary" 
+                                <Button
+                                    variant="secondary"
                                     onClick={() => setShowLogin(false)}
                                     style={{padding: '10px 20px'}}
                                 >
                                     Retour
                                 </Button>
-                                <Button 
-                                    variant="success" 
-                                    onClick={handleLogin}
-                                    disabled={isLoggingIn}
-                                    style={{padding: '10px 20px'}}
-                                >
-                                    {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
-                                </Button>
+                                {!gtawOnly && (
+                                    <Button
+                                        variant="success"
+                                        onClick={handleLogin}
+                                        disabled={isLoggingIn}
+                                        style={{padding: '10px 20px'}}
+                                    >
+                                        {isLoggingIn ? 'Connexion en cours...' : 'Connexion'}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>

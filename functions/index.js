@@ -21,8 +21,21 @@ if (admin.apps.length === 0) {
 }
 const db = admin.database();
 
-// Set global options for all v2 functions in this file
-setGlobalOptions({ region: "europe-west1" }); // Deploy to Europe region
+// Set global options for all v2 functions in this file.
+// serviceAccount : les fonctions Cloud Functions 2ᵉ génération tournent par
+// défaut sous le compte de service Compute Engine par défaut
+// (<PROJECT_NUMBER>-compute@developer.gserviceaccount.com), qui n'a pas
+// nécessairement accès à la Realtime Database ou à la signature de jetons
+// (symptôme observé : "FIREBASE WARNING: Provided authentication credentials
+// ... are invalid" en boucle, puis timeout/504). On utilise donc explicitement
+// le compte de service dédié à l'Admin SDK Firebase, qui a déjà tous les rôles
+// nécessaires (RTDB Admin, Auth Admin, Créateur de jetons du compte de
+// service...), plutôt que d'accumuler des rôles au coup par coup sur le
+// compte par défaut.
+setGlobalOptions({
+    region: "europe-west1",
+    serviceAccount: "firebase-adminsdk-fbsvc@phmcfr-forms.iam.gserviceaccount.com"
+});
 
 // --- Helper Functions ---
 

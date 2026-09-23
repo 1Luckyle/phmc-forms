@@ -5,9 +5,11 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { buildGtawAuthUrl } from '../../utils/gtawOAuth';
+import { useAuthMethodsConfig } from '../../hooks/useAuthMethodsConfig';
 
 const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
     const { loginEmployee } = useEmployeeAuth();
+    const { gtawOnly } = useAuthMethodsConfig();
     const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [error, setError] = useState('');
@@ -170,96 +172,106 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
                     </span>
                 </button>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 20px' }}>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
-                    <span style={{ color: '#888', fontSize: '0.85em' }}>ou</span>
-                    <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
-                </div>
-
-                <Form onSubmit={handleSubmit}>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Email</Form.Label>
-                        <Form.Control
-                            type="email"
-                            name="email"
-                            value={loginData.email}
-                            onChange={handleChange}
-                            placeholder="votre.email@exemple.com"
-                            autoComplete="email"
-                            style={{
-                                backgroundColor: '#1a1a1a',
-                                color: '#fff',
-                                border: '1px solid #444'
-                            }}
-                        />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>Mot de passe</Form.Label>
-                        <Form.Control
-                            type="password"
-                            name="password"
-                            value={loginData.password}
-                            onChange={handleChange}
-                            placeholder="••••••••"
-                            autoComplete="current-password"
-                            style={{
-                                backgroundColor: '#1a1a1a',
-                                color: '#fff',
-                                border: '1px solid #444'
-                            }}
-                        />
-                    </Form.Group>
-
-                    <div style={{ marginBottom: '15px', textAlign: 'right' }}>
-                        <Button 
-                            variant="link" 
-                            onClick={handlePasswordReset}
-                            disabled={isResettingPassword || !loginData.email}
-                            style={{ 
-                                color: '#4a9eff', 
-                                textDecoration: 'none',
-                                padding: 0,
-                                fontSize: '0.9em'
-                            }}
-                        >
-                            {isResettingPassword ? (
-                                <>
-                                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
-                                    Envoi en cours...
-                                </>
-                            ) : (
-                                <>
-                                    <i className="fas fa-key" style={{ marginRight: '5px' }}></i>
-                                    Mot de passe oublié ?
-                                </>
-                            )}
-                        </Button>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                        <Button variant="secondary" onClick={handleClose} disabled={isLoggingIn}>
+                {gtawOnly ? (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button variant="secondary" onClick={handleClose}>
                             Annuler
                         </Button>
-                        <Button 
-                            variant="primary" 
-                            type="submit" 
-                            disabled={isLoggingIn}
-                        >
-                            {isLoggingIn ? (
-                                <>
-                                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
-                                    Connexion en cours...
-                                </>
-                            ) : (
-                                <>
-                                    <i className="fas fa-sign-in-alt" style={{ marginRight: '5px' }}></i>
-                                    Se connecter
-                                </>
-                            )}
-                        </Button>
                     </div>
-                </Form>
+                ) : (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 20px' }}>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                            <span style={{ color: '#888', fontSize: '0.85em' }}>ou</span>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#444' }}></div>
+                        </div>
+
+                        <Form onSubmit={handleSubmit}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control
+                                    type="email"
+                                    name="email"
+                                    value={loginData.email}
+                                    onChange={handleChange}
+                                    placeholder="votre.email@exemple.com"
+                                    autoComplete="email"
+                                    style={{
+                                        backgroundColor: '#1a1a1a',
+                                        color: '#fff',
+                                        border: '1px solid #444'
+                                    }}
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>Mot de passe</Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    name="password"
+                                    value={loginData.password}
+                                    onChange={handleChange}
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
+                                    style={{
+                                        backgroundColor: '#1a1a1a',
+                                        color: '#fff',
+                                        border: '1px solid #444'
+                                    }}
+                                />
+                            </Form.Group>
+
+                            <div style={{ marginBottom: '15px', textAlign: 'right' }}>
+                                <Button
+                                    variant="link"
+                                    onClick={handlePasswordReset}
+                                    disabled={isResettingPassword || !loginData.email}
+                                    style={{
+                                        color: '#4a9eff',
+                                        textDecoration: 'none',
+                                        padding: 0,
+                                        fontSize: '0.9em'
+                                    }}
+                                >
+                                    {isResettingPassword ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
+                                            Envoi en cours...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-key" style={{ marginRight: '5px' }}></i>
+                                            Mot de passe oublié ?
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                                <Button variant="secondary" onClick={handleClose} disabled={isLoggingIn}>
+                                    Annuler
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    type="submit"
+                                    disabled={isLoggingIn}
+                                >
+                                    {isLoggingIn ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
+                                            Connexion en cours...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-sign-in-alt" style={{ marginRight: '5px' }}></i>
+                                            Se connecter
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </Form>
+                    </>
+                )}
             </Modal.Body>
         </Modal>
     );
