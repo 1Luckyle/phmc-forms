@@ -168,14 +168,19 @@ export const useReportManagement = (
                 return { success: false, error: message };
             }
             key = `${formData.patientName} - ${formData.patientDateOfBirth}`;
-        } else if (bbCodeVersion === 24) { // Medical Record Release
-            // This form uses registrantFullName and dateOfRequest
-            if (!formData.registrantFullName || !formData.dateOfRequest) {
-                const message = `Veuillez remplir les champs « Nom complet du titulaire » et « Date de la demande ».`;
+        } else if (bbCodeVersion === 24) { // Medical Record Release (MedicalRelease.js)
+            // Le formulaire réel utilise patientFirstName/patientLastName, pas
+            // registrantFullName/dateOfRequest (qui n'existent dans aucun champ
+            // de ce formulaire) — l'ancienne validation ci-dessous échouait donc
+            // systématiquement, empêchant toute sauvegarde de ce type de rapport.
+            if (!formData.patientFirstName && !formData.patientLastName) {
+                const message = `Veuillez remplir le prénom ou le nom du patient.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `[Medical Release] ${formData.registrantFullName} - ${formData.dateOfRequest}`;
+            const releasePatientName = `${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim();
+            const releaseDate = formData.SubmitDate || new Date().toISOString().split('T')[0];
+            key = `[Medical Release] ${releasePatientName} - ${releaseDate}`;
         }
         // --- Add more 'else if' blocks here for other specific bbCodeVersions ---
         // Example for Coroner Email (bbCodeVersion 2)
@@ -789,21 +794,13 @@ export const useReportManagement = (
     }, [bbCodeVersion, loadReportForUser, modalCloseTimer, removeNotification, setFormData, showNotification]);
 
     const onAttachReportSummaryRequest = useCallback((callback) => {
-        // First, check if a relevant employee is selected
-        const author = getCurrentReportAuthor(formData);
-
-        if (!author) {
-            // If no author is determined, show a notification and prevent the modal from opening
-            showNotification('Veuillez sélectionner un employé PHMC dans le formulaire avant de joindre un rapport.', 'warning');
-            return; // Stop execution here
-        }
-
-        // If an author is found, proceed to open the modal
+        // Même logique que toggleSavedReports : plus de gate sur le formulaire,
+        // SavedReportsModal gère l'accès selon la connexion (voir plus haut).
         pendingReportAttachmentCallback.current = callback;
         setReportSelectionFilter([ER_PROTOCOL_VERSION, CONSULTATION_NOTES_PHMC_VERSION, CONSULTATION_NOTES_PBC_VERSION]);
         setPreselectedEmployeeType('PHMC'); // Set to PHMC for this specific use case
         setShowSavedReports(true);
-    }, [ER_PROTOCOL_VERSION, CONSULTATION_NOTES_PBC_VERSION, CONSULTATION_NOTES_PHMC_VERSION, getCurrentReportAuthor, formData, setReportSelectionFilter, setPreselectedEmployeeType, setShowSavedReports, showNotification]);
+    }, [ER_PROTOCOL_VERSION, CONSULTATION_NOTES_PBC_VERSION, CONSULTATION_NOTES_PHMC_VERSION, setReportSelectionFilter, setPreselectedEmployeeType, setShowSavedReports]);
 
     const deleteReportForUser = useCallback(async (reportFirebaseKey, userId) => {
         if (!userId || !reportFirebaseKey) {
@@ -844,6 +841,11 @@ export const useReportManagement = (
         }
     }, [sendEasterEggNotification, setEasterEggType, setShowEasterEggModal]);
 
+    // N'exige plus qu'un nom d'employé/patient soit sélectionné dans le
+    // formulaire courant : la fenêtre "Rapports enregistrés" s'ouvre toujours,
+    // et c'est SavedReportsModal (via useEmployeeAuth) qui décide quoi montrer
+    // — ses propres rapports si un employé est connecté, un sélecteur si
+    // admin, ou un message de blocage si personne n'est connecté.
     const toggleSavedReports = useCallback((filterVersions = null, employeeType = null, callback = null) => {
         if (showSavedReports) {
             setShowSavedReports(false);
@@ -854,17 +856,11 @@ export const useReportManagement = (
             return;
         }
 
-        const author = getCurrentReportAuthor(formData);
-
-        if (author) {
-            setShowSavedReports(true);
-            setPreselectedEmployeeType(employeeType);
-            setReportSelectionFilter(filterVersions);
-            pendingReportAttachmentCallback.current = callback;
-        } else {
-            showNotification('Veuillez sélectionner un employé dans le formulaire avant de consulter les rapports enregistrés.', 'warning');
-        }
-    }, [getCurrentReportAuthor, formData, setPreselectedEmployeeType, setReportSelectionFilter, setShowSavedReports, showNotification, showSavedReports]);
+        setShowSavedReports(true);
+        setPreselectedEmployeeType(employeeType);
+        setReportSelectionFilter(filterVersions);
+        pendingReportAttachmentCallback.current = callback;
+    }, [setPreselectedEmployeeType, setReportSelectionFilter, setShowSavedReports, showSavedReports]);
 
     const handleShowPositionInfo = useCallback((positionKey, recruitmentDataSource = null) => {
         let data = null;
