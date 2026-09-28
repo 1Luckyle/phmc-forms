@@ -97,10 +97,16 @@ export const useReportManagement = (
         }
     };
 
-    async function saveReport() {
+    // authorOverride : identité réelle sous laquelle sauvegarder (compte
+    // employé connecté, ou employé choisi par un admin) — voir
+    // handleSaveReportWrapper dans MainApp.js. Prend le pas sur
+    // getCurrentReportAuthor(formData), qui ne reflète que le nom
+    // sélectionné dans le champ coronerEmployee/phmcEmployee du formulaire
+    // (ou le nom du patient pour les anciens formulaires "civils").
+    async function saveReport(authorOverride) {
         let key = '';
         const bbCodeContent = getBBCodeContent();
-        const currentAuthor = getCurrentReportAuthor(formData);
+        const currentAuthor = authorOverride || getCurrentReportAuthor(formData);
 
         // --- Validation logic to determine the key ---
         if (bbCodeVersion === 1) { // Death Report

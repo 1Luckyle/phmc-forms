@@ -81,14 +81,18 @@
     },
 
     // ─── Rapports sauvegardés ─────────────────────────────────────────────────
-    // CIVILIAN : entièrement public (formulaires civils anonymes).
     // Admin : lecture complète du nœud (UserStats, UserManagementModal).
-    // Autres clés : accès réservé aux utilisateurs authentifiés.
+    // Sauvegarder un rapport nécessite désormais toujours d'être connecté (voir
+    // handleSaveReportWrapper dans MainApp.js : plus de sauvegarde anonyme).
+    // CIVILIAN : ancien compartiment des formulaires civils sauvegardés de
+    // façon anonyme (abandonné, invisible depuis l'interface) — lecture encore
+    // publique pour les anciennes données déjà présentes, mais plus aucune
+    // nouvelle écriture anonyme n'y est permise.
     "savedReports": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       "CIVILIAN": {
         ".read":  true,
-        ".write": true
+        ".write": "auth != null"
       },
       "$userKey": {
         ".read":  "auth != null",
