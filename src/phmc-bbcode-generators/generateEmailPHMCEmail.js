@@ -1,12 +1,12 @@
 const generateEmailPHMCEmail = (formData) => {
     const {
         scenePhotos,
-        decedentName,
-        patientNotes,
-        synopsis,
+        decedentName = '',
+        patientNotes = '',
+        synopsis = '',
         phmcEmployee,
-        decedentOOC,
-        patientCareer,
+        decedentOOC = '',
+        patientCareer = '',
     } = formData;
     const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
 

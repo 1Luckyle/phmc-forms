@@ -4,7 +4,7 @@ const generateMassFatality = (formData) => {
         placeOfDeath,
         department,
         dateTime,
-        requestingOfficer,
+        requestingOfficer = '',
         coronerEmployee,
         coronerBadge,
         synopsis,
@@ -63,14 +63,14 @@ Un représentant du ${getDepartmentFullName(department) || 'Département inconnu
             let evidenceLockerListItems = '';
             if (dec.evidenceLockerID && dec.evidenceLockerID.trim() !== '') {
                 evidenceLockerText = 'Oui';
-                evidenceLockerListItems = `[list][*] ${dec.evidenceLockerID.trim()} - ${dec.decedentName} (( ${dec.decedentOOC} ))[/list]`;
+                evidenceLockerListItems = `[list][*] ${dec.evidenceLockerID.trim()} - ${dec.decedentName || ''} (( ${dec.decedentOOC || ''} ))[/list]`;
             }
             const morgueStatusMessage = dec.morgueStatus === 'true' || dec.morgueStatus === true
                 ? '[bold][color=red]La photo de l\'écran de la morgue est actuellement indisponible. [/color][/bold]\n'
                 : '';
 
             bbCode += `
-[divbox=transparent][altspoiler=${idx + 1} - ${dec.decedentName} - OOC ${dec.decedentOOC || 'Inconnu'}]
+[divbox=transparent][altspoiler=${idx + 1} - ${dec.decedentName || 'Défunt non identifié'} - OOC ${dec.decedentOOC || 'Inconnu'}]
 [divbox=transparent][center][bold]INFORMATIONS SUR LE DÉFUNT[/bold][/center]
 [b] (( NOM DU DÉFUNT: )) [/b] ${dec.decedentName || 'Défunt non identifié'}
 [b] NOM OOC DU DÉFUNT: [/b] (( ${dec.decedentOOC || 'Inconnu'} ))

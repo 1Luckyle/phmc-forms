@@ -63,7 +63,7 @@ const getDepartmentFullName = (shortCode) => {
     // Check if evidenceLockerID has a value, indicating evidence submission
     if (evidenceLockerID && evidenceLockerID.trim() !== '') {
         evidenceLockerText = 'Oui';
-        evidenceLockerListItems = `[list][*] ${evidenceLockerID.trim()} - ${decedentName} (( ${decedentOOC} ))[/list]`;
+        evidenceLockerListItems = `[list][*] ${evidenceLockerID.trim()} - ${decedentName || ''} (( ${decedentOOC || ''} ))[/list]`;
     }
     const morgueStatusMessage = morgueStatus === 'true' || morgueStatus === true
      ? '[bold][color=red]La photo de l\'écran de la morgue est actuellement indisponible. [/color][/bold]\n'

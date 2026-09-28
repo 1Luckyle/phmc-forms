@@ -1,12 +1,12 @@
 const generateEmail = (formData) => {
     const {
-        requestingOfficer,
-        department,
-        coronerEmployee,
-        coronerRank,
-        coronerDiscord,
-        coronerPHNumber,
-        deathReport,
+        requestingOfficer = '',
+        department = '',
+        coronerEmployee = '',
+        coronerRank = '',
+        coronerDiscord = '',
+        coronerPHNumber = '',
+        deathReport = '',
         additionalReports,
         agencyDataStore, // Added agencyDataStore
         autopsyPaymentLink,

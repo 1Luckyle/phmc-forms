@@ -1,18 +1,18 @@
 const generatePhysEvalInternalMedPBC = (formData) => {
         const {
-            patientID,
-            date,
-            lastName,
-            patientHeight,
-            patientWeight,
-            phmcRank,
-            careerRisks,
-            patientAllergies,
-            patientMedicine,
-            patientcareerNo,
-            patientSummary,
-            patientCareer,
-            patientImpairments,
+            patientID = '',
+            date = '',
+            lastName = '',
+            patientHeight = '',
+            patientWeight = '',
+            phmcRank = '',
+            careerRisks = '',
+            patientAllergies = '',
+            patientMedicine = '',
+            patientcareerNo = '',
+            patientSummary = '',
+            patientCareer = '',
+            patientImpairments = '',
         } = formData;
 
         let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]EXAMEN PHYSIQUE[/b]
