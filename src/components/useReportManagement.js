@@ -171,7 +171,7 @@ export const useReportManagement = (
         } else if (bbCodeVersion === 24) { // Medical Record Release
             // This form uses registrantFullName and dateOfRequest
             if (!formData.registrantFullName || !formData.dateOfRequest) {
-                const message = `Please fill in Registrant Full Name and Date of Request fields.`;
+                const message = `Veuillez remplir les champs « Nom complet du titulaire » et « Date de la demande ».`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
@@ -280,6 +280,29 @@ export const useReportManagement = (
         }
 
         const sanitizedAuthorId = comprehensiveSanitize(currentAuthor);
+
+        // Évite d'avoir plusieurs rapports affichés avec exactement le même nom
+        // (ex: deux chirurgies pour le même patient le même jour) : on vérifie
+        // les rapports déjà enregistrés pour cet auteur et on ajoute un
+        // suffixe " (2)", " (3)"... si le nom généré existe déjà.
+        try {
+            const authorReportsSnapshot = await get(ref(database, `savedReports/${sanitizedAuthorId}`));
+            if (authorReportsSnapshot.exists()) {
+                const existingKeys = new Set(
+                    Object.values(authorReportsSnapshot.val()).map((r) => r.originalKey)
+                );
+                if (existingKeys.has(key)) {
+                    let suffix = 2;
+                    while (existingKeys.has(`${key} (${suffix})`)) {
+                        suffix++;
+                    }
+                    key = `${key} (${suffix})`;
+                }
+            }
+        } catch (error) {
+            console.warn('Could not check for duplicate report names, saving without suffix:', error);
+        }
+
         const sanitizedKey = key.trim().replace(/[.#$[\/ \]]+/g, '_') + '_' + Date.now();
 
         // --- Easter Egg Logic ---
