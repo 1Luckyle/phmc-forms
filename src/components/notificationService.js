@@ -828,23 +828,17 @@ const filterFormData = (formData, bbCodeVersion) => {
     return filteredData;
 };
 
-export const handleFormCopyAndNotify = async ({
-    formData,
-    bbCodeVersion,
-    selectedAgencyGroup,
+// Copie pure : ne génère et ne copie QUE le BBCode dans le presse-papiers.
+// Ne sauvegarde rien et n'envoie aucun webhook — voir handleSaveReportAndNotify
+// pour la sauvegarde (bouton "Sauvegarder le rapport" séparé, qui reprend
+// désormais toutes les conditions/validations qui étaient auparavant liées à
+// la copie).
+export const handleCopyBBCodeOnly = async ({
     getBBCodeContent,
     getFormDefinition,
-    saveReport,
+    bbCodeVersion,
     showNotification,
-    removeNotification,
-    handleAgencySelect,
-    setLastWebhookIdentifier,
-    lastWebhookIdentifier,
-    commitInfo,
-    database,
-    getCurrentReportAuthor,
 }) => {
-    // --- Step 1: Generate BBCode ---
     const bbCodeToCopy = getBBCodeContent();
     const definition = getFormDefinition(bbCodeVersion);
     const versionName = definition ? definition.name : "Unknown Form";
@@ -855,7 +849,39 @@ export const handleFormCopyAndNotify = async ({
         return;
     }
 
-    // --- Step 2: Save Report to Firebase (if applicable) ---
+    await copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copié dans le presse-papiers !`);
+};
+
+// Sauvegarde explicite du rapport (bouton "Sauvegarder le rapport") : reprend
+// toutes les conditions de validation et la logique d'enregistrement qui
+// étaient auparavant déclenchées par le bouton "Copier le BBCode". N'affecte
+// jamais le presse-papiers.
+export const handleSaveReportAndNotify = async ({
+    formData,
+    bbCodeVersion,
+    selectedAgencyGroup,
+    getBBCodeContent,
+    getFormDefinition,
+    saveReport,
+    showNotification,
+    handleAgencySelect,
+    setLastWebhookIdentifier,
+    commitInfo,
+    database,
+    getCurrentReportAuthor,
+}) => {
+    // --- Step 1: Generate BBCode (nécessaire pour le payload sauvegardé) ---
+    const bbCodeToCopy = getBBCodeContent();
+    const definition = getFormDefinition(bbCodeVersion);
+    const versionName = definition ? definition.name : "Unknown Form";
+
+    if (!bbCodeToCopy) {
+        showNotification(`Échec de la génération du BBCode pour ${versionName}. Veuillez vérifier les données du formulaire.`, 'error');
+        Sentry.captureMessage(`getBBCodeContent returned null/undefined for bbCodeVersion: ${bbCodeVersion}`, 'error');
+        return;
+    }
+
+    // --- Step 2: Save Report to Firebase ---
     let saveResult = { success: false };
     let savingAsCivilian = false;
 
@@ -882,6 +908,7 @@ export const handleFormCopyAndNotify = async ({
                 bbCodeVersion: bbCodeVersion
             });
             saveResult = { success: true };
+            showNotification(`Rapport sauvegardé dans "Rapports Sauvegardés" (Civils).`, 'save');
         } catch (error) {
             console.error("Error saving Civilian report to Firebase:", error);
             Sentry.captureException(error, { extra: { context: 'Firebase set report' } });
@@ -891,23 +918,17 @@ export const handleFormCopyAndNotify = async ({
         saveResult = await saveReport();
     }
 
-    if (!saveResult.success && !savingAsCivilian) {
-        // If there was a specific validation error message from saveReport, show it.
-        // Otherwise, show a generic message.
-        const message = saveResult.error || 'Échec de l\'enregistrement du rapport. La copie et la notification webhook seront ignorées.';
+    if (!saveResult.success) {
+        // Si saveReport() a fourni un message de validation précis, on l'affiche.
+        // Sinon, message générique. (saveReport() affiche déjà sa propre
+        // notification de succès avec l'emplacement exact — voir
+        // useReportManagement.js.)
+        const message = saveResult.error || 'Échec de l\'enregistrement du rapport.';
         showNotification(message, 'error');
         return;
     }
 
-    // --- Step 3: Copy BBCode to Clipboard ---
-    const copySuccessful = await copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copier dans le presse-papiers !`);
-
-    if (!copySuccessful) {
-        showNotification('Le BBCode n\'a pas pu être copié. La notification webhook sera ignorée.', 'warning');
-        return;
-    }
-
-    // --- Step 4: Send Discord Webhook Notification ---
+    // --- Step 3: Send Discord Webhook Notification ---
     try {
         let discordWebhookUrl = process.env.REACT_APP_DEV_WEBHOOK;
 
@@ -967,11 +988,6 @@ export const handleFormCopyAndNotify = async ({
                 Sentry.captureException(error, { extra: { context: 'Firebase User Saved Reports Count' } });
             }
 
-            let webhookActionMessage = "BBCode Copié";
-            if (saveResult.success) {
-                webhookActionMessage = "BBCode Copié & Rapport enregistré dans Firebase";
-            }
-
             await sendFormInteractionWebhookInternal({
                 webhookUrl: discordWebhookUrl,
                 formData,
@@ -980,7 +996,7 @@ export const handleFormCopyAndNotify = async ({
                 selectedAgencyGroup,
                 statusTitle: "Quelqu'un a utilisé votre générateur !",
                 statusColor: 0x00FF00,
-                actionMessage: webhookActionMessage,
+                actionMessage: "Rapport enregistré dans Firebase",
                 commitInfo,
                 firebaseSavedCount,
                 userSavedCount,
@@ -996,7 +1012,7 @@ export const handleFormCopyAndNotify = async ({
                             if (typeof handleAgencySelect === 'function') {
                                 handleAgencySelect(2);
                             } else {
-                                console.error('handleFormCopyAndNotify: Cannot switch form, the component may have unmounted.');
+                                console.error('handleSaveReportAndNotify: Cannot switch form, the component may have unmounted.');
                                 showNotification('Action échouée : Le contexte a été perdu. Veuillez naviguer vers le formulaire manuellement.', 'error');
                             }
                         }}
@@ -1016,8 +1032,8 @@ export const handleFormCopyAndNotify = async ({
         }
     } catch (error) {
         console.error('Error during webhook notification in service: ', error);
-        Sentry.captureException(error, { extra: { context: 'handleFormCopyAndNotify Webhook Error', errorName: error.name, errorMessage: error.message } });
-        showNotification('Rapport traité, mais échec de l\'envoi de la notification Discord.', 'warning');
+        Sentry.captureException(error, { extra: { context: 'handleSaveReportAndNotify Webhook Error', errorName: error.name, errorMessage: error.message } });
+        showNotification('Rapport enregistré, mais échec de l\'envoi de la notification Discord.', 'warning');
     }
 };
 export const sendErrorToDiscord = async (errorDetails) => {

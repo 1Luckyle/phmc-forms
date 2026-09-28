@@ -323,7 +323,7 @@ export const useReportManagement = (
         try {
             const reportRef = ref(database, reportPath);    
             await set(reportRef, cleanPayload);
-            showNotification(`Report "${key}" saved for ${currentAuthor} to Firebase!`, 'save');
+            showNotification(`Rapport "${key}" sauvegardé pour ${currentAuthor} (visible dans "Rapports Sauvegardés").`, 'save');
 
             // Log the webhook
             await logWebhook(`report_saved by ${currentAuthor}`, {
