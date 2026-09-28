@@ -11,7 +11,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import * as Sentry from "@sentry/react";
 import { useNotification } from './contexts/NotificationContext';
 import SwitchableFormButtons from './components/SwitchableFormButtons';
-import { handleFormCopyAndNotify, handlePhmcRecruitmentCopyAndNotify, sendBingoNotification, sendPhraseRequestNotification } from './components/notificationService';
+import { handleSaveReportAndNotify, handleCopyBBCodeOnly, handlePhmcRecruitmentCopyAndNotify, sendBingoNotification, sendPhraseRequestNotification } from './components/notificationService';
 import { useData } from './contexts/DataContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import { useModal } from './contexts/ModalProvider';
@@ -736,6 +736,13 @@ function MainApp({
     const { imageSource: deathReportImage, className: deathReportClass, season, effect } = SeasonalEvents({ imageType: 'deathReport', season: seasonalEffectsEnabled ? undefined : 'Default' });
     const { imageSource: civilianPaperworkImage, className: civilianPaperworkClass } = SeasonalEvents({ imageType: 'civilianPaperwork', season: seasonalEffectsEnabled ? undefined : 'Default' });
 
+    // Copie pure du BBCode dans le presse-papiers. Pour les formulaires de
+    // recrutement PHMC, la copie EST l'action de soumission (webhook de
+    // candidature inclus) puisque ces formulaires ne peuvent pas être
+    // sauvegardés (voir saveReport() dans useReportManagement.js) — ce cas
+    // reste donc géré à part. Pour tous les autres formulaires, copier ne fait
+    // plus que copier : la sauvegarde (et ses conditions/validations) est
+    // désormais déclenchée séparément par handleSaveReportWrapper.
     const handleCopyAndNotifyWrapper = useCallback(() => {
         if (selectedAgencyGroup === 'PHMC Recruitment') {
             handlePhmcRecruitmentCopyAndNotify({
@@ -747,36 +754,48 @@ function MainApp({
                 formDefinition: getFormDefinition(bbCodeVersion),
             });
         } else {
-            handleFormCopyAndNotify({
-                formData,
-                bbCodeVersion,
-                selectedAgencyGroup,
+            handleCopyBBCodeOnly({
                 getBBCodeContent,
                 getFormDefinition,
-                saveReport,
+                bbCodeVersion,
                 showNotification,
-                removeNotification,
-                handleAgencySelect,
-                setLastWebhookIdentifier,
-                lastWebhookIdentifier,
-                commitInfo,
-                database,
-                getCurrentReportAuthor,
             });
         }
     }, [
-        selectedAgencyGroup, 
-        formData, 
-        getBBCodeContent, 
-        showNotification, 
-        commitInfo, 
-        selectOptions, 
-        bbCodeVersion, 
-        saveReport, 
-        removeNotification, 
-        handleAgencySelect, 
-        setLastWebhookIdentifier, 
-        lastWebhookIdentifier, 
+        selectedAgencyGroup,
+        formData,
+        getBBCodeContent,
+        showNotification,
+        commitInfo,
+        selectOptions,
+        bbCodeVersion,
+    ]);
+
+    const handleSaveReportWrapper = useCallback(() => {
+        handleSaveReportAndNotify({
+            formData,
+            bbCodeVersion,
+            selectedAgencyGroup,
+            getBBCodeContent,
+            getFormDefinition,
+            saveReport,
+            showNotification,
+            handleAgencySelect,
+            setLastWebhookIdentifier,
+            commitInfo,
+            database,
+            getCurrentReportAuthor,
+        });
+    }, [
+        formData,
+        bbCodeVersion,
+        selectedAgencyGroup,
+        getBBCodeContent,
+        saveReport,
+        showNotification,
+        handleAgencySelect,
+        setLastWebhookIdentifier,
+        commitInfo,
         database,
         getCurrentReportAuthor
     ]);
@@ -1874,6 +1893,19 @@ function MainApp({
                                     <i className="fas fa-copy"></i>
                                     {getCopyButtonText()}
                                 </Button>
+
+                                {selectedAgencyGroup !== 'PHMC Recruitment' && (
+                                    <Button
+                                        type="button"
+                                        onClick={handleSaveReportWrapper}
+                                        className="copy-button-modern"
+                                        disabled={isLockdownActive}
+                                        title={isLockdownActive ? 'La sauvegarde des rapports est désactivée pendant le confinement du site' : ''}
+                                    >
+                                        <i className="fas fa-save"></i>
+                                        Sauvegarder le rapport
+                                    </Button>
+                                )}
                             </div>
 
                             {showBBCode && (
