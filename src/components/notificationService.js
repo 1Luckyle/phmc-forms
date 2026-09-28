@@ -868,7 +868,7 @@ export const handleSaveReportAndNotify = async ({
     setLastWebhookIdentifier,
     commitInfo,
     database,
-    getCurrentReportAuthor,
+    authorOverride,
 }) => {
     // --- Step 1: Generate BBCode (nécessaire pour le payload sauvegardé) ---
     const bbCodeToCopy = getBBCodeContent();
@@ -882,41 +882,13 @@ export const handleSaveReportAndNotify = async ({
     }
 
     // --- Step 2: Save Report to Firebase ---
-    let saveResult = { success: false };
-    let savingAsCivilian = false;
-
-    if ([3, 24, 25, 26].includes(bbCodeVersion)) { // Civilian Forms
-        savingAsCivilian = true;
-        const bbCodeContent = getBBCodeContent();
-        const key = `[CIVIL-RAPPORT] - ${formData.patientName || ''} ${formData.patientFirstName || ''} ${formData.patientLastName || ''} - ${new Date().toISOString()}`;
-        const sanitizedKey = comprehensiveSanitize(key);
-        const reportDataToSave = {
-            bbCodeVersion: bbCodeVersion,
-            data: filterFormData(formData, bbCodeVersion),
-            bbCode: bbCodeContent,
-            timestamp: Date.now(),
-            originalKey: key,
-            authorName: 'CIVIL'
-        };
-
-        try {
-            const reportRef = ref(database, `savedReports/CIVILIAN/${sanitizedKey}`);
-            await set(reportRef, reportDataToSave);
-            await logWebhookToFirebase('report_saved_civilian', {
-                reportKey: sanitizedKey,
-                originalKey: key,
-                bbCodeVersion: bbCodeVersion
-            });
-            saveResult = { success: true };
-            showNotification(`Rapport sauvegardé dans "Rapports Sauvegardés" (Civils).`, 'save');
-        } catch (error) {
-            console.error("Error saving Civilian report to Firebase:", error);
-            Sentry.captureException(error, { extra: { context: 'Firebase set report' } });
-            saveResult = { success: false, error: 'Échec de l\'enregistrement du rapport civil dans Firebase.' };
-        }
-    } else {
-        saveResult = await saveReport();
-    }
+    // Tous les types de formulaires (y compris les anciens formulaires
+    // "civils" 3/24/25/26, qui atterrissaient auparavant dans un compartiment
+    // "CIVILIAN" invisible depuis l'interface) passent désormais par le même
+    // chemin, sauvegardés sous l'identité de qui enregistre (authorOverride :
+    // le compte connecté, ou l'employé choisi par un admin) — voir
+    // handleSaveReportWrapper dans MainApp.js.
+    const saveResult = await saveReport(authorOverride);
 
     if (!saveResult.success) {
         // Si saveReport() a fourni un message de validation précis, on l'affiche.
@@ -957,16 +929,7 @@ export const handleSaveReportAndNotify = async ({
             }
 
             try {
-                let userKey;
-                if (savingAsCivilian) {
-                    userKey = 'CIVIL'; // Directly use 'CIVILIAN' for civilian forms
-                } else {
-                    userKey = getCurrentReportAuthor(formData);
-                    if (!userKey) {
-                        userKey = 'INCONNU';
-                    }
-                }
-                
+                let userKey = authorOverride || 'INCONNU';
                 userKey = comprehensiveSanitize(userKey);
                 let userReportsRef = ref(database, `savedReports/${userKey}`);
                 let userSnapshot = await get(userReportsRef);

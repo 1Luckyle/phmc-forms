@@ -45,6 +45,7 @@ import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { database } from './firebase'; // Your Firebase config
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
+const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
 const AgencyGroupSelectorModal = lazy(() => import('./components/AgencyGroupSelectorModal'));
 const AgencySelector = lazy(() => import('./components/AgencySelector'));
 const OnboardingModal = lazy(() => import('./components/OnboardingModal'));
@@ -120,6 +121,12 @@ function MainApp({
     const { currentEmployee, employeeProfile, isAdmin, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
+    // Modal de sélection d'employé affichée à un admin qui clique sur
+    // "Sauvegarder le rapport" : un admin peut sauvegarder pour n'importe quel
+    // employé, alors qu'un employé connecté (non-admin) sauvegarde toujours
+    // sous sa propre identité, et un visiteur non connecté ne peut pas
+    // sauvegarder du tout (voir handleSaveReportWrapper).
+    const [showSaveAsEmployeeModal, setShowSaveAsEmployeeModal] = useState(false);
 
 
     // Onboarding detection and initialization
@@ -771,7 +778,13 @@ function MainApp({
         bbCodeVersion,
     ]);
 
-    const handleSaveReportWrapper = useCallback(() => {
+    // Sauvegarde un rapport pour l'auteur donné (compte connecté, ou employé
+    // choisi par un admin via SaveAsEmployeeModal). C'est ce nom qui remplace
+    // désormais getCurrentReportAuthor(formData) pour la sauvegarde : on
+    // sauvegarde sous l'identité réelle de qui enregistre, pas sous le nom
+    // choisi dans le menu déroulant coronerEmployee/phmcEmployee du formulaire
+    // ni sous un compartiment "CIVILIAN" invisible.
+    const runSaveReport = useCallback((authorOverride) => {
         handleSaveReportAndNotify({
             formData,
             bbCodeVersion,
@@ -784,7 +797,7 @@ function MainApp({
             setLastWebhookIdentifier,
             commitInfo,
             database,
-            getCurrentReportAuthor,
+            authorOverride,
         });
     }, [
         formData,
@@ -797,8 +810,30 @@ function MainApp({
         setLastWebhookIdentifier,
         commitInfo,
         database,
-        getCurrentReportAuthor
     ]);
+
+    const handleSaveReportWrapper = useCallback(() => {
+        if (!currentEmployee) {
+            showNotification('Vous devez être connecté pour enregistrer un rapport.', 'error');
+            return;
+        }
+        if (isAdmin) {
+            setShowSaveAsEmployeeModal(true);
+            return;
+        }
+        const authorName = employeeProfile?.name
+            || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null);
+        if (!authorName) {
+            showNotification('Impossible de déterminer votre identité employé. Veuillez réessayer ou contacter un administrateur.', 'error');
+            return;
+        }
+        runSaveReport(authorName);
+    }, [currentEmployee, isAdmin, employeeProfile, runSaveReport, showNotification]);
+
+    const handleConfirmSaveAsEmployee = useCallback((employeeName) => {
+        setShowSaveAsEmployeeModal(false);
+        runSaveReport(employeeName);
+    }, [runSaveReport]);
 
     const currentFormDefinition = useMemo(() => getFormDefinition(bbCodeVersion), [bbCodeVersion]);
     const FieldComponent = currentFormDefinition ? currentFormDefinition.FieldComponent : null;
@@ -2011,6 +2046,12 @@ function MainApp({
                             removeNotification={removeNotification}
                             bbCodeVersion={bbCodeVersion}
                             handleReportSelectedForAttachment={handleReportSelectedForAttachment}
+                        />
+                        <SaveAsEmployeeModal
+                            show={showSaveAsEmployeeModal}
+                            onHide={() => setShowSaveAsEmployeeModal(false)}
+                            employeeOptions={combinedStaffOptions}
+                            onConfirm={handleConfirmSaveAsEmployee}
                         />
                     </div>
                 </div>
