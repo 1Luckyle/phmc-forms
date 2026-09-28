@@ -259,19 +259,30 @@ const SavedReportsModal = ({
     const lastLoadedEmployeeRef = useRef(null);
     const isManualSelectionRef = useRef(false);
 
+    const { employeeProfile, currentEmployee, isAdmin } = useEmployeeAuth();
+
+    // Un employé connecté (non-admin) consulte toujours SES PROPRES rapports,
+    // directement, peu importe ce qui est sélectionné dans le formulaire
+    // principal (currentPhmcEmployee/currentCoronerEmployee). Un admin garde
+    // le comportement précédent (pré-sélection pratique basée sur le
+    // formulaire, mais libre de choisir n'importe quel employé). Un visiteur
+    // non connecté ne peut rien consulter du tout — voir le rendu plus bas.
     useEffect(() => {
         if (show && !isManualSelectionRef.current) {
             let employeeToSelectValue = null;
-            
-            // First try to use the current employee based on form data
-            if (currentPhmcEmployee) {
-                employeeToSelectValue = currentPhmcEmployee;
-            } else if (currentCoronerEmployee) {
-                employeeToSelectValue = currentCoronerEmployee;
-            } else if (preselectedEmployeeType === 'PHMC') {
-                employeeToSelectValue = currentPhmcEmployee;
-            } else {
-                employeeToSelectValue = currentCoronerEmployee || currentPhmcEmployee;
+
+            if (isAdmin) {
+                if (currentPhmcEmployee) {
+                    employeeToSelectValue = currentPhmcEmployee;
+                } else if (currentCoronerEmployee) {
+                    employeeToSelectValue = currentCoronerEmployee;
+                } else if (preselectedEmployeeType === 'PHMC') {
+                    employeeToSelectValue = currentPhmcEmployee;
+                } else {
+                    employeeToSelectValue = currentCoronerEmployee || currentPhmcEmployee;
+                }
+            } else if (currentEmployee && employeeProfile?.name) {
+                employeeToSelectValue = employeeProfile.name;
             }
 
             // Find the matching employee option
@@ -295,7 +306,7 @@ const SavedReportsModal = ({
             lastLoadedEmployeeRef.current = null;
             isManualSelectionRef.current = false;
         }
-    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect]);
+    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile]);
 
     const handleEmployeeSelect = (selectedOption) => {
         isManualSelectionRef.current = true;
@@ -311,8 +322,6 @@ const SavedReportsModal = ({
             lastLoadedEmployeeRef.current = null;
         }
     };
-
-    const { employeeProfile, currentEmployee, isAdmin } = useEmployeeAuth();
 
     const filteredEmployeeOptions = useMemo(() => {
         let options = employeeOptions || [];
@@ -488,27 +497,31 @@ const SavedReportsModal = ({
                 </div>
 
                 <div style={controlsContainerStyle}>
-                    <input
-                        type="text"
-                        placeholder="Rechercher des rapports par nom/identifiant..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={searchInputStyle}
-                        disabled={!selectedEmployee || isLoadingReports}
-                    />
-                    <Form.Group controlId="employeeSelect" className="mb-3">
-                        <Form.Label>Sélectionnez un employé pour voir les rapports :</Form.Label>
-                        <Select
-                            name="employeeSelect"
-                            options={filteredEmployeeOptions}
-                            value={selectedEmployee}
-                            onChange={handleEmployeeSelect}
-                            isClearable
-                            placeholder="Rechercher ou sélectionner un employé..."
-                            styles={reactSelectStyles}
+                    {currentEmployee && (
+                        <input
+                            type="text"
+                            placeholder="Rechercher des rapports par nom/identifiant..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={searchInputStyle}
+                            disabled={!selectedEmployee || isLoadingReports}
                         />
-                    </Form.Group>
-                    {canSwitchEmployee && !preselectedEmployeeType && (
+                    )}
+                    {isAdmin && (
+                        <Form.Group controlId="employeeSelect" className="mb-3">
+                            <Form.Label>Sélectionnez un employé pour voir les rapports :</Form.Label>
+                            <Select
+                                name="employeeSelect"
+                                options={filteredEmployeeOptions}
+                                value={selectedEmployee}
+                                onChange={handleEmployeeSelect}
+                                isClearable
+                                placeholder="Rechercher ou sélectionner un employé..."
+                                styles={reactSelectStyles}
+                            />
+                        </Form.Group>
+                    )}
+                    {isAdmin && canSwitchEmployee && !preselectedEmployeeType && (
                         <Button
                             onClick={() => {
                                 const newEmployeeValue =
@@ -534,7 +547,7 @@ const SavedReportsModal = ({
 
                 <div style={modalHeaderStyle} key={selectedEmployee ? selectedEmployee.value : 'noEmployee'}>
                     <h5 style={{ margin: 0 }}>
-                        Rapports enregistrés {selectedEmployee ? `pour ${selectedEmployee.label}` : '(Aucun employé sélectionné)'}
+                        Rapports enregistrés {selectedEmployee ? `pour ${selectedEmployee.label}` : (!currentEmployee ? '(Non connecté)' : '(Aucun employé sélectionné)')}
                         {selectedEmployee && ` (${searchedAndFilteredReports.length} total)`}
                     </h5>
                 </div>
@@ -635,7 +648,11 @@ const SavedReportsModal = ({
                     )}
                     {!isLoadingReports && !selectedEmployee && (
                         <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                            Veuillez sélectionner un employé dans le formulaire principal pour voir ses rapports enregistrés.
+                            {!currentEmployee
+                                ? 'Vous devez être connecté pour consulter les rapports enregistrés.'
+                                : isAdmin
+                                ? 'Veuillez sélectionner un employé pour voir ses rapports enregistrés.'
+                                : 'Impossible de retrouver votre fiche employé associée à ce compte. Contactez un administrateur.'}
                         </p>
                     )}
                 </div>

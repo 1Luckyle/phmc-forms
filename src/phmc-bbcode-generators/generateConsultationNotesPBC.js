@@ -1,15 +1,15 @@
 const generateConsultationNotesPBC = (formData) => {
             const {
-                lastName,
-                phmcRank,
-                patientID,
-                date,
-                patientDiagnosis,
-                patientSecondaryDiagnosis,
-                patientMedicine,
-                patientProcedure,
-                patientChiefComplaint,
-                patientNotes,
+                lastName = '',
+                phmcRank = '',
+                patientID = '',
+                date = '',
+                patientDiagnosis = '',
+                patientSecondaryDiagnosis = '',
+                patientMedicine = '',
+                patientProcedure = '',
+                patientChiefComplaint = '',
+                patientNotes = '',
             } = formData;
     
             let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de consultation[/b]
@@ -44,7 +44,7 @@ ${patientChiefComplaint}
 [td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]
 [table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]
 [td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluides [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Changement tissulaire[/center][/table]
-[table][tr][td][center]Labo: [cb${formData.lab.includes('WNL') ? 'c' : ''}] DLN  [cb${formData.lab.includes('Anemia') ? 'c' : ''}] Anémie [cb${formData.lab.includes('Inflammation/Infection') ? 'c' : ''}] Inflammation/Infection [cb${formData.lab.includes('Dysfunction') ? 'c' : ''}] Dysfonctionnement/Trouble [cb${formData.lab.includes('ElectrolyteImbalance') ? 'c' : ''}] Déséquilibre électrolytique [cb${formData.lab.includes('Infarct') ? 'c' : ''}] Infarctus/Embolie [cb${formData.lab.includes('Tumor') ? 'c' : ''}] Tumeur [/center][/table]
+[table][tr][td][center]Labo: [cb${formData.lab?.includes('WNL') ? 'c' : ''}] DLN  [cb${formData.lab?.includes('Anemia') ? 'c' : ''}] Anémie [cb${formData.lab?.includes('Inflammation/Infection') ? 'c' : ''}] Inflammation/Infection [cb${formData.lab?.includes('Dysfunction') ? 'c' : ''}] Dysfonctionnement/Trouble [cb${formData.lab?.includes('ElectrolyteImbalance') ? 'c' : ''}] Déséquilibre électrolytique [cb${formData.lab?.includes('Infarct') ? 'c' : ''}] Infarctus/Embolie [cb${formData.lab?.includes('Tumor') ? 'c' : ''}] Tumeur [/center][/table]
 [divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Diagnostic de sortie[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis}

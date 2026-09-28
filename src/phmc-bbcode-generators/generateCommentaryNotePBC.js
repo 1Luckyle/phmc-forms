@@ -1,9 +1,9 @@
 const generateCommentaryNotePBC = (formData) => {
     const {
-        phmcEmployee,
-        date,
-        patientID,
-        patientNotes
+        phmcEmployee = '',
+        date = '',
+        patientID = '',
+        patientNotes = ''
     } = formData;
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]

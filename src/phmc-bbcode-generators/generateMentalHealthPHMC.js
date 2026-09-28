@@ -1,14 +1,14 @@
 const generateMentalHealthPHMC = (formData) => {
         const {
-            lastName,
-            patientID,
-            date,
-            patientChiefComplaint,
-            phmcRank,
-            patientNotes, 
-            patientDiagnosis,
-            patientMedicine,
-            patientProcedure,
+            lastName = '',
+            patientID = '',
+            date = '',
+            patientChiefComplaint = '',
+            phmcRank = '',
+            patientNotes = '',
+            patientDiagnosis = '',
+            patientMedicine = '',
+            patientProcedure = '',
         } = formData;
 
         let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]

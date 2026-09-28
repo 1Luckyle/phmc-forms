@@ -1,15 +1,15 @@
 const generateCertificate = (formData) => {
     const {
         scenePhotos,
-        decedentName,
-        patientAge,
+        decedentName = '',
+        patientAge = '',
         probableCauseOfDeath,
         patientDateOfBirth,
         dateofdeath,
         TimeofDeath,
         witnessName,
-        coronerEmployee,
-        date,
+        coronerEmployee = '',
+        date = '',
     } = formData;
     const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
 

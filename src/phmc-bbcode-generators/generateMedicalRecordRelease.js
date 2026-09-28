@@ -1,19 +1,19 @@
 const generateMedicalRecordRelease = (formData) => {
     const {
-        patientFirstName,
-        patientMiddleName,
-        patientLastName,
-        patientPH,
-        patientDateOfBirth,
-        patientAddress,
-        patientZIP,
-        patientEmail,
-        patientMedInfoReleaseOther,
-        phmcEmployee,
-        MedicalRecordsReleaseOther,
-        patientMedInfoFormatOther,
-        StupidDateFrom,
-        StupidDateTo,
+        patientFirstName = '',
+        patientMiddleName = '',
+        patientLastName = '',
+        patientPH = '',
+        patientDateOfBirth = '',
+        patientAddress = '',
+        patientZIP = '',
+        patientEmail = '',
+        patientMedInfoReleaseOther = '',
+        phmcEmployee = '',
+        MedicalRecordsReleaseOther = '',
+        patientMedInfoFormatOther = '',
+        StupidDateFrom = '',
+        StupidDateTo = '',
         SubmitDate = new Date().toLocaleDateString('fr-CA'),
         paymentProofPhotos,
         MedicalRecordsRelease,
@@ -99,19 +99,19 @@ const generateMedicalRecordRelease = (formData) => {
 [i]${phmcEmployee}[/i]
 [br][/br][/list]
 [color=#800000][size=150][b]IV. AUTORISATION DE DIVULGATION DES INFORMATIONS[/b][/size][/color][hr][/hr][br][/br]
-[list=none]Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, autorise par la présente le Pillbox Hill Medical Center à divulguer mes informations de santé individuellement identifiables. Je comprends que cette autorisation est volontaire et que je peux refuser de signer cette autorisation. Je comprends également que mes soins de santé ne seront pas affectés si je ne signe pas ce formulaire.
+[list=none]Je soussigné(e), ${patientFullName}, autorise par la présente le Pillbox Hill Medical Center à divulguer mes informations de santé individuellement identifiables. Je comprends que cette autorisation est volontaire et que je peux refuser de signer cette autorisation. Je comprends également que mes soins de santé ne seront pas affectés si je ne signe pas ce formulaire.
 
-Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, comprends que si le destinataire autorisé à recevoir les informations n'est pas une entité couverte, les informations divulguées peuvent ne plus être protégées par les réglementations fédérales et étatiques sur la vie privée.
+Je soussigné(e), ${patientFullName}, comprends que si le destinataire autorisé à recevoir les informations n'est pas une entité couverte, les informations divulguées peuvent ne plus être protégées par les réglementations fédérales et étatiques sur la vie privée.
 
-Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, comprends en outre que je peux révoquer cette autorisation à tout moment en avisant par écrit l'établissement du Pillbox Hill Medical Center où cette autorisation est signée. Je comprends également que la révocation doit être signée et datée d'une date postérieure à celle figurant sur cette autorisation. La révocation n'affectera pas les divulgations effectuées avant la réception de la révocation écrite.
+Je soussigné(e), ${patientFullName}, comprends en outre que je peux révoquer cette autorisation à tout moment en avisant par écrit l'établissement du Pillbox Hill Medical Center où cette autorisation est signée. Je comprends également que la révocation doit être signée et datée d'une date postérieure à celle figurant sur cette autorisation. La révocation n'affectera pas les divulgations effectuées avant la réception de la révocation écrite.
 
-Je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, comprends que le dossier peut ne pas être complet s'il s'agit d'une visite récente, et qu'une documentation supplémentaire pourrait être ajoutée après la soumission de cette demande.
+Je soussigné(e), ${patientFullName}, comprends que le dossier peut ne pas être complet s'il s'agit d'une visite récente, et qu'une documentation supplémentaire pourrait être ajoutée après la soumission de cette demande.
 
-En tapant mon nom ci-dessous, je soussigné(e), ${patientFirstName} ${patientMiddleName} ${patientLastName}, certifie que ces informations peuvent être utilisées dans le but de traiter ma demande d'autorisation de divulgation de dossiers médicaux. Je considère ceci comme ma signature électronique pour cette demande.
+En tapant mon nom ci-dessous, je soussigné(e), ${patientFullName}, certifie que ces informations peuvent être utilisées dans le but de traiter ma demande d'autorisation de divulgation de dossiers médicaux. Je considère ceci comme ma signature électronique pour cette demande.
 [br][/br]
 [/list]
-[list=none][b]Signature:[/b] 
-[i]${patientFirstName} ${patientMiddleName} ${patientLastName}[/i][br][/br]
+[list=none][b]Signature:[/b]
+[i]${patientFullName}[/i][br][/br]
 [b]Date:[/b]
 [i]${SubmitDate}[/i]
 ${(payNow === true || payNow === 'true') && approximateCost > 0 ? `

@@ -1,15 +1,15 @@
 const generateSurgicalOps = (formData) => {
     const {
-        phmcEmployee,
-        extraStaff,
-        patientID,
-        patientSummaryConsultation,
-        patientAddress,
-        phmcRank,
-        date,
-        patientSummary,
-        lastName,
-        surgeryProcedures
+        phmcEmployee = '',
+        extraStaff = '',
+        patientID = '',
+        patientSummaryConsultation = '',
+        patientAddress = '',
+        phmcRank = '',
+        date = '',
+        patientSummary = '',
+        lastName = '',
+        surgeryProcedures = ''
     } = formData;
     const extraStaffNames = Array.isArray(extraStaff) ? extraStaff.join(', ') : extraStaff;
 
