@@ -1131,7 +1131,7 @@ const OnboardingModal = ({
                                     name="email"
                                     value={accountData.email}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Email (pour la connexion) *"
+                                    placeholder="prenomnom@mail.eyefind.fr (pour la connexion) *"
                                     style={formInputStyle}
                                     autoComplete="email"
                                 />
@@ -1149,8 +1149,8 @@ const OnboardingModal = ({
                                 }}>
                                     <i className="fas fa-info-circle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
                                     <span>
-                                        Vous pouvez utiliser une adresse email Eyefind Mail (fictive) au format <strong>prénom.nom@phmc.health</strong> (pensez à bien créer cette adresse email dans Eyefind Mail. L'hôpital pourrait s'en servir pour vous contacter) ou une véritable adresse email.
-                                        {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse fictive, vous ne pourrez pas réinitialiser votre mot de passe.
+                                        Utilisez de préférence votre adresse Eyefind Mail existante, au format <strong>prenomnom@mail.eyefind.fr</strong> (prénom et nom accolés, sans point ni accent — ex : rosecallahan@mail.eyefind.fr) — le PHMC pourra vous y envoyer des notifications automatiques (compte approuvé, changement de grade, reçus de paiement...). Vous pouvez aussi utiliser une véritable adresse email si vous préférez.
+                                        {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse Eyefind Mail (ou toute autre adresse fictive), vous ne pourrez pas réinitialiser votre mot de passe par email — contactez un administrateur en cas d'oubli.
                                     </span>
                                 </div>
                             </div>
@@ -1508,7 +1508,7 @@ const OnboardingModal = ({
                                     name="email"
                                     value={accountData.email}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Email (pour la connexion) *"
+                                    placeholder="prenomnom@mail.eyefind.fr (pour la connexion) *"
                                     style={formInputStyle}
                                     autoComplete="email"
                                 />
@@ -1526,8 +1526,8 @@ const OnboardingModal = ({
                                 }}>
                                     <i className="fas fa-info-circle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
                                     <span>
-                                        Vous pouvez utiliser une adresse email Eyefind Mail (fictive) au format <strong>prénom.nom@phmc.health</strong> (pensez à bien créer cette adresse email dans Eyefind Mail. L'hôpital pourrait s'en servir pour vous contacter) ou une véritable adresse email.
-                                        {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse fictive, vous ne pourrez pas réinitialiser votre mot de passe.
+                                        Utilisez de préférence votre adresse Eyefind Mail existante, au format <strong>prenomnom@mail.eyefind.fr</strong> (prénom et nom accolés, sans point ni accent — ex : rosecallahan@mail.eyefind.fr) — le PHMC pourra vous y envoyer des notifications automatiques (compte approuvé, changement de grade, reçus de paiement...). Vous pouvez aussi utiliser une véritable adresse email si vous préférez.
+                                        {' '}<strong style={{ color: '#ffd700' }}>Attention :</strong> avec une adresse Eyefind Mail (ou toute autre adresse fictive), vous ne pourrez pas réinitialiser votre mot de passe par email — contactez un administrateur en cas d'oubli.
                                     </span>
                                 </div>
                             </div>

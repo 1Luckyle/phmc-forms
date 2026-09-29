@@ -1,12 +1,17 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage).
+const NOT_FILLED = 'Non renseigné';
+
 const generateEmail = (formData) => {
     const {
-        requestingOfficer = '',
-        department = '',
-        coronerEmployee = '',
-        coronerRank = '',
-        coronerDiscord = '',
-        coronerPHNumber = '',
-        deathReport = '',
+        requestingOfficer = NOT_FILLED,
+        department = NOT_FILLED,
+        coronerEmployee = NOT_FILLED,
+        coronerRank = NOT_FILLED,
+        coronerDiscord = NOT_FILLED,
+        coronerPHNumber = NOT_FILLED,
+        deathReport = NOT_FILLED,
         additionalReports,
         agencyDataStore, // Added agencyDataStore
         autopsyPaymentLink,

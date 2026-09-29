@@ -1,15 +1,22 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage). Le personnel
+// supplémentaire est explicitement optionnel ("laisser vide si aucun") et
+// garde une chaîne vide.
+const NOT_FILLED = 'Non renseigné';
+
 const generateSurgicalOps = (formData) => {
     const {
-        phmcEmployee = '',
+        phmcEmployee = NOT_FILLED,
         extraStaff = '',
-        patientID = '',
-        patientSummaryConsultation = '',
-        patientAddress = '',
-        phmcRank = '',
-        date = '',
-        patientSummary = '',
-        lastName = '',
-        surgeryProcedures = ''
+        patientID = NOT_FILLED,
+        patientSummaryConsultation = NOT_FILLED,
+        patientAddress = NOT_FILLED,
+        phmcRank = NOT_FILLED,
+        date = NOT_FILLED,
+        patientSummary = NOT_FILLED,
+        lastName = NOT_FILLED,
+        surgeryProcedures = NOT_FILLED
     } = formData;
     const extraStaffNames = Array.isArray(extraStaff) ? extraStaff.join(', ') : extraStaff;
 

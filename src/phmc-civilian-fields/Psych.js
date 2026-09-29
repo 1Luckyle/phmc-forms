@@ -286,7 +286,7 @@ const PsychFields = ({
                         <Form.Control
                             type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''} onChange={handleChange}
                             onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Numéro de téléphone / Email" required
+                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
                             className={`form-control ${!formData.applicantContactDetails?.trim() ? 'is-invalid' : ''}`}
                         />
                         {!formData.applicantContactDetails?.trim() && <div className="invalid-feedback d-block">Les coordonnées sont requises.</div>}

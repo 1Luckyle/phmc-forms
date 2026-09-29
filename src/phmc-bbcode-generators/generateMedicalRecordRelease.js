@@ -1,19 +1,26 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage). Les champs
+// explicitement optionnels (ex: deuxième prénom) ou qui ne sont pertinents que
+// si une autre case "Autre" est cochée gardent une chaîne vide.
+const NOT_FILLED = 'Non renseigné';
+
 const generateMedicalRecordRelease = (formData) => {
     const {
-        patientFirstName = '',
+        patientFirstName = NOT_FILLED,
         patientMiddleName = '',
-        patientLastName = '',
-        patientPH = '',
-        patientDateOfBirth = '',
-        patientAddress = '',
-        patientZIP = '',
-        patientEmail = '',
+        patientLastName = NOT_FILLED,
+        patientPH = NOT_FILLED,
+        patientDateOfBirth = NOT_FILLED,
+        patientAddress = NOT_FILLED,
+        patientZIP = NOT_FILLED,
+        patientEmail = NOT_FILLED,
         patientMedInfoReleaseOther = '',
-        phmcEmployee = '',
+        phmcEmployee = NOT_FILLED,
         MedicalRecordsReleaseOther = '',
         patientMedInfoFormatOther = '',
-        StupidDateFrom = '',
-        StupidDateTo = '',
+        StupidDateFrom = NOT_FILLED,
+        StupidDateTo = NOT_FILLED,
         SubmitDate = new Date().toLocaleDateString('fr-CA'),
         paymentProofPhotos,
         MedicalRecordsRelease,

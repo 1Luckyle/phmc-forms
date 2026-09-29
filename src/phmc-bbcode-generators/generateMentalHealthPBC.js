@@ -1,14 +1,19 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage).
+const NOT_FILLED = 'Non renseigné';
+
 const generateMentalHealthPBC = (formData) => {
         const {
-            lastName = '',
-            patientID = '',
-            phmcRank = '',
-            date = '',
-            patientChiefComplaint = '',
-            patientNotes = '',
-            patientDiagnosis = '',
-            patientMedicine = '',
-            patientProcedure = '',
+            lastName = NOT_FILLED,
+            patientID = NOT_FILLED,
+            phmcRank = NOT_FILLED,
+            date = NOT_FILLED,
+            patientChiefComplaint = NOT_FILLED,
+            patientNotes = NOT_FILLED,
+            patientDiagnosis = NOT_FILLED,
+            patientMedicine = NOT_FILLED,
+            patientProcedure = NOT_FILLED,
         } = formData;
 
         let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]

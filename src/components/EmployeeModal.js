@@ -7,6 +7,18 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
+import { sendEyefindMail } from '../utils/eyefindMail';
+
+// Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
+// débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
+const sendMailBestEffort = (params) => {
+    if (!params.to) return;
+    sendEyefindMail(params).then((result) => {
+        if (!result.ok) {
+            console.warn('Eyefind Mail non envoyé:', result.error, result.message);
+        }
+    });
+};
 
 // --- Styles ---
 const modalOverlayStyle = {
@@ -498,6 +510,17 @@ const EmployeeModal = ({
           // Si c'est un admin, modifier directement
           await set(ref(database, `${basePath}/${key}`), updated);
 
+          if (updated.rank !== employee.rank) {
+            const rankList = employeeType === 'coroner' ? CORONER_RANKS : PHMC_RANKS;
+            const newRankLabel = rankList.find(r => r.value === updated.rank)?.label || updated.rank;
+            sendMailBestEffort({
+              to: updated.email,
+              subject: 'Changement de grade - Pillbox Hill Medical Center',
+              body: `Bonjour ${updated.name},\n\nVotre grade au sein du Pillbox Hill Medical Center a été mis à jour : ${newRankLabel}.\n\nCordialement,\nPillbox Hill Medical Center`,
+              html: `<p>Bonjour ${updated.name},</p><p>Votre grade au sein du <b>Pillbox Hill Medical Center</b> a été mis à jour : <b>${newRankLabel}</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+            });
+          }
+
           await handleMissingEmployeeSubmit('editUser', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updated, currentAdminUser?.email);
           showNotification(`Mise à jour réussie des informations pour ${selectedEmployeeName}.`, 'success');
           setSelectedEmployeeName('');
@@ -700,6 +723,12 @@ const EmployeeModal = ({
             console.warn(`Could not delete Auth account for ${emp.name}:`, authErr);
           }
         }
+        sendMailBestEffort({
+          to: emp.email,
+          subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
+          body: `Bonjour ${emp.name},\n\nVotre compte et vos fonctions au sein du Pillbox Hill Medical Center ont été résiliés.\n\nCordialement,\nPillbox Hill Medical Center`,
+          html: `<p>Bonjour ${emp.name},</p><p>Votre compte et vos fonctions au sein du <b>Pillbox Hill Medical Center</b> ont été résiliés.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+        });
       }
 
       await handleMissingEmployeeSubmit('removeStaff', employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updates, currentAdminUser?.email);

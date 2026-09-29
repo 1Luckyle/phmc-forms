@@ -1,3 +1,8 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage).
+const NOT_FILLED = 'Non renseigné';
+
 const generateMassFatality = (formData) => {
     const {
         coronerRank,
@@ -63,7 +68,7 @@ Un représentant du ${getDepartmentFullName(department) || 'Département inconnu
             let evidenceLockerListItems = '';
             if (dec.evidenceLockerID && dec.evidenceLockerID.trim() !== '') {
                 evidenceLockerText = 'Oui';
-                evidenceLockerListItems = `[list][*] ${dec.evidenceLockerID.trim()} - ${dec.decedentName || ''} (( ${dec.decedentOOC || ''} ))[/list]`;
+                evidenceLockerListItems = `[list][*] ${dec.evidenceLockerID.trim()} - ${dec.decedentName || NOT_FILLED} (( ${dec.decedentOOC || NOT_FILLED} ))[/list]`;
             }
             const morgueStatusMessage = dec.morgueStatus === 'true' || dec.morgueStatus === true
                 ? '[bold][color=red]La photo de l\'écran de la morgue est actuellement indisponible. [/color][/bold]\n'
