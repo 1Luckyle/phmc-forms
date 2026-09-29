@@ -1,16 +1,24 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
+// sont pertinents que si une autre réponse Oui/Non associée a été sélectionnée
+// (ex: emploi, risques professionnels, allergies, médicaments, déficiences)
+// gardent une chaîne vide.
+const NOT_FILLED = 'Non renseigné';
+
 const generatePhysEvalInternalMed = (formData) => {
     const {
-        patientID = '',
-        date = '',
-        lastName = '',
-        patientHeight = '',
-        patientWeight = '',
-        phmcRank = '',
+        patientID = NOT_FILLED,
+        date = NOT_FILLED,
+        lastName = NOT_FILLED,
+        patientHeight = NOT_FILLED,
+        patientWeight = NOT_FILLED,
+        phmcRank = NOT_FILLED,
         careerRisks = '',
         patientAllergies = '',
         patientMedicine = '',
         patientcareerNo = '',
-        patientSummary = '',
+        patientSummary = NOT_FILLED,
         patientCareer = '',
         patientImpairments = '',
     } = formData;

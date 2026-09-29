@@ -1,9 +1,14 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage).
+const NOT_FILLED = 'Non renseigné';
+
 const generateCommentaryNotePBC = (formData) => {
     const {
-        phmcEmployee = '',
-        date = '',
-        patientID = '',
-        patientNotes = ''
+        phmcEmployee = NOT_FILLED,
+        date = NOT_FILLED,
+        patientID = NOT_FILLED,
+        patientNotes = NOT_FILLED
     } = formData;
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]

@@ -12,6 +12,7 @@ import * as Sentry from "@sentry/react";
 import { useNotification } from './contexts/NotificationContext';
 import SwitchableFormButtons from './components/SwitchableFormButtons';
 import { handleSaveReportAndNotify, handleCopyBBCodeOnly, handlePhmcRecruitmentCopyAndNotify, sendBingoNotification, sendPhraseRequestNotification } from './components/notificationService';
+import { sendEyefindMail } from './utils/eyefindMail';
 import { useData } from './contexts/DataContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import { useModal } from './contexts/ModalProvider';
@@ -833,7 +834,25 @@ function MainApp({
     const handleConfirmSaveAsEmployee = useCallback((employeeName) => {
         setShowSaveAsEmployeeModal(false);
         runSaveReport(employeeName);
-    }, [runSaveReport]);
+
+        // Prévient l'employé par mail Eyefind qu'un rapport a été sauvegardé sur
+        // son compte par un admin — best-effort, ne bloque jamais la sauvegarde.
+        const employeeRecord = [...ensureArray(phmcListData), ...ensureArray(coronerListData)]
+            .find((emp) => emp.name === employeeName);
+        if (employeeRecord?.email) {
+            const formName = getFormDefinition(bbCodeVersion)?.name || 'un rapport';
+            sendEyefindMail({
+                to: employeeRecord.email,
+                subject: 'Rapport enregistré sur votre compte - PHMC',
+                body: `Bonjour ${employeeName},\n\nUn administrateur a enregistré « ${formName} » sur votre compte PHMC. Vous pouvez le consulter dans « Rapports enregistrés ».\n\nCordialement,\nPillbox Hill Medical Center`,
+                html: `<p>Bonjour ${employeeName},</p><p>Un administrateur a enregistré « ${formName} » sur votre compte PHMC. Vous pouvez le consulter dans « Rapports enregistrés ».</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+            }).then((result) => {
+                if (!result.ok) {
+                    console.warn('Eyefind Mail non envoyé:', result.error, result.message);
+                }
+            });
+        }
+    }, [runSaveReport, phmcListData, coronerListData, bbCodeVersion]);
 
     const currentFormDefinition = useMemo(() => getFormDefinition(bbCodeVersion), [bbCodeVersion]);
     const FieldComponent = currentFormDefinition ? currentFormDefinition.FieldComponent : null;

@@ -815,7 +815,10 @@ export const createFleecaPayment = onRequest({ secrets: FLEECA_SECRETS }, async 
 // corsHandler : c'est un appel serveur-à-serveur, pas une requête de
 // navigateur — l'authenticité est garantie par la signature HMAC ci-dessous,
 // pas par l'origine de la requête.
-export const fleecaWebhook = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
+// Déclare aussi EYEFIND_API_KEY (en dur, pas via la constante EYEFIND_SECRETS
+// définie plus bas dans ce fichier — une référence ici s'évaluerait avant sa
+// déclaration) : ce webhook envoie un reçu de paiement par mail Eyefind.
+export const fleecaWebhook = onRequest({ secrets: [...FLEECA_SECRETS, 'EYEFIND_API_KEY'] }, async (req, res) => {
     if (req.method !== 'POST') {
         res.status(405).send('Method not allowed');
         return;
@@ -862,6 +865,33 @@ export const fleecaWebhook = onRequest({ secrets: FLEECA_SECRETS }, async (req, 
             paidAt: payload.paid_at || null,
             updatedAt: admin.database.ServerValue.TIMESTAMP,
         });
+
+        // Reçu de paiement par mail Eyefind, en best-effort : une erreur ici
+        // (ex. adresse introuvable si le nom ne suit pas exactement la
+        // convention prénom.nom) ne doit jamais faire échouer la confirmation
+        // du paiement auprès de Fleeca, qui réessaierait sinon inutilement le
+        // webhook.
+        if (payload.status === 'payment_successful' && payload.payer_name) {
+            try {
+                const eyefindApiKey = process.env.EYEFIND_API_KEY;
+                const [payerFirstName, ...payerLastNameParts] = String(payload.payer_name).trim().split(/\s+/);
+                const payerLastName = payerLastNameParts.join(' ');
+                const payerAddress = deriveEyefindAddress(payerFirstName, payerLastName);
+                if (eyefindApiKey && payerAddress) {
+                    const amount = Number(payload.amount || 0).toLocaleString('fr-FR');
+                    await sendEyefindMailInternal({
+                        apiKey: eyefindApiKey,
+                        to: payerAddress,
+                        subject: 'Reçu de paiement - Pillbox Hill Medical Center',
+                        body: `Bonjour ${payload.payer_name},\n\nNous confirmons la réception de votre paiement de ${amount}$ (${payload.description || 'services PHMC'}) via Fleeca.\n\nRéférence du paiement : ${paymentId}\n\nCordialement,\nPillbox Hill Medical Center`,
+                        html: `<p>Bonjour ${payload.payer_name},</p><p>Nous confirmons la réception de votre paiement de <b>${amount}$</b> (${payload.description || 'services PHMC'}) via Fleeca.</p><p>Référence du paiement : ${paymentId}</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+                    });
+                }
+            } catch (mailError) {
+                console.warn(`Failed to send Eyefind Mail receipt for payment ${paymentId}:`, mailError);
+            }
+        }
+
         res.status(200).send('OK');
     } catch (error) {
         console.error('Error processing Fleeca webhook:', error);
@@ -940,5 +970,128 @@ export const getFleecaPaymentStatus = onRequest({ secrets: FLEECA_SECRETS }, asy
     } catch (error) {
         console.error('Error fetching Fleeca payment status:', error);
         res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue.' });
+    }
+});
+
+// --- Eyefind Mail (messagerie RP interne au serveur) ---
+// Comme pour Fleeca, la clé API reste exclusivement côté serveur (Secret
+// Manager) : le navigateur ne parle qu'à cette Cloud Function, jamais
+// directement à eyefind.fr — l'API Eyefind Mail est explicitement réservée à
+// un usage serveur-à-serveur (voir la doc fournie par le staff du serveur).
+const EYEFIND_API_URL = 'https://eyefind.fr/bot-api/mail/send';
+const EYEFIND_SECRETS = ['EYEFIND_API_KEY'];
+
+// En-tête visuel (logo PHMC) ajouté automatiquement à tout mail Eyefind ayant
+// un corps HTML — un seul endroit à maintenir plutôt que de le répéter dans
+// chaque appelant (PendingAccountRequests.js, EmployeeModal.js, MainApp.js,
+// et le reçu de paiement ci-dessous). i.imgur.com fait partie des domaines
+// d'images autorisés par le nettoyeur HTML d'Eyefind Mail.
+const PHMC_LOGO_URL = 'https://i.imgur.com/oB47nCI.png';
+const wrapEmailHtml = (html) => `<img src="${PHMC_LOGO_URL}" alt="Pillbox Hill Medical Center" style="max-width:220px;margin-bottom:14px;" />${html}`;
+
+// Adresse Eyefind Mail d'un joueur : convention prenomnom@mail.eyefind.fr
+// (prénom et nom concaténés, sans séparateur — ex: rosecallahan@mail.eyefind.fr).
+// Purement dérivée du nom (pas de champ dédié à stocker) : normalise les
+// accents/apostrophes/espaces à l'intérieur de chaque partie du nom. Peut se
+// tromper sur des noms composés inhabituels — les appelants doivent traiter
+// un éventuel "recipient_not_found" comme non bloquant (voir sendReceiptMail
+// plus bas), jamais faire échouer l'action principale à cause d'un mail.
+//
+// La regex des marques diacritiques combinantes est construite via les codes
+// numériques (0x0300-0x036F) plutôt qu'un échappement \u dans le code source,
+// pour éviter tout risque de caractère combinant littéral mal interprété
+// selon l'encodage de l'éditeur/terminal.
+const COMBINING_MARKS_REGEX = new RegExp(`[${String.fromCharCode(0x0300)}-${String.fromCharCode(0x036f)}]`, 'g');
+
+const slugifyNamePart = (part) => (part || '')
+    .normalize('NFD').replace(COMBINING_MARKS_REGEX, '') // retire les accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ''); // ne garde que lettres/chiffres
+
+const deriveEyefindAddress = (firstName, lastName) => {
+    const f = slugifyNamePart(firstName);
+    const l = slugifyNamePart(lastName);
+    if (!f || !l) return null;
+    return `${f}${l}@mail.eyefind.fr`;
+};
+
+// Logique d'envoi partagée entre la Cloud Function publique sendEyefindMail
+// et les envois internes (ex. reçu de paiement depuis fleecaWebhook), pour
+// éviter un aller-retour HTTP inutile vers soi-même.
+const sendEyefindMailInternal = async ({ apiKey, to, subject, body, html }) => {
+    const eyefindResponse = await fetch(EYEFIND_API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ to, subject, body, ...(html ? { html } : {}) }),
+    });
+
+    const eyefindText = await eyefindResponse.text();
+    let eyefindData;
+    try {
+        eyefindData = JSON.parse(eyefindText);
+    } catch (parseError) {
+        throw { status: 502, body: { error: 'eyefind-invalid-response', message: 'Réponse invalide d\'Eyefind Mail.' } };
+    }
+
+    if (!eyefindResponse.ok || !eyefindData.ok) {
+        throw {
+            status: eyefindResponse.status || 502,
+            body: { error: eyefindData.error || 'eyefind-send-failed', message: eyefindData.message || 'Échec de l\'envoi du mail Eyefind.' },
+        };
+    }
+
+    return eyefindData;
+};
+
+// Point d'entrée appelé par le client pour tous les mails Eyefind (compte
+// approuvé, promotion, retrait, rapport enregistré par un admin...). Le
+// contenu (sujet/corps) est composé côté client (voir src/utils/eyefindMail.js)
+// puis simplement transmis ici avec la clé API.
+export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API Eyefind Mail n\'est pas configurée.' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const { to, subject, body, html } = data || {};
+
+    if (!to || !subject || !body) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Les champs « to », « subject » et « body » sont obligatoires.' });
+        return;
+    }
+
+    try {
+        const result = await sendEyefindMailInternal({ apiKey, to, subject, body, html });
+        res.status(200).json({ message_id: result.message_id, warnings: result.warnings || [] });
+    } catch (error) {
+        if (error && error.status && error.body) {
+            // Erreurs attendues de l'API (destinataire inexistant, doublon,
+            // limite de débit...) : on les relaie telles quelles, pas une 500.
+            res.status(error.status).json(error.body);
+            return;
+        }
+        console.error('Error sending Eyefind Mail:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de l\'envoi du mail.' });
     }
 });

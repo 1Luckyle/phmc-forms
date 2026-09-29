@@ -295,7 +295,7 @@ const PhysicianFields = ({
                         <Form.Control
                             type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''}
                             onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Numéro de téléphone / Email" required
+                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
                             className={`form-control ${!formData.applicantContactDetails ? 'is-invalid' : ''} mb-4`} // Added mb-4
                         />
                         {!formData.applicantContactDetails && <div className="invalid-feedback d-block">Les coordonnées sont requises.</div>}

@@ -210,7 +210,7 @@ const AdminFields = ({
                         <Form.Control
                             type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''}
                             onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Numéro de téléphone / Email" required
+                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
                             className={`form-control ${!formData.applicantContactDetails ? 'is-invalid' : ''} mb-4`}
                         />
                     </Form.Group>

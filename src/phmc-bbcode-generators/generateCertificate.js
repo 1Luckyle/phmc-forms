@@ -1,15 +1,20 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage).
+const NOT_FILLED = 'Non renseigné';
+
 const generateCertificate = (formData) => {
     const {
         scenePhotos,
-        decedentName = '',
-        patientAge = '',
+        decedentName = NOT_FILLED,
+        patientAge = NOT_FILLED,
         probableCauseOfDeath,
         patientDateOfBirth,
         dateofdeath,
         TimeofDeath,
         witnessName,
-        coronerEmployee = '',
-        date = '',
+        coronerEmployee = NOT_FILLED,
+        date = NOT_FILLED,
     } = formData;
     const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
 

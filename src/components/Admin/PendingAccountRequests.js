@@ -8,6 +8,17 @@ import { initializeApp, deleteApp, getApps } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS } from '../../constants/ranks';
+import { sendEyefindMail } from '../../utils/eyefindMail';
+
+// Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
+// débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
+const sendMailBestEffort = (params) => {
+    sendEyefindMail(params).then((result) => {
+        if (!result.ok) {
+            console.warn('Eyefind Mail non envoyé:', result.error, result.message);
+        }
+    });
+};
 
 // map|array|null -> array
 const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
@@ -164,6 +175,13 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
             // Supprimer la demande de la liste des demandes en attente
             await removeRequest(request.email);
 
+            sendMailBestEffort({
+                to: request.email,
+                subject: 'Votre compte PHMC a été approuvé',
+                body: `Bonjour ${request.name},\n\nVotre demande de compte auprès du Pillbox Hill Medical Center a été approuvée. Votre badge est ${request.badge || 'en cours d\'attribution'}.\n\nVous pouvez dès à présent vous connecter sur l'outil PHMC-FR.\n\nCordialement,\nPillbox Hill Medical Center`,
+                html: `<p>Bonjour ${request.name},</p><p>Votre demande de compte auprès du <b>Pillbox Hill Medical Center</b> a été approuvée. Votre badge est <b>${request.badge || 'en cours d\'attribution'}</b>.</p><p>Vous pouvez dès à présent vous connecter sur l'outil PHMC-FR.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+            });
+
             showNotification(`✅ Compte créé avec succès pour ${request.name} !`, 'success');
             loadPendingRequests();
         } catch (error) {
@@ -179,6 +197,14 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
         }
         try {
             await removeRequest(request.email);
+
+            sendMailBestEffort({
+                to: request.email,
+                subject: 'Votre demande de compte PHMC',
+                body: `Bonjour ${request.name},\n\nVotre demande de compte auprès du Pillbox Hill Medical Center n'a pas été retenue. Pour plus d'informations, contactez la direction du PHMC.\n\nCordialement,\nPillbox Hill Medical Center`,
+                html: `<p>Bonjour ${request.name},</p><p>Votre demande de compte auprès du <b>Pillbox Hill Medical Center</b> n'a pas été retenue. Pour plus d'informations, contactez la direction du PHMC.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+            });
+
             showNotification(`Demande rejetée pour ${request.email}`, 'info');
             loadPendingRequests();
         } catch (error) {

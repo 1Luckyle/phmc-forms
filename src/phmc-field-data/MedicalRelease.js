@@ -171,7 +171,7 @@ const MedicalRelease = ({
                     name="patientEmail"
                     value={formData.patientEmail}
                     onChange={handleChange}
-                    placeholder="Adresse email"
+                    placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
                     required
                     className={`form-control ${!formData.patientEmail ? 'is-invalid' : ''}`}
 

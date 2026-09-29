@@ -1,22 +1,28 @@
+// Placeholder utilisé pour les informations attendues mais non renseignées,
+// afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
+// silencieux qui pourrait passer pour un bug d'affichage). Le seul champ
+// explicitement optionnel (ID patient) garde une chaîne vide.
+const NOT_FILLED = 'Non renseigné';
+
 const generateBasicPatientFile = (formData) => {
     const {
-        patientName = '',
-        patientAddress = '',
-        patientRace = '',
-        patientGender = '',
-        patientPH = '',
-        patientDiscord = '',
-        patientEmergencyContact = '',
-        patientEmergencyContactNumber = '',
-        patientEmergencyContactRelation = '',
-        patientEmergencyContactDiscord = '',
-        patientTitle = '',
-        patientAllergies = '',
-        patientCurrentMedicine = '',
-        patientChronicDiseases = '',
-        patientNotes = '',
+        patientName = NOT_FILLED,
+        patientAddress = NOT_FILLED,
+        patientRace = NOT_FILLED,
+        patientGender = NOT_FILLED,
+        patientPH = NOT_FILLED,
+        patientDiscord = NOT_FILLED,
+        patientEmergencyContact = NOT_FILLED,
+        patientEmergencyContactNumber = NOT_FILLED,
+        patientEmergencyContactRelation = NOT_FILLED,
+        patientEmergencyContactDiscord = NOT_FILLED,
+        patientTitle = NOT_FILLED,
+        patientAllergies = NOT_FILLED,
+        patientCurrentMedicine = NOT_FILLED,
+        patientChronicDiseases = NOT_FILLED,
+        patientNotes = NOT_FILLED,
         paymentProofPhotos,
-        patientDateOfBirth = ''  ,
+        patientDateOfBirth = NOT_FILLED,
         patientID = '',
     } = formData;
             // Payment/Exempt logic
