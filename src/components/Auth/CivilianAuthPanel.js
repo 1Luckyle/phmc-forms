@@ -58,6 +58,11 @@ const CivilianAuthPanel = ({
     const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
     const [accountData, setAccountData] = useState(emptyAccountData);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // ID patient attribué à la création — affiché en lecture seule une fois le
+    // compte créé (impossible de le montrer avant : il est généré par
+    // generatePatientID() côté client, qui exige d'être déjà connecté — voir
+    // EmployeeAuthContext.js).
+    const [createdPatientID, setCreatedPatientID] = useState(null);
 
     // Vérification de l'adresse Eyefind Mail : un code est envoyé, doit être
     // ressaisi avant que le bouton "Créer mon compte" ne soit utilisable.
@@ -167,10 +172,11 @@ const CivilianAuthPanel = ({
                 discord: accountData.discord
             };
 
-            await createCivilianAccountFromGtaw(civilianData, accountData.email, selectedGtawCharacter?.id ?? null, gtawUserId ?? null);
+            const result = await createCivilianAccountFromGtaw(civilianData, accountData.email, selectedGtawCharacter?.id ?? null, gtawUserId ?? null);
 
             showNotification('Compte Civil créé avec succès !', 'success');
-            onAuthenticated();
+            setCreatedPatientID(result?.civilianData?.patientID || null);
+            setMode('created');
         } catch (error) {
             console.error('Error creating civilian account:', error);
             let msg = 'Erreur lors de la création du compte.';
@@ -190,6 +196,29 @@ const CivilianAuthPanel = ({
             setIsSubmitting(false);
         }
     };
+
+    if (mode === 'created') {
+        return (
+            <div>
+                <div style={{ marginBottom: '15px', color: '#3fb950' }}>
+                    <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
+                    Votre compte Civil a été créé avec succès !
+                </div>
+                <Form.Group className="mb-3">
+                    <Form.Label>Votre ID Patient</Form.Label>
+                    <Form.Control type="text" value={createdPatientID || ''} disabled style={fieldBoxStyle} />
+                    <div style={{ fontSize: '0.85em', color: '#ccc', marginTop: '4px' }}>
+                        Conservez cet identifiant : il vous sera demandé sur les formulaires médicaux et de candidature.
+                    </div>
+                </Form.Group>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button variant="primary" onClick={onAuthenticated}>
+                        Continuer
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     if (mode === 'create') {
         return (
@@ -211,7 +240,12 @@ const CivilianAuthPanel = ({
                     </Form.Group>
                     <Form.Group className="mb-3" style={{ flex: 1 }}>
                         <Form.Label>Genre à l'état civil</Form.Label>
-                        <Form.Control type="text" name="gender" value={accountData.gender} onChange={handleAccountChange} style={fieldBoxStyle} />
+                        <Form.Select name="gender" value={accountData.gender} onChange={handleAccountChange} style={fieldBoxStyle}>
+                            <option value="" disabled>Sélectionner...</option>
+                            <option value="Male">Homme</option>
+                            <option value="Female">Femme</option>
+                            <option value="Other">Autre</option>
+                        </Form.Select>
                     </Form.Group>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
