@@ -191,8 +191,13 @@ export const EmployeeAuthProvider = ({ children }) => {
     };
 
     /**
-     * Génère un ID patient unique au format PHMC-XXXXX (5 chiffres), en
-     * vérifiant l'absence de collision avec les civils déjà enregistrés.
+     * Génère un ID patient de secours (PHMC-XXXXX aléatoire), utilisé
+     * uniquement si un personnage GTA World n'a pas pu être déterminé pour ce
+     * civil — cas normalement impossible depuis le retrait de la création
+     * manuelle, mais gardé comme filet de sécurité. Dans le cas normal, l'ID
+     * patient est directement dérivé du personnage GTA World (voir
+     * createCivilianAccountFromGtaw), pas généré aléatoirement : même
+     * convention que le badge d'un employé créé via GTAW.
      */
     const generatePatientID = async () => {
         const civiliansRef = ref(database, 'civilians');
@@ -241,7 +246,11 @@ export const EmployeeAuthProvider = ({ children }) => {
             const userCredential = await signInWithCustomToken(auth, data.customToken);
             const user = userCredential.user;
 
-            const patientID = await generatePatientID();
+            // L'ID patient est directement dérivé du personnage GTA World
+            // (même principe que le badge d'un employé créé via GTAW — voir
+            // OnboardingModal.js), pour que ce soit un identifiant stable que
+            // le civil connaît déjà, plutôt qu'un code arbitraire à retenir.
+            const patientID = gtawCharacterId != null ? `PHMC-${gtawCharacterId}` : await generatePatientID();
             const civilianWithID = {
                 ...civilianData,
                 uid: user.uid,
