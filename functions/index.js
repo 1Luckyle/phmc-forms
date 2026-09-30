@@ -486,52 +486,74 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: GTAW_OAUTH_SECRETS 
     console.log('Received request data:', JSON.stringify(data, null, 2));
 
     const { code, redirectUri, tokenUrl } = data || {};
+    // 'employee' (par défaut) = flux personnel PHMC/DMEC existant, inchangé
+    // (filtre faction 364). 'civilian' = nouveau flux compte Civil : aucun
+    // filtre de faction, un civil peut être n'importe quel personnage GTAW.
+    const flowMode = data?.flowMode === 'civilian' ? 'civilian' : 'employee';
 
     try {
         const { tokenData, userData, baseUrl } = await exchangeGtawAuthCode({ code, redirectUri, tokenUrl });
 
-        // Le système de formulaires est réservé au personnel du PHMC (Pillbox Hill
-        // Medical Center, faction id 364 sur GTA World — le DMEC en fait partie) :
-        // on ne garde donc, parmi les personnages GTAW de l'utilisateur, que ceux
-        // membres de cette faction. Si l'appel à /api/factions échoue, on fait
-        // échouer toute la requête plutôt que de risquer de laisser passer un
-        // personnage non membre (ou de bloquer tout le monde en filtrant à vide).
+        // Le système de formulaires employé est réservé au personnel du PHMC
+        // (Pillbox Hill Medical Center, faction id 364 sur GTA World — le DMEC en
+        // fait partie) : on ne garde donc, parmi les personnages GTAW de
+        // l'utilisateur, que ceux membres de cette faction. Si l'appel à
+        // /api/factions échoue, on fait échouer toute la requête plutôt que de
+        // risquer de laisser passer un personnage non membre (ou de bloquer tout
+        // le monde en filtrant à vide). Le flux Civil n'a pas cette contrainte :
+        // n'importe quel personnage GTAW peut créer un compte Civil.
         const PHMC_FACTION_ID = 364;
-        const allCharacters = userData?.user?.character || [];
-        if (Array.isArray(allCharacters) && allCharacters.length > 0) {
-            const factionsResponse = await fetch(`${baseUrl}/api/factions`, {
-                headers: {
-                    'Authorization': `Bearer ${tokenData.access_token}`,
-                    'Accept': 'application/json',
-                },
-            });
+        if (flowMode === 'employee') {
+            const allCharacters = userData?.user?.character || [];
+            if (Array.isArray(allCharacters) && allCharacters.length > 0) {
+                const factionsResponse = await fetch(`${baseUrl}/api/factions`, {
+                    headers: {
+                        'Authorization': `Bearer ${tokenData.access_token}`,
+                        'Accept': 'application/json',
+                    },
+                });
 
-            if (!factionsResponse.ok) {
-                console.error('Failed to fetch GTAW factions:', factionsResponse.status);
-                throw { status: 502, body: { error: 'factions-fetch-failed', message: 'Impossible de vérifier votre appartenance à la faction PHMC sur GTA World. Réessayez plus tard.' } };
+                if (!factionsResponse.ok) {
+                    console.error('Failed to fetch GTAW factions:', factionsResponse.status);
+                    throw { status: 502, body: { error: 'factions-fetch-failed', message: 'Impossible de vérifier votre appartenance à la faction PHMC sur GTA World. Réessayez plus tard.' } };
+                }
+
+                let factionsData;
+                try {
+                    factionsData = await factionsResponse.json();
+                } catch (parseError) {
+                    console.error('Failed to parse GTAW factions response:', parseError);
+                    throw { status: 502, body: { error: 'factions-fetch-failed', message: 'Impossible de vérifier votre appartenance à la faction PHMC sur GTA World. Réessayez plus tard.' } };
+                }
+
+                const factionsMap = factionsData?.data || {};
+                userData.user.character = allCharacters.filter((c) => {
+                    const info = factionsMap[String(c.id)];
+                    return info && Number(info.faction) === PHMC_FACTION_ID;
+                });
             }
-
-            let factionsData;
-            try {
-                factionsData = await factionsResponse.json();
-            } catch (parseError) {
-                console.error('Failed to parse GTAW factions response:', parseError);
-                throw { status: 502, body: { error: 'factions-fetch-failed', message: 'Impossible de vérifier votre appartenance à la faction PHMC sur GTA World. Réessayez plus tard.' } };
-            }
-
-            const factionsMap = factionsData?.data || {};
-            userData.user.character = allCharacters.filter((c) => {
-                const info = factionsMap[String(c.id)];
-                return info && Number(info.faction) === PHMC_FACTION_ID;
-            });
         }
 
         // Détermine, parmi les personnages GTAW de l'utilisateur, lesquels sont déjà
-        // liés à un compte existant (staff/phmc, staff/coroner) ou à une demande de
-        // compte en attente (pendingAccountRequests), afin que le sélecteur de
-        // personnage côté client puisse les désactiver. Utilise l'Admin SDK, donc
-        // aucune règle de la Realtime Database n'a besoin d'être ouverte pour ça.
+        // liés à un compte existant (staff/phmc, staff/coroner, et — en flux Civil —
+        // civilians) ou à une demande de compte en attente (pendingAccountRequests),
+        // afin que le sélecteur de personnage « intelligent » côté client sache pour
+        // chacun s'il doit proposer une connexion ou une création de compte. Utilise
+        // l'Admin SDK, donc aucune règle de la Realtime Database n'a besoin d'être
+        // ouverte pour ça.
+        //
+        // Pour chaque personnage déjà lié à un compte réel (pas juste une demande en
+        // attente, qui n'a pas encore de compte Firebase Auth), on prépare directement
+        // un jeton de connexion Firebase (gtawResolutions[id].customToken) : le code
+        // d'autorisation OAuth étant à usage unique, il est déjà consommé à ce stade
+        // et le sélecteur de personnage ne peut pas relancer un second échange rien
+        // que pour se connecter au personnage choisi. Le jeton est untilisable que
+        // par le compte auquel il a été émis, et ce compte a été déterminé côté
+        // serveur (pas depuis une entrée cliente) : émettre un jeton pour chaque
+        // personnage déjà enregistré, même ceux qui ne seront pas choisis, n'ouvre
+        // donc aucune brèche.
         let unavailableCharacterIds = [];
+        let gtawResolutions = {};
         try {
             const characters = userData?.user?.character || [];
             if (Array.isArray(characters) && characters.length > 0) {
@@ -542,23 +564,53 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: GTAW_OAUTH_SECRETS 
                     return Array.isArray(val) ? val : Object.values(val);
                 };
 
-                const [phmcSnap, coronerSnap, pendingSnap] = await Promise.all([
+                const [phmcSnap, coronerSnap, pendingSnap, civiliansSnap] = await Promise.all([
                     db.ref('staff/phmc').once('value'),
                     db.ref('staff/coroner').once('value'),
                     db.ref('pendingAccountRequests').once('value'),
+                    flowMode === 'civilian' ? db.ref('civilians').once('value') : Promise.resolve(null),
                 ]);
 
-                const usedIds = new Set();
-                for (const entry of [...toArray(phmcSnap.val()), ...toArray(coronerSnap.val())]) {
-                    if (entry && entry.gtawCharacterId != null) usedIds.add(String(entry.gtawCharacterId));
+                const registryByCharId = new Map();
+                for (const entry of toArray(phmcSnap.val())) {
+                    if (entry && entry.gtawCharacterId != null && entry.uid) {
+                        registryByCharId.set(String(entry.gtawCharacterId), { uid: entry.uid, accountType: 'phmc' });
+                    }
                 }
-                for (const entry of toArray(pendingSnap.val())) {
-                    if (entry && entry.status === 'pending' && entry.gtawCharacterId != null) {
-                        usedIds.add(String(entry.gtawCharacterId));
+                for (const entry of toArray(coronerSnap.val())) {
+                    if (entry && entry.gtawCharacterId != null && entry.uid) {
+                        registryByCharId.set(String(entry.gtawCharacterId), { uid: entry.uid, accountType: 'coroner' });
+                    }
+                }
+                if (flowMode === 'civilian' && civiliansSnap) {
+                    for (const entry of toArray(civiliansSnap.val())) {
+                        if (entry && entry.gtawCharacterId != null && entry.uid) {
+                            registryByCharId.set(String(entry.gtawCharacterId), { uid: entry.uid, accountType: 'civilian' });
+                        }
                     }
                 }
 
+                const pendingIds = new Set();
+                for (const entry of toArray(pendingSnap.val())) {
+                    if (entry && entry.status === 'pending' && entry.gtawCharacterId != null) {
+                        pendingIds.add(String(entry.gtawCharacterId));
+                    }
+                }
+
+                const usedIds = new Set([...registryByCharId.keys(), ...pendingIds]);
                 unavailableCharacterIds = [...characterIds].filter((id) => usedIds.has(id));
+
+                for (const id of characterIds) {
+                    const registryEntry = registryByCharId.get(id);
+                    if (registryEntry) {
+                        const customToken = await admin.auth().createCustomToken(registryEntry.uid, { gtawLogin: true });
+                        gtawResolutions[id] = { registered: true, accountType: registryEntry.accountType, customToken };
+                    } else if (pendingIds.has(id)) {
+                        gtawResolutions[id] = { registered: false, pending: true };
+                    } else {
+                        gtawResolutions[id] = { registered: false };
+                    }
+                }
             }
         } catch (availabilityError) {
             console.error('Error computing GTAW character availability:', availabilityError);
@@ -566,7 +618,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: GTAW_OAUTH_SECRETS 
             // liste vide plutôt que de faire échouer toute la connexion GTAW.
         }
 
-        res.status(200).json({ token: tokenData, user: userData, unavailableCharacterIds });
+        res.status(200).json({ token: tokenData, user: userData, unavailableCharacterIds, gtawResolutions });
     } catch (error) {
         if (error && error.status && error.body) {
             res.status(error.status).json(error.body);
@@ -611,7 +663,14 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
     }
 
     const data = req.body.data || req.body;
-    const { code, redirectUri, tokenUrl } = data || {};
+    // gtawCharacterId : personnage précis choisi côté client (sélecteur intelligent,
+    // voir Lot 2 du plan Civil). Optionnel pour préserver la compatibilité tant que
+    // le client n'envoie pas encore ce champ : dans ce cas on retombe sur l'ancien
+    // comportement (recherche par gtawUserId, le compte GTAW entier). Une fois
+    // fourni, on recherche PRÉCISÉMENT ce personnage — nécessaire car un même
+    // compte GTAW peut désormais avoir un personnage employé ET un personnage civil,
+    // donc gtawUserId seul ne suffit plus à désambiguïser.
+    const { code, redirectUri, tokenUrl, gtawCharacterId } = data || {};
 
     try {
         const { userData } = await exchangeGtawAuthCode({ code, redirectUri, tokenUrl });
@@ -620,6 +679,19 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
         if (gtawUserId == null) {
             res.status(400).json({ error: 'invalid-user', message: 'Impossible de récupérer votre identifiant GTA World.' });
             return;
+        }
+
+        // Le personnage précis doit appartenir au compte GTAW authentifié : on ne
+        // fait jamais confiance à un gtawCharacterId envoyé par le client sans le
+        // recouper avec les personnages réellement renvoyés par l'UCP pour ce code
+        // d'autorisation, pour empêcher qu'un client ne forge une connexion sur le
+        // personnage de quelqu'un d'autre.
+        if (gtawCharacterId != null) {
+            const ownedCharacterIds = new Set((userData?.user?.character || []).map((c) => String(c.id)));
+            if (!ownedCharacterIds.has(String(gtawCharacterId))) {
+                res.status(403).json({ error: 'character-not-owned', message: 'Ce personnage n\'appartient pas à votre compte GTA World.' });
+                return;
+            }
         }
 
         const toArray = (val) => {
@@ -632,10 +704,16 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
             db.ref('staff/coroner').once('value'),
         ]);
 
-        const phmcMatch = toArray(phmcSnap.val()).find((e) => e && e.gtawUserId != null && String(e.gtawUserId) === String(gtawUserId));
-        const coronerMatch = !phmcMatch
-            ? toArray(coronerSnap.val()).find((e) => e && e.gtawUserId != null && String(e.gtawUserId) === String(gtawUserId))
-            : null;
+        const matchesIdentity = (e) => {
+            if (!e) return false;
+            if (gtawCharacterId != null) {
+                return e.gtawCharacterId != null && String(e.gtawCharacterId) === String(gtawCharacterId);
+            }
+            return e.gtawUserId != null && String(e.gtawUserId) === String(gtawUserId);
+        };
+
+        const phmcMatch = toArray(phmcSnap.val()).find(matchesIdentity);
+        const coronerMatch = !phmcMatch ? toArray(coronerSnap.val()).find(matchesIdentity) : null;
         const match = phmcMatch || coronerMatch;
 
         if (!match || !match.uid) {
@@ -707,6 +785,57 @@ export const createGtawEmployeeAccount = onRequest({}, async (req, res) => {
             return;
         }
         console.error('Error creating GTA World employee account:', error);
+        res.status(500).json({
+            error: 'internal',
+            message: 'Une erreur interne est survenue lors de la création du compte.',
+            details: error.message
+        });
+    }
+});
+
+// --- GTA World Civilian Account Creation (no password) ---
+// Équivalent civil de createGtawEmployeeAccount, mais sans étape d'approbation
+// admin : un compte Civil est en libre-service (n'importe quel joueur peut en
+// créer un), contrairement à un compte Personnel/DMEC qui doit être validé.
+// Renvoie directement un customToken pour que le client puisse se connecter
+// et écrire son profil dans civilians/{uid} (autorisé par database.rules.json,
+// qui exige auth.uid === $uid) sans repasser par une deuxième redirection OAuth.
+export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const { email } = data || {};
+
+    if (!email) {
+        res.status(400).json({ error: 'invalid-argument', message: 'La fonction doit être appelée avec l\'argument « email ».' });
+        return;
+    }
+
+    try {
+        const userRecord = await admin.auth().createUser({ email });
+        const customToken = await admin.auth().createCustomToken(userRecord.uid, { gtawLogin: true });
+        res.status(200).json({ uid: userRecord.uid, customToken });
+    } catch (error) {
+        if (error.code === 'auth/email-already-exists') {
+            res.status(409).json({ error: 'email-already-exists', message: 'Cet email est déjà utilisé.' });
+            return;
+        }
+        console.error('Error creating GTA World civilian account:', error);
         res.status(500).json({
             error: 'internal',
             message: 'Une erreur interne est survenue lors de la création du compte.',

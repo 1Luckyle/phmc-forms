@@ -1,16 +1,20 @@
 // src/contexts/EmployeeAuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, database } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
+
+const CREATE_GTAW_CIVILIAN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawCivilianAccount';
 
 const EmployeeAuthContext = createContext(null);
 
 export const EmployeeAuthProvider = ({ children }) => {
     const [currentEmployee, setCurrentEmployee] = useState(null);
     const [employeeProfile, setEmployeeProfile] = useState(null);
+    const [civilianProfile, setCivilianProfile] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    const isCivilian = !isAdmin && !employeeProfile && !!civilianProfile;
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -45,6 +49,7 @@ export const EmployeeAuthProvider = ({ children }) => {
                             
                             if (employeeData) {
                                 setEmployeeProfile({ ...employeeData, type: 'phmc' });
+                                setCivilianProfile(null);
                                 setCurrentEmployee(user);
                                 setIsLoading(false);
                                 return;
@@ -59,27 +64,36 @@ export const EmployeeAuthProvider = ({ children }) => {
                             const coronerData = coronerSnapshot.val();
                             const coronerArray = Array.isArray(coronerData) ? coronerData : Object.values(coronerData);
                             const employeeData = coronerArray.find(emp => emp.uid === user.uid);
-                            
+
                             if (employeeData) {
                                 setEmployeeProfile({ ...employeeData, type: 'coroner' });
+                                setCivilianProfile(null);
                                 setCurrentEmployee(user);
                                 setIsLoading(false);
                                 return;
                             }
                         }
 
-                        // Aucun profil employé trouvé
+                        // Aucun profil employé trouvé : rechercher un profil Civil
                         setEmployeeProfile(null);
+
+                        const civilianRef = ref(database, `civilians/${user.uid}`);
+                        const civilianSnapshot = await get(civilianRef);
+                        setCivilianProfile(civilianSnapshot.exists() ? civilianSnapshot.val() : null);
+                    } else {
+                        setCivilianProfile(null);
                     }
-                    
+
                     setCurrentEmployee(user);
                 } catch (error) {
                     console.error('Error loading employee profile:', error);
                     setEmployeeProfile(null);
+                    setCivilianProfile(null);
                 }
             } else {
                 setCurrentEmployee(null);
                 setEmployeeProfile(null);
+                setCivilianProfile(null);
                 setIsAdmin(false);
             }
             
@@ -177,6 +191,113 @@ export const EmployeeAuthProvider = ({ children }) => {
     };
 
     /**
+     * Génère un ID patient unique au format PHMC-XXXXX (5 chiffres), en
+     * vérifiant l'absence de collision avec les civils déjà enregistrés.
+     */
+    const generatePatientID = async () => {
+        const civiliansRef = ref(database, 'civilians');
+        const snapshot = await get(civiliansRef);
+        const existingIds = new Set();
+        if (snapshot.exists()) {
+            Object.values(snapshot.val()).forEach((civilian) => {
+                if (civilian && civilian.patientID) existingIds.add(civilian.patientID);
+            });
+        }
+
+        let patientID;
+        do {
+            const digits = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+            patientID = `PHMC-${digits}`;
+        } while (existingIds.has(patientID));
+
+        return patientID;
+    };
+
+    /**
+     * Créer un compte Civil (identité + coordonnées uniquement — aucun champ de
+     * santé n'est jamais demandé ni stocké ici).
+     * @param {Object} civilianData - Identité/contact du civil
+     * @param {string} email - Email pour Firebase Auth
+     * @param {string} password - Mot de passe
+     */
+    const createCivilianAccount = async (civilianData, email, password) => {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            const patientID = await generatePatientID();
+            const civilianWithID = {
+                ...civilianData,
+                uid: user.uid,
+                email,
+                patientID,
+                createdAt: new Date().toISOString()
+            };
+
+            await set(ref(database, `civilians/${user.uid}`), civilianWithID);
+
+            setCivilianProfile(civilianWithID);
+            setEmployeeProfile(null);
+
+            return { success: true, user, civilianData: civilianWithID };
+        } catch (error) {
+            console.error('Error creating civilian account:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * Créer un compte Civil à partir d'une identité GTA World déjà vérifiée
+     * (voir CivilianAuthPanel.js / GtawCharacterPicker.js) : pas de mot de
+     * passe, connexion uniquement via GTA World par la suite — même principe
+     * que createGtawEmployeeAccount côté Personnel/DMEC, mais en libre-service
+     * (pas d'approbation admin), d'où le customToken renvoyé directement par
+     * createGtawCivilianAccount pour éviter un second aller-retour OAuth.
+     * @param {Object} civilianData - Identité/contact du civil (sans champ de santé)
+     * @param {string} email - Email pour Firebase Auth
+     * @param {number|string|null} gtawCharacterId - Id du personnage GTA World
+     * @param {number|string|null} gtawUserId - Id du compte GTA World
+     */
+    const createCivilianAccountFromGtaw = async (civilianData, email, gtawCharacterId, gtawUserId) => {
+        try {
+            const response = await fetch(CREATE_GTAW_CIVILIAN_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.customToken) {
+                throw new Error(data.message || data.error || 'Erreur lors de la création du compte.');
+            }
+
+            const userCredential = await signInWithCustomToken(auth, data.customToken);
+            const user = userCredential.user;
+
+            const patientID = await generatePatientID();
+            const civilianWithID = {
+                ...civilianData,
+                uid: user.uid,
+                email,
+                patientID,
+                gtawCharacterId: gtawCharacterId ?? null,
+                gtawUserId: gtawUserId ?? null,
+                createdAt: new Date().toISOString()
+            };
+
+            await set(ref(database, `civilians/${user.uid}`), civilianWithID);
+
+            setCivilianProfile(civilianWithID);
+            setEmployeeProfile(null);
+
+            return { success: true, user, civilianData: civilianWithID };
+        } catch (error) {
+            console.error('Error creating civilian account via GTA World:', error);
+            throw error;
+        }
+    };
+
+    /**
      * Connexion employé
      * @param {string} email - Email
      * @param {string} password - Mot de passe
@@ -199,6 +320,7 @@ export const EmployeeAuthProvider = ({ children }) => {
             await signOut(auth);
             setCurrentEmployee(null);
             setEmployeeProfile(null);
+            setCivilianProfile(null);
             setIsAdmin(false);
         } catch (error) {
             console.error('Error logging out:', error);
@@ -209,10 +331,14 @@ export const EmployeeAuthProvider = ({ children }) => {
     const value = {
         currentEmployee,
         employeeProfile,
+        civilianProfile,
+        isCivilian,
         isLoading,
         isAdmin,
         requestEmployeeAccount,
         createEmployeeAccount,
+        createCivilianAccount,
+        createCivilianAccountFromGtaw,
         loginEmployee,
         logoutEmployee
     };

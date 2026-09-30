@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Select from 'react-select';
 import './phmc-tooltips.css'; // Assuming you have a tooltip component
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 // Helper component for collapsible section headers - Copied from Nursing.js
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     <Button
@@ -60,6 +61,18 @@ const PatientAdvanced = ({
     const [isAdvancedDirectivesOpen, setIsAdvancedDirectivesOpen] = useState(true);
     const [isPaymentInfoOpen, setIsPaymentInfoOpen] = useState(true);
 const [activeSection, setActiveSection] = useState('general-info');
+        // Si c'est un membre du personnel PHMC/DMEC connecté qui remplit ce
+        // formulaire (pas le civil lui-même), le paiement ne doit jamais être
+        // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
+        // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
+        // pas avoir lieu.
+        const { currentEmployee, employeeProfile, isAdmin } = useEmployeeAuth();
+        const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
+        // Répercuté dans formData car le générateur BBCode (fonction pure, sans
+        // accès au contexte React) en a besoin pour afficher le bon texte.
+        useEffect(() => {
+            setFormData(prev => (prev.filledByStaff === filledByStaff ? prev : { ...prev, filledByStaff }));
+        }, [filledByStaff, setFormData]);
         const isPayNow = formData.payNow === true || formData.payNow === 'true';
         const isExempt = formData.isExempt === true || formData.isExempt === 'true';
         const calculateCost = () => {
@@ -838,56 +851,63 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isPaymentInfoOpen && (
                 <div id="collapse-payment-info" onFocusCapture={() => setActiveSection('payment-info')}>
 
-            <Form.Label style={{ marginTop: '5px', color: '#28a745', fontWeight: 'bold' }}>
-                Ce service coûtera ${approximateCost.toLocaleString()}.
-            </Form.Label>
-            <Form.Group className="mb-3" style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <Form.Check
-                    type="radio"
-                    id="payNowRadio"
-                    label="  Payer maintenant?"
-                    name="paymentOption"
-                    checked={isPayNow}
-                    onChange={() => {
-                        setFormData(prev => ({
-                            ...prev,
-                            payNow: true,
-                            isExempt: false,
-                        }));
-                    }}
-                    style={{ marginRight: '1rem' }}
-                />
-                <Form.Check
-                    type="radio"
-                    id="exemptRadio"
-                    label="  Je suis exempté"
-                    name="paymentOption"
-                    checked={isExempt}
-                    onChange={() => {
-                        setFormData(prev => ({
-                            ...prev,
-                            payNow: false,
-                            isExempt: true,
-                            paymentProofPhotos: '',
-                        }));
-                    }}
-                />
-            </Form.Group>
-                         {isExempt && (
-                                            <span className="helper-text">
-                    Informations sur l'exemption: Les citoyens qui sont soit mineurs (moins de 18 ans), soit des citoyens de l'État à faible revenu sont exemptés du paiement de ce service.
+            {filledByStaff ? (
+                <span className="helper-text">
+                    Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.
                 </span>
+            ) : (
+                <>
+                    <Form.Label style={{ marginTop: '5px', color: '#28a745', fontWeight: 'bold' }}>
+                        Ce service coûtera ${approximateCost.toLocaleString()}.
+                    </Form.Label>
+                    <Form.Group className="mb-3" style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                        <Form.Check
+                            type="radio"
+                            id="payNowRadio"
+                            label="  Payer maintenant?"
+                            name="paymentOption"
+                            checked={isPayNow}
+                            onChange={() => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    payNow: true,
+                                    isExempt: false,
+                                }));
+                            }}
+                            style={{ marginRight: '1rem' }}
+                        />
+                        <Form.Check
+                            type="radio"
+                            id="exemptRadio"
+                            label="  Je suis exempté"
+                            name="paymentOption"
+                            checked={isExempt}
+                            onChange={() => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    payNow: false,
+                                    isExempt: true,
+                                    paymentProofPhotos: '',
+                                }));
+                            }}
+                        />
+                    </Form.Group>
+                    {isExempt && (
+                        <span className="helper-text">
+                            Informations sur l'exemption: Les citoyens qui sont soit mineurs (moins de 18 ans), soit des citoyens de l'État à faible revenu sont exemptés du paiement de ce service.
+                        </span>
+                    )}
 
-            )}
-    
-            {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
-                <FleecaPaymentPanel
-                    amount={approximateCost}
-                    description={`Dossier patient avancé${formData.patientName ? ' - ' + formData.patientName : ''}`}
-                    paymentId={formData.fleecaPaymentId}
-                    onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id, ...(id ? {} : { paymentProofPhotos: '' }) }))}
-                    onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
-                />
+                    {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
+                        <FleecaPaymentPanel
+                            amount={approximateCost}
+                            description={`Dossier patient avancé${formData.patientName ? ' - ' + formData.patientName : ''}`}
+                            paymentId={formData.fleecaPaymentId}
+                            onPaymentIdChange={(id) => setFormData(prev => ({ ...prev, fleecaPaymentId: id, ...(id ? {} : { paymentProofPhotos: '' }) }))}
+                            onPaymentConfirmed={({ paymentLink }) => setFormData(prev => ({ ...prev, paymentProofPhotos: paymentLink }))}
+                        />
+                    )}
+                </>
             )}
             </div>
             )}

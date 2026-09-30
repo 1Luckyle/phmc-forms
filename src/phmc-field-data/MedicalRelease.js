@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 
 const MedicalRelease = ({
     formData,
@@ -25,6 +26,18 @@ const MedicalRelease = ({
         return selectedCount * costPerItem;
     };
     const approximateCost = calculateCost();
+    // Si c'est un membre du personnel PHMC/DMEC connecté qui remplit ce
+    // formulaire (pas le civil lui-même), le paiement ne doit jamais être
+    // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
+    // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
+    // pas avoir lieu.
+    const { currentEmployee, employeeProfile, isAdmin } = useEmployeeAuth();
+    const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
+    // Répercuté dans formData car le générateur BBCode (fonction pure, sans
+    // accès au contexte React) en a besoin pour afficher le bon texte.
+    useEffect(() => {
+        setFormData(prev => (prev.filledByStaff === filledByStaff ? prev : { ...prev, filledByStaff }));
+    }, [filledByStaff, setFormData]);
 
     return (
         <>        <Form.Group className="mb-3">
@@ -349,17 +362,22 @@ const MedicalRelease = ({
                     Ce service coûtera environ ${approximateCost.toLocaleString()}
                 </Form.Label>
             )}
-            {approximateCost > 0 && ( 
+            {approximateCost > 0 && filledByStaff && (
+                <span className="helper-text">
+                    Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.
+                </span>
+            )}
+            {approximateCost > 0 && !filledByStaff && (
                 <Form.Group className="mb-3" style={{ marginTop: '15px' }}>
                     <Form.Check
                         type="checkbox"
                         id="payNowCheckbox"
                         label=" Payer maintenant?"
-                        checked={formData.payNow === true || formData.payNow === 'true'} 
+                        checked={formData.payNow === true || formData.payNow === 'true'}
                         onChange={(e) => {
                             setFormData(prev => ({
                                 ...prev,
-                                payNow: e.target.checked, 
+                                payNow: e.target.checked,
                             }));
                         }}
                     />
@@ -369,7 +387,7 @@ const MedicalRelease = ({
                 </Form.Group>
             )}
 
-            {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
+            {!filledByStaff && (formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
                 <FleecaPaymentPanel
                     amount={approximateCost}
                     description={`Dossier médical - ${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim()}

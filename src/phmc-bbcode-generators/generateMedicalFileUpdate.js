@@ -65,7 +65,9 @@ const generateMedicalFileUpdate = (formData) => {
 
     // Payment/Exempt logic
     let paymentSection = '';
-    if (paymentProofPhotos) {
+    if (formData.filledByStaff) {
+        paymentSection = 'Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.';
+    } else if (paymentProofPhotos) {
         paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
     }
 
