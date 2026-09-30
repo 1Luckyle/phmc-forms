@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[211],{8211:s=>{s.exports=JSON.parse('{"staff":{"phmc":[],"coroner":[]},"agencies":{},"selectOptions":{"physicianRecruitmentDetails":{},"psychPositionDetailsData":{},"adminPositionDetailsData":{},"emsPositionDetailsData":{},"nursePositionDetailsData":{},"coronerPositionDetailsData":{}}}')}}]);
