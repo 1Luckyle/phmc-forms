@@ -145,13 +145,36 @@ const EmployeeModal = ({
   show,
   onHide,
   phmcList,
-  handleMissingEmployeeSubmit,
+  handleMissingEmployeeSubmit = async () => {},
   showNotification,
   coronerList,
   isLoadingData,
   isAdminAuthenticated,
   adminUserEmail
 }) => {
+  // Utilisé depuis le panneau admin (AdminDashboard), qui n'a pas les listes
+  // phmc/coroner déjà chargées comme MainApp.js — auto-chargées ici si le
+  // parent ne les fournit pas, pour que ce composant reste utilisable des
+  // deux côtés sans dupliquer sa logique.
+  const [selfFetchedPhmcList, setSelfFetchedPhmcList] = useState(null);
+  const [selfFetchedCoronerList, setSelfFetchedCoronerList] = useState(null);
+  useEffect(() => {
+    if (!show || phmcList || coronerList) return;
+    (async () => {
+      try {
+        const [phmcSnap, coronerSnap] = await Promise.all([
+          get(ref(database, 'staff/phmc')),
+          get(ref(database, 'staff/coroner')),
+        ]);
+        setSelfFetchedPhmcList(phmcSnap.exists() ? phmcSnap.val() : []);
+        setSelfFetchedCoronerList(coronerSnap.exists() ? coronerSnap.val() : []);
+      } catch (err) {
+        console.error('EmployeeModal: failed to self-fetch staff lists', err);
+      }
+    })();
+  }, [show, phmcList, coronerList]);
+  const effectivePhmcList = phmcList || selfFetchedPhmcList;
+  const effectiveCoronerList = coronerList || selfFetchedCoronerList;
   const [actionType, setActionType] = useState('addEmployee');
   const [employeeType, setEmployeeType] = useState('coroner');
   const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
@@ -606,7 +629,7 @@ const EmployeeModal = ({
 
   // Options des selects (robustes map/array) - Filtrées selon l'utilisateur connecté
   const employeeOptions = useMemo(() => {
-    const src = employeeType === 'coroner' ? ensureArray(coronerList) : ensureArray(phmcList);
+    const src = employeeType === 'coroner' ? ensureArray(effectiveCoronerList) : ensureArray(effectivePhmcList);
     const allOptions = src.map(emp => {
       // Compose display name avoiding duplication:
       // - Coroner: name is full name (no lastName field needed)
@@ -634,7 +657,7 @@ const EmployeeModal = ({
     }
     
     return allOptions;
-  }, [employeeType, coronerList, phmcList, isAdminVerified, employeeProfile, actionType]);
+  }, [employeeType, effectiveCoronerList, effectivePhmcList, isAdminVerified, employeeProfile, actionType]);
 
   // ── Exécution réelle de la suppression (appelée depuis la boite de dialogue) ─
   const executeRemoveStaff = async (targetEmployee) => {
@@ -746,12 +769,12 @@ const EmployeeModal = ({
   };
 
   const combinedStaffOptions = useMemo(() => {
-    const coronerOptions = ensureArray(coronerList).map(c => ({
+    const coronerOptions = ensureArray(effectiveCoronerList).map(c => ({
       value: c.name,
       label: `${c.name} (${c.rank || 'Coroner'})`,
       category: 'Coroner Staff'
     }));
-    const phmcOptions = ensureArray(phmcList).map(p => {
+    const phmcOptions = ensureArray(effectivePhmcList).map(p => {
       const displayName = p.firstName && p.lastName
         ? `${p.firstName} ${p.lastName}`
         : (p.name && p.lastName ? `${p.name} ${p.lastName}` : (p.name || ''));
@@ -762,7 +785,7 @@ const EmployeeModal = ({
       };
     });
     return [...coronerOptions, ...phmcOptions].sort((a, b) => a.category.localeCompare(b.category));
-  }, [coronerList, phmcList]);
+  }, [effectiveCoronerList, effectivePhmcList]);
 
   return show ? (
     <>

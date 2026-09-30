@@ -1563,9 +1563,10 @@ function MainApp({
                                                 <Dropdown.Divider />
                                             </>
                                         ) : null}
-                                        <Dropdown.Item onClick={() => {setShowEmployeeModal(true); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-users-cog"></i> Gérer le Personnel
-                                        </Dropdown.Item>
+                                        {/* "Gérer le Personnel" déplacé dans le Panneau Admin (section
+                                            Utilisateurs) — cette modale reste montée ci-dessous pour les
+                                            boutons "Nom manquant ?" des formulaires (setShowEmployeeModal),
+                                            un usage self-service distinct de la gestion admin complète. */}
                                         <Dropdown.Item onClick={() => {setShowFeatureRequestModal(true); setShowToolsDropdown(false);}}>
                                             <i className="fas fa-bug"></i> Rapport de Bug/Ajout
                                         </Dropdown.Item>

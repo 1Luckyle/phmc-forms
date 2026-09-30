@@ -6,9 +6,10 @@
 // voit que owner/shared) — n'importe quel personnel PHMC/DMEC connecté peut
 // ainsi voir tout ce qui a été enregistré ou mentionné pour ce patient, y
 // compris les rapports staff-only jamais partagés.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { Button } from 'react-bootstrap';
+import Select from 'react-select';
 import { ref, get } from 'firebase/database';
 import { database } from '../firebase';
 import { copyToClipboard } from './notificationService';
@@ -33,9 +34,20 @@ const closeButtonStyle = {
     lineHeight: '1', padding: '0.25rem 0.5rem', cursor: 'pointer', zIndex: 10,
 };
 
-const searchInputStyle = {
-    padding: '8px 10px', borderRadius: '5px', border: '1px solid #30363d',
-    backgroundColor: '#0d1117', color: '#c9d1d9', flexGrow: 1, maxWidth: '350px',
+const reactSelectStyles = {
+    container: (base) => ({ ...base, flexGrow: 1, maxWidth: '400px' }),
+    control: (base) => ({
+        ...base, backgroundColor: '#0d1117', color: '#c9d1d9', borderColor: '#30363d',
+        '&:hover': { borderColor: '#c9d1d9' },
+    }),
+    menu: (base) => ({ ...base, backgroundColor: '#0d1117', zIndex: 1051 }),
+    option: (base, state) => ({
+        ...base, backgroundColor: state.isFocused ? '#1f2937' : '#0d1117', color: '#c9d1d9',
+        '&:hover': { backgroundColor: '#1f2937' },
+    }),
+    singleValue: (base) => ({ ...base, color: '#c9d1d9' }),
+    input: (base) => ({ ...base, color: '#c9d1d9' }),
+    placeholder: (base) => ({ ...base, color: '#6c757d' }),
 };
 
 const tableStyle = { width: '100%', borderCollapse: 'collapse' };
@@ -64,17 +76,44 @@ const PatientDossierModal = ({ show, onHide, showNotification, copyReportToOwnAc
         || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null)
         || (isAdmin ? (currentEmployee?.email || null) : null);
 
-    const [patientIdInput, setPatientIdInput] = useState('');
+    const [selectedPatientOption, setSelectedPatientOption] = useState(null);
+    const [civilianOptions, setCivilianOptions] = useState([]);
+    const [isLoadingCivilians, setIsLoadingCivilians] = useState(false);
     const [searchedPatientId, setSearchedPatientId] = useState(null);
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Liste des civils enregistrés pour le menu déroulant — évite d'avoir à
+    // taper l'ID patient à la main (et de faire une faute de frappe).
+    useEffect(() => {
+        if (!show) return;
+        setIsLoadingCivilians(true);
+        get(ref(database, 'civilians')).then((snap) => {
+            if (!snap.exists()) {
+                setCivilianOptions([]);
+                return;
+            }
+            const options = Object.values(snap.val())
+                .filter((c) => c && c.patientID)
+                .map((c) => ({
+                    value: c.patientID,
+                    label: `${c.firstName || ''} ${c.lastName || ''} (${c.patientID})`.trim(),
+                }))
+                .sort((a, b) => a.label.localeCompare(b.label));
+            setCivilianOptions(options);
+        }).catch((error) => {
+            console.error('Error loading civilians for patient dossier selector:', error);
+        }).finally(() => {
+            setIsLoadingCivilians(false);
+        });
+    }, [show]);
+
     if (!show) return null;
 
-    const handleSearch = async () => {
-        const patientId = patientIdInput.trim();
+    const handleSearch = async (patientIdOverride) => {
+        const patientId = (patientIdOverride ?? selectedPatientOption?.value ?? '').trim();
         if (!patientId) {
-            showNotification('Veuillez entrer un ID patient.', 'warning');
+            showNotification('Veuillez sélectionner un patient.', 'warning');
             return;
         }
         setIsLoading(true);
@@ -154,16 +193,21 @@ const PatientDossierModal = ({ show, onHide, showNotification, copyReportToOwnAc
                 </p>
 
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                    <input
-                        type="text"
-                        placeholder="ID Patient (ex: PHMC-00123)"
-                        value={patientIdInput}
-                        onChange={(e) => setPatientIdInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-                        style={searchInputStyle}
+                    <Select
+                        options={civilianOptions}
+                        value={selectedPatientOption}
+                        onChange={(option) => {
+                            setSelectedPatientOption(option);
+                            if (option) handleSearch(option.value);
+                        }}
+                        isClearable
+                        isLoading={isLoadingCivilians}
+                        placeholder="Rechercher un patient par nom ou ID..."
+                        noOptionsMessage={() => 'Aucun civil enregistré'}
+                        styles={reactSelectStyles}
                     />
-                    <Button onClick={handleSearch} disabled={isLoading} variant="primary">
-                        {isLoading ? 'Recherche...' : 'Rechercher'}
+                    <Button onClick={() => handleSearch()} disabled={isLoading || !selectedPatientOption} variant="primary">
+                        {isLoading ? 'Recherche...' : 'Actualiser'}
                     </Button>
                 </div>
 
