@@ -59,6 +59,7 @@ const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModa
 const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
+const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
 const CctvRequestWebhookModal = lazy(() => import('./components/Admin/CctvRequestWebhookModal'));
 const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'));
@@ -648,6 +649,13 @@ function MainApp({
         loadSharedReportsForPatient,
         shareReportWithPatient,
         copyReportToOwnAccount,
+        saveJobApplication,
+        loadMyJobApplications,
+        updateJobApplicationStatus,
+        myJobApplications,
+        isLoadingJobApplications,
+        showMyJobApplications,
+        setShowMyJobApplications,
         showRareEasterEggDirectly,
         toggleSavedReports,
         showPositionInfoModal,
@@ -1518,17 +1526,15 @@ function MainApp({
                 <div className="container-fluid">
                     <div className="form-container">
                         <div className="button-group">
-                            {!currentEmployee && (
-                                <Button
-                                    variant="outline-light"
-                                    onClick={handleOpenLoginRoleChoice}
-                                    className="floating-tools-container"
-                                    style={{ marginRight: '10px' }}
-                                >
-                                    <i className="fas fa-sign-in-alt"></i> Se connecter
-                                </Button>
-                            )}
                             <div className="floating-tools-container">
+                                {!currentEmployee && (
+                                    <Button
+                                        variant="outline-light"
+                                        onClick={handleOpenLoginRoleChoice}
+                                    >
+                                        <i className="fas fa-sign-in-alt"></i> Se connecter
+                                    </Button>
+                                )}
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
                                         <i className="fas fa-tools"></i> Boite à Outils
@@ -2109,6 +2115,40 @@ function MainApp({
                                         Sauvegarder le rapport
                                     </Button>
                                 )}
+
+                                {/* Pipeline de candidatures (Lot 6) : un Civil sur un formulaire de
+                                    candidature a le choix entre garder un brouillon et candidater
+                                    réellement (accusé de réception + notification admin). */}
+                                {selectedAgencyGroup === 'PHMC Recruitment' && isCivilian && (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            onClick={() => saveJobApplication('save')}
+                                            className="copy-button-modern"
+                                            disabled={isLockdownActive}
+                                        >
+                                            <i className="fas fa-save"></i>
+                                            Enregistrer
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={() => saveJobApplication('submit')}
+                                            className="copy-button-modern"
+                                            disabled={isLockdownActive}
+                                        >
+                                            <i className="fas fa-paper-plane"></i>
+                                            Enregistrer et Candidater
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={() => { loadMyJobApplications(); setShowMyJobApplications(true); }}
+                                            className="copy-button-modern"
+                                        >
+                                            <i className="fas fa-list-check"></i>
+                                            Mes candidatures
+                                        </Button>
+                                    </>
+                                )}
                             </div>
 
                             {showBBCode && (
@@ -2225,6 +2265,20 @@ function MainApp({
                             showNotification={showNotification}
                             shareReportWithPatient={shareReportWithPatient}
                             copyReportToOwnAccount={copyReportToOwnAccount}
+                        />
+                        <MyJobApplicationsModal
+                            show={showMyJobApplications}
+                            onHide={() => setShowMyJobApplications(false)}
+                            applications={myJobApplications}
+                            isLoading={isLoadingJobApplications}
+                            showNotification={showNotification}
+                            onUpdateStatus={async (applicantUid, applicationId, newStatus) => {
+                                const result = await updateJobApplicationStatus(applicantUid, applicationId, newStatus);
+                                if (result?.success) {
+                                    loadMyJobApplications();
+                                }
+                                return result;
+                            }}
                         />
                         <SaveAsEmployeeModal
                             show={showSaveAsEmployeeModal}

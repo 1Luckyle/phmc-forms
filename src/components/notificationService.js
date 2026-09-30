@@ -544,7 +544,11 @@ export const sendPhraseRequestNotification = async ({ requester, phrase, bingoTy
 
 
 // --- MODIFIED: General PHMC Recruitment Webhook Sender ---
-const sendPhmcRecruitmentWebhook = async ({
+// Exportée pour être réutilisée par le pipeline de candidatures (Lot 6) :
+// "Enregistrer et Candidater" envoie cette même notification, sans passer par
+// handlePhmcRecruitmentCopyAndNotify (qui copie aussi dans le presse-papiers,
+// non pertinent ici puisque la candidature est persistée dans jobApplications).
+export const sendPhmcRecruitmentWebhook = async ({
     webhookUrl,
     formData,
     commitInfo,
