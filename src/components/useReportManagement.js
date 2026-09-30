@@ -3,6 +3,12 @@ import { getFormDefinition } from '../formDefinitions'; // Assuming this path
 import { database } from '../firebase'; // Assuming this path
 import { ref, get, set, remove } from 'firebase/database';
 import * as Sentry from "@sentry/react";
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+
+// Formulaires accessibles à un compte Civil : dossiers médicaux civils
+// (3 Advanced, 24 Medical Release, 25 Basic, 26 Medical Update) et
+// candidatures (50-55) — voir Lot 3 du plan Civil.
+const CIVILIAN_ALLOWED_BBCODE_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
 
 function sanitizeForFirebase(obj) {
   if (obj === undefined) return undefined;
@@ -73,6 +79,7 @@ export const useReportManagement = (
     coronerRecruitmentDetails,
     selectedAgencyGroup
 ) => {
+    const { isCivilian, civilianProfile } = useEmployeeAuth();
     const [savedReports, setSavedReports] = useState([]);
     const [showSavedReports, setShowSavedReports] = useState(false);
     const [isLoadingUserReports, setIsLoadingUserReports] = useState(false);
@@ -104,6 +111,16 @@ export const useReportManagement = (
     // sélectionné dans le champ coronerEmployee/phmcEmployee du formulaire
     // (ou le nom du patient pour les anciens formulaires "civils").
     async function saveReport(authorOverride) {
+        // Un compte Civil ne peut sauvegarder que ses propres dossiers médicaux
+        // civils ou candidatures — pas les formulaires réservés au personnel
+        // (voir Lot 3 du plan Civil). Le personnel, lui, n'a toujours pas le
+        // droit de sauvegarder une candidature (bloqué plus bas).
+        if (isCivilian && !CIVILIAN_ALLOWED_BBCODE_VERSIONS.includes(bbCodeVersion)) {
+            const message = 'Votre compte Civil ne peut sauvegarder que des dossiers médicaux civils ou des candidatures.';
+            showNotification(message, 'exclamation-circle');
+            return { success: false, error: message };
+        }
+
         let key = '';
         const bbCodeContent = getBBCodeContent();
         const currentAuthor = authorOverride || getCurrentReportAuthor(formData);
@@ -124,12 +141,12 @@ export const useReportManagement = (
             }
             key = `[Autopsy] ${formData.decedentName} (${formData.decedentOOC}) - ${formData.autopsyDate}`;
         } else if (bbCodeVersion === 3) { // Detailed Patient File (PatientAdvanced)
-            if (!formData.patientName || !formData.patientDateOfBirth) {
-                const message = `Please fill in Patient Name and Date of Birth fields.`;
+            if (!formData.patientName || !formData.patientDateOfBirth || !formData.patientEmail || !formData.patientID) {
+                const message = `Veuillez remplir le nom, la date de naissance, l'email et l'ID patient.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `${formData.patientID || 'NO_ID'} - ${formData.patientName || 'NO_NAME'} - ${formData.patientDateOfBirth || 'NO_DATE'}`;
+            key = `[${formData.patientID}] ${formData.patientName} - ${formData.patientDateOfBirth}`;
         } else if (((bbCodeVersion > 3 && bbCodeVersion <= 7) && bbCodeVersion !== 4)) { // SurgicalOps (5), PhysEval PHMC/PBC (6,7)
             let patientIdMissing = !formData.patientID;
             let dateMissing = !formData.date;
@@ -162,25 +179,32 @@ export const useReportManagement = (
             }
             key = `${formData.patientID} - ${formData.lastName} - ${formData.date}`;
         } else if (bbCodeVersion === 25) { // BasicPatientFile
-            if (!formData.patientName || !formData.patientDateOfBirth) {
-                const message = `Please fill in Patient Name and Date of Birth fields.`;
+            if (!formData.patientName || !formData.patientDateOfBirth || !formData.patientEmail || !formData.patientID) {
+                const message = `Veuillez remplir le nom, la date de naissance, l'email et l'ID patient.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `${formData.patientName} - ${formData.patientDateOfBirth}`;
+            key = `[${formData.patientID}] ${formData.patientName} - ${formData.patientDateOfBirth}`;
         } else if (bbCodeVersion === 24) { // Medical Record Release (MedicalRelease.js)
             // Le formulaire réel utilise patientFirstName/patientLastName, pas
             // registrantFullName/dateOfRequest (qui n'existent dans aucun champ
             // de ce formulaire) — l'ancienne validation ci-dessous échouait donc
             // systématiquement, empêchant toute sauvegarde de ce type de rapport.
-            if (!formData.patientFirstName && !formData.patientLastName) {
-                const message = `Veuillez remplir le prénom ou le nom du patient.`;
+            if ((!formData.patientFirstName && !formData.patientLastName) || !formData.patientEmail || !formData.patientID) {
+                const message = `Veuillez remplir le prénom ou le nom du patient, l'email et l'ID patient.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
             const releasePatientName = `${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim();
             const releaseDate = formData.SubmitDate || new Date().toISOString().split('T')[0];
-            key = `[Medical Release] ${releasePatientName} - ${releaseDate}`;
+            key = `[${formData.patientID}] ${releasePatientName} - ${releaseDate}`;
+        } else if (bbCodeVersion === 26) { // Medical File Update (MedicalUpdate.js)
+            if (!formData.patientName || !formData.date || !formData.patientEmail || !formData.patientID) {
+                const message = `Veuillez remplir le nom du patient, la date de naissance, l'email et l'ID patient.`;
+                showNotification(message, 'exclamation-circle');
+                return { success: false, error: message };
+            }
+            key = `[${formData.patientID}] ${formData.patientName} - ${formData.date}`;
         }
         // --- Add more 'else if' blocks here for other specific bbCodeVersions ---
         // Example for Coroner Email (bbCodeVersion 2)
@@ -202,7 +226,11 @@ export const useReportManagement = (
             key = `[Feedback] ${formData.department} - ${formData.dateTime}`;
         }
         // --- MODIFICATION FOR PHMC RECRUITMENT ---
-        else if (getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment') {
+        // Le personnel n'a toujours pas besoin de sauvegarder une candidature —
+        // seul un compte Civil le peut désormais (voir garde isCivilian en tête
+        // de fonction). Si isCivilian est vrai ici, ce bbCodeVersion a déjà été
+        // validé comme faisant partie de CIVILIAN_ALLOWED_BBCODE_VERSIONS.
+        else if (getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !isCivilian) {
             return { success: false, error: 'PHMC Recruitment forms cannot be saved to Firebase.' };
         }
         // --- END MODIFICATION ---
@@ -258,8 +286,10 @@ export const useReportManagement = (
             // Existing generic key generation for non-SAAA, non-PHMC Recruitment forms
             const formName = versionNames[bbCodeVersion] || `FormV${bbCodeVersion}`;
 
-            // MODIFIED: Prioritize decedentName, then patientName, then patientID, then a generic placeholder
-            let identifier = formData.decedentName || formData.patientName || formData.patientID || 'Unnamed Report';
+            // MODIFIED: Prioritize decedentName, then patientName, then patientID, then
+            // applicantTitleAndFullName (candidatures, bbCodeVersion 50-55), then a
+            // generic placeholder
+            let identifier = formData.decedentName || formData.patientName || formData.patientID || formData.applicantTitleAndFullName || 'Unnamed Report';
             if (Array.isArray(identifier)) identifier = identifier.join(', ');
 
             // MODIFIED: Ensure dateField always has a value
@@ -355,9 +385,33 @@ export const useReportManagement = (
         const reportPath = `savedReports/${sanitizedAuthorId}/${sanitizedKey}`;
 
         try {
-            const reportRef = ref(database, reportPath);    
+            const reportRef = ref(database, reportPath);
             await set(reportRef, cleanPayload);
             showNotification(`Rapport "${key}" sauvegardé pour ${currentAuthor} (visible dans "Rapports Sauvegardés").`, 'save');
+
+            // Regroupement par patient (Lot 5) : si le formulaire porte un ID
+            // patient, on indexe ce rapport dans patientRecords/{patientID} pour
+            // qu'il puisse être retrouvé/partagé/copié indépendamment de qui l'a
+            // écrit. "owner" quand le civil sauvegarde son propre dossier,
+            // "staff-only" quand c'est le personnel qui le remplit pour lui (pas
+            // encore partagé) — voir le bouton "Partager avec le patient".
+            // Best-effort : une erreur ici ne doit jamais faire échouer la
+            // sauvegarde du rapport lui-même.
+            if (formData.patientID) {
+                try {
+                    const isOwnedByThisCivilian = isCivilian && civilianProfile?.patientID === formData.patientID;
+                    await set(ref(database, `patientRecords/${formData.patientID}/${sanitizedKey}`), {
+                        reportPath,
+                        visibility: isOwnedByThisCivilian ? 'owner' : 'staff-only',
+                        bbCodeVersion,
+                        originalKey: key,
+                        authorName: currentAuthor,
+                        timestamp: Date.now(),
+                    });
+                } catch (indexError) {
+                    console.warn('Could not index report under patientRecords:', indexError);
+                }
+            }
 
             // Log the webhook
             await logWebhook(`report_saved by ${currentAuthor}`, {
@@ -429,6 +483,10 @@ export const useReportManagement = (
                         timestamp: report.timestamp,
                         authorName: report.authorName,
                         bbCode: report.bbCode,
+                        // Utilisé par les boutons "Partager avec le patient" /
+                        // "Récupérer une copie" (Lot 5).
+                        patientID: report.data?.patientID || null,
+                        reportPath: `${userReportsPath}/${reportKey}`,
                     });
                 }
 
@@ -832,6 +890,120 @@ export const useReportManagement = (
         }
     }, [loadUserSavedReports, selectedUserForSavedReports, showNotification]);
 
+    // --- Regroupement des dossiers par patient (Lot 5) ---
+
+    // Complète savedReports (déjà chargé pour l'auteur courant) avec les
+    // rapports d'un patient explicitement PARTAGÉS par le personnel — ces
+    // rapports vivent sous le savedReports d'un AUTRE auteur, donc invisibles
+    // via le chargement author-scoped habituel. Utilisé par la vue Civil
+    // ("Dossiers/Candidatures sauvegardées") : ses propres rapports viennent
+    // déjà de loadUserSavedReports, ceci n'ajoute que ce qui lui a été partagé.
+    const loadSharedReportsForPatient = useCallback(async (patientID) => {
+        if (!patientID) return;
+        try {
+            const indexSnap = await get(ref(database, `patientRecords/${patientID}`));
+            if (!indexSnap.exists()) return;
+            const entries = Object.values(indexSnap.val() || {});
+            const sharedEntries = entries.filter((e) => e && e.visibility === 'shared' && e.reportPath);
+
+            const fetched = await Promise.all(sharedEntries.map(async (entry) => {
+                try {
+                    const reportSnap = await get(ref(database, entry.reportPath));
+                    if (!reportSnap.exists()) return null;
+                    const report = reportSnap.val();
+                    const reportKey = entry.reportPath.split('/').pop();
+                    return {
+                        key: reportKey,
+                        originalKey: report.originalKey,
+                        bbCodeVersion: report.bbCodeVersion,
+                        timestamp: report.timestamp,
+                        authorName: report.authorName,
+                        bbCode: report.bbCode,
+                        patientID: report.data?.patientID || patientID,
+                        reportPath: entry.reportPath,
+                        sharedByStaff: true,
+                    };
+                } catch (fetchError) {
+                    console.warn('Could not fetch shared report:', entry.reportPath, fetchError);
+                    return null;
+                }
+            }));
+
+            const validShared = fetched.filter(Boolean);
+            if (validShared.length > 0) {
+                setSavedReports((prev) => {
+                    const existingKeys = new Set(prev.map((r) => r.key));
+                    return [...prev, ...validShared.filter((r) => !existingKeys.has(r.key))];
+                });
+            }
+        } catch (error) {
+            console.error('Error loading shared patient reports:', error);
+            Sentry.captureException(error, { extra: { context: 'loadSharedReportsForPatient', patientID } });
+        }
+    }, []);
+
+    // Action personnel : rend un rapport visible au patient concerné dans sa
+    // propre vue "Dossiers/Candidatures sauvegardées" (patientRecords passe de
+    // staff-only à shared — le rapport lui-même n'est ni déplacé ni dupliqué).
+    const shareReportWithPatient = useCallback(async (patientID, reportKey) => {
+        if (!patientID || !reportKey) return;
+        try {
+            await set(ref(database, `patientRecords/${patientID}/${reportKey}/visibility`), 'shared');
+            showNotification('Rapport partagé avec le patient.', 'check-circle');
+        } catch (error) {
+            console.error('Error sharing report with patient:', error);
+            Sentry.captureException(error, { extra: { context: 'shareReportWithPatient', patientID, reportKey } });
+            showNotification('Erreur lors du partage du rapport.', 'error');
+        }
+    }, [showNotification]);
+
+    // Action personnel : duplique un rapport (créé par un civil, ou partagé
+    // par un collègue) dans son PROPRE savedReports, pour le consulter plus
+    // tard indépendamment de l'auteur d'origine. Le rapport d'origine n'est ni
+    // modifié ni supprimé.
+    const copyReportToOwnAccount = useCallback(async (reportPath, copyAuthorName) => {
+        if (!reportPath || !copyAuthorName) {
+            showNotification('Impossible de déterminer votre identité pour la copie.', 'error');
+            return;
+        }
+        try {
+            const snap = await get(ref(database, reportPath));
+            if (!snap.exists()) {
+                showNotification('Rapport introuvable.', 'error');
+                return;
+            }
+            const original = snap.val();
+            const sanitizedCopyAuthorId = comprehensiveSanitize(copyAuthorName);
+            const copyOriginalKey = `[Copie] ${original.originalKey || ''}`.trim();
+            const copyKey = comprehensiveSanitize(copyOriginalKey) + '_' + Date.now();
+            const copyPath = `savedReports/${sanitizedCopyAuthorId}/${copyKey}`;
+            const copyPayload = sanitizeForFirebase({
+                ...original,
+                authorName: copyAuthorName,
+                timestamp: Date.now(),
+                originalKey: copyOriginalKey,
+            });
+            await set(ref(database, copyPath), copyPayload);
+
+            if (original.data?.patientID) {
+                await set(ref(database, `patientRecords/${original.data.patientID}/${copyKey}`), {
+                    reportPath: copyPath,
+                    visibility: 'staff-only',
+                    bbCodeVersion: original.bbCodeVersion,
+                    originalKey: copyOriginalKey,
+                    authorName: copyAuthorName,
+                    timestamp: Date.now(),
+                });
+            }
+
+            showNotification('Copie enregistrée dans vos propres rapports.', 'save');
+        } catch (error) {
+            console.error('Error copying report:', error);
+            Sentry.captureException(error, { extra: { context: 'copyReportToOwnAccount', reportPath } });
+            showNotification('Erreur lors de la copie du rapport.', 'error');
+        }
+    }, [showNotification]);
+
     const showRareEasterEggDirectly = useCallback(() => {
         setShowEasterEggModal(true);
         setEasterEggType('rare');
@@ -899,6 +1071,9 @@ export const useReportManagement = (
         handleReportSelectedForAttachment,
         onAttachReportSummaryRequest,
         deleteReportForUser,
+        loadSharedReportsForPatient,
+        shareReportWithPatient,
+        copyReportToOwnAccount,
         showRareEasterEggDirectly,
         toggleSavedReports,
         showPositionInfoModal,

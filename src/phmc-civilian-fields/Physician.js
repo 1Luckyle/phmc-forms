@@ -33,7 +33,7 @@ const EXPIRY_DURATION_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 
 const physicianFormFields = [
     'recruitmentPosition', 'applicantTitleAndFullName', 'genderMale', 'genderFemale', 'genderOther',
-    'applicantGenderOtherText', 'applicantDOB', 'applicantBirthPlace', 'applicantAddress', 'applicantContactDetails', // MODIFIED: Split DOB field
+    'applicantGenderOtherText', 'applicantDOB', 'applicantBirthPlace', 'applicantAddress', 'applicantPhone', 'applicantEmail', // MODIFIED: Split DOB field
     'locationPHMC', 'locationPBC', 'applicantMedicalConditions', 'citizenUS', 'citizenPermanent', 'citizenNone',
     'eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAssociate', 'eduBachelor', 'eduMaster', 'eduDoctorate',
     'applicantSchoolName', 'applicantEnrollmentTerm', 'applicantMajor', 'applicantLanguages',
@@ -138,7 +138,7 @@ const PhysicianFields = ({
             { anyOf: ['genderMale', 'genderFemale', 'genderOther'] },
             { conditional: { if: { field: 'genderOther', value: true }, then: { field: 'applicantGenderOtherText' } } },
             'applicantDOB', 'applicantBirthPlace', // MODIFIED: Split DOB field
-            'applicantAddress', 'applicantContactDetails',
+            'applicantAddress', 'applicantPhone', 'applicantEmail',
             { anyOf: ['locationPHMC', 'locationPBC'] },
             'applicantMedicalConditions',
             { anyOf: ['citizenUS', 'citizenPermanent', 'citizenNone'] }
@@ -292,13 +292,21 @@ const PhysicianFields = ({
 
                     <Form.Group className="mb-3">
                         <Form.Label>1.6 Coordonnées</Form.Label> {/* MODIFIED: Label number */}
-                        <Form.Control
-                            type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''}
-                            onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
-                            className={`form-control ${!formData.applicantContactDetails ? 'is-invalid' : ''} mb-4`} // Added mb-4
-                        />
-                        {!formData.applicantContactDetails && <div className="invalid-feedback d-block">Les coordonnées sont requises.</div>}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <Form.Control
+                                type="text" name="applicantPhone" value={formData.applicantPhone || ''}
+                                onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
+                                placeholder="Numéro de téléphone" required
+                                className={`form-control ${!formData.applicantPhone ? 'is-invalid' : ''} mb-4`}
+                            />
+                            <Form.Control
+                                type="email" name="applicantEmail" value={formData.applicantEmail || ''}
+                                onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
+                                placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)" required
+                                className={`form-control ${!formData.applicantEmail ? 'is-invalid' : ''} mb-4`}
+                            />
+                        </div>
+                        {(!formData.applicantPhone || !formData.applicantEmail) && <div className="invalid-feedback d-block">Le téléphone et l'email sont requis.</div>}
                     </Form.Group>
 
                     <Form.Group className="mb-3">

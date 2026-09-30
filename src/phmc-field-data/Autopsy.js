@@ -163,6 +163,14 @@ const Autopsy = ({
                     required
                     className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
                 />
+                <Form.Control
+                    type="text"
+                    name="patientID"
+                    value={formData.patientID || ''}
+                    onChange={handleChange}
+                    placeholder="ID Patient (optionnel, le défunt n'était peut-être pas patient du PHMC)"
+                    className="form-control"
+                />
             </div>
             <Form.Label style={{ marginBottom: 0 }}>Date et heure de l'autopsie </Form.Label>
              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>

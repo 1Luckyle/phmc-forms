@@ -10,6 +10,7 @@ const generateMedicalRecordRelease = (formData) => {
         patientFirstName = NOT_FILLED,
         patientMiddleName = '',
         patientLastName = NOT_FILLED,
+        patientID = NOT_FILLED,
         patientPH = NOT_FILLED,
         patientDateOfBirth = NOT_FILLED,
         patientAddress = NOT_FILLED,
@@ -54,6 +55,8 @@ const generateMedicalRecordRelease = (formData) => {
 [i]${patientMiddleName}[/i][br][/br]
 [b]Nom de famille:[/b]
 [i]${patientLastName}[/i][br][/br]
+[b]ID Patient:[/b]
+[i]${patientID}[/i][br][/br]
 [b]Genre à l'état civil :[/b] [i](sélectionnez-en un)[/i]
 [list=none]
 [*][${formData.patientGender === 'Male' ? 'X' : ''}] Masculin

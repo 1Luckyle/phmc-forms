@@ -149,12 +149,20 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
 
                     <Form.Group className="mb-3">
                         <Form.Label>1.5 Coordonnées</Form.Label>
-                        <Form.Control
-                            type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''}
-                            onChange={handleChange}
-                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
-                            className={`form-control ${!formData.applicantContactDetails ? 'is-invalid' : ''} mb-4`}
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <Form.Control
+                                type="text" name="applicantPhone" value={formData.applicantPhone || ''}
+                                onChange={handleChange}
+                                placeholder="Numéro de téléphone" required
+                                className={`form-control ${!formData.applicantPhone ? 'is-invalid' : ''} mb-4`}
+                            />
+                            <Form.Control
+                                type="email" name="applicantEmail" value={formData.applicantEmail || ''}
+                                onChange={handleChange}
+                                placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)" required
+                                className={`form-control ${!formData.applicantEmail ? 'is-invalid' : ''} mb-4`}
+                            />
+                        </div>
                     </Form.Group>
 
                     <Form.Group className="mb-3">

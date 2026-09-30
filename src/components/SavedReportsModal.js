@@ -249,17 +249,26 @@ const SavedReportsModal = ({
     onAttachReportSummaryRequest,
     preselectedEmployeeType,
     bbCodeVersion,
+    loadSharedReportsForPatient,
+    shareReportWithPatient,
+    copyReportToOwnAccount,
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedReportKeys, setSelectedReportKeys] = useState([]);
     const [isLoadingMultiple, setIsLoadingMultiple] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
-    
+
     const lastLoadedEmployeeRef = useRef(null);
     const isManualSelectionRef = useRef(false);
 
-    const { employeeProfile, currentEmployee, isAdmin } = useEmployeeAuth();
+    const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
+    // Le personnel (admin ou employé identifié) peut partager/copier un
+    // rapport lié à un patient — un civil ne le peut jamais (Lot 5).
+    const isStaffViewer = isAdmin || !!employeeProfile;
+    const staffAuthorNameForCopy = employeeProfile?.name
+        || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null)
+        || (isAdmin ? (currentEmployee?.email || null) : null);
 
     // Un employé connecté (non-admin) consulte toujours SES PROPRES rapports,
     // directement, peu importe ce qui est sélectionné dans le formulaire
@@ -269,6 +278,33 @@ const SavedReportsModal = ({
     // non connecté ne peut rien consulter du tout — voir le rendu plus bas.
     useEffect(() => {
         if (show && !isManualSelectionRef.current) {
+            // Un Civil n'existe pas dans employeeOptions (ce n'est pas un
+            // employé) : sa "sélection" est synthétique, construite directement
+            // à partir de civilianProfile — même format que l'auteur utilisé à
+            // la sauvegarde (voir handleSaveReportWrapper dans MainApp.js), pour
+            // retomber exactement sur le même savedReports/{sanitizedAuthorId}.
+            // On charge en plus les rapports que le personnel lui a partagés
+            // (patientRecords, Lot 5), invisibles via ce chemin auteur seul.
+            if (isCivilian && civilianProfile) {
+                const civilName = civilianProfile.firstName && civilianProfile.lastName
+                    ? `${civilianProfile.firstName} ${civilianProfile.lastName}`
+                    : (civilianProfile.email || '');
+                const civilAuthorValue = `${civilName} [${civilianProfile.patientID}]`;
+                if (civilAuthorValue !== lastLoadedEmployeeRef.current) {
+                    setSelectedEmployee({ value: civilAuthorValue, label: `${civilName} (Civil)` });
+                    lastLoadedEmployeeRef.current = civilAuthorValue;
+                    // Attend la fin du chargement des rapports "propriétaire" (qui
+                    // REMPLACE tout le tableau savedReports) avant d'y AJOUTER les
+                    // rapports partagés, pour éviter que l'un écrase l'autre.
+                    Promise.resolve(onEmployeeSelect(civilAuthorValue)).then(() => {
+                        if (civilianProfile.patientID && loadSharedReportsForPatient) {
+                            loadSharedReportsForPatient(civilianProfile.patientID);
+                        }
+                    });
+                }
+                return;
+            }
+
             let employeeToSelectValue = null;
 
             if (isAdmin) {
@@ -306,7 +342,7 @@ const SavedReportsModal = ({
             lastLoadedEmployeeRef.current = null;
             isManualSelectionRef.current = false;
         }
-    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile]);
+    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile, isCivilian, civilianProfile, loadSharedReportsForPatient]);
 
     const handleEmployeeSelect = (selectedOption) => {
         isManualSelectionRef.current = true;
@@ -595,34 +631,38 @@ const SavedReportsModal = ({
                                             <td style={tdStyle}>{new Date(report.timestamp).toLocaleString()}</td>
                                             <td style={tdStyle}>{report.bbCodeVersion}</td>
                                             <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                                                <Button
-                                                    variant="primary"
-                                                    size="sm"
-                                                    className="me-2"
-                                                    onClick={() => {
-                                                        if (bbCodeVersion === 2) {
-                                                            handleReportSelectedForAttachment(report.key, selectedEmployee.value);
-                                                        } else if (loadReport) {
-                                                            loadReport(report.key, selectedEmployee.value);
-                                                        }
-                                                        onHide(); // Close modal after action
-                                                    }}
-                                                    disabled={isLoadingReports || !selectedEmployee}
-                                                >
-                                                    {bbCodeVersion === 2 ? 'Attacher' : 'Charger'}
-                                                </Button>
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
-                                                            deleteReportForUser(report.key, selectedEmployee.value);
-                                                        }
-                                                    }}
-                                                    disabled={isLoadingReports || !selectedEmployee}
-                                                >
-                                                    Supprimer
-                                                </Button>
+                                                {!report.sharedByStaff && (
+                                                    <>
+                                                        <Button
+                                                            variant="primary"
+                                                            size="sm"
+                                                            className="me-2"
+                                                            onClick={() => {
+                                                                if (bbCodeVersion === 2) {
+                                                                    handleReportSelectedForAttachment(report.key, selectedEmployee.value);
+                                                                } else if (loadReport) {
+                                                                    loadReport(report.key, selectedEmployee.value);
+                                                                }
+                                                                onHide(); // Close modal after action
+                                                            }}
+                                                            disabled={isLoadingReports || !selectedEmployee}
+                                                        >
+                                                            {bbCodeVersion === 2 ? 'Attacher' : 'Charger'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="danger"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
+                                                                    deleteReportForUser(report.key, selectedEmployee.value);
+                                                                }
+                                                            }}
+                                                            disabled={isLoadingReports || !selectedEmployee}
+                                                        >
+                                                            Supprimer
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button
                                                     onClick={() => handleCopyBBCode(report.key)}
                                                     style={copyButtonStyle}
@@ -630,6 +670,34 @@ const SavedReportsModal = ({
                                                 >
                                                     Copier le BBCode
                                                 </Button>
+                                                {report.sharedByStaff && (
+                                                    <span style={{ marginLeft: '5px', fontSize: '0.8em', color: '#8b949e' }}>
+                                                        <i className="fas fa-share-alt" style={{ marginRight: '4px' }}></i>
+                                                        Partagé par le personnel
+                                                    </span>
+                                                )}
+                                                {isStaffViewer && report.patientID && !report.sharedByStaff && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="me-2"
+                                                        style={{ backgroundColor: '#8957e5', border: 'none', marginLeft: '5px' }}
+                                                        title="Rendre ce rapport visible au patient dans son propre compte"
+                                                        onClick={() => shareReportWithPatient && shareReportWithPatient(report.patientID, report.key)}
+                                                    >
+                                                        Partager avec le patient
+                                                    </Button>
+                                                )}
+                                                {isStaffViewer && report.patientID && !report.sharedByStaff && report.authorName !== staffAuthorNameForCopy && (
+                                                    <Button
+                                                        size="sm"
+                                                        style={{ backgroundColor: '#316dca', border: 'none', marginLeft: '5px' }}
+                                                        title="Enregistrer une copie de ce rapport dans vos propres rapports"
+                                                        onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy)}
+                                                        disabled={!staffAuthorNameForCopy}
+                                                    >
+                                                        Récupérer une copie
+                                                    </Button>
+                                                )}
                                             </td>
                                         </tr>
                                     );

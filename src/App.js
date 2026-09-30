@@ -208,7 +208,8 @@ const initialFormData = {
 
     // Recruitment Fields
     recruitmentPosition: '',
-    applicantContactDetails: '',
+    applicantPhone: '',
+    applicantEmail: '',
     locationPHMC: false,
     locationPBC: false,
     applicantMedicalConditions: '',

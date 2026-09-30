@@ -4,6 +4,7 @@ import Select from 'react-select';
 import './phmc-tooltips.css'; // Assuming you have a tooltip component
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 // Helper component for collapsible section headers - Copied from Nursing.js
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     <Button
@@ -66,13 +67,30 @@ const [activeSection, setActiveSection] = useState('general-info');
         // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
         // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
         // pas avoir lieu.
-        const { currentEmployee, employeeProfile, isAdmin } = useEmployeeAuth();
+        const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
         const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
         // Répercuté dans formData car le générateur BBCode (fonction pure, sans
         // accès au contexte React) en a besoin pour afficher le bon texte.
         useEffect(() => {
             setFormData(prev => (prev.filledByStaff === filledByStaff ? prev : { ...prev, filledByStaff }));
         }, [filledByStaff, setFormData]);
+        // Pré-remplissage depuis le profil Civil connecté — uniquement les
+        // champs identité/contact encore vides, aucun champ de santé (le
+        // profil Civil n'en contient pas).
+        useEffect(() => {
+            if (!isCivilian || !civilianProfile) return;
+            const autofillValues = buildCivilianAutofillValues(civilianProfile);
+            setFormData(prev => applyCivilianAutofill(prev, autofillValues, {
+                patientID: 'patientID',
+                patientName: 'fullName',
+                patientDateOfBirth: 'dateOfBirth',
+                patientAddress: 'address',
+                patientGender: 'gender',
+                patientPH: 'phone',
+                patientEmail: 'email',
+                patientDiscord: 'discord',
+            }));
+        }, [isCivilian, civilianProfile, setFormData]);
         const isPayNow = formData.payNow === true || formData.payNow === 'true';
         const isExempt = formData.isExempt === true || formData.isExempt === 'true';
         const calculateCost = () => {
@@ -107,14 +125,15 @@ const [activeSection, setActiveSection] = useState('general-info');
                     <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
                         <OverlayTrigger
                             placement="top"
-                            overlay={<Tooltip id="tooltip-patientID" className="phmc-tooltip">Identifiant unique du patient. Laisser vide si inconnu.</Tooltip>}
+                            overlay={<Tooltip id="tooltip-patientID" className="phmc-tooltip">Identifiant unique du patient.</Tooltip>}
                         >
                             <Form.Control
                                 type="text"
                                 name="patientID"
                                 value={formData.patientID}
                                 onChange={handleChange}
-                                placeholder="ID Patient (Optionnel, laisser vide si incertain)"
+                                placeholder="ID Patient"
+                                required
                                 className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
                             />
                         </OverlayTrigger>
@@ -224,6 +243,20 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Numéro de téléphone du patient"
                                 required
                                 className={`form-control ${!formData.patientPH ? 'is-invalid' : ''}`}
+                            />
+                        </OverlayTrigger>
+                        <OverlayTrigger
+                            placement="top"
+                            overlay={<Tooltip id="tooltip-patientEmail" className="phmc-tooltip">Adresse email du patient.</Tooltip>}
+                        >
+                            <Form.Control
+                                type="email"
+                                name="patientEmail"
+                                value={formData.patientEmail}
+                                onChange={handleChange}
+                                placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
+                                required
+                                className={`form-control ${!formData.patientEmail ? 'is-invalid' : ''}`}
                             />
                         </OverlayTrigger>
                         <OverlayTrigger

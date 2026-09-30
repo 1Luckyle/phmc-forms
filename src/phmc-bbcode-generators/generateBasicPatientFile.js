@@ -1,7 +1,6 @@
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
-// silencieux qui pourrait passer pour un bug d'affichage). Le seul champ
-// explicitement optionnel (ID patient) garde une chaîne vide.
+// silencieux qui pourrait passer pour un bug d'affichage).
 const NOT_FILLED = 'Non renseigné';
 
 const generateBasicPatientFile = (formData) => {
@@ -11,6 +10,7 @@ const generateBasicPatientFile = (formData) => {
         patientRace = NOT_FILLED,
         patientGender = NOT_FILLED,
         patientPH = NOT_FILLED,
+        patientEmail = NOT_FILLED,
         patientDiscord = NOT_FILLED,
         patientEmergencyContact = NOT_FILLED,
         patientEmergencyContactNumber = NOT_FILLED,
@@ -23,7 +23,7 @@ const generateBasicPatientFile = (formData) => {
         patientNotes = NOT_FILLED,
         paymentProofPhotos,
         patientDateOfBirth = NOT_FILLED,
-        patientID = '',
+        patientID = NOT_FILLED,
     } = formData;
             // Payment/Exempt logic
         let paymentSection = '';
@@ -48,7 +48,8 @@ ${patientName}
 [table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${patientDateOfBirth}  [/td][td] Adresse: ${patientAddress}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Pseudo Discord: ${patientDiscord}))
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
+[tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Contact d'urgence[/b][/color][/size][/center][/divboxcolor]
 [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}

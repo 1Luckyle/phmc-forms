@@ -3,6 +3,7 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 const customSelectStyles = {
     control: (base, state) => ({
         ...base,
@@ -105,13 +106,30 @@ const MedicalRelease = ({
     // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
     // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
     // pas avoir lieu.
-    const { currentEmployee, employeeProfile, isAdmin } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
     const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {
         setFormData(prev => (prev.filledByStaff === filledByStaff ? prev : { ...prev, filledByStaff }));
     }, [filledByStaff, setFormData]);
+    // Pré-remplissage depuis le profil Civil connecté — uniquement les champs
+    // identité/contact encore vides, aucun champ de santé (le profil Civil
+    // n'en contient pas). Le champ de date de naissance s'appelle "date" ici
+    // (pas patientDateOfBirth, contrairement aux autres formulaires civils).
+    useEffect(() => {
+        if (!isCivilian || !civilianProfile) return;
+        const autofillValues = buildCivilianAutofillValues(civilianProfile);
+        setFormData(prev => applyCivilianAutofill(prev, autofillValues, {
+            patientID: 'patientID',
+            patientName: 'fullName',
+            date: 'dateOfBirth',
+            patientAddress: 'address',
+            patientPH: 'phone',
+            patientEmail: 'email',
+            patientDiscord: 'discord',
+        }));
+    }, [isCivilian, civilianProfile, setFormData]);
 
     return (
         <>
@@ -149,11 +167,20 @@ const MedicalRelease = ({
       required
       className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
     />
+    <Form.Control
+      type="text"
+      name="patientID"
+      value={formData.patientID}
+      onChange={handleChange}
+      placeholder="ID Patient"
+      required
+      className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
+    />
 
                 </div>
 
 
-            <div className="input-group">        
+            <div className="input-group">
                   <Form.Control
     type="text"
     name="patientAddress"
@@ -163,7 +190,7 @@ const MedicalRelease = ({
     required
     className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
   />
-                                                       
+
          <Form.Control
                     type="text"
                     name="patientPH"
@@ -172,6 +199,16 @@ const MedicalRelease = ({
                     placeholder="Numéro de téléphone du patient"
                     required
                     className={`form-control ${!formData.patientPH ? 'is-invalid' : ''}`}
+
+                />
+                <Form.Control
+                    type="email"
+                    name="patientEmail"
+                    value={formData.patientEmail}
+                    onChange={handleChange}
+                    placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
+                    required
+                    className={`form-control ${!formData.patientEmail ? 'is-invalid' : ''}`}
 
                 />
                 <Form.Control

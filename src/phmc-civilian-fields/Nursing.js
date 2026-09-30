@@ -34,7 +34,7 @@ const EXPIRY_DURATION_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 // Define which fields belong to this form for localStorage or other logic
 const nursingFormFields = [
     'recruitmentPosition', 'applicantTitleAndFullName', 'genderMale', 'genderFemale', 'genderOther',
-    'applicantGenderOtherText', 'applicantDOBAndPlace', 'applicantAddress', 'applicantContactDetails',
+    'applicantGenderOtherText', 'applicantDOBAndPlace', 'applicantAddress', 'applicantPhone', 'applicantEmail',
     'locationPHMC', 'locationPBC', // Conditionally shown
     'applicantMedicalConditions', 'citizenUS', 'citizenPermanent', 'citizenNone',
     'eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAssociate', 'eduBachelor', 'eduMaster', 'eduDoctorate',
@@ -158,7 +158,7 @@ const NursingFields = ({
             'recruitmentPosition', 'applicantTitleAndFullName',
             { anyOf: ['genderMale', 'genderFemale', 'genderOther'] },
             { conditional: { if: { field: 'genderOther', value: true }, then: { field: 'applicantGenderOtherText' } } },
-            'applicantDOBAndPlace', 'applicantAddress', 'applicantContactDetails',
+            'applicantDOBAndPlace', 'applicantAddress', 'applicantPhone', 'applicantEmail',
             // Conditional requirement for locationPHMC or locationPBC
             { ifSpecificRole: { then: [{ anyOf: ['locationPHMC', 'locationPBC'] }] } },
             'applicantMedicalConditions',
@@ -292,12 +292,20 @@ const NursingFields = ({
 
                     <Form.Group className="mb-3">
                         <Form.Label>1.5 Coordonnées</Form.Label>
-                        <Form.Control
-                            type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''}
-                            onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
-                            className={`form-control ${!formData.applicantContactDetails ? 'is-invalid' : ''} mb-4`}
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <Form.Control
+                                type="text" name="applicantPhone" value={formData.applicantPhone || ''}
+                                onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
+                                placeholder="Numéro de téléphone" required
+                                className={`form-control ${!formData.applicantPhone ? 'is-invalid' : ''} mb-4`}
+                            />
+                            <Form.Control
+                                type="email" name="applicantEmail" value={formData.applicantEmail || ''}
+                                onChange={handleChange} onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
+                                placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)" required
+                                className={`form-control ${!formData.applicantEmail ? 'is-invalid' : ''} mb-4`}
+                            />
+                        </div>
                     </Form.Group>
 
                     {/* Conditional Section based on Nursing Role */}
