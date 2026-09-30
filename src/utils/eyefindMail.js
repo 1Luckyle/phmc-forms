@@ -5,6 +5,12 @@
 // sendEyefindMail, jamais directement à eyefind.fr (l'API est explicitement
 // réservée à un usage serveur-à-serveur — voir la doc fournie par le staff).
 const SEND_MAIL_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/sendEyefindMail';
+const SEND_VERIFICATION_CODE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/sendEmailVerificationCode';
+const VERIFY_EMAIL_CODE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/verifyEmailCode';
+
+// URL où un joueur crée son adresse Eyefind Mail (prenomnom@mail.eyefind.fr)
+// s'il n'en a pas encore — affichée dans les formulaires de création de compte.
+export const EYEFIND_MAIL_SIGNUP_URL = 'https://eyefind.fr/mail.php';
 
 // Adresse Eyefind Mail d'un joueur : convention prenomnom@mail.eyefind.fr
 // (prénom et nom concaténés, sans séparateur — ex: rosecallahan@mail.eyefind.fr).
@@ -64,5 +70,46 @@ export const sendEyefindMail = async ({ to, subject, body, html }) => {
     } catch (err) {
         console.error('Failed to send Eyefind Mail:', err);
         return { ok: false, error: 'network-error', message: err.message || 'Erreur réseau lors de l\'envoi du mail.' };
+    }
+};
+
+// Envoie un code de vérification à 6 chiffres à l'adresse Eyefind Mail
+// indiquée — étape obligatoire avant la création d'un compte Civil (voir
+// CivilianAuthPanel.js). Ne lève jamais : retourne { ok:false, message } pour
+// affichage direct dans l'interface.
+export const sendEmailVerificationCode = async (email) => {
+    try {
+        const response = await fetch(SEND_VERIFICATION_CODE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            return { ok: false, error: data.error, message: data.message || 'Échec de l\'envoi du code de vérification.' };
+        }
+        return { ok: true };
+    } catch (err) {
+        console.error('Failed to send email verification code:', err);
+        return { ok: false, error: 'network-error', message: 'Erreur réseau lors de l\'envoi du code.' };
+    }
+};
+
+// Vérifie le code saisi par l'utilisateur. Retourne { ok:true } si valide.
+export const verifyEmailCode = async (email, code) => {
+    try {
+        const response = await fetch(VERIFY_EMAIL_CODE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            return { ok: false, error: data.error, message: data.message || 'Code de vérification invalide.' };
+        }
+        return { ok: true };
+    } catch (err) {
+        console.error('Failed to verify email code:', err);
+        return { ok: false, error: 'network-error', message: 'Erreur réseau lors de la vérification du code.' };
     }
 };

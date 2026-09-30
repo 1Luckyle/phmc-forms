@@ -53,7 +53,7 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 5: // Surgery Report
             return [
-                'phmcEmployee', 'lastName', 'extraStaff', 'patientID', 'patientSummaryConsultation',
+                'phmcEmployee', 'lastName', 'extraStaff', 'patientName', 'patientID', 'patientSummaryConsultation',
                 'patientAddress', 'rank', 'date', 'patientSummary', 'lastName',
                 'surgeryProcedures', 'patientConsentOption', 'patientComplicationOptions',
                 'procedureGoodOptions'
@@ -145,14 +145,14 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 19: // Emergency Room Protocols
             return [
-                'lastName', 'phmcRank', 'patientID', 'date', 'patientDiagnosis',
+                'lastName', 'phmcRank', 'patientName', 'patientID', 'date', 'patientDiagnosis',
                 'patientSecondaryDiagnosis', 'patientMedicine', 'patientProcedure',
                 'patientChiefComplaint', 'painLevel', 'temperature', 'heartRate', 'breathing',
                 'bloodPressure', 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission'
             ];
         case 20: // Consultation Notes (PHMC)
             return [
-                'lastName', 'phmcRank', 'patientID', 'date', 'patientDiagnosis',
+                'lastName', 'phmcRank', 'patientName', 'patientID', 'date', 'patientDiagnosis',
                 'patientSecondaryDiagnosis', 'patientMedicine', 'patientProcedure',
                 'patientChiefComplaint', 'temperature', 'heartRate', 'breathing', 'bloodPressure',
                 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission',
@@ -160,7 +160,7 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 21: // Consultation Notes (PBC)
             return [
-                'lastName', 'phmcRank', 'patientID', 'date', 'patientDiagnosis',
+                'lastName', 'phmcRank', 'patientName', 'patientID', 'date', 'patientDiagnosis',
                 'patientSecondaryDiagnosis', 'patientMedicine', 'patientProcedure',
                 'patientChiefComplaint', 'temperature', 'heartRate', 'breathing', 'bloodPressure',
                 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission',
@@ -170,6 +170,7 @@ const getRelevantFields = (bbCodeVersion) => {
             return [
                 'phmcEmployee', 'lastName',
                 'date',
+                'patientName',
                 'patientID',
                 'departmentLarge',
                 'patientNotes',  // AJOUTER CETTE LIGNE
@@ -178,6 +179,7 @@ const getRelevantFields = (bbCodeVersion) => {
             return [
                 'phmcEmployee', 'lastName',
                 'date',
+                'patientName',
                 'patientID',
                 'departmentLarge',
                 'patientNotes',  // AJOUTER CETTE LIGNE
@@ -260,6 +262,7 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 28: // Psychological Evaluation PHMC
             return [
+                'patientName',
                 'patientID',
                 'date',
                 'phmcRank',
@@ -307,6 +310,7 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 29: // Psychological Evaluation PBC
             return [
+                'patientName',
                 'patientID',
                 'date',
                 'phmcRank',

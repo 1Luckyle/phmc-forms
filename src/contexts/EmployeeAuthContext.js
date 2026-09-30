@@ -214,39 +214,6 @@ export const EmployeeAuthProvider = ({ children }) => {
     };
 
     /**
-     * Créer un compte Civil (identité + coordonnées uniquement — aucun champ de
-     * santé n'est jamais demandé ni stocké ici).
-     * @param {Object} civilianData - Identité/contact du civil
-     * @param {string} email - Email pour Firebase Auth
-     * @param {string} password - Mot de passe
-     */
-    const createCivilianAccount = async (civilianData, email, password) => {
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            const patientID = await generatePatientID();
-            const civilianWithID = {
-                ...civilianData,
-                uid: user.uid,
-                email,
-                patientID,
-                createdAt: new Date().toISOString()
-            };
-
-            await set(ref(database, `civilians/${user.uid}`), civilianWithID);
-
-            setCivilianProfile(civilianWithID);
-            setEmployeeProfile(null);
-
-            return { success: true, user, civilianData: civilianWithID };
-        } catch (error) {
-            console.error('Error creating civilian account:', error);
-            throw error;
-        }
-    };
-
-    /**
      * Créer un compte Civil à partir d'une identité GTA World déjà vérifiée
      * (voir CivilianAuthPanel.js / GtawCharacterPicker.js) : pas de mot de
      * passe, connexion uniquement via GTA World par la suite — même principe
@@ -337,7 +304,6 @@ export const EmployeeAuthProvider = ({ children }) => {
         isAdmin,
         requestEmployeeAccount,
         createEmployeeAccount,
-        createCivilianAccount,
         createCivilianAccountFromGtaw,
         loginEmployee,
         logoutEmployee

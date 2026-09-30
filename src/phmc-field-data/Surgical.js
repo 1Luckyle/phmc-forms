@@ -16,16 +16,27 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
     return (
     <>
     <p>Ce formulaire est utilisé pour documenter une intervention chirurgicale. Il doit être ajouté au dossier pour chaque rendez-vous de chirurgie, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
-    <Form.Label>Identifiant unique du patient.</Form.Label>
-    <Form.Control
-                type="text"
-                name="patientID"
-                value={formData.patientID}
-                onChange={handleChange}
-                placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
-                className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
+    <Form.Label>Nom du patient / ID Patient</Form.Label>
+    <div style={{ display: 'flex', gap: '10px' }}>
+        <Form.Control
+                    type="text"
+                    name="patientName"
+                    value={formData.patientName}
+                    onChange={handleChange}
+                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
+                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
 
-            />
+                />
+        <Form.Control
+                    type="text"
+                    name="patientID"
+                    value={formData.patientID}
+                    onChange={handleChange}
+                    placeholder="ID Patient (optionnel, si connu)"
+                    className="form-control"
+
+                />
+    </div>
 
         <Form.Label>Date du rendez-vous</Form.Label>
         <Form.Control

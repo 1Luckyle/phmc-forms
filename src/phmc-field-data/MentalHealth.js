@@ -20,12 +20,20 @@ const MentalHealth = ({
 
                 <Form.Control
                     type="text"
+                    name="patientName"
+                    value={formData.patientName}
+                    onChange={handleChange}
+                    placeholder="Prénom & Nom du patient"
+                    required
+                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+                />
+                <Form.Control
+                    type="text"
                     name="patientID"
                     value={formData.patientID}
                     onChange={handleChange}
-                    placeholder="ID Patient (Prénom & Nom du patient si incertain)"
-                    required
-                    className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
+                    placeholder="ID Patient (optionnel, si connu)"
+                    className="form-control"
                 />
                 <Form.Label>Date:</Form.Label>
                 <Form.Control

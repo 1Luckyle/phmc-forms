@@ -149,8 +149,16 @@
     // connecté peut voir/partager/copier le dossier d'un patient — voir Lot 5 du
     // plan Civil), et par le civil lui-même. Écriture réservée au propriétaire.
     "civilians": {
+      // .read au niveau du parent (pas seulement $uid) : generatePatientID()
+      // dans EmployeeAuthContext.js lit tout le nœud civilians pour vérifier
+      // l'absence de collision d'ID patient (get(ref(database, 'civilians'))).
+      // Une règle .read définie uniquement sous $uid n'autorise PAS la lecture
+      // du nœud parent — Firebase exige la permission au niveau exact du chemin
+      // lu, elle ne "descend" pas automatiquement depuis les enfants. Sans ce
+      // niveau, generatePatientID() échoue avec PERMISSION_DENIED et bloque
+      // toute création de compte Civil après l'étape de vérification d'email.
+      ".read": "auth != null",
       "$uid": {
-        ".read":  "auth != null",
         ".write": "auth != null && auth.uid === $uid"
       }
     },
@@ -182,9 +190,14 @@
     // consulte que jobApplications/{son propre uid}) ; écriture par tout
     // utilisateur connecté (le civil gère sa propre candidature, l'admin fait
     // avancer son statut) ; suppression réservée aux admins.
+    // .read déclaré ici (niveau parent), pas seulement sous $applicantUid :
+    // PendingJobApplications.js lit tout le nœud jobApplications en une fois
+    // (get(ref(database, 'jobApplications'))) pour les aplatir dans le panneau
+    // admin — une règle .read placée uniquement sous $applicantUid n'aurait
+    // pas autorisé cette lecture globale (voir la même correction sur civilians).
     "jobApplications": {
+      ".read": "auth != null",
       "$applicantUid": {
-        ".read": "auth != null",
         "$applicationId": {
           ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true)"
         }
@@ -201,6 +214,17 @@
     // pouvoir suivre en direct le statut de leur paiement sans être connectés.
     "fleecaPayments": {
       ".read":  true,
+      ".write": false
+    },
+
+    // ─── Codes de vérification d'email (Eyefind Mail) ─────────────────────────
+    // Créés/lus/mis à jour exclusivement côté serveur avec le SDK Admin (voir
+    // sendEmailVerificationCode / verifyEmailCode / createGtawCivilianAccount
+    // dans functions/index.js), qui contourne ces règles : lecture et écriture
+    // client bloquées pour empêcher qu'un civil ne s'auto-valide un code ou ne
+    // lise celui d'un autre.
+    "emailVerifications": {
+      ".read":  false,
       ".write": false
     }
   }

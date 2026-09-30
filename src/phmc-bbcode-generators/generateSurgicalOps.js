@@ -9,7 +9,8 @@ const generateSurgicalOps = (formData) => {
     const {
         phmcEmployee = NOT_FILLED,
         extraStaff = '',
-        patientID = NOT_FILLED,
+        patientName = NOT_FILLED,
+        patientID = '',
         patientSummaryConsultation = NOT_FILLED,
         patientAddress = NOT_FILLED,
         phmcRank = NOT_FILLED,
@@ -22,7 +23,7 @@ const generateSurgicalOps = (formData) => {
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]RAPPORT CHIRURGICAL[/b]
 
-PATIENT ${patientID}
+PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 Signé: ${phmcRank} ${lastName}

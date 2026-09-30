@@ -2,6 +2,7 @@ const generateEmergencyProtocol = (formData) => {
     const {
         lastName,
         phmcRank,
+        patientName,
         patientID,
         date,
         patientDiagnosis,
@@ -52,6 +53,7 @@ const generateEmergencyProtocol = (formData) => {
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]PROTOCOLE D'URGENCE[/b]
 
+PATIENT: ${patientName || 'N/A'}
 ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}

@@ -1653,15 +1653,17 @@ function MainApp({
                                 setShowFeatureRequestModal={setShowFeatureRequestModal}
                             />
 
-                            <Button
-                                variant="secondary"
-                                type="button"
-                                className="changelog-button"
-                                onClick={() => setShowBusinessCard(prev => !prev)}
-                            >
-                                <i className="fa-solid fa-address-card"></i>
-                                Carte de Visite
-                            </Button>
+                            {(isAdmin || employeeProfile) && (
+                                <Button
+                                    variant="secondary"
+                                    type="button"
+                                    className="changelog-button"
+                                    onClick={() => setShowBusinessCard(prev => !prev)}
+                                >
+                                    <i className="fa-solid fa-address-card"></i>
+                                    Carte de Visite
+                                </Button>
+                            )}
 
                             <Button
                                 variant="secondary"
@@ -1780,7 +1782,7 @@ function MainApp({
 
                         <form> 
                             <Suspense fallback={<LoadingSpinner />}>
-                                {FieldComponent ? (
+                                {FieldComponent && currentEmployee ? (
                                     <FieldComponent
                                         formData={formData}
                                         handleChange={handleChange}
@@ -1889,6 +1891,15 @@ function MainApp({
                                         showNotification={showNotification}
                                         onAttachReportSummaryRequest={onAttachReportSummaryRequest}
                                     />
+                                ) : !currentEmployee ? (
+                                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                                        <i className="fas fa-lock" style={{ fontSize: '3rem', marginBottom: '20px', opacity: 0.6 }}></i>
+                                        <h4>Connexion requise</h4>
+                                        <p>Vous devez être connecté (Personnel PHMC/DMEC ou Civil) pour remplir un formulaire.</p>
+                                        <Button variant="primary" size="lg" onClick={restartOnboarding}>
+                                            <i className="fas fa-play-circle"></i> Ouvrir le Guide de Configuration
+                                        </Button>
+                                    </div>
                                 ) : (
                                     <p>Veuillez sélectionner une agence, puis un type de formulaire.</p>
                                 )}
@@ -2187,7 +2198,7 @@ function MainApp({
                             />
                         </div>
 
-                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && (
+                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && (isAdmin || employeeProfile) && (
                             <BusinessCardModal
                                 show={showBusinessCard}
                                 onHide={() => setShowBusinessCard(false)}
