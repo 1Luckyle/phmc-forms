@@ -8,23 +8,29 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import * as Sentry from "@sentry/react";
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail, signInWithCustomToken } from 'firebase/auth';
 import { auth } from '../firebase';
 import { buildGtawAuthUrl } from '../utils/gtawOAuth';
 import { useAuthMethodsConfig } from '../hooks/useAuthMethodsConfig';
+import GtawCharacterPicker from './Auth/GtawCharacterPicker';
+import CivilianAuthPanel from './Auth/CivilianAuthPanel';
 
 // Step definitions for the onboarding flow
-const ONBOARDING_STEPS = {
+export const ONBOARDING_STEPS = {
     WELCOME: 'welcome',
     USER_TYPE: 'userType',
     ROLE_SPECIFIC: 'roleSpecific',
+    // Étape de connexion/création de compte Civil, empruntée par CIVILIAN et
+    // RECRUITMENT — un compte Civil unique sert aux deux (formulaires médicaux
+    // civils ET candidatures).
+    CIVIL_AUTH: 'civilAuth',
     FORM_PREVIEW: 'formPreview',
     PRIVACY_POLICY: 'privacyPolicy',
     COMPLETE: 'complete'
 };
 
 // User type categories
-const USER_TYPES = {
+export const USER_TYPES = {
     CIVILIAN: 'civilian',
     PHMC_STAFF: 'phmcStaff',
     CORONER: 'coroner',
@@ -53,14 +59,21 @@ const RECOMMENDED_FORMS = {
 // Utility function to ensure a value is an array
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
 
-const OnboardingModal = ({ 
-    show, 
-    onComplete, 
+const OnboardingModal = ({
+    show,
+    onComplete,
     onSkip,
     formDefinitions: formDefs = formDefinitions,
     showNotification = () => {}, // Add showNotification prop with default fallback
     phmcList = [], // Add phmcList prop
-    coronerList = [] // Add coronerList prop
+    coronerList = [], // Add coronerList prop
+    // Permet d'ouvrir l'assistant directement sur une étape donnée (utilisé par
+    // le bouton « Se connecter » de la page principale pour aller droit à la
+    // connexion/création de compte Civil, sans repasser par Bienvenue/Rôle).
+    // Ignoré au retour d'une redirection OAuth GTA World, qui a toujours
+    // priorité (voir la reprise plus bas).
+    initialStep = null,
+    initialUserType = null
 }) => {
     // Initialize webhook functions
     const { logWebhookToFirebase } = useWebhooks({}, { sha: 'onboarding' }, showNotification);
@@ -96,6 +109,9 @@ const OnboardingModal = ({
     const [accountCreationMethod, setAccountCreationMethod] = useState(null);
     const [gtawCharacters, setGtawCharacters] = useState(null);
     const [gtawUnavailableCharacterIds, setGtawUnavailableCharacterIds] = useState([]);
+    // Pour chaque id de personnage : { registered, customToken?, pending? } — voir
+    // GtawCharacterPicker.js, qui décide connexion/création à partir de ça.
+    const [gtawResolutions, setGtawResolutions] = useState({});
     const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
     const [gtawUserId, setGtawUserId] = useState(null);
 
@@ -118,14 +134,14 @@ const OnboardingModal = ({
                     sessionStorage.removeItem('gtaw-onboarding-result');
 
                     const phmcCharacters = result.characters || [];
+                    const isCivilFlow = pending.userType === USER_TYPES.CIVILIAN || pending.userType === USER_TYPES.RECRUITMENT;
                     if (result.error) {
                         showNotification(`Échec de la connexion GTA World : ${result.error}`, 'error');
                     } else if (pending.userType && phmcCharacters.length === 0) {
-                        // Aucun personnage du compte GTA World n'appartient à la faction
-                        // PHMC (id 364) : impossible de créer un compte Personnel PHMC /
-                        // DMEC avec ce compte. On renvoie vers le choix du type
-                        // d'utilisateur — Civil et Candidat restent accessibles sans
-                        // compte pour ceux qui ne sont pas membres du PHMC.
+                        // Aucun personnage exploitable trouvé sur ce compte GTA World (pour
+                        // le flux Personnel/DMEC : aucun membre de la faction PHMC id 364 ;
+                        // pour le flux Civil : le compte GTA World n'a tout simplement aucun
+                        // personnage). On renvoie vers le choix du type d'utilisateur.
                         resumedFromGtaw = true;
                         setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
                         setSelectedUserType(null);
@@ -133,9 +149,23 @@ const OnboardingModal = ({
                         setShowAccountCreation(false);
                         setAccountCreationMethod(null);
                         showNotification(
-                            'Aucun personnage membre de la faction PHMC n\'a été trouvé sur ce compte GTA World. Si vous n\'êtes pas membre du PHMC, utilisez plutôt les options Civil ou Candidat.',
+                            isCivilFlow
+                                ? 'Aucun personnage n\'a été trouvé sur ce compte GTA World.'
+                                : 'Aucun personnage membre de la faction PHMC n\'a été trouvé sur ce compte GTA World. Si vous n\'êtes pas membre du PHMC, utilisez plutôt les options Civil ou Candidat.',
                             'warning'
                         );
+                    } else if (isCivilFlow) {
+                        // Reprise du flux Civil : la sélection/connexion de personnage est
+                        // entièrement gérée par CivilianAuthPanel (voir CIVIL_AUTH), à partir
+                        // des mêmes états gtawCharacters/gtawResolutions/gtawUserId que le
+                        // flux Personnel — un seul flux GTAW est actif à la fois.
+                        resumedFromGtaw = true;
+                        setCurrentStep(ONBOARDING_STEPS.CIVIL_AUTH);
+                        setSelectedUserType(pending.userType);
+                        setSelectedRole(null);
+                        setGtawCharacters(phmcCharacters);
+                        setGtawResolutions(result.gtawResolutions || {});
+                        setGtawUserId(result.gtawUserId ?? null);
                     } else if (pending.userType) {
                         resumedFromGtaw = true;
                         setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
@@ -145,6 +175,7 @@ const OnboardingModal = ({
                         setAccountCreationMethod('gtaw');
                         setGtawCharacters(phmcCharacters);
                         setGtawUnavailableCharacterIds(result.unavailableCharacterIds || []);
+                        setGtawResolutions(result.gtawResolutions || {});
                         setSelectedGtawCharacter(null);
                         setGtawUserId(result.gtawUserId ?? null);
                         setAccountData({
@@ -165,14 +196,15 @@ const OnboardingModal = ({
             }
 
             if (!resumedFromGtaw) {
-                setCurrentStep(ONBOARDING_STEPS.WELCOME);
-                setSelectedUserType(null);
+                setCurrentStep(initialStep || ONBOARDING_STEPS.WELCOME);
+                setSelectedUserType(initialUserType || null);
                 setSelectedRole(null);
                 setRecommendedForms([]);
                 setShowAccountCreation(false);
                 setAccountCreationMethod(null);
                 setGtawCharacters(null);
                 setGtawUnavailableCharacterIds([]);
+                setGtawResolutions({});
                 setSelectedGtawCharacter(null);
                 setGtawUserId(null);
                 setShowLogin(false);
@@ -219,11 +251,16 @@ const OnboardingModal = ({
             case ONBOARDING_STEPS.USER_TYPE:
                 if (selectedUserType === USER_TYPES.PHMC_STAFF || selectedUserType === USER_TYPES.CORONER) {
                     setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
+                } else if (selectedUserType === USER_TYPES.CIVILIAN || selectedUserType === USER_TYPES.RECRUITMENT) {
+                    setCurrentStep(ONBOARDING_STEPS.CIVIL_AUTH);
                 } else {
                     setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
                 }
                 break;
             case ONBOARDING_STEPS.ROLE_SPECIFIC:
+                setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+                break;
+            case ONBOARDING_STEPS.CIVIL_AUTH:
                 setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
                 break;
             case ONBOARDING_STEPS.FORM_PREVIEW:
@@ -248,9 +285,14 @@ const OnboardingModal = ({
             case ONBOARDING_STEPS.ROLE_SPECIFIC:
                 setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
                 break;
+            case ONBOARDING_STEPS.CIVIL_AUTH:
+                setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
+                break;
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 if (selectedUserType === USER_TYPES.PHMC_STAFF || selectedUserType === USER_TYPES.CORONER) {
                     setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
+                } else if (selectedUserType === USER_TYPES.CIVILIAN || selectedUserType === USER_TYPES.RECRUITMENT) {
+                    setCurrentStep(ONBOARDING_STEPS.CIVIL_AUTH);
                 } else {
                     setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
                 }
@@ -383,17 +425,39 @@ const OnboardingModal = ({
         });
     };
 
-    // Démarre la connexion OAuth GTA World depuis l'étape de création de compte.
-    // L'état React sera perdu au rechargement de la page après la redirection ;
-    // on mémorise donc le type d'utilisateur en cours dans sessionStorage pour
-    // pouvoir rouvrir l'onboarding au bon endroit dans GtaCallback / MainApp.
+    // Démarre la connexion OAuth GTA World depuis l'étape de création de compte
+    // (Personnel/DMEC) ou depuis CivilianAuthPanel (Civil/Candidat). L'état React
+    // sera perdu au rechargement de la page après la redirection ; on mémorise
+    // donc le type d'utilisateur en cours dans sessionStorage pour pouvoir
+    // rouvrir l'onboarding au bon endroit dans GtaCallback / MainApp. flowMode
+    // détermine si exchangeAuthCodeForToken applique le filtre faction PHMC
+    // (Personnel/DMEC) ou renvoie tous les personnages (Civil/Candidat).
     const startGtawOnboardingLogin = () => {
         try {
+            const isCivilFlow = selectedUserType === USER_TYPES.CIVILIAN || selectedUserType === USER_TYPES.RECRUITMENT;
             sessionStorage.setItem('gtaw-onboarding-pending', JSON.stringify({ userType: selectedUserType }));
-            window.location.href = buildGtawAuthUrl({ type: 'onboarding' });
+            window.location.href = buildGtawAuthUrl({ type: 'onboarding', flowMode: isCivilFlow ? 'civilian' : 'employee' });
         } catch (err) {
             console.error('Failed to start GTA World login:', err);
             showNotification('Impossible de démarrer la connexion avec GTA World.', 'error');
+        }
+    };
+
+    // Connexion directe via un personnage GTAW déjà lié à un compte Personnel/
+    // DMEC existant (voir GtawCharacterPicker) : le customToken a déjà été émis
+    // côté serveur au moment de l'échange (gtawResolutions), donc plus besoin
+    // d'un second aller-retour OAuth.
+    const handleGtawEmployeeCharacterLogin = async (customToken) => {
+        try {
+            await signInWithCustomToken(auth, customToken);
+            setLoggedIn(true);
+            showNotification('Connecté avec succès !', 'success');
+            setTimeout(() => {
+                setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+            }, 1500);
+        } catch (error) {
+            console.error('Error signing in with GTAW character token:', error);
+            showNotification('Erreur lors de la connexion avec ce personnage.', 'error');
         }
     };
 
@@ -730,15 +794,23 @@ const OnboardingModal = ({
     };
 
     const getStepNumber = () => {
+        // ROLE_SPECIFIC (Personnel/DMEC) et CIVIL_AUTH (Civil/Candidat) occupent
+        // logiquement le même créneau de progression — un parcours donné ne
+        // traverse jamais les deux — donc on normalise l'un vers l'autre avant
+        // de chercher l'index plutôt que de dupliquer le tableau des étapes.
+        const hasExtraStep = [
+            USER_TYPES.PHMC_STAFF, USER_TYPES.CORONER, USER_TYPES.CIVILIAN, USER_TYPES.RECRUITMENT
+        ].includes(selectedUserType);
         const steps = [ONBOARDING_STEPS.WELCOME, ONBOARDING_STEPS.USER_TYPE, ONBOARDING_STEPS.ROLE_SPECIFIC, ONBOARDING_STEPS.FORM_PREVIEW, ONBOARDING_STEPS.PRIVACY_POLICY, ONBOARDING_STEPS.COMPLETE];
-        const totalSteps = selectedUserType === USER_TYPES.PHMC_STAFF || selectedUserType === USER_TYPES.CORONER ? 6 : 5;
-        let currentStepIndex = steps.indexOf(currentStep) + 1;
-        
+        const totalSteps = hasExtraStep ? 6 : 5;
+        const normalizedStep = currentStep === ONBOARDING_STEPS.CIVIL_AUTH ? ONBOARDING_STEPS.ROLE_SPECIFIC : currentStep;
+        let currentStepIndex = steps.indexOf(normalizedStep) + 1;
+
         // Adjust for skipped role step
-        if ((selectedUserType !== USER_TYPES.PHMC_STAFF && selectedUserType !== USER_TYPES.CORONER) && currentStepIndex > 2) {
+        if (!hasExtraStep && currentStepIndex > 2) {
             currentStepIndex -= 1;
         }
-        
+
         return { current: currentStepIndex, total: totalSteps };
     };
 
@@ -946,12 +1018,15 @@ const OnboardingModal = ({
         </div>
     );
 
-    // Étape de sélection du personnage GTA World une fois l'OAuth terminé.
+    // Étape de sélection du personnage GTA World une fois l'OAuth terminé. Le
+    // sélecteur "intelligent" (GtawCharacterPicker) saute directement à la
+    // connexion ou à la création quand il n'y a pas d'ambiguïté (0 ou 1
+    // personnage), et n'affiche une liste de choix que s'il y en a plusieurs.
     const renderGtawCharacterPicker = (isCoroner) => (
         <div style={stepContentStyle}>
             <h2 style={stepTitleStyle}>Choisissez votre personnage</h2>
             <p style={stepDescriptionStyle}>
-                Voici les personnages liés à votre compte GTA World. Sélectionnez celui pour lequel vous créez ce compte.
+                Voici les personnages liés à votre compte GTA World.
             </p>
             <div style={accountFormStyle}>
                 {(!gtawCharacters || gtawCharacters.length === 0) ? (
@@ -960,47 +1035,19 @@ const OnboardingModal = ({
                         Aucun personnage membre de la faction PHMC n'a été trouvé sur ce compte GTA World.
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                        {gtawCharacters.map((character) => {
-                            const isUnavailable = gtawUnavailableCharacterIds.includes(String(character.id));
-                            return (
-                                <button
-                                    key={character.id}
-                                    type="button"
-                                    disabled={isUnavailable}
-                                    onClick={() => handleSelectGtawCharacter(character)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        backgroundColor: '#2a2a2a',
-                                        border: `1px solid ${isUnavailable ? '#5c1f1f' : '#444'}`,
-                                        borderRadius: '8px', padding: '12px 15px',
-                                        color: isUnavailable ? '#888' : '#fff',
-                                        cursor: isUnavailable ? 'not-allowed' : 'pointer',
-                                        opacity: isUnavailable ? 0.6 : 1,
-                                        textAlign: 'left'
-                                    }}
-                                >
-                                    <span>
-                                        <i className="fas fa-user" style={{ marginRight: '10px' }}></i>
-                                        {character.firstname} {character.lastname}
-                                    </span>
-                                    {isUnavailable && (
-                                        <span style={{
-                                            fontSize: '0.75em', color: '#ff6b6b', border: '1px solid #ff6b6b',
-                                            borderRadius: '4px', padding: '2px 6px', whiteSpace: 'nowrap'
-                                        }}>
-                                            Déjà utilisé
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <GtawCharacterPicker
+                        characters={gtawCharacters}
+                        gtawResolutions={gtawResolutions}
+                        onLogin={(customToken) => handleGtawEmployeeCharacterLogin(customToken)}
+                        onCreate={(character) => handleSelectGtawCharacter(character)}
+                        onPending={() => showNotification('Une demande de compte est déjà en attente d\'approbation pour ce personnage.', 'warning')}
+                        onNoCharacters={() => {}}
+                    />
                 )}
                 <div style={accountActionsStyle}>
                     <Button
                         variant="outline-secondary"
-                        onClick={() => { setAccountCreationMethod(null); setGtawCharacters(null); setGtawUnavailableCharacterIds([]); }}
+                        onClick={() => { setAccountCreationMethod(null); setGtawCharacters(null); setGtawUnavailableCharacterIds([]); setGtawResolutions({}); }}
                         style={skipAccountButtonStyle}
                     >
                         Retour
@@ -1755,6 +1802,40 @@ const OnboardingModal = ({
         return null;
     };
 
+    // Étape de connexion/création de compte Civil, empruntée par CIVILIAN et
+    // RECRUITMENT — un compte Civil unique sert aux formulaires médicaux civils
+    // ET aux candidatures. Toute la logique (choix GTAW/manuel, formulaire
+    // d'identité, connexion) vit dans CivilianAuthPanel ; cette étape ne fait
+    // que lui fournir l'état GTAW déjà résolu (gtawCharacters/gtawResolutions,
+    // partagés avec le flux Personnel/DMEC ci-dessus) et le déclencheur de
+    // redirection OAuth.
+    const renderCivilAuthStep = () => (
+        <div style={stepContentStyle}>
+            <h2 style={stepTitleStyle}>
+                {selectedUserType === USER_TYPES.RECRUITMENT ? 'Connexion ou création de compte Candidat' : 'Connexion ou création de compte Civil'}
+            </h2>
+            <p style={stepDescriptionStyle}>
+                Un compte Civil vous permet de retrouver vos dossiers médicaux
+                {selectedUserType === USER_TYPES.RECRUITMENT ? ' et de suivre vos candidatures' : ''}, où que vous soyez.
+                Aucune information de santé ne vous sera jamais demandée ici.
+            </p>
+            <div style={accountFormStyle}>
+                <CivilianAuthPanel
+                    gtawCharacters={gtawCharacters}
+                    gtawResolutions={gtawResolutions}
+                    gtawUserId={gtawUserId}
+                    onStartGtaw={startGtawOnboardingLogin}
+                    showNotification={showNotification}
+                    onAuthenticated={() => {
+                        setTimeout(() => {
+                            setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+                        }, 1200);
+                    }}
+                />
+            </div>
+        </div>
+    );
+
     const renderFormPreviewStep = () => (
         <div style={stepContentStyle}>
             <h2 style={stepTitleStyle}>Voici vos formulaires recommandés</h2>
@@ -1881,6 +1962,12 @@ const OnboardingModal = ({
                     return true || showAccountCreation || showLogin || accountCreated || loggedIn;
                 }
                 return selectedRole !== null;
+            case ONBOARDING_STEPS.CIVIL_AUTH:
+                // La connexion/création Civil n'est pas bloquante au niveau de
+                // l'assistant : la restriction stricte d'accès aux formulaires
+                // civils/candidature pour les non-connectés est gérée ailleurs
+                // (AgencySelector). On laisse toujours avancer.
+                return true;
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 return true;
             case ONBOARDING_STEPS.PRIVACY_POLICY:
@@ -1913,6 +2000,8 @@ const OnboardingModal = ({
                 return renderUserTypeStep();
             case ONBOARDING_STEPS.ROLE_SPECIFIC:
                 return renderRoleSpecificStep();
+            case ONBOARDING_STEPS.CIVIL_AUTH:
+                return renderCivilAuthStep();
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 return renderFormPreviewStep();
             case ONBOARDING_STEPS.PRIVACY_POLICY:

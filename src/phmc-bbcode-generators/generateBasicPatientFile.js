@@ -27,7 +27,9 @@ const generateBasicPatientFile = (formData) => {
     } = formData;
             // Payment/Exempt logic
         let paymentSection = '';
-        if (formData.isExempt === true || formData.isExempt === 'true') {
+        if (formData.filledByStaff) {
+            paymentSection = 'Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.';
+        } else if (formData.isExempt === true || formData.isExempt === 'true') {
             paymentSection = 'Je suis exempté de payer ce service conformément aux politiques du PHMC.';
         } else if (paymentProofPhotos) {
             paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;

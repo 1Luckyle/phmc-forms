@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { formDefinitions, getFormDefinition } from './formDefinitions'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown, Modal } from 'react-bootstrap';
 import getRelevantFields from './components/RevelantFields';
 import SeasonalEvents from './components/SeasonalEvents';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -119,8 +119,17 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, isAdmin, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
+    // Choix de rôle affiché par le bouton « Se connecter » de la page
+    // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
+    // Civil ouvre le Guide de Configuration directement sur la connexion/
+    // création de compte Civil (voir ONBOARDING_STEPS.CIVIL_AUTH /
+    // USER_TYPES.CIVILIAN dans OnboardingModal.js — valeurs dupliquées ici en
+    // chaînes littérales pour ne pas forcer le chargement anticipé de ce
+    // composant lazy-loaded).
+    const [showLoginRoleChoice, setShowLoginRoleChoice] = useState(false);
+    const [quickCivilOnboarding, setQuickCivilOnboarding] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
     // Modal de sélection d'employé affichée à un admin qui clique sur
     // "Sauvegarder le rapport" : un admin peut sauvegarder pour n'importe quel
@@ -182,7 +191,8 @@ function MainApp({
         setUserOnboardingPreferences(preferences);
         setOnboardingComplete(true);
         setShowOnboarding(false);
-        
+        setQuickCivilOnboarding(false);
+
         // Apply user preferences immediately
         if (preferences.allowedCategories?.length === 1) {
             setSelectedAgencyGroup(preferences.allowedCategories[0]);
@@ -201,6 +211,7 @@ function MainApp({
     const handleOnboardingSkip = () => {
         setShowOnboarding(false);
         setOnboardingComplete(true);
+        setQuickCivilOnboarding(false);
         showNotification('L\'introduction a été ignorée. Vous pouvez la relancer à tout moment depuis le menu Outils.', 'info-circle');
     };
 
@@ -210,6 +221,7 @@ function MainApp({
         localStorage.removeItem('userOnboardingPreferences');
         setUserOnboardingPreferences(null);
         setOnboardingComplete(false);
+        setQuickCivilOnboarding(false);
         setShowOnboarding(true);
     };
     const [isMobile, setIsMobile] = useState(false);
@@ -695,9 +707,20 @@ function MainApp({
         setShowCctvRequestModal(true);
     };
     
-    const handleEmployeeLogin = () => {
+    // Bouton « Se connecter » de la page principale : ouvre le choix de rôle.
+    const handleOpenLoginRoleChoice = () => {
+        setShowLoginRoleChoice(true);
+    };
+
+    const handleChooseEmployeeLogin = () => {
+        setShowLoginRoleChoice(false);
         setShowLoginModal(true);
-        setShowToolsDropdown(false);
+    };
+
+    const handleChooseCivilLogin = () => {
+        setShowLoginRoleChoice(false);
+        setQuickCivilOnboarding(true);
+        setShowOnboarding(true);
     };
     
     const handleEmployeeLogout = async () => {
@@ -1251,14 +1274,18 @@ function MainApp({
             <div className="App">
                 <LockdownBanner notification={lockdownConfig.notification} show={isLockdownActive} />
                 <LockdownDialog show={showDialog} onHide={hideDialog} message={lockdownConfig.dialog} />
-                <OnboardingModal 
-                    show={showOnboarding} 
+                <OnboardingModal
+                    show={showOnboarding}
                     onComplete={handleOnboardingComplete}
                     onSkip={handleOnboardingSkip}
                     formDefinitions={formDefinitions}
                     showNotification={showNotification}
                     phmcList={phmcListData}
                     coronerList={coronerListData}
+                    // Valeurs dupliquées d'ONBOARDING_STEPS.CIVIL_AUTH / USER_TYPES.CIVILIAN
+                    // (voir la déclaration de quickCivilOnboarding ci-dessus pour le pourquoi).
+                    initialStep={quickCivilOnboarding ? 'civilAuth' : null}
+                    initialUserType={quickCivilOnboarding ? 'civilian' : null}
                 />
                 <AgencyGroupSelectorModal
                     show={showAgencyGroupSelectorModal && !selectedAgencyGroup && onboardingComplete}
@@ -1434,9 +1461,44 @@ function MainApp({
                     </div>
                 )}
 
-                <div className="container-fluid"> 
+                {/* Message d'information si connecté en tant que Civil */}
+                {isCivilian && civilianProfile && (
+                    <div style={{
+                        backgroundColor: '#1f3a2e',
+                        color: '#fff',
+                        padding: '10px 20px',
+                        margin: '10px 20px',
+                        borderRadius: '8px',
+                        border: '1px solid #2e7d32',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                    }}>
+                        <i className="fas fa-id-card" style={{ color: '#66bb6a' }}></i>
+                        <span>
+                            <strong>Connecté en tant que Civil :</strong> {
+                                civilianProfile.firstName && civilianProfile.lastName
+                                    ? `${civilianProfile.firstName} ${civilianProfile.lastName}`
+                                    : (civilianProfile.email || '')
+                            } (ID patient : <strong>{civilianProfile.patientID}</strong>).
+                            Vous pouvez sauvegarder et retrouver vos propres dossiers médicaux et candidatures.
+                        </span>
+                    </div>
+                )}
+
+                <div className="container-fluid">
                     <div className="form-container">
                         <div className="button-group">
+                            {!currentEmployee && (
+                                <Button
+                                    variant="outline-light"
+                                    onClick={handleOpenLoginRoleChoice}
+                                    className="floating-tools-container"
+                                    style={{ marginRight: '10px' }}
+                                >
+                                    <i className="fas fa-sign-in-alt"></i> Se connecter
+                                </Button>
+                            )}
                             <div className="floating-tools-container">
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
@@ -1454,9 +1516,14 @@ function MainApp({
                                                 : (employeeProfile.name && employeeProfile.lastName
                                                     ? `${employeeProfile.name} ${employeeProfile.lastName}`
                                                     : (employeeProfile.name || currentEmployee.email)))
-                                            : currentEmployee.email
+                                            : (civilianProfile
+                                                ? (civilianProfile.firstName && civilianProfile.lastName
+                                                    ? `${civilianProfile.firstName} ${civilianProfile.lastName}`
+                                                    : (civilianProfile.email || currentEmployee.email))
+                                                : currentEmployee.email)
                                     }
                                                     {isAdmin && <span style={{marginLeft: '5px', color: '#ffc107'}}><i className="fas fa-crown"></i> Admin</span>}
+                                                    {isCivilian && <span style={{marginLeft: '5px', color: '#66bb6a'}}><i className="fas fa-id-card"></i> Civil</span>}
                                                 </Dropdown.Header>
                                                 <Dropdown.Divider />
                                             </>
@@ -1507,15 +1574,13 @@ function MainApp({
                                         >
                                             <i className="fas fa-sync-alt"></i> Vider le Cache & Actualiser
                                         </Dropdown.Item>
-                                        <Dropdown.Divider />
-                                        {currentEmployee ? (
-                                            <Dropdown.Item onClick={handleEmployeeLogout}>
-                                                <i className="fas fa-sign-out-alt"></i> Déconnexion
-                                            </Dropdown.Item>
-                                        ) : (
-                                            <Dropdown.Item onClick={handleEmployeeLogin}>
-                                                <i className="fas fa-sign-in-alt"></i> Connexion Employé
-                                            </Dropdown.Item>
+                                        {currentEmployee && (
+                                            <>
+                                                <Dropdown.Divider />
+                                                <Dropdown.Item onClick={handleEmployeeLogout}>
+                                                    <i className="fas fa-sign-out-alt"></i> Déconnexion
+                                                </Dropdown.Item>
+                                            </>
                                         )}
                                         <Dropdown.Divider />
                                         <Dropdown.Item onClick={() => {{
@@ -1859,6 +1924,56 @@ function MainApp({
                             onHide={() => setShowLoginModal(false)}
                             onSuccess={handleLoginSuccess}
                         />
+
+                        <Modal show={showLoginRoleChoice} onHide={() => setShowLoginRoleChoice(false)} centered>
+                            <Modal.Header closeButton style={{ backgroundColor: '#1a1a1a', color: '#fff', borderBottom: '1px solid #444' }}>
+                                <Modal.Title>
+                                    <i className="fas fa-sign-in-alt" style={{ marginRight: '10px' }}></i>
+                                    Se connecter
+                                </Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>
+                                <p>Quel type de compte souhaitez-vous utiliser ?</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={handleChooseEmployeeLogin}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '12px',
+                                            backgroundColor: '#1a1a1a', border: '1px solid #007bff',
+                                            borderRadius: '8px', padding: '15px', color: '#fff',
+                                            cursor: 'pointer', textAlign: 'left'
+                                        }}
+                                    >
+                                        <i className="fas fa-user-md" style={{ fontSize: '1.4rem', color: '#4a9eff' }}></i>
+                                        <span>
+                                            <strong style={{ display: 'block' }}>Personnel PHMC / DMEC</strong>
+                                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                                Employé du Pillbox Hill Medical Center ou du DMEC (coroner).
+                                            </span>
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleChooseCivilLogin}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '12px',
+                                            backgroundColor: '#1a1a1a', border: '1px solid #2e7d32',
+                                            borderRadius: '8px', padding: '15px', color: '#fff',
+                                            cursor: 'pointer', textAlign: 'left'
+                                        }}
+                                    >
+                                        <i className="fas fa-id-card" style={{ fontSize: '1.4rem', color: '#66bb6a' }}></i>
+                                        <span>
+                                            <strong style={{ display: 'block' }}>Civil</strong>
+                                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                                Retrouvez vos dossiers médicaux et vos candidatures.
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </Modal.Body>
+                        </Modal>
 
                         <EmployeeModal
                             show={showEmployeeModal}

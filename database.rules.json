@@ -142,6 +142,19 @@
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
 
+    // ─── Profils Civil ─────────────────────────────────────────────────────────
+    // Identité + coordonnées d'un compte Civil (voir EmployeeAuthContext.js,
+    // branche civilianProfile), SANS AUCUN champ de santé. Lecture par tout
+    // personnel PHMC/DMEC connecté (décision validée : n'importe quel personnel
+    // connecté peut voir/partager/copier le dossier d'un patient — voir Lot 5 du
+    // plan Civil), et par le civil lui-même. Écriture réservée au propriétaire.
+    "civilians": {
+      "$uid": {
+        ".read":  "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
     // ─── Paiements Fleeca (passerelle marchand v2) ────────────────────────────
     // Créés et mis à jour uniquement côté serveur avec le SDK Admin (voir
     // createFleecaPayment / fleecaWebhook / getFleecaPaymentStatus dans

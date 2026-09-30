@@ -60,7 +60,11 @@ const GtaCallback = () => {
                     navigate('/admin');
                     return;
                 }
-                // 'onboarding' (par défaut)
+                // 'onboarding' (par défaut) — utilisé aussi bien par le Guide de
+                // Configuration (Personnel/DMEC et, désormais, Civil/Candidat via
+                // CIVIL_AUTH) que par le bouton « Se connecter » de la page
+                // principale, qui rouvre directement l'assistant sur cette même
+                // étape (voir OnboardingModal initialStep/initialUserType).
                 try { sessionStorage.setItem('gtaw-onboarding-result', JSON.stringify(result)); }
                 catch (err) { console.error('Failed to store GTA World onboarding result:', err); }
                 navigate('/');
@@ -124,12 +128,14 @@ const GtaCallback = () => {
                     return;
                 }
 
-                // 'onboarding' : on a seulement besoin de la liste des personnages GTAW
-                // pour que l'utilisateur en choisisse un.
+                // 'onboarding' : on a besoin de la liste des personnages GTAW pour que
+                // l'utilisateur en choisisse un (création ou connexion — voir
+                // gtawResolutions ci-dessous). flowMode distingue le flux Personnel/
+                // DMEC (filtre faction 364, inchangé) du flux Civil (aucun filtre).
                 const response = await fetch(EXCHANGE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, redirectUri, tokenUrl }),
+                    body: JSON.stringify({ code, redirectUri, tokenUrl, flowMode: flow?.flowMode || 'employee' }),
                 });
 
                 const responseText = await response.text();
@@ -152,6 +158,11 @@ const GtaCallback = () => {
                 finish({
                     characters,
                     unavailableCharacterIds: data.unavailableCharacterIds || [],
+                    // Pour chaque personnage déjà lié à un compte : un customToken prêt
+                    // à l'emploi (signInWithCustomToken) — voir le sélecteur de
+                    // personnage "intelligent" (GtawCharacterPicker) qui décide de
+                    // connecter ou de proposer une création selon ce champ.
+                    gtawResolutions: data.gtawResolutions || {},
                     gtawUserId,
                     gtawUsername,
                     employeeType: flow?.employeeType,
