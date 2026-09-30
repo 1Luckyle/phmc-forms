@@ -5,7 +5,8 @@ const NOT_FILLED = 'Non renseigné';
 
 const generatePsychEvalPHMC = (formData) => {
     const {
-        patientID = NOT_FILLED,
+        patientName = NOT_FILLED,
+        patientID = '',
         date = NOT_FILLED,
         phmcRank = NOT_FILLED,
         lastName = NOT_FILLED,
@@ -40,7 +41,7 @@ const generatePsychEvalPHMC = (formData) => {
     } = formData;
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
-PATIENT ${patientID}
+PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 Date: ${date}
 Signé: ${phmcRank} ${lastName}
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]

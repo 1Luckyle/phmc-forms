@@ -8,7 +8,8 @@ const NOT_FILLED = 'Non renseigné';
 
 const generatePhysEvalInternalMed = (formData) => {
     const {
-        patientID = NOT_FILLED,
+        patientName = NOT_FILLED,
+        patientID = '',
         date = NOT_FILLED,
         lastName = NOT_FILLED,
         patientHeight = NOT_FILLED,
@@ -25,7 +26,7 @@ const generatePhysEvalInternalMed = (formData) => {
 
         let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]EXAMEN PHYSIQUE[/b]
 
-PATIENT ${patientID}
+PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 Signé: ${phmcRank} ${lastName}

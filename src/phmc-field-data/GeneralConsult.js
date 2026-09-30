@@ -37,12 +37,21 @@ const GeneralConsult = ({
 
                                 <Form.Control
                                     type="text"
+                                    name="patientName"
+                                    value={formData.patientName}
+                                    onChange={handleChange}
+                                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
+                                    required
+                                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+                                />
+                                <Form.Control
+                                    type="text"
                                     name="patientID"
                                     value={formData.patientID}
                                     onChange={handleChange}
-                                    placeholder="ID Patient (Prénom (Deuxième Prénom) & Nom du patient si incertain)"
-                                    required
-                                    className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
+                                    placeholder="ID Patient (optionnel, si connu)"
+                                    className="form-control"
+                                    style={{ marginTop: '10px' }}
                                 />
 
                                 <Form.Label>Date:</Form.Label>

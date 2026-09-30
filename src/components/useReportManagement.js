@@ -154,13 +154,16 @@ export const useReportManagement = (
             }
             key = `[${formData.patientID}] ${formData.patientName} - ${formData.patientDateOfBirth}`;
         } else if (((bbCodeVersion > 3 && bbCodeVersion <= 7) && bbCodeVersion !== 4)) { // SurgicalOps (5), PhysEval PHMC/PBC (6,7)
-            let patientIdMissing = !formData.patientID;
+            // L'ID patient est un champ à part désormais, mais reste optionnel sur
+            // ces formulaires remplis par le personnel (le patient n'est pas
+            // toujours identifié avec certitude) — seuls le nom et la date sont
+            // requis.
+            let patientNameMissing = !formData.patientName;
             let dateMissing = !formData.date;
-            
-            // Aucun de ces formulaires n'utilise patientName, seulement patientID
-            if (patientIdMissing || dateMissing) {
+
+            if (patientNameMissing || dateMissing) {
                 let missingFieldLabels = [];
-                if (patientIdMissing) missingFieldLabels.push('Patient ID');
+                if (patientNameMissing) missingFieldLabels.push('Nom du patient');
                 if (dateMissing) missingFieldLabels.push('Date');
                 if (missingFieldLabels.length > 0) {
                     const message = `Please fill in ${missingFieldLabels.join(', ')} fields.`;
@@ -168,22 +171,24 @@ export const useReportManagement = (
                     return { success: false, error: message };
                 }
             }
-            
+
+            const patientLabel = `${formData.patientName || 'NO_NAME'}${formData.patientID ? ` [${formData.patientID}]` : ''}`;
+
             // Générer la clé pour chaque version
             if (bbCodeVersion === 5) {
-                key = `[Surgery] ${formData.patientID || 'NO_ID'} - ${formData.date || 'NO_DATE'}`;
+                key = `[Surgery] ${patientLabel} - ${formData.date || 'NO_DATE'}`;
             } else if (bbCodeVersion === 6) {
-                key = `[PhysEval-PHMC] ${formData.patientID || 'NO_ID'} - ${formData.date || 'NO_DATE'}`;
+                key = `[PhysEval-PHMC] ${patientLabel} - ${formData.date || 'NO_DATE'}`;
             } else if (bbCodeVersion === 7) {
-                key = `[PhysEval-PBC] ${formData.patientID || 'NO_ID'} - ${formData.date || 'NO_DATE'}`;
+                key = `[PhysEval-PBC] ${patientLabel} - ${formData.date || 'NO_DATE'}`;
             }
         } else if (bbCodeVersion === 19) { // EmergencyProtocol
-            if (!formData.patientID || !formData.date) {
-                const message = `Please fill in Patient ID, and Date fields.`;
+            if (!formData.patientName || !formData.date) {
+                const message = `Please fill in Patient Name, and Date fields.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `${formData.patientID} - ${formData.lastName} - ${formData.date}`;
+            key = `${formData.patientName}${formData.patientID ? ` [${formData.patientID}]` : ''} - ${formData.lastName} - ${formData.date}`;
         } else if (bbCodeVersion === 25) { // BasicPatientFile
             if (!formData.patientName || !formData.patientDateOfBirth || !formData.patientEmail || !formData.patientID) {
                 const message = `Veuillez remplir le nom, la date de naissance, l'email et l'ID patient.`;
@@ -268,13 +273,14 @@ export const useReportManagement = (
             key = `[CASE #${caseNumber}] ${formData.decedentName} (( ${formData.decedentOOC || 'N/A'} )) | [${formattedDate}]`;
         }
         else if (bbCodeVersion === 22 || bbCodeVersion === 23) { // Commentary Note
-            if (!formData.patientID || !formData.date) {
-                const message = `Please fill in Patient ID and Date fields.`;
+            if (!formData.patientName || !formData.date) {
+                const message = `Please fill in Patient Name and Date fields.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
             const formattedDate = new Date(formData.date).toLocaleDateString('fr-FR');
-            key = `[Commentary Note${bbCodeVersion === 23 ? ' (PBC)' : ' (PHMC)'}] ${formData.patientID} - ${formattedDate}`;
+            const patientLabel = `${formData.patientName}${formData.patientID ? ` [${formData.patientID}]` : ''}`;
+            key = `[Commentary Note${bbCodeVersion === 23 ? ' (PBC)' : ' (PHMC)'}] ${patientLabel} - ${formattedDate}`;
         }
         else if (bbCodeVersion === 27) { // Email Forms
             if (!formData.patientNotes || !formData.decedentName) {

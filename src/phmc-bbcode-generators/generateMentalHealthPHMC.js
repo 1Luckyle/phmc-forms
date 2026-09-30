@@ -6,7 +6,8 @@ const NOT_FILLED = 'Non renseigné';
 const generateMentalHealthPHMC = (formData) => {
         const {
             lastName = NOT_FILLED,
-            patientID = NOT_FILLED,
+            patientName = NOT_FILLED,
+            patientID = '',
             date = NOT_FILLED,
             patientChiefComplaint = NOT_FILLED,
             phmcRank = NOT_FILLED,
@@ -18,7 +19,7 @@ const generateMentalHealthPHMC = (formData) => {
 
         let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
 
-PATIENT ${patientID}
+PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 Signé: ${phmcRank} ${lastName}

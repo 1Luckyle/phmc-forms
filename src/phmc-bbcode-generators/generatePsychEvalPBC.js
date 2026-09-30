@@ -5,7 +5,8 @@ const NOT_FILLED = 'Non renseigné';
 
 const generatePsychEvalPBC = (formData) => {
     const {
-        patientID = NOT_FILLED,
+        patientName = NOT_FILLED,
+        patientID = '',
         date = NOT_FILLED,
         Affect,
         phmcRank = NOT_FILLED,
@@ -41,7 +42,7 @@ const generatePsychEvalPBC = (formData) => {
     } = formData;
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
-PATIENT ${patientID}
+PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 Date: ${date}
 Signé: ${phmcRank} ${lastName}
 [/center][td][center][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]

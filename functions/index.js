@@ -827,8 +827,22 @@ export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
     }
 
     try {
+        // L'adresse Eyefind Mail doit avoir été vérifiée (code reçu par mail,
+        // voir sendEmailVerificationCode/verifyEmailCode) avant de pouvoir créer
+        // le compte — filet de sécurité côté serveur : le client ne peut pas se
+        // contenter de sauter l'étape de vérification dans l'interface.
+        const emailKey = sanitizeEmailKey(email);
+        const verificationSnap = await db.ref(`emailVerifications/${emailKey}`).once('value');
+        const verification = verificationSnap.exists() ? verificationSnap.val() : null;
+        if (!verification || !verification.verified || (verification.email || '').toLowerCase() !== email.toLowerCase()) {
+            res.status(403).json({ error: 'email-not-verified', message: 'Cette adresse email n\'a pas été vérifiée. Veuillez d\'abord valider le code reçu par mail.' });
+            return;
+        }
+
         const userRecord = await admin.auth().createUser({ email });
         const customToken = await admin.auth().createCustomToken(userRecord.uid, { gtawLogin: true });
+        // Le code de vérification a rempli son rôle, inutile de le conserver.
+        await db.ref(`emailVerifications/${emailKey}`).remove();
         res.status(200).json({ uid: userRecord.uid, customToken });
     } catch (error) {
         if (error.code === 'auth/email-already-exists') {
@@ -1144,6 +1158,13 @@ const deriveEyefindAddress = (firstName, lastName) => {
     return `${f}${l}@mail.eyefind.fr`;
 };
 
+// Clé RTDB dérivée d'un email (mêmes caractères interdits que côté client dans
+// EmployeeAuthContext.js/PendingAccountRequests.js) — utilisée pour indexer
+// emailVerifications/{emailKey} par adresse plutôt que par uid, puisque la
+// vérification a lieu AVANT la création du compte Firebase Auth (pas encore
+// d'uid à ce stade).
+const sanitizeEmailKey = (email) => (email || '').toLowerCase().trim().replace(/[.#$[\]]/g, '_');
+
 // Logique d'envoi partagée entre la Cloud Function publique sendEyefindMail
 // et les envois internes (ex. reçu de paiement depuis fleecaWebhook), pour
 // éviter un aller-retour HTTP inutile vers soi-même.
@@ -1222,5 +1243,125 @@ export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (re
         }
         console.error('Error sending Eyefind Mail:', error);
         res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de l\'envoi du mail.' });
+    }
+});
+
+// --- Vérification d'adresse Eyefind Mail (obligatoire avant un compte Civil) ---
+// Un civil doit prouver qu'il contrôle réellement l'adresse Eyefind Mail
+// (format prenomnom@mail.eyefind.fr, créée sur https://eyefind.fr/mail.php)
+// qu'il indique avant de pouvoir terminer son inscription : on lui envoie un
+// code à 6 chiffres valable 15 minutes, qu'il doit ressaisir. Indexé par email
+// (pas par uid) car aucun compte Firebase Auth n'existe encore à ce stade.
+const EMAIL_VERIFICATION_TTL_MS = 15 * 60 * 1000;
+const EYEFIND_ADDRESS_REGEX = /^[^\s@]+@mail\.eyefind\.fr$/i;
+
+export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API Eyefind Mail n\'est pas configurée.' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const email = (data?.email || '').trim();
+    if (!email || !EYEFIND_ADDRESS_REGEX.test(email)) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Adresse Eyefind Mail invalide (format attendu : prenomnom@mail.eyefind.fr).' });
+        return;
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const emailKey = sanitizeEmailKey(email);
+
+    try {
+        await db.ref(`emailVerifications/${emailKey}`).set({
+            email,
+            code,
+            verified: false,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + EMAIL_VERIFICATION_TTL_MS,
+        });
+
+        await sendEyefindMailInternal({
+            apiKey,
+            to: email,
+            subject: 'Code de vérification - PHMC',
+            body: `Votre code de vérification pour créer votre compte Civil PHMC-FR est : ${code}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
+            html: wrapEmailHtml(`<p>Votre code de vérification pour créer votre compte Civil PHMC-FR est :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p><p>Ce code expire dans 15 minutes.</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`),
+        });
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        if (error && error.status && error.body) {
+            res.status(error.status).json(error.body);
+            return;
+        }
+        console.error('Error sending email verification code:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de l\'envoi du code.' });
+    }
+});
+
+export const verifyEmailCode = onRequest({}, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const email = (data?.email || '').trim();
+    const code = (data?.code || '').trim();
+    if (!email || !code) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Email et code sont obligatoires.' });
+        return;
+    }
+
+    const emailKey = sanitizeEmailKey(email);
+    try {
+        const snap = await db.ref(`emailVerifications/${emailKey}`).once('value');
+        if (!snap.exists()) {
+            res.status(404).json({ error: 'not-found', message: 'Aucune demande de vérification pour cet email. Redemandez un code.' });
+            return;
+        }
+        const record = snap.val();
+        if (Date.now() > record.expiresAt) {
+            res.status(410).json({ error: 'expired', message: 'Ce code a expiré. Redemandez-en un nouveau.' });
+            return;
+        }
+        if (String(record.code) !== code) {
+            res.status(400).json({ error: 'invalid-code', message: 'Code incorrect.' });
+            return;
+        }
+
+        await db.ref(`emailVerifications/${emailKey}`).update({ verified: true, verifiedAt: Date.now() });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error verifying email code:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de la vérification.' });
     }
 });

@@ -7,7 +7,8 @@ const generateConsultationNotesPBC = (formData) => {
             const {
                 lastName = NOT_FILLED,
                 phmcRank = NOT_FILLED,
-                patientID = NOT_FILLED,
+                patientName = NOT_FILLED,
+                patientID = '',
                 date = NOT_FILLED,
                 patientDiagnosis = NOT_FILLED,
                 patientSecondaryDiagnosis = NOT_FILLED,
@@ -19,7 +20,7 @@ const generateConsultationNotesPBC = (formData) => {
     
             let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de consultation[/b]
     
-ID PATIENT: ${patientID}
+PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 

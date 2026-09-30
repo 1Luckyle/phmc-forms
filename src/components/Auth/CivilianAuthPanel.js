@@ -6,11 +6,20 @@
 // la redirection OAuth GTA World : le parent lui fournit l'état déjà résolu
 // (gtawCharacters/gtawResolutions/gtawUserId, partagés avec le flux Personnel/
 // DMEC — un seul flux GTAW actif à la fois) et un déclencheur onStartGtaw.
+//
+// La création de compte Civil se fait UNIQUEMENT via GTA World (identité déjà
+// vérifiée par le personnage choisi) — pas de création manuelle. L'adresse
+// Eyefind Mail indiquée doit en plus être vérifiée par un code envoyé par mail
+// avant que le compte ne soit créé (voir sendEmailVerificationCode/
+// verifyEmailCode dans functions/index.js, et le filet de sécurité côté
+// serveur dans createGtawCivilianAccount qui refuse toute création tant que
+// l'email n'est pas marqué vérifié).
 import { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { sendEmailVerificationCode, verifyEmailCode, EYEFIND_MAIL_SIGNUP_URL } from '../../utils/eyefindMail';
 import GtawCharacterPicker from './GtawCharacterPicker';
 
 const emptyAccountData = {
@@ -24,8 +33,6 @@ const emptyAccountData = {
     phone: '',
     discord: '',
     email: '',
-    password: '',
-    confirmPassword: ''
 };
 
 const fieldBoxStyle = {
@@ -42,29 +49,41 @@ const CivilianAuthPanel = ({
     showNotification = () => {},
     onAuthenticated = () => {}
 }) => {
-    const { loginEmployee, createCivilianAccount, createCivilianAccountFromGtaw } = useEmployeeAuth();
+    const { createCivilianAccountFromGtaw } = useEmployeeAuth();
 
-    // 'choice' = écran initial (GTAW / manuel / j'ai déjà un compte)
-    // 'login'  = email + mot de passe pour un compte existant
-    // 'create' = formulaire d'identité (pré-rempli si method === 'gtaw')
+    // 'choice' = écran initial (uniquement GTA World)
+    // 'create' = formulaire d'identité + vérification email, pré-rempli via le
+    //            personnage GTAW choisi (nom/prénom en lecture seule)
     const [mode, setMode] = useState('choice');
-    const [method, setMethod] = useState(null); // 'manual' | 'gtaw'
     const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
     const [accountData, setAccountData] = useState(emptyAccountData);
-    const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleAccountChange = (e) => {
-        setAccountData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
+    // Vérification de l'adresse Eyefind Mail : un code est envoyé, doit être
+    // ressaisi avant que le bouton "Créer mon compte" ne soit utilisable.
+    const [emailCodeSent, setEmailCodeSent] = useState(false);
+    const [emailVerified, setEmailVerified] = useState(false);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [isSendingCode, setIsSendingCode] = useState(false);
+    const [isVerifyingCode, setIsVerifyingCode] = useState(false);
 
-    const handleLoginChange = (e) => {
-        setLoginData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const EYEFIND_ADDRESS_REGEX = /^[^\s@]+@mail\.eyefind\.fr$/i;
+
+    const handleAccountChange = (e) => {
+        const { name, value } = e.target;
+        setAccountData(prev => ({ ...prev, [name]: value }));
+        // Modifier l'email après l'avoir vérifié invalide la vérification —
+        // on ne veut jamais créer un compte avec une adresse différente de
+        // celle réellement vérifiée.
+        if (name === 'email') {
+            setEmailCodeSent(false);
+            setEmailVerified(false);
+            setVerificationCode('');
+        }
     };
 
     const handleGtawCharacterForCreation = (character) => {
         setSelectedGtawCharacter(character);
-        setMethod('gtaw');
         setMode('create');
         setAccountData(prev => ({
             ...prev,
@@ -84,55 +103,54 @@ const CivilianAuthPanel = ({
         }
     };
 
-    const handleLogin = async () => {
-        if (!loginData.email || !loginData.password) {
-            showNotification('Veuillez remplir tous les champs.', 'warning');
+    const handleSendVerificationCode = async () => {
+        if (!EYEFIND_ADDRESS_REGEX.test(accountData.email.trim())) {
+            showNotification('Adresse Eyefind Mail invalide (format attendu : prenomnom@mail.eyefind.fr).', 'warning');
             return;
         }
-        setIsSubmitting(true);
+        setIsSendingCode(true);
         try {
-            await loginEmployee(loginData.email, loginData.password);
-            showNotification('Connecté avec succès !', 'success');
-            onAuthenticated();
-        } catch (error) {
-            console.error('Error during civilian login:', error);
-            let msg = 'Erreur lors de la connexion.';
-            if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                msg = 'Email ou mot de passe incorrect.';
-            } else if (error.code === 'auth/invalid-email') {
-                msg = 'Email invalide.';
-            } else if (error.code === 'auth/too-many-requests') {
-                msg = 'Trop de tentatives. Réessayez plus tard.';
-            } else if (error.message) {
-                msg = error.message;
+            const result = await sendEmailVerificationCode(accountData.email.trim());
+            if (result.ok) {
+                setEmailCodeSent(true);
+                showNotification('Code de vérification envoyé par mail.', 'success');
+            } else {
+                showNotification(result.message, 'error');
             }
-            showNotification(msg, 'error');
         } finally {
-            setIsSubmitting(false);
+            setIsSendingCode(false);
+        }
+    };
+
+    const handleVerifyCode = async () => {
+        if (!verificationCode.trim()) {
+            showNotification('Veuillez entrer le code reçu par mail.', 'warning');
+            return;
+        }
+        setIsVerifyingCode(true);
+        try {
+            const result = await verifyEmailCode(accountData.email.trim(), verificationCode.trim());
+            if (result.ok) {
+                setEmailVerified(true);
+                showNotification('Adresse email vérifiée !', 'success');
+            } else {
+                showNotification(result.message, 'error');
+            }
+        } finally {
+            setIsVerifyingCode(false);
         }
     };
 
     const handleCreateAccount = async () => {
-        const isGtaw = method === 'gtaw';
-        const required = isGtaw
-            ? ['email', 'dateOfBirth', 'gender', 'address', 'zip', 'phone']
-            : ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'dateOfBirth', 'gender', 'address', 'zip', 'phone'];
+        if (!emailVerified) {
+            showNotification('Veuillez d\'abord vérifier votre adresse email.', 'warning');
+            return;
+        }
+        const required = ['email', 'dateOfBirth', 'gender', 'address', 'zip', 'phone'];
         const missing = required.filter(f => !accountData[f]?.trim());
         if (missing.length > 0) {
             showNotification('Veuillez remplir tous les champs requis.', 'warning');
             return;
-        }
-
-        if (!isGtaw) {
-            if (accountData.password !== accountData.confirmPassword) {
-                showNotification('Les mots de passe ne correspondent pas.', 'warning');
-                return;
-            }
-            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-            if (!passwordRegex.test(accountData.password)) {
-                showNotification('Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.', 'warning');
-                return;
-            }
         }
 
         setIsSubmitting(true);
@@ -149,11 +167,7 @@ const CivilianAuthPanel = ({
                 discord: accountData.discord
             };
 
-            if (isGtaw) {
-                await createCivilianAccountFromGtaw(civilianData, accountData.email, selectedGtawCharacter?.id ?? null, gtawUserId ?? null);
-            } else {
-                await createCivilianAccount(civilianData, accountData.email, accountData.password);
-            }
+            await createCivilianAccountFromGtaw(civilianData, accountData.email, selectedGtawCharacter?.id ?? null, gtawUserId ?? null);
 
             showNotification('Compte Civil créé avec succès !', 'success');
             onAuthenticated();
@@ -162,10 +176,12 @@ const CivilianAuthPanel = ({
             let msg = 'Erreur lors de la création du compte.';
             if (error.code === 'auth/email-already-in-use' || error.error === 'email-already-exists') {
                 msg = 'Cet email est déjà utilisé.';
+            } else if (error.error === 'email-not-verified') {
+                msg = 'Cette adresse email n\'a pas été vérifiée. Veuillez recommencer la vérification.';
+                setEmailVerified(false);
+                setEmailCodeSent(false);
             } else if (error.code === 'auth/invalid-email') {
                 msg = 'Email invalide.';
-            } else if (error.code === 'auth/weak-password') {
-                msg = 'Le mot de passe est trop faible.';
             } else if (error.message) {
                 msg = error.message;
             }
@@ -175,46 +191,13 @@ const CivilianAuthPanel = ({
         }
     };
 
-    if (mode === 'login') {
-        return (
-            <Form>
-                <Form.Group className="mb-3">
-                    <Form.Label>Email</Form.Label>
-                    <Form.Control type="email" name="email" value={loginData.email} onChange={handleLoginChange} style={fieldBoxStyle} />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                    <Form.Label>Mot de passe</Form.Label>
-                    <Form.Control type="password" name="password" value={loginData.password} onChange={handleLoginChange} style={fieldBoxStyle} />
-                </Form.Group>
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                    <Button variant="outline-secondary" onClick={() => setMode('choice')} disabled={isSubmitting}>Retour</Button>
-                    <Button variant="primary" onClick={handleLogin} disabled={isSubmitting}>
-                        {isSubmitting ? 'Connexion...' : 'Se connecter'}
-                    </Button>
-                </div>
-            </Form>
-        );
-    }
-
     if (mode === 'create') {
         return (
             <Form>
-                {method === 'gtaw' && selectedGtawCharacter && (
+                {selectedGtawCharacter && (
                     <div style={{ marginBottom: '15px', color: '#ffc107' }}>
                         <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
                         Identité vérifiée via GTA World : <strong>{selectedGtawCharacter.firstname} {selectedGtawCharacter.lastname}</strong>
-                    </div>
-                )}
-                {method !== 'gtaw' && (
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Group className="mb-3" style={{ flex: 1 }}>
-                            <Form.Label>Prénom</Form.Label>
-                            <Form.Control type="text" name="firstName" value={accountData.firstName} onChange={handleAccountChange} style={fieldBoxStyle} />
-                        </Form.Group>
-                        <Form.Group className="mb-3" style={{ flex: 1 }}>
-                            <Form.Label>Nom</Form.Label>
-                            <Form.Control type="text" name="lastName" value={accountData.lastName} onChange={handleAccountChange} style={fieldBoxStyle} />
-                        </Form.Group>
                     </div>
                 )}
                 <Form.Group className="mb-3">
@@ -251,27 +234,60 @@ const CivilianAuthPanel = ({
                         <Form.Control type="text" name="discord" value={accountData.discord} onChange={handleAccountChange} style={fieldBoxStyle} />
                     </Form.Group>
                 </div>
-                <Form.Group className="mb-3">
-                    <Form.Label>Email</Form.Label>
-                    <Form.Control type="email" name="email" value={accountData.email} onChange={handleAccountChange} placeholder="prenomnom@mail.eyefind.fr" style={fieldBoxStyle} />
-                </Form.Group>
-                {method !== 'gtaw' && (
+
+                <Form.Group className="mb-2">
+                    <Form.Label>Adresse Eyefind Mail</Form.Label>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Group className="mb-3" style={{ flex: 1 }}>
-                            <Form.Label>Mot de passe</Form.Label>
-                            <Form.Control type="password" name="password" value={accountData.password} onChange={handleAccountChange} style={fieldBoxStyle} />
-                        </Form.Group>
-                        <Form.Group className="mb-3" style={{ flex: 1 }}>
-                            <Form.Label>Confirmation</Form.Label>
-                            <Form.Control type="password" name="confirmPassword" value={accountData.confirmPassword} onChange={handleAccountChange} style={fieldBoxStyle} />
-                        </Form.Group>
+                        <Form.Control
+                            type="email" name="email" value={accountData.email} onChange={handleAccountChange}
+                            placeholder="prenomnom@mail.eyefind.fr" style={fieldBoxStyle}
+                            disabled={emailCodeSent}
+                        />
+                        <Button variant="outline-primary" onClick={handleSendVerificationCode} disabled={isSendingCode || emailCodeSent}>
+                            {isSendingCode ? 'Envoi...' : (emailCodeSent ? 'Code envoyé' : 'Envoyer le code')}
+                        </Button>
+                    </div>
+                    <div style={{ fontSize: '0.85em', color: '#ccc', marginTop: '4px' }}>
+                        Pas encore d'adresse Eyefind Mail ?{' '}
+                        <a href={EYEFIND_MAIL_SIGNUP_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
+                            Créez-en une ici
+                        </a>.
+                    </div>
+                </Form.Group>
+
+                {emailCodeSent && !emailVerified && (
+                    <Form.Group className="mb-3">
+                        <Form.Label>Code de vérification reçu par mail</Form.Label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <Form.Control
+                                type="text" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)}
+                                placeholder="123456" style={fieldBoxStyle}
+                            />
+                            <Button variant="primary" onClick={handleVerifyCode} disabled={isVerifyingCode}>
+                                {isVerifyingCode ? 'Vérification...' : 'Vérifier'}
+                            </Button>
+                        </div>
+                        <Button
+                            variant="link" size="sm" onClick={handleSendVerificationCode} disabled={isSendingCode}
+                            style={{ color: '#4a9eff', padding: 0, marginTop: '5px' }}
+                        >
+                            Renvoyer le code
+                        </Button>
+                    </Form.Group>
+                )}
+
+                {emailVerified && (
+                    <div style={{ marginBottom: '15px', color: '#3fb950' }}>
+                        <i className="fas fa-check-circle" style={{ marginRight: '8px' }}></i>
+                        Adresse email vérifiée.
                     </div>
                 )}
+
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                    <Button variant="outline-secondary" onClick={() => { setMode('choice'); setMethod(null); setSelectedGtawCharacter(null); }} disabled={isSubmitting}>
+                    <Button variant="outline-secondary" onClick={() => { setMode('choice'); setSelectedGtawCharacter(null); }} disabled={isSubmitting}>
                         Retour
                     </Button>
-                    <Button variant="primary" onClick={handleCreateAccount} disabled={isSubmitting}>
+                    <Button variant="primary" onClick={handleCreateAccount} disabled={isSubmitting || !emailVerified}>
                         {isSubmitting ? 'Création...' : 'Créer mon compte'}
                     </Button>
                 </div>
@@ -296,32 +312,15 @@ const CivilianAuthPanel = ({
                     <span>
                         <strong style={{ display: 'block' }}>Continuer avec GTA World</strong>
                         <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                            Connexion ou création de compte selon votre personnage.
+                            Connexion ou création de compte selon votre personnage. Seule méthode disponible pour un compte Civil.
                         </span>
                     </span>
                 </button>
-                <button
-                    type="button"
-                    onClick={() => { setMethod('manual'); setMode('create'); }}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '12px',
-                        backgroundColor: '#2a2a2a', border: '1px solid #444',
-                        borderRadius: '8px', padding: '15px', color: '#fff',
-                        cursor: 'pointer', textAlign: 'left'
-                    }}
-                >
-                    <i className="fas fa-keyboard" style={{ fontSize: '1.4rem', color: '#6c757d' }}></i>
-                    <span>
-                        <strong style={{ display: 'block' }}>Créer un compte manuellement</strong>
-                        <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                            Remplissez vous-même vos informations.
-                        </span>
-                    </span>
-                </button>
-                <div style={{ textAlign: 'center' }}>
-                    <Button variant="link" onClick={() => setMode('login')} style={{ color: '#4a9eff' }}>
-                        J'ai déjà un compte Civil — me connecter
-                    </Button>
+                <div style={{ fontSize: '0.85em', color: '#ccc', textAlign: 'center' }}>
+                    Pas encore d'adresse Eyefind Mail ?{' '}
+                    <a href={EYEFIND_MAIL_SIGNUP_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
+                        Créez-en une ici
+                    </a>.
                 </div>
             </div>
 
