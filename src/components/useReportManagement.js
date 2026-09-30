@@ -4,6 +4,8 @@ import { database } from '../firebase'; // Assuming this path
 import { ref, get, set, remove } from 'firebase/database';
 import * as Sentry from "@sentry/react";
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { sendEyefindMail } from '../utils/eyefindMail';
+import { sendPhmcRecruitmentWebhook } from './notificationService';
 
 // Formulaires accessibles à un compte Civil : dossiers médicaux civils
 // (3 Advanced, 24 Medical Release, 25 Basic, 26 Medical Update) et
@@ -89,6 +91,10 @@ export const useReportManagement = (
     const [reportSelectionFilter, setReportSelectionFilter] = useState(null);
     const [showPositionInfoModal, setShowPositionInfoModal] = useState(false);
     const [currentPositionInfo, setCurrentPositionInfo] = useState(null);
+    // Pipeline de candidatures (Lot 6) — vue Civil "Mes candidatures".
+    const [myJobApplications, setMyJobApplications] = useState([]);
+    const [isLoadingJobApplications, setIsLoadingJobApplications] = useState(false);
+    const [showMyJobApplications, setShowMyJobApplications] = useState(false);
 
     const logWebhook = async (type, payload) => {
         const logRef = ref(database, 'webhook_logs/' + Date.now());
@@ -1004,6 +1010,156 @@ export const useReportManagement = (
         }
     }, [showNotification]);
 
+    // --- Pipeline de candidatures (Lot 6) ---
+
+    // Une candidature par (civil, poste) : applicationId dérivé du bbCodeVersion
+    // pour que "Enregistrer" mette à jour la même entrée au lieu d'en créer une
+    // nouvelle à chaque clic. submitAction : 'save' (brouillon) | 'submit'
+    // (candidater — envoie accusé de réception + notification Discord admin).
+    const saveJobApplication = useCallback(async (submitAction) => {
+        if (!isCivilian || !civilianProfile?.uid) {
+            showNotification('Vous devez être connecté en tant que Civil pour gérer une candidature.', 'error');
+            return { success: false };
+        }
+        const definition = getFormDefinition(bbCodeVersion);
+        if (!definition || definition.group !== 'PHMC Recruitment') {
+            showNotification('Ce formulaire n\'est pas une candidature.', 'error');
+            return { success: false };
+        }
+
+        const applicationId = `form_${bbCodeVersion}`;
+        const applicationPath = `jobApplications/${civilianProfile.uid}/${applicationId}`;
+        const bbCodeContent = getBBCodeContent();
+        const applicantName = formData.applicantTitleAndFullName
+            || `${civilianProfile.firstName || ''} ${civilianProfile.lastName || ''}`.trim();
+        const newStatus = submitAction === 'submit' ? 'submitted' : 'saved';
+
+        try {
+            const existingSnap = await get(ref(database, applicationPath));
+            const existing = existingSnap.exists() ? existingSnap.val() : null;
+
+            // Une décision admin (acceptée/refusée) est définitive : on ne laisse
+            // pas un nouvel envoi depuis le formulaire l'écraser silencieusement.
+            if (existing && ['accepted', 'refused'].includes(existing.status)) {
+                showNotification('Cette candidature a déjà été traitée par l\'administration et ne peut plus être modifiée.', 'warning');
+                return { success: false };
+            }
+
+            const history = existing?.history ? [...existing.history] : [];
+            history.push({ status: newStatus, timestamp: Date.now() });
+
+            const payload = sanitizeForFirebase({
+                applicantUid: civilianProfile.uid,
+                patientID: civilianProfile.patientID,
+                applicantName,
+                position: formData.recruitmentPosition || definition.name,
+                bbCodeVersion,
+                data: filterFormData(formData, bbCodeVersion),
+                bbCode: bbCodeContent,
+                status: newStatus,
+                interviewDateTime: existing?.interviewDateTime || null,
+                createdAt: existing?.createdAt || Date.now(),
+                updatedAt: Date.now(),
+                history,
+            });
+
+            await set(ref(database, applicationPath), payload);
+
+            if (submitAction === 'submit') {
+                // Best-effort : un mail/webhook raté ne doit jamais faire échouer
+                // la candidature elle-même (déjà persistée à ce stade).
+                if (civilianProfile.email) {
+                    sendEyefindMail({
+                        to: civilianProfile.email,
+                        subject: 'Candidature reçue - PHMC',
+                        body: `Bonjour ${applicantName},\n\nNous avons bien reçu votre candidature pour le poste "${definition.name}". Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.\n\nCordialement,\nLe Pillbox Hill Medical Center`,
+                    }).catch((err) => console.warn('Eyefind Mail (accusé de réception candidature) échoué:', err));
+                }
+
+                const discordWebhookUrl = process.env.REACT_APP_PHMC_RECRUITMENT_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+                if (discordWebhookUrl) {
+                    sendPhmcRecruitmentWebhook({
+                        webhookUrl: discordWebhookUrl,
+                        formData,
+                        commitInfo: {},
+                        actionMessage: 'Nouvelle candidature soumise (compte Civil)',
+                        selectOptions,
+                        formDefinition: definition,
+                    }).catch((err) => console.warn('Webhook Discord candidature échoué:', err));
+                }
+            }
+
+            showNotification(
+                submitAction === 'submit' ? 'Candidature envoyée !' : 'Candidature enregistrée (brouillon).',
+                'save'
+            );
+            return { success: true };
+        } catch (error) {
+            console.error('Error saving job application:', error);
+            Sentry.captureException(error, { extra: { context: 'saveJobApplication', bbCodeVersion } });
+            showNotification('Erreur lors de l\'enregistrement de la candidature.', 'error');
+            return { success: false };
+        }
+    }, [isCivilian, civilianProfile, bbCodeVersion, formData, getBBCodeContent, filterFormData, selectOptions, showNotification]);
+
+    // Charge les candidatures du civil connecté ("Mes candidatures").
+    const loadMyJobApplications = useCallback(async () => {
+        if (!civilianProfile?.uid) {
+            setMyJobApplications([]);
+            return;
+        }
+        setIsLoadingJobApplications(true);
+        try {
+            const snap = await get(ref(database, `jobApplications/${civilianProfile.uid}`));
+            if (snap.exists()) {
+                const apps = Object.entries(snap.val()).map(([id, app]) => ({ id, ...app }));
+                apps.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+                setMyJobApplications(apps);
+            } else {
+                setMyJobApplications([]);
+            }
+        } catch (error) {
+            console.error('Error loading job applications:', error);
+            Sentry.captureException(error, { extra: { context: 'loadMyJobApplications' } });
+        } finally {
+            setIsLoadingJobApplications(false);
+        }
+    }, [civilianProfile]);
+
+    // Transition de statut générique, utilisée aussi bien par le civil
+    // (Mettre en pause / Retirer / Candidater depuis "saved") que par le
+    // panneau admin (Planifier un entretien / Marquer effectué / Accepter /
+    // Refuser) — voir PendingJobApplications.js. extra permet de fusionner des
+    // champs additionnels (ex: interviewDateTime) en même temps que le statut.
+    const updateJobApplicationStatus = useCallback(async (applicantUid, applicationId, newStatus, extra = {}) => {
+        if (!applicantUid || !applicationId || !newStatus) return { success: false };
+        try {
+            const appPath = `jobApplications/${applicantUid}/${applicationId}`;
+            const snap = await get(ref(database, appPath));
+            if (!snap.exists()) {
+                showNotification('Candidature introuvable.', 'error');
+                return { success: false };
+            }
+            const existing = snap.val();
+            const history = existing.history ? [...existing.history] : [];
+            history.push({ status: newStatus, timestamp: Date.now() });
+            const updated = sanitizeForFirebase({
+                ...existing,
+                ...extra,
+                status: newStatus,
+                updatedAt: Date.now(),
+                history,
+            });
+            await set(ref(database, appPath), updated);
+            return { success: true, application: updated };
+        } catch (error) {
+            console.error('Error updating job application status:', error);
+            Sentry.captureException(error, { extra: { context: 'updateJobApplicationStatus', applicantUid, applicationId, newStatus } });
+            showNotification('Erreur lors de la mise à jour de la candidature.', 'error');
+            return { success: false };
+        }
+    }, [showNotification]);
+
     const showRareEasterEggDirectly = useCallback(() => {
         setShowEasterEggModal(true);
         setEasterEggType('rare');
@@ -1074,6 +1230,13 @@ export const useReportManagement = (
         loadSharedReportsForPatient,
         shareReportWithPatient,
         copyReportToOwnAccount,
+        saveJobApplication,
+        loadMyJobApplications,
+        updateJobApplicationStatus,
+        myJobApplications,
+        isLoadingJobApplications,
+        showMyJobApplications,
+        setShowMyJobApplications,
         showRareEasterEggDirectly,
         toggleSavedReports,
         showPositionInfoModal,

@@ -7,6 +7,7 @@ import UserStats from './UserStats';
 import WebhookLogs from './WebhookLogs';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
+import PendingJobApplications from './PendingJobApplications';
 
 const AdminDashboard = ({
     currentUser,
@@ -127,6 +128,7 @@ const AdminDashboard = ({
                         <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
                         <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
                         <button className={`nav-link ${selectedSection === 'recruitment' ? 'active' : ''}`} onClick={() => setSelectedSection('recruitment')}><i className="fas fa-user-plus me-2"></i>Recrutement</button>
+                        <button className={`nav-link ${selectedSection === 'jobApplications' ? 'active' : ''}`} onClick={() => setSelectedSection('jobApplications')}><i className="fas fa-file-signature me-2"></i>Candidatures</button>
                         <button className={`nav-link ${selectedSection === 'bingo' ? 'active' : ''}`} onClick={() => setSelectedSection('bingo')}><i className="fas fa-dice me-2"></i>Bingo</button>
                         <button className={`nav-link ${selectedSection === 'users' ? 'active' : ''}`} onClick={() => setSelectedSection('users')}><i className="fas fa-users-cog me-2"></i>Utilisateurs</button>
                         <button className={`nav-link ${selectedSection === 'webhooks' ? 'active' : ''}`} onClick={() => setSelectedSection('webhooks')}><i className="fas fa-bullhorn me-2"></i>Webhooks</button>
@@ -203,6 +205,14 @@ const AdminDashboard = ({
                             <div className="card-header">Demandes de modification en attente</div>
                             <div className="card-body">
                                 <PendingModificationRequests showNotification={showInAppNotification} currentUser={currentUser} />
+                            </div>
+                        </div>
+                    )}
+                    {selectedSection === 'jobApplications' && (
+                        <div className="card">
+                            <div className="card-header">Candidatures</div>
+                            <div className="card-body">
+                                <PendingJobApplications showNotification={showInAppNotification} />
                             </div>
                         </div>
                     )}
