@@ -3,6 +3,7 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 
 const MedicalRelease = ({
     formData,
@@ -31,13 +32,32 @@ const MedicalRelease = ({
     // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
     // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
     // pas avoir lieu.
-    const { currentEmployee, employeeProfile, isAdmin } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
     const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {
         setFormData(prev => (prev.filledByStaff === filledByStaff ? prev : { ...prev, filledByStaff }));
     }, [filledByStaff, setFormData]);
+    // Pré-remplissage depuis le profil Civil connecté — uniquement les champs
+    // identité/contact encore vides, aucun champ de santé (le profil Civil
+    // n'en contient pas). Ce formulaire utilise prénom/nom séparés, pas un nom
+    // combiné, contrairement à BasicPatientFile/PatientAdvanced.
+    useEffect(() => {
+        if (!isCivilian || !civilianProfile) return;
+        const autofillValues = buildCivilianAutofillValues(civilianProfile);
+        setFormData(prev => applyCivilianAutofill(prev, autofillValues, {
+            patientID: 'patientID',
+            patientFirstName: 'firstName',
+            patientMiddleName: 'middleName',
+            patientLastName: 'lastName',
+            patientDateOfBirth: 'dateOfBirth',
+            patientAddress: 'address',
+            patientZIP: 'zip',
+            patientPH: 'phone',
+            patientEmail: 'email',
+        }));
+    }, [isCivilian, civilianProfile, setFormData]);
 
     return (
         <>        <Form.Group className="mb-3">
@@ -95,6 +115,16 @@ const MedicalRelease = ({
                     placeholder="Date de naissance"
                     required
                     className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
+
+                />
+                <Form.Control
+                    type="text"
+                    name="patientID"
+                    value={formData.patientID}
+                    onChange={handleChange}
+                    placeholder="ID Patient"
+                    required
+                    className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
 
                 />
 

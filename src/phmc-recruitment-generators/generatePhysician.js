@@ -6,7 +6,8 @@ const generatePhysician = (formData) => {
         applicantTitleAndFullName,
         applicantGenderOtherText, // Used if genderOther is true
         applicantAddress,
-        applicantContactDetails,
+        applicantPhone,
+        applicantEmail,
         applicantMedicalConditions,
 
         // Section 2: Educational Background
@@ -101,7 +102,7 @@ Centre de Carrières [center][/center]
 [/list]
 [b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOB || 'JJ/MMM/AAAA'} à ${applicantBirthPlace || 'Lieu de Naissance'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
-[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color]  Lieu d'Emploi Souhaité:[/b] [color=#FF0000][u][b]LES POSTES SONT UNIQUEMENT OUVERT SUR LE PHMC DE LOS SANTOS[/b][/u][/color]
 [list=none][cbc${locationPHMC ? 'c' : ''}] Pillbox Hill Medical Center(Ville de Los Santos)
 [cb${locationPBC ? 'c' : ''}] Clinique PHMC de Paleto Bay (Paleto Bay)

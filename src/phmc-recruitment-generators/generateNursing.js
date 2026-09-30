@@ -6,7 +6,8 @@ const generateNursing = (formData) => {
         applicantGenderOtherText, // Utilisé si genderOther est vrai
         applicantDOBAndPlace,
         applicantAddress,
-        applicantContactDetails,
+        applicantPhone,
+        applicantEmail,
         applicantMedicalConditions,
 
         // Section 2: Parcours éducatif
@@ -127,7 +128,7 @@ Centre de carrière [center][/center]
 [/list]
 [b][color=#FF0000]1.3[/color] Date et lieu de naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
-[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 ${personalInfoContinuation}
 [/list][/divbox]
 [br][/br]

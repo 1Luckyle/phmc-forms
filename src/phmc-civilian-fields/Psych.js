@@ -34,7 +34,7 @@ const EXPIRY_DURATION_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 // Define which fields belong to this form for potential localStorage or other logic
 const psychFormFields = [
     'recruitmentPosition', 'applicantTitleAndFullName', 'genderMale', 'genderFemale', 'genderOther',
-    'applicantGenderOtherText', 'applicantDOBAndPlace', 'applicantAddress', 'applicantContactDetails',
+    'applicantGenderOtherText', 'applicantDOBAndPlace', 'applicantAddress', 'applicantPhone', 'applicantEmail',
     'locationPHMC', 'locationPBC', 'applicantMedicalConditions', 'citizenUS', 'citizenPermanent', 'citizenNone',
     'eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAssociate', 'eduBachelor', 'eduMaster', 'eduDoctorate',
     'applicantSchoolName', 'applicantEnrollmentTerm', 'applicantMajor', 'applicantLanguages',
@@ -134,8 +134,8 @@ const PsychFields = ({
             'recruitmentPosition', 'applicantTitleAndFullName',
             { anyOf: ['genderMale', 'genderFemale', 'genderOther'] },
             { conditional: { if: { field: 'genderOther', value: true }, then: { field: 'applicantGenderOtherText' } } },
-            'applicantDOBAndPlace', 'applicantAddress', 'applicantContactDetails',
-            { 
+            'applicantDOBAndPlace', 'applicantAddress', 'applicantPhone', 'applicantEmail',
+            {
                 check: (currentFormData, showSimplified) => {
                     if (showSimplified) { 
                         return !!currentFormData.applicantMedicalConditions?.trim() &&
@@ -283,13 +283,21 @@ const PsychFields = ({
 
                     <Form.Group className="mb-3" controlId="psychApplicantContactDetails">
                         <Form.Label className="field-label">1.5 Coordonnées</Form.Label>
-                        <Form.Control
-                            type="text" name="applicantContactDetails" value={formData.applicantContactDetails || ''} onChange={handleChange}
-                            onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
-                            placeholder="Numéro de téléphone / Email (ex: prenomnom@mail.eyefind.fr)" required
-                            className={`form-control ${!formData.applicantContactDetails?.trim() ? 'is-invalid' : ''}`}
-                        />
-                        {!formData.applicantContactDetails?.trim() && <div className="invalid-feedback d-block">Les coordonnées sont requises.</div>}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <Form.Control
+                                type="text" name="applicantPhone" value={formData.applicantPhone || ''} onChange={handleChange}
+                                onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
+                                placeholder="Numéro de téléphone" required
+                                className={`form-control ${!formData.applicantPhone?.trim() ? 'is-invalid' : ''}`}
+                            />
+                            <Form.Control
+                                type="email" name="applicantEmail" value={formData.applicantEmail || ''} onChange={handleChange}
+                                onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}
+                                placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)" required
+                                className={`form-control ${!formData.applicantEmail?.trim() ? 'is-invalid' : ''}`}
+                            />
+                        </div>
+                        {(!formData.applicantPhone?.trim() || !formData.applicantEmail?.trim()) && <div className="invalid-feedback d-block">Le téléphone et l'email sont requis.</div>}
                     </Form.Group>
 
                     {shouldShowSimplifiedLayout ? (

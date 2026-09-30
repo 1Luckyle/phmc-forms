@@ -93,6 +93,7 @@ const DeathRecord = ({
                         <Form.Control type="text" name="deathReportPostId" value={formData.deathReportPostId} onChange={handleUrlChange} placeholder="URL du rapport de décès" className={`form-control ${!formData.deathReportPostId ? 'is-invalid' : ''}`} />
                         <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom & Nom" className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
                         <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                        <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (optionnel)" className="form-control" />
                     </div>
                     <Form.Label>Date du décès</Form.Label>
 

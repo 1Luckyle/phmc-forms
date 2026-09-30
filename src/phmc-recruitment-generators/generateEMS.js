@@ -6,7 +6,8 @@ const generateEMS = (formData) => {
         applicantGenderOtherText,
         applicantDOBAndPlace,
         applicantAddress,
-        applicantContactDetails,
+        applicantPhone,
+        applicantEmail,
         applicantMedicalConditions,
 
         // Section 2: Parcours éducatif
@@ -191,7 +192,7 @@ Centre de carrière [center][/center]
 [/list]
 [b][color=#FF0000]1.3[/color] Date et lieu de naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
-[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis

@@ -54,7 +54,13 @@ const AgencySelector = ({
     nurseRecruitmentDetails,
     coronerRecruitmentDetails,
     userPreferences,
+    isCivilian,
 }) => {
+    // Un compte Civil connecté ne doit voir QUE ses formulaires (dossiers
+    // médicaux civils + candidatures), pas seulement les voir mis en avant —
+    // contrairement au filtrage userPreferences ci-dessous (issu du Guide de
+    // Configuration), qui ne fait que prioriser sans jamais masquer le reste.
+    const CIVILIAN_ALLOWED_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
     // State to track whether to show personalized or all forms
     const [showPersonalizedForms, setShowPersonalizedForms] = useState(true);
     
@@ -86,8 +92,12 @@ const AgencySelector = ({
     };
 
     // Get forms for the selected agency group first
-    const allAgencyGroupForms = formDefinitions
+    let allAgencyGroupForms = formDefinitions
         .filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
+
+    if (isCivilian) {
+        allAgencyGroupForms = allAgencyGroupForms.filter(form => CIVILIAN_ALLOWED_VERSIONS.includes(form.version));
+    }
 
     // Filter forms based on user preferences (existing functionality)
     const filteredFormDefinitions = userPreferences 

@@ -6,7 +6,8 @@ const generateCoroner = (formData) => {
         applicantGenderOtherText,
         applicantDOBAndPlace,
         applicantAddress,
-        applicantContactDetails,
+        applicantPhone,
+        applicantEmail,
         applicantMedicalConditions,
         citizenUS,
         citizenPermanent,
@@ -93,7 +94,7 @@ Centre de Carrières [center][/center]
 [/list]
 [b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
-[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]${applicantContactDetails || 'RÉPONSE'}[/i]
+[b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none][cb${check(citizenUS)}] Citoyen des États-Unis

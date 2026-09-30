@@ -155,6 +155,25 @@
       }
     },
 
+    // ─── Index des dossiers par patient (regroupement, Lot 5) ─────────────────
+    // patientRecords/{patientID}/{indexKey} : pointeurs (reportPath +
+    // visibility: owner/shared/staff-only) vers les vrais rapports dans
+    // savedReports, écrits par saveReport() dès que formData.patientID est
+    // renseigné. Lecture : même modèle que savedReports (auth != null — tout
+    // utilisateur authentifié, cohérent avec le reste de l'app ; la vue Civil
+    // elle-même ne consulte jamais que son propre patientID côté client).
+    // Écriture : tout utilisateur connecté peut créer/mettre à jour une entrée
+    // (sauvegarder un rapport, le partager) ; seule la SUPPRESSION est
+    // réservée aux admins (newData.exists() distingue écriture de suppression).
+    "patientRecords": {
+      "$patientId": {
+        ".read": "auth != null",
+        "$indexKey": {
+          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true)"
+        }
+      }
+    },
+
     // ─── Paiements Fleeca (passerelle marchand v2) ────────────────────────────
     // Créés et mis à jour uniquement côté serveur avec le SDK Admin (voir
     // createFleecaPayment / fleecaWebhook / getFleecaPaymentStatus dans

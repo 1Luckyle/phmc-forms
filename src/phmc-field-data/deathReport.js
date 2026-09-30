@@ -193,6 +193,7 @@ useEffect(() => {
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
                 <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (optionnel, le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
 

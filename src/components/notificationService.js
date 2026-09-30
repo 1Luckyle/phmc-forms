@@ -555,7 +555,8 @@ const sendPhmcRecruitmentWebhook = async ({
     const {
         applicantTitleAndFullName,
         recruitmentPosition,
-        applicantContactDetails,
+        applicantPhone,
+        applicantEmail,
         oocUcpName,
         oocDiscord,
     } = formData;
@@ -592,7 +593,7 @@ const sendPhmcRecruitmentWebhook = async ({
     const fields = [
         { name: "Nom du demandeur", value: applicantTitleAndFullName || "N/A", inline: true },
         { name: "Poste postulé", value: positionDisplayName, inline: true },
-        { name: "Coordonnées", value: applicantContactDetails || "N/A", inline: false },
+        { name: "Coordonnées", value: `Tél: ${applicantPhone || 'N/A'} — Email: ${applicantEmail || 'N/A'}`, inline: false },
         { name: "Nom UCP OOC", value: oocUcpName || "N/A", inline: true },
         { name: "Nom Discord", value: oocDiscord || "N/A", inline: true },
         { name: "Horodatage", value: new Date().toLocaleString(), inline: false },

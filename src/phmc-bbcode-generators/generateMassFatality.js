@@ -79,6 +79,7 @@ Un représentant du ${getDepartmentFullName(department) || 'Département inconnu
 [divbox=transparent][center][bold]INFORMATIONS SUR LE DÉFUNT[/bold][/center]
 [b] (( NOM DU DÉFUNT: )) [/b] ${dec.decedentName || 'Défunt non identifié'}
 [b] NOM OOC DU DÉFUNT: [/b] (( ${dec.decedentOOC || 'Inconnu'} ))
+[b] ID PATIENT: [/b] ${dec.patientID || 'Non applicable'}
 [b] HEURE DE DÉCÈS PRONONCÉE: [/b] ${dec.pronouncedTimeOfDeath || 'Heure inconnue'}
 [b] CAUSE PROBABLE DU DÉCÈS: [/b] ${dec.probableCauseOfDeath || 'Cause inconnue'}
 [b] MANIÈRE DU DÉCÈS: [/b] ${dec.mannerOfDeath || 'Manière inconnue'}

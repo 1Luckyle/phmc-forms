@@ -5,6 +5,7 @@ import ImagePreview from '../components/ImagePreview';
 const defaultDecedent = {
     decedentName: '',
     decedentOOC: '',
+    patientID: '',
     dateTime: '',
     pronouncedTimeOfDeath: '',
     department: '',
@@ -381,6 +382,7 @@ const MassFatality = ({
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <Form.Control type="text" value={dec.decedentName} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" onChange={e => updateDecedent(idx, 'decedentName', e.target.value)} />
                                             <Form.Control type="text" value={dec.decedentOOC} placeholder="Nom du défunt (HRP)" onChange={e => updateDecedent(idx, 'decedentOOC', e.target.value)} />
+                                            <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient (optionnel)" onChange={e => updateDecedent(idx, 'patientID', e.target.value)} />
                                         </div>
                                                             <Form.Label>Heure du décès prononcée</Form.Label>
 

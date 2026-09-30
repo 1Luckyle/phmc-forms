@@ -58,6 +58,7 @@ const EasterEggModal = lazy(() => import('./components/EasterEggModal'));
 const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModal'));
 const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
+const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
 const CctvRequestWebhookModal = lazy(() => import('./components/Admin/CctvRequestWebhookModal'));
 const FeatureRequestModal = lazy(() => import('./contexts/FeatureRequestModal'));
@@ -130,6 +131,9 @@ function MainApp({
     // composant lazy-loaded).
     const [showLoginRoleChoice, setShowLoginRoleChoice] = useState(false);
     const [quickCivilOnboarding, setQuickCivilOnboarding] = useState(false);
+    // Outil personnel "Dossier Patient" (Lot 5) : recherche par ID patient,
+    // voir PatientDossierModal.js.
+    const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
     // Modal de sélection d'employé affichée à un admin qui clique sur
     // "Sauvegarder le rapport" : un admin peut sauvegarder pour n'importe quel
@@ -641,6 +645,9 @@ function MainApp({
         handleReportSelectedForAttachment,
         onAttachReportSummaryRequest,
         deleteReportForUser,
+        loadSharedReportsForPatient,
+        shareReportWithPatient,
+        copyReportToOwnAccount,
         showRareEasterEggDirectly,
         toggleSavedReports,
         showPositionInfoModal,
@@ -845,6 +852,20 @@ function MainApp({
             setShowSaveAsEmployeeModal(true);
             return;
         }
+        // Un civil sauvegarde sous sa propre identité (civilianProfile), jamais
+        // sous employeeProfile — l'ID patient est inclus pour garantir
+        // l'unicité même entre deux civils homonymes.
+        if (isCivilian) {
+            const civilName = civilianProfile?.firstName && civilianProfile?.lastName
+                ? `${civilianProfile.firstName} ${civilianProfile.lastName}`
+                : (civilianProfile?.email || null);
+            if (!civilName || !civilianProfile?.patientID) {
+                showNotification('Impossible de déterminer votre identité Civil. Veuillez réessayer ou contacter un administrateur.', 'error');
+                return;
+            }
+            runSaveReport(`${civilName} [${civilianProfile.patientID}]`);
+            return;
+        }
         const authorName = employeeProfile?.name
             || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null);
         if (!authorName) {
@@ -852,7 +873,7 @@ function MainApp({
             return;
         }
         runSaveReport(authorName);
-    }, [currentEmployee, isAdmin, employeeProfile, runSaveReport, showNotification]);
+    }, [currentEmployee, isAdmin, isCivilian, civilianProfile, employeeProfile, runSaveReport, showNotification]);
 
     const handleConfirmSaveAsEmployee = useCallback((employeeName) => {
         setShowSaveAsEmployeeModal(false);
@@ -1269,7 +1290,14 @@ function MainApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bbCodeVersion]);
 
-    return ( 
+    // Un civil connecté voit un libellé qui reflète ce qu'il retrouvera en
+    // cliquant (dossiers médicaux ou candidatures selon le formulaire affiché) ;
+    // le personnel garde le libellé générique dans tous les contextes.
+    const savedReportsButtonLabel = isCivilian
+        ? (selectedAgencyGroup === 'PHMC Recruitment' ? 'Candidatures Sauvegardées' : 'Dossiers Sauvegardés')
+        : 'Rapports Sauvegardés';
+
+    return (
         <Suspense fallback={<LoadingSpinner />}>
             <div className="App">
                 <LockdownBanner notification={lockdownConfig.notification} show={isLockdownActive} />
@@ -1376,6 +1404,7 @@ function MainApp({
                         nurseRecruitmentDetails={nurseRecruitmentDetails}
                         coronerRecruitmentDetails={coronerRecruitmentDetails}
                         userPreferences={userOnboardingPreferences}
+                        isCivilian={isCivilian}
                     />
                 )}
 
@@ -1535,8 +1564,13 @@ function MainApp({
                                             <i className="fas fa-bug"></i> Rapport de Bug/Ajout
                                         </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {toggleSavedReports(); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-save"></i> Rapports Sauvegardés
+                                            <i className="fas fa-save"></i> {savedReportsButtonLabel}
                                         </Dropdown.Item>
+                                        {!isCivilian && (currentEmployee || isAdmin) && (
+                                            <Dropdown.Item onClick={() => {setShowPatientDossierModal(true); setShowToolsDropdown(false);}}>
+                                                <i className="fas fa-folder-open"></i> Dossier Patient
+                                            </Dropdown.Item>
+                                        )}
                                         <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
                                             <i className="fa-solid fa-truck-medical"></i> EMS Contre Avis Médical
                                         </Dropdown.Item>
@@ -2031,7 +2065,7 @@ function MainApp({
                                     className="control-button"
                                 >
                                     <i className="fas fa-save"></i>
-                                    Rapports Sauvegardés
+                                    {savedReportsButtonLabel}
                                 </Button>
                             </div>
                             <p className="generated-title-label">Titre du Formulaire</p>
@@ -2148,6 +2182,9 @@ function MainApp({
                             reportsForSelectedUser={savedReports}
                             loadReport={loadReportForUser}
                             deleteReportForUser={deleteReportForUser}
+                            loadSharedReportsForPatient={loadSharedReportsForPatient}
+                            shareReportWithPatient={shareReportWithPatient}
+                            copyReportToOwnAccount={copyReportToOwnAccount}
                             author={getCurrentReportAuthor(formData)}
                             isLoading={isLoadingUserReports}
                             onAttachReportSelectedForAttachment={handleReportSelectedForAttachment}
@@ -2155,8 +2192,9 @@ function MainApp({
                             versionNames={versionNames}
                             onEmployeeSelect={(employeeValue) => {
                                 if (employeeValue) {
-                                    loadUserSavedReports(employeeValue);
+                                    return loadUserSavedReports(employeeValue);
                                 }
+                                return Promise.resolve();
                             }}
                             employeeOptions={[
                                 {
@@ -2180,6 +2218,13 @@ function MainApp({
                             removeNotification={removeNotification}
                             bbCodeVersion={bbCodeVersion}
                             handleReportSelectedForAttachment={handleReportSelectedForAttachment}
+                        />
+                        <PatientDossierModal
+                            show={showPatientDossierModal}
+                            onHide={() => setShowPatientDossierModal(false)}
+                            showNotification={showNotification}
+                            shareReportWithPatient={shareReportWithPatient}
+                            copyReportToOwnAccount={copyReportToOwnAccount}
                         />
                         <SaveAsEmployeeModal
                             show={showSaveAsEmployeeModal}
@@ -2397,7 +2442,8 @@ function MainAppWrapper() {
         confirmationPurpose: '',
         phmcEmployeeSignatureImage: '',
         recruitmentPosition: '',
-        applicantContactDetails: '',
+        applicantPhone: '',
+        applicantEmail: '',
         locationPHMC: false,
         locationPBC: false,
         applicantMedicalConditions: '',

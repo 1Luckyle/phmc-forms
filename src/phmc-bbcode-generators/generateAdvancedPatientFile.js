@@ -1,9 +1,8 @@
         // Placeholder utilisé pour les informations attendues mais non renseignées,
         // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
-        // silencieux qui pourrait passer pour un bug d'affichage). Les champs
-        // explicitement optionnels (ex: ID patient) ou qui ne sont pertinents que
-        // si une autre case (ex: mandataire, testament de vie "Autre") est cochée
-        // gardent une chaîne vide.
+        // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
+        // sont pertinents que si une autre case (ex: mandataire, testament de vie
+        // "Autre") est cochée gardent une chaîne vide.
         const NOT_FILLED = 'Non renseigné';
 
         const generateAdvancedPatientFile = (formData) => {
@@ -13,6 +12,7 @@
         patientRace = NOT_FILLED,
         patientGender = NOT_FILLED,
         patientPH = NOT_FILLED,
+        patientEmail = NOT_FILLED,
         patientDiscord = NOT_FILLED,
         patientEmergencyContact = NOT_FILLED,
         patientEmergencyContactNumber = NOT_FILLED,
@@ -24,7 +24,7 @@
         patientChronicDiseases = NOT_FILLED,
         patientNotes = NOT_FILLED,
         date = NOT_FILLED,
-        patientID = '',
+        patientID = NOT_FILLED,
         patientTherapy = NOT_FILLED,
         patientTriggers = NOT_FILLED,
         patientSupport = NOT_FILLED,
@@ -52,6 +52,7 @@
         paymentProofPhotos = ''
         } = formData;
 
+        const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `${photo.trim()}`).join('\n') : '';
         // Payment/Exempt logic
         let paymentSection = '';
         if (formData.filledByStaff) {
@@ -59,9 +60,8 @@
         } else if (formData.isExempt === true || formData.isExempt === 'true') {
             paymentSection = 'Je suis exempté de payer ce service conformément aux politiques du PHMC.';
         } else {
-            paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
+            paymentSection = scenePhotosBBCode ? `[url=${scenePhotosBBCode}]Preuve de paiement[/url]` : 'Aucune preuve de paiement fournie';
         }
-        const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `${photo.trim()}`).join('\n') : '';
 
         let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]
 
@@ -76,7 +76,8 @@ ${patientName}
 [table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Pseudo Discord: ${patientDiscord}))
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
+[tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
     [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Contact d'urgence[/b][/color][/size][/center][/divboxcolor]
     [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
@@ -147,7 +148,7 @@ Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partag
 Je soussigné(e), ${patientName}, conserve le droit de révoquer ce consentement à tout moment en avisant le Pillbox Hill Medical Center par écrit. Cependant, je comprends également que la révocation du consentement peut limiter la capacité des professionnels de la santé à me fournir des soins optimaux et coordonnés.[/list][/divbox]
     [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Paiement[/b][/color][/size][/center][/divboxcolor]
     [table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.[/td][td]
-    ${scenePhotosBBCode ? `[url=${scenePhotosBBCode}]Preuve de paiement[/url]` : 'Aucune preuve de paiement fournie'}
+    ${paymentSection}
     [/table]`
             return bbCode;
             };

@@ -12,6 +12,7 @@ const generateMedicalFileUpdate = (formData) => {
         patientRace,
         patientGender,
         patientPH = NOT_FILLED,
+        patientEmail = NOT_FILLED,
         patientDiscord = NOT_FILLED,
         patientEmergencyContact = NOT_FILLED,
         patientEmergencyContactNumber = NOT_FILLED,
@@ -83,7 +84,8 @@ ${patientName}
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations du patient[/b][/color][/size][/center][/divboxcolor]
 [table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] (( Pseudo Discord: ${patientDiscord}))
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
+[tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 [divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations mises à jour[/b][/color][/size][/center][/divboxcolor]
 [u]Je demande par la présente la mise à jour des informations suivantes:[/u]
