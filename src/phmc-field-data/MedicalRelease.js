@@ -52,6 +52,7 @@ const MedicalRelease = ({
             patientMiddleName: 'middleName',
             patientLastName: 'lastName',
             patientDateOfBirth: 'dateOfBirth',
+            patientGender: 'gender',
             patientAddress: 'address',
             patientZIP: 'zip',
             patientPH: 'phone',
