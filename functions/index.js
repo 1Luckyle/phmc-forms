@@ -839,7 +839,31 @@ export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
             return;
         }
 
-        const userRecord = await admin.auth().createUser({ email });
+        let userRecord;
+        try {
+            userRecord = await admin.auth().createUser({ email });
+        } catch (createError) {
+            if (createError.code !== 'auth/email-already-exists') {
+                throw createError;
+            }
+            // Un compte Auth avec cet email existe déjà — mais s'il n'a JAMAIS
+            // abouti à un vrai profil Civil (civilians/{uid}), c'est un résidu
+            // orphelin d'une tentative précédente interrompue après la création
+            // Auth mais avant l'écriture RTDB (coupure réseau, règle de
+            // permission manquante côté client, etc.) : sans ce nettoyage, cet
+            // email resterait bloqué indéfiniment, sans aucun moyen de
+            // réessayer. On ne supprime JAMAIS un compte qui a un profil
+            // civilians/{uid} réel.
+            const existingUser = await admin.auth().getUserByEmail(email);
+            const civiliansSnap = await db.ref('civilians').orderByChild('email').equalTo(email).once('value');
+            if (civiliansSnap.exists()) {
+                throw createError; // vrai compte existant, pas un résidu — on ne touche à rien
+            }
+            console.warn(`Nettoyage d'un compte Civil orphelin (${existingUser.uid}) pour ${email} avant recréation.`);
+            await admin.auth().deleteUser(existingUser.uid);
+            userRecord = await admin.auth().createUser({ email });
+        }
+
         const customToken = await admin.auth().createCustomToken(userRecord.uid, { gtawLogin: true });
         // Le code de vérification a rempli son rôle, inutile de le conserver.
         await db.ref(`emailVerifications/${emailKey}`).remove();
