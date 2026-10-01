@@ -95,8 +95,7 @@ const MedicalRelease = ({
                     value={formData.patientMiddleName}
                     onChange={handleChange}
                     placeholder="Deuxième prénom (Optionnel)"
-                    className={`form-control ${!formData.patientMiddleName ? 'is-invalid' : ''}`}
-
+                    className="form-control"
                 />
                     <Form.Control
                     type="text"
@@ -118,6 +117,9 @@ const MedicalRelease = ({
                     className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
 
                 />
+
+            </div>
+            <Form.Group className="mb-3">
                 <Form.Control
                     type="text"
                     name="patientID"
@@ -126,10 +128,8 @@ const MedicalRelease = ({
                     placeholder="ID Patient"
                     required
                     className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
-
                 />
-
-            </div>
+            </Form.Group>
             <Form.Label>Genre à l'état civil :</Form.Label>
                 <Form.Check
                     type="radio"

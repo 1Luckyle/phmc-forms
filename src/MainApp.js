@@ -1299,11 +1299,13 @@ function MainApp({
     }, [bbCodeVersion]);
 
     // Un civil connecté voit un libellé qui reflète ce qu'il retrouvera en
-    // cliquant (dossiers médicaux ou candidatures selon le formulaire affiché) ;
-    // le personnel garde le libellé générique dans tous les contextes.
-    const savedReportsButtonLabel = isCivilian
-        ? (selectedAgencyGroup === 'PHMC Recruitment' ? 'Candidatures Sauvegardées' : 'Dossiers Sauvegardés')
-        : 'Rapports Sauvegardés';
+    // cliquant ; le personnel garde le libellé générique dans tous les
+    // contextes. Sur un formulaire de candidature, ce bouton (qui pointe vers
+    // savedReports, jamais alimenté par saveJobApplication) est masqué pour un
+    // civil — "Mes candidatures" (jobApplications) est le seul suivi pertinent
+    // là, le garder en plus créait une confusion entre deux boutons dont l'un
+    // ne menait jamais à rien.
+    const savedReportsButtonLabel = isCivilian ? 'Dossier Patient' : 'Rapports Sauvegardés';
 
     return (
         <Suspense fallback={<LoadingSpinner />}>
@@ -2077,14 +2079,16 @@ function MainApp({
                                     <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                     {showBBCode ? 'Cacher BBCode' : 'Montrer BBCode'}
                                 </Button>
-                                <Button
-                                    type="button"
-                                    onClick={toggleSavedReports}
-                                    className="control-button"
-                                >
-                                    <i className="fas fa-save"></i>
-                                    {savedReportsButtonLabel}
-                                </Button>
+                                {!(isCivilian && selectedAgencyGroup === 'PHMC Recruitment') && (
+                                    <Button
+                                        type="button"
+                                        onClick={toggleSavedReports}
+                                        className="control-button"
+                                    >
+                                        <i className="fas fa-save"></i>
+                                        {savedReportsButtonLabel}
+                                    </Button>
+                                )}
                             </div>
                             <p className="generated-title-label">Titre du Formulaire</p>
                             <p className="generated-title-string">{generateTitle()}</p>
@@ -2124,7 +2128,7 @@ function MainApp({
                                         title={isLockdownActive ? 'La sauvegarde des rapports est désactivée pendant le confinement du site' : ''}
                                     >
                                         <i className="fas fa-save"></i>
-                                        Sauvegarder le rapport
+                                        {isCivilian ? 'Sauvegarder le dossier' : 'Sauvegarder le rapport'}
                                     </Button>
                                 )}
 

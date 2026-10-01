@@ -12,6 +12,16 @@ import { sendPhmcRecruitmentWebhook } from './notificationService';
 // candidatures (50-55) — voir Lot 3 du plan Civil.
 const CIVILIAN_ALLOWED_BBCODE_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
 
+// Format standard des noms de rapports sauvegardés (demande utilisateur) :
+// "[ID-Patient] Nom du formulaire - Date" partout où un ID patient existe sur
+// le formulaire ; repli sur le nom du patient si l'ID n'est pas renseigné
+// (champ resté optionnel sur certains formulaires remplis par le personnel).
+function buildStandardReportKey(formName, patientID, patientName, dateValue) {
+    const identifier = patientID || patientName || null;
+    const datePart = dateValue || 'Date inconnue';
+    return identifier ? `[${identifier}] ${formName} - ${datePart}` : `${formName} - ${datePart}`;
+}
+
 function sanitizeForFirebase(obj) {
   if (obj === undefined) return undefined;
   if (obj === null) return null;
@@ -152,7 +162,7 @@ export const useReportManagement = (
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `[${formData.patientID}] ${formData.patientName} - ${formData.patientDateOfBirth}`;
+            key = buildStandardReportKey(versionNames[3], formData.patientID, formData.patientName, formData.patientDateOfBirth);
         } else if (((bbCodeVersion > 3 && bbCodeVersion <= 7) && bbCodeVersion !== 4)) { // SurgicalOps (5), PhysEval PHMC/PBC (6,7)
             // L'ID patient est un champ à part désormais, mais reste optionnel sur
             // ces formulaires remplis par le personnel (le patient n'est pas
@@ -172,30 +182,21 @@ export const useReportManagement = (
                 }
             }
 
-            const patientLabel = `${formData.patientName || 'NO_NAME'}${formData.patientID ? ` [${formData.patientID}]` : ''}`;
-
-            // Générer la clé pour chaque version
-            if (bbCodeVersion === 5) {
-                key = `[Surgery] ${patientLabel} - ${formData.date || 'NO_DATE'}`;
-            } else if (bbCodeVersion === 6) {
-                key = `[PhysEval-PHMC] ${patientLabel} - ${formData.date || 'NO_DATE'}`;
-            } else if (bbCodeVersion === 7) {
-                key = `[PhysEval-PBC] ${patientLabel} - ${formData.date || 'NO_DATE'}`;
-            }
+            key = buildStandardReportKey(versionNames[bbCodeVersion], formData.patientID, formData.patientName, formData.date || 'NO_DATE');
         } else if (bbCodeVersion === 19) { // EmergencyProtocol
             if (!formData.patientName || !formData.date) {
                 const message = `Please fill in Patient Name, and Date fields.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `${formData.patientName}${formData.patientID ? ` [${formData.patientID}]` : ''} - ${formData.lastName} - ${formData.date}`;
+            key = buildStandardReportKey(versionNames[19], formData.patientID, formData.patientName, formData.date);
         } else if (bbCodeVersion === 25) { // BasicPatientFile
             if (!formData.patientName || !formData.patientDateOfBirth || !formData.patientEmail || !formData.patientID) {
                 const message = `Veuillez remplir le nom, la date de naissance, l'email et l'ID patient.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `[${formData.patientID}] ${formData.patientName} - ${formData.patientDateOfBirth}`;
+            key = buildStandardReportKey(versionNames[25], formData.patientID, formData.patientName, formData.patientDateOfBirth);
         } else if (bbCodeVersion === 24) { // Medical Record Release (MedicalRelease.js)
             // Le formulaire réel utilise patientFirstName/patientLastName, pas
             // registrantFullName/dateOfRequest (qui n'existent dans aucun champ
@@ -208,14 +209,14 @@ export const useReportManagement = (
             }
             const releasePatientName = `${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim();
             const releaseDate = formData.SubmitDate || new Date().toISOString().split('T')[0];
-            key = `[${formData.patientID}] ${releasePatientName} - ${releaseDate}`;
+            key = buildStandardReportKey(versionNames[24], formData.patientID, releasePatientName, releaseDate);
         } else if (bbCodeVersion === 26) { // Medical File Update (MedicalUpdate.js)
             if (!formData.patientName || !formData.date || !formData.patientEmail || !formData.patientID) {
                 const message = `Veuillez remplir le nom du patient, la date de naissance, l'email et l'ID patient.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `[${formData.patientID}] ${formData.patientName} - ${formData.date}`;
+            key = buildStandardReportKey(versionNames[26], formData.patientID, formData.patientName, formData.date);
         }
         // --- Add more 'else if' blocks here for other specific bbCodeVersions ---
         // Example for Coroner Email (bbCodeVersion 2)
@@ -279,8 +280,7 @@ export const useReportManagement = (
                 return { success: false, error: message };
             }
             const formattedDate = new Date(formData.date).toLocaleDateString('fr-FR');
-            const patientLabel = `${formData.patientName}${formData.patientID ? ` [${formData.patientID}]` : ''}`;
-            key = `[Commentary Note${bbCodeVersion === 23 ? ' (PBC)' : ' (PHMC)'}] ${patientLabel} - ${formattedDate}`;
+            key = buildStandardReportKey(versionNames[bbCodeVersion], formData.patientID, formData.patientName, formattedDate);
         }
         else if (bbCodeVersion === 27) { // Email Forms
             if (!formData.patientNotes || !formData.decedentName) {
@@ -298,19 +298,16 @@ export const useReportManagement = (
             // Existing generic key generation for non-SAAA, non-PHMC Recruitment forms
             const formName = versionNames[bbCodeVersion] || `FormV${bbCodeVersion}`;
 
-            // MODIFIED: Prioritize decedentName, then patientName, then patientID, then
-            // applicantTitleAndFullName (candidatures, bbCodeVersion 50-55), then a
-            // generic placeholder
-            let identifier = formData.decedentName || formData.patientName || formData.patientID || formData.applicantTitleAndFullName || 'Unnamed Report';
+            // Repli quand il n'y a pas d'ID patient (candidatures, formulaires
+            // DMEC sans notion de patient) : decedentName, puis patientName, puis
+            // le nom du candidat, puis un générique.
+            let identifier = formData.decedentName || formData.patientName || formData.applicantTitleAndFullName || 'Unnamed Report';
             if (Array.isArray(identifier)) identifier = identifier.join(', ');
 
             // MODIFIED: Ensure dateField always has a value
             const dateField = formData.date || formData.dateTime || formData.autopsyDate || 'No Date';
 
-            // MODIFIED: Removed the check that would prevent saving if identifier was empty.
-            // The identifier will now always have a value ('Unnamed Report' at minimum).
-
-            key = `[${formName}] ${identifier} - ${dateField}`;
+            key = buildStandardReportKey(formName, formData.patientID, identifier, dateField);
         }
 
         // If key is still empty, something went wrong (should be caught by validations)

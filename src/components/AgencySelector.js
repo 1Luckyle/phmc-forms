@@ -91,28 +91,38 @@ const AgencySelector = ({
         return allForms.filter(form => userPreferences.recommendedForms.includes(form.version));
     };
 
-    // Get forms for the selected agency group first
-    let allAgencyGroupForms = formDefinitions
-        .filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
+    // Get forms for the selected agency group first. Un civil n'a que deux
+    // groupes de formulaires réels (dossiers médicaux "PHMC" + candidatures
+    // "PHMC Recruitment") : on les fusionne systématiquement dans la même
+    // liste, quel que soit le tile cliqué pour ouvrir ce sélecteur, pour que
+    // passer d'un dossier médical à une candidature ne demande plus de
+    // rouvrir le Guide de Configuration.
+    let allAgencyGroupForms = isCivilian
+        ? formDefinitions.filter(form => CIVILIAN_ALLOWED_VERSIONS.includes(form.version) && !form.name.includes('(PBC)'))
+        : formDefinitions.filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
 
-    if (isCivilian) {
-        allAgencyGroupForms = allAgencyGroupForms.filter(form => CIVILIAN_ALLOWED_VERSIONS.includes(form.version));
-    }
-
-    // Filter forms based on user preferences (existing functionality)
-    const filteredFormDefinitions = userPreferences 
+    // Filter forms based on user preferences (existing functionality). Un
+    // compte Civil réel saute cette étape : userPreferences.userType reflète
+    // le choix fait une fois dans le Guide de Configuration (civilian OU
+    // recruitment), alors que CIVILIAN_ALLOWED_VERSIONS ci-dessus autorise
+    // déjà exactement les deux à la fois — filtrer par userType ici aurait
+    // sinon ré-exclu les candidatures pour un civil venu du flux médical.
+    const filteredFormDefinitions = (userPreferences && !isCivilian)
         ? allAgencyGroupForms.filter(form => {
             // If no userTypes specified on form, show to everyone
             if (!form.userTypes) return true;
-            
+
             // Check if user's type is allowed for this form
             return form.userTypes.includes(userPreferences.userType);
         })
         : allAgencyGroupForms;
 
-    // Determine which forms to show (personalized or all)
+    // Determine which forms to show (personalized or all). Même raison : pour
+    // un civil, le jeu de formulaires est déjà entièrement défini et petit
+    // (dossiers médicaux + candidatures), la personnalisation n'a pas lieu
+    // d'être et ne ferait que recacher les candidatures par défaut.
     let formsToDisplay;
-    if (showPersonalizedForms && userPreferences) {
+    if (showPersonalizedForms && userPreferences && !isCivilian) {
         const personalizedForms = getPersonalizedForms(filteredFormDefinitions);
         // Only use personalized forms if we have any, otherwise show all
         formsToDisplay = personalizedForms.length > 0 ? personalizedForms : filteredFormDefinitions;
@@ -131,12 +141,13 @@ const AgencySelector = ({
     
     // Helper function to generate modal title
     const getModalTitle = () => {
+        const groupLabel = isCivilian ? 'Civils & Candidatures' : selectedAgencyGroup;
         if (!userPreferences) {
-            return `Formulaires ${selectedAgencyGroup} (${availableForms.length})`;
+            return `Formulaires ${groupLabel} (${availableForms.length})`;
         }
-        
+
         const modeText = showPersonalizedForms ? 'Mes' : 'Tous';
-        return `${modeText} Formulaires ${selectedAgencyGroup} (${availableForms.length})`;
+        return `${modeText} Formulaires ${groupLabel} (${availableForms.length})`;
     };
     
         // --- Recruitment Details Mapping ---
@@ -294,7 +305,7 @@ const AgencySelector = ({
                                 <div style={modalHeaderStyle}>
                     <h4 style={modalTitleStyle}>{getModalTitle()}</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {userPreferences && (
+                        {userPreferences && !isCivilian && (
                             <Button
                                 variant={showPersonalizedForms ? "outline-primary" : "primary"}
                                 size="sm"
@@ -331,7 +342,7 @@ const AgencySelector = ({
                 </div>
 
                 <div style={modalBodyStyle}>
-                    {userPreferences && showPersonalizedForms && availableForms.length > 0 && (
+                    {userPreferences && !isCivilian && showPersonalizedForms && availableForms.length > 0 && (
                         <div style={{
                             backgroundColor: '#1a3a5c',
                             border: '1px solid #007bff',
@@ -385,8 +396,11 @@ const AgencySelector = ({
                                         //     }
                                         // }
 
-                                        // For PHMC Recruitment, set recruitment status props before rendering
-                                        if (selectedAgencyGroup === 'PHMC Recruitment' && recruitmentDetailsMap[form.version]) {
+                                        // For PHMC Recruitment, set recruitment status props before rendering.
+                                        // Vérifie le groupe du FORMULAIRE, pas selectedAgencyGroup : un civil peut
+                                        // voir un formulaire de candidature alors que le tile cliqué était "PHMC"
+                                        // (voir fusion des groupes ci-dessus pour les comptes Civil).
+                                        if (form.group === 'PHMC Recruitment' && recruitmentDetailsMap[form.version]) {
                                             const details = recruitmentDetailsMap[form.version];
                                             const groupFilter = recruitmentGroupMap[form.version]; // Get the group filter
                                             buttonDisplayProps.isRecruitmentForm = true;
