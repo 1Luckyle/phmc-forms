@@ -1076,6 +1076,7 @@ export const useReportManagement = (
                         to: civilianProfile.email,
                         subject: 'Candidature reçue - PHMC',
                         body: `Bonjour ${applicantName},\n\nNous avons bien reçu votre candidature pour le poste "${definition.name}". Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.\n\nCordialement,\nLe Pillbox Hill Medical Center`,
+                        html: `<p>Bonjour ${applicantName},</p><p>Nous avons bien reçu votre candidature pour le poste « <b>${definition.name}</b> ». Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.</p><p>Cordialement,<br>Le Pillbox Hill Medical Center</p>`,
                     }).catch((err) => console.warn('Eyefind Mail (accusé de réception candidature) échoué:', err));
                 }
 
