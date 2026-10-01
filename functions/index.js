@@ -1148,13 +1148,36 @@ export const getFleecaPaymentStatus = onRequest({ secrets: FLEECA_SECRETS }, asy
 const EYEFIND_API_URL = 'https://eyefind.fr/bot-api/mail/send';
 const EYEFIND_SECRETS = ['EYEFIND_API_KEY'];
 
-// En-tête visuel (logo PHMC) ajouté automatiquement à tout mail Eyefind ayant
-// un corps HTML — un seul endroit à maintenir plutôt que de le répéter dans
-// chaque appelant (PendingAccountRequests.js, EmployeeModal.js, MainApp.js,
-// et le reçu de paiement ci-dessous). i.imgur.com fait partie des domaines
-// d'images autorisés par le nettoyeur HTML d'Eyefind Mail.
+// Habillage visuel (logo + carte stylée + pied de page) appliqué
+// automatiquement à TOUT mail Eyefind ayant un corps HTML (voir
+// sendEyefindMailInternal plus bas) — un seul endroit à maintenir plutôt que
+// de le répéter dans chaque appelant (PendingAccountRequests.js,
+// EmployeeModal.js, MainApp.js, le reçu de paiement, etc.). i.imgur.com fait
+// partie des domaines d'images autorisés par le nettoyeur HTML d'Eyefind
+// Mail. Styles en ligne (pas de <style>/classe) car la plupart des clients
+// mail ignorent ou suppriment les feuilles de style externes/internes.
 const PHMC_LOGO_URL = 'https://i.imgur.com/oB47nCI.png';
-const wrapEmailHtml = (html) => `<img src="${PHMC_LOGO_URL}" alt="Pillbox Hill Medical Center" style="max-width:220px;margin-bottom:14px;" />${html}`;
+const wrapEmailHtml = (html) => `
+<div style="background-color:#0d1117;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background-color:#161b22;border-radius:10px;overflow:hidden;border:1px solid #30363d;">
+    <tr>
+      <td style="background-color:#010409;padding:24px;text-align:center;border-bottom:3px solid #2ea043;">
+        <img src="${PHMC_LOGO_URL}" alt="Pillbox Hill Medical Center" style="max-width:180px;height:auto;" />
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 32px;color:#c9d1d9;font-size:15px;line-height:1.6;">
+        ${html}
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color:#010409;padding:16px 32px;text-align:center;color:#6e7681;font-size:12px;border-top:1px solid #30363d;">
+        Pillbox Hill Medical Center — 76 Strawberry Ave, Los Santos<br />
+        Cet email est envoyé automatiquement par l'outil PHMC-FR, merci de ne pas y répondre directement.
+      </td>
+    </tr>
+  </table>
+</div>`;
 
 // Adresse Eyefind Mail d'un joueur : convention prenomnom@mail.eyefind.fr
 // (prénom et nom concaténés, sans séparateur — ex: rosecallahan@mail.eyefind.fr).
@@ -1199,7 +1222,10 @@ const sendEyefindMailInternal = async ({ apiKey, to, subject, body, html }) => {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ to, subject, body, ...(html ? { html } : {}) }),
+        // wrapEmailHtml habille automatiquement tout corps HTML fourni (logo +
+        // carte stylée + pied de page) — les appelants n'ont qu'à fournir leur
+        // contenu propre (quelques <p> / <b>), jamais le template complet.
+        body: JSON.stringify({ to, subject, body, ...(html ? { html: wrapEmailHtml(html) } : {}) }),
     });
 
     const eyefindText = await eyefindResponse.text();
@@ -1326,7 +1352,7 @@ export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS },
             to: email,
             subject: 'Code de vérification - PHMC',
             body: `Votre code de vérification pour créer votre compte Civil PHMC-FR est : ${code}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
-            html: wrapEmailHtml(`<p>Votre code de vérification pour créer votre compte Civil PHMC-FR est :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p><p>Ce code expire dans 15 minutes.</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`),
+            html: `<p>Votre code de vérification pour créer votre compte Civil PHMC-FR est :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#2ea043;">${code}</p><p>Ce code expire dans 15 minutes.</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
         });
 
         res.status(200).json({ success: true });

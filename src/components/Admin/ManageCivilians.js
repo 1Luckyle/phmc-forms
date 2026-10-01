@@ -78,8 +78,13 @@ const ManageCivilians = ({ showNotification }) => {
         if (!editData) return;
         setIsSaving(true);
         try {
-            const { uid, ...rest } = editData;
-            await set(ref(database, `civilians/${uid}`), rest);
+            // IMPORTANT : ne JAMAIS retirer le champ `uid` avant d'écrire — il est
+            // stocké à l'intérieur même du profil (pas seulement comme clé RTDB) et
+            // sert de preuve d'existence du compte lors de la connexion GTAW
+            // (exchangeAuthCodeForToken exige entry.uid pour reconnaître un
+            // personnage déjà enregistré). Un set() sans ce champ rendait le compte
+            // invisible à la connexion ("le compte n'existe plus").
+            await set(ref(database, `civilians/${editData.uid}`), editData);
             showNotification('Profil Civil mis à jour.', 'success');
             setEditingUid(null);
             setEditData(null);

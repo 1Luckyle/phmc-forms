@@ -147,7 +147,10 @@
     // branche civilianProfile), SANS AUCUN champ de santé. Lecture par tout
     // personnel PHMC/DMEC connecté (décision validée : n'importe quel personnel
     // connecté peut voir/partager/copier le dossier d'un patient — voir Lot 5 du
-    // plan Civil), et par le civil lui-même. Écriture réservée au propriétaire.
+    // plan Civil), et par le civil lui-même. Écriture : le civil sur son propre
+    // profil, OU un admin sur n'importe quel profil (voir ManageCivilians.js —
+    // modifier/supprimer un compte Civil comme admin échouait avec
+    // PERMISSION_DENIED tant que seul auth.uid === $uid était autorisé).
     "civilians": {
       // .read au niveau du parent (pas seulement $uid) : generatePatientID()
       // dans EmployeeAuthContext.js lit tout le nœud civilians pour vérifier
@@ -159,7 +162,7 @@
       // toute création de compte Civil après l'étape de vérification d'email.
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
       }
     },
 
