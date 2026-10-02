@@ -1,6 +1,7 @@
 // src/hooks/useEmployeeSelector.js
 import { useMemo } from 'react';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { getEmployeeDisplayName } from '../utils/employeeName';
 
 // Utility function to ensure a value is an array
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
@@ -85,11 +86,7 @@ export const useEmployeeSelector = (phmcList = [], coronerList = [], applyRestri
         filteredCoronerList,
         isRestricted: !isAdmin && !!currentEmployee,
         currentEmployeeName: employeeProfile
-            ? (employeeProfile.firstName && employeeProfile.lastName
-                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
-                : (employeeProfile.name && employeeProfile.lastName
-                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
-                    : employeeProfile.name || null))
+            ? (getEmployeeDisplayName(employeeProfile) || null)
             : null,
         currentEmployeeType: employeeProfile?.type || null
     };

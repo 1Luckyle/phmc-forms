@@ -3,7 +3,17 @@
 // silencieux qui pourrait passer pour un bug d'affichage). Le personnel
 // supplémentaire est explicitement optionnel ("laisser vide si aucun") et
 // garde une chaîne vide.
+import { buildPatientContextBBCode } from './shared/patientContext';
+
 const NOT_FILLED = 'Non renseigné';
+
+const ANESTHESIA_LABELS = {
+    General: 'Anesthésie générale',
+    Regional: 'Anesthésie locorégionale / péridurale',
+    Local: 'Anesthésie locale',
+    Sedation: 'Sédation',
+    None: 'Aucune anesthésie',
+};
 
 const generateSurgicalOps = (formData) => {
     const {
@@ -40,11 +50,20 @@ ${phmcEmployee}
 [tr][td]Personnel supplémentaire [i](laisser vide si aucun)[/i][/td][td]
 ${extraStaff}
 [/td][/tr][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Enquête chirurgicale[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData)}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Enquête chirurgicale[/b][/color][/center][/divboxcolor]
 [table]
+
+[tr][td]Diagnostic pré-opératoire[/td][td]
+${formData.surgeryPreOpDiagnosis || NOT_FILLED}
+[/td][/tr]
 
 [tr][td]Nom de la procédure[/td][td]
 ${surgeryProcedures}
+[/td][/tr]
+
+[tr][td]Anesthésie / durée / pertes sanguines[/td][td]
+${ANESTHESIA_LABELS[formData.surgeryAnesthesiaType] || NOT_FILLED} | ${formData.surgeryDuration ? `${formData.surgeryDuration} min` : 'Durée non renseignée'} | ${formData.surgeryBloodLoss ? `${formData.surgeryBloodLoss} mL` : 'Pertes non renseignées'}
+[/td][/tr]
 
 [tr][td]Le patient ou sa famille a-t-il donné son consentement, ou avait-il une blessure potentiellement mortelle ou grave nécessitant une intervention chirurgicale immédiate?[/td][td]
 [cb${formData.patientConsentOption === 'Yes' ? 'c' : ''}] Oui
@@ -56,11 +75,13 @@ ${surgeryProcedures}
 [tr][td]Des complications médicales sont-elles survenues pendant la chirurgie?[/td][td]
 [cb${formData.patientComplicationOptions === 'Yes' ? 'c' : ''}] Oui
 [cb${formData.patientComplicationOptions === 'No' ? 'c' : ''}] Non
+${formData.patientComplicationOptions === 'Yes' && formData.patientComplicationsYes ? `[br][/br][i]Détails :[/i] ${formData.patientComplicationsYes}` : ''}
 [/td][/tr]
 
 [tr][td]La procédure a-t-elle été complétée avec succès et a-t-elle abouti au résultat clinique souhaité?[/td][td]
 [cb${formData.procedureGoodOptions === 'Yes' ? 'c' : ''}] Oui
 [cb${formData.procedureGoodOptions === 'No' ? 'c' : ''}] Non
+${formData.procedureGoodOptions === 'No' && formData.procedureGoodNo ? `[br][/br][i]Détails :[/i] ${formData.procedureGoodNo}` : ''}
 [/td][/tr]
 [/table]
 
@@ -80,7 +101,11 @@ ${surgeryProcedures}
 
 [tr][td]
 ${patientSummary}
-
+[/td][/tr]
+${formData.surgeryPostOpInstructions ? `
+[tr][td][b]Consignes post-opératoires et suivi[/b][br][/br]
+${formData.surgeryPostOpInstructions}
+[/td][/tr]` : ''}
 [/table]`;
 
     return bbCode;

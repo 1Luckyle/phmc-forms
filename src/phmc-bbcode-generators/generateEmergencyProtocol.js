@@ -1,3 +1,6 @@
+import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
+
 const generateEmergencyProtocol = (formData) => {
     const {
         lastName,
@@ -15,6 +18,7 @@ const generateEmergencyProtocol = (formData) => {
         ctResults,
         mriResults,
         ultrasoundResults,
+        otherImagingResults,
         patientInjuryMechanism,
         prescriptionImage
     } = formData;
@@ -22,7 +26,15 @@ const generateEmergencyProtocol = (formData) => {
     // --- Imaging Section Logic ---
     let imagingSectionBBCode = '';
     if (Imaging && Array.isArray(Imaging) && Imaging.length > 0) {
-        const imagingPerformedString = Imaging.join(', '); // e.g., "X-Ray, CT Scan"
+        const imagingLabels = {
+            XRay: 'Radiographie',
+            CTScan: 'Scanner',
+            MRI: 'IRM',
+            Ultrasound: 'Échographie',
+            Other: 'Autre',
+            NoneRequired: 'Aucune requise',
+        };
+        const imagingPerformedString = Imaging.map((type) => imagingLabels[type] || type).join(', ');
 
         // Build the results string conditionally based on what's filled
         let imagingResultsString = '';
@@ -31,6 +43,7 @@ const generateEmergencyProtocol = (formData) => {
         if (ctResults && ctResults.length > 0) results.push(`Scanner: ${ctResults.join(', ')}`);
         if (mriResults && mriResults.length > 0) results.push(`IRM: ${mriResults.join(', ')}`);
         if (ultrasoundResults && ultrasoundResults.length > 0) results.push(`Échographie: ${ultrasoundResults.join(', ')}`);
+        if (otherImagingResults && otherImagingResults.length > 0) results.push(`Autres: ${otherImagingResults.join(', ')}`);
 
         imagingResultsString = results.length > 0 ? results.join('; ') : 'Résultats en attente ou N/A';
 
@@ -64,8 +77,10 @@ ELGIN AVE. / STRAWBERRY AVE.
 BP 742
 LOS SANTOS, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
-[table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]
+${buildPatientContextBBCode(formData)}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+[table][tr][td][left][list=none][u]Arrivée: [/u] ${ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
+[br][/br][br][/br]
+[u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
 
 [u] Mécanisme de blessure du patient: [/u][br][/br]
@@ -78,10 +93,10 @@ ${formData.patientInjuryMechanism || 'N/A'}
 [table][tr][td][center]Température: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normale [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermique [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermique[/center]
 [td][center]Fréquence cardiaque: [cb${formData.heartRate === 'patientHeartRateNormal' ? 'c' : ''}] Normale [cb${formData.heartRate === 'patientHeartRateBradycardia' ? 'c' : ''}] Bradycardie [cb${formData.heartRate === 'patientHeartRateTachycardia' ? 'c' : ''}] Tachycardie[/center][/table]
 [table][tr][td][center]Respiration: [cb${formData.breathing === 'patientBreathingNormal' ? 'c' : ''}] Normale [cb${formData.breathing === 'patientBreathingSlow' ? 'c' : ''}] Lente [cb${formData.breathing === 'patientBreathingFast' ? 'c' : ''}] Rapide [cb${formData.breathing === 'patientBreathingObstructed' ? 'c' : ''}] Obstruée[/center]
-[td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]
+[td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]${buildVitalValuesBBCode(formData)}
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
 [table][tr][td][center]État de santé général (ESG): [cb${formData.findings === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientImpared' ? 'c' : ''}] Altéré[/center]
-[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.findings === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
+[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.lungs === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.lungs === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
 [table][tr][td][center]Pupilles: [cb${formData.pupils === 'patientPupilsNormal' ? 'c' : ''}] Normales [cb${formData.pupils === 'patientPupilsAbnormal' ? 'c' : ''}] Anormales [/center]
 [td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]${imagingSectionBBCode}
 [table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
+import PatientContextFields from './shared/PatientContextFields';
 
 const PhysEval = ({
             formData,
@@ -142,10 +143,9 @@ onChange={(selectedOption) => {
                                         })
                                     }}
                                 />
-                                <Form.Label></Form.Label>
+                                <PatientContextFields formData={formData} handleChange={handleChange} showHistory={false} />
 
-
-                                    <Form.Label>Mesures du patient</Form.Label>
+                                    <Form.Label className="form-section-title">Mesures du patient</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
 
                                     <Form.Control
@@ -181,7 +181,7 @@ onChange={(selectedOption) => {
                                     </Form.Select></div>
 
 
-                                    <Form.Label>Signes vitaux</Form.Label>
+                                    <Form.Label className="form-section-title">Signes vitaux</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     <Form.Select
                                         name="temperature"
@@ -249,7 +249,7 @@ onChange={(selectedOption) => {
                                     </Form.Select></div>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Anamnèse</Form.Label>
+                                    <Form.Label className="form-section-title">Anamnèse</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     <Form.Select
                                         name="patientJob"
@@ -303,7 +303,8 @@ onChange={(selectedOption) => {
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     {formData.patientJob === 'Yes' && (
                                     <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows="2"
                                     name="patientCareer"
                                     value={formData.patientCareer}
                                     onChange={handleChange}
@@ -314,7 +315,8 @@ onChange={(selectedOption) => {
                                 )}
                                     {formData.patientJob === 'No' && (
                                     <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows="2"
                                     name="patientcareerNo"
                                     value={formData.patientcareerNo}
                                     onChange={handleChange}
@@ -325,7 +327,8 @@ onChange={(selectedOption) => {
                                 )} 
                                     {formData.patientJobRisks === 'Yes' && (
                                     <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows="2"
                                     name="careerRisks"
                                     value={formData.careerRisks}
                                     onChange={handleChange}
@@ -336,7 +339,8 @@ onChange={(selectedOption) => {
                                 )} 
                                   {formData.patientAllergiesRisk === 'Yes' && (
                                     <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows="2"
                                     name="patientAllergies"
                                     value={formData.patientAllergies}
                                     onChange={handleChange}
@@ -402,7 +406,8 @@ onChange={(selectedOption) => {
 
                                     {formData.patientMedicineRegular === 'Yes' && (
                                     <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows="2"
                                     name="patientMedicine"
                                     value={formData.patientMedicine}
                                     onChange={handleChange}
@@ -413,7 +418,8 @@ onChange={(selectedOption) => {
                                 )} 
                                     {formData.patientOther === 'Yes' && (
                                     <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows="2"
                                     name="patientImpairments"
                                     value={formData.patientImpairments}
                                     onChange={handleChange}

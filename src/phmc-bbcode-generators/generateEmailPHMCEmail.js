@@ -5,33 +5,33 @@ const NOT_FILLED = 'Non renseigné';
 
 const generateEmailPHMCEmail = (formData) => {
     const {
-        scenePhotos,
-        decedentName = NOT_FILLED,
-        patientNotes = NOT_FILLED,
-        synopsis = NOT_FILLED,
+        internalEmailSignatureImage,
+        internalEmailRecipient = NOT_FILLED,
+        internalEmailSubject = NOT_FILLED,
+        internalEmailBody = NOT_FILLED,
         phmcEmployee,
-        decedentOOC = NOT_FILLED,
-        patientCareer = NOT_FILLED,
+        internalEmailSenderTitle = NOT_FILLED,
+        internalEmailSenderDepartment = NOT_FILLED,
     } = formData;
-    const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
+    const scenePhotosBBCode = (internalEmailSignatureImage || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
 
     let bbCode = `[divbox=na][br][/br][imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 [center][/center][br][/br]
 [center][size=130][/center][/size]
-[center][size=150][b]RE: ${patientNotes} [/b][/size][/center]
+[center][size=150][b]RE: ${internalEmailSubject} [/b][/size][/center]
 
 [hr][/hr][br][/br][list=none]
-Cher(ère) ${decedentName},
+Cher(ère) ${internalEmailRecipient},
 
-${synopsis}
+${internalEmailBody}
 
 
 Respectueusement,
 ${scenePhotosBBCode} 
 [/list][hr][/hr][list=none]
 [b][size=105]${phmcEmployee || 'Employé PHMC'}[/size][/b]
-[size=85]${decedentOOC}
-${patientCareer}
+[size=85]${internalEmailSenderTitle}
+${internalEmailSenderDepartment}
 [/size]
 
 [b]Pillbox Hill Medical Center[/b]

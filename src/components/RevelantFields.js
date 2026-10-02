@@ -1,3 +1,13 @@
+// Champs communs aux formulaires cliniques (voir PatientContextFields) et
+// valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
+const PATIENT_CONTEXT_FIELDS = [
+    'patientAgeYears', 'patientSex', 'patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine',
+];
+const VITAL_VALUE_FIELDS = [
+    'temperatureValue', 'heartRateValue', 'respiratoryRateValue', 'bloodPressureValue',
+    'spo2Value', 'glucoseValue',
+];
+
 const getRelevantFields = (bbCodeVersion) => {
     switch (bbCodeVersion) {
         case 1: // Death Report
@@ -6,11 +16,14 @@ const getRelevantFields = (bbCodeVersion) => {
                 'coronerBadge', 'decedentName', 'decedentOOC', 'pronouncedTimeOfDeath',
                 'synopsis', 'probableCauseOfDeath', 'mannerOfDeath', 'typeOfDeath',
                 'scenePhotos', 'additionalImages', 'requestingOfficer',
+                'patientID', 'evidenceLockerID', 'decedentAttributes', 'massFatality', 'showRequestingOfficerInput',
+                'decedentAge', 'decedentSex', 'decedentMarks',
             ];
         case 2: // Email Generator
             return [
                 'requestingOfficer', 'department', 'coronerEmployee', 'coronerRank',
-                'coronerDiscord', 'coronerPHNumber', 'deathReport', 'additionalReports'
+                'coronerDiscord', 'coronerPHNumber', 'deathReport', 'additionalReports',
+                'decedentName', 'decedentOOC',
             ];
         case 3: // Patient File - Advanced
             return [
@@ -23,7 +36,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'patientReligion', 'attorneyName', 'attorneyRelation', 'attorneyPH', 'patientDateOfBirth',
                 'patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet',
                 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther',
-                'dnrOther', 'decedentOOC', 'maritalStatus', 'numberChildren', 'financialStatus', 'dnr', 'dnrOrder', 'attorney'
+                'dnrOther', 'decedentOOC', 'maritalStatus', 'numberChildren', 'financialStatus', 'dnr', 'dnrOrder', 'attorney',
+                'patientBloodType', 'patientEmail',
             ];
         case 4: // Autopsy Report
             return [
@@ -49,14 +63,19 @@ const getRelevantFields = (bbCodeVersion) => {
                 'RadiologyResult', // Added from your Autopsy.js component
                 'autopsyDiagramImgurUrl', // Added: URL for the saved diagram image
                 'autopsyDiagramMarkers',  // Added: Marker data for the diagram (if you want to save for re-editing)
-                // Add any other fields specific to your Autopsy form component
+                // Add any other fields specific to your Autopsy form component,
+                'patientID', 'chiefCoronerEmployee', 'chiefCoronerRank', 'chiefCoronerBadge', 'chiefCoronerDiscord',
+                'decedentAge', 'decedentSex', 'decedentHeight', 'decedentWeight', 'decedentMarks', 'autopsyClothing', 'autopsyInternalExamination',
             ];
         case 5: // Surgery Report
             return [
                 'phmcEmployee', 'lastName', 'extraStaff', 'patientName', 'patientID', 'patientSummaryConsultation',
                 'patientAddress', 'rank', 'date', 'patientSummary', 'lastName',
                 'surgeryProcedures', 'patientConsentOption', 'patientComplicationOptions',
-                'procedureGoodOptions'
+                'procedureGoodOptions',
+                ...PATIENT_CONTEXT_FIELDS, 'surgeryPreOpDiagnosis', 'surgeryAnesthesiaType',
+                'surgeryDuration', 'surgeryBloodLoss', 'surgeryPostOpInstructions',
+                'patientComplicationsYes', 'procedureGoodNo'
             ];
         case 6: // Physical Evaluation (PHMC)
             return [
@@ -65,7 +84,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'phmcRank', 'careerRisks', 'patientAllergies', 'patientMedicine',
                 'patientcareerNo', 'patientSummary', 'patientCareer', 'patientImpairments',
                 'BodyMassIndex', 'temperature', 'heartRate', 'breathing', 'bloodPressure',
-                'patientJob', 'patientJobRisks', 'patientOther', 'predisposition'
+                'patientJob', 'patientJobRisks', 'patientOther', 'predisposition',
+                'patientAgeYears', 'patientSex', 'patientAllergiesRisk', 'patientMedicineRegular'
             ];
         case 7: // Physical Evaluation (PBC)
             return [
@@ -74,7 +94,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'phmcRank', 'careerRisks', 'patientAllergies', 'patientMedicine',
                 'patientcareerNo', 'patientSummary', 'patientCareer', 'patientImpairments',
                 'BodyMassIndex', 'temperature', 'heartRate', 'breathing', 'bloodPressure',
-                'patientJob', 'patientJobRisks', 'patientOther', 'predisposition'
+                'patientJob', 'patientJobRisks', 'patientOther', 'predisposition',
+                'patientAgeYears', 'patientSex', 'patientAllergiesRisk', 'patientMedicineRegular'
             ];
         case 9: // Obs Main File
             return [
@@ -104,6 +125,7 @@ const getRelevantFields = (bbCodeVersion) => {
                 'decedents', 'coronerRank', 'placeOfDeath', 'department', 'dateTime',
                 'coronerEmployee', 'coronerBadge', 'synopsis', 'requestingOfficer',
                 'decedentName', 'decedentOOC',
+                'evidenceLockerID', 'showRequestingOfficerInput',
             ];
         case 12: // Gynecology - Main File
             return [
@@ -130,13 +152,15 @@ const getRelevantFields = (bbCodeVersion) => {
             return [
                 'phmcEmployee', 'lastName', 'patientName',
                 'lastName', 'patientID', 'date', 'patientChiefComplaint', 'rank',
-                'patientNotes', 'patientDiagnosis', 'patientMedicine', 'patientProcedure'
+                'patientNotes', 'patientDiagnosis', 'patientMedicine', 'patientProcedure',
+                'admission', 'followup', ...PATIENT_CONTEXT_FIELDS
             ];
         case 16: // Mental Health - PBC
             return [
                 'phmcEmployee', 'lastName', 'patientName',
                 'lastName', 'patientID', 'rank', 'date', 'patientChiefComplaint',
-                'patientNotes', 'patientDiagnosis', 'patientMedicine', 'patientProcedure'
+                'patientNotes', 'patientDiagnosis', 'patientMedicine', 'patientProcedure',
+                'admission', 'followup', ...PATIENT_CONTEXT_FIELDS
             ];
         case 18: // Agency Feedback
             return [
@@ -148,7 +172,10 @@ const getRelevantFields = (bbCodeVersion) => {
                 'lastName', 'phmcRank', 'patientName', 'patientID', 'date', 'patientDiagnosis',
                 'patientSecondaryDiagnosis', 'patientMedicine', 'patientProcedure',
                 'patientChiefComplaint', 'painLevel', 'temperature', 'heartRate', 'breathing',
-                'bloodPressure', 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission'
+                'bloodPressure', 'bloodOxy', 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission',
+                'followup', 'prescriptionImage', 'patientInjuryMechanism', 'arrivalMode', 'arrivalTime', 'gcsScore',
+                'Imaging', 'XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults', 'otherImagingResults',
+                ...PATIENT_CONTEXT_FIELDS, ...VITAL_VALUE_FIELDS
             ];
         case 20: // Consultation Notes (PHMC)
             return [
@@ -156,7 +183,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'patientSecondaryDiagnosis', 'patientMedicine', 'patientProcedure',
                 'patientChiefComplaint', 'temperature', 'heartRate', 'breathing', 'bloodPressure',
                 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission',
-                'assignedDepartment'
+                'assignedDepartment', 'bloodOxy', 'followup', 'scenePhotos',
+                ...PATIENT_CONTEXT_FIELDS, ...VITAL_VALUE_FIELDS
             ];
         case 21: // Consultation Notes (PBC)
             return [
@@ -164,7 +192,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'patientSecondaryDiagnosis', 'patientMedicine', 'patientProcedure',
                 'patientChiefComplaint', 'temperature', 'heartRate', 'breathing', 'bloodPressure',
                 'findings', 'lungs', 'pupils', 'wounds', 'ecg', 'sono', 'lab', 'admission',
-                'paletoClinicDepartment', 'patientNotes'
+                'paletoClinicDepartment', 'patientNotes', 'bloodOxy', 'followup', 'scenePhotos',
+                ...PATIENT_CONTEXT_FIELDS, ...VITAL_VALUE_FIELDS
             ];
         case 22: // Commentary Note (PHMC)
             return [
@@ -205,8 +234,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'CarePurposeMedicalInformationRelease',
                 'PurposeMedicalInformationReleaseFormat',
                 'payNow', 
-                'paymentProofPhotos' 
-        
+                'paymentProofPhotos',
+                'patientID', 'patientTitle', 'patientGender', 'patientPhoneType',
             ];
         case 25: // Patient File - Basic
             return [
@@ -228,6 +257,7 @@ const getRelevantFields = (bbCodeVersion) => {
                 'date',
                 'patientID',
                 'patientBloodType',
+                'patientDateOfBirth', 'patientEmail',
             ];
         case 26: // Patient File - Advanced
             return [
@@ -249,16 +279,17 @@ const getRelevantFields = (bbCodeVersion) => {
                 'date',
                 'patientID',
                 'patientBloodType',
+                'patientTitleOptions', 'patientEmail', 'patientDateOfBirth', 'UpdateMedicalFile', 'patientTitleNew', 'patientNameNew', 'patientDateOfBirthNew', 'patientAddressNew', 'patientGenderNew', 'patientRaceNew', 'patientPHNew', 'patientDiscordNew', 'patientMental', 'patientTherapy', 'patientTriggers', 'patientSupport', 'patientHarm', 'patientFam', 'patientGenetic', 'patientFamSocial', 'maritalStatus', 'numberChildren', 'patientReligion', 'financialStatus', 'patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet', 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther', 'dnr', 'dnrOrder', 'dnrOther', 'attorney', 'attorneyName', 'attorneyRelation', 'attorneyPH',
             ];
         case 27: // Email Forms
             return [
-                'scenePhotos',
-                'decedentName',
-                'patientNotes',
-                'synopsis',
+                'internalEmailSubject',
+                'internalEmailRecipient',
+                'internalEmailBody',
+                'internalEmailSignatureImage',
+                'internalEmailSenderTitle',
+                'internalEmailSenderDepartment',
                 'phmcEmployee', 'lastName',
-                'decedentOOC',
-                'patientCareer',
             ];
         case 28: // Psychological Evaluation PHMC
             return [
@@ -355,6 +386,26 @@ const getRelevantFields = (bbCodeVersion) => {
                 'Cognition',
                 'admission',
                 'followup',
+            ];
+        case 8: // Certificat de décès
+            return [
+                'coronerEmployee', 'decedentName', 'patientAge', 'patientDateOfBirth',
+                'probableCauseOfDeath', 'TimeofDeath', 'dateofdeath', 'witnessName', 'date',
+            ];
+        case 35: // Certificat de maladie
+            return [
+                'emailPurpose', 'emailRecipient', 'patientName', 'dateOfVisit',
+                'sicknessStartDate', 'sicknessEndDate', 'reasonForSickness',
+                'illnessCondition', 'confirmationPurpose', 'attachedReportSummary',
+                'phmcEmployee', 'lastName', 'phmcRank', 'phmcEmployeeSignatureImage', 'SubmitDate',
+            ];
+        case 37: // Rapport public de décès
+            return [
+                'deathRecordType', 'deathReportPostId', 'caseNumber', 'decedentName', 'decedentOOC', 'patientID',
+                'dateOfDeath', 'caseStatus', 'bodyStatus', 'sex', 'ethnicity', 'placeOfDeath', 'age', 'manner',
+                'hairColor', 'eyeColor', 'weight', 'height', 'tattoos', 'jewelry', 'comments',
+                'causeA', 'causeB', 'causeC', 'causeD', 'otherSignificantConditions',
+                'coronerEmployee', 'chiefMedicalExaminer',
             ];
         default:
             return []; // Or return a default set of fields

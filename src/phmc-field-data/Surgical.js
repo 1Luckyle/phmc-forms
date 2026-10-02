@@ -1,6 +1,15 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
+import PatientContextFields from './shared/PatientContextFields';
+
+const ANESTHESIA_TYPE_OPTIONS = [
+    { value: 'General', label: 'Anesthésie générale' },
+    { value: 'Regional', label: 'Anesthésie locorégionale / péridurale' },
+    { value: 'Local', label: 'Anesthésie locale' },
+    { value: 'Sedation', label: 'Sédation' },
+    { value: 'None', label: 'Aucune anesthésie' },
+];
 
 const Surgical = ({ // Renamed component to follow PascalCase convention
             formData,
@@ -38,6 +47,9 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
                 />
     </div>
 
+        <PatientContextFields formData={formData} handleChange={handleChange} />
+
+        <Form.Label className="form-section-title">Date et équipe</Form.Label>
         <Form.Label>Date du rendez-vous</Form.Label>
         <Form.Control
             type="date"
@@ -192,8 +204,17 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
     })
 }}
 />                                
-    <Form.Label></Form.Label>
-        <Form.Label>Enquête chirurgicale</Form.Label>
+    <Form.Label className="form-section-title">Enquête chirurgicale</Form.Label>
+        <Form.Control
+            as="textarea"
+            rows={2}
+            name="surgeryPreOpDiagnosis"
+            value={formData.surgeryPreOpDiagnosis || ''}
+            onChange={handleChange}
+            placeholder="Diagnostic pré-opératoire / indication de l'intervention"
+            required
+            className={`form-control ${!formData.surgeryPreOpDiagnosis ? 'is-invalid' : ''}`}
+        />
         <Form.Control
             type="text"
             name="surgeryProcedures"
@@ -202,6 +223,38 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             placeholder="Nom de la procédure"
             required
         />
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <Form.Select
+                name="surgeryAnesthesiaType"
+                value={formData.surgeryAnesthesiaType || ''}
+                onChange={handleChange}
+                required
+                className={`form-control ${!formData.surgeryAnesthesiaType ? 'is-invalid' : ''}`}
+            >
+                <option value="" disabled>Type d'anesthésie</option>
+                {ANESTHESIA_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </Form.Select>
+            <Form.Control
+                type="text"
+                inputMode="numeric"
+                name="surgeryDuration"
+                value={formData.surgeryDuration || ''}
+                onChange={handleChange}
+                placeholder="Durée de l'intervention (minutes)"
+                className="form-control"
+            />
+            <Form.Control
+                type="text"
+                inputMode="numeric"
+                name="surgeryBloodLoss"
+                value={formData.surgeryBloodLoss || ''}
+                onChange={handleChange}
+                placeholder="Pertes sanguines estimées (mL)"
+                className="form-control"
+            />
+        </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
         <Form.Select
@@ -265,16 +318,39 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         ))}
     </Form.Select>
     </div>
+        {formData.patientComplicationOptions === 'Yes' && (
+            <Form.Control
+                as="textarea"
+                rows={2}
+                name="patientComplicationsYes"
+                value={formData.patientComplicationsYes || ''}
+                onChange={handleChange}
+                placeholder="Décrire les complications survenues et leur prise en charge"
+                required
+                className={`form-control ${!formData.patientComplicationsYes ? 'is-invalid' : ''}`}
+            />
+        )}
+        {formData.procedureGoodOptions === 'No' && (
+            <Form.Control
+                as="textarea"
+                rows={2}
+                name="procedureGoodNo"
+                value={formData.procedureGoodNo || ''}
+                onChange={handleChange}
+                placeholder="Expliquer pourquoi la procédure n'a pas abouti au résultat souhaité"
+                required
+                className={`form-control ${!formData.procedureGoodNo ? 'is-invalid' : ''}`}
+            />
+        )}
 
-        <Form.Label>Rapport post-anesthésie</Form.Label>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <Form.Label className="form-section-title">Rapport post-anesthésie</Form.Label>
         <Form.Control
             as="textarea"
             name="patientSummaryConsultation"
             value={formData.patientSummaryConsultation}
             onChange={handleChange}
             placeholder="Type et dosage d'anesthésie administrée"
-            rows="4"
+            rows="2"
             required
             className={`form-control ${!formData.patientSummaryConsultation ? 'is-invalid' : ''}`}
         />
@@ -283,12 +359,13 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             name="patientAddress"
             value={formData.patientAddress}
             onChange={handleChange}
-            rows="4"
+            rows="2"
             required
             className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
-            placeholder="Détails de l'anesthésie post-opératoire"
-        /></div>
-        <Form.Label>Résumé de la procédure chirurgicale</Form.Label>
+            placeholder="Détails de l'anesthésie post-opératoire (réveil, surveillance)"
+        />
+
+        <Form.Label className="form-section-title">Résumé de la procédure et suites</Form.Label>
         <Form.Control
             as="textarea"
             name="patientSummary"
@@ -298,6 +375,15 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
             required
             className={`form-control ${!formData.patientSummary ? 'is-invalid' : ''}`}
             placeholder="Résumé de la procédure chirurgicale"
+        />
+        <Form.Control
+            as="textarea"
+            rows={2}
+            name="surgeryPostOpInstructions"
+            value={formData.surgeryPostOpInstructions || ''}
+            onChange={handleChange}
+            placeholder="Consignes post-opératoires, traitements prescrits et suivi prévu"
+            className="form-control"
         />
 </>
     );
