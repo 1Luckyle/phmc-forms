@@ -1,3 +1,4 @@
+import withoutBlanks from './shared/withoutBlanks';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -24,7 +25,7 @@ const generateBasicPatientFile = (formData) => {
         paymentProofPhotos,
         patientDateOfBirth = NOT_FILLED,
         patientID = NOT_FILLED,
-    } = formData;
+    } = withoutBlanks(formData);
             // Payment/Exempt logic
         let paymentSection = '';
         if (formData.filledByStaff) {

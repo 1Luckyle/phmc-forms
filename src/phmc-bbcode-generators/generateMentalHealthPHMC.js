@@ -1,3 +1,4 @@
+import { buildPatientContextBBCode } from './shared/patientContext';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -28,7 +29,7 @@ ELGIN AVE. / STRAWBERRY AVE.
 BP 742
 LOS SANTOS, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: true })}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint}
 [br][/br]

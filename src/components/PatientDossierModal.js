@@ -69,12 +69,12 @@ const visibilityBadge = (visibility) => {
     return <span style={{ color: info.color, fontSize: '0.85em' }}>{info.text}</span>;
 };
 
-const PatientDossierModal = ({ show, onHide, showNotification, copyReportToOwnAccount, shareReportWithPatient }) => {
-    const { isAdmin, employeeProfile, currentEmployee } = useEmployeeAuth();
+const PatientDossierModal = ({ show, onHide, showNotification, copyReportToOwnAccount, shareReportWithPatient, adminCopyAuthorName }) => {
+    const { isAdmin, employeeProfile } = useEmployeeAuth();
     const isStaffViewer = isAdmin || !!employeeProfile;
     const staffAuthorNameForCopy = employeeProfile?.name
         || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null)
-        || (isAdmin ? (currentEmployee?.email || null) : null);
+        || (isAdmin ? (adminCopyAuthorName || null) : null);
 
     const [selectedPatientOption, setSelectedPatientOption] = useState(null);
     const [civilianOptions, setCivilianOptions] = useState([]);
