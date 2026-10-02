@@ -25,7 +25,7 @@ export const buildPatientContextBBCode = (formData, { accentColor = '#FF0000', s
     if (showHistory) {
         body += `
 [br][/br][u]Allergies: [/u][br][/br]
-${orNA(formData.patientAllergies)}
+${formData.patientAllergies && String(formData.patientAllergies).trim() ? String(formData.patientAllergies).trim() : 'Non renseigné'}
 [br][/br][u]Antécédents médicaux: [/u][br][/br]
 ${orNA(formData.patientChronicDiseases)}
 [br][/br][u]Traitements habituels: [/u][br][/br]
