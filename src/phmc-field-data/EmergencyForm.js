@@ -285,6 +285,14 @@ const EmergencyForm = ({
                 classNamePrefix="react-select"
                 styles={customSelectStyles}
             />
+            <Form.Control
+                type="text"
+                name="phmcID"
+                value={formData.phmcID || ''}
+                onChange={handleChange}
+                placeholder="ID PHMC"
+                className={`form-control ${!formData.phmcID ? 'is-invalid' : ''}`}
+            />
 
             <PatientContextFields formData={formData} handleChange={handleChange} allergiesRequired={false} />
 

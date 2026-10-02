@@ -7,6 +7,7 @@ const generateEmergencyProtocol = (formData) => {
     const {
         lastName,
         phmcRank,
+        phmcID,
         patientName,
         patientID,
         date,
@@ -73,7 +74,7 @@ ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
+Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'} - ${phmcID || 'N/A'}
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
 BP 742
@@ -81,7 +82,7 @@ LOS SANTOS, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
 ${buildPatientContextBBCode(formData)}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Arrivée: [/u] ${ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
-[br][/br][br][/br]
+[br][/br]
 [u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
 
@@ -119,7 +120,9 @@ ${patientProcedure || 'N/A'}
 [br][/br]
 [u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine || 'N/A'}
+[br][/br]
 ${prescriptionImageBBCode}
+[br][/br]
 [u]Suivi: [/u][br][/br]
 [cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
 [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
