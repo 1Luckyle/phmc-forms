@@ -46,6 +46,7 @@ import 'react-bootstrap-typeahead/css/Typeahead.css';
 // database
 import { database } from './firebase'; // Your Firebase config
 import { getEmployeeDisplayName } from './utils/employeeName';
+import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -1831,7 +1832,7 @@ function MainApp({
                                         wounds={optionize(selectOptions.wounds)}
                                         ecg={optionize(selectOptions.ecg)}
                                         sono={optionize(selectOptions.sono)}
-                                        lab={optionize(selectOptions.lab)}
+                                        lab={mergeResultOptions(optionize(selectOptions.lab), LAB_RESULT_ADDITIONS)}
                                         bloodOxy={optionize(selectOptions.bloodOxy)}
                                         assignedDepartment={optionize(selectOptions.assignedDepartment)}
                                         departmentLarge={
@@ -1869,11 +1870,11 @@ function MainApp({
                                         UpdateMedicalFile={optionize(selectOptions.UpdateMedicalFile)}
                                         Imaging={optionize(selectOptions.Imaging)}
                                         patientTitleNew={optionize(selectOptions.patientTitleNew)}
-                                        XrayResults={optionize(selectOptions.XrayResults)}
-                                        ctResults={optionize(selectOptions.ctResults)}
-                                        mriResults={optionize(selectOptions.mriResults)}
-                                        ultrasoundResults={optionize(selectOptions.ultrasoundResults)}
-                                        otherResults={optionize(selectOptions.otherResults)}
+                                        XrayResults={mergeResultOptions(optionize(selectOptions.XrayResults), IMAGING_RESULT_ADDITIONS.XrayResults)}
+                                        ctResults={mergeResultOptions(optionize(selectOptions.ctResults), IMAGING_RESULT_ADDITIONS.ctResults)}
+                                        mriResults={mergeResultOptions(optionize(selectOptions.mriResults), IMAGING_RESULT_ADDITIONS.mriResults)}
+                                        ultrasoundResults={mergeResultOptions(optionize(selectOptions.ultrasoundResults), IMAGING_RESULT_ADDITIONS.ultrasoundResults)}
+                                        otherResults={mergeResultOptions(optionize(selectOptions.otherResults), IMAGING_RESULT_ADDITIONS.otherResults)}
                                         patientBloodType={optionize(selectOptions.patientBloodType)} 
                                         selectOptions={selectOptions}
                                         maritalStatus={optionize(selectOptions.maritalStatus)}

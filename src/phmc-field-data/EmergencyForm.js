@@ -286,7 +286,7 @@ const EmergencyForm = ({
                 styles={customSelectStyles}
             />
 
-            <PatientContextFields formData={formData} handleChange={handleChange} />
+            <PatientContextFields formData={formData} handleChange={handleChange} allergiesRequired={false} />
 
             <Form.Label className="form-section-title">Arrivée aux urgences</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>

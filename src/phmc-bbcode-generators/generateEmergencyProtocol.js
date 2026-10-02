@@ -1,3 +1,5 @@
+import { translateResultValue } from '../constants/clinicalOptions';
+import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 
@@ -39,11 +41,11 @@ const generateEmergencyProtocol = (formData) => {
         // Build the results string conditionally based on what's filled
         let imagingResultsString = '';
         const results = [];
-        if (XrayResults && XrayResults.length > 0) results.push(`Radiographie: ${XrayResults.join(', ')}`);
-        if (ctResults && ctResults.length > 0) results.push(`Scanner: ${ctResults.join(', ')}`);
-        if (mriResults && mriResults.length > 0) results.push(`IRM: ${mriResults.join(', ')}`);
-        if (ultrasoundResults && ultrasoundResults.length > 0) results.push(`Échographie: ${ultrasoundResults.join(', ')}`);
-        if (otherImagingResults && otherImagingResults.length > 0) results.push(`Autres: ${otherImagingResults.join(', ')}`);
+        if (XrayResults && XrayResults.length > 0) results.push(`Radiographie: ${XrayResults.map(translateResultValue).join(', ')}`);
+        if (ctResults && ctResults.length > 0) results.push(`Scanner: ${ctResults.map(translateResultValue).join(', ')}`);
+        if (mriResults && mriResults.length > 0) results.push(`IRM: ${mriResults.map(translateResultValue).join(', ')}`);
+        if (ultrasoundResults && ultrasoundResults.length > 0) results.push(`Échographie: ${ultrasoundResults.map(translateResultValue).join(', ')}`);
+        if (otherImagingResults && otherImagingResults.length > 0) results.push(`Autres: ${otherImagingResults.map(translateResultValue).join(', ')}`);
 
         imagingResultsString = results.length > 0 ? results.join('; ') : 'Résultats en attente ou N/A';
 
@@ -101,7 +103,7 @@ ${formData.patientInjuryMechanism || 'N/A'}
 [td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]${imagingSectionBBCode}
 [table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]
 [td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluides [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Changement tissulaire[/center][/table]
-[table][tr][td][center]Labo: [cb${formData.lab?.includes('WNL') ? 'c' : ''}] DLN  [cb${formData.lab?.includes('Anemia') ? 'c' : ''}] Anémie [cb${formData.lab?.includes('Inflammation/Infection') ? 'c' : ''}] Inflammation/Infection [cb${formData.lab?.includes('Dysfunction') ? 'c' : ''}] Dysfonctionnement/Trouble [cb${formData.lab?.includes('ElectrolyteImbalance') ? 'c' : ''}] Déséquilibre électrolytique [cb${formData.lab?.includes('Infarct') ? 'c' : ''}] Infarctus/Embolie [cb${formData.lab?.includes('Tumor') ? 'c' : ''}] Tumeur [/center][/table]
+${buildLabBBCode(formData)}
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Diagnostic préliminaire[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis || 'N/A'}

@@ -16,7 +16,7 @@ export const PATIENT_GENDER_OPTIONS = [
  * `showHistory` : false pour les formulaires qui ont déjà leurs propres champs
  * d'antécédents/allergies/traitements (évaluation physique, psychiatrie).
  */
-const PatientContextFields = ({ formData, handleChange, showHistory = true, title = 'Contexte patient' }) => (
+const PatientContextFields = ({ formData, handleChange, showHistory = true, allergiesRequired = true, title = 'Contexte patient' }) => (
     <>
         <Form.Label className="form-section-title">{title}</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -52,9 +52,11 @@ const PatientContextFields = ({ formData, handleChange, showHistory = true, titl
                     name="patientAllergies"
                     value={formData.patientAllergies || ''}
                     onChange={handleChange}
-                    placeholder="Allergies connues (écrire « Aucune connue » si aucune)"
-                    required
-                    className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
+                    placeholder={allergiesRequired
+                        ? 'Allergies connues (écrire « Aucune connue » si aucune)'
+                        : 'Allergies connues (optionnel)'}
+                    required={allergiesRequired}
+                    className={`form-control ${allergiesRequired && !formData.patientAllergies ? 'is-invalid' : ''}`}
                 />
                 <Form.Control
                     as="textarea"
