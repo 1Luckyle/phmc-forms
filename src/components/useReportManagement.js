@@ -1006,12 +1006,18 @@ export const useReportManagement = (
             }
 
             showNotification('Copie enregistrée dans vos propres rapports.', 'save');
+
+            // La liste affichée est déjà chargée : sans rechargement, la copie
+            // n'apparaît pas avant la prochaine ouverture de la modale.
+            if (selectedUserForSavedReports === copyAuthorName) {
+                loadUserSavedReports(copyAuthorName);
+            }
         } catch (error) {
             console.error('Error copying report:', error);
             Sentry.captureException(error, { extra: { context: 'copyReportToOwnAccount', reportPath } });
             showNotification('Erreur lors de la copie du rapport.', 'error');
         }
-    }, [showNotification]);
+    }, [showNotification, selectedUserForSavedReports, loadUserSavedReports]);
 
     // --- Pipeline de candidatures (Lot 6) ---
 
