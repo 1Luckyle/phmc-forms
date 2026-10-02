@@ -7,7 +7,6 @@ const generateEmergencyProtocol = (formData) => {
     const {
         lastName,
         phmcRank,
-        phmcID,
         patientName,
         patientID,
         date,
@@ -74,7 +73,7 @@ ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'} - ${phmcID || 'N/A'}
+Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
 BP 742
