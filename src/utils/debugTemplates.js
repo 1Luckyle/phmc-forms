@@ -144,8 +144,14 @@ const buildHelpers = (ctx = {}) => {
         discord: civil?.discord || 'jean.testard',
     };
 
+    // Alternance A, B, A, B... dans l'ordre des champs du gabarit.
+    let imageIndex = 0;
+    const img = () => TEST_IMAGES[imageIndex++ % TEST_IMAGES.length];
+    const imgs = (count = 2) => Array.from({ length: count }, img).join(', ');
+
     return {
         selectOptions, formData, civil,
+        img, imgs,
         today, utcDateTime, utcTime, daysFromToday,
         opt, optLabel, some, every, list,
         phmc, coroner, chief, extraStaff,
@@ -157,8 +163,12 @@ const buildHelpers = (ctx = {}) => {
 
 const LOREM_SHORT = "[TEST] Texte de démonstration généré par le mode debug.";
 const LOREM_LONG = "[TEST] Texte de démonstration généré par le mode debug. Il remplit entièrement ce champ afin de vérifier la mise en page, la génération du BBCode et les permissions, sans avoir à tout saisir à la main.";
-const IMG_A = 'https://i.imgur.com/debugTestA.png';
-const IMG_B = 'https://i.imgur.com/debugTestB.png';
+// Captures de test : les champs d'images utilisent ces deux URL en alternance
+// (h.img() / h.imgs(n)), pour vérifier l'affichage de plusieurs images.
+const TEST_IMAGES = [
+    'https://i.ibb.co/yFLRmDc8/image.png',
+    'https://i.ibb.co/gZTnynjz/image.png',
+];
 
 const vitals = (h) => ({
     temperature: h.opt('temperature'),
@@ -243,7 +253,7 @@ const consultBase = (h) => ({
     lab: h.some('lab', 2),
     admission: h.opt('admission'),
     followup: h.opt('followup'),
-    scenePhotos: IMG_A,
+    scenePhotos: h.img(),
 });
 
 const recruitmentBase = (h) => ({
@@ -322,8 +332,8 @@ const TEMPLATES = {
         mannerOfDeath: h.opt('mannerOfDeathOptions'),
         probableCauseOfDeath: 'Multiples blessures par balle',
         synopsis: LOREM_LONG,
-        scenePhotos: `${IMG_A}, ${IMG_B}`,
-        additionalImages: IMG_B,
+        scenePhotos: h.imgs(2),
+        additionalImages: h.img(),
         morgueStatus: 'false',
     }),
 
@@ -342,7 +352,7 @@ const TEMPLATES = {
         externalExamination: LOREM_LONG,
         autopsyAnatomicSummaryItems: ['Plaie thoracique gauche', 'Fracture de la 4e côte'],
         RadiologyResult: 'Projectile retenu dans le thorax.',
-        autopsyAlbumUrl: IMG_A,
+        autopsyAlbumUrl: h.img(),
         autopsyPhotosUnavailable: false,
         synopsis: LOREM_LONG,
     }),
@@ -420,7 +430,7 @@ const TEMPLATES = {
             evidenceLocker: 'false',
             evidenceLockerID: '',
             probableCauseOfDeath: 'Traumatisme crânien',
-            scenePhotos: IMG_A,
+            scenePhotos: h.img(),
             additionalImages: '',
             morgueStatus: 'false',
             collapsed: false,
@@ -443,7 +453,7 @@ const TEMPLATES = {
             ctResults: imaging.includes('CTScan') ? h.some('ctResults', 1) : [],
             mriResults: imaging.includes('MRI') ? h.some('mriResults', 1) : [],
             ultrasoundResults: imaging.includes('Ultrasound') ? h.some('ultrasoundResults', 1) : [],
-            prescriptionImage: IMG_B,
+            prescriptionImage: h.img(),
         };
     },
 
@@ -541,7 +551,7 @@ const TEMPLATES = {
         decedentOOC: 'Test Debug',
         synopsis: LOREM_LONG,
         patientCareer: 'Médecin',
-        scenePhotos: IMG_A,
+        scenePhotos: h.img(),
     }),
 
     // Évaluation Psychologique (PHMC + PBC)
@@ -561,7 +571,7 @@ const TEMPLATES = {
         illnessCondition: 'Repos complet recommandé.',
         confirmationPurpose: 'Justificatif pour l\'employeur.',
         attachedReportSummary: LOREM_SHORT,
-        phmcEmployeeSignatureImage: IMG_A,
+        phmcEmployeeSignatureImage: h.img(),
         SubmitDate: h.today,
     }),
 
@@ -631,7 +641,7 @@ const TEMPLATES = {
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(h.selectOptions.emsPositionDetailsData),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
-        emsLicenseLink: 'https://example.com/ems-license.png',
+        emsLicenseLink: h.img(),
         emsPartTimeReason: LOREM_SHORT,
         oocOtherCharLicenseProof: 'N/A',
         dfpSanFireLink: 'N/A',
