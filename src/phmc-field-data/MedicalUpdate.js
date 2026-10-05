@@ -310,9 +310,8 @@ const MedicalRelease = ({
                     name="patientRaceNew"
                     value={formData.patientRaceNew}
                     onChange={handleChange}
-                    placeholder="Ethnicité du patient"
-                    required
-                    className={`form-control ${!formData.patientRaceNew ? 'is-invalid' : ''}`}
+                    placeholder="Ethnicité du patient (optionnel)"
+                    className="form-control"
 
                 />
 
@@ -334,9 +333,8 @@ const MedicalRelease = ({
                     name="patientDiscordNew"
                     value={formData.patientDiscordNew}
                     onChange={handleChange}
-                    placeholder="(( Pseudo Discord du patient )) "
-                    required
-                    className={`form-control ${!formData.patientDiscordNew ? 'is-invalid' : ''}`}
+                    placeholder="(( Pseudo Discord du patient )) (optionnel)"
+                    className="form-control"
 
                 />
             </div>
@@ -353,43 +351,48 @@ const MedicalRelease = ({
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientMental"
                         value={formData.patientMental}
                         onChange={handleChange}
-                        placeholder="Troubles de santé mentale diagnostiqués"
+                        placeholder="Troubles de santé mentale diagnostiqués (optionnel)"
                     />
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientTherapy"
                         value={formData.patientTherapy}
                         onChange={handleChange}
-                        placeholder="Thérapies et séances de conseil"
+                        placeholder="Thérapies et séances de conseil (optionnel)"
                     />
                 <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientTriggers"
                         value={formData.patientTriggers}
                         onChange={handleChange}
-                        placeholder="Déclencheurs ou phobies sensoriels"
+                        placeholder="Déclencheurs ou phobies sensoriels (optionnel)"
                     />
 
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientSupport"
                         value={formData.patientSupport}
                         onChange={handleChange}
-                        placeholder="Soutien et mécanismes d'adaptation personnels"
+                        placeholder="Soutien et mécanismes d'adaptation personnels (optionnel)"
                     />
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientHarm"
                         value={formData.patientHarm}
                         onChange={handleChange}
-                        placeholder="Historique d'automutilation ou tentatives"
+                        placeholder="Historique d'automutilation ou tentatives (optionnel)"
                     />
 
                                 </div>
@@ -437,9 +440,8 @@ const MedicalRelease = ({
                             name="patientEmergencyContactDiscord"
                             value={formData.patientEmergencyContactDiscord}
                             onChange={handleChange}
-                            placeholder="(( Pseudo Discord du contact d'urgence )) "
-                            required
-                            className={`form-control ${!formData.patientEmergencyContactDiscord ? 'is-invalid' : ''}`}
+                            placeholder="(( Pseudo Discord du contact d'urgence )) (optionnel)"
+                            className="form-control"
                         />
                     </div>
                 </> </div>
@@ -466,7 +468,8 @@ const MedicalRelease = ({
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Control
-                            type="text"
+                            as="textarea"
+                            rows="2"
                             name="patientAllergies"
                             value={formData.patientAllergies}
                             onChange={handleChange}
@@ -475,7 +478,8 @@ const MedicalRelease = ({
                             className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
                         />
                         <Form.Control
-                            type="text"
+                            as="textarea"
+                            rows="2"
                             name="patientCurrentMedicine"
                             value={formData.patientCurrentMedicine}
                             onChange={handleChange}
@@ -486,7 +490,8 @@ const MedicalRelease = ({
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Control
-                            type="text"
+                            as="textarea"
+                            rows="2"
                             name="patientChronicDiseases"
                             value={formData.patientChronicDiseases}
                             onChange={handleChange}
@@ -495,13 +500,13 @@ const MedicalRelease = ({
                             className={`form-control ${!formData.patientChronicDiseases ? 'is-invalid' : ''}`}
                         />
                         <Form.Control
-                            type="text"
+                            as="textarea"
+                            rows="2"
                             name="patientNotes"
                             value={formData.patientNotes}
                             onChange={handleChange}
-                            placeholder="Traumatismes et blessures"
-                            required
-                            className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
+                            placeholder="Traumatismes et blessures (optionnel)"
+                            className="form-control"
                         />
                     </div>
                 </></div>
@@ -513,25 +518,28 @@ const MedicalRelease = ({
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
 
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientFam"
                         value={formData.patientFam}
                         onChange={handleChange}
-                        placeholder="Membres de la famille immédiate"
+                        placeholder="Membres de la famille immédiate (optionnel)"
                     />
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientGenetic"
                         value={formData.patientGenetic}
                         onChange={handleChange}
-                        placeholder="Maladies génétiques connues"
+                        placeholder="Maladies génétiques connues (optionnel)"
                     />
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientFamSocial"
                         value={formData.patientFamSocial}
                         onChange={handleChange}
-                        placeholder="Antécédents sociaux familiaux"
+                        placeholder="Antécédents sociaux familiaux (optionnel)"
                     />
                 </div></></div>
             )}
@@ -567,11 +575,12 @@ const MedicalRelease = ({
 </div>                 <div style={{ display: 'flex', gap: '10px' }}>
 
                     <Form.Control
-                        type="text"
+                        as="textarea"
+                        rows="2"
                         name="patientReligion"
                         value={formData.patientReligion}
                         onChange={handleChange}
-                        placeholder="Considérations culturelles et/ou religieuses"
+                        placeholder="Considérations culturelles et/ou religieuses (optionnel)"
                     />
                     <Form.Select
                         name="financialStatus"
@@ -593,108 +602,108 @@ const MedicalRelease = ({
 
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientSmoker"
                     value={formData.patientSmoker}
                     onChange={handleChange}
-                    placeholder="Habitudes de tabagisme"
-                    required
-                    className={`form-control ${!formData.patientSmoker ? 'is-invalid' : ''}`}
+                    placeholder="Habitudes de tabagisme (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientAlcohol"
                     value={formData.patientAlcohol}
                     onChange={handleChange}
-                    placeholder="Consommation d'alcool"
-                    required
-                    className={`form-control ${!formData.patientAlcohol ? 'is-invalid' : ''}`}
+                    placeholder="Consommation d'alcool (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientDrugs"
                     value={formData.patientDrugs}
                     onChange={handleChange}
-                    placeholder="Consommation de drogue et autres substances"
-                    required
-                    className={`form-control ${!formData.patientDrugs ? 'is-invalid' : ''}`}
+                    placeholder="Consommation de drogue et autres substances (optionnel)"
+                    className="form-control"
 
                 />
             </div>          
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientExercise"
                     value={formData.patientExercise}
                     onChange={handleChange}
-                    placeholder="Habitudes d'exercice du patient"
-                    required
-                    className={`form-control ${!formData.patientExercise ? 'is-invalid' : ''}`}
+                    placeholder="Habitudes d'exercice du patient (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientDiet"
                     value={formData.patientDiet}
                     onChange={handleChange}
-                    placeholder="Habitudes alimentaires"
-                    required
-                    className={`form-control ${!formData.patientDiet ? 'is-invalid' : ''}`}
+                    placeholder="Habitudes alimentaires (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientSleep"
                     value={formData.patientSleep}
                     onChange={handleChange}
-                    placeholder="Habitudes de sommeil"
-                    required
-                    className={`form-control ${!formData.patientSleep ? 'is-invalid' : ''}`}
+                    placeholder="Habitudes de sommeil (optionnel)"
+                    className="form-control"
 
                 />
 
             </div>            
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientSexLife"
                     value={formData.patientSexLife}
                     onChange={handleChange}
-                    placeholder="Santé sexuelle"
-                    required
-                    className={`form-control ${!formData.patientSexLife ? 'is-invalid' : ''}`}
+                    placeholder="Santé sexuelle (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientJobRisks"
                     value={formData.patientJobRisks}
                     onChange={handleChange}
-                    placeholder="Risques ou dangers professionnels"
-                    required
-                    className={`form-control ${!formData.patientJobRisks ? 'is-invalid' : ''}`}
+                    placeholder="Risques ou dangers professionnels (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientHazards"
                     value={formData.patientHazards}
                     onChange={handleChange}
-                    placeholder="Dangers environnementaux ou expositions"
-                    required
-                    className={`form-control ${!formData.patientHazards ? 'is-invalid' : ''}`}
+                    placeholder="Dangers environnementaux ou expositions (optionnel)"
+                    className="form-control"
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientOther"
                     value={formData.patientOther}
                     onChange={handleChange}
-                    placeholder="Autres informations"
-                    required
-                    className={`form-control ${!formData.patientOther ? 'is-invalid' : ''}`}
+                    placeholder="Autres informations (optionnel)"
+                    className="form-control"
 
                 />
 
@@ -749,7 +758,8 @@ const MedicalRelease = ({
                     <div style={{ display: 'flex', gap: '10px' }}>
                         {formData.dnr === 'other' && (
                             <Form.Control
-                                type="text"
+                                as="textarea"
+                                rows="2"
                                 name="dnrOther"
                                 value={formData.dnrOther}
                                 onChange={handleChange}

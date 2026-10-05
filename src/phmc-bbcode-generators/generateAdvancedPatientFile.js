@@ -1,3 +1,4 @@
+import withoutBlanks from './shared/withoutBlanks';
         // Placeholder utilisé pour les informations attendues mais non renseignées,
         // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
         // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
@@ -50,7 +51,7 @@
         patientOther = NOT_FILLED,
         dnrOther = '',
         paymentProofPhotos = ''
-        } = formData;
+        } = withoutBlanks(formData);
 
         const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `${photo.trim()}`).join('\n') : '';
         // Payment/Exempt logic

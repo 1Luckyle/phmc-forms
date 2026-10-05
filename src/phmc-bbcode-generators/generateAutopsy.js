@@ -1,3 +1,5 @@
+import { buildDecedentDescription } from './shared/decedentDescription';
+
 const generateAutopsy = (formData) => {
     const {
         coronerRank,
@@ -90,10 +92,17 @@ const generateAutopsy = (formData) => {
     }
     const finalAutopsyTime = formAutopsyTime || 'HH:MM';
 
+    const decedentDescription = buildDecedentDescription(formData);
+    const decedentDescriptionLine = decedentDescription ? `\n[b]IDENTIFICATION:[/b] ${decedentDescription}` : '';
+    const clothingText = (formData.autopsyClothing || '').trim()
+        || "Le corps n'était pas vêtu et les vêtements n'étaient pas disponibles au moment de l'autopsie.";
+    const internalExamText = (formData.autopsyInternalExamination || '').trim()
+        || "Conformément à la cause du décès indiquée, rien d'inhabituel n'a été observé.";
+
     let bbCode = `[divbox=white][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
 
 [divbox=white][b][size=150][br][/br][center]DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/size][/b][/center]
-[center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Nom OOC'}))[/b] (ID Patient : ${formData.patientID || 'Non applicable'}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.
+[center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Nom OOC'}))[/b] (ID Patient : ${formData.patientID || 'Non applicable'}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.${decedentDescriptionLine}
 D'après les constatations anatomiques et les antécédents pertinents, j'attribue le décès à:
 ${deathCausesListItems}
 [b]MANIÈRE DU DÉCÈS:[/b] ${deathType || 'Indéterminée'}
@@ -104,11 +113,11 @@ ${anatomicSummaryListItems}
 [b]Examen externe:[/b]
 ${externalExamination || 'Aucun détail d\'examen externe fourni.'}[br][/br]
 [b]Vêtements:[/b]
-Le corps n'était pas vêtu et les vêtements n'étaient pas disponibles au moment de l'autopsie.[br][/br]
+${clothingText}[br][/br]
 [b]Incision initiale:[/b]
 Les cavités corporelles sont ouvertes par l'incision coronale standard et l'incision en forme de Y standard.[br][/br]
 [b]Examen interne:[/b]
-Conformément à la cause du décès indiquée, rien d'inhabituel n'a été observé.[br][/br]
+${internalExamText}[br][/br]
 [b]Sections histologiques:[/b]
 Des sections représentatives de divers organes sont conservées dans un bocal de stockage dans du formol à 10%.[br][/br]
 [b]Toxicologie:[/b]

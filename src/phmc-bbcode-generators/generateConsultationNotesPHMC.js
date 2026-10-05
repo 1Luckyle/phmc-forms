@@ -1,3 +1,6 @@
+import { buildLabBBCode } from './shared/labResults';
+import { buildPatientContextBBCode } from './shared/patientContext';
+
 const generateConsultationNotesPHMC = (formData) => {
     const {
         lastName,
@@ -16,6 +19,11 @@ const generateConsultationNotesPHMC = (formData) => {
 
     // --- Custom Handling for scenePhotos (Medication) ---
     let medicationBBCode = '[i]Aucun détail sur les médicaments fourni.[/i]'; // Default fallback
+    const medicationText = formData.patientMedicine && formData.patientMedicine.trim();
+
+    if (medicationText) {
+        medicationBBCode = medicationText;
+    }
 
     if (scenePhotos && scenePhotos.trim()) {
         const items = scenePhotos.split(',')
@@ -23,7 +31,7 @@ const generateConsultationNotesPHMC = (formData) => {
             .filter(item => item); // Remove any empty items resulting from split/trim
 
         if (items.length > 0) {
-            medicationBBCode = items.map(item => {
+            const attachments = items.map(item => {
                 const isImageUrl = item.startsWith('https://') || /\.(jpg|jpeg|png|gif)$/i.test(item);
                 if (isImageUrl) {
                     return `[img]${item}[/img]`; // Wrap in img tags
@@ -31,6 +39,8 @@ const generateConsultationNotesPHMC = (formData) => {
                     return item; // Output as plain text
                 }
             }).join('\n'); // Join processed items with newlines
+            // Le texte saisi (nom, dosage, durée) reste visible au-dessus des images d'ordonnance.
+            medicationBBCode = medicationText ? `${medicationText}\n${attachments}` : attachments;
         }
     }
     // --- End Custom Handling ---
@@ -49,7 +59,7 @@ ELGIN AVE. / STRAWBERRY AVE.
 BP 742
 LOS SANTOS, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData)}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
 [br][/br]
@@ -66,12 +76,12 @@ ${patientChiefComplaint || 'N/A'}
 [td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
 [table][tr][td][center]État de santé général (ESG): [cb${formData.findings === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientImpared' ? 'c' : ''}] Altéré[/center]
-[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.findings === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
+[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.lungs === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.lungs === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
 [table][tr][td][center]Pupilles: [cb${formData.pupils === 'patientPupilsNormal' ? 'c' : ''}] Normales [cb${formData.pupils === 'patientPupilsAbnormal' ? 'c' : ''}] Anormales [/center]
 [td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]
 [table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]
 [td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluides [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Changement tissulaire[/center][/table]
-[table][tr][td][center]Labo: [cb${formData.lab?.includes('WNL') ? 'c' : ''}] DLN  [cb${formData.lab?.includes('Anemia') ? 'c' : ''}] Anémie [cb${formData.lab?.includes('Inflammation/Infection') ? 'c' : ''}] Inflammation/Infection [cb${formData.lab?.includes('Dysfunction') ? 'c' : ''}] Dysfonctionnement/Trouble [cb${formData.lab?.includes('ElectrolyteImbalance') ? 'c' : ''}] Déséquilibre électrolytique [cb${formData.lab?.includes('Infarct') ? 'c' : ''}] Infarctus/Embolie [cb${formData.lab?.includes('Tumor') ? 'c' : ''}] Tumeur [/center][/table]
+${buildLabBBCode(formData)}
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Diagnostic préliminaire[/b][/color][/center][/divboxcolor]
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis || 'N/A'}

@@ -1,3 +1,5 @@
+import { buildDecedentDescription } from './shared/decedentDescription';
+
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -86,6 +88,11 @@ const getDepartmentFullName = (shortCode) => {
 
     // --- BBCode Template ---
     // Use template literals for better readability
+    const decedentDescription = buildDecedentDescription(formData);
+    const decedentDescriptionParagraph = decedentDescription
+        ? `\n\nDescription du défunt: ${decedentDescription}`
+        : '';
+
     const bbCode = `[divbox=transparent][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
 
 [divbox=transparent][br][/br][center]RAPPORT D'ENQUÊTE SUR LE DÉCÈS[/center]
@@ -95,7 +102,7 @@ const getDepartmentFullName = (shortCode) => {
 
 Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à l'emplacement de [bold]${placeOfDeath || 'Lieu inconnu'}[/bold]. Après avoir reçu l'appel de[bold] ${getDepartmentFullName(department) || 'Département inconnu'}[/bold], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [bold]${dateTime || 'Date/Heure inconnue'}[/bold].
 
-Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Numéro de badge [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié l'individu comme étant [bold]${decedentName || 'Défunt non identifié'}[/bold] (ID Patient : ${formData.patientID || 'Non applicable'}), qui est estimé être décédé à [bold]${pronouncedTimeOfDeath || 'Heure inconnue'}[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}
+Le ${coronerRank || 'Coroner'}, [bold]${coronerEmployee || 'Coroner inconnu'}[/bold], Numéro de badge [bold]${coronerBadge || 'N/A'}[/bold], est arrivé sur les lieux et a identifié l'individu comme étant [bold]${decedentName || 'Défunt non identifié'}[/bold] (ID Patient : ${formData.patientID || 'Non applicable'}), qui est estimé être décédé à [bold]${pronouncedTimeOfDeath || 'Heure inconnue'}[/bold]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [bold]synopsis[/bold] suivant: ${synopsis || 'Aucun synopsis fourni.'}${decedentDescriptionParagraph}
 
 D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [bold]${probableCauseOfDeath || 'Indéterminée'}[/bold]. La manière du décès a été classée comme [bold]${mannerOfDeath || 'Indéterminée'}[/bold].
 [/divbox]

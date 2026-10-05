@@ -5,6 +5,7 @@ import { ref, get, set, remove } from 'firebase/database';
 import * as Sentry from "@sentry/react";
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { sendEyefindMail } from '../utils/eyefindMail';
+import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 
 // Formulaires accessibles à un compte Civil : dossiers médicaux civils
@@ -283,13 +284,13 @@ export const useReportManagement = (
             key = buildStandardReportKey(versionNames[bbCodeVersion], formData.patientID, formData.patientName, formattedDate);
         }
         else if (bbCodeVersion === 27) { // Email Forms
-            if (!formData.patientNotes || !formData.decedentName) {
+            if (!formData.internalEmailSubject || !formData.internalEmailRecipient) {
                 const message = `Please fill in Email Subject and Recipient fields.`;
                 showNotification(message, 'exclamation-circle');
                 return { success: false, error: message };
             }
-            key = `[Email Forms] ${formData.patientNotes} - À: ${formData.decedentName} - ${currentDate}`;
             const currentDate = new Date().toLocaleDateString('fr-FR');
+            key = `[Email Forms] ${formData.internalEmailSubject} - À: ${formData.internalEmailRecipient} - ${currentDate}`;
         }
         else { // Default handler for any other bbCodeVersion (includes SAAA)
             const definition = getFormDefinition(bbCodeVersion); // Get current form definition
@@ -554,6 +555,8 @@ export const useReportManagement = (
                     const loadedVersion = reportData.bbCodeVersion;
                     let loadedBbCode = reportData.bbCode || '';
                     let loadedFormData = reportData.data || {};
+                    // Anciens rapports « Email interne » : clés partagées renommées.
+                    if (loadedVersion === 27) loadedFormData = migrateInternalEmailData(loadedFormData);
 
                     if (returnOnly) {
                         // When attaching, convert [bold] to [b]
@@ -1005,7 +1008,7 @@ export const useReportManagement = (
                 });
             }
 
-            showNotification('Copie enregistrée dans vos propres rapports.', 'save');
+            showNotification(`Copie enregistrée dans les rapports de ${copyAuthorName}.`, 'save');
 
             // La liste affichée est déjà chargée : sans rechargement, la copie
             // n'apparaît pas avant la prochaine ouverture de la modale.

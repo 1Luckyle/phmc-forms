@@ -979,3 +979,51 @@ input[type="checkbox"]:checked::after {
     align-items: center;
     gap: 0.5rem;
 }
+/* ==========================================================================
+   Formulaires : mise en page uniforme
+   ========================================================================== */
+
+/* Les rangées de champs posées côte à côte (display:flex + gap:10px en ligne
+   dans chaque formulaire) passent à la ligne quand elles manquent de place,
+   au lieu d'écraser les champs et de tronquer leur texte. */
+.form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):not([style*="align-items"]) {
+    flex-wrap: wrap;
+}
+
+.form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):not([style*="align-items"]) > .form-control,
+.form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):not([style*="align-items"]) > .form-select,
+.form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):not([style*="align-items"]) > textarea {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+/* Zones de texte : hauteur pilotée par useAutoGrowTextareas (tout le texte
+   reste visible), redimensionnement manuel en hauteur seulement. */
+.form-container form textarea {
+    overflow-y: hidden;
+    resize: vertical;
+    min-height: 3.2rem;
+    line-height: 1.4;
+}
+
+/* Titres de section d'un formulaire (ex. « Anamnèse », « Constatations »). */
+.form-container form .form-section-title {
+    display: block;
+    margin: 1.25rem 0 0.6rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #30363d;
+    color: #c9d1d9;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Rangées Bootstrap « input-group » de champs de saisie (dossiers civils) :
+   même comportement que les rangées en ligne ci-dessus. */
+.form-container form .input-group {
+    flex-wrap: wrap;
+}
+
+.form-container form .input-group > .form-control {
+    flex: 1 1 220px;
+    min-width: 0;
+}

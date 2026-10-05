@@ -268,7 +268,10 @@ const SavedReportsModal = ({
     const isStaffViewer = isAdmin || !!employeeProfile;
     const staffAuthorNameForCopy = employeeProfile?.name
         || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null)
-        || (isAdmin ? (currentEmployee?.email || null) : null);
+        // Un admin n'a pas de compartiment de rapports à son nom : la copie
+        // va chez l'employé sélectionné dans le formulaire (même logique que
+        // "Enregistrer sous un employé"), jamais sous son email.
+        || (isAdmin ? (currentPhmcEmployee || currentCoronerEmployee || null) : null);
 
     // Un employé connecté (non-admin) consulte toujours SES PROPRES rapports,
     // directement, peu importe ce qui est sélectionné dans le formulaire

@@ -9,6 +9,7 @@ import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
 import DebugFillButton from './DebugFillButton';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import { sendEyefindMail } from '../utils/eyefindMail';
+import { getEmployeeDisplayName } from '../utils/employeeName';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
 // débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
@@ -439,6 +440,7 @@ const EmployeeModal = ({
           }
         : {
             name: newName,
+            firstName: missingEmployeeData.coronerName,
             lastName: missingEmployeeData.employeeLastName,
             discord: missingEmployeeData.phmcDiscord || '',
             phNumber: missingEmployeeData.phmcPHNumber || '',
@@ -673,11 +675,7 @@ const EmployeeModal = ({
       // - Coroner: name is full name (no lastName field needed)
       // - PHMC new format: firstName + lastName stored separately
       // - PHMC legacy: name = firstName only, lastName separate
-      const displayName = emp.firstName && emp.lastName
-        ? `${emp.firstName} ${emp.lastName}`
-        : (emp.name && emp.lastName
-            ? `${emp.name} ${emp.lastName}`
-            : (emp.name || ''));
+      const displayName = getEmployeeDisplayName(emp);
       return {
         value: emp.name,
         label: `${displayName} (${emp.rank || emp.category || 'Rank Missing'})`
@@ -813,9 +811,7 @@ const EmployeeModal = ({
       category: 'Coroner Staff'
     }));
     const phmcOptions = ensureArray(effectivePhmcList).map(p => {
-      const displayName = p.firstName && p.lastName
-        ? `${p.firstName} ${p.lastName}`
-        : (p.name && p.lastName ? `${p.name} ${p.lastName}` : (p.name || ''));
+      const displayName = getEmployeeDisplayName(p);
       return {
         value: p.name,
         label: `${displayName} (${p.category || 'PHMC'})`,
@@ -875,13 +871,7 @@ const EmployeeModal = ({
             fontWeight: '500',
             textAlign: 'center'
           }}>
-            ℹ️ Connecté en tant qu'employé : {
-              (employeeProfile.firstName && employeeProfile.lastName)
-                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
-                : (employeeProfile.name && employeeProfile.lastName
-                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
-                    : employeeProfile.name)
-            }. Vous pouvez uniquement modifier vos propres informations.
+            ℹ️ Connecté en tant qu'employé : {getEmployeeDisplayName(employeeProfile)}. Vous pouvez uniquement modifier vos propres informations.
           </div>
         )}
 

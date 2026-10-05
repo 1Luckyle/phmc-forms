@@ -2,6 +2,7 @@ import React, { useState, useEffect} from 'react'; // Import useEffect
 import { Form, Button, InputGroup } from 'react-bootstrap';
 import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
+import DecedentDetailsFields from './shared/DecedentDetailsFields';
 
 const DeathReport = ({
     formData,
@@ -195,6 +196,8 @@ useEffect(() => {
                 <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
                 <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (optionnel, le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
             </div>
+            <DecedentDetailsFields formData={formData} handleChange={handleChange} />
+            <Form.Label className="form-section-title">Circonstances du décès</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
 
             <Form.Select
@@ -256,7 +259,7 @@ useEffect(() => {
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
-            <Form.Control type="text" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" required className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`} />
+            <Form.Control as="textarea" rows="2" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" required className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`} />
 </div>
             <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé..." required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
             <label>Soumission au casier à preuves:</label>

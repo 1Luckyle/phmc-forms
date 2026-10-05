@@ -27,6 +27,7 @@ import { useEmployeeAuth } from './contexts/EmployeeAuthContext';
 import { useEmployeeSelector } from './hooks/useEmployeeSelector';
 import DebugFillButton from './components/DebugFillButton';
 import { getDebugTemplate, hasDebugTemplate } from './utils/debugTemplates';
+import useAutoGrowTextareas from './hooks/useAutoGrowTextareas';
 // logos
 import email from './assets/email.png'
 import Civilian from './assets/Civilian.png'
@@ -46,6 +47,8 @@ import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
 import { database } from './firebase'; // Your Firebase config
+import { getEmployeeDisplayName } from './utils/employeeName';
+import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -760,11 +763,7 @@ function MainApp({
     const prevEmployeeRef = useRef(null);
     useEffect(() => {
         if (employeeProfile && !prevEmployeeRef.current) {
-            const displayName = employeeProfile.firstName && employeeProfile.lastName
-                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
-                : (employeeProfile.name && employeeProfile.lastName
-                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
-                    : (employeeProfile.name || currentEmployee?.email || ''));
+            const displayName = getEmployeeDisplayName(employeeProfile, currentEmployee?.email || '');
             showNotification(`Bienvenue ${displayName} !`, 'success');
         }
         prevEmployeeRef.current = employeeProfile;
@@ -907,6 +906,9 @@ function MainApp({
             });
         }
     }, [runSaveReport, phmcListData, coronerListData, bbCodeVersion]);
+
+    // Les zones de texte du formulaire s'agrandissent avec leur contenu.
+    useAutoGrowTextareas([formData, bbCodeVersion]);
 
     const currentFormDefinition = useMemo(() => getFormDefinition(bbCodeVersion), [bbCodeVersion]);
     const FieldComponent = currentFormDefinition ? currentFormDefinition.FieldComponent : null;
@@ -1513,11 +1515,7 @@ function MainApp({
                         <span>
                             <strong>Mode Administrateur:</strong> Vous êtes connecté en tant qu'admin <strong>{
                                 employeeProfile
-                                    ? (employeeProfile.firstName && employeeProfile.lastName
-                                        ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
-                                        : (employeeProfile.name && employeeProfile.lastName
-                                            ? `${employeeProfile.name} ${employeeProfile.lastName}`
-                                            : (employeeProfile.name || currentEmployee.email)))
+                                    ? getEmployeeDisplayName(employeeProfile, currentEmployee.email)
                                     : currentEmployee.email
                             }</strong>. 
                             Vous avez accès à tous les employés et toutes les fonctions.
@@ -1573,11 +1571,7 @@ function MainApp({
                                                 <Dropdown.Header>
                                                     <i className="fas fa-user-circle"></i> {
                                         employeeProfile
-                                            ? (employeeProfile.firstName && employeeProfile.lastName
-                                                ? `${employeeProfile.firstName} ${employeeProfile.lastName}`
-                                                : (employeeProfile.name && employeeProfile.lastName
-                                                    ? `${employeeProfile.name} ${employeeProfile.lastName}`
-                                                    : (employeeProfile.name || currentEmployee.email)))
+                                            ? getEmployeeDisplayName(employeeProfile, currentEmployee.email)
                                             : (civilianProfile
                                                 ? (civilianProfile.firstName && civilianProfile.lastName
                                                     ? `${civilianProfile.firstName} ${civilianProfile.lastName}`
@@ -1817,6 +1811,7 @@ function MainApp({
                             <Suspense fallback={<LoadingSpinner />}>
                                 {FieldComponent && currentEmployee ? (
                                     <FieldComponent
+                                        bbCodeVersion={bbCodeVersion}
                                         formData={formData}
                                         handleChange={handleChange}
                                         commitInfo={commitInfo}
@@ -1867,7 +1862,7 @@ function MainApp({
                                         wounds={optionize(selectOptions.wounds)}
                                         ecg={optionize(selectOptions.ecg)}
                                         sono={optionize(selectOptions.sono)}
-                                        lab={optionize(selectOptions.lab)}
+                                        lab={mergeResultOptions(optionize(selectOptions.lab), LAB_RESULT_ADDITIONS)}
                                         bloodOxy={optionize(selectOptions.bloodOxy)}
                                         assignedDepartment={optionize(selectOptions.assignedDepartment)}
                                         departmentLarge={
@@ -1905,11 +1900,11 @@ function MainApp({
                                         UpdateMedicalFile={optionize(selectOptions.UpdateMedicalFile)}
                                         Imaging={optionize(selectOptions.Imaging)}
                                         patientTitleNew={optionize(selectOptions.patientTitleNew)}
-                                        XrayResults={optionize(selectOptions.XrayResults)}
-                                        ctResults={optionize(selectOptions.ctResults)}
-                                        mriResults={optionize(selectOptions.mriResults)}
-                                        ultrasoundResults={optionize(selectOptions.ultrasoundResults)}
-                                        otherResults={optionize(selectOptions.otherResults)}
+                                        XrayResults={mergeResultOptions(optionize(selectOptions.XrayResults), IMAGING_RESULT_ADDITIONS.XrayResults)}
+                                        ctResults={mergeResultOptions(optionize(selectOptions.ctResults), IMAGING_RESULT_ADDITIONS.ctResults)}
+                                        mriResults={mergeResultOptions(optionize(selectOptions.mriResults), IMAGING_RESULT_ADDITIONS.mriResults)}
+                                        ultrasoundResults={mergeResultOptions(optionize(selectOptions.ultrasoundResults), IMAGING_RESULT_ADDITIONS.ultrasoundResults)}
+                                        otherResults={mergeResultOptions(optionize(selectOptions.otherResults), IMAGING_RESULT_ADDITIONS.otherResults)}
                                         patientBloodType={optionize(selectOptions.patientBloodType)} 
                                         selectOptions={selectOptions}
                                         maritalStatus={optionize(selectOptions.maritalStatus)}
@@ -2311,6 +2306,7 @@ function MainApp({
                             showNotification={showNotification}
                             shareReportWithPatient={shareReportWithPatient}
                             copyReportToOwnAccount={copyReportToOwnAccount}
+                            adminCopyAuthorName={formData.phmcEmployee || formData.coronerEmployee || null}
                         />
                         <MyJobApplicationsModal
                             show={showMyJobApplications}

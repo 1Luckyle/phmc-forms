@@ -1,6 +1,27 @@
 import React, { useMemo } from 'react'; // Added useMemo
 import { Form, Button, InputGroup } from 'react-bootstrap';
 import Select from 'react-select';
+import PatientContextFields from './shared/PatientContextFields';
+
+const ARRIVAL_MODE_OPTIONS = [
+    { value: 'Walk-in', label: 'Par ses propres moyens' },
+    { value: 'EMS', label: 'Ambulance / EMS' },
+    { value: 'Police', label: 'Amené par les forces de l\'ordre' },
+    { value: 'Transfer', label: 'Transfert depuis un autre établissement' },
+    { value: 'Other', label: 'Autre' },
+];
+
+// Valeurs chiffrées facultatives des signes vitaux. Les catégories (normal /
+// anormal) restent les cases à cocher du protocole ; ces valeurs les précisent.
+const VITAL_VALUE_FIELDS = [
+    { name: 'temperatureValue', placeholder: 'T° (°C)', inputMode: 'decimal' },
+    { name: 'heartRateValue', placeholder: 'FC (bpm)', inputMode: 'numeric' },
+    { name: 'respiratoryRateValue', placeholder: 'FR (/min)', inputMode: 'numeric' },
+    { name: 'bloodPressureValue', placeholder: 'TA (ex. 120/80)', inputMode: 'text' },
+    { name: 'spo2Value', placeholder: 'SpO2 (%)', inputMode: 'numeric' },
+    { name: 'glucoseValue', placeholder: 'Glycémie (g/L)', inputMode: 'decimal' },
+    { name: 'gcsScore', placeholder: 'Glasgow (3-15)', inputMode: 'numeric' },
+];
 
 // customSelectStyles remains the same
 
@@ -264,43 +285,68 @@ const EmergencyForm = ({
                 classNamePrefix="react-select"
                 styles={customSelectStyles}
             />
-            <Form.Label></Form.Label> {/* Spacer */}
-                        <Form.Label>Anamnèse:</Form.Label>
 
+            <PatientContextFields formData={formData} handleChange={handleChange} allergiesRequired={false} />
+
+            <Form.Label className="form-section-title">Arrivée aux urgences</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Select
-                    name="painLevel"
-                    value={formData.painLevel}
+                    name="arrivalMode"
+                    value={formData.arrivalMode || ''}
                     onChange={handleChange}
                     required
-                    className={`form-control ${!formData.painLevel ? 'is-invalid' : ''}`}
+                    className={`form-control ${!formData.arrivalMode ? 'is-invalid' : ''}`}
                 >
-                    <option value="" disabled>Échelle de douleur (EVA) </option>
-                    {painLevel.map((option) => (
+                    <option value="" disabled>Mode d'arrivée</option>
+                    {ARRIVAL_MODE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                 </Form.Select>
                 <Form.Control
-                    type="text"
-                    name="patientChiefComplaint"
-                    value={formData.patientChiefComplaint}
+                    type="time"
+                    name="arrivalTime"
+                    value={formData.arrivalTime || ''}
                     onChange={handleChange}
-                    placeholder="Plainte principale du patient"
-                    required
-                    className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
+                    title="Heure d'arrivée du patient"
+                    className="form-control"
                 />
-                    <Form.Control
-                    type="text"
-                    name="patientInjuryMechanism"
-                    value={formData.patientInjuryMechanism}
-                    onChange={handleChange}
-                    placeholder="Comment le patient a été blessé?"
-                    required
-                    className={`form-control ${!formData.patientInjuryMechanism ? 'is-invalid' : ''}`}
-                />
-
             </div>
-            <Form.Label>Section des signes vitaux (T° | FC | FR | TA | SpO2)</Form.Label>
+
+            <Form.Label className="form-section-title">Anamnèse</Form.Label>
+            <Form.Control
+                as="textarea"
+                rows={2}
+                name="patientChiefComplaint"
+                value={formData.patientChiefComplaint || ''}
+                onChange={handleChange}
+                placeholder="Plainte principale du patient"
+                required
+                className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
+            />
+            <Form.Control
+                as="textarea"
+                rows={2}
+                name="patientInjuryMechanism"
+                value={formData.patientInjuryMechanism || ''}
+                onChange={handleChange}
+                placeholder="Mécanisme de la blessure / circonstances (comment le patient a été blessé)"
+                required
+                className={`form-control ${!formData.patientInjuryMechanism ? 'is-invalid' : ''}`}
+            />
+            <Form.Select
+                name="painLevel"
+                value={formData.painLevel}
+                onChange={handleChange}
+                required
+                className={`form-control ${!formData.painLevel ? 'is-invalid' : ''}`}
+            >
+                <option value="" disabled>Indice de gravité d'urgence / douleur (EVA)</option>
+                {painLevel.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </Form.Select>
+
+            <Form.Label className="form-section-title">Signes vitaux (T° | FC | FR | TA | SpO2)</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Select name="temperature" value={formData.temperature} onChange={handleChange} required className={`form-control ${!formData.temperature ? 'is-invalid' : ''}`}>
                     <option value="" disabled>Température</option>
@@ -323,7 +369,23 @@ const EmergencyForm = ({
                     {bloodOxy.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
             </div>
-            <Form.Label>Constatations </Form.Label>
+            <Form.Label>Valeurs mesurées (optionnel — précisent les catégories ci-dessus)</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                {VITAL_VALUE_FIELDS.map((field) => (
+                    <Form.Control
+                        key={field.name}
+                        type="text"
+                        inputMode={field.inputMode}
+                        name={field.name}
+                        value={formData[field.name] || ''}
+                        onChange={handleChange}
+                        placeholder={field.placeholder}
+                        title={field.placeholder}
+                        className="form-control"
+                    />
+                ))}
+            </div>
+            <Form.Label className="form-section-title">Constatations</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Select name="findings" value={formData.findings} onChange={handleChange} required className={`form-control ${!formData.findings ? 'is-invalid' : ''}`}>
                     <option value="" disabled>État de santé général</option>
@@ -355,7 +417,8 @@ const EmergencyForm = ({
 
 
             {/* Imaging Type Select */}
-            <Form.Label style={{ marginTop: '0.5rem' }}>Imagerie effectuée</Form.Label>
+            <Form.Label className="form-section-title">Examens complémentaires</Form.Label>
+            <Form.Label>Imagerie effectuée</Form.Label>
 <Select
     isMulti
     name="Imaging"
@@ -439,19 +502,18 @@ const EmergencyForm = ({
             <Form.Label></Form.Label> {/* Spacer */}
 
             {/* ... (rest of your form: Preliminary Diagnosis, Discharge Notes, etc.) ... */}
-            <Form.Label>Diagnostic préliminaire </Form.Label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control as="textarea" name="patientProcedure" value={formData.patientProcedure} onChange={handleChange} rows="4" placeholder="Procédures effectuées sur le patient" required className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`} />
-                <Form.Control as="textarea" name="patientDiagnosis" value={formData.patientDiagnosis} onChange={handleChange} rows="4" placeholder="Diagnostic du patient" required className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`} />
-                <Form.Control as="textarea" name="patientSecondaryDiagnosis" value={formData.patientSecondaryDiagnosis} onChange={handleChange} rows="4" placeholder="Diagnostic secondaire du patient" required className={`form-control ${!formData.patientSecondaryDiagnosis ? 'is-invalid' : ''}`} />
-            </div>
+            <Form.Label className="form-section-title">Diagnostic préliminaire</Form.Label>
+            <Form.Control as="textarea" name="patientDiagnosis" value={formData.patientDiagnosis} onChange={handleChange} rows="2" placeholder="Diagnostic principal du patient" required className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`} />
+            <Form.Control as="textarea" name="patientSecondaryDiagnosis" value={formData.patientSecondaryDiagnosis} onChange={handleChange} rows="2" placeholder="Diagnostic secondaire du patient (écrire « Aucun » si aucun)" required className={`form-control ${!formData.patientSecondaryDiagnosis ? 'is-invalid' : ''}`} />
+
+            <Form.Label className="form-section-title">Thérapie et sortie</Form.Label>
+            <Form.Control as="textarea" name="patientProcedure" value={formData.patientProcedure} onChange={handleChange} rows="3" placeholder="Procédures effectuées sur le patient" required className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`} />
             <Form.Select name="admission" value={formData.admission} onChange={handleChange} required className={`form-control ${!formData.admission ? 'is-invalid' : ''}`}>
                 <option value="" disabled>Patient admis?</option>
                 {admission.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
             </Form.Select>
-            <Form.Label>Notes de sortie </Form.Label>
             <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Notes du plan de traitement (conseils verbaux/recommandations supplémentaires/notes additionnelles)" required className={`form-control mb-2 ${!formData.patientMedicine ? 'is-invalid' : ''}`} />
+                <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Médicaments / traitements administrés ou prescrits, conseils verbaux et recommandations" required className={`form-control mb-2 ${!formData.patientMedicine ? 'is-invalid' : ''}`} />
                 <Form.Group className="mb-2 upload-container">
                     <InputGroup>
                         <Form.Control as="textarea" rows={2} name="prescriptionImage" value={formData.prescriptionImage || ''} onChange={handleChange} placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)" className={`form-control`}
