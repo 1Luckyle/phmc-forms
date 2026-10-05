@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select'; // Make sure react-select is imported
+import PatientContextFields from './shared/PatientContextFields';
 
 const MentalHealth = ({
     formData,
@@ -111,162 +112,84 @@ const MentalHealth = ({
                     })
                 }}
             />
-            <Form.Label></Form.Label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    as="textarea"
-                    name="patientChiefComplaint"
-                    value={formData.patientChiefComplaint}
-                    onChange={handleChange}
-                    placeholder="Plainte principale du patient"
-                    rows="3"
-                    required
-                    className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
 
-                />
+            <PatientContextFields formData={formData} handleChange={handleChange} />
 
-                <Form.Control
-                    as="textarea"
-                    rows="3"
-                    name="patientNotes"
-                    value={formData.patientNotes}
-                    onChange={handleChange}
-                    placeholder="Notes du patient"
-                    required
-                    className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
-                />
-            </div>
-            <Select
-                name="admission"
-                value={admission.find(option => option.value === formData.admission)}
-                onChange={(selectedOption) => {
-                    setFormData(prev => ({
-                        ...prev,
-                        admission: selectedOption ? selectedOption.value : ''
-                    }));
-                }}
-                options={admission}
-                isClearable
-                placeholder="Patient admis?"
-                className="form-control"
-                styles={{
-                    control: (base) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: '#30363d',
-                        '&:hover': {
-                            borderColor: '#30363d'
-                        }
-                    }),
-                    menu: (base) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        zIndex: 1000
-                    }),
-                    option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                        color: '#eeeeeeb0'
-                    }),
-                    singleValue: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    }),
-                    input: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    }),
-                    placeholder: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    })
-                }}
+            <Form.Label className="form-section-title">Motif et constatations</Form.Label>
+            <Form.Control
+                as="textarea"
+                name="patientChiefComplaint"
+                value={formData.patientChiefComplaint || ''}
+                onChange={handleChange}
+                placeholder="Plainte principale du patient"
+                rows="2"
+                required
+                className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
             />
-            <Form.Label></Form.Label>
-            <Form.Label><br></br></Form.Label>
+            <Form.Control
+                as="textarea"
+                rows="3"
+                name="patientNotes"
+                value={formData.patientNotes || ''}
+                onChange={handleChange}
+                placeholder="Notes de session / observations du patient"
+                required
+                className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
+            />
 
+            <Form.Label className="form-section-title">Diagnostic de sortie</Form.Label>
             <Form.Control
                 as="textarea"
                 name="patientDiagnosis"
-                value={formData.patientDiagnosis}
+                value={formData.patientDiagnosis || ''}
                 onChange={handleChange}
                 placeholder="Diagnostic"
-                rows="3"
+                rows="2"
                 required
                 className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
-
             />
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    as="textarea"
-                    name="patientProcedure"
-                    value={formData.patientProcedure}
-                    onChange={handleChange}
-                    placeholder="Procédure(s) effectuée(s) / mise(s) en place"
-                    rows="2"
-                    className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`}
 
-                />
-
-                <Form.Control
-                    as="textarea"
-                    name="patientMedicine"
-                    value={formData.patientMedicine}
-                    onChange={handleChange}
-                    placeholder="Médicament(s) prescrit(s) / administré(s)"
-                    rows="2"
-                    className={`form-control ${!formData.patientMedicine ? 'is-invalid' : ''}`}
-                />
-            </div>
-            <Select
-                name="followup"
-                value={followup.find(option => option.value === formData.followup)}
-                onChange={(selectedOption) => {
-                    setFormData(prev => ({
-                        ...prev,
-                        followup: selectedOption ? selectedOption.value : ''
-                    }));
-                }}
-                options={followup}
-                isClearable
-                placeholder="Sélectionner le processus de suivi..."
+            <Form.Label className="form-section-title">Thérapie et suivi</Form.Label>
+            <Form.Select
+                name="admission"
+                value={formData.admission || ''}
+                onChange={handleChange}
                 className="form-control"
-                styles={{
-                    control: (base) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: '#30363d',
-                        '&:hover': {
-                            borderColor: '#30363d'
-                        }
-                    }),
-                    menu: (base) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        zIndex: 1000
-                    }),
-                    option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                        color: '#eeeeeeb0'
-                    }),
-                    singleValue: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    }),
-                    input: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    }),
-                    placeholder: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    })
-                }}
+            >
+                <option value="">Patient admis?</option>
+                {(admission || []).map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </Form.Select>
+            <Form.Control
+                as="textarea"
+                name="patientProcedure"
+                value={formData.patientProcedure || ''}
+                onChange={handleChange}
+                placeholder="Procédure(s) effectuée(s) / mise(s) en place"
+                rows="2"
+                className="form-control"
             />
-
+            <Form.Control
+                as="textarea"
+                name="patientMedicine"
+                value={formData.patientMedicine || ''}
+                onChange={handleChange}
+                placeholder="Médicament(s) prescrit(s) / administré(s)"
+                rows="2"
+                className="form-control"
+            />
+            <Form.Select
+                name="followup"
+                value={formData.followup || ''}
+                onChange={handleChange}
+                className="form-control"
+            >
+                <option value="">Processus de suivi</option>
+                {(followup || []).map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </Form.Select>
         </>
     );
 };

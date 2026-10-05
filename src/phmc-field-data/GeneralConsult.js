@@ -2,8 +2,20 @@ import React from 'react';
 import { Form, InputGroup, Button} from 'react-bootstrap';
 import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
+import PatientContextFields from './shared/PatientContextFields';
+
+// Valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
+const VITAL_VALUE_FIELDS = [
+    { name: 'temperatureValue', placeholder: 'T° (°C)', inputMode: 'decimal' },
+    { name: 'heartRateValue', placeholder: 'FC (bpm)', inputMode: 'numeric' },
+    { name: 'respiratoryRateValue', placeholder: 'FR (/min)', inputMode: 'numeric' },
+    { name: 'bloodPressureValue', placeholder: 'TA (ex. 120/80)', inputMode: 'text' },
+    { name: 'spo2Value', placeholder: 'SpO2 (%)', inputMode: 'numeric' },
+    { name: 'glucoseValue', placeholder: 'Glycémie (g/L)', inputMode: 'decimal' },
+];
 
 const GeneralConsult = ({
+    bbCodeVersion,
     formData,
     handleChange,
     setFormData,
@@ -147,35 +159,48 @@ onChange={(selectedOption) => {
                                         })
                                     }}
                                 />
-                                <Form.Label></Form.Label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
 
+                                <PatientContextFields formData={formData} handleChange={handleChange} />
+
+                                <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
                                 <Form.Control
-                                    type="text"
+                                    as="textarea"
+                                    rows={2}
                                     name="patientChiefComplaint"
-                                    value={formData.patientChiefComplaint}
+                                    value={formData.patientChiefComplaint || ''}
                                     onChange={handleChange}
-                                    placeholder="Plainte principale du patient"
+                                    placeholder="Motif de la visite / plainte principale du patient"
                                     required
                                     className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
-                                    />
-                                                        <Form.Select
-                                name="assignedDepartment"
-                                value={formData.assignedDepartment}
-                                onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.assignedDepartment ? 'is-invalid' : ''}`}
-                            >
-                                <option value="" disabled>Département assigné</option>
-                                {assignedDepartment.map((option) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                ))}
-                            </Form.Select>
+                                />
+                                {bbCodeVersion === 21 ? (
+                                    <Form.Select
+                                        name="paletoClinicDepartment"
+                                        value={formData.paletoClinicDepartment || ''}
+                                        onChange={handleChange}
+                                        required
+                                        className={`form-control ${!formData.paletoClinicDepartment ? 'is-invalid' : ''}`}
+                                    >
+                                        <option value="" disabled>Département assigné</option>
+                                        <option value="InternalMedicine">Médecine interne</option>
+                                        <option value="SurgicalDepartment">Département chirurgical</option>
+                                    </Form.Select>
+                                ) : (
+                                    <Form.Select
+                                        name="assignedDepartment"
+                                        value={formData.assignedDepartment}
+                                        onChange={handleChange}
+                                        required
+                                        className={`form-control ${!formData.assignedDepartment ? 'is-invalid' : ''}`}
+                                    >
+                                        <option value="" disabled>Département assigné</option>
+                                        {assignedDepartment.map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </Form.Select>
+                                )}
 
-                                </div> 
-
-
-                                <Form.Label>Section des signes vitaux (T° | FC | FR | TA | SpO2)</Form.Label>
+                                <Form.Label className="form-section-title">Signes vitaux (T° | FC | FR | TA | SpO2)</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                         <Form.Select
                                                 name="temperature"
@@ -237,9 +262,25 @@ onChange={(selectedOption) => {
                                                 <option key={option.value} value={option.value}>{option.label}</option>
                                             ))}
                                         </Form.Select>
-                                            
+
                                             </div>
-                                            <Form.Label>Constatations </Form.Label>
+                                <Form.Label>Valeurs mesurées (optionnel — précisent les catégories ci-dessus)</Form.Label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    {VITAL_VALUE_FIELDS.map((field) => (
+                                        <Form.Control
+                                            key={field.name}
+                                            type="text"
+                                            inputMode={field.inputMode}
+                                            name={field.name}
+                                            value={formData[field.name] || ''}
+                                            onChange={handleChange}
+                                            placeholder={field.placeholder}
+                                            title={field.placeholder}
+                                            className="form-control"
+                                        />
+                                    ))}
+                                </div>
+                                            <Form.Label className="form-section-title">Constatations</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                         <Form.Select
                                                 name="findings"
@@ -297,7 +338,7 @@ onChange={(selectedOption) => {
                                                 value={formData.ecg}
                                                 onChange={handleChange}
                                                 required
-                                                className={`form-control ${!formData.wounds ? 'is-invalid' : ''}`}
+                                                className={`form-control ${!formData.ecg ? 'is-invalid' : ''}`}
                                             >
                                                 <option value="" disabled>Résultats ECG</option>
                                                 {ecg.map((option) => (
@@ -309,7 +350,7 @@ onChange={(selectedOption) => {
                                                 value={formData.sono}
                                                 onChange={handleChange}
                                                 required
-                                                className={`form-control ${!formData.wounds ? 'is-invalid' : ''}`}
+                                                className={`form-control ${!formData.sono ? 'is-invalid' : ''}`}
                                             >
                                                 <option value="" disabled>Résultats échographie</option>
                                                 {sono.map((option) => (
@@ -387,16 +428,14 @@ onChange={(selectedOption) => {
                                         })
                                     }}
                                 /><Form.Label></Form.Label>
-                            <Form.Label>Diagnostic préliminaire </Form.Label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-
+                            <Form.Label className="form-section-title">{bbCodeVersion === 21 ? 'Diagnostic de sortie' : 'Diagnostic préliminaire'}</Form.Label>
                                 <Form.Control
                                     as="textarea"
                                     name="patientDiagnosis"
                                     value={formData.patientDiagnosis}
                                     onChange={handleChange}
-                                    rows="4"
-                                    placeholder="Diagnostic du patient"
+                                    rows="2"
+                                    placeholder="Diagnostic principal du patient"
                                     required
                                     className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
                                 />
@@ -405,12 +444,12 @@ onChange={(selectedOption) => {
                                     name="patientSecondaryDiagnosis"
                                     value={formData.patientSecondaryDiagnosis}
                                     onChange={handleChange}
-                                    rows="4"
-                                    placeholder="Diagnostic secondaire du patient"
+                                    rows="2"
+                                    placeholder="Diagnostic secondaire du patient (écrire « Aucun » si aucun)"
                                     required
                                     className={`form-control ${!formData.patientSecondaryDiagnosis ? 'is-invalid' : ''}`}
                                 />
-                                </div>
+                                <Form.Label className="form-section-title">Thérapie et suivi</Form.Label>
                                 <Form.Select
                                 name="admission"
                                 value={formData.admission}
@@ -423,19 +462,36 @@ onChange={(selectedOption) => {
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </Form.Select>
-                                <Form.Label>Plan de traitement</Form.Label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
                                 <Form.Control
                                     as="textarea"
                                     name="patientProcedure"
                                     value={formData.patientProcedure}
                                     onChange={handleChange}
-                                    rows="4"
-                                    placeholder="Notes du plan de traitement (conseils verbaux/recommandations supplémentaires/notes additionnelles)"
+                                    rows="3"
+                                    placeholder="Plan de traitement (conseils verbaux, recommandations, notes additionnelles)"
                                     required
                                     className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`}
                                 />
-                                </div> 
+                                <Form.Control
+                                    as="textarea"
+                                    name="patientMedicine"
+                                    value={formData.patientMedicine || ''}
+                                    onChange={handleChange}
+                                    rows="2"
+                                    placeholder="Médicaments prescrits ou administrés (nom, dosage, durée)"
+                                    className="form-control"
+                                />
+                                {bbCodeVersion === 21 && (
+                                    <Form.Control
+                                        as="textarea"
+                                        name="patientNotes"
+                                        value={formData.patientNotes || ''}
+                                        onChange={handleChange}
+                                        rows="2"
+                                        placeholder="Notes supplémentaires (optionnel)"
+                                        className="form-control"
+                                    />
+                                )}
 
                                 <Form.Group className="mb-3 upload-container">
                 <InputGroup>
@@ -445,8 +501,7 @@ onChange={(selectedOption) => {
                         value={formData.scenePhotos}
                         onChange={handleChange}
                         rows="2"
-                        required
-                        className={`form-control ${!formData.scenePhotos ? 'is-invalid' : ''}`}
+                        className="form-control"
                         placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)"
                         onPaste={(e) => { // Keep the paste logic
                             const clipboardData = e.clipboardData || window.clipboardData;

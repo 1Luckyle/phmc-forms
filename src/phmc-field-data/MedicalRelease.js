@@ -246,7 +246,8 @@ const MedicalRelease = ({
             </Form.Select>
         {formData.CarePurposeMedicalInformationRelease === 'Other' && (
             <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientMedInfoReleaseOther"
                 value={formData.patientMedInfoReleaseOther}
                 onChange={handleChange}
@@ -283,7 +284,8 @@ const MedicalRelease = ({
         </Form.Select>
          {formData.PurposeMedicalInformationReleaseFormat === 'Other' && (
             <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientMedInfoFormatOther"
                 value={formData.patientMedInfoFormatOther}
                 onChange={handleChange}
@@ -431,7 +433,8 @@ const MedicalRelease = ({
 
             {formData.MedicalRecordsRelease && formData.MedicalRecordsRelease.includes('Other') && (
             <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="MedicalRecordsReleaseOther"
                 value={formData.MedicalRecordsReleaseOther}
                 onChange={handleChange}

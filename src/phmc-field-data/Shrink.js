@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form } from 'react-bootstrap'; 
 import Select from 'react-select';
+import PatientContextFields from './shared/PatientContextFields';
 
 const Shrink = ({
     formData,
@@ -121,7 +122,8 @@ const Shrink = ({
                 })
             }}
         />
-        <Form.Label></Form.Label>
+        <PatientContextFields formData={formData} handleChange={handleChange} showHistory={false} />
+        <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
                 <Form.Control
                 as="textarea"
                 name="patientChiefComplaint"
@@ -132,10 +134,11 @@ const Shrink = ({
                 className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
                 />
 
-            <Form.Label> Problème présenté</Form.Label>
+            <Form.Label className="form-section-title">Problème présenté</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientVisitReason"
                     value={formData.patientVisitReason}
                     onChange={handleChange}
@@ -145,7 +148,8 @@ const Shrink = ({
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientSymptoms"
                     value={formData.patientSymptoms}
                     onChange={handleChange}
@@ -157,7 +161,8 @@ const Shrink = ({
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientTriggers"
                     value={formData.patientTriggers}
                     onChange={handleChange}
@@ -167,7 +172,8 @@ const Shrink = ({
 
                 />
                 <Form.Control
-                    type="text"
+                    as="textarea"
+                    rows="2"
                     name="patientStress"
                     value={formData.patientStress}
                     onChange={handleChange}
@@ -178,7 +184,7 @@ const Shrink = ({
                 />
             </div>
 
-            <Form.Label> Examen de l'état mental (EEM) </Form.Label>
+            <Form.Label className="form-section-title">Examen de l'état mental (EEM)</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
 
             <Form.Select
@@ -294,7 +300,7 @@ const Shrink = ({
                         ))}
                     </Form.Select>
                     </div>
-                    <Form.Label> Historique psychiatrique </Form.Label>
+                    <Form.Label className="form-section-title">Historique psychiatrique</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 as="textarea"
@@ -335,7 +341,7 @@ const Shrink = ({
                 className={`form-control ${!formData.patientJobRisks ? 'is-invalid' : ''}`}
                                 />
                 </div>
-                <Form.Label> Historique médical </Form.Label>
+                <Form.Label className="form-section-title">Historique médical</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 as="textarea"
@@ -365,10 +371,11 @@ const Shrink = ({
                 className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
                 />
             </div>
-            <Form.Label> Historique d'abus de substances </Form.Label>
+            <Form.Label className="form-section-title">Historique d'abus de substances</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientDrugs"
                 value={formData.patientDrugs}
                 onChange={handleChange}
@@ -376,7 +383,8 @@ const Shrink = ({
                 className={`form-control ${!formData.patientDrugs ? 'is-invalid' : ''}`}
                  />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientDrugsUsage"
                 value={formData.patientDrugsUsage}
                 onChange={handleChange}
@@ -384,7 +392,8 @@ const Shrink = ({
                 className={`form-control ${!formData.patientDrugsUsage ? 'is-invalid' : ''}`}
                 />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientMental"
                 value={formData.patientMental}
                 onChange={handleChange}
@@ -392,10 +401,11 @@ const Shrink = ({
                 className={`form-control ${!formData.patientMental ? 'is-invalid' : ''}`}
                 />
             </div>
-            <Form.Label> Historique psychosocial </Form.Label>
+            <Form.Label className="form-section-title">Historique psychosocial</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientFam"
                 value={formData.patientFam}
                 onChange={handleChange}
@@ -403,7 +413,8 @@ const Shrink = ({
                 className={`form-control ${!formData.patientFam ? 'is-invalid' : ''}`}
                  />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientJob"
                 value={formData.patientJob}
                 onChange={handleChange}
@@ -413,7 +424,8 @@ const Shrink = ({
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientRelationship"
                 value={formData.patientRelationship}
                 onChange={handleChange}
@@ -421,7 +433,8 @@ const Shrink = ({
                 className={`form-control ${!formData.patientRelationship ? 'is-invalid' : ''}`}
                 />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientLegal"
                 value={formData.patientLegal}
                 onChange={handleChange}
@@ -429,7 +442,7 @@ const Shrink = ({
                 className={`form-control ${!formData.patientLegal ? 'is-invalid' : ''}`}
                 />
             </div>
-            <Form.Label> Évaluation des risques </Form.Label>
+            <Form.Label className="form-section-title">Évaluation des risques</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select
                 name="Risk"
@@ -444,7 +457,8 @@ const Shrink = ({
                 ))}
             </Form.Select>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientRiskAssessment"
                 value={formData.patientRiskAssessment}
                 onChange={handleChange}
@@ -452,10 +466,11 @@ const Shrink = ({
                 className={`form-control ${!formData.patientRiskAssessment ? 'is-invalid' : ''}`}
                 />
                 </div>
-                <Form.Label> Constatations </Form.Label>
+                <Form.Label className="form-section-title">Constatations</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientFindings"
                 value={formData.patientFindings}
                 onChange={handleChange}
@@ -464,10 +479,11 @@ const Shrink = ({
                 />
                 </div>
 
-                <Form.Label> Diagnostic de sortie </Form.Label>
+                <Form.Label className="form-section-title">Diagnostic de sortie</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientDiagnosis"
                 value={formData.patientDiagnosis}
                 onChange={handleChange}
@@ -475,7 +491,7 @@ const Shrink = ({
                 className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
                 />
                 </div>
-                <Form.Label> Thérapie </Form.Label>
+                <Form.Label className="form-section-title">Thérapie</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select
                 name="admission"
@@ -490,7 +506,8 @@ const Shrink = ({
                 ))}
             </Form.Select>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientTreatmentPlan"
                 value={formData.patientTreatmentPlan}
                 onChange={handleChange}
@@ -498,7 +515,8 @@ const Shrink = ({
                 className={`form-control ${!formData.patientTreatmentPlan ? 'is-invalid' : ''}`}
                 />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientTherapyMedicine"
                 value={formData.patientTherapyMedicine}
                 onChange={handleChange}
@@ -519,10 +537,11 @@ const Shrink = ({
             </Form.Select>
 
                 </div>
-                <Form.Label> Plan de traitement / Recommandations </Form.Label>
+                <Form.Label className="form-section-title">Plan de traitement / Recommandations</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientTreatmentMedicine"
                 value={formData.patientTreatmentMedicine}
                 onChange={handleChange}
@@ -531,7 +550,8 @@ const Shrink = ({
 
                 />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientTherapy"
                 value={formData.patientTherapy}
                 onChange={handleChange}
@@ -540,7 +560,8 @@ const Shrink = ({
                 /></div> 
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientFollowUp"
                 value={formData.patientFollowUp}
                 onChange={handleChange}
@@ -549,7 +570,8 @@ const Shrink = ({
 
                 />
                 <Form.Control
-                type="text"
+                as="textarea"
+                rows="2"
                 name="patientSafety"
                 value={formData.patientSafety}
                 onChange={handleChange}

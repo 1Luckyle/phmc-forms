@@ -3,6 +3,7 @@ import { Form, Button, InputGroup } from 'react-bootstrap';
 import Select from 'react-select';
 import AutopsyDiagramModal from '../components/AutopsyDiagramModal';
 import * as Sentry from "@sentry/react";
+import DecedentDetailsFields from './shared/DecedentDetailsFields';
 
 const Autopsy = ({
     formData,
@@ -172,7 +173,8 @@ const Autopsy = ({
                     className="form-control"
                 />
             </div>
-            <Form.Label style={{ marginBottom: 0 }}>Date et heure de l'autopsie </Form.Label>
+            <DecedentDetailsFields formData={formData} handleChange={handleChange} showMeasures />
+            <Form.Label className="form-section-title">Date et heure de l'autopsie</Form.Label>
              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
                 <Form.Control
                     type="date"
@@ -262,6 +264,26 @@ const Autopsy = ({
                 onChange={handleChange}
                 placeholder="Résultats détaillés de l'examen externe (ex: marques d'identification, état du corps, blessures spécifiques observées extérieurement (les liaisons non mortelles))"
                 className={`form-control mb-2 ${!formData.externalExamination ? 'is-invalid' : ''}`}
+            />
+            <Form.Label>Vêtements:</Form.Label>
+            <Form.Control
+                as="textarea"
+                rows={2}
+                name="autopsyClothing"
+                value={formData.autopsyClothing || ''}
+                onChange={handleChange}
+                placeholder="Vêtements et effets personnels présents sur le corps (optionnel — laissez vide pour « Le corps n'était pas vêtu »)"
+                className="form-control mb-2"
+            />
+            <Form.Label>Examen interne:</Form.Label>
+            <Form.Control
+                as="textarea"
+                rows={3}
+                name="autopsyInternalExamination"
+                value={formData.autopsyInternalExamination || ''}
+                onChange={handleChange}
+                placeholder="Constatations de l'examen interne : organes, lésions, hémorragies… (optionnel — laissez vide pour « rien d'inhabituel »)"
+                className="form-control mb-2"
             />
 
             <Form.Label>Éléments du résumé anatomique:</Form.Label>

@@ -199,9 +199,8 @@ const BasicPatientFile = ({
                                     name="patientRace"
                                     value={formData.patientRace}
                                     onChange={handleChange}
-                                    placeholder="Ethnicité du patient"
-                                    required
-                                    className={`form-control ${!formData.patientRace ? 'is-invalid' : ''}`}
+                                    placeholder="Ethnicité du patient (optionnel)"
+                                    className="form-control"
                                 />
                             </OverlayTrigger>
                         </div>
@@ -243,9 +242,8 @@ const BasicPatientFile = ({
                                 name="patientDiscord"
                                 value={formData.patientDiscord}
                                 onChange={handleChange}
-                                placeholder="(( Pseudo Discord du patient )) "
-                                required
-                                className={`form-control ${!formData.patientDiscord ? 'is-invalid' : ''}`}
+                                placeholder="(( Pseudo Discord du patient )) (optionnel)"
+                                className="form-control"
                             />
                         </OverlayTrigger>
                     </div>
@@ -316,9 +314,8 @@ const BasicPatientFile = ({
                                 name="patientEmergencyContactDiscord"
                                 value={formData.patientEmergencyContactDiscord}
                                 onChange={handleChange}
-                                placeholder="(( Pseudo Discord du contact d'urgence du patient )) "
-                                required
-                                className={`form-control ${!formData.patientEmergencyContactDiscord ? 'is-invalid' : ''}`}
+                                placeholder="(( Pseudo Discord du contact d'urgence du patient )) (optionnel)"
+                                className="form-control"
                             />
                         </OverlayTrigger>
                     </div>
@@ -359,7 +356,8 @@ const BasicPatientFile = ({
                             overlay={<Tooltip id="tooltip-allergies" className="phmc-tooltip">Allergies connues du patient.</Tooltip>}
                         >
                             <Form.Control
-                                type="text"
+                                as="textarea"
+                                rows="2"
                                 name="patientAllergies"
                                 value={formData.patientAllergies}
                                 onChange={handleChange}
@@ -373,7 +371,8 @@ const BasicPatientFile = ({
                             overlay={<Tooltip id="tooltip-currentMedicine" className="phmc-tooltip">Médicament(s) actuellement pris par le patient.</Tooltip>}
                         >
                             <Form.Control
-                                type="text"
+                                as="textarea"
+                                rows="2"
                                 name="patientCurrentMedicine"
                                 value={formData.patientCurrentMedicine}
                                 onChange={handleChange}
@@ -389,7 +388,8 @@ const BasicPatientFile = ({
                             overlay={<Tooltip id="tooltip-chronicDiseases" className="phmc-tooltip">Conditions chroniques du patient.</Tooltip>}
                         >
                             <Form.Control
-                                type="text"
+                                as="textarea"
+                                rows="2"
                                 name="patientChronicDiseases"
                                 value={formData.patientChronicDiseases}
                                 onChange={handleChange}
@@ -403,13 +403,13 @@ const BasicPatientFile = ({
                             overlay={<Tooltip id="tooltip-traumas" className="phmc-tooltip">Traumatismes et blessures du patient.</Tooltip>}
                         >
                             <Form.Control
-                                type="text"
+                                as="textarea"
+                                rows="2"
                                 name="patientNotes"
                                 value={formData.patientNotes}
                                 onChange={handleChange}
-                                placeholder="Traumatismes et blessures du patient"
-                                required
-                                className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
+                                placeholder="Traumatismes et blessures du patient (optionnel)"
+                                className="form-control"
                             />
                         </OverlayTrigger>
                     </div>

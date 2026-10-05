@@ -1,3 +1,4 @@
+import withoutBlanks from './shared/withoutBlanks';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
@@ -62,7 +63,7 @@ const generateMedicalFileUpdate = (formData) => {
         patientRaceNew = NOT_FILLED,
         paymentProofPhotos
 
-    } = formData;
+    } = withoutBlanks(formData);
 
     // Payment/Exempt logic
     let paymentSection = '';

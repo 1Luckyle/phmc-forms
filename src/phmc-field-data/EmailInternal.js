@@ -18,35 +18,35 @@ const EmailInternal = ({
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 type="text"
-                name="patientNotes"
-                value={formData.patientNotes}
+                name="internalEmailSubject"
+                value={formData.internalEmailSubject || ''}
                 onChange={handleChange}
                 placeholder="Sujet de l'email"
                 required
-                className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
+                className={`form-control ${!formData.internalEmailSubject ? 'is-invalid' : ''}`}
 
             />
             <Form.Control
                 type="text"
-                name="decedentName"
-                value={formData.decedentName}
+                name="internalEmailRecipient"
+                value={formData.internalEmailRecipient || ''}
                 onChange={handleChange}
                 placeholder="Destinataire de l'email"
                 required
-                className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
+                className={`form-control ${!formData.internalEmailRecipient ? 'is-invalid' : ''}`}
 
             />
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
             as="textarea"
-            name="synopsis"
-            value={formData.synopsis}
+            name="internalEmailBody"
+            value={formData.internalEmailBody || ''}
             onChange={handleChange}
             rows="4"
             placeholder="Corps de l'email"
             required
-            className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`}
+            className={`form-control ${!formData.internalEmailBody ? 'is-invalid' : ''}`}
         />
         </div>
         <Form.Group className="mb-3 upload-container">
@@ -54,11 +54,11 @@ const EmailInternal = ({
             <Form.Control
                 as="textarea"
                 rows="4"
-                name="scenePhotos"
-                value={formData.scenePhotos}
+                name="internalEmailSignatureImage"
+                value={formData.internalEmailSignatureImage || ''}
                 onChange={handleChange}
                 required
-                className={`form-control ${!formData.scenePhotos ? 'is-invalid' : ''}`}
+                className={`form-control ${!formData.internalEmailSignatureImage ? 'is-invalid' : ''}`}
                 placeholder="Image de signature de l'employé"
                 onPaste={(e) => {
                     const clipboardData = e.clipboardData || window.clipboardData;
@@ -78,7 +78,7 @@ const EmailInternal = ({
                         if (items[i].type.indexOf('image') !== -1) {
                             hasImageItem = true;
                             const file = items[i].getAsFile();
-                            handleImageUpload({ target: { files: [file] } }, 'scenePhotos');
+                            handleImageUpload({ target: { files: [file] } }, 'internalEmailSignatureImage');
                             e.preventDefault();
                             break;
                         }
@@ -88,7 +88,7 @@ const EmailInternal = ({
                     if (containsUrl && !hasImageItem) {
 
                         // Get current value and cursor position
-                        const currentValue = formData.scenePhotos || '';
+                        const currentValue = formData.internalEmailSignatureImage || '';
                         const cursorPos = e.target.selectionStart;
 
 
@@ -103,7 +103,7 @@ const EmailInternal = ({
                         // Update form data
                         setFormData(prev => ({
                             ...prev,
-                            scenePhotos: newValue
+                            internalEmailSignatureImage: newValue
                         }));
 
                         e.preventDefault();
@@ -119,7 +119,7 @@ const EmailInternal = ({
                     input.type = 'file';
                     input.accept = 'image/*';
                     input.multiple = true;
-                    input.onchange = (e) => handleImageUpload(e, 'scenePhotos');
+                    input.onchange = (e) => handleImageUpload(e, 'internalEmailSignatureImage');
                     input.click();
                 }}
             >
@@ -131,7 +131,7 @@ const EmailInternal = ({
         <span className="helper-text">
             Télécharger l'image de signature. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
         </span>
-        <ImagePreview imageUrls={formData.scenePhotos} />
+        <ImagePreview imageUrls={formData.internalEmailSignatureImage} />
     </Form.Group>
 
         <Select
@@ -190,22 +190,22 @@ const EmailInternal = ({
     <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 type="text"
-                name="decedentOOC"
-                value={formData.decedentOOC}
+                name="internalEmailSenderTitle"
+                value={formData.internalEmailSenderTitle || ''}
                 onChange={handleChange}
                 placeholder="Fonction au sein du PHMC"
                 required
-                className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
+                className={`form-control ${!formData.internalEmailSenderTitle ? 'is-invalid' : ''}`}
 
             />
             <Form.Control
                 type="text"
-                name="patientCareer"
-                value={formData.patientCareer}
+                name="internalEmailSenderDepartment"
+                value={formData.internalEmailSenderDepartment || ''}
                 onChange={handleChange}
                 placeholder="Département assigné"
                 required
-                className={`form-control ${!formData.patientCareer ? 'is-invalid' : ''}`}
+                className={`form-control ${!formData.internalEmailSenderDepartment ? 'is-invalid' : ''}`}
 
             />
         </div>
