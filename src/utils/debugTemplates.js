@@ -73,6 +73,13 @@ const buildHelpers = (ctx = {}) => {
         if (options.length === 0) return fallback;
         return options[Math.min(index, options.length - 1)].label;
     };
+    // Valeur précise d'une liste si elle existe (ex. 'Yes' pour déclencher un champ
+    // conditionnel), sinon la première option.
+    const optIs = (key, wanted, fallback = wanted) => {
+        const options = list(key);
+        if (options.length === 0) return fallback;
+        return options.some((o) => o.value === wanted) ? wanted : options[0].value;
+    };
     // Plusieurs valeurs distinctes pour un multi-select.
     const some = (key, count = 2, fallback = []) => {
         const options = preferred(key);
@@ -129,13 +136,23 @@ const buildHelpers = (ctx = {}) => {
     const civilFullName = civil
         ? [civil.firstName, civil.middleName, civil.lastName].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
         : '';
+    const dobValue = civil?.dateOfBirth || '1990-05-17';
+    const dobDate = new Date(dobValue);
+    let ageYears = Number.isNaN(dobDate.getTime()) ? 35 : now.getFullYear() - dobDate.getFullYear();
+    if (!Number.isNaN(dobDate.getTime())
+        && (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate()))) {
+        ageYears -= 1;
+    }
     const patient = {
+        ageYears: String(Math.max(0, ageYears)),
+        // Valeurs du sélecteur « Sexe du patient » : Male / Female / Other.
+        sex: ['Male', 'Female', 'Other'].includes(civil?.gender) ? civil.gender : 'Male',
         firstName: civil?.firstName || 'Jean',
         middleName: civil ? (civil.middleName || '') : 'Michel',
         lastName: civil?.lastName || 'Testard',
         fullName: civilFullName || 'Jean Michel Testard',
         id: civil?.patientID || 'PHMC-99999',
-        dob: civil?.dateOfBirth || '1990-05-17',
+        dob: dobValue,
         gender: civil?.gender || 'Masculin',
         address: civil?.address || '1234 Vinewood Blvd, Los Santos',
         zip: civil?.zip || '90001',
@@ -153,7 +170,7 @@ const buildHelpers = (ctx = {}) => {
         selectOptions, formData, civil,
         img, imgs,
         today, utcDateTime, utcTime, daysFromToday,
-        opt, optLabel, some, every, list,
+        opt, optIs, optLabel, some, every, list,
         phmc, coroner, chief, extraStaff,
         patient,
     };
@@ -163,6 +180,10 @@ const buildHelpers = (ctx = {}) => {
 
 const LOREM_SHORT = "[TEST] Texte de démonstration généré par le mode debug.";
 const LOREM_LONG = "[TEST] Texte de démonstration généré par le mode debug. Il remplit entièrement ce champ afin de vérifier la mise en page, la génération du BBCode et les permissions, sans avoir à tout saisir à la main.";
+// Lien de test pour les champs qui attendent un sujet du forum (non-image).
+const TEST_TOPIC_ID = '10291';
+const TEST_TOPIC_URL = `https://phmc.gta.world/viewtopic.php?t=${TEST_TOPIC_ID}`;
+
 // Captures de test : les champs d'images utilisent ces deux URL en alternance
 // (h.img() / h.imgs(n)), pour vérifier l'affichage de plusieurs images.
 const TEST_IMAGES = [
@@ -231,8 +252,18 @@ const patientAdvancedExtras = (h) => ({
     attorneyPH: '555-0199',
 });
 
+// Bloc « Contexte patient » commun aux formulaires cliniques (PatientContextFields).
+const patientContext = (h) => ({
+    patientAgeYears: h.patient.ageYears,
+    patientSex: h.patient.sex,
+    patientAllergies: 'Pénicilline',
+    patientChronicDiseases: 'Hypertension artérielle',
+    patientCurrentMedicine: 'Ramipril 5 mg le matin',
+});
+
 const consultBase = (h) => ({
     ...h.phmc,
+    ...patientContext(h),
     phmcRank: h.opt('phmcRank'),
     patientName: h.patient.fullName,
     patientID: h.patient.id,
@@ -291,8 +322,9 @@ const recruitmentBase = (h) => ({
     oocDiscord: 'jean.testard',
     oocTimezone: 'GMT+1',
     oocMedicalExperience: 'Trois ans d\'expérience médicale en jeu.',
-    oocAdminRecordLink: 'https://example.com/admin-record',
-    oocStatsLink: 'https://example.com/stats',
+    // Ces champs demandent un lien direct vers une image (ImgBB).
+    oocAdminRecordLink: h.img(),
+    oocStatsLink: h.img(),
     charBackground: LOREM_LONG,
 });
 
@@ -326,6 +358,11 @@ const TEMPLATES = {
         massFatality: false,
         decedentName: 'Pierre Défunt',
         decedentOOC: 'Test Debug',
+        decedentAge: '42',
+        decedentSex: 'Male',
+        decedentHeight: '1,80 m',
+        decedentWeight: '80 kg',
+        decedentMarks: "Tatouage sur l'avant-bras gauche, cicatrice à l'abdomen.",
         patientID: h.patient.id,
         typeOfDeath: h.opt('typeOfDeathOptions'),
         placeOfDeath: '1234 Vinewood Blvd, Los Santos',
@@ -346,6 +383,13 @@ const TEMPLATES = {
         patientID: h.patient.id,
         autopsyDate: h.today,
         autopsyTime: h.utcTime,
+        decedentAge: '42',
+        decedentSex: 'Male',
+        decedentHeight: '1,80 m',
+        decedentWeight: '80 kg',
+        decedentMarks: "Tatouage sur l'avant-bras gauche, cicatrice à l'abdomen.",
+        autopsyClothing: 'Jean bleu, t-shirt gris, baskets noires, montre au poignet gauche.',
+        autopsyInternalExamination: 'Hémopéritoine abondant, lésion hépatique et pulmonaire gauche.',
         autopsyDeathCauses: ['Hémorragie interne', 'Choc hypovolémique'],
         deathType: 'Homicide',
         causeOfDeath: 'Multiples blessures par balle',
@@ -365,8 +409,8 @@ const TEMPLATES = {
         department: h.opt('requestingAgenciesOptions'),
         decedentName: 'Pierre Défunt',
         decedentOOC: 'Test Debug',
-        deathReport: 'https://example.com/forum/viewtopic.php?t=1234',
-        additionalReports: ['https://example.com/forum/viewtopic.php?t=1235'],
+        deathReport: TEST_TOPIC_URL,
+        additionalReports: [TEST_TOPIC_URL],
     }),
 
     // Certificat de Décès
@@ -386,6 +430,7 @@ const TEMPLATES = {
     // Opération Chirurgicale
     5: (h) => ({
         ...h.phmc,
+        ...patientContext(h),
         phmcRank: h.opt('phmcRank'),
         extraStaff: h.extraStaff(2),
         patientName: h.patient.fullName,
@@ -395,9 +440,18 @@ const TEMPLATES = {
         patientSummaryConsultation: 'Patient adressé après une consultation pour une appendicite aiguë.',
         patientSummary: LOREM_LONG,
         surgeryProcedures: 'Appendicectomie par voie laparoscopique.',
-        patientConsentOption: h.opt('patientConsent'),
-        patientComplicationOptions: h.opt('complications'),
-        procedureGoodOptions: h.opt('procedureGood'),
+        // Enquête chirurgicale
+        surgeryPreOpDiagnosis: 'Appendicite aiguë non perforée.',
+        surgeryAnesthesiaType: 'General',
+        surgeryDuration: '90',
+        surgeryBloodLoss: '150',
+        patientConsentOption: h.optIs('patientConsent', 'Yes'),
+        // « Yes » / « No » déclenchent les champs de précision correspondants.
+        patientComplicationOptions: h.optIs('complications', 'Yes'),
+        patientComplicationsYes: 'Saignement peropératoire maîtrisé par cautérisation.',
+        procedureGoodOptions: h.optIs('procedureGood', 'No'),
+        procedureGoodNo: 'Conversion en voie ouverte nécessaire, résultat attendu non atteint par laparoscopie.',
+        surgeryPostOpInstructions: 'Repos 48 h, surveillance de la plaie, antalgiques si besoin.',
     }),
 
     // Évaluation Physique (PHMC + PBC)
@@ -447,6 +501,8 @@ const TEMPLATES = {
         return {
             ...consultBase(h),
             patientInjuryMechanism: 'Chute d\'un escabeau de deux mètres.',
+            arrivalMode: 'EMS',
+            arrivalTime: h.utcTime,
             painLevel: h.opt('painLevel'),
             Imaging: imaging,
             XrayResults: imaging.includes('XRay') ? h.some('XrayResults', 1) : [],
@@ -546,12 +602,12 @@ const TEMPLATES = {
     // PHMC Email Interne
     27: (h) => ({
         ...h.phmc,
-        patientNotes: 'Objet de test — email interne',
-        decedentName: 'Pierre Défunt',
-        decedentOOC: 'Test Debug',
-        synopsis: LOREM_LONG,
-        patientCareer: 'Médecin',
-        scenePhotos: h.img(),
+        internalEmailSubject: "[TEST] Objet de l'email interne",
+        internalEmailRecipient: 'Direction du PHMC',
+        internalEmailBody: LOREM_LONG,
+        internalEmailSignatureImage: h.img(),
+        internalEmailSenderTitle: 'Médecin',
+        internalEmailSenderDepartment: 'Médecine interne',
     }),
 
     // Évaluation Psychologique (PHMC + PBC)
@@ -580,8 +636,8 @@ const TEMPLATES = {
         ...h.coroner,
         chiefMedicalExaminer: h.chief.chiefCoronerEmployee || h.coroner.coronerEmployee || '',
         deathRecordType: h.optLabel('deathRecordType', 0, 'Identified'),
-        deathReportPostId: 'https://example.com/forum/viewtopic.php?t=1234',
-        caseNumber: '1234',
+        deathReportPostId: TEST_TOPIC_URL,
+        caseNumber: TEST_TOPIC_ID,
         decedentName: 'Pierre Défunt',
         decedentOOC: 'Test Debug',
         patientID: h.patient.id,
@@ -655,6 +711,7 @@ const TEMPLATES = {
 function physEval(h) {
     return {
         ...h.phmc,
+        ...patientContext(h),
         phmcRank: h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
@@ -682,6 +739,7 @@ function physEval(h) {
 function mentalHealth(h) {
     return {
         ...h.phmc,
+        ...patientContext(h),
         phmcRank: h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
@@ -699,6 +757,7 @@ function mentalHealth(h) {
 function shrink(h) {
     return {
         ...h.phmc,
+        ...patientContext(h),
         phmcRank: h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,

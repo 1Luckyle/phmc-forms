@@ -103,7 +103,7 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
             status: 'OPEN',
             poc: 'Testeur Debug (testeur.debug)',
             shortCode: 'TEST-DBG',
-            url: 'https://example.com/forum/candidature-test',
+            url: 'https://phmc.gta.world/viewtopic.php?t=10291',
             Overview: "[TEST] Poste généré par le mode debug pour vérifier l'affichage.",
             skill1: 'Compétence de test numéro 1',
             skill2: 'Compétence de test numéro 2',
