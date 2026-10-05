@@ -14,6 +14,7 @@ import { buildGtawAuthUrl } from '../utils/gtawOAuth';
 import { useAuthMethodsConfig } from '../hooks/useAuthMethodsConfig';
 import GtawCharacterPicker from './Auth/GtawCharacterPicker';
 import CivilianAuthPanel from './Auth/CivilianAuthPanel';
+import DebugFillButton from './DebugFillButton';
 
 // Step definitions for the onboarding flow
 export const ONBOARDING_STEPS = {
@@ -416,6 +417,27 @@ const OnboardingModal = ({
         localStorage.setItem('onboardingComplete', 'true');
         localStorage.setItem('onboardingSkipped', 'true');
         onSkip();
+    };
+
+    // Mode debug : remplit la demande de compte Personnel/DMEC. Si l'identité
+    // vient d'un personnage GTA World, le prénom/nom/badge restent ceux du
+    // personnage (et aucun mot de passe n'est requis).
+    const handleDebugFillAccount = () => {
+        const isCoroner = selectedUserType === USER_TYPES.CORONER;
+        const isGtawAccount = accountCreationMethod === 'gtaw' && !!selectedGtawCharacter;
+        const rank = (isCoroner ? CORONER_RANKS : PHMC_RANKS)[0].value;
+        setAccountData(prev => ({
+            ...prev,
+            firstName: isGtawAccount ? prev.firstName : 'Testeur',
+            lastName: isGtawAccount ? prev.lastName : 'Debug',
+            discord: 'testeur.debug',
+            rank,
+            badge: isGtawAccount ? prev.badge : '99999',
+            phNumber: '555-0100',
+            email: 'testeur.debug@mail.eyefind.fr',
+            password: isGtawAccount ? '' : 'Debug#2024!x',
+            confirmPassword: isGtawAccount ? '' : 'Debug#2024!x',
+        }));
     };
 
     const handleAccountDataChange = (e) => {
@@ -1234,6 +1256,9 @@ const OnboardingModal = ({
                                     </div>
                                 </>
                             )}
+                            <div style={{ marginBottom: '10px', textAlign: 'right' }}>
+                                <DebugFillButton onFill={handleDebugFillAccount} />
+                            </div>
                             <div style={accountActionsStyle}>
                                 <Button
                                     variant="outline-secondary"
@@ -1611,6 +1636,9 @@ const OnboardingModal = ({
                                     </div>
                                 </>
                             )}
+                            <div style={{ marginBottom: '10px', textAlign: 'right' }}>
+                                <DebugFillButton onFill={handleDebugFillAccount} />
+                            </div>
                             <div style={accountActionsStyle}>
                                 <Button
                                     variant="outline-secondary"

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWebhook } from '../../contexts/WebhookProvider';
 import '../WebhookModal.css'; // Reusing the CSS for now
+import DebugFillButton from '../DebugFillButton';
 
 const WebhookManager = () => {
     const {
@@ -160,6 +161,12 @@ const WebhookManager = () => {
                 )}
             </div>
             <div className="webhook-footer">
+                <DebugFillButton
+                    onFill={() => {
+                        setWebhookTitle('[TEST] Mise à jour mineure');
+                        setWebhookMessage(['- Ajouté : élément de test', '- Corrigé : correctif de test', '- Mis à jour : texte de test'].join('\n'));
+                    }}
+                />
                 <div className="webhook-spacer"></div>
                 <button
                     type="button"

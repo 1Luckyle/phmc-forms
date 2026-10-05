@@ -4,6 +4,7 @@ import { Button, Form as BootstrapForm, Spinner } from 'react-bootstrap';
 import { database } from '../../firebase';
 import { ref, set, get } from "firebase/database"; // Removed 'update' as 'set' is used for both add/edit
 import ReactDOM from 'react-dom';
+import DebugFillButton from '../DebugFillButton';
 
 // Helper to map categoryKey to the correct group identifier for Firebase
 const getGroupIdentifier = (categoryKey) => {
@@ -92,6 +93,24 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
         const { name, value } = e.target;
         setRoleData(prev => ({ ...prev, [name]: value }));
     }, []);
+
+    // Mode debug : remplit un rôle de test (le nom d'un rôle existant en
+    // modification n'est pas touché : il détermine la clé Firebase).
+    const handleDebugFill = useCallback(() => {
+        setRoleData(prev => ({
+            ...prev,
+            ...(roleToEdit ? {} : { displayName: '[TEST] Poste de démonstration' }),
+            status: 'OPEN',
+            poc: 'Testeur Debug (testeur.debug)',
+            shortCode: 'TEST-DBG',
+            url: 'https://example.com/forum/candidature-test',
+            Overview: "[TEST] Poste généré par le mode debug pour vérifier l'affichage.",
+            skill1: 'Compétence de test numéro 1',
+            skill2: 'Compétence de test numéro 2',
+            skill3: 'Compétence de test numéro 3',
+            EduRequirement: 'Diplôme de test',
+        }));
+    }, [roleToEdit]);
 
     const handleClose = useCallback(() => {
         setRoleData(initialRoleState);
@@ -241,6 +260,7 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
                         {error && <p className="text-danger mt-2 mb-0">{error}</p>}
 
                         <div style={modalFooterStyle}>
+                            <DebugFillButton onFill={handleDebugFill} disabled={isSaving} style={{ marginRight: 'auto' }} />
                             <Button variant="secondary" onClick={handleClose} disabled={isSaving}>Annuler</Button>
                             <Button variant="primary" type="submit" disabled={isSaving || !isFormValid} style={{ minWidth: '120px', marginLeft: '10px' }}>
                                 {isSaving ? <Spinner as="span" animation="border" size="sm" /> : submitButtonText}

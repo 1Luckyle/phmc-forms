@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import * as Sentry from "@sentry/react";
+import DebugFillButton from '../DebugFillButton';
 
 // --- MODIFICATION START: Generic Modal Styles ---
 const modalOverlayStyle = {
@@ -59,6 +60,22 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification }) =
             setOocNotes('');
         }
     }, [show]);
+
+    // Mode debug : données de test (l'envoi reste à la charge de l'utilisateur).
+    const handleDebugFill = () => {
+        setRank('Sergent');
+        setOfficer('1234, John Doe');
+        setOfficerPH('555-0100');
+        setDepartment('LSPD');
+        setLocation('Pillbox Hill Medical Center - Entrée principale');
+        setDescription('[TEST] Demande de vidéosurveillance générée par le mode debug.');
+        setDiscordUsername('john.doe.debug');
+        setOocNotes('[TEST] Aucun nom connu.');
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        setIncidentDateTime(`${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} vers ${pad(now.getHours())}:${pad(now.getMinutes())}`);
+        setRequestReason('Criminal Investigation');
+    };
 
     const handleSubmit = async () => {
         if (!officer.trim() || !department.trim() || !location.trim() || !description.trim() || !incidentDateTime.trim() || !requestReason.trim()) {
@@ -154,6 +171,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification }) =
                     </Form>
                 </div>
                 <div style={modalFooterStyle}>
+                    <DebugFillButton onFill={handleDebugFill} disabled={isSubmitting} style={{ marginRight: 'auto' }} />
                     <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>Annuler</Button>
                     <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} style={{ marginLeft: '10px' }}>
                         {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : 'Envoyer la demande de vidéosurveillance'}

@@ -21,6 +21,7 @@ import { auth } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { sendEmailVerificationCode, verifyEmailCode, EYEFIND_MAIL_SIGNUP_URL } from '../../utils/eyefindMail';
 import GtawCharacterPicker from './GtawCharacterPicker';
+import DebugFillButton from '../DebugFillButton';
 
 const emptyAccountData = {
     firstName: '',
@@ -85,6 +86,24 @@ const CivilianAuthPanel = ({
             setEmailVerified(false);
             setVerificationCode('');
         }
+    };
+
+    const handleDebugFill = () => {
+        setAccountData(prev => ({
+            ...prev,
+            middleName: prev.middleName || 'Michel',
+            dateOfBirth: '1990-05-17',
+            gender: 'Male',
+            address: '1234 Vinewood Blvd, Los Santos',
+            zip: '90001',
+            phone: '555-0142',
+            discord: 'jean.testard',
+            email: 'jean.testard.debug@mail.eyefind.fr',
+        }));
+        // Changer l'email invalide toute vérification précédente.
+        setEmailCodeSent(false);
+        setEmailVerified(false);
+        setVerificationCode('');
     };
 
     const handleGtawCharacterForCreation = (character) => {
@@ -318,6 +337,9 @@ const CivilianAuthPanel = ({
                 )}
 
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                    {/* Mode debug : remplit l'identité. La vérification du code envoyé
+                        par mail reste obligatoire (contrôlée côté serveur). */}
+                    <DebugFillButton onFill={handleDebugFill} />
                     <Button variant="outline-secondary" onClick={() => { setMode('choice'); setSelectedGtawCharacter(null); }} disabled={isSubmitting}>
                         Retour
                     </Button>

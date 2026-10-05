@@ -25,6 +25,8 @@ import LockdownBanner from './components/LockdownBanner';
 import LockdownDialog from './components/LockdownDialog';
 import { useEmployeeAuth } from './contexts/EmployeeAuthContext';
 import { useEmployeeSelector } from './hooks/useEmployeeSelector';
+import DebugFillButton from './components/DebugFillButton';
+import { getDebugTemplate, hasDebugTemplate } from './utils/debugTemplates';
 // logos
 import email from './assets/email.png'
 import Civilian from './assets/Civilian.png'
@@ -1183,6 +1185,29 @@ function MainApp({
         });
     }, [unrestrictedCoronerList]);
 
+    // Mode debug (activé depuis le panneau admin) : remplit le formulaire
+    // courant avec un gabarit de test. Les employés sont choisis parmi les
+    // listes déjà filtrées par useEmployeeSelector, donc un employé restreint
+    // reste « lui-même » (utile pour tester les permissions).
+    const handleDebugFill = () => {
+        const flatten = (groups) => (groups || []).flatMap((g) => g.options || []);
+        const template = getDebugTemplate(bbCodeVersion, {
+            selectOptions,
+            formData,
+            civilianProfile: isCivilian ? civilianProfile : null,
+            phmcOptions: flatten(phmcGroupedOptions),
+            coronerOptions: flatten(coronerGroupedOptions),
+            unrestrictedPhmcOptions: flatten(unrestrictedPhmcGroupedOptions),
+            unrestrictedCoronerOptions: flatten(unrestrictedCoronerGroupedOptions),
+        });
+        if (!template) {
+            showNotification('Aucun gabarit de debug pour ce formulaire.', 'info-circle');
+            return;
+        }
+        setFormData(prev => ({ ...prev, ...template }));
+        showNotification('Formulaire rempli avec des données de test (debug).', 'check-circle');
+    };
+
     const handleDoeChange = (type) => (e) => {
         const isChecked = e.target.checked;
 
@@ -1781,6 +1806,11 @@ function MainApp({
                                     phmcInternalEmails
                                 }}
                             />
+
+                            {/* Mode debug : visible seulement si un admin l'a activé (voir DebugContext). */}
+                            {FieldComponent && currentEmployee && hasDebugTemplate(bbCodeVersion) && (
+                                <DebugFillButton onFill={handleDebugFill} className="changelog-button" />
+                            )}
                         </div>
 
                         <form> 

@@ -6,6 +6,7 @@ import { ref, get, set, push, update } from 'firebase/database';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
+import DebugFillButton from './DebugFillButton';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import { sendEyefindMail } from '../utils/eyefindMail';
 
@@ -253,6 +254,43 @@ const EmployeeModal = ({
     });
     return () => unsubscribe();
   }, []);
+  // Mode debug : remplit le formulaire de l'action en cours. Pour la suppression,
+  // on ne pré-sélectionne volontairement aucun employé (action destructive).
+  const handleDebugFill = () => {
+    const isCoroner = employeeType === 'coroner';
+    if (actionType === 'addEmployee') {
+      const rank = (isCoroner ? CORONER_RANKS : PHMC_RANKS)[0].value;
+      setMissingEmployeeData(prev => ({
+        ...prev,
+        coronerName: 'Testeur',
+        coronerLastName: 'Debug',
+        employeeLastName: 'Debug',
+        coronerDiscord: 'testeur.debug',
+        phmcDiscord: 'testeur.debug',
+        coronerRank: rank,
+        coronerBadge: '99999',
+        phmcBadge: '99999',
+        coronerPHNumber: '555-0100',
+        phmcPHNumber: '555-0100',
+      }));
+      setAuthorizedBy('Admin Debug');
+    } else if (actionType === 'editUser') {
+      if (!selectedEmployeeName) {
+        showNotification("Debug : sélectionnez d'abord l'employé à modifier.", 'info-circle');
+        return;
+      }
+      setMissingEmployeeData(prev => ({
+        ...prev,
+        coronerDiscord: 'testeur.debug',
+        phmcDiscord: 'testeur.debug',
+        coronerPHNumber: '555-0100',
+        phmcPHNumber: '555-0100',
+      }));
+    } else {
+      setAuthorizedBy('Admin Debug');
+      showNotification("Debug : sélectionnez vous-même les employés à supprimer (non pré-rempli par sécurité).", 'info-circle');
+    }
+  };
   const handleRemoveStaffChange = (opts) => setStaffToRemove(opts ? opts.map(o => o.value) : []);
   const handleAuthorizedByChange = (e) => setAuthorizedBy(e.target.value);
   const handleInputChange = (e) => setMissingEmployeeData({ ...missingEmployeeData, [e.target.name]: e.target.value });
@@ -1143,6 +1181,7 @@ const EmployeeModal = ({
         </div>
 
         <div style={modalFooterStyle}>
+          <DebugFillButton onFill={handleDebugFill} disabled={isLoading} style={{ marginRight: 'auto' }} />
           <Button 
             variant="primary" 
             onClick={handleSubmit} 

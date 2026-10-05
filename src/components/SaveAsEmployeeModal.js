@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import Select from 'react-select';
+import DebugFillButton from './DebugFillButton';
 
 const reactSelectStyles = {
     control: (base) => ({
@@ -56,6 +57,14 @@ const SaveAsEmployeeModal = ({ show, onHide, employeeOptions, onConfirm }) => {
                 />
             </Modal.Body>
             <Modal.Footer style={{ backgroundColor: '#1a1a1a', borderTop: '1px solid #444' }}>
+                <DebugFillButton
+                    style={{ marginRight: 'auto' }}
+                    onFill={() => {
+                        // Premier employé de la première liste non vide.
+                        const first = (employeeOptions || []).flatMap((g) => g.options || [])[0];
+                        if (first) setSelectedEmployee(first);
+                    }}
+                />
                 <Button variant="secondary" onClick={onHide}>Annuler</Button>
                 <Button variant="success" onClick={handleConfirm} disabled={!selectedEmployee}>
                     <i className="fas fa-save" style={{ marginRight: '6px' }}></i>

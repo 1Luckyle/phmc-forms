@@ -4,6 +4,7 @@ import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { database } from '../firebase';
 import { ref, push, serverTimestamp } from 'firebase/database';
 import * as Sentry from "@sentry/react";
+import DebugFillButton from './DebugFillButton';
 
 const PhraseRequestModal = ({ show, onHide, showNotification, selectedEmployee, selectedBingoType, sendPhraseRequestWebhook }) => {
     const [phraseText, setPhraseText] = useState('');
@@ -103,6 +104,11 @@ const PhraseRequestModal = ({ show, onHide, showNotification, selectedEmployee, 
                 {error && <p className="text-danger">{error}</p>}
             </Modal.Body>
             <Modal.Footer>
+                <DebugFillButton
+                    onFill={() => setPhraseText('[TEST] Le patient demande à être conduit à la cafétéria.')}
+                    disabled={isSubmitting}
+                    style={{ marginRight: 'auto' }}
+                />
                 <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>
                     Annuler
                 </Button>
