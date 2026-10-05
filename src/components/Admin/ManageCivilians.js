@@ -11,6 +11,7 @@ import { database } from '../../firebase';
 import { ref, get, set, remove } from 'firebase/database';
 import { auth } from '../../firebase';
 import { sendEyefindMail } from '../../utils/eyefindMail';
+import DebugFillButton from '../DebugFillButton';
 
 const sendMailBestEffort = (params) => {
     if (!params.to) return;
@@ -230,6 +231,20 @@ const ManageCivilians = ({ showNotification }) => {
                             </Form.Group>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            {/* Mode debug : données de test (identité/ID patient/email inchangés). */}
+                            <DebugFillButton
+                                disabled={isSaving}
+                                onFill={() => setEditData(prev => ({
+                                    ...prev,
+                                    middleName: prev.middleName || 'Michel',
+                                    dateOfBirth: '1990-05-17',
+                                    gender: 'Male',
+                                    address: '1234 Vinewood Blvd, Los Santos',
+                                    zip: '90001',
+                                    phone: '555-0142',
+                                    discord: 'jean.testard',
+                                }))}
+                            />
                             <Button variant="secondary" onClick={handleCancelEdit} disabled={isSaving}>Annuler</Button>
                             <Button variant="success" onClick={handleSaveEdit} disabled={isSaving}>
                                 {isSaving ? 'Enregistrement...' : 'Enregistrer'}

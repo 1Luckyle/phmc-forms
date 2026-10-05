@@ -3,6 +3,7 @@ import { Form, Button } from 'react-bootstrap';
 import * as Sentry from "@sentry/react";
 import EMSAMAImage from '../assets/EMSAMA.png';
 import { copyToClipboard } from './notificationService';
+import DebugFillButton from './DebugFillButton';
 
 import './EmsAmaModal.css';
 
@@ -40,6 +41,15 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
     const handleDateChange = (e) => setDate(e.target.value);
     const handleGuardianSignatureChange = (e) => setGuardianSignature(e.target.value);
     const handleParamedicSignatureChange = (e) => setParamedicSignature(e.target.value);
+    // Mode debug : données de test.
+    const handleDebugFill = () => {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        setPatientSignature('Jean Testard');
+        setDate(`${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} / ${pad(now.getHours())}:${pad(now.getMinutes())}`);
+        setGuardianSignature('Marie Testard');
+        setParamedicSignature('Paul Secouriste');
+    };
 
     const processWebhookQueue = useCallback(async () => {
         if (webhookQueue.current.length === 0 || isWebhookProcessing.current) {
@@ -353,6 +363,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                         </Form.Group>
                     </div>
                 </div>
+                <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="ems-ama-save-button" />
                 <Button className="ems-ama-save-button" onClick={handleSave} disabled={isSaving}>
                     {isSaving ? 'Enregistrement...' : 'Enregistrer et téléverser le formulaire AMA'}
                 </Button>

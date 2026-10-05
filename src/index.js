@@ -9,6 +9,7 @@ import { DataProvider } from './contexts/DataContext';
 import { ModalProvider } from './contexts/ModalProvider';
 import { SettingsProvider } from './contexts/SettingsProvider';
 import { LockdownProvider } from './contexts/LockdownContext';
+import { DebugProvider } from './contexts/DebugContext';
 import { EmployeeAuthProvider } from './contexts/EmployeeAuthContext';
 import { useNotification } from './contexts/NotificationContext';
 import * as Sentry from "@sentry/react";
@@ -217,9 +218,11 @@ root.render(
             <ModalProvider>
               <SettingsProvider>
                 <LockdownProvider>
-                  <EmployeeAuthProvider>
-                    <Root />
-                  </EmployeeAuthProvider>
+                  <DebugProvider>
+                    <EmployeeAuthProvider>
+                      <Root />
+                    </EmployeeAuthProvider>
+                  </DebugProvider>
                 </LockdownProvider>
               </SettingsProvider>
             </ModalProvider>

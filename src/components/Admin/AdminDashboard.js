@@ -10,6 +10,7 @@ import PendingModificationRequests from './PendingModificationRequests';
 import PendingJobApplications from './PendingJobApplications';
 import ManageCivilians from './ManageCivilians';
 import EmployeeModal from '../EmployeeModal';
+import { useDebug } from '../../contexts/DebugContext';
 
 const AdminDashboard = ({
     currentUser,
@@ -119,6 +120,25 @@ const AdminDashboard = ({
         }
     };
 
+    // Mode debug : bouton "Remplir (debug)" sur tous les formulaires (voir DebugContext).
+    const { debugAutofillEnabled, setDebugAutofillEnabled } = useDebug();
+    const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
+    const handleToggleDebugAutofill = async (enabled) => {
+        setIsUpdatingDebug(true);
+        try {
+            await setDebugAutofillEnabled(enabled, currentUser?.email);
+            if (showInAppNotification) {
+                showInAppNotification(`Mode debug ${enabled ? 'activé' : 'désactivé'} pour tous les utilisateurs.`, enabled ? 'check-circle' : 'info-circle');
+            }
+        } catch (error) {
+            console.error('Error updating debug autofill setting:', error);
+            if (Sentry?.captureException) Sentry.captureException(error, { extra: { context: 'toggleDebugAutofill' } });
+            alert("Impossible de modifier le mode debug : " + (error?.message || error));
+        } finally {
+            setIsUpdatingDebug(false);
+        }
+    };
+
     return (
         <div className="admin-dashboard-container">
             <div className="admin-dashboard-layout">
@@ -130,6 +150,7 @@ const AdminDashboard = ({
                     <div className="nav-pills-flex-column">
                         <button className={`nav-link ${selectedSection === 'serviceStatus' ? 'active' : ''}`} onClick={() => setSelectedSection('serviceStatus')}><i className="fas fa-server me-2"></i>Statut du service</button>
                         <button className={`nav-link ${selectedSection === 'lockdown' ? 'active' : ''}`} onClick={() => setSelectedSection('lockdown')}><i className="fas fa-lock me-2"></i>Confinement</button>
+                        <button className={`nav-link ${selectedSection === 'debug' ? 'active' : ''}`} onClick={() => setSelectedSection('debug')}><i className="fas fa-bug me-2"></i>Debug</button>
                         <button className={`nav-link ${selectedSection === 'authMethods' ? 'active' : ''}`} onClick={() => setSelectedSection('authMethods')}><i className="fas fa-key me-2"></i>Méthodes de connexion</button>
                         <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
                         <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
@@ -293,6 +314,39 @@ const AdminDashboard = ({
                                 <Button variant="primary" onClick={handleUpdateLockdownStatus} disabled={isUpdatingDb}>
                                     {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mise à jour sur l'état du confinement"}
                                 </Button>
+                            </div>
+                        </div>
+                    )}
+                    {selectedSection === 'debug' && (
+                        <div className="card">
+                            <div className="card-header">Mode debug — remplissage automatique des formulaires</div>
+                            <div className="card-body">
+                                <p className="text-muted">
+                                    Quand il est activé, <strong>tous les utilisateurs</strong> (visiteurs, civils, employés, admins)
+                                    voient un bouton « Remplir (debug) » sur chaque formulaire (rapports, emails, candidatures,
+                                    dossiers civils) et sur les modales (création de compte, demandes, etc.). Il remplit le
+                                    formulaire avec des données de test sans rien envoyer ni sauvegarder. Pratique pour tester
+                                    les formulaires et les permissions de chaque rôle. À désactiver en production.
+                                </p>
+                                <div className="form-check form-switch mb-3">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="debugAutofillSwitch"
+                                        checked={debugAutofillEnabled}
+                                        disabled={isUpdatingDebug}
+                                        onChange={(e) => handleToggleDebugAutofill(e.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="debugAutofillSwitch">
+                                        Activer le bouton « Remplir (debug) » pour tout le monde
+                                        {isUpdatingDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
+                                    </label>
+                                </div>
+                                <p className={`mb-0 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
+                                    <i className={`fas ${debugAutofillEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
+                                    État actuel : {debugAutofillEnabled ? 'ACTIVÉ' : 'désactivé'}
+                                </p>
                             </div>
                         </div>
                     )}

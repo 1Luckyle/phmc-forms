@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Button, Form } from 'react-bootstrap';
+import DebugFillButton from './DebugFillButton';
 
 // ─────────────────────────────────────────────────────────────────
 // CONVERTISSEUR BBCODE → MARKDOWN DISCORD
@@ -624,6 +625,22 @@ const BbcodeToMarkdownModal = ({ show, onHide, showNotification }) => {
                 {messages.length} message{messages.length > 1 ? 's' : ''}
               </span>
             )}
+            {/* Mode debug : BBcode d'exemple couvrant les balises courantes. */}
+            <DebugFillButton
+              size="sm"
+              label="Exemple"
+              onFill={() => setBbcode([
+                '[divbox=white][center][b][size=130]RAPPORT DE TEST[/size][/b][/center]',
+                '[b]Patient :[/b] Jean Testard',
+                '[i]Généré par le mode debug[/i]',
+                '[list]',
+                '[*] Premier élément',
+                '[*] Deuxième élément',
+                '[/list]',
+                '[url=https://example.com]Lien de test[/url]',
+                '[color=red]Texte rouge[/color] et [u]texte souligné[/u][/divbox]',
+              ].join('\n'))}
+            />
             {markdown && (
               <Button size="sm" variant="outline-secondary"
                 onClick={handleCopyAll}

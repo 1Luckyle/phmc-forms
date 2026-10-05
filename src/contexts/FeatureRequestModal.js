@@ -3,6 +3,7 @@ import { Form, Button } from 'react-bootstrap';
 import './FeatureRequestModal.css';
 import * as Sentry from "@sentry/react";
 import { useNotification } from './NotificationContext';
+import DebugFillButton from '../components/DebugFillButton';
 
 const FeatureRequestModal = ({
     show,
@@ -287,6 +288,16 @@ const FeatureRequestModal = ({
                     </Form>
                 </div>
                 <div className="modal-footer">
+                    <DebugFillButton
+                        style={{ marginRight: 'auto' }}
+                        onFill={() => {
+                            setIsBbcodeRequest(true);
+                            setBbcodeTitleRequest('[TEST] Nouveau format de test');
+                            setBbcodeRequestText('[b]Titre de test[/b]\n[list]\n[*] Élément de test\n[/list]');
+                            setFeatureRequest('[TEST] Demande générée par le mode debug.');
+                            setDiscordName('testeur.debug');
+                        }}
+                    />
                     <Button variant="primary" onClick={handleFeatureRequestSubmit}>
                         Soumettre
                     </Button>

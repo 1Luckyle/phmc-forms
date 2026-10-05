@@ -14,6 +14,7 @@ import { ref, get } from 'firebase/database';
 import { database } from '../firebase';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import DebugFillButton from './DebugFillButton';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -209,6 +210,16 @@ const PatientDossierModal = ({ show, onHide, showNotification, copyReportToOwnAc
                     <Button onClick={() => handleSearch()} disabled={isLoading || !selectedPatientOption} variant="primary">
                         {isLoading ? 'Recherche...' : 'Actualiser'}
                     </Button>
+                    {/* Mode debug : ouvre le dossier du patient de test utilisé par les
+                        gabarits « Remplir (debug) » (ID PHMC-99999). */}
+                    <DebugFillButton
+                        label="Patient de test"
+                        disabled={isLoading}
+                        onFill={() => {
+                            setSelectedPatientOption({ value: 'PHMC-99999', label: 'Jean Michel Testard (PHMC-99999)' });
+                            handleSearch('PHMC-99999');
+                        }}
+                    />
                 </div>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>

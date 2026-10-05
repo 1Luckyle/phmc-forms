@@ -3,6 +3,7 @@ import { Form, Button } from 'react-bootstrap';
 import * as Sentry from "@sentry/react";
 import BusinessCardImage from '../assets/business-card.png';
 import { copyToClipboard } from '../components/notificationService';
+import DebugFillButton from './DebugFillButton';
 
 const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload }) => {
     const [name, setName] = useState('');
@@ -32,6 +33,12 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     const handleNameChange = (e) => setName(e.target.value);
     const handleRankChange = (e) => setRank(e.target.value);
     const handlePhoneNumberChange = (e) => setPhoneNumber(e.target.value);
+    // Mode debug : données de test.
+    const handleDebugFill = () => {
+        setName('Jean Testard');
+        setRank('Médecin Résident');
+        setPhoneNumber('555-0142');
+    };
 
     const processWebhookQueue = useCallback(async () => {
         if (webhookQueue.current.length === 0 || isWebhookProcessing.current) {
@@ -344,6 +351,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         <Form.Control className="mb-2" type="text" placeholder="Numéro de téléphone" value={phoneNumber} onChange={handlePhoneNumberChange} />
                     </div>
                 </div>
+                <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="mt-3 w-100" />
                 <Button className="mt-3 w-100" onClick={handleSave} disabled={isSaving}>
                     {isSaving ? 'Enregistrement...' : 'Enregistrer et télécharger la carte de visite'}
                 </Button>
