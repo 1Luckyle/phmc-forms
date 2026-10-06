@@ -563,6 +563,8 @@ const SavedReportsModal = ({
         reportPath: report.reportPath,
         patientID: report.patientID,
         sharedByStaff: report.sharedByStaff,
+        isCopy: report.isCopy,
+        copiedFrom: report.copiedFrom,
     });
 
     const handleCopyTitle = async (report) => {
@@ -790,7 +792,7 @@ const SavedReportsModal = ({
                                                         Partagé par le personnel
                                                     </span>
                                                 )}
-                                                {isStaffViewer && report.patientID && !report.sharedByStaff && (
+                                                {isStaffViewer && report.patientID && !report.sharedByStaff && !report.isCopy && (
                                                     <Button
                                                         size="sm"
                                                         className="me-2"

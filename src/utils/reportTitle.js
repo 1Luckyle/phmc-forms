@@ -9,10 +9,13 @@
 // pendant que le formulaire se remplit) ; les validations « champ requis »
 // restent dans saveReport.
 
+import { canonicalPatientId } from './patientId';
+
 // Format standard demandé : "[ID-Patient] Nom du formulaire - Date", avec repli
 // sur le nom du patient quand l'ID n'est pas renseigné.
 export function buildStandardReportKey(formName, patientID, patientName, dateValue) {
-    const identifier = patientID || patientName || null;
+    // L'ID est toujours affiché sous sa forme canonique (2752 → PHMC-2752, sans espaces parasites).
+    const identifier = canonicalPatientId(patientID) || patientName || null;
     const datePart = dateValue || 'Date inconnue';
     return identifier ? `[${identifier}] ${formName} - ${datePart}` : `${formName} - ${datePart}`;
 }

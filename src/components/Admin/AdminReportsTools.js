@@ -66,14 +66,14 @@ const AdminReportsTools = ({ showNotification }) => {
     }, [phmcListData, coronerListData, accountNodes]);
 
     const handleReindex = async () => {
-        if (!window.confirm("Réindexer les dossiers patients ?\n\nTous les rapports sauvegardés qui portent un ID patient et ne sont pas encore dans un dossier (ou dont le chemin est périmé après une migration) y seront ajoutés. Aucune donnée n'est supprimée.")) {
+        if (!window.confirm("Réindexer les dossiers patients ?\n\nLes anciens ID mal formés (« 2704 », « PHMC-2704 » avec espace…) sont fusionnés sous la forme PHMC-2704, les titres « [2704 ] … » deviennent « [PHMC-2704] … », et les rapports portant un ID patient qui ne sont pas encore dans un dossier y sont ajoutés. Aucun rapport n'est supprimé.")) {
             return;
         }
         setReindexing(true);
         try {
             const result = await reindexPatientRecords();
             showNotification(
-                `Réindexation terminée : ${result.scanned} rapport(s) analysé(s), ${result.created} ajouté(s) aux dossiers, ${result.repaired} chemin(s) corrigé(s).`,
+                `Réindexation terminée : ${result.scanned} rapport(s) analysé(s), ${result.created} ajouté(s) aux dossiers, ${result.repaired} chemin(s) corrigé(s), ${result.merged} entrée(s) d'ID mal formé fusionnée(s), ${result.retitled} titre(s) corrigé(s).`,
                 'check-circle'
             );
         } catch (error) {

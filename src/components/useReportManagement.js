@@ -9,7 +9,7 @@ import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
 import {
-    normalizePatientId, patientIdCandidates, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
+    normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
 } from '../utils/patientRecords';
 
@@ -464,33 +464,18 @@ export const useReportManagement = (
                 const reportsData = snapshot.val();
                 const validReports = [];
 
-                // Un civil ne voit plus les rapports qu'il a « supprimés » alors qu'un médecin
-                // en garde une copie (ils restent accessibles au personnel via le dossier).
-                let hiddenByOwner = new Set();
-                if (isCivilian && civilianProfile?.patientID) {
-                    try {
-                        for (const node of patientIdCandidates(civilianProfile.patientID)) {
-                            const idxSnap = await get(ref(database, `patientRecords/${node}`));
-                            if (idxSnap.exists()) {
-                                Object.values(idxSnap.val() || {}).forEach((e) => {
-                                    if (e && e.ownerDeleted && e.reportPath) hiddenByOwner.add(e.reportPath);
-                                });
-                            }
-                        }
-                    } catch (hideError) {
-                        console.warn('Could not read hidden reports for civilian:', hideError);
-                    }
-                }
-
+                // Un rapport « retiré » par son créateur (alors qu'une copie existe encore chez un
+                // médecin) reste en base mais n'apparaît plus dans sa liste ni dans celle du patient.
                 for (const reportKey in reportsData) {
                     const report = reportsData[reportKey];
-                    if (hiddenByOwner.has(`${userReportsPath}/${reportKey}`)) continue;
+                    if (report && report.ownerDeleted) continue;
                     validReports.push({
                         key: reportKey,
                         originalKey: report.originalKey,
                         title: report.title || null,
                         creatorName: report.creatorName || report.originalAuthorName || report.authorName,
                         isCopy: !!report.copiedFrom,
+                        copiedFrom: report.copiedFrom || null,
                         kind: report.kind || null,
                         imageUrl: report.imageUrl || report.data?.imageUrl || null,
                         bbCodeVersion: report.bbCodeVersion,
@@ -526,7 +511,7 @@ export const useReportManagement = (
         } finally {
             setIsLoadingUserReports(false);
         }
-    }, [showNotification, removeNotification, setSavedReports, setSelectedUserForSavedReports, setIsLoadingUserReports, database, isCivilian, civilianProfile]);
+    }, [showNotification, removeNotification, setSavedReports, setSelectedUserForSavedReports, setIsLoadingUserReports, database]);
 
     const loadReportForUser = useCallback(async (reportFirebaseKey, userId, returnOnly = false) => {
         if (!userId || !reportFirebaseKey) {
@@ -924,7 +909,7 @@ export const useReportManagement = (
             // phmc-1234, 1234…), puis ne garde que ce que le personnel a PARTAGÉ.
             const dossier = await loadPatientDossier(patientID);
             const validShared = dossier
-                .filter((e) => e.visibility === 'shared')
+                .filter((e) => e.visibility === 'shared' && !e.ownerDeleted)
                 .map((e) => ({
                     key: e.indexKey,
                     originalKey: e.originalKey,
@@ -957,9 +942,10 @@ export const useReportManagement = (
     // propre vue "Dossiers/Candidatures sauvegardées" (patientRecords passe de
     // staff-only à shared — le rapport lui-même n'est ni déplacé ni dupliqué).
     // patientNode : nœud d'index où vit réellement l'entrée (voir loadPatientDossier) ;
-    // sinon on cherche parmi les variantes de l'ID (normalisé, brut, avec PHMC-).
+    // sinon on cherche parmi tous les nœuds qui désignent ce patient (« 2704 »,
+    // « PHMC-2704 », ancien nœud mal formé…).
     const findIndexLocation = async (patientID, indexKey, patientNode) => {
-        const nodes = patientNode ? [patientNode] : patientIdCandidates(patientID);
+        const nodes = patientNode ? [patientNode] : await findPatientNodes(patientID);
         for (const node of nodes) {
             const snap = await get(ref(database, `patientRecords/${node}/${indexKey}`));
             if (snap.exists()) return { node, entry: snap.val() };
@@ -975,6 +961,26 @@ export const useReportManagement = (
                 showNotification("Ce rapport n'est pas encore indexé dans le dossier du patient (ré-indexation admin nécessaire).", 'warning');
                 return;
             }
+            const { entry } = location;
+            // Une COPIE ne se repartage pas : seul le créateur du rapport d'origine décide
+            // de le montrer au patient (sinon on pourrait partager 30 fois le même rapport).
+            if (entry.copiedFrom) {
+                showNotification("Ce rapport est une copie : seul le créateur du rapport d'origine peut le partager avec le patient.", 'warning');
+                return;
+            }
+            if (entry.visibility === 'shared') {
+                showNotification('Ce rapport est déjà partagé avec le patient.', 'info-circle');
+                return;
+            }
+            if (entry.visibility === 'owner') {
+                showNotification('Ce rapport a été créé par le patient lui-même : il le voit déjà.', 'info-circle');
+                return;
+            }
+            const isCreator = !!staffName && entry.authorName === staffName;
+            if (!isCreator && !isAdmin) {
+                showNotification("Seul le médecin qui a créé ce rapport (ou un administrateur) peut le partager avec le patient.", 'warning');
+                return;
+            }
             await set(ref(database, `patientRecords/${location.node}/${reportKey}/visibility`), 'shared');
             showNotification('Rapport partagé avec le patient.', 'check-circle');
         } catch (error) {
@@ -982,34 +988,67 @@ export const useReportManagement = (
             Sentry.captureException(error, { extra: { context: 'shareReportWithPatient', patientID, reportKey } });
             showNotification('Erreur lors du partage du rapport.', 'error');
         }
-    }, [showNotification]);
+    }, [showNotification, staffName, isAdmin]);
 
-    // Action personnel : duplique un rapport (créé par un civil, ou partagé
-    // par un collègue) dans son PROPRE savedReports, pour le consulter plus
-    // tard indépendamment de l'auteur d'origine. Le rapport d'origine n'est ni
-    // modifié ni supprimé ; il garde seulement un marqueur « copié par » (qui
-    // permet au patient de le « supprimer » sans que le médecin perde sa copie).
-    // copyAuthorName DOIT être le nom du médecin (jamais son e-mail) : c'est la clé
-    // sous laquelle sa liste « Rapports enregistrés » est chargée.
+    // Action personnel : duplique un rapport (créé par un civil, ou par un collègue) dans
+    // son PROPRE savedReports, pour le consulter plus tard indépendamment de l'auteur
+    // d'origine. Le rapport d'origine n'est ni modifié ni supprimé ; il garde un marqueur
+    // « copié par ». Règles : UNE seule copie par médecin et par rapport ; on copie
+    // toujours le rapport d'origine (jamais la copie d'un collègue) ; pas de copie de ses
+    // propres rapports. copyAuthorName DOIT être le nom du médecin (jamais son e-mail) :
+    // c'est la clé sous laquelle sa liste « Rapports enregistrés » est chargée.
     const copyReportToOwnAccount = useCallback(async (reportPath, copyAuthorName, meta = {}) => {
         if (!reportPath || !copyAuthorName) {
             showNotification('Impossible de déterminer votre identité pour la copie.', 'error');
             return;
         }
         try {
-            const snap = await get(ref(database, reportPath));
+            const sanitizedCopyAuthorId = sanitizeAuthorKey(copyAuthorName);
+            let sourcePath = reportPath;
+            let snap = await get(ref(database, sourcePath));
             if (!snap.exists()) {
                 showNotification('Rapport introuvable.', 'error');
                 return;
             }
-            const original = snap.val();
-            const originalKeyInPath = reportPath.split('/').pop();
-            const sanitizedCopyAuthorId = sanitizeAuthorKey(copyAuthorName);
-            const patientID = original.data?.patientID || meta.patientID || null;
-            const location = patientID ? await findIndexLocation(patientID, originalKeyInPath, meta.patientNode) : null;
+            let original = snap.val();
 
-            if (location?.entry?.copiedBy?.[sanitizedCopyAuthorId]) {
-                showNotification('Vous avez déjà une copie de ce rapport dans vos rapports enregistrés.', 'info-circle');
+            // Une copie de copie n'a pas de sens : on remonte au rapport d'origine.
+            if (original.copiedFrom?.reportPath) {
+                sourcePath = original.copiedFrom.reportPath;
+                snap = await get(ref(database, sourcePath));
+                if (!snap.exists()) {
+                    showNotification("Le rapport d'origine de cette copie n'existe plus.", 'error');
+                    return;
+                }
+                original = snap.val();
+            }
+
+            if (sourcePath.split('/')[1] === sanitizedCopyAuthorId) {
+                showNotification("Ce rapport est déjà dans vos rapports enregistrés : inutile d'en faire une copie.", 'info-circle');
+                return;
+            }
+
+            const originalKeyInPath = sourcePath.split('/').pop();
+            const patientID = original.data?.patientID || meta.patientID || null;
+            const location = patientID ? await findIndexLocation(patientID, originalKeyInPath, null) : null;
+
+            // UNE copie par médecin : marqueur sur l'original, et vérification dans le dossier
+            // (au cas où le marqueur manquerait sur un ancien rapport).
+            let alreadyCopied = !!location?.entry?.copiedBy?.[sanitizedCopyAuthorId];
+            if (!alreadyCopied && patientID) {
+                const dossierNodes = await findPatientNodes(patientID);
+                for (const node of dossierNodes) {
+                    const nodeSnap = await get(ref(database, `patientRecords/${node}`));
+                    const nodeEntries = nodeSnap.exists() ? Object.values(nodeSnap.val() || {}) : [];
+                    if (nodeEntries.some((e) => e && e.copiedFrom?.reportPath === sourcePath
+                        && sanitizeAuthorKey(e.authorName) === sanitizedCopyAuthorId)) {
+                        alreadyCopied = true;
+                        break;
+                    }
+                }
+            }
+            if (alreadyCopied) {
+                showNotification('Vous avez déjà une copie de ce rapport dans vos rapports enregistrés (une seule copie par médecin).', 'info-circle');
                 return;
             }
 
@@ -1018,11 +1057,12 @@ export const useReportManagement = (
             const creator = original.creatorName || original.originalAuthorName || original.authorName || '';
             const copyPayload = sanitizeForFirebase({
                 ...original,
+                ownerDeleted: null,
                 authorName: copyAuthorName,
                 creatorName: creator,
                 timestamp: Date.now(),
                 title: reportTitleOf(original),
-                copiedFrom: { reportPath, patientNode: location?.node || null, indexKey: originalKeyInPath },
+                copiedFrom: { reportPath: sourcePath, patientNode: location?.node || null, indexKey: originalKeyInPath },
             });
             await set(ref(database, copyPath), copyPayload);
 
@@ -1033,6 +1073,7 @@ export const useReportManagement = (
                     indexKey: copyKey,
                     entry: {
                         reportPath: copyPath,
+                        // Une copie reste privée : elle ne peut jamais être partagée au patient.
                         visibility: 'staff-only',
                         bbCodeVersion: original.bbCodeVersion,
                         originalKey: original.originalKey,
@@ -1042,7 +1083,7 @@ export const useReportManagement = (
                         creatorName: creator,
                         patientName: original.data?.patientName || location?.entry?.patientName || null,
                         timestamp: Date.now(),
-                        copiedFrom: { reportPath, patientNode: node, indexKey: originalKeyInPath },
+                        copiedFrom: { reportPath: sourcePath, patientNode: node, indexKey: originalKeyInPath },
                     },
                 });
                 // Marqueur sur l'original (best-effort : n'empêche pas la copie).
@@ -1099,7 +1140,7 @@ export const useReportManagement = (
 
         const done = result.deleted + result.hidden;
         if (done > 0) {
-            const hiddenNote = result.hidden ? ` (dont ${result.hidden} retiré(s) de votre dossier, une copie du personnel est conservée)` : '';
+            const hiddenNote = result.hidden ? ` (dont ${result.hidden} conservé(s) dans le dossier tant que des copies existent)` : '';
             showNotification(`${done} rapport(s) supprimé(s)${hiddenNote}.`, 'trash');
         }
         refusals.forEach((message) => showNotification(message, 'warning', 7000));

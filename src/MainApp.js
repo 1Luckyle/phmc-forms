@@ -7,6 +7,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import { Button, Dropdown, Modal } from 'react-bootstrap';
 import getRelevantFields from './components/RevelantFields';
 import { buildReportTitle } from './utils/reportTitle';
+import { canonicalPatientId } from './utils/patientId';
 import SeasonalEvents from './components/SeasonalEvents';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as Sentry from "@sentry/react";
@@ -524,6 +525,9 @@ function MainApp({
 
                 const generatorArgs = {
                     ...formData,
+                    // L'ID patient est toujours écrit sous sa forme canonique dans le BBCode
+                    // (2752 → PHMC-2752), même si l'utilisateur n'a saisi que les chiffres.
+                    ...(formData.patientID ? { patientID: canonicalPatientId(formData.patientID) } : {}),
                     positionDetailsData: specificPositionData || {},
                     agencyDataStore: agencyDataStore,
                 };
@@ -1813,7 +1817,16 @@ function MainApp({
                             )}
                         </div>
 
-                        <form> 
+                        {/* Quand on quitte un champ « ID patient », on le complète : 2752 → PHMC-2752. */}
+                        <form onBlur={(event) => {
+                            const field = event.target;
+                            if (field && field.name === 'patientID' && field.value && field.value.trim()) {
+                                const completed = canonicalPatientId(field.value);
+                                if (completed && completed !== field.value) {
+                                    handleChange({ target: { name: 'patientID', value: completed, type: 'text' } });
+                                }
+                            }
+                        }}> 
                             <Suspense fallback={<LoadingSpinner />}>
                                 {FieldComponent && currentEmployee ? (
                                     <FieldComponent
