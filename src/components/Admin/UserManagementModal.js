@@ -1,3 +1,4 @@
+import { normalizePatientId } from '../../utils/patientRecords';
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { ref, get, set, remove, update } from "firebase/database";
@@ -217,6 +218,47 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
 
             await set(destinationUserRef, destinationReports);
             await remove(sourceUserRef);
+
+            // Les dossiers patients pointent vers l'ANCIEN chemin (savedReports/{source}/…) :
+            // sans cette mise à jour, les rapports migrés disparaissaient des dossiers patients.
+            // On corrige aussi le nom d'auteur (une adresse e-mail devient le nom du médecin) et
+            // les marqueurs « copié par » des rapports d'origine.
+            try {
+                const nameCounts = {};
+                Object.entries(destinationBackup || {}).forEach(([key, r]) => {
+                    if (sourceReports[key]) return; // rapports qu'on vient de migrer : pas représentatifs
+                    if (r && r.authorName) nameCounts[r.authorName] = (nameCounts[r.authorName] || 0) + 1;
+                });
+                const knownDestinationName = Object.entries(nameCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+                const destinationAuthorName = knownDestinationName || destinationUser.replace(/_/g, ' ');
+                const indexUpdates = {};
+                Object.keys(sourceReports).forEach((key) => {
+                    if (conflictedReports.includes(key)) return; // conflit : non migré
+                    const report = sourceReports[key] || {};
+                    const newPath = `savedReports/${destinationUser}/${key}`;
+                    const oldAuthor = report.authorName;
+                    const wasSelfCreated = !report.creatorName || report.creatorName === oldAuthor;
+                    indexUpdates[`${newPath}/authorName`] = destinationAuthorName;
+                    if (wasSelfCreated) indexUpdates[`${newPath}/creatorName`] = destinationAuthorName;
+                    const patientNode = normalizePatientId(report.data && report.data.patientID);
+                    if (patientNode) {
+                        indexUpdates[`patientRecords/${patientNode}/${key}/reportPath`] = newPath;
+                        indexUpdates[`patientRecords/${patientNode}/${key}/authorName`] = destinationAuthorName;
+                        if (wasSelfCreated) indexUpdates[`patientRecords/${patientNode}/${key}/creatorName`] = destinationAuthorName;
+                    }
+                    if (report.copiedFrom && report.copiedFrom.patientNode && report.copiedFrom.indexKey) {
+                        const base = `patientRecords/${report.copiedFrom.patientNode}/${report.copiedFrom.indexKey}/copiedBy`;
+                        indexUpdates[`${base}/${sourceUser}`] = null;
+                        indexUpdates[`${base}/${destinationUser}`] = key;
+                    }
+                });
+                if (Object.keys(indexUpdates).length > 0) {
+                    await update(ref(database), indexUpdates);
+                }
+            } catch (indexError) {
+                console.warn('Reports migrated but patient records could not be updated:', indexError);
+                showNotification("Rapports migrés, mais l'index des dossiers patients n'a pas pu être mis à jour : utilisez « Réindexer les dossiers patients ».", 'warning');
+            }
 
             if (conflictedReports.length > 0) {
                 showNotification(`Migration terminée, mais ${conflictedReports.length} rapports n'ont pas été migrés en raison de conflits.`, "warning");

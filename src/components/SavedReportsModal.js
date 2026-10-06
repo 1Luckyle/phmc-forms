@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { Button, Form } from 'react-bootstrap';
+import { Button, Form, Dropdown } from 'react-bootstrap';
 import Select from 'react-select';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
+import { getFormDefinition } from '../formDefinitions';
 
 const modalStyle = {
     position: 'fixed',
@@ -112,6 +114,15 @@ const tdStyle = {
 const tdCheckboxStyle = {
     ...tdStyle,
     textAlign: 'center',
+};
+
+// La colonne d'actions ne doit JAMAIS être tronquée (les boutons finissaient en « … »).
+const actionsTdStyle = {
+    ...tdStyle,
+    maxWidth: 'none',
+    overflow: 'visible',
+    textOverflow: 'clip',
+    whiteSpace: 'nowrap',
 };
 
 const actionButtonStyle = {
@@ -240,7 +251,7 @@ const SavedReportsModal = ({
     employeeOptions,
     isLoadingReports,
     loadReport,
-    deleteReportForUser,
+    deleteReportsForUser,
     loadReportForUser,
     handleReportSelectedForAttachment,
     currentCoronerEmployee,
@@ -262,16 +273,15 @@ const SavedReportsModal = ({
     const lastLoadedEmployeeRef = useRef(null);
     const isManualSelectionRef = useRef(false);
 
-    const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
+    const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
     // Le personnel (admin ou employé identifié) peut partager/copier un
     // rapport lié à un patient — un civil ne le peut jamais (Lot 5).
     const isStaffViewer = isAdmin || !!employeeProfile;
-    const staffAuthorNameForCopy = employeeProfile?.name
-        || (employeeProfile?.firstName && employeeProfile?.lastName ? `${employeeProfile.firstName} ${employeeProfile.lastName}` : null)
-        // Un admin n'a pas de compartiment de rapports à son nom : la copie
-        // va chez l'employé sélectionné dans le formulaire (même logique que
-        // "Enregistrer sous un employé"), jamais sous son email.
-        || (isAdmin ? (currentPhmcEmployee || currentCoronerEmployee || null) : null);
+    // Nom sous lequel le médecin range ses rapports : sa fiche personnel (même pour
+    // un admin, voir EmployeeAuthContext), JAMAIS son e-mail. Un admin sans fiche
+    // personnel copie chez l'employé dont la liste est affichée.
+    const staffAuthorNameForCopy = staffName
+        || (isAdmin ? (selectedEmployee?.value || currentPhmcEmployee || currentCoronerEmployee || null) : null);
 
     // Un employé connecté (non-admin) consulte toujours SES PROPRES rapports,
     // directement, peu importe ce qui est sélectionné dans le formulaire
@@ -320,20 +330,31 @@ const SavedReportsModal = ({
                 } else {
                     employeeToSelectValue = currentCoronerEmployee || currentPhmcEmployee;
                 }
-            } else if (currentEmployee && employeeProfile?.name) {
-                employeeToSelectValue = employeeProfile.name;
+                // Un admin qui est aussi médecin retrouve ses propres rapports par défaut.
+                if (!employeeToSelectValue && staffName) {
+                    employeeToSelectValue = staffName;
+                }
+            } else if (currentEmployee && staffName) {
+                employeeToSelectValue = staffName;
             }
 
             // Find the matching employee option
-            const employeeOption = employeeOptions?.flatMap(group => group.options).find(
+            let employeeOption = employeeOptions?.flatMap(group => group.options).find(
                 (opt) => opt.value === employeeToSelectValue
             );
+            // Un employé non-admin charge TOUJOURS ses propres rapports : on ne dépend pas de la
+            // liste d'options (en cache jusqu'à 7 jours, elle peut ne pas encore contenir un
+            // employé récent, ce qui laissait la liste vide).
+            if (!employeeOption && !isAdmin && employeeToSelectValue) {
+                employeeOption = { value: employeeToSelectValue, label: employeeToSelectValue };
+            }
 
             if (employeeOption && employeeToSelectValue !== lastLoadedEmployeeRef.current) {
                 setSelectedEmployee(employeeOption);
                 onEmployeeSelect(String(employeeOption.value));
                 lastLoadedEmployeeRef.current = employeeToSelectValue;
-            } else if (!employeeOption) {
+            } else if (!employeeOption && lastLoadedEmployeeRef.current !== '__none__') {
+                lastLoadedEmployeeRef.current = '__none__';
                 setSelectedEmployee(null);
                 onEmployeeSelect(null);
             }
@@ -345,7 +366,7 @@ const SavedReportsModal = ({
             lastLoadedEmployeeRef.current = null;
             isManualSelectionRef.current = false;
         }
-    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile, isCivilian, civilianProfile, loadSharedReportsForPatient]);
+    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile, staffName, isCivilian, civilianProfile, loadSharedReportsForPatient]);
 
     const handleEmployeeSelect = (selectedOption) => {
         isManualSelectionRef.current = true;
@@ -382,15 +403,18 @@ const SavedReportsModal = ({
         
         // Si employé connecté, montrer seulement cet employé
         if (employeeProfile) {
-            const currentEmployeeName = employeeProfile.name;
-            return options.map(group => ({
+            const currentEmployeeName = staffName || employeeProfile.name;
+            const restricted = options.map(group => ({
                 ...group,
                 options: group.options.filter(opt => opt.value === currentEmployeeName)
             })).filter(group => group.options.length > 0);
+            return restricted.length > 0
+                ? restricted
+                : [{ label: 'Moi', options: [{ value: currentEmployeeName, label: currentEmployeeName }] }];
         }
         
         return options;
-    }, [employeeOptions, preselectedEmployeeType, isAdmin, currentEmployee, employeeProfile]);
+    }, [employeeOptions, preselectedEmployeeType, isAdmin, currentEmployee, employeeProfile, staffName]);
 
     const sortedReports = useMemo(() => {
         return [...(reportsForSelectedUser || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -443,6 +467,24 @@ const SavedReportsModal = ({
         }
         if (isLoadingMultiple) return;
 
+        // Garde-fou : on peut sélectionner autant de rapports qu'on veut pour les supprimer ou
+        // copier leur BBCode, mais on ne CHARGE qu'un rapport à la fois (chaque rapport
+        // remplace le formulaire correspondant). Seul l'attachement à l'Email DMEC en accepte
+        // plusieurs.
+        if (bbCodeVersion !== 2) {
+            if (selectedReportKeys.length > 1) {
+                showNotification("Vous ne pouvez charger qu'un seul rapport à la fois. Désélectionnez les autres rapports (la suppression et la copie du BBCode restent possibles en sélection multiple).", 'warning', 7000);
+                return;
+            }
+            const target = sortedReports.find((r) => r.key === selectedReportKeys[0]);
+            if (target && (!isLoadable(target) || target.sharedByStaff)) {
+                showNotification(target.sharedByStaff
+                    ? 'Un rapport partagé par le personnel se consulte et se copie, mais ne peut pas être rechargé dans un formulaire.'
+                    : "Ce rapport (ex. formulaire AMA) n'a pas de formulaire associé : il ne peut pas être rechargé.", 'warning', 6000);
+                return;
+            }
+        }
+
         setIsLoadingMultiple(true);
         const numToLoad = selectedReportKeys.length;
         const calculatedDuration = numToLoad > 1 ? (numToLoad - 1) * LOAD_DELAY_MS + 500 : 3000;
@@ -473,7 +515,7 @@ const SavedReportsModal = ({
         onHide(); // Close modal after operation completes
     };
 
-    const handleDeleteSelected = () => {
+    const handleDeleteSelected = async () => {
         if (selectedReportKeys.length === 0 || !selectedEmployee?.value) {
             showNotification('Aucun rapport sélectionné ou aucun employé identifié.', 'warning');
             return;
@@ -481,11 +523,12 @@ const SavedReportsModal = ({
         if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedReportKeys.length} rapport(s) sélectionné(s) ? Cette action est irréversible.`)) {
             return;
         }
-        selectedReportKeys.forEach((reportKey) => {
-            deleteReportForUser(reportKey, selectedEmployee.value);
-        });
-        showNotification(`${selectedReportKeys.length} rapport(s) supprimé(s).`, 'trash');
+        const reportsToDelete = sortedReports
+            .filter((r) => selectedReportKeys.includes(r.key))
+            .map(toDeletePayload);
         setSelectedReportKeys([]);
+        // Les règles (qui peut supprimer quoi) et les notifications sont gérées par le hook.
+        await deleteReportsForUser(reportsToDelete, selectedEmployee.value);
     };
 
     const handleCopySelectedBBCode = async () => {
@@ -510,6 +553,74 @@ const SavedReportsModal = ({
             showNotification('Aucun BBCode trouvé pour ce rapport.', 'warning');
         }
     };
+
+    // Rapport rechargeable dans un formulaire ? (un formulaire AMA, par exemple, n'en a pas)
+    const isLoadable = (report) => report.kind !== 'ama' && !!getFormDefinition(report.bbCodeVersion)?.FieldComponent;
+
+    // Ce que deleteReportsForUser a besoin de savoir pour appliquer les règles de suppression.
+    const toDeletePayload = (report) => ({
+        key: report.key,
+        reportPath: report.reportPath,
+        patientID: report.patientID,
+        sharedByStaff: report.sharedByStaff,
+    });
+
+    const handleCopyTitle = async (report) => {
+        const title = reportTitleOf(report);
+        if (title) {
+            await copyToClipboard(title, showNotification, 'Titre copié !');
+        } else {
+            showNotification('Aucun titre trouvé pour ce rapport.', 'warning');
+        }
+    };
+
+    const handleCopyImageLink = async (report) => {
+        if (report.imageUrl) {
+            await copyToClipboard(report.imageUrl, showNotification, "Lien de l'image copié !");
+        } else {
+            showNotification("Aucun lien d'image enregistré pour ce rapport.", 'warning');
+        }
+    };
+
+    const handleCopySelectedTitles = async () => {
+        if (selectedReportKeys.length === 0) {
+            showNotification('Aucun rapport sélectionné à copier.', 'warning');
+            return;
+        }
+        const titles = sortedReports
+            .filter((r) => selectedReportKeys.includes(r.key))
+            .map((r) => reportTitleOf(r))
+            .filter(Boolean);
+        if (titles.length > 0) {
+            await copyToClipboard(titles.join('\n'), showNotification, `${titles.length} titre(s) copié(s) !`);
+        } else {
+            showNotification('Aucun titre trouvé dans les rapports sélectionnés.', 'warning');
+        }
+    };
+
+    // Menu « Copier ▾ » d'une ligne : BBCode + titre (ou titre + lien de l'image pour un AMA).
+    const renderCopyMenu = (report) => (
+        <Dropdown className="d-inline-block me-2">
+            <Dropdown.Toggle size="sm" style={{ backgroundColor: '#2f81f7', border: 'none' }} title="Copier le BBCode, le titre…">
+                Copier
+            </Dropdown.Toggle>
+            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                {report.kind === 'ama' ? (
+                    <>
+                        <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleCopyImageLink(report)} disabled={!report.imageUrl}>
+                            Copier le lien de l'image
+                        </Dropdown.Item>
+                    </>
+                ) : (
+                    <>
+                        <Dropdown.Item onClick={() => handleCopyBBCode(report.key)}>Copier le BBCode</Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
+                    </>
+                )}
+            </Dropdown.Menu>
+        </Dropdown>
+    );
 
     const goToPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
     const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -609,9 +720,9 @@ const SavedReportsModal = ({
                                             title="Sélectionner/Désélectionner tout sur cette page"
                                         />
                                     </th>
-                                    <th style={thStyle}>Nom / Identifiant</th>
+                                    <th style={thStyle}>Titre du rapport</th>
+                                    <th style={thStyle}>Créé par</th>
                                     <th style={thStyle}>Date et heure d'enregistrement</th>
-                                    <th style={thStyle}>Version</th>
                                     <th style={thStyle}>Actions</th>
                                 </tr>
                             </thead>
@@ -628,50 +739,50 @@ const SavedReportsModal = ({
                                                     onChange={(e) => handleCheckboxChange(report.key, e.target.checked)}
                                                 />
                                             </td>
-                                            <td style={tdStyle} title={report.originalKey}>
+                                            <td style={{ ...tdStyle, maxWidth: '420px' }} title={reportTitleOf(report) || report.originalKey}>
                                                 {report.originalKey}
                                             </td>
-                                            <td style={tdStyle}>{new Date(report.timestamp).toLocaleString()}</td>
-                                            <td style={tdStyle}>{report.bbCodeVersion}</td>
-                                            <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                                                {!report.sharedByStaff && (
-                                                    <>
-                                                        <Button
-                                                            variant="primary"
-                                                            size="sm"
-                                                            className="me-2"
-                                                            onClick={() => {
-                                                                if (bbCodeVersion === 2) {
-                                                                    handleReportSelectedForAttachment(report.key, selectedEmployee.value);
-                                                                } else if (loadReport) {
-                                                                    loadReport(report.key, selectedEmployee.value);
-                                                                }
-                                                                onHide(); // Close modal after action
-                                                            }}
-                                                            disabled={isLoadingReports || !selectedEmployee}
-                                                        >
-                                                            {bbCodeVersion === 2 ? 'Attacher' : 'Charger'}
-                                                        </Button>
-                                                        <Button
-                                                            variant="danger"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
-                                                                    deleteReportForUser(report.key, selectedEmployee.value);
-                                                                }
-                                                            }}
-                                                            disabled={isLoadingReports || !selectedEmployee}
-                                                        >
-                                                            Supprimer
-                                                        </Button>
-                                                    </>
+                                            <td style={tdStyle} title="Créateur d'origine du rapport">
+                                                {reportCreatorOf(report) || 'N/A'}
+                                                {report.isCopy && (
+                                                    <span style={{ marginLeft: '6px', fontSize: '0.75em', padding: '1px 6px', borderRadius: '8px', backgroundColor: '#1f6feb', color: '#fff' }}>
+                                                        Copie
+                                                    </span>
                                                 )}
+                                            </td>
+                                            <td style={tdStyle}>{new Date(report.timestamp).toLocaleString()}</td>
+                                            <td style={actionsTdStyle}>
+                                                {isLoadable(report) && !report.sharedByStaff && (loadReport || bbCodeVersion === 2) && (
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        className="me-2"
+                                                        onClick={() => {
+                                                            if (bbCodeVersion === 2) {
+                                                                handleReportSelectedForAttachment(report.key, selectedEmployee.value);
+                                                            } else if (loadReport) {
+                                                                loadReport(report.key, selectedEmployee.value);
+                                                            }
+                                                            onHide(); // Close modal after action
+                                                        }}
+                                                        disabled={isLoadingReports || !selectedEmployee}
+                                                    >
+                                                        {bbCodeVersion === 2 ? 'Attacher' : 'Charger'}
+                                                    </Button>
+                                                )}
+                                                {renderCopyMenu(report)}
                                                 <Button
-                                                    onClick={() => handleCopyBBCode(report.key)}
-                                                    style={copyButtonStyle}
-                                                    title="Copier le BBCode"
+                                                    variant="danger"
+                                                    size="sm"
+                                                    className="me-2"
+                                                    onClick={async () => {
+                                                        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
+                                                            await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
+                                                        }
+                                                    }}
+                                                    disabled={isLoadingReports || !selectedEmployee}
                                                 >
-                                                    Copier le BBCode
+                                                    Supprimer
                                                 </Button>
                                                 {report.sharedByStaff && (
                                                     <span style={{ marginLeft: '5px', fontSize: '0.8em', color: '#8b949e' }}>
@@ -683,7 +794,7 @@ const SavedReportsModal = ({
                                                     <Button
                                                         size="sm"
                                                         className="me-2"
-                                                        style={{ backgroundColor: '#8957e5', border: 'none', marginLeft: '5px' }}
+                                                        style={{ backgroundColor: '#8957e5', border: 'none' }}
                                                         title="Rendre ce rapport visible au patient dans son propre compte"
                                                         onClick={() => shareReportWithPatient && shareReportWithPatient(report.patientID, report.key)}
                                                     >
@@ -693,9 +804,11 @@ const SavedReportsModal = ({
                                                 {isStaffViewer && report.patientID && !report.sharedByStaff && report.authorName !== staffAuthorNameForCopy && (
                                                     <Button
                                                         size="sm"
-                                                        style={{ backgroundColor: '#316dca', border: 'none', marginLeft: '5px' }}
-                                                        title="Enregistrer une copie de ce rapport dans vos propres rapports"
-                                                        onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy)}
+                                                        style={{ backgroundColor: '#316dca', border: 'none' }}
+                                                        title={staffAuthorNameForCopy
+                                                            ? `Enregistrer une copie de ce rapport dans les rapports de ${staffAuthorNameForCopy}`
+                                                            : 'Impossible de déterminer à quel médecin rattacher la copie'}
+                                                        onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy, { patientID: report.patientID })}
                                                         disabled={!staffAuthorNameForCopy}
                                                     >
                                                         Récupérer une copie
@@ -737,16 +850,20 @@ const SavedReportsModal = ({
                         >
                             Supprimer la sélection ({selectedReportKeys.length})
                         </Button>
-                        <Button
-                            onClick={handleCopySelectedBBCode}
-                            style={copyButtonStyle}
-                            disabled={selectedReportKeys.length === 0}
-                        >
-                            Copier le BBCode sélectionné ({selectedReportKeys.length})
-                        </Button>
+                        <Dropdown drop="up">
+                            <Dropdown.Toggle style={copyButtonStyle} disabled={selectedReportKeys.length === 0}>
+                                Copier la sélection ({selectedReportKeys.length})
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                                <Dropdown.Item onClick={handleCopySelectedBBCode}>Copier le BBCode sélectionné</Dropdown.Item>
+                                <Dropdown.Item onClick={handleCopySelectedTitles}>Copier les titres sélectionnés</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                        {(loadReport || bbCodeVersion === 2) && (
                         <Button
                             style={actionButtonStyle}
-                            disabled={selectedReportKeys.length === 0 || isLoadingMultiple}
+                            disabled={selectedReportKeys.length === 0 || isLoadingMultiple || (bbCodeVersion !== 2 && selectedReportKeys.length > 1)}
+                            title={bbCodeVersion !== 2 && selectedReportKeys.length > 1 ? 'Un seul rapport peut être chargé à la fois' : ''}
                             onClick={handleLoadSelected}
                         >
                             {isLoadingMultiple ? (
@@ -755,9 +872,10 @@ const SavedReportsModal = ({
                                     Chargement...
                                 </>
                             ) : (
-                                `${bbCodeVersion === 2 ? 'Attacher la sélection' : 'Charger la sélection'} (${selectedReportKeys.length})`
+                                `${bbCodeVersion === 2 ? 'Attacher la sélection' : 'Charger le rapport sélectionné'} (${selectedReportKeys.length})`
                             )}
                         </Button>
+                        )}
                     </div>
                 )}
 

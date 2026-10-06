@@ -6,6 +6,7 @@ import { formDefinitions, getFormDefinition } from './formDefinitions';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { Button, Dropdown, Modal } from 'react-bootstrap';
 import getRelevantFields from './components/RevelantFields';
+import { buildReportTitle } from './utils/reportTitle';
 import SeasonalEvents from './components/SeasonalEvents';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as Sentry from "@sentry/react";
@@ -126,7 +127,7 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
@@ -475,12 +476,13 @@ function MainApp({
         showNotification('Titre copié dans le presse-papiers !', 'check-circle');
     };
 
+    // Le « Titre du Formulaire » est EXACTEMENT le titre qui sera enregistré avec le
+    // rapport (Rapports enregistrés, Dossier Patient) : même fonction que saveReport.
     const generateTitle = () => {
         const definition = getFormDefinition(bbCodeVersion);
-        if (definition && definition.titleGenerator) {
-            return definition.titleGenerator(formData);
-        }
-        return "Rapport Sans Titre";
+        if (!definition) return "Rapport Sans Titre";
+        if (bbCodeVersion === 999 && definition.titleGenerator) return definition.titleGenerator(formData);
+        return buildReportTitle(bbCodeVersion, formData, definition.name);
     };
 
     useEffect(() => {
@@ -650,7 +652,7 @@ function MainApp({
         loadReportForUser,
         handleReportSelectedForAttachment,
         onAttachReportSummaryRequest,
-        deleteReportForUser,
+        deleteReportsForUser,
         loadSharedReportsForPatient,
         shareReportWithPatient,
         copyReportToOwnAccount,
@@ -698,7 +700,8 @@ function MainApp({
         emsRecruitmentDetails,
         nurseRecruitmentDetails,
         coronerRecruitmentDetails,
-        selectedAgencyGroup
+        selectedAgencyGroup,
+        initialFormData
     );
 
     const clearForm = () => {
@@ -1599,9 +1602,12 @@ function MainApp({
                                                 <i className="fas fa-folder-open"></i> Dossier Patient
                                             </Dropdown.Item>
                                         )}
-                                        <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
-                                            <i className="fa-solid fa-truck-medical"></i> EMS Contre Avis Médical
-                                        </Dropdown.Item>
+                                        {/* Formulaire AMA : réservé aux médecins (personnel PHMC) et aux admins. */}
+                                        {canUseAma && (
+                                            <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
+                                                <i className="fa-solid fa-truck-medical"></i> EMS Contre Avis Médical
+                                            </Dropdown.Item>
+                                        )}
                                         <Dropdown.Item onClick={() => {toggleSeasonalEffects(); setShowToolsDropdown(false);}}>
                                             <i className={`fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`}></i> 
                                             {seasonalEffectsEnabled ? ' Désactiver' : ' Activer'} Effet de Saison
@@ -2262,7 +2268,7 @@ function MainApp({
                             savedReports={savedReports}
                             reportsForSelectedUser={savedReports}
                             loadReport={loadReportForUser}
-                            deleteReportForUser={deleteReportForUser}
+                            deleteReportsForUser={deleteReportsForUser}
                             loadSharedReportsForPatient={loadSharedReportsForPatient}
                             shareReportWithPatient={shareReportWithPatient}
                             copyReportToOwnAccount={copyReportToOwnAccount}
@@ -2306,7 +2312,8 @@ function MainApp({
                             showNotification={showNotification}
                             shareReportWithPatient={shareReportWithPatient}
                             copyReportToOwnAccount={copyReportToOwnAccount}
-                            adminCopyAuthorName={formData.phmcEmployee || formData.coronerEmployee || null}
+                            loadReport={loadReportForUser}
+                            deleteReportsForUser={deleteReportsForUser}
                         />
                         <MyJobApplicationsModal
                             show={showMyJobApplications}

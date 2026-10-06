@@ -174,13 +174,24 @@
     // utilisateur authentifié, cohérent avec le reste de l'app ; la vue Civil
     // elle-même ne consulte jamais que son propre patientID côté client).
     // Écriture : tout utilisateur connecté peut créer/mettre à jour une entrée
-    // (sauvegarder un rapport, le partager) ; seule la SUPPRESSION est
-    // réservée aux admins (newData.exists() distingue écriture de suppression).
+    // (sauvegarder un rapport, le partager, marquer une copie). La SUPPRESSION
+    // (newData.exists() faux) est permise : aux admins, à tout membre du
+    // personnel (un utilisateur qui n'a PAS de profil dans civilians — il supprime
+    // ses rapports ou ses copies depuis « Rapports enregistrés » / « Dossier
+    // Patient »), et à un civil uniquement pour une entrée qu'il a lui-même
+    // créée (visibility "owner"). Un civil ne peut donc jamais supprimer un
+    // rapport créé par le personnel ; les règles métier plus fines (copie
+    // conservée par un médecin, etc.) sont appliquées côté application — voir
+    // deleteReportWithRules dans src/utils/patientRecords.js.
     "patientRecords": {
+      // Lecture de TOUT le nœud (liste des patients sans compte dans « Dossier
+      // Patient », réindexation admin) : personnel et admins uniquement — un civil
+      // ne peut lire que le dossier d'un ID précis (règle $patientId ci-dessous).
+      ".read": "auth != null && !root.child('civilians').child(auth.uid).exists()",
       "$patientId": {
         ".read": "auth != null",
         "$indexKey": {
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true)"
+          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists() || data.child('visibility').val() === 'owner')"
         }
       }
     },
