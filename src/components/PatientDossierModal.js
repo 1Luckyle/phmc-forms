@@ -2,9 +2,19 @@
 //
 // Outil personnel « Dossier Patient » (Lot 5) : retrouve tous les rapports liés à
 // un ID patient — créés par le patient lui-même, créés par un médecin (partagés ou
-// non avec le patient), copies de médecins, formulaires AMA — que le patient ait un
-// compte sur le logiciel ou non (un médecin peut créer des rapports sur un patient
-// qui n'a jamais ouvert de compte : il suffit de connaître son ID).
+// non avec le patient), formulaires AMA — que le patient ait un compte sur le
+// logiciel ou non (un médecin peut créer des rapports sur un patient qui n'a jamais
+// ouvert de compte : il suffit de connaître son ID). La recherche accepte « 2752 »
+// comme « PHMC-2752 ».
+//
+// UNE LIGNE = UN RAPPORT. Les copies que des médecins en ont faites ne sont pas
+// affichées comme des rapports séparés : elles sont listées sur la ligne du rapport
+// d'origine (colonne « Copies »), et les boutons s'adaptent à celui qui regarde :
+//   • « Supprimer ma copie » si on a une copie (elle seule est supprimée) ;
+//   • « Supprimer » si on est le créateur du rapport ;
+//   • « Récupérer une copie » seulement si on n'en a pas déjà une (une par médecin) ;
+//   • « Partager avec le patient » seulement pour le créateur d'un rapport non partagé
+//     (jamais pour une copie, jamais deux fois).
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Form, Dropdown } from 'react-bootstrap';
@@ -16,7 +26,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import DebugFillButton from './DebugFillButton';
 import { getFormDefinition } from '../formDefinitions';
 import {
-    loadPatientDossier, listIndexedPatientIds, normalizePatientId,
+    loadPatientDossier, listIndexedPatientIds, groupDossierEntries, canonicalPatientId,
     reportTitleOf, reportCreatorOf, comprehensiveSanitize,
 } from '../utils/patientRecords';
 
@@ -28,7 +38,7 @@ const modalStyle = {
 
 const modalContentStyle = {
     backgroundColor: '#0d1117', color: '#c9d1d9', padding: '20px',
-    borderRadius: '5px', width: '95%', maxWidth: '1250px', height: '88vh',
+    borderRadius: '5px', width: '95%', maxWidth: '1300px', height: '88vh',
     maxHeight: '88vh', display: 'flex', flexDirection: 'column',
     overflowY: 'hidden', position: 'relative', border: '1px solid #30363d',
 };
@@ -67,9 +77,19 @@ const tdStyle = {
 // La colonne d'actions n'est jamais tronquée.
 const actionsTdStyle = { ...tdStyle, whiteSpace: 'nowrap' };
 
+const chipStyle = (highlight) => ({
+    display: 'inline-block', margin: '1px 4px 1px 0', padding: '1px 8px', borderRadius: '10px',
+    fontSize: '0.78em', whiteSpace: 'nowrap',
+    backgroundColor: highlight ? '#1f6feb' : '#21262d', color: highlight ? '#fff' : '#c9d1d9',
+    border: `1px solid ${highlight ? '#1f6feb' : '#30363d'}`,
+});
+
 const visibilityBadge = (entry) => {
     if (entry.ownerDeleted) {
-        return <span style={{ color: '#8b949e', fontSize: '0.85em' }}>Retiré par le patient (copie du personnel conservée)</span>;
+        return <span style={{ color: '#8b949e', fontSize: '0.85em' }}>Retiré par son créateur — conservé tant que des copies existent</span>;
+    }
+    if (entry.copiedFrom) {
+        return <span style={{ color: '#8b949e', fontSize: '0.85em' }}>Copie (jamais partageable)</span>;
     }
     const labels = {
         owner: { text: 'Créé par le patient', color: '#3fb950' },
@@ -114,15 +134,16 @@ const PatientDossierModal = ({
                 if (civilSnap.exists()) {
                     Object.values(civilSnap.val()).forEach((c) => {
                         if (c && c.patientID) {
-                            withAccount.set(normalizePatientId(c.patientID), {
-                                value: c.patientID,
-                                label: `${c.firstName || ''} ${c.lastName || ''} (${c.patientID})`.trim(),
+                            const id = canonicalPatientId(c.patientID);
+                            withAccount.set(id, {
+                                value: id,
+                                label: `${c.firstName || ''} ${c.lastName || ''} (${id})`.trim(),
                             });
                         }
                     });
                 }
                 const withoutAccount = indexed
-                    .filter((p) => !withAccount.has(normalizePatientId(p.patientNode)))
+                    .filter((p) => !withAccount.has(canonicalPatientId(p.patientNode)))
                     .map((p) => ({
                         value: p.patientNode,
                         label: `${p.patientName || 'Patient sans compte'} (${p.patientNode}) — ${p.reportCount} rapport(s)`,
@@ -155,14 +176,15 @@ const PatientDossierModal = ({
             showNotification('Veuillez sélectionner ou saisir un ID patient.', 'warning');
             return;
         }
+        const canonical = canonicalPatientId(patientId);
         setIsLoading(true);
-        setSearchedPatientId(patientId);
+        setSearchedPatientId(canonical);
         setSelectedKeys([]);
         try {
-            const dossier = await loadPatientDossier(patientId);
+            const dossier = await loadPatientDossier(canonical);
             setEntries(dossier);
             if (dossier.length === 0) {
-                showNotification(`Aucun rapport trouvé pour l'ID patient "${patientId}".`, 'info-circle');
+                showNotification(`Aucun rapport trouvé pour l'ID patient "${canonical}".`, 'info-circle');
             }
         } catch (error) {
             console.error('Error searching patient dossier:', error);
@@ -177,16 +199,42 @@ const PatientDossierModal = ({
         else showNotification(emptyMessage, 'warning');
     };
 
+    // Un rapport et ses copies = une « famille » (une ligne), vue selon qui regarde.
+    const families = useMemo(() => groupDossierEntries(entries).map((family) => {
+        const { root, copies } = family;
+        // Orphelin : la ligne est elle-même la copie de quelqu'un (original disparu).
+        const rootIsCopy = !!root.copiedFrom;
+        const myCopy = rootIsCopy
+            ? (ownerNodeOf(root) === myNodeKey ? root : null)
+            : (copies.find((c) => ownerNodeOf(c) === myNodeKey) || null);
+        const iAmHolder = !rootIsCopy && !!myNodeKey && ownerNodeOf(root) === myNodeKey;
+        // L'exemplaire que « Supprimer » vise pour CE lecteur (jamais l'original du patient).
+        let deleteTarget = null;
+        if (myCopy) deleteTarget = { entry: myCopy, label: 'Supprimer ma copie' };
+        else if (iAmHolder) deleteTarget = { entry: root, label: 'Supprimer' };
+        else if (isAdmin) deleteTarget = { entry: root, label: 'Supprimer (admin)' };
+        return {
+            ...family,
+            myCopy,
+            iAmHolder,
+            deleteTarget,
+            canShare: !rootIsCopy && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
+            canCopy: !!staffAuthorNameForCopy && !rootIsCopy && !iAmHolder && !myCopy,
+        };
+    }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const toDeletePayload = (entry) => ({
         key: entry.indexKey,
         reportPath: entry.reportPath,
         patientID: entry.patientID,
         patientNode: entry.patientNode,
+        isCopy: !!entry.copiedFrom,
+        copiedFrom: entry.copiedFrom,
     });
 
-    const handleDelete = async (targets) => {
+    const handleDelete = async (targets, description) => {
         if (!deleteReportsForUser || targets.length === 0) return;
-        if (!window.confirm(`Supprimer ${targets.length} rapport(s) ? Cette action est irréversible (les règles de suppression du dossier s'appliquent).`)) return;
+        if (!window.confirm(`${description}\n\nCette action est irréversible (les règles de suppression du dossier s'appliquent).`)) return;
         await deleteReportsForUser(targets.map(toDeletePayload), staffAuthorNameForCopy, { skipReload: true });
         setSelectedKeys([]);
         await handleSearch(searchedPatientId);
@@ -202,20 +250,30 @@ const PatientDossierModal = ({
         onHide();
     };
 
-    const selectedEntries = useMemo(
-        () => entries.filter((e) => selectedKeys.includes(e.indexKey)),
-        [entries, selectedKeys]
+    const selectedFamilies = useMemo(
+        () => families.filter((f) => selectedKeys.includes(f.root.indexKey)),
+        [families, selectedKeys]
     );
     const toggleKey = (indexKey, checked) =>
         setSelectedKeys((prev) => (checked ? [...new Set([...prev, indexKey])] : prev.filter((k) => k !== indexKey)));
-    const allSelected = entries.length > 0 && entries.every((e) => selectedKeys.includes(e.indexKey));
+    const allSelected = families.length > 0 && families.every((f) => selectedKeys.includes(f.root.indexKey));
+
+    const handleDeleteSelected = () => {
+        const targets = selectedFamilies.map((f) => f.deleteTarget).filter(Boolean);
+        const skipped = selectedFamilies.length - targets.length;
+        if (targets.length === 0) {
+            showNotification("Aucun des rapports sélectionnés n'est supprimable par vous (créés par le patient ou par un autre médecin, sans copie à vous).", 'warning', 7000);
+            return;
+        }
+        handleDelete(targets.map((t) => t.entry), `Supprimer ${targets.length} rapport(s) ou copie(s) ?${skipped > 0 ? `\n(${skipped} rapport(s) sélectionné(s) ne vous appartiennent pas et seront ignorés.)` : ''}`);
+    };
 
     const handleLoadSelected = () => {
-        if (selectedEntries.length !== 1) {
+        if (selectedFamilies.length !== 1) {
             showNotification("Vous ne pouvez charger qu'un seul rapport à la fois : sélectionnez-en un seul.", 'warning');
             return;
         }
-        handleLoad(selectedEntries[0]);
+        handleLoad(selectedFamilies[0].root);
     };
 
     const renderCopyMenu = (entry) => (
@@ -259,11 +317,11 @@ const PatientDossierModal = ({
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
-                <h5 style={{ marginBottom: '15px' }}>Dossier Patient</h5>
-                <p style={{ color: '#8b949e', fontSize: '0.9em' }}>
-                    Recherchez tous les rapports liés à un ID patient : créés par le patient, créés par un médecin
-                    (partagés ou non), copies, formulaires AMA. Choisissez un patient dans la liste (avec ou sans compte)
-                    ou tapez directement son ID.
+                <h5 style={{ marginBottom: '10px' }}>Dossier Patient</h5>
+                <p style={{ color: '#8b949e', fontSize: '0.9em', marginBottom: '10px' }}>
+                    Recherchez tous les rapports d'un patient avec ou sans compte : choisissez-le dans la liste ou tapez son ID
+                    (<strong>2752</strong> ou <strong>PHMC-2752</strong>). <strong>Une ligne = un rapport</strong> : les copies des médecins
+                    sont regroupées sur la ligne du rapport d'origine (colonne « Copies »).
                 </p>
 
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -276,9 +334,9 @@ const PatientDossierModal = ({
                         }}
                         isClearable
                         isLoading={isLoadingPatients}
-                        placeholder="Choisir un patient ou taper un ID (ex. PHMC-1234)…"
+                        placeholder="Choisir un patient ou taper un ID (ex. 2752 ou PHMC-2752)…"
                         noOptionsMessage={() => 'Aucun patient connu — tapez un ID pour le rechercher'}
-                        formatCreateLabel={(typed) => `Rechercher l'ID « ${typed.trim()} »`}
+                        formatCreateLabel={(typed) => `Rechercher l'ID « ${canonicalPatientId(typed)} »`}
                         isValidNewOption={(typed) => typed.trim().length >= 3}
                         styles={reactSelectStyles}
                     />
@@ -298,7 +356,7 @@ const PatientDossierModal = ({
                 </div>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-                    {searchedPatientId && !isLoading && entries.length > 0 && (
+                    {searchedPatientId && !isLoading && families.length > 0 && (
                         <table style={tableStyle}>
                             <thead>
                                 <tr>
@@ -307,87 +365,101 @@ const PatientDossierModal = ({
                                             type="checkbox"
                                             id="dossier-select-all"
                                             checked={allSelected}
-                                            onChange={(e) => setSelectedKeys(e.target.checked ? entries.map((x) => x.indexKey) : [])}
+                                            onChange={(e) => setSelectedKeys(e.target.checked ? families.map((f) => f.root.indexKey) : [])}
                                             title="Tout sélectionner / désélectionner"
                                         />
                                     </th>
                                     <th style={thStyle}>Titre du rapport</th>
                                     <th style={thStyle}>Créé par</th>
+                                    <th style={thStyle} title="Médecins qui ont récupéré une copie de ce rapport">Copies</th>
                                     <th style={thStyle}>Date</th>
                                     <th style={thStyle}>Visibilité</th>
                                     <th style={thStyle}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {entries.map((entry) => {
-                                    const isMine = !!myNodeKey && ownerNodeOf(entry) === myNodeKey;
-                                    const alreadyCopiedByMe = !!entry.copiedBy?.[myNodeKey];
+                                {families.map((family) => {
+                                    const { root, copiers, myCopy, iAmHolder, deleteTarget, canShare, canCopy } = family;
+                                    const rowStyle = {
+                                        ...(selectedKeys.includes(root.indexKey) ? { backgroundColor: '#161b22' } : {}),
+                                        ...(root.ownerDeleted ? { opacity: 0.65 } : {}),
+                                    };
                                     return (
-                                        <tr key={entry.indexKey} style={selectedKeys.includes(entry.indexKey) ? { backgroundColor: '#161b22' } : {}}>
+                                        <tr key={root.indexKey} style={rowStyle}>
                                             <td style={{ ...tdStyle, textAlign: 'center' }}>
                                                 <Form.Check
                                                     type="checkbox"
-                                                    id={`dossier-select-${entry.indexKey}`}
-                                                    checked={selectedKeys.includes(entry.indexKey)}
-                                                    onChange={(e) => toggleKey(entry.indexKey, e.target.checked)}
+                                                    id={`dossier-select-${root.indexKey}`}
+                                                    checked={selectedKeys.includes(root.indexKey)}
+                                                    onChange={(e) => toggleKey(root.indexKey, e.target.checked)}
                                                 />
                                             </td>
-                                            <td style={{ ...tdStyle, maxWidth: '420px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={reportTitleOf(entry) || entry.originalKey}>
-                                                {entry.originalKey}
+                                            <td style={{ ...tdStyle, maxWidth: '380px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={reportTitleOf(root) || root.originalKey}>
+                                                {root.originalKey}
+                                                {iAmHolder && <span style={{ ...chipStyle(true), marginLeft: '6px' }}>Mon rapport</span>}
                                             </td>
+                                            <td style={tdStyle}>{reportCreatorOf(root) || 'N/A'}</td>
                                             <td style={tdStyle}>
-                                                {reportCreatorOf(entry) || 'N/A'}
-                                                {entry.copiedFrom && (
-                                                    <span style={{ marginLeft: '6px', fontSize: '0.75em', padding: '1px 6px', borderRadius: '8px', backgroundColor: '#1f6feb', color: '#fff' }}>
-                                                        Copie
+                                                {copiers.length === 0 ? (
+                                                    <span style={{ color: '#6e7681' }}>—</span>
+                                                ) : copiers.map((copier) => (
+                                                    <span key={copier.nodeKey} style={chipStyle(copier.nodeKey === myNodeKey)}
+                                                        title={copier.nodeKey === myNodeKey ? 'Vous avez une copie de ce rapport' : `${copier.name} a une copie de ce rapport`}>
+                                                        {copier.nodeKey === myNodeKey ? 'Vous' : copier.name}
                                                     </span>
-                                                )}
-                                                {entry.authorName && entry.authorName !== reportCreatorOf(entry) && (
-                                                    <div style={{ fontSize: '0.75em', color: '#8b949e' }}>rangé chez {entry.authorName}</div>
-                                                )}
+                                                ))}
                                             </td>
-                                            <td style={tdStyle}>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}</td>
-                                            <td style={tdStyle}>{visibilityBadge(entry)}</td>
+                                            <td style={tdStyle}>{root.timestamp ? new Date(root.timestamp).toLocaleString() : 'N/A'}</td>
+                                            <td style={tdStyle}>{visibilityBadge(root)}</td>
                                             <td style={actionsTdStyle}>
-                                                {loadReport && isLoadable(entry) && (
-                                                    <Button size="sm" variant="primary" className="me-2" onClick={() => handleLoad(entry)}>
+                                                {loadReport && isLoadable(root) && (
+                                                    <Button size="sm" variant="primary" className="me-2" onClick={() => handleLoad(root)}>
                                                         Charger
                                                     </Button>
                                                 )}
-                                                {renderCopyMenu(entry)}
-                                                {entry.visibility === 'staff-only' && shareReportWithPatient && (
+                                                {renderCopyMenu(root)}
+                                                {canShare && shareReportWithPatient && (
                                                     <Button
                                                         size="sm"
                                                         className="me-2"
                                                         style={{ backgroundColor: '#8957e5', border: 'none' }}
                                                         onClick={async () => {
-                                                            await shareReportWithPatient(searchedPatientId, entry.indexKey, entry.patientNode);
+                                                            await shareReportWithPatient(searchedPatientId, root.indexKey, root.patientNode);
                                                             handleSearch(searchedPatientId);
                                                         }}
                                                     >
                                                         Partager avec le patient
                                                     </Button>
                                                 )}
-                                                {copyReportToOwnAccount && !isMine && !alreadyCopiedByMe && (
+                                                {canCopy && copyReportToOwnAccount && (
                                                     <Button
                                                         size="sm"
                                                         className="me-2"
                                                         style={{ backgroundColor: '#316dca', border: 'none' }}
-                                                        disabled={!staffAuthorNameForCopy}
-                                                        title={staffAuthorNameForCopy
-                                                            ? `Enregistrer une copie dans les rapports de ${staffAuthorNameForCopy}`
-                                                            : "Votre compte n'est lié à aucune fiche du personnel : impossible de rattacher une copie"}
+                                                        title={`Enregistrer une copie dans les rapports de ${staffAuthorNameForCopy} (une seule copie par médecin)`}
                                                         onClick={async () => {
-                                                            await copyReportToOwnAccount(entry.reportPath, staffAuthorNameForCopy, { patientID: entry.patientID, patientNode: entry.patientNode });
+                                                            await copyReportToOwnAccount(root.reportPath, staffAuthorNameForCopy, { patientID: root.patientID, patientNode: root.patientNode });
                                                             handleSearch(searchedPatientId);
                                                         }}
                                                     >
                                                         Récupérer une copie
                                                     </Button>
                                                 )}
-                                                {deleteReportsForUser && (
-                                                    <Button size="sm" variant="danger" onClick={() => handleDelete([entry])}>
-                                                        Supprimer
+                                                {!staffAuthorNameForCopy && !iAmHolder && (
+                                                    <span style={{ fontSize: '0.75em', color: '#8b949e' }} title="Votre compte n'est lié à aucune fiche du personnel : impossible de rattacher une copie">
+                                                        Copie indisponible
+                                                    </span>
+                                                )}
+                                                {deleteReportsForUser && deleteTarget && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="danger"
+                                                        title={myCopy
+                                                            ? "Supprime uniquement VOTRE copie : le rapport et les copies des autres médecins restent dans le dossier"
+                                                            : 'Supprime ce rapport (conservé dans le dossier tant que des médecins en ont une copie)'}
+                                                        onClick={() => handleDelete([deleteTarget.entry], `${deleteTarget.label} : « ${root.originalKey} » ?`)}
+                                                    >
+                                                        {deleteTarget.label}
                                                     </Button>
                                                 )}
                                             </td>
@@ -397,7 +469,7 @@ const PatientDossierModal = ({
                             </tbody>
                         </table>
                     )}
-                    {searchedPatientId && !isLoading && entries.length === 0 && (
+                    {searchedPatientId && !isLoading && families.length === 0 && (
                         <p style={{ textAlign: 'center', marginTop: '20px' }}>
                             Aucun rapport trouvé pour l'ID patient "{searchedPatientId}".
                             {isAdmin && " Si des rapports devraient exister, lancez « Réindexer les dossiers patients » depuis l'onglet Utilisateurs du panneau admin."}
@@ -405,24 +477,25 @@ const PatientDossierModal = ({
                     )}
                 </div>
 
-                {entries.length > 0 && !isLoading && (
+                {families.length > 0 && !isLoading && (
                     <div style={{ display: 'flex', gap: '10px', marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #30363d', flexShrink: 0, flexWrap: 'wrap' }}>
                         {deleteReportsForUser && (
-                            <Button variant="danger" disabled={selectedEntries.length === 0} onClick={() => handleDelete(selectedEntries)}>
-                                Supprimer la sélection ({selectedEntries.length})
+                            <Button variant="danger" disabled={selectedFamilies.length === 0} onClick={handleDeleteSelected}
+                                title="Supprime vos copies / vos rapports parmi la sélection (les autres sont ignorés)">
+                                Supprimer la sélection ({selectedFamilies.length})
                             </Button>
                         )}
                         <Dropdown drop="up">
-                            <Dropdown.Toggle variant="secondary" disabled={selectedEntries.length === 0}>
-                                Copier la sélection ({selectedEntries.length})
+                            <Dropdown.Toggle variant="secondary" disabled={selectedFamilies.length === 0}>
+                                Copier la sélection ({selectedFamilies.length})
                             </Dropdown.Toggle>
                             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
                                 <Dropdown.Item onClick={() => copyText(
-                                    selectedEntries.map((e) => e.bbCode).filter(Boolean).join('\n\n'),
+                                    selectedFamilies.map((f) => f.root.bbCode).filter(Boolean).join('\n\n'),
                                     'BBCode copié !', 'Aucun BBCode trouvé dans la sélection.'
                                 )}>Copier le BBCode sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={() => copyText(
-                                    selectedEntries.map((e) => reportTitleOf(e)).filter(Boolean).join('\n'),
+                                    selectedFamilies.map((f) => reportTitleOf(f.root)).filter(Boolean).join('\n'),
                                     'Titres copiés !', 'Aucun titre trouvé dans la sélection.'
                                 )}>Copier les titres sélectionnés</Dropdown.Item>
                             </Dropdown.Menu>
@@ -430,11 +503,11 @@ const PatientDossierModal = ({
                         {loadReport && (
                             <Button
                                 variant="success"
-                                disabled={selectedEntries.length !== 1}
-                                title={selectedEntries.length > 1 ? 'Un seul rapport peut être chargé à la fois' : ''}
+                                disabled={selectedFamilies.length !== 1}
+                                title={selectedFamilies.length > 1 ? 'Un seul rapport peut être chargé à la fois' : ''}
                                 onClick={handleLoadSelected}
                             >
-                                Charger le rapport sélectionné ({selectedEntries.length})
+                                Charger le rapport sélectionné ({selectedFamilies.length})
                             </Button>
                         )}
                     </div>

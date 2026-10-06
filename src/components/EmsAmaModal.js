@@ -441,7 +441,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                     <div className="business-card-input-fields"> {/* Re-use class if styles are similar */}
                         <Form.Group className="mb-2 ems-ama-input-group">
                             <Form.Label>ID du patient *</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="ex. PHMC-1234" value={patientID} onChange={(e) => setPatientID(e.target.value)} />
+                            <Form.Control size="sm" type="text" placeholder="ex. PHMC-1234" value={patientID} onChange={(e) => setPatientID(e.target.value)} onBlur={() => setPatientID((current) => (current.trim() ? normalizePatientId(current) : current))} />
                             <Form.Text style={{ color: '#8b949e' }}>
                                 Non imprimé sur le document : sert uniquement à enregistrer l'AMA dans vos rapports et dans le dossier du patient.
                             </Form.Text>
