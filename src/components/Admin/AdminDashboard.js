@@ -11,6 +11,7 @@ import PendingJobApplications from './PendingJobApplications';
 import ManageCivilians from './ManageCivilians';
 import EmployeeModal from '../EmployeeModal';
 import { useDebug } from '../../contexts/DebugContext';
+import AdminReportsTools from './AdminReportsTools';
 
 const AdminDashboard = ({
     currentUser,
@@ -518,6 +519,9 @@ const AdminDashboard = ({
                                         <i className="fas fa-tools"></i> Outils de migration des rapports
                                     </Button>
                                 </div>
+                            </div>
+                            <div className="card-body pt-0">
+                                <AdminReportsTools showNotification={showInAppNotification} />
                             </div>
                             <UserStats currentUser={currentUser} />
                         </div>

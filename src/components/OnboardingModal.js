@@ -536,10 +536,10 @@ const OnboardingModal = ({
                 return;
             }
 
-            // Validation du badge : exactement 5 chiffres — uniquement en saisie
+            // Validation du badge : 4 ou 5 chiffres — uniquement en saisie
             // manuelle. Via GTAW, le badge est l'ID du personnage (longueur variable).
-            if (accountCreationMethod !== 'gtaw' && !/^\d{5}$/.test(accountData.badge)) {
-                showNotification('Le numéro de badge doit contenir exactement 5 chiffres.', 'warning');
+            if (accountCreationMethod !== 'gtaw' && !/^\d{4,5}$/.test(accountData.badge)) {
+                showNotification('Le numéro de badge doit contenir 4 ou 5 chiffres.', 'warning');
                 setIsCreatingAccount(false);
                 return;
             }
@@ -1185,7 +1185,7 @@ const OnboardingModal = ({
                                     name="badge"
                                     value={accountData.badge}
                                     onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setAccountData({ ...accountData, badge: v }); }}
-                                    placeholder={accountCreationMethod === 'gtaw' ? 'ID du personnage' : '00000 (5 chiffres) *'}
+                                    placeholder={accountCreationMethod === 'gtaw' ? 'ID du personnage' : '0000 ou 00000 (4 ou 5 chiffres) *'}
                                     readOnly={accountCreationMethod === 'gtaw'}
                                     style={{
                                         ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0,
@@ -1565,7 +1565,7 @@ const OnboardingModal = ({
                                     name="badge"
                                     value={accountData.badge}
                                     onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 5); setAccountData({ ...accountData, badge: v }); }}
-                                    placeholder={accountCreationMethod === 'gtaw' ? 'ID du personnage' : '00000 (5 chiffres) *'}
+                                    placeholder={accountCreationMethod === 'gtaw' ? 'ID du personnage' : '0000 ou 00000 (4 ou 5 chiffres) *'}
                                     readOnly={accountCreationMethod === 'gtaw'}
                                     style={{
                                         ...formInputStyle, borderRadius: '0 4px 4px 0', marginBottom: 0, flex: 1, minWidth: 0,

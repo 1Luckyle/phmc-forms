@@ -86,7 +86,7 @@ function HeaderInfo({ commitInfo }) {
                         </span>
 
                         <span className="contact-info">
-                            Remerciements à l'équipe du PHMC US pour le développement de l'outils: Alyson Frost sur <a
+                            Remerciements à l'équipe du PHMC US pour le développement de l'outil: Alyson Frost sur <a
                                 href="http://discord.gg/rrzJ4EeHfK"
                                 className="discord-link"
                             >

@@ -4,6 +4,11 @@ import * as Sentry from "@sentry/react";
 import EMSAMAImage from '../assets/EMSAMA.png';
 import { copyToClipboard } from './notificationService';
 import DebugFillButton from './DebugFillButton';
+import { ref, set } from 'firebase/database';
+import { database } from '../firebase';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { buildReportTitle } from '../utils/reportTitle';
+import { normalizePatientId, writeIndexEntry, comprehensiveSanitize } from '../utils/patientRecords';
 
 import './EmsAmaModal.css';
 
@@ -14,6 +19,11 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
     const [paramedicSignature, setParamedicSignature] = useState('');
     const [imageUrl, setImageUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    // ID du patient : ne s'imprime PAS sur le document, il sert uniquement à ranger l'AMA
+    // dans les rapports du médecin et dans le dossier du patient.
+    const [patientID, setPatientID] = useState('');
+    // L'AMA est réservé aux médecins (personnel PHMC) et aux admins.
+    const { canUseAma, staffName } = useEmployeeAuth();
     const [isPreviewVisible, setIsPreviewVisible] = useState(true);
 
     const patientSignaturePreviewRef = useRef(null);
@@ -34,6 +44,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
             setGuardianSignature(localStorage.getItem('emsAmaGuardianSignature') || '');
             setParamedicSignature(localStorage.getItem('emsAmaParamedicSignature') || '');
             setImageUrl(null);
+            setPatientID('');
         }
     }, [show]);
 
@@ -49,6 +60,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
         setDate(`${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} / ${pad(now.getHours())}:${pad(now.getMinutes())}`);
         setGuardianSignature('Marie Testard');
         setParamedicSignature('Paul Secouriste');
+        setPatientID('PHMC-99999');
     };
 
     const processWebhookQueue = useCallback(async () => {
@@ -156,6 +168,14 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
 
 
     const handleSave = useCallback(async () => {
+        if (!canUseAma) {
+            showNotification('Le formulaire AMA est réservé aux médecins.', 'warning');
+            return;
+        }
+        if (!patientID.trim()) {
+            showNotification("Renseignez l'ID du patient : il permet d'enregistrer l'AMA dans son dossier.", 'warning');
+            return;
+        }
         setIsSaving(true);
         showNotification('Traitement du formulaire AMA...', 'upload');
 
@@ -232,6 +252,61 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
             showNotification('Téléchargement en cours...', 'upload');
             const link = await handleImageUpload(dataUrl);
             setImageUrl(link);
+            // Enregistre l'AMA comme n'importe quel rapport : « Rapports enregistrés » du
+            // médecin + dossier du patient (non partagé tant que le médecin ne le décide pas).
+            // Le formulaire lui-même ne contient pas l'ID patient : il sert uniquement à ranger.
+            try {
+                if (!staffName) {
+                    showNotification("Votre compte n'est lié à aucune fiche du personnel : l'AMA n'a pas pu être rangé dans vos rapports.", 'warning', 7000);
+                } else {
+                    const normalizedId = normalizePatientId(patientID);
+                    const title = buildReportTitle(40, { patientID: normalizedId, patientSignature, date }, 'Formulaire AMA');
+                    const reportKey = `${comprehensiveSanitize(title)}_${Date.now()}`;
+                    const reportPath = `savedReports/${comprehensiveSanitize(staffName)}/${reportKey}`;
+                    const timestamp = Date.now();
+                    await set(ref(database, reportPath), {
+                        bbCodeVersion: 40,
+                        kind: 'ama',
+                        bbCode: '',
+                        imageUrl: link,
+                        originalKey: title,
+                        title,
+                        authorName: staffName,
+                        creatorName: staffName,
+                        timestamp,
+                        data: {
+                            patientID: normalizedId,
+                            patientName: patientSignature,
+                            patientSignature,
+                            date,
+                            guardianSignature,
+                            paramedicSignature,
+                            imageUrl: link,
+                        },
+                    });
+                    await writeIndexEntry({
+                        patientID: normalizedId,
+                        indexKey: reportKey,
+                        entry: {
+                            reportPath,
+                            visibility: 'staff-only',
+                            bbCodeVersion: 40,
+                            kind: 'ama',
+                            originalKey: title,
+                            title,
+                            authorName: staffName,
+                            creatorName: staffName,
+                            patientName: patientSignature,
+                            timestamp,
+                        },
+                    });
+                    showNotification(`AMA enregistré dans vos rapports et dans le dossier de ${normalizedId}.`, 'save');
+                }
+            } catch (saveError) {
+                console.error('Error saving AMA report:', saveError);
+                Sentry.captureException(saveError, { extra: { context: 'EMS AMA report save' } });
+                showNotification("L'image AMA a été créée mais n'a pas pu être enregistrée dans les rapports.", 'warning', 7000);
+            }
             showNotification(`Formulaire AMA enregistré et téléchargé : ${link}`, 'save');
             sendDiscordWebhook(patientSignature, date, guardianSignature, paramedicSignature, link);
 
@@ -252,7 +327,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
             setIsSaving(false);
         }
     }, [
-        patientSignature, date, guardianSignature, paramedicSignature,
+        patientSignature, date, guardianSignature, paramedicSignature, patientID, canUseAma, staffName,
         showNotification, handleImageUpload, sendDiscordWebhook, commitInfo,
         patientSignatureOverlayStyle, dateOverlayStyle, guardianSignatureOverlayStyle, paramedicSignatureOverlayStyle
     ]);
@@ -260,6 +335,25 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
 
     if (!show) {
         return null;
+    }
+
+    // Réservé aux médecins : les autres voient seulement ce message.
+    if (!canUseAma) {
+        return (
+            <div className="modal-overlay">
+                <div className="agency-selector-modal ems-ama-modal" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h4>EMS - Contre Avis Médical (AMA)</h4>
+                        <Button variant="secondary" className="close" onClick={onHide} aria-label="Fermer">
+                            <i className="fas fa-times"></i>
+                        </Button>
+                    </div>
+                    <div className="ems-ama-modal-body">
+                        <p>Le formulaire AMA est réservé aux médecins (personnel PHMC) connectés.</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -345,6 +439,13 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                     )}
 
                     <div className="business-card-input-fields"> {/* Re-use class if styles are similar */}
+                        <Form.Group className="mb-2 ems-ama-input-group">
+                            <Form.Label>ID du patient *</Form.Label>
+                            <Form.Control size="sm" type="text" placeholder="ex. PHMC-1234" value={patientID} onChange={(e) => setPatientID(e.target.value)} />
+                            <Form.Text style={{ color: '#8b949e' }}>
+                                Non imprimé sur le document : sert uniquement à enregistrer l'AMA dans vos rapports et dans le dossier du patient.
+                            </Form.Text>
+                        </Form.Group>
                         <Form.Group className="mb-2 ems-ama-input-group">
                             <Form.Label>Signature du patient (nom)</Form.Label>
                             <Form.Control size="sm" type="text" placeholder="Entrer le nom complet du patient" value={patientSignature} onChange={handlePatientSignatureChange} />

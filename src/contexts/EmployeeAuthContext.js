@@ -14,6 +14,12 @@ export const EmployeeAuthProvider = ({ children }) => {
     const [civilianProfile, setCivilianProfile] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    // Fiche du personnel (PHMC/DMEC) d'un compte ADMIN. employeeProfile reste
+    // volontairement null pour un admin (voir la branche userIsAdmin plus bas),
+    // mais un admin qui est aussi médecin a quand même une fiche dans
+    // staff/phmc|coroner : sans elle, ses rapports/copies étaient rangés sous
+    // son adresse e-mail au lieu de son nom.
+    const [adminStaffProfile, setAdminStaffProfile] = useState(null);
     const isCivilian = !isAdmin && !employeeProfile && !!civilianProfile;
 
     useEffect(() => {
@@ -82,6 +88,28 @@ export const EmployeeAuthProvider = ({ children }) => {
                         setCivilianProfile(civilianSnapshot.exists() ? civilianSnapshot.val() : null);
                     } else {
                         setCivilianProfile(null);
+                        // Retrouve la fiche du personnel de cet admin (uid, sinon e-mail).
+                        let matchedStaff = null;
+                        try {
+                            const email = (user.email || '').toLowerCase();
+                            for (const [listName, type] of [['staff/phmc', 'phmc'], ['staff/coroner', 'coroner']]) {
+                                const staffSnapshot = await get(ref(database, listName));
+                                if (!staffSnapshot.exists()) continue;
+                                const staffData = staffSnapshot.val();
+                                const staffArray = Array.isArray(staffData) ? staffData : Object.values(staffData);
+                                const found = staffArray.find((emp) => emp && (
+                                    (emp.uid && emp.uid === user.uid)
+                                    || (email && (emp.email || '').toLowerCase() === email)
+                                ));
+                                if (found) {
+                                    matchedStaff = { ...found, type };
+                                    break;
+                                }
+                            }
+                        } catch (staffError) {
+                            console.warn('Could not resolve admin staff profile:', staffError);
+                        }
+                        setAdminStaffProfile(matchedStaff);
                     }
 
                     setCurrentEmployee(user);
@@ -94,9 +122,10 @@ export const EmployeeAuthProvider = ({ children }) => {
                 setCurrentEmployee(null);
                 setEmployeeProfile(null);
                 setCivilianProfile(null);
+                setAdminStaffProfile(null);
                 setIsAdmin(false);
             }
-            
+
             setIsLoading(false);
         });
 
@@ -297,6 +326,7 @@ export const EmployeeAuthProvider = ({ children }) => {
             setCurrentEmployee(null);
             setEmployeeProfile(null);
             setCivilianProfile(null);
+            setAdminStaffProfile(null);
             setIsAdmin(false);
         } catch (error) {
             console.error('Error logging out:', error);
@@ -304,9 +334,25 @@ export const EmployeeAuthProvider = ({ children }) => {
         }
     };
 
+    // Identité « personnel » unifiée : fiche de l'employé connecté, ou fiche
+    // staff d'un admin. C'est LE nom sous lequel les rapports sont rangés
+    // (savedReports/{nom}) — jamais l'e-mail.
+    const staffProfile = employeeProfile || adminStaffProfile;
+    const staffName = staffProfile
+        ? (staffProfile.name
+            || (staffProfile.firstName && staffProfile.lastName ? `${staffProfile.firstName} ${staffProfile.lastName}` : null))
+        : null;
+    // Le formulaire AMA est réservé aux médecins (personnel PHMC) et aux admins.
+    const isPhmcStaff = staffProfile?.type === 'phmc';
+    const canUseAma = isAdmin || isPhmcStaff;
+
     const value = {
         currentEmployee,
         employeeProfile,
+        staffProfile,
+        staffName,
+        isPhmcStaff,
+        canUseAma,
         civilianProfile,
         isCivilian,
         isLoading,

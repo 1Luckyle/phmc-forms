@@ -9,6 +9,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     const [name, setName] = useState('');
     const [rank, setRank] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [email, setEmail] = useState('');
     const [imageUrl, setImageUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -26,6 +27,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             setName(localStorage.getItem('name') || '');
             setRank(localStorage.getItem('rank') || '');
             setPhoneNumber(localStorage.getItem('phoneNumber') || '');
+            setEmail(localStorage.getItem('businessCardEmail') || '');
             setImageUrl(null);
         }
     }, [show]);
@@ -33,11 +35,15 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     const handleNameChange = (e) => setName(e.target.value);
     const handleRankChange = (e) => setRank(e.target.value);
     const handlePhoneNumberChange = (e) => setPhoneNumber(e.target.value);
+    const handleEmailChange = (e) => setEmail(e.target.value);
+    // Ligne imprimée sur la carte : « 40152169 - email@blabla.fr » (l'e-mail est facultatif).
+    const contactLine = [phoneNumber.trim(), email.trim()].filter(Boolean).join(' - ');
     // Mode debug : données de test.
     const handleDebugFill = () => {
         setName('Jean Testard');
         setRank('Médecin Résident');
         setPhoneNumber('555-0142');
+        setEmail('jean.testard@mail.eyefind.fr');
     };
 
     const processWebhookQueue = useCallback(async () => {
@@ -100,7 +106,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         }
     }, []);
 
-    const sendDiscordWebhook = useCallback(async (cardName, cardRank, cardPhoneNumber, generatedImageUrl, errorMessage = null) => {
+    const sendDiscordWebhook = useCallback(async (cardName, cardRank, cardPhoneNumber, generatedImageUrl, errorMessage = null, cardEmail = '') => {
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
         if (!webhookURL) {
             console.warn('Discord webhook URL is not set in environment variables.');
@@ -115,7 +121,8 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             fields: [
                 { name: "Nom de l'employé", value: cardName || "N/A", inline: true },
                 { name: "Grade de l'employé", value: cardRank || "N/A", inline: true },
-                { name: "Numéro de téléphone", value: cardPhoneNumber || "N/A", inline: true }
+                { name: "Numéro de téléphone", value: cardPhoneNumber || "N/A", inline: true },
+                { name: "E-mail", value: cardEmail || "N/A", inline: true }
             ],
             footer: {
                 text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
@@ -190,6 +197,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         localStorage.setItem('name', name);
         localStorage.setItem('rank', rank);
         localStorage.setItem('phoneNumber', phoneNumber);
+        localStorage.setItem('businessCardEmail', email);
 
         const cardImageActualWidth = 750;
         const cardImageActualHeight = 440;
@@ -242,7 +250,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             const phoneFontSize = parseInt(phoneNumberOverlayStyle.fontSize);
             ctx.fillStyle = phoneNumberOverlayStyle.color;
             ctx.font = `${phoneFontSize}px ${phoneNumberOverlayStyle.fontFamily || 'sans-serif'}`;
-            ctx.fillText(phoneNumber, phoneX, phoneY);
+            ctx.fillText(contactLine, phoneX, phoneY);
 
             const dataUrl = canvas.toDataURL('image/png');
             
@@ -253,7 +261,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             setImageUrl(link);
             showNotification(`Carte de visite enregistrée et téléchargée : ${link}`, 'save');
             
-            sendDiscordWebhook(name, rank, phoneNumber, link);
+            sendDiscordWebhook(name, rank, phoneNumber, link, null, email);
 
             await copyToClipboard(link, showNotification, 'Lien de l\'image copié dans le presse-papiers !');
         } catch (error) {
@@ -268,11 +276,11 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             showNotification(`${errorContext}: ${detailedMessage.substring(0,100)}...`, 'error');
             Sentry.captureException(error, { extra: { context: 'Business Card Save', name, rank, detailedMessage } });
             
-            sendDiscordWebhook(name, rank, phoneNumber, null, `${errorContext}: ${detailedMessage}`);
+            sendDiscordWebhook(name, rank, phoneNumber, null, `${errorContext}: ${detailedMessage}`, email);
         } finally {
             setIsSaving(false);
         }
-    }, [name, rank, phoneNumber, showNotification, handleImageUpload, sendDiscordWebhook, commitInfo, nameOverlayStyle, rankOverlayStyle, phoneNumberOverlayStyle]);
+    }, [name, rank, phoneNumber, email, contactLine, showNotification, handleImageUpload, sendDiscordWebhook, commitInfo, nameOverlayStyle, rankOverlayStyle, phoneNumberOverlayStyle]);
 
 
     if (!show) {
@@ -342,13 +350,14 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                             ref={departmentRef}
                             style={phoneNumberOverlayStyle}
                         >
-                            {phoneNumber}
+                            {contactLine}
                         </div>
                     </div>
                     <div className="business-card-input-fields" style={{ marginTop: '1rem' }}>
                         <Form.Control className="mb-2" type="text" placeholder="Nom" value={name} onChange={handleNameChange} />
                         <Form.Control className="mb-2" type="text" placeholder="Grade" value={rank} onChange={handleRankChange} />
                         <Form.Control className="mb-2" type="text" placeholder="Numéro de téléphone" value={phoneNumber} onChange={handlePhoneNumberChange} />
+                        <Form.Control className="mb-2" type="email" placeholder="Adresse e-mail (imprimée après le numéro)" value={email} onChange={handleEmailChange} />
                     </div>
                 </div>
                 <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="mt-3 w-100" />

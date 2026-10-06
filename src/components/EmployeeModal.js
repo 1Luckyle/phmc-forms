@@ -413,8 +413,8 @@ const EmployeeModal = ({
 
       // Validate badge: exactly 5 digits.
       const badgeDigits = isCoroner ? missingEmployeeData.coronerBadge : missingEmployeeData.phmcBadge;
-      if (!/^\d{5}$/.test(badgeDigits)) {
-        showNotification('Le numéro de badge doit contenir exactement 5 chiffres.', 'warning');
+      if (!/^\d{4,5}$/.test(badgeDigits)) {
+        showNotification('Le numéro de badge doit contenir 4 ou 5 chiffres.', 'warning');
         setIsLoading(false);
         return;
       }

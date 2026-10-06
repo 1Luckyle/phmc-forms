@@ -6,6 +6,7 @@ import phmcEaster from '../assets/easter.png';
 import halloween from '../assets/halloween-rip.png';
 import Default from '../assets/Generic.png';
 import HalloweenEffect from './HalloweenEffect';
+import PinkRibbonEffect from './PinkRibbonEffect';
 import AmbientSeasonalEffect from './AmbientSeasonalEffect';
 import Snowfall from 'react-snowfall';
 
@@ -39,9 +40,10 @@ function getSeason() {
     const month = now.getMonth(); // 0 = janvier ... 11 = décembre
     const day = now.getDate();
 
-    // Halloween (1er au 31 octobre)
+    // Octobre : ruban rose (Octobre Rose) du 1er au 30 ; les tombes d'Halloween
+    // uniquement le 31 octobre. Doit rester AVANT les autres plages.
     if (month === 9) {
-        return "Halloween";
+        return day === 31 ? "Halloween" : "PinkOctober";
     }
     // Poisson d'avril (1er-2 avril)
     if (month === 3 && day >= 1 && day <= 2) {
@@ -105,6 +107,8 @@ function seasonalEvents({ imageType, season: seasonOverride }) {
         className = 'easter-bounce';
     } else if (season === "Halloween") {
         effect = <HalloweenEffect />;
+    } else if (season === "PinkOctober") {
+        effect = <PinkRibbonEffect />;
     } else if (season === "Christmas") {
         effect = <Snowfall snowflakeCount={40} />;
     } else if (season === "NewYear") {
