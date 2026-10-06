@@ -549,12 +549,11 @@ const EmergencyForm = ({
                     </InputGroup>
                     <span className="helper-text">Télécharger une image du bon de prescription si applicable. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.</span>
                 </Form.Group>
-                {formData.admission === 'No' && (
-                    <Form.Select name="followup" value={formData.followup} onChange={handleChange} required className={`form-control ${!formData.followup ? 'is-invalid' : ''}`}>
-                        <option value="" disabled>Suivi requis?</option>
-                        {(followup || []).map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-                    </Form.Select>
-                )}
+                {/* Le suivi se renseigne que le patient soit admis ou non (le BBCode l'imprime dans les deux cas). */}
+                <Form.Select name="followup" value={formData.followup || ''} onChange={handleChange} required className={`form-control ${!formData.followup ? 'is-invalid' : ''}`}>
+                    <option value="" disabled>Suivi requis?</option>
+                    {(followup || []).map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                </Form.Select>
             </div>
         </>
     );
