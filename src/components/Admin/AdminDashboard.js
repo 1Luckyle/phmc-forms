@@ -310,10 +310,10 @@ const AdminDashboard = ({
                     )}
                     {selectedSection === 'debug' && (
                         <div className="card">
-                            <div className="card-header">Mode debug — remplissage automatique des formulaires</div>
+                            <div className="card-header">Mode debug</div>
                             <div className="card-body">
                                 <p className="text-muted">
-                                    Quand il est activé, <strong>tous les utilisateurs</strong> (visiteurs, civils, employés, admins)
+                                    <strong>Remplissage automatique des formulaires.</strong> Quand il est activé, <strong>tous les utilisateurs</strong> (visiteurs, civils, employés, admins)
                                     voient un bouton « Remplir (debug) » sur chaque formulaire (rapports, emails, candidatures,
                                     dossiers civils) et sur les modales (création de compte, demandes, etc.). Il remplit le
                                     formulaire avec des données de test sans rien envoyer ni sauvegarder. Pratique pour tester
@@ -334,6 +334,10 @@ const AdminDashboard = ({
                                         {isUpdatingDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
                                     </label>
                                 </div>
+                                <p className={`mb-0 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
+                                    <i className={`fas ${debugAutofillEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
+                                    État actuel : {debugAutofillEnabled ? 'ACTIVÉ' : 'désactivé'}
+                                </p>
                                 <hr />
                                 <p className="text-muted">
                                     <strong>Suppression des candidatures.</strong> Quand cet interrupteur est activé, un bouton « Supprimer »
@@ -356,9 +360,9 @@ const AdminDashboard = ({
                                         {isUpdatingDeleteDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
                                     </label>
                                 </div>
-                                <p className={`mb-0 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
-                                    <i className={`fas ${debugAutofillEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
-                                    État actuel : {debugAutofillEnabled ? 'ACTIVÉ' : 'désactivé'}
+                                <p className={`mb-0 ${debugDeleteApplicationsEnabled ? 'text-warning' : 'text-muted'}`}>
+                                    <i className={`fas ${debugDeleteApplicationsEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
+                                    État actuel : {debugDeleteApplicationsEnabled ? 'ACTIVÉ' : 'désactivé'}
                                 </p>
                             </div>
                         </div>

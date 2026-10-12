@@ -16,6 +16,7 @@ import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';
 import { sendEyefindMail } from './eyefindMail';
 import { canonicalPatientId } from './patientId';
+import { findPatientNodes } from './patientRecords';
 
 export const STAFF_SERVICES = {
     phmc: { key: 'phmc', label: 'PHMC (hospitalier)', path: 'staff/phmc', ranks: PHMC_RANKS, defaultPrefix: 'MD' },
@@ -75,32 +76,162 @@ export async function loadRecruiterUids() {
 
 // ───────────────────────────── Personnel ─────────────────────────────
 
-// Modifie grade / badge / Discord / téléphone. Le NOM n'est pas modifiable ici : c'est la clé
-// d'identité des rapports (savedReports/{nom}) ; un renommage passe par l'outil de migration.
-export async function updateStaffMember(member, { rank, badgeDigitsValue, discord, phNumber }) {
-    const cfg = STAFF_SERVICES[member.service];
-    const { service, storageKey, displayName, ...stored } = member; // eslint-disable-line no-unused-vars
-    const updated = { ...stored };
-    if (rank) { updated.rank = rank; updated.category = rank; }
-    if (badgeDigitsValue !== undefined && String(badgeDigitsValue).replace(/\D/g, '')) {
-        updated.badge = buildBadge(member.service, updated.rank || member.rank, badgeDigitsValue);
-    } else if (rank && badgeDigits(member.badge)) {
-        updated.badge = buildBadge(member.service, rank, badgeDigits(member.badge)); // le préfixe suit le grade
+// Prénom / nom d'une fiche (les fiches existent sous plusieurs formes, voir employeeName.js).
+export const staffNameParts = (member) => {
+    const { firstName, lastName, name = '' } = member || {};
+    if (firstName && lastName) return { firstName, lastName };
+    if (firstName) {
+        const rest = name.trim().toLowerCase().startsWith(firstName.trim().toLowerCase())
+            ? name.trim().slice(firstName.trim().length).trim()
+            : '';
+        return { firstName, lastName: lastName || rest };
     }
+    if (lastName) {
+        const base = name.trim().toLowerCase().endsWith(lastName.trim().toLowerCase())
+            ? name.trim().slice(0, name.trim().length - lastName.trim().length).trim()
+            : name.trim();
+        return { firstName: base, lastName };
+    }
+    const parts = name.trim().split(' ');
+    return { firstName: parts.slice(0, -1).join(' ') || name.trim(), lastName: parts.length > 1 ? parts[parts.length - 1] : '' };
+};
+
+// Renomme le « propriétaire » de rapports : déplace savedReports/{ancien nom} vers
+// savedReports/{nouveau nom} et met à jour tout ce qui y pointe (authorName/creatorName, index
+// des dossiers patients, marqueurs « copié par » et chemins des copies). Sans cela, un renommage
+// ferait disparaître les rapports de la liste de leur auteur (le nom EST la clé des rapports).
+// Les rapports sont d'abord copiés à la nouvelle adresse, puis les anciens supprimés.
+export async function renameReportOwner(oldAuthorName, newAuthorName) {
+    const oldNode = sanitizeNode(oldAuthorName);
+    const newNode = sanitizeNode(newAuthorName);
+    const result = { moved: 0 };
+    if (!oldNode || !newNode) return result;
+    const sourceSnap = await get(ref(database, `savedReports/${oldNode}`));
+    if (!sourceSnap.exists()) return result;
+    if (oldNode !== newNode) {
+        const destinationSnap = await get(ref(database, `savedReports/${newNode}`));
+        if (destinationSnap.exists()) {
+            throw new Error(`Des rapports existent déjà sous « ${newNode} » : renommage refusé pour ne rien écraser. Utilisez l'outil de migration.`);
+        }
+    }
+
+    const reports = sourceSnap.val();
+    const writes = {};
+    const deletions = {};
+    const nodeCache = new Map(); // nœud d'index -> entrées
+
+    const readIndexNode = async (patientNode) => {
+        if (!nodeCache.has(patientNode)) {
+            const snap = await get(ref(database, `patientRecords/${patientNode}`));
+            nodeCache.set(patientNode, snap.exists() ? snap.val() : {});
+        }
+        return nodeCache.get(patientNode);
+    };
+
+    for (const [key, report] of Object.entries(reports)) {
+        const selfCreated = !report.creatorName || report.creatorName === report.authorName;
+        const newPath = `savedReports/${newNode}/${key}`;
+        const migrated = { ...report, authorName: newAuthorName };
+        if (selfCreated) migrated.creatorName = newAuthorName;
+        if (migrated.data) {
+            migrated.data = { ...migrated.data };
+            ['phmcEmployee', 'coronerEmployee'].forEach((field) => {
+                if (migrated.data[field] === oldAuthorName) migrated.data[field] = newAuthorName;
+            });
+        }
+        writes[newPath] = migrated;
+        if (oldNode !== newNode) deletions[`savedReports/${oldNode}/${key}`] = null;
+
+        const patientId = report.data?.patientID;
+        if (!patientId) continue;
+        for (const patientNode of await findPatientNodes(patientId)) {
+            const entries = await readIndexNode(patientNode);
+            const entry = entries[key];
+            if (!entry || entry.reportPath !== `savedReports/${oldNode}/${key}`) continue;
+            const nodeBase = `patientRecords/${patientNode}`;
+            const base = `${nodeBase}/${key}`;
+            writes[`${base}/reportPath`] = newPath;
+            writes[`${base}/authorName`] = newAuthorName;
+            if (selfCreated) writes[`${base}/creatorName`] = newAuthorName;
+
+            // Cette entrée est une COPIE : le marqueur « copié par » de l'original suit le nouveau nom.
+            if (entry.copiedFrom?.indexKey) {
+                const originalBase = `patientRecords/${entry.copiedFrom.patientNode || patientNode}/${entry.copiedFrom.indexKey}/copiedBy`;
+                if (oldNode !== newNode) writes[`${originalBase}/${oldNode}`] = null;
+                writes[`${originalBase}/${newNode}`] = key;
+            }
+            // Cette entrée est un ORIGINAL copié par des médecins : leurs copies pointent vers le nouveau chemin.
+            Object.entries(entry.copiedBy || {}).forEach(([copierNode, copyKey]) => {
+                writes[`savedReports/${copierNode}/${copyKey}/copiedFrom/reportPath`] = newPath;
+                writes[`${nodeBase}/${copyKey}/copiedFrom/reportPath`] = newPath;
+                if (selfCreated) {
+                    writes[`savedReports/${copierNode}/${copyKey}/creatorName`] = newAuthorName;
+                    writes[`${nodeBase}/${copyKey}/creatorName`] = newAuthorName;
+                }
+            });
+        }
+    }
+
+    // Phase 1 : écritures (par lots), phase 2 : suppression des anciens rapports.
+    const flush = async (pathsObject) => {
+        const entries = Object.entries(pathsObject);
+        for (let i = 0; i < entries.length; i += 150) {
+            await update(ref(database), Object.fromEntries(entries.slice(i, i + 150)));
+        }
+    };
+    await flush(writes);
+    await flush(deletions);
+    result.moved = Object.keys(reports).length;
+    return result;
+}
+
+// Modifie une fiche du personnel. L'ENREGISTREMENT SE FAIT SUR L'ID (compte de connexion, sinon
+// numéro de badge), pas sur le nom : le prénom et le nom sont modifiables, et les rapports de la
+// personne suivent automatiquement (renameReportOwner). Le numéro de badge — l'ID employé, aussi
+// son ID patient PHMC-{badge} — n'est JAMAIS modifié ici (seul le préfixe suit le grade).
+export async function updateStaffMember(member, { firstName, lastName, rank, discord, phNumber }) {
+    const cfg = STAFF_SERVICES[member.service];
+    const snap = await get(ref(database, cfg.path));
+    if (!snap.exists()) throw new Error('Liste du personnel introuvable.');
+    const digits = badgeDigits(member.badge);
+    const found = Object.entries(snap.val() || {}).find(([, entry]) => entry && (
+        member.uid ? entry.uid === member.uid : (badgeDigits(entry.badge) === digits && entry.name === member.name)
+    ));
+    if (!found) throw new Error('Fiche introuvable (elle a peut-être été modifiée ou supprimée entre-temps).');
+    const [key, current] = found;
+
+    const newFirst = (firstName ?? '').trim();
+    const newLast = (lastName ?? '').trim();
+    if (!newFirst) throw new Error('Le prénom est obligatoire.');
+    const newName = `${newFirst} ${newLast}`.trim();
+    const renamed = newName !== current.name;
+
+    if (renamed) {
+        const everyone = await loadStaffMembers();
+        const clash = everyone.find((m) => m.name.toLowerCase() === newName.toLowerCase()
+            && !(m.service === member.service && String(m.storageKey) === String(key)));
+        if (clash) throw new Error(`Une fiche du personnel nommée "${newName}" existe déjà.`);
+        await renameReportOwner(current.name, newName);
+    }
+
+    const updated = { ...current, name: newName, firstName: newFirst };
+    if (member.service === 'phmc') updated.lastName = newLast;
+    if (rank) { updated.rank = rank; updated.category = rank; }
+    if (digits) updated.badge = buildBadge(member.service, updated.rank || current.rank, digits); // chiffres inchangés
     if (discord !== undefined) updated.discord = discord;
     if (phNumber !== undefined) updated.phNumber = phNumber;
-    await set(ref(database, `${cfg.path}/${storageKey}`), updated);
+    await set(ref(database, `${cfg.path}/${key}`), updated);
 
-    if (rank && rank !== member.rank) {
+    if (rank && rank !== current.rank) {
         const label = rankLabel(member.service, rank);
         sendMailBestEffort({
-            to: member.email,
+            to: current.email,
             subject: 'Changement de grade - Pillbox Hill Medical Center',
-            body: `Bonjour ${member.displayName},\n\nVotre grade au sein du Pillbox Hill Medical Center a été mis à jour : ${label}.\n\nCordialement,\nPillbox Hill Medical Center`,
-            html: `<p>Bonjour ${member.displayName},</p><p>Votre grade au sein du <b>Pillbox Hill Medical Center</b> a été mis à jour : <b>${label}</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+            body: `Bonjour ${newName},\n\nVotre grade au sein du Pillbox Hill Medical Center a été mis à jour : ${label}.\n\nCordialement,\nPillbox Hill Medical Center`,
+            html: `<p>Bonjour ${newName},</p><p>Votre grade au sein du <b>Pillbox Hill Medical Center</b> a été mis à jour : <b>${label}</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
         });
     }
-    return updated;
+    return { updated, renamed, previousName: current.name };
 }
 
 // Ajoute une fiche SANS compte de connexion (même écriture que l'ancien « Ajouter un employé »).
@@ -283,13 +414,29 @@ export async function setRecruiterRole(uid, enabled) {
     await set(ref(database, `recruiterUIDs/${uid}`), enabled ? true : null);
 }
 
-// Modification du profil Civil. Le champ `uid` DOIT rester dans le profil (voir
-// l'avertissement de l'ancien ManageCivilians : il sert de preuve d'existence du compte à la
-// connexion GTA World).
-export async function saveCivilianProfile(profile) {
+// Nom sous lequel un Civil range ses rapports : « Prénom Nom [ID patient] » (voir
+// handleSaveReportWrapper dans MainApp.js ; repli sur l'e-mail sans prénom/nom).
+export const civilianAuthorName = (profile) => {
+    const base = profile?.firstName && profile?.lastName ? `${profile.firstName} ${profile.lastName}` : (profile?.email || '');
+    return `${base} [${profile?.patientID}]`;
+};
+
+// Modification du profil Civil, enregistrée sur son uid. Le champ `uid` DOIT rester dans le profil
+// (il sert de preuve d'existence du compte à la connexion GTA World). Si le prénom/nom change,
+// ses rapports suivent (le nom fait partie de la clé sous laquelle ils sont rangés).
+export async function saveCivilianProfile(profile, previousProfile = null) {
     if (!profile?.uid) throw new Error('Profil Civil sans uid : enregistrement refusé.');
     const { storageKey, ...clean } = profile; // eslint-disable-line no-unused-vars
+    let renamedReports = 0;
+    if (previousProfile) {
+        const oldAuthor = civilianAuthorName(previousProfile);
+        const newAuthor = civilianAuthorName(clean);
+        if (sanitizeNode(oldAuthor) !== sanitizeNode(newAuthor)) {
+            renamedReports = (await renameReportOwner(oldAuthor, newAuthor)).moved;
+        }
+    }
     await set(ref(database, `civilians/${profile.uid}`), clean);
+    return { renamedReports };
 }
 
 export async function deleteCivilianAccount(civilian) {

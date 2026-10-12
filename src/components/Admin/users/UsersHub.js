@@ -121,8 +121,10 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
     const save = async () => {
         setBusy(true);
         try {
-            await saveCivilianProfile(form);
-            showNotification('Profil Civil mis à jour.', 'success');
+            const outcome = await saveCivilianProfile(form, civilian);
+            showNotification(outcome.renamedReports > 0
+                ? `Profil Civil mis à jour (${outcome.renamedReports} rapport(s) migré(s) vers le nouveau nom).`
+                : 'Profil Civil mis à jour.', 'success');
             onDone();
             onHide();
         } catch (error) {
@@ -173,7 +175,7 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
     const [toStaff, setToStaff] = useState(null);
     const [deleting, setDeleting] = useState(null);
 
-    const rows = useMemo(() => civilians.filter((c) => matches(query, c.firstName, c.lastName, c.patientID, c.email, c.phone)), [civilians, query]);
+    const rows = useMemo(() => civilians.filter((c) => matches(query, c.firstName, c.lastName, c.patientID, c.email, c.phone, c.discord)), [civilians, query]);
     const nameOf = (c) => `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
 
     const toggleRecruiter = async (civilian) => {
@@ -209,10 +211,10 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
 
     return (
         <>
-            <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un civil (nom, ID patient, e-mail, téléphone…)" />
+            <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un civil (nom, ID patient, e-mail, téléphone, Discord…)" />
             <div className="table-responsive">
                 <table className="table table-hover align-middle uh-table">
-                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th>Téléphone</th><th>Rôle</th><th></th></tr></thead>
+                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th>Téléphone</th><th>Discord</th><th>Rôle</th><th></th></tr></thead>
                     <tbody>
                         {rows.map((c) => {
                             const isStaff = staffUids.has(c.uid);
@@ -223,6 +225,7 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
                                     <td>{c.patientID}</td>
                                     <td>{c.email}</td>
                                     <td>{c.phone || '—'}</td>
+                                    <td>{c.discord || '—'}</td>
                                     <td>
                                         {isStaff ? <span title="Ce compte a aussi une fiche du personnel (elle a la priorité)"><RoleBadge role="phmc" /> <small className="text-muted">+ profil Civil</small></span>
                                             : isRecruiter ? <RoleBadge role="recruiter" /> : <RoleBadge role="civil" />}
@@ -243,7 +246,7 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
                                 </tr>
                             );
                         })}
-                        {rows.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">Aucun compte Civil ne correspond.</td></tr>}
+                        {rows.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">Aucun compte Civil ne correspond.</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -310,17 +313,18 @@ const RecruitersTab = ({ civilians, recruiterUids, adminEmail, showNotification,
             </div>
             <div className="table-responsive">
                 <table className="table table-hover align-middle uh-table">
-                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th></th></tr></thead>
+                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th>Discord</th><th></th></tr></thead>
                     <tbody>
                         {recruiters.map((c) => (
                             <tr key={c.uid}>
                                 <td className="fw-semibold">{nameOf(c)} <RoleBadge role="recruiter" /></td>
                                 <td>{c.patientID}</td>
                                 <td>{c.email}</td>
+                                <td>{c.discord || '—'}</td>
                                 <td className="text-end"><Button size="sm" variant="outline-danger" onClick={() => change(c, false)}>Retirer le rôle</Button></td>
                             </tr>
                         ))}
-                        {recruiters.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-4">Aucun recruteur pour le moment.</td></tr>}
+                        {recruiters.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">Aucun recruteur pour le moment.</td></tr>}
                     </tbody>
                 </table>
             </div>

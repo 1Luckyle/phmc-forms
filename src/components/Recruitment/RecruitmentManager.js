@@ -4,7 +4,8 @@
 // RECRUTEURS (compte Civil + drapeau recruiterUIDs, voir EmployeeAuthContext). Elle
 // regroupe ce qui se trouvait dans les onglets « Recrutement » et « Candidatures » du
 // panneau admin :
-//   • Postes : ouvrir/fermer, ajouter, modifier, renommer la clé, copier le BBCode des statuts ;
+//   • Postes : ouvrir/fermer, ajouter, modifier, copier le BBCode des statuts ; renommer la clé
+//     (sensible) est réservé aux ADMINS, y compris côté règles Firebase ;
 //   • Candidatures : suivi du pipeline (entretiens, acceptation/refus, historique).
 // Les actions sont journalisées sur Discord comme avant (sendAdminActionWebhook).
 import React, { useState, useEffect, useCallback } from 'react';
@@ -197,11 +198,14 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                                                         <small style={{ color: '#8b949e' }}>Clé BD : {key}</small>
                                                     </div>
                                                     <div className="d-flex gap-2">
-                                                        <Button variant="outline-warning" size="sm" disabled={isUpdating}
-                                                            onClick={() => setRoleToRename({ key, data: position })}
-                                                            title="Renommer la clé de la base de données (sensible : change l'identifiant du poste)">
-                                                            <i className="fas fa-key"></i> Renommer la clé
-                                                        </Button>
+                                                        {/* Sensible (change l'identifiant du poste) : réservé aux admins. */}
+                                                        {isAdmin && (
+                                                            <Button variant="outline-warning" size="sm" disabled={isUpdating}
+                                                                onClick={() => setRoleToRename({ key, data: position })}
+                                                                title="Renommer la clé de la base de données (sensible : change l'identifiant du poste)">
+                                                                <i className="fas fa-key"></i> Renommer la clé
+                                                            </Button>
+                                                        )}
                                                         <Button variant="outline-secondary" size="sm" disabled={isUpdating}
                                                             onClick={() => { setRoleToEdit({ ...position, originalKey: key }); setShowRoleModal(true); }}>
                                                             <i className="fas fa-edit"></i> Modifier
@@ -234,7 +238,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                         roleToEdit={roleToEdit}
                     />
                 )}
-                {config && roleToRename && (
+                {isAdmin && config && roleToRename && (
                     <RenameRoleKeyModal
                         show={!!roleToRename}
                         onHide={() => setRoleToRename(null)}

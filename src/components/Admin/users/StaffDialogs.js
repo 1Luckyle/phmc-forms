@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import {
-    STAFF_SERVICES, rankLabel, badgeDigits, updateStaffMember, addStaffMember,
+    STAFF_SERVICES, rankLabel, badgeDigits, buildBadge, staffNameParts, updateStaffMember, addStaffMember,
     removeStaffMember, convertCivilianToStaff, convertStaffToCivilian,
 } from '../../../utils/staffAdmin';
 import { sendAdminActionWebhook } from '../adminUtils';
@@ -46,8 +46,9 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
         setError('');
         if (member) {
             setService(member.service);
+            const parts = staffNameParts(member);
             setForm({
-                firstName: member.firstName || '', lastName: member.lastName || '',
+                firstName: parts.firstName, lastName: parts.lastName,
                 discord: member.discord || '', phNumber: member.phNumber || '',
                 rank: member.rank || '', badge: badgeDigits(member.badge),
             });
@@ -62,11 +63,16 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
 
     const handleSave = () => run(async () => {
         if (!form.rank) throw new Error('Choisissez un grade.');
-        if (!/^\d{4,5}$/.test(form.badge)) throw new Error('Le numéro de badge doit contenir 4 ou 5 chiffres.');
+        // L'ID employé n'est validé qu'à la création : en modification il n'est jamais touché.
+        if (!isEdit && !/^\d{4,5}$/.test(form.badge)) throw new Error('Le numéro de badge doit contenir 4 ou 5 chiffres.');
         if (isEdit) {
-            await updateStaffMember(member, { rank: form.rank, badgeDigitsValue: form.badge, discord: form.discord, phNumber: form.phNumber });
-            sendAdminActionWebhook(adminEmail, 'Fiche du personnel modifiée', `Membre : ${member.displayName}\nGrade : ${rankLabel(member.service, form.rank)}\nBadge : ${form.badge}`, null, 'Admin');
-            showNotification(`Fiche de ${member.displayName} mise à jour.`, 'success');
+            const newName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
+            if (newName && newName !== member.name && !window.confirm(
+                `Renommer « ${member.displayName} » en « ${newName} » ?\n\nSes rapports sauvegardés et leurs dossiers patients sont migrés automatiquement vers le nouveau nom. Son ID employé (${member.badge}) ne change pas.`
+            )) return;
+            const outcome = await updateStaffMember(member, { firstName: form.firstName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber });
+            sendAdminActionWebhook(adminEmail, 'Fiche du personnel modifiée', `Membre : ${outcome.renamed ? `${outcome.previousName} → ${newName}` : member.displayName}\nGrade : ${rankLabel(member.service, form.rank)}\nID employé : ${member.badge}`, null, 'Admin');
+            showNotification(outcome.renamed ? `${outcome.previousName} renommé(e) en ${newName} (rapports migrés).` : `Fiche de ${member.displayName} mise à jour.`, 'success');
         } else {
             if (!form.firstName.trim() || !form.lastName.trim()) throw new Error('Prénom et nom obligatoires.');
             await addStaffMember(service, {
@@ -98,17 +104,17 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
                 <div className="d-flex gap-2 mb-3">
                     <Form.Group className="flex-fill">
                         <Form.Label>Prénom</Form.Label>
-                        <Form.Control value={form.firstName} onChange={set('firstName')} disabled={isEdit} />
+                        <Form.Control value={form.firstName} onChange={set('firstName')} />
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Nom</Form.Label>
-                        <Form.Control value={form.lastName} onChange={set('lastName')} disabled={isEdit} />
+                        <Form.Control value={form.lastName} onChange={set('lastName')} />
                     </Form.Group>
                 </div>
                 {isEdit && (
                     <p className="text-muted small">
-                        Le nom n'est pas modifiable ici : c'est l'identifiant sous lequel les rapports sont rangés. Pour un
-                        renommage, utilisez d'abord l'outil de migration des rapports.
+                        Le prénom et le nom sont modifiables : la fiche est enregistrée sur l'<strong>ID employé</strong> (non modifiable),
+                        et les rapports de la personne suivent automatiquement le nouveau nom.
                     </p>
                 )}
                 <Form.Group className="mb-3">
@@ -120,8 +126,14 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
                 </Form.Group>
                 <div className="d-flex gap-2 mb-3">
                     <Form.Group className="flex-fill">
-                        <Form.Label>Badge (4 ou 5 chiffres)</Form.Label>
-                        <DigitsInput value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
+                        <Form.Label>{isEdit ? 'ID employé (badge) — non modifiable' : 'ID employé / badge (4 ou 5 chiffres)'}</Form.Label>
+                        {isEdit ? (
+                            <Form.Control value={buildBadge(service, form.rank || member.rank, form.badge)} disabled
+                                title="L'ID employé est unique (lié à l'UCP). C'est aussi l'ID patient PHMC-{ID} de la personne." />
+                        ) : (
+                            <DigitsInput value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
+                        )}
+                        {isEdit && <Form.Text className="text-muted">ID patient : PHMC-{form.badge}</Form.Text>}
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Téléphone</Form.Label>

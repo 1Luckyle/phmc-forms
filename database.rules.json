@@ -44,16 +44,18 @@
     // ─── Options des formulaires & agences ───────────────────────────────────
     // Les postes de recrutement (statut OUVERT/FERMÉ, description…) sont aussi gérés
     // par les RECRUTEURS (recruiterUIDs, posé par un admin) : ils n'ont accès en écriture
-    // qu'à ces six nœuds, pas au reste de selectOptions.
+    // qu'à ces six nœuds, pas au reste de selectOptions, et peuvent AJOUTER ou MODIFIER un
+    // poste mais jamais en supprimer un (newData.exists()) : le renommage d'une clé de poste
+    // (= supprimer l'ancienne clé) reste donc réservé aux admins.
     "selectOptions": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
-      "physicianRecruitmentDetails": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
-      "psychPositionDetailsData":    { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
-      "adminPositionDetailsData":    { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
-      "nursePositionDetailsData":    { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
-      "emsPositionDetailsData":      { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
-      "coronerPositionDetailsData":  { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" }
+      "physicianRecruitmentDetails": { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
+      "psychPositionDetailsData":    { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
+      "adminPositionDetailsData":    { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
+      "nursePositionDetailsData":    { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
+      "emsPositionDetailsData":      { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
+      "coronerPositionDetailsData":  { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } }
     },
 
     // ─── Rôle « recruteur » ───────────────────────────────────────────────────
@@ -66,15 +68,6 @@
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
 
-    // ─── ID patient d'un membre du personnel ──────────────────────────────────
-    // Un médecin peut être hospitalisé : il a lui aussi un dossier patient. Son ID est
-    // déduit de son personnage GTA World quand c'est possible, sinon il le renseigne ici.
-    "staffPatientIds": {
-      "$uid": {
-        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
-        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
-      }
-    },
     "agencies": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"

@@ -21,10 +21,6 @@ export const EmployeeAuthProvider = ({ children }) => {
     // staff/phmc|coroner : sans elle, ses rapports/copies étaient rangés sous
     // son adresse e-mail au lieu de son nom.
     const [adminStaffProfile, setAdminStaffProfile] = useState(null);
-    // ID patient d'un membre du personnel (un médecin peut être hospitalisé : il a lui aussi
-    // un dossier patient). Mémorisé dans staffPatientIds/{uid} quand il ne peut pas être
-    // déduit de la fiche (voir myPatientID plus bas).
-    const [staffPatientId, setStaffPatientId] = useState('');
     const isCivilian = !isAdmin && !employeeProfile && !!civilianProfile;
 
     useEffect(() => {
@@ -359,7 +355,6 @@ export const EmployeeAuthProvider = ({ children }) => {
     useEffect(() => {
         if (!uid) {
             setIsRecruiter(false);
-            setStaffPatientId('');
             return undefined;
         }
         let cancelled = false;
@@ -370,38 +365,29 @@ export const EmployeeAuthProvider = ({ children }) => {
             } catch (error) {
                 if (!cancelled) setIsRecruiter(false);
             }
-            try {
-                const patientIdSnap = await get(ref(database, `staffPatientIds/${uid}`));
-                if (!cancelled) setStaffPatientId(patientIdSnap.exists() ? String(patientIdSnap.val()) : '');
-            } catch (error) {
-                if (!cancelled) setStaffPatientId('');
-            }
         })();
         return () => { cancelled = true; };
     }, [uid]);
     // Peut accéder à la gestion des recrutements (admins + recruteurs).
     const canManageRecruitment = isAdmin || isRecruiter;
 
-    // ID patient de la personne connectée : celui de son profil Civil, sinon (personnel) celui
-    // déduit de son personnage GTA World (PHMC-{id}, même convention que les civils), sinon
-    // celui qu'elle a renseigné elle-même.
+    // ID patient de la personne connectée : celui de son profil Civil ; pour le personnel,
+    // PHMC-{ID employé} — l'ID employé est le numéro de badge (les chiffres après le préfixe, qui
+    // est aussi l'ID du personnage GTA World pour les comptes créés via GTA World). Cet ID est
+    // unique et lié à l'UCP : il n'est modifiable par personne depuis l'interface.
+    const staffBadgeDigits = String(staffProfile?.badge || '').includes('-')
+        ? String(staffProfile.badge).split('-').slice(1).join('')
+        : String(staffProfile?.badge || '').replace(/\D/g, '');
     const myPatientID = canonicalPatientId(
         civilianProfile?.patientID
-        || staffPatientId
         || (staffProfile?.gtawCharacterId != null ? `PHMC-${staffProfile.gtawCharacterId}` : '')
+        || (staffBadgeDigits ? `PHMC-${staffBadgeDigits}` : '')
     );
-    const setMyPatientId = async (patientId) => {
-        if (!uid) return;
-        const canonical = canonicalPatientId(patientId);
-        await set(ref(database, `staffPatientIds/${uid}`), canonical || null);
-        setStaffPatientId(canonical);
-    };
 
     const value = {
         isRecruiter,
         canManageRecruitment,
         myPatientID,
-        setMyPatientId,
         currentEmployee,
         employeeProfile,
         staffProfile,

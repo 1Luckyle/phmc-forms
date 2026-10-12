@@ -4,14 +4,16 @@
 // donc avoir un dossier. Les rapports sont rattachés à un ID patient (pas à un rôle) : les
 // collègues qui le soignent créent les rapports sur son ID comme sur n'importe quel patient,
 // et il retrouve ici ceux qui ont été PARTAGÉS avec lui (comme un civil dans son propre dossier).
-// Son ID est déduit de son personnage GTA World quand c'est possible, sinon il le renseigne.
+//
+// L'ID patient est UNIQUE et lié à l'UCP de la personne (personnage GTA World) : il n'est donc
+// jamais modifiable ici. Il est déduit de la fiche (PHMC-{personnage}) ; si une fiche n'en a
+// pas, seul un administrateur peut le définir (menu Utilisateurs → Personnel → Modifier).
 import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import { Button, Form, Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'react-bootstrap';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
 import { loadPatientDossier, reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
-import { canonicalPatientId } from '../utils/patientId';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -31,9 +33,7 @@ const thStyle = { backgroundColor: '#161b22', border: '1px solid #30363d', paddi
 const tdStyle = { border: '1px solid #30363d', padding: '8px 10px', verticalAlign: 'middle' };
 
 const MyPatientFileModal = ({ show, onHide, showNotification }) => {
-    const { myPatientID, setMyPatientId } = useEmployeeAuth();
-    const [idInput, setIdInput] = useState('');
-    const [editing, setEditing] = useState(false);
+    const { myPatientID } = useEmployeeAuth();
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -55,28 +55,8 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
     }, [myPatientID, showNotification]);
 
     useEffect(() => {
-        if (show) {
-            setEditing(false);
-            setIdInput(myPatientID || '');
-            load();
-        }
-    }, [show, load, myPatientID]);
-
-    const handleSaveId = async () => {
-        const canonical = canonicalPatientId(idInput);
-        if (!canonical) {
-            showNotification('Saisissez votre ID patient (ex. 2752 ou PHMC-2752).', 'warning');
-            return;
-        }
-        try {
-            await setMyPatientId(canonical);
-            setEditing(false);
-            showNotification(`ID patient enregistré : ${canonical}`, 'check-circle');
-        } catch (error) {
-            console.error('Error saving staff patient id:', error);
-            showNotification("Impossible d'enregistrer l'ID patient (règles Firebase à déployer ?).", 'error');
-        }
-    };
+        if (show) load();
+    }, [show, load]);
 
     const copy = (text, message) => (text
         ? copyToClipboard(text, showNotification, message)
@@ -94,32 +74,19 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                     les rapports que vos soignants ont partagés avec vous.
                 </p>
 
-                {(!myPatientID || editing) ? (
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '15px' }}>
-                        <Form.Control
-                            style={{ maxWidth: '260px' }}
-                            placeholder="Mon ID patient (ex. 2752)"
-                            value={idInput}
-                            onChange={(e) => setIdInput(e.target.value)}
-                            onBlur={() => setIdInput((v) => (v.trim() ? canonicalPatientId(v) : v))}
-                        />
-                        <Button onClick={handleSaveId}>Enregistrer</Button>
-                        {myPatientID && <Button variant="secondary" onClick={() => setEditing(false)}>Annuler</Button>}
-                        {!myPatientID && (
-                            <span style={{ fontSize: '0.85em', color: '#d29922' }}>
-                                Votre ID n'a pas pu être déduit de votre fiche : renseignez-le une fois.
-                            </span>
-                        )}
-                    </div>
-                ) : (
+                {myPatientID ? (
                     <p>
-                        ID patient : <strong>{myPatientID}</strong>{' '}
-                        <Button variant="link" size="sm" onClick={() => setEditing(true)}>Modifier</Button>
-                        <Button variant="link" size="sm" onClick={load} disabled={isLoading}>Actualiser</Button>
+                        ID patient : <strong>{myPatientID}</strong>
+                        <span style={{ color: '#8b949e', fontSize: '0.85em', marginLeft: '8px' }}>(unique, lié à votre UCP)</span>
+                    </p>
+                ) : (
+                    <p style={{ color: '#d29922' }}>
+                        Aucun ID patient n'est rattaché à votre fiche du personnel. Contactez un administrateur : lui seul
+                        peut le renseigner.
                     </p>
                 )}
 
-                {myPatientID && !editing && (
+                {myPatientID && (
                     isLoading ? <p>Chargement…</p> : entries.length === 0 ? (
                         <p style={{ textAlign: 'center', marginTop: '20px' }}>
                             Aucun rapport partagé avec vous pour le moment.
