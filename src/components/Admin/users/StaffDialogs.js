@@ -1,0 +1,321 @@
+// src/components/Admin/users/StaffDialogs.js
+//
+// Boîtes de dialogue du menu « Utilisateurs » : fiche du personnel (ajout / modification),
+// suppression définitive, conversions Civil ⇄ Personnel. Toutes les écritures passent par
+// utils/staffAdmin.js. Les actions sensibles demandent une confirmation explicite et disent
+// ce qui est conservé et ce qui ne l'est pas.
+import React, { useState, useEffect, useMemo } from 'react';
+import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
+import {
+    STAFF_SERVICES, rankLabel, badgeDigits, updateStaffMember, addStaffMember,
+    removeStaffMember, convertCivilianToStaff, convertStaffToCivilian,
+} from '../../../utils/staffAdmin';
+import { sendAdminActionWebhook } from '../adminUtils';
+import { canonicalPatientId } from '../../../utils/patientId';
+
+const DigitsInput = ({ value, onChange, ...rest }) => (
+    <Form.Control
+        inputMode="numeric"
+        maxLength={5}
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 5))}
+        {...rest}
+    />
+);
+
+const useBusy = () => {
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const run = async (fn) => {
+        setBusy(true);
+        setError('');
+        try { await fn(); } catch (e) { console.error(e); setError(e.message || String(e)); } finally { setBusy(false); }
+    };
+    return { busy, error, setError, run };
+};
+
+// ─────────────── Fiche du personnel : ajout / modification ───────────────
+export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc', adminEmail, showNotification, onDone }) => {
+    const isEdit = !!member;
+    const [service, setService] = useState(defaultService);
+    const [form, setForm] = useState({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+    const { busy, error, setError, run } = useBusy();
+
+    useEffect(() => {
+        if (!show) return;
+        setError('');
+        if (member) {
+            setService(member.service);
+            setForm({
+                firstName: member.firstName || '', lastName: member.lastName || '',
+                discord: member.discord || '', phNumber: member.phNumber || '',
+                rank: member.rank || '', badge: badgeDigits(member.badge),
+            });
+        } else {
+            setService(defaultService);
+            setForm({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+        }
+    }, [show, member, defaultService, setError]);
+
+    const ranks = STAFF_SERVICES[service].ranks;
+    const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+    const handleSave = () => run(async () => {
+        if (!form.rank) throw new Error('Choisissez un grade.');
+        if (!/^\d{4,5}$/.test(form.badge)) throw new Error('Le numéro de badge doit contenir 4 ou 5 chiffres.');
+        if (isEdit) {
+            await updateStaffMember(member, { rank: form.rank, badgeDigitsValue: form.badge, discord: form.discord, phNumber: form.phNumber });
+            sendAdminActionWebhook(adminEmail, 'Fiche du personnel modifiée', `Membre : ${member.displayName}\nGrade : ${rankLabel(member.service, form.rank)}\nBadge : ${form.badge}`, null, 'Admin');
+            showNotification(`Fiche de ${member.displayName} mise à jour.`, 'success');
+        } else {
+            if (!form.firstName.trim() || !form.lastName.trim()) throw new Error('Prénom et nom obligatoires.');
+            await addStaffMember(service, {
+                firstName: form.firstName.trim(), lastName: form.lastName.trim(),
+                discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge,
+            });
+            sendAdminActionWebhook(adminEmail, 'Membre du personnel ajouté', `Membre : ${form.firstName} ${form.lastName}\nService : ${STAFF_SERVICES[service].label}\nGrade : ${rankLabel(service, form.rank)}`, null, 'Admin');
+            showNotification(`${form.firstName} ${form.lastName} ajouté(e) au personnel (sans compte de connexion).`, 'success');
+        }
+        onDone();
+        onHide();
+    });
+
+    return (
+        <Modal show={show} onHide={onHide} centered>
+            <Modal.Header closeButton>
+                <Modal.Title>{isEdit ? `Modifier ${member.displayName}` : 'Ajouter un membre du personnel'}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {error && <Alert variant="danger">{error}</Alert>}
+                {!isEdit && (
+                    <Form.Group className="mb-3">
+                        <Form.Label>Service</Form.Label>
+                        <Form.Select value={service} onChange={(e) => { setService(e.target.value); setForm((p) => ({ ...p, rank: '' })); }}>
+                            {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                )}
+                <div className="d-flex gap-2 mb-3">
+                    <Form.Group className="flex-fill">
+                        <Form.Label>Prénom</Form.Label>
+                        <Form.Control value={form.firstName} onChange={set('firstName')} disabled={isEdit} />
+                    </Form.Group>
+                    <Form.Group className="flex-fill">
+                        <Form.Label>Nom</Form.Label>
+                        <Form.Control value={form.lastName} onChange={set('lastName')} disabled={isEdit} />
+                    </Form.Group>
+                </div>
+                {isEdit && (
+                    <p className="text-muted small">
+                        Le nom n'est pas modifiable ici : c'est l'identifiant sous lequel les rapports sont rangés. Pour un
+                        renommage, utilisez d'abord l'outil de migration des rapports.
+                    </p>
+                )}
+                <Form.Group className="mb-3">
+                    <Form.Label>Grade</Form.Label>
+                    <Form.Select value={form.rank} onChange={set('rank')}>
+                        <option value="">Sélectionner…</option>
+                        {ranks.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                <div className="d-flex gap-2 mb-3">
+                    <Form.Group className="flex-fill">
+                        <Form.Label>Badge (4 ou 5 chiffres)</Form.Label>
+                        <DigitsInput value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
+                    </Form.Group>
+                    <Form.Group className="flex-fill">
+                        <Form.Label>Téléphone</Form.Label>
+                        <Form.Control value={form.phNumber} onChange={set('phNumber')} />
+                    </Form.Group>
+                </div>
+                <Form.Group>
+                    <Form.Label>Discord</Form.Label>
+                    <Form.Control value={form.discord} onChange={set('discord')} />
+                </Form.Group>
+                {!isEdit && (
+                    <p className="text-muted small mt-3 mb-0">
+                        Cette fiche n'a pas de compte de connexion : la personne en obtient un via « Demandes de compte », ou en
+                        convertissant son compte Civil existant depuis l'onglet Civils.
+                    </p>
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
+                <Button variant="primary" onClick={handleSave} disabled={busy}>
+                    {busy ? <Spinner size="sm" animation="border" /> : (isEdit ? 'Enregistrer' : 'Ajouter')}
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
+
+// ─────────────── Suppression définitive ───────────────
+export const RemoveStaffDialog = ({ show, onHide, member, allStaff, adminEmail, showNotification, onDone }) => {
+    const [transferTo, setTransferTo] = useState('');
+    const [typed, setTyped] = useState('');
+    const { busy, error, setError, run } = useBusy();
+
+    useEffect(() => { if (show) { setTransferTo(''); setTyped(''); setError(''); } }, [show, setError]);
+    if (!member) return null;
+    const confirmed = typed.trim().toLowerCase() === member.displayName.toLowerCase();
+
+    return (
+        <Modal show={show} onHide={onHide} centered>
+            <Modal.Header closeButton><Modal.Title>Supprimer {member.displayName}</Modal.Title></Modal.Header>
+            <Modal.Body>
+                {error && <Alert variant="danger">{error}</Alert>}
+                <Alert variant="danger">
+                    <strong>Suppression définitive.</strong> La fiche du personnel, <strong>le compte de connexion</strong> et
+                    (sauf transfert) <strong>tous les rapports</strong> de cette personne seront supprimés, et un mail de fin de
+                    fonctions lui sera envoyé.
+                </Alert>
+                <p className="small">
+                    Pour que la personne garde son compte (par exemple pour devenir patiente ou candidate), utilisez
+                    plutôt <strong>« Passer en Civil »</strong> : rien n'est supprimé.
+                </p>
+                <Form.Group className="mb-3">
+                    <Form.Label>Rapports de {member.displayName}</Form.Label>
+                    <Form.Select value={transferTo} onChange={(e) => setTransferTo(e.target.value)}>
+                        <option value="">— Supprimer les rapports (aucun transfert) —</option>
+                        {allStaff.filter((m) => m.name !== member.name).map((m) => (
+                            <option key={`${m.service}-${m.name}`} value={m.name}>Transférer vers {m.displayName}</option>
+                        ))}
+                    </Form.Select>
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Pour confirmer, tapez « {member.displayName} »</Form.Label>
+                    <Form.Control value={typed} onChange={(e) => setTyped(e.target.value)} />
+                </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
+                <Button variant="danger" disabled={!confirmed || busy} onClick={() => run(async () => {
+                    await removeStaffMember(member, { transferTo: transferTo || null });
+                    sendAdminActionWebhook(adminEmail, 'Membre du personnel supprimé', `Membre : ${member.displayName}\nRapports : ${transferTo ? `transférés vers ${transferTo}` : 'supprimés'}`, null, 'Admin');
+                    showNotification(`${member.displayName} supprimé(e) du personnel.`, 'success');
+                    onDone();
+                    onHide();
+                })}>
+                    {busy ? <Spinner size="sm" animation="border" /> : 'Supprimer définitivement'}
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
+
+// ─────────────── Personnel → Civil ───────────────
+export const ConvertToCivilDialog = ({ show, onHide, member, hasCivilProfile, adminEmail, showNotification, onDone }) => {
+    const [patientID, setPatientID] = useState('');
+    const { busy, error, setError, run } = useBusy();
+
+    useEffect(() => {
+        if (!show || !member) return;
+        setError('');
+        setPatientID(member.gtawCharacterId != null ? `PHMC-${member.gtawCharacterId}` : '');
+    }, [show, member, setError]);
+    if (!member) return null;
+    const needsId = !hasCivilProfile && !patientID.trim();
+
+    return (
+        <Modal show={show} onHide={onHide} centered>
+            <Modal.Header closeButton><Modal.Title>Passer {member.displayName} en Civil</Modal.Title></Modal.Header>
+            <Modal.Body>
+                {error && <Alert variant="danger">{error}</Alert>}
+                <p>
+                    Les fonctions de <strong>{member.displayName}</strong> ({rankLabel(member.service, member.rank)}) prennent fin :
+                    sa fiche du personnel est retirée et elle/il redevient un compte <strong>Civil</strong>.
+                </p>
+                <ul className="small">
+                    <li><strong>Conservés :</strong> le compte de connexion, son profil Civil (ou un nouveau profil créé ci-dessous), ses dossiers de patient.</li>
+                    <li><strong>Non supprimés :</strong> ses rapports. Ils restent rangés sous son nom de personnel : un administrateur peut les retrouver ou les migrer, mais la personne ne les verra plus dans son compte Civil.</li>
+                    <li><strong>Mail :</strong> un message l'informe de la fin de ses fonctions.</li>
+                </ul>
+                {!hasCivilProfile && (
+                    <Form.Group className="mb-2">
+                        <Form.Label>ID patient du nouveau profil Civil *</Form.Label>
+                        <Form.Control value={patientID} onChange={(e) => setPatientID(e.target.value)}
+                            onBlur={() => setPatientID((v) => (v.trim() ? canonicalPatientId(v) : v))} placeholder="ex. PHMC-2752" />
+                        <Form.Text className="text-muted">
+                            Cette personne n'a pas encore de profil Civil : il est créé avec son identité de personnel. Elle complétera le reste elle-même.
+                        </Form.Text>
+                    </Form.Group>
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
+                <Button variant="warning" disabled={busy || needsId} onClick={() => run(async () => {
+                    await convertStaffToCivilian(member, { patientID });
+                    sendAdminActionWebhook(adminEmail, 'Personnel → Civil', `Membre : ${member.displayName}\nGrade retiré : ${rankLabel(member.service, member.rank)}`, null, 'Admin');
+                    showNotification(`${member.displayName} est maintenant un compte Civil.`, 'success');
+                    onDone();
+                    onHide();
+                })}>
+                    {busy ? <Spinner size="sm" animation="border" /> : 'Confirmer le passage en Civil'}
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};
+
+// ─────────────── Civil → Personnel ───────────────
+export const ConvertToStaffDialog = ({ show, onHide, civilian, adminEmail, showNotification, onDone }) => {
+    const [service, setService] = useState('phmc');
+    const [rank, setRank] = useState('');
+    const [badge, setBadge] = useState('');
+    const { busy, error, setError, run } = useBusy();
+
+    useEffect(() => {
+        if (!show || !civilian) return;
+        setError('');
+        setService('phmc');
+        setRank('');
+        // L'ID du personnage GTA World sert de badge s'il tient sur 4-5 chiffres ; sinon à saisir.
+        const characterId = civilian.gtawCharacterId != null ? String(civilian.gtawCharacterId) : '';
+        setBadge(/^\d{4,5}$/.test(characterId) ? characterId : '');
+    }, [show, civilian, setError]);
+    const ranks = useMemo(() => STAFF_SERVICES[service].ranks, [service]);
+    if (!civilian) return null;
+    const name = `${civilian.firstName || ''} ${civilian.lastName || ''}`.trim() || civilian.email;
+
+    return (
+        <Modal show={show} onHide={onHide} centered>
+            <Modal.Header closeButton><Modal.Title>Passer {name} en Personnel</Modal.Title></Modal.Header>
+            <Modal.Body>
+                {error && <Alert variant="danger">{error}</Alert>}
+                <p className="small">
+                    La fiche du personnel est créée avec le <strong>même compte de connexion</strong>. Le profil Civil et les dossiers
+                    de patient sont <strong>conservés</strong>. La personne doit se reconnecter pour voir ses nouveaux outils.
+                </p>
+                <Form.Group className="mb-3">
+                    <Form.Label>Service</Form.Label>
+                    <Form.Select value={service} onChange={(e) => { setService(e.target.value); setRank(''); }}>
+                        {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                    <Form.Label>Grade</Form.Label>
+                    <Form.Select value={rank} onChange={(e) => setRank(e.target.value)}>
+                        <option value="">Sélectionner…</option>
+                        {ranks.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </Form.Select>
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Badge (4 ou 5 chiffres)</Form.Label>
+                    <DigitsInput value={badge} onChange={setBadge} placeholder="00000" />
+                </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
+                <Button variant="success" disabled={busy || !rank || !/^\d{4,5}$/.test(badge)} onClick={() => run(async () => {
+                    await convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue: badge });
+                    sendAdminActionWebhook(adminEmail, 'Civil → Personnel', `Compte : ${name}\nService : ${STAFF_SERVICES[service].label}\nGrade : ${rankLabel(service, rank)}`, null, 'Admin');
+                    showNotification(`${name} est maintenant membre du personnel.`, 'success');
+                    onDone();
+                    onHide();
+                })}>
+                    {busy ? <Spinner size="sm" animation="border" /> : 'Confirmer le passage en Personnel'}
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};

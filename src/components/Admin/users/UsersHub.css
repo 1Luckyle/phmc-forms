@@ -1,0 +1,59 @@
+/* Menu « Utilisateurs » : une seule direction artistique pour Personnel, Civils, Recruteurs et Outils. */
+.users-hub .uh-tabs {
+    margin-bottom: 16px;
+}
+
+.users-hub .uh-tabs .nav-link {
+    color: #495057;
+    cursor: pointer;
+}
+
+.users-hub .uh-tabs .nav-link.active {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.users-hub .uh-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.users-hub .uh-search {
+    flex: 1 1 280px;
+    max-width: 460px;
+}
+
+.users-hub .uh-filter {
+    width: auto;
+}
+
+.users-hub .uh-toolbar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.users-hub .uh-table thead th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6c757d;
+    border-bottom-width: 2px;
+    white-space: nowrap;
+}
+
+.users-hub .uh-table td {
+    vertical-align: middle;
+}
+
+.users-hub .uh-role {
+    font-weight: 500;
+}
+
+.users-hub .uh-actions-toggle::after {
+    margin-left: 6px;
+}

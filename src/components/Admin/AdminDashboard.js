@@ -3,14 +3,11 @@ import { Button, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import DatabaseEditor from './DatabaseEditor';
-import UserStats from './UserStats';
 import WebhookLogs from './WebhookLogs';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
-import ManageCivilians from './ManageCivilians';
-import EmployeeModal from '../EmployeeModal';
 import { useDebug } from '../../contexts/DebugContext';
-import AdminReportsTools from './AdminReportsTools';
+import UsersHub from './users/UsersHub';
 
 const AdminDashboard = ({
     currentUser,
@@ -73,8 +70,6 @@ const AdminDashboard = ({
     const [testWebhookData, setTestWebhookData] = useState({ title: '', message: '', selectedWebhook: null });
     // Gestion du personnel/des civils, déplacée ici depuis la Boîte à Outils
     // (auparavant sur la page principale) — voir la section 'users' plus bas.
-    const [showManageEmployees, setShowManageEmployees] = useState(false);
-    const [showManageCivilians, setShowManageCivilians] = useState(false);
     const navigate = useNavigate();
 
     const handleTestWebhook = async (webhook) => {
@@ -471,60 +466,13 @@ const AdminDashboard = ({
                         </div>
                     )}
                     {selectedSection === 'users' && (
-                        <div className="card">
-                            <div className="card-header">Gestion des utilisateurs</div>
-                            <div className="card-body">
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                    <Button variant="primary" onClick={() => setShowManageEmployees(true)}>
-                                        <i className="fas fa-user-md"></i> Gérer le Personnel
-                                    </Button>
-                                    <Button variant="primary" onClick={() => setShowManageCivilians(true)}>
-                                        <i className="fas fa-id-card"></i> Gérer les Civils
-                                    </Button>
-                                    <Button variant="outline-secondary" onClick={() => setShowUserManagementModal(true)}>
-                                        <i className="fas fa-tools"></i> Outils de migration des rapports
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="card-body pt-0">
-                                <AdminReportsTools showNotification={showInAppNotification} />
-                            </div>
-                            <UserStats currentUser={currentUser} />
-                        </div>
+                        <UsersHub
+                            currentUser={currentUser}
+                            showNotification={showInAppNotification}
+                            onOpenMigrationTools={() => setShowUserManagementModal(true)}
+                        />
                     )}
 
-                    <EmployeeModal
-                        show={showManageEmployees}
-                        onHide={() => setShowManageEmployees(false)}
-                        showNotification={showInAppNotification}
-                    />
-                    {showManageCivilians && (
-                        <div style={{
-                            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex',
-                            justifyContent: 'center', alignItems: 'center', zIndex: 1050,
-                        }} onClick={() => setShowManageCivilians(false)}>
-                            <div style={{
-                                backgroundColor: '#0d1117', color: '#c9d1d9', padding: '20px',
-                                borderRadius: '5px', width: '95%', maxWidth: '1100px', maxHeight: '90vh',
-                                overflowY: 'auto', position: 'relative', border: '1px solid #30363d',
-                            }} onClick={(e) => e.stopPropagation()}>
-                                <div style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    borderBottom: '1px solid #30363d', paddingBottom: '10px', marginBottom: '15px',
-                                }}>
-                                    <h5 style={{ margin: 0 }}>Gérer les Civils</h5>
-                                    <button
-                                        onClick={() => setShowManageCivilians(false)}
-                                        style={{ background: 'none', border: 'none', color: '#c9d1d9', fontSize: '24px', cursor: 'pointer' }}
-                                    >
-                                        &times;
-                                    </button>
-                                </div>
-                                <ManageCivilians showNotification={showInAppNotification} />
-                            </div>
-                        </div>
-                    )}
                     {selectedSection === 'webhooks' && (
                         <div className="card">
                             <div className="card-header">Webhook Management</div>
