@@ -1566,7 +1566,7 @@ function MainApp({
                             } (ID patient : <strong>{civilianProfile.patientID}</strong>).
                             Vous pouvez sauvegarder et retrouver vos propres dossiers médicaux et candidatures.
                             {isRecruiter && (
-                                <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement »).</>
+                                <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement ») et pouvez créer votre carte de visite.</>
                             )}
                         </span>
                     </div>
@@ -1712,7 +1712,8 @@ function MainApp({
                                 setShowFeatureRequestModal={setShowFeatureRequestModal}
                             />
 
-                            {(isAdmin || employeeProfile) && (
+                            {/* Carte de visite : personnel, admins et recruteurs (un recruteur reste un Civil). */}
+                            {(isAdmin || employeeProfile || isRecruiter) && (
                                 <Button
                                     variant="secondary"
                                     type="button"
@@ -2274,7 +2275,7 @@ function MainApp({
                             />
                         </div>
 
-                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && (isAdmin || employeeProfile) && (
+                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && (isAdmin || employeeProfile || isRecruiter) && (
                             <BusinessCardModal
                                 show={showBusinessCard}
                                 onHide={() => setShowBusinessCard(false)}
