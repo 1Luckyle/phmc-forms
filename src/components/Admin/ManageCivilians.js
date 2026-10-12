@@ -35,6 +35,8 @@ const ManageCivilians = ({ showNotification }) => {
     const [editingUid, setEditingUid] = useState(null);
     const [editData, setEditData] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    // Rôle « recruteur » : drapeau recruiterUIDs/{uid} (compte Civil + gestion du recrutement).
+    const [recruiterUids, setRecruiterUids] = useState({});
 
     useEffect(() => {
         loadCivilians();
@@ -43,6 +45,8 @@ const ManageCivilians = ({ showNotification }) => {
     const loadCivilians = async () => {
         setIsLoading(true);
         try {
+            const recruiterSnapshot = await get(ref(database, 'recruiterUIDs'));
+            setRecruiterUids(recruiterSnapshot.exists() ? recruiterSnapshot.val() : {});
             const snapshot = await get(ref(database, 'civilians'));
             if (snapshot.exists()) {
                 const data = snapshot.val();
@@ -95,6 +99,28 @@ const ManageCivilians = ({ showNotification }) => {
             showNotification(`Erreur lors de l'enregistrement : ${error.message}`, 'error');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    // Pose / retire le rôle recruteur (n'affecte ni le compte Civil, ni ses rapports).
+    const handleToggleRecruiter = async (civilian) => {
+        const isRecruiterNow = recruiterUids[civilian.uid] === true;
+        const name = `${civilian.firstName || ''} ${civilian.lastName || ''}`.trim() || civilian.email;
+        const question = isRecruiterNow
+            ? `Retirer le rôle de recruteur à ${name} ? Il garde son compte Civil.`
+            : `Donner le rôle de recruteur à ${name} ? Il gardera ses accès de Civil et pourra gérer les postes et les candidatures.`;
+        if (!window.confirm(question)) return;
+        try {
+            await set(ref(database, `recruiterUIDs/${civilian.uid}`), isRecruiterNow ? null : true);
+            setRecruiterUids((prev) => {
+                const next = { ...prev };
+                if (isRecruiterNow) delete next[civilian.uid]; else next[civilian.uid] = true;
+                return next;
+            });
+            showNotification(isRecruiterNow ? `${name} n'est plus recruteur.` : `${name} est maintenant recruteur.`, 'success');
+        } catch (error) {
+            console.error('Error updating recruiter role:', error);
+            showNotification('Impossible de modifier le rôle de recruteur (règles Firebase à déployer ?).', 'error');
         }
     };
 
@@ -268,6 +294,7 @@ const ManageCivilians = ({ showNotification }) => {
                             <th>Email</th>
                             <th>Téléphone</th>
                             <th>Personnage GTAW</th>
+                            <th>Rôle</th>
                             <th>Créé le</th>
                             <th>Actions</th>
                         </tr>
@@ -280,6 +307,13 @@ const ManageCivilians = ({ showNotification }) => {
                                 <td>{civilian.email}</td>
                                 <td>{civilian.phone}</td>
                                 <td>{civilian.gtawCharacterId ?? 'N/A'}</td>
+                                <td>
+                                    <Button size="sm" variant={recruiterUids[civilian.uid] === true ? 'info' : 'outline-secondary'}
+                                        onClick={() => handleToggleRecruiter(civilian)}
+                                        title={recruiterUids[civilian.uid] === true ? 'Recruteur : cliquer pour retirer le rôle' : 'Civil : cliquer pour donner le rôle de recruteur'}>
+                                        <i className="fas fa-user-tie"></i> {recruiterUids[civilian.uid] === true ? 'Recruteur' : 'Civil'}
+                                    </Button>
+                                </td>
                                 <td>{civilian.createdAt ? new Date(civilian.createdAt).toLocaleDateString('fr-FR') : 'N/A'}</td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '5px' }}>

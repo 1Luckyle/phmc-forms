@@ -7,7 +7,6 @@ import UserStats from './UserStats';
 import WebhookLogs from './WebhookLogs';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
-import PendingJobApplications from './PendingJobApplications';
 import ManageCivilians from './ManageCivilians';
 import EmployeeModal from '../EmployeeModal';
 import { useDebug } from '../../contexts/DebugContext';
@@ -26,15 +25,6 @@ const AdminDashboard = ({
     setLocalHostStatus,
     handleUpdateServiceStatus,
     isUpdatingDb,
-    selectedRecruitmentCategory,
-    setSelectedRecruitmentCategory,
-    recruitmentCategories,
-    handleAddRoleClick,
-    isLoadingRecruitmentData,
-    currentRecruitmentData,
-    handleRenameRoleKeyClick,
-    handleEditRoleClick,
-    handleTogglePositionStatus,
     selectedAdminBingoType,
     setSelectedAdminBingoType,
     BINGO_TYPES,
@@ -122,7 +112,22 @@ const AdminDashboard = ({
     };
 
     // Mode debug : bouton "Remplir (debug)" sur tous les formulaires (voir DebugContext).
-    const { debugAutofillEnabled, setDebugAutofillEnabled } = useDebug();
+    const { debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled } = useDebug();
+    const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
+    const handleToggleDeleteApplications = async (enabled) => {
+        setIsUpdatingDeleteDebug(true);
+        try {
+            await setDebugDeleteApplicationsEnabled(enabled, currentUser?.email);
+            if (showInAppNotification) {
+                showInAppNotification(`Suppression des candidatures ${enabled ? 'activée' : 'désactivée'}.`, enabled ? 'check-circle' : 'info-circle');
+            }
+        } catch (error) {
+            console.error('Error updating debug delete applications setting:', error);
+            alert('Impossible de modifier ce réglage : ' + (error?.message || error));
+        } finally {
+            setIsUpdatingDeleteDebug(false);
+        }
+    };
     const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
     const handleToggleDebugAutofill = async (enabled) => {
         setIsUpdatingDebug(true);
@@ -155,8 +160,6 @@ const AdminDashboard = ({
                         <button className={`nav-link ${selectedSection === 'authMethods' ? 'active' : ''}`} onClick={() => setSelectedSection('authMethods')}><i className="fas fa-key me-2"></i>Méthodes de connexion</button>
                         <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
                         <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
-                        <button className={`nav-link ${selectedSection === 'recruitment' ? 'active' : ''}`} onClick={() => setSelectedSection('recruitment')}><i className="fas fa-user-plus me-2"></i>Recrutement</button>
-                        <button className={`nav-link ${selectedSection === 'jobApplications' ? 'active' : ''}`} onClick={() => setSelectedSection('jobApplications')}><i className="fas fa-file-signature me-2"></i>Candidatures</button>
                         <button className={`nav-link ${selectedSection === 'bingo' ? 'active' : ''}`} onClick={() => setSelectedSection('bingo')}><i className="fas fa-dice me-2"></i>Bingo</button>
                         <button className={`nav-link ${selectedSection === 'users' ? 'active' : ''}`} onClick={() => setSelectedSection('users')}><i className="fas fa-users-cog me-2"></i>Utilisateurs</button>
                         <button className={`nav-link ${selectedSection === 'webhooks' ? 'active' : ''}`} onClick={() => setSelectedSection('webhooks')}><i className="fas fa-bullhorn me-2"></i>Webhooks</button>
@@ -233,14 +236,6 @@ const AdminDashboard = ({
                             <div className="card-header">Demandes de modification en attente</div>
                             <div className="card-body">
                                 <PendingModificationRequests showNotification={showInAppNotification} currentUser={currentUser} />
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'jobApplications' && (
-                        <div className="card">
-                            <div className="card-header">Candidatures</div>
-                            <div className="card-body">
-                                <PendingJobApplications showNotification={showInAppNotification} />
                             </div>
                         </div>
                     )}
@@ -344,6 +339,28 @@ const AdminDashboard = ({
                                         {isUpdatingDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
                                     </label>
                                 </div>
+                                <hr />
+                                <p className="text-muted">
+                                    <strong>Suppression des candidatures.</strong> Quand cet interrupteur est activé, un bouton « Supprimer »
+                                    apparaît dans l'historique des candidatures : chaque candidat peut supprimer les siennes (« Mes candidatures »),
+                                    et les admins/recruteurs celles de la liste de gestion. Utile pour nettoyer les candidatures de test ; à
+                                    désactiver ensuite (la suppression est définitive).
+                                </p>
+                                <div className="form-check form-switch mb-3">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="debugDeleteApplicationsSwitch"
+                                        checked={debugDeleteApplicationsEnabled}
+                                        disabled={isUpdatingDeleteDebug}
+                                        onChange={(e) => handleToggleDeleteApplications(e.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="debugDeleteApplicationsSwitch">
+                                        Autoriser la suppression des candidatures
+                                        {isUpdatingDeleteDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
+                                    </label>
+                                </div>
                                 <p className={`mb-0 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
                                     <i className={`fas ${debugAutofillEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
                                     État actuel : {debugAutofillEnabled ? 'ACTIVÉ' : 'désactivé'}
@@ -376,57 +393,6 @@ const AdminDashboard = ({
                                 <Button variant="primary" onClick={handleUpdateAuthConfig} disabled={isUpdatingDb}>
                                     {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mettre à jour les méthodes de connexion"}
                                 </Button>
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'recruitment' && (
-                        <div className="card">
-                            <div className="card-header">Gestion du recrutement</div>
-                            <div className="card-body">
-                                <div className="form-group mb-3">
-                                    <label htmlFor="selectRecruitmentCategory">Sélectionnez une option de recrutement</label>
-                                    <select id="selectRecruitmentCategory" value={selectedRecruitmentCategory} onChange={(e) => setSelectedRecruitmentCategory(e.target.value)} className="form-select">
-                                        <option value="">-- Sélectionnez une option --</option>
-                                        {Object.entries(recruitmentCategories).map(([key, cat]) => (<option key={key} value={key}>{cat.displayName}</option>))}
-                                    </select>
-                                </div>
-
-                                {selectedRecruitmentCategory && recruitmentCategories[selectedRecruitmentCategory] ? (
-                                    <>
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                            <h5>Gérer {recruitmentCategories[selectedRecruitmentCategory]?.displayName}</h5>
-                                            <Button variant="success" size="sm" onClick={handleAddRoleClick}>
-                                                <i className="fas fa-plus-circle"></i> Ajouter un rôle
-                                            </Button>
-                                        </div>
-                                        {isLoadingRecruitmentData ? (<Spinner animation="border" />) : Object.keys(currentRecruitmentData).length > 0 ? (
-                                            <div className="list-group mb-3">
-                                                {Object.entries(currentRecruitmentData).map(([key, position]) => (
-                                                    <div key={key} className="list-group-item d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            {position.displayName || position.name || key}: {}
-                                                            <strong style={{ color: position.status === "OPEN" ? 'green' : 'red' }}>{position.status || "N/A"}</strong>
-                                                            <br />
-                                                            <small className="text-muted">Clé BD: {key}</small>
-                                                        </div>
-                                                        <div className="d-flex gap-2">
-                                                            <Button variant="outline-warning" size="sm" onClick={() => handleRenameRoleKeyClick(key, position)} disabled={isUpdatingDb} title={`Renommer la clé de la base de données pour ${position.displayName || position.name || key}`}>
-                                                                <i className="fas fa-key"></i> Renommer la clé
-                                                            </Button>
-                                                            <Button variant="outline-secondary" size="sm" onClick={() => handleEditRoleClick(key, position)} disabled={isUpdatingDb} title={`Modifier ${position.displayName || position.name || key}`}>
-                                                                <i className="fas fa-edit"></i> Modifier
-                                                            </Button>
-                                                            <Button variant={position.status === "OPEN" ? "outline-danger" : "outline-success"} size="sm" onClick={() => handleTogglePositionStatus(key, position.status)} disabled={isUpdatingDb} style={{ minWidth: '120px' }}>
-                                                                {isUpdatingDb && <Spinner as="span" animation="border" size="sm" />}
-                                                                {position.status === "OPEN" ? "CLOSED" : "OPEN"}
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (<p>Aucun poste chargé pour {recruitmentCategories[selectedRecruitmentCategory]?.displayName}.</p>)}
-                                    </>
-                                ) : (<p>Sélectionnez une catégorie de recrutement pour gérer les postes.</p>)}
                             </div>
                         </div>
                     )}

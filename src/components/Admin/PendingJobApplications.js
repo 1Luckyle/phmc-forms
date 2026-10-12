@@ -8,7 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Table } from 'react-bootstrap';
 import { database } from '../../firebase';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, remove } from 'firebase/database';
+import { useDebug } from '../../contexts/DebugContext';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 
 const sendMailBestEffort = (params) => {
@@ -41,10 +42,24 @@ const PendingJobApplications = ({ showNotification }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [showAll, setShowAll] = useState(false);
     const [interviewInputs, setInterviewInputs] = useState({});
+    // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
+    const { debugDeleteApplicationsEnabled } = useDebug();
 
     useEffect(() => {
         loadApplications();
     }, []);
+
+    const handleDeleteApplication = async (application) => {
+        if (!window.confirm(`Supprimer définitivement la candidature de ${application.applicantName || 'ce candidat'} (${application.position || 'poste inconnu'}) ?`)) return;
+        try {
+            await remove(ref(database, `jobApplications/${application.applicantUid}/${application.applicationId}`));
+            showNotification('Candidature supprimée.', 'trash');
+            await loadApplications();
+        } catch (error) {
+            console.error('Error deleting job application:', error);
+            showNotification("Suppression refusée : l'option Debug « suppression des candidatures » est-elle activée ?", 'error');
+        }
+    };
 
     const loadApplications = async () => {
         setIsLoading(true);
@@ -256,6 +271,12 @@ const PendingJobApplications = ({ showNotification }) => {
                                             {['submitted', 'interview_scheduled', 'interview_completed'].includes(application.status) && (
                                                 <Button size="sm" variant="danger" onClick={() => handleRefuse(application)}>
                                                     Refuser
+                                                </Button>
+                                            )}
+                                            {debugDeleteApplicationsEnabled && (
+                                                <Button size="sm" variant="outline-danger" onClick={() => handleDeleteApplication(application)}
+                                                    title="Debug : supprime définitivement cette candidature">
+                                                    <i className="fas fa-trash"></i> Supprimer
                                                 </Button>
                                             )}
                                         </div>

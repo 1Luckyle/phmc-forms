@@ -13,16 +13,22 @@ import { ref, onValue, set } from 'firebase/database';
 import { database } from '../firebase';
 
 const DEBUG_PATH = 'adminSettings/debugAutofill';
+// Second interrupteur : permet de SUPPRIMER une candidature dans l'historique (nettoyage des
+// candidatures de test). Les règles Firebase ne l'autorisent que tant qu'il est activé.
+const DEBUG_DELETE_APPLICATIONS_PATH = 'adminSettings/debugDeleteApplications';
 
 const DebugContext = createContext({
     debugAutofillEnabled: false,
     setDebugAutofillEnabled: async () => {},
+    debugDeleteApplicationsEnabled: false,
+    setDebugDeleteApplicationsEnabled: async () => {},
 });
 
 export const useDebug = () => useContext(DebugContext);
 
 export const DebugProvider = ({ children }) => {
     const [debugAutofillEnabled, setEnabled] = useState(false);
+    const [debugDeleteApplicationsEnabled, setDeleteEnabled] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onValue(
@@ -32,6 +38,23 @@ export const DebugProvider = ({ children }) => {
             () => setEnabled(false)
         );
         return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = onValue(
+            ref(database, DEBUG_DELETE_APPLICATIONS_PATH),
+            (snapshot) => setDeleteEnabled(snapshot.val()?.enabled === true),
+            () => setDeleteEnabled(false)
+        );
+        return () => unsubscribe();
+    }, []);
+
+    const setDebugDeleteApplicationsEnabled = useCallback(async (enabled, updatedBy = null) => {
+        await set(ref(database, DEBUG_DELETE_APPLICATIONS_PATH), {
+            enabled: Boolean(enabled),
+            updatedBy: updatedBy || null,
+            updatedAt: Date.now(),
+        });
     }, []);
 
     // Réservé aux admins (les règles Firebase refusent l'écriture aux autres).
@@ -44,7 +67,7 @@ export const DebugProvider = ({ children }) => {
     }, []);
 
     return (
-        <DebugContext.Provider value={{ debugAutofillEnabled, setDebugAutofillEnabled }}>
+        <DebugContext.Provider value={{ debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled }}>
             {children}
         </DebugContext.Provider>
     );

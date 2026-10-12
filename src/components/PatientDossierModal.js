@@ -128,7 +128,11 @@ const PatientDossierModal = ({
             try {
                 const [civilSnap, indexed] = await Promise.all([
                     get(ref(database, 'civilians')),
-                    listIndexedPatientIds().catch(() => []),
+                    listIndexedPatientIds().catch((error) => {
+                        console.error('Could not list indexed patient ids:', error);
+                        showNotification("Impossible de lister les patients sans compte (règles Firebase « patientRecords » à déployer : firebase deploy --only database).", 'warning', 8000);
+                        return [];
+                    }),
                 ]);
                 const withAccount = new Map();
                 if (civilSnap.exists()) {

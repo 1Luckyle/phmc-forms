@@ -407,10 +407,16 @@ export async function reindexPatientRecords({ onProgress } = {}) {
                     timestamp: report.timestamp ?? Date.now(),
                 };
                 stats.created++;
-            } else if (entry.reportPath !== reportPath) {
-                updates[`patientRecords/${patientNode}/${reportKey}/reportPath`] = reportPath;
-                updates[`patientRecords/${patientNode}/${reportKey}/authorName`] = report.authorName ?? entry.authorName ?? '';
-                stats.repaired++;
+            } else {
+                if (entry.reportPath !== reportPath) {
+                    updates[`patientRecords/${patientNode}/${reportKey}/reportPath`] = reportPath;
+                    updates[`patientRecords/${patientNode}/${reportKey}/authorName`] = report.authorName ?? entry.authorName ?? '';
+                    stats.repaired++;
+                }
+                // Les anciennes entrées n'ont pas le nom du patient : il alimente la liste de recherche.
+                if (!entry.patientName && report.data?.patientName) {
+                    updates[`patientRecords/${patientNode}/${reportKey}/patientName`] = report.data.patientName;
+                }
             }
         }
         if (onProgress) onProgress(stats.scanned);

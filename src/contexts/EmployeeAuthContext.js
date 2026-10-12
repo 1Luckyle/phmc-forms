@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, database } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
+import { canonicalPatientId } from '../utils/patientId';
 
 const CREATE_GTAW_CIVILIAN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawCivilianAccount';
 
@@ -20,6 +21,10 @@ export const EmployeeAuthProvider = ({ children }) => {
     // staff/phmc|coroner : sans elle, ses rapports/copies étaient rangés sous
     // son adresse e-mail au lieu de son nom.
     const [adminStaffProfile, setAdminStaffProfile] = useState(null);
+    // ID patient d'un membre du personnel (un médecin peut être hospitalisé : il a lui aussi
+    // un dossier patient). Mémorisé dans staffPatientIds/{uid} quand il ne peut pas être
+    // déduit de la fiche (voir myPatientID plus bas).
+    const [staffPatientId, setStaffPatientId] = useState('');
     const isCivilian = !isAdmin && !employeeProfile && !!civilianProfile;
 
     useEffect(() => {
@@ -346,7 +351,57 @@ export const EmployeeAuthProvider = ({ children }) => {
     const isPhmcStaff = staffProfile?.type === 'phmc';
     const canUseAma = isAdmin || isPhmcStaff;
 
+    // Rôle « recruteur » : un compte Civil (mêmes accès qu'un civil) + un drapeau
+    // recruiterUIDs/{uid} posé par un admin, qui donne en plus l'onglet Recrutement de la
+    // boîte à outils. Un recruteur reste donc `isCivilian`.
+    const [isRecruiter, setIsRecruiter] = useState(false);
+    const uid = currentEmployee?.uid || null;
+    useEffect(() => {
+        if (!uid) {
+            setIsRecruiter(false);
+            setStaffPatientId('');
+            return undefined;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const recruiterSnap = await get(ref(database, `recruiterUIDs/${uid}`));
+                if (!cancelled) setIsRecruiter(recruiterSnap.val() === true);
+            } catch (error) {
+                if (!cancelled) setIsRecruiter(false);
+            }
+            try {
+                const patientIdSnap = await get(ref(database, `staffPatientIds/${uid}`));
+                if (!cancelled) setStaffPatientId(patientIdSnap.exists() ? String(patientIdSnap.val()) : '');
+            } catch (error) {
+                if (!cancelled) setStaffPatientId('');
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [uid]);
+    // Peut accéder à la gestion des recrutements (admins + recruteurs).
+    const canManageRecruitment = isAdmin || isRecruiter;
+
+    // ID patient de la personne connectée : celui de son profil Civil, sinon (personnel) celui
+    // déduit de son personnage GTA World (PHMC-{id}, même convention que les civils), sinon
+    // celui qu'elle a renseigné elle-même.
+    const myPatientID = canonicalPatientId(
+        civilianProfile?.patientID
+        || staffPatientId
+        || (staffProfile?.gtawCharacterId != null ? `PHMC-${staffProfile.gtawCharacterId}` : '')
+    );
+    const setMyPatientId = async (patientId) => {
+        if (!uid) return;
+        const canonical = canonicalPatientId(patientId);
+        await set(ref(database, `staffPatientIds/${uid}`), canonical || null);
+        setStaffPatientId(canonical);
+    };
+
     const value = {
+        isRecruiter,
+        canManageRecruitment,
+        myPatientID,
+        setMyPatientId,
         currentEmployee,
         employeeProfile,
         staffProfile,

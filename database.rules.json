@@ -42,9 +42,38 @@
     },
 
     // ─── Options des formulaires & agences ───────────────────────────────────
+    // Les postes de recrutement (statut OUVERT/FERMÉ, description…) sont aussi gérés
+    // par les RECRUTEURS (recruiterUIDs, posé par un admin) : ils n'ont accès en écriture
+    // qu'à ces six nœuds, pas au reste de selectOptions.
     "selectOptions": {
       ".read":  true,
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
+      "physicianRecruitmentDetails": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
+      "psychPositionDetailsData":    { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
+      "adminPositionDetailsData":    { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
+      "nursePositionDetailsData":    { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
+      "emsPositionDetailsData":      { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" },
+      "coronerPositionDetailsData":  { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true" }
+    },
+
+    // ─── Rôle « recruteur » ───────────────────────────────────────────────────
+    // recruiterUIDs/{uid}: true — posé/retiré par un admin (menu de gestion des
+    // utilisateurs). Un recruteur reste un compte Civil ; ce drapeau lui ajoute l'onglet
+    // Recrutement de la boîte à outils. Lisible par tout utilisateur connecté (l'app
+    // vérifie son propre uid au chargement).
+    "recruiterUIDs": {
+      ".read":  "auth != null",
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── ID patient d'un membre du personnel ──────────────────────────────────
+    // Un médecin peut être hospitalisé : il a lui aussi un dossier patient. Son ID est
+    // déduit de son personnage GTA World quand c'est possible, sinon il le renseigne ici.
+    "staffPatientIds": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
+      }
     },
     "agencies": {
       ".read":  true,
@@ -213,7 +242,10 @@
       ".read": "auth != null",
       "$applicantUid": {
         "$applicationId": {
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true)"
+          // Suppression : admins ; recruteurs et candidats (pour LEURS candidatures)
+          // uniquement tant que l'interrupteur Debug « suppression des candidatures » est
+          // activé dans le panneau admin (adminSettings/debugDeleteApplications).
+          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruiterUIDs').child(auth.uid).val() === true || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true))"
         }
       }
     },

@@ -66,6 +66,8 @@ const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModa
 const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
+const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'));
+const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
 const CctvRequestWebhookModal = lazy(() => import('./components/Admin/CctvRequestWebhookModal'));
@@ -128,7 +130,7 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, canManageRecruitment, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
@@ -142,6 +144,10 @@ function MainApp({
     // Outil personnel "Dossier Patient" (Lot 5) : recherche par ID patient,
     // voir PatientDossierModal.js.
     const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
+    // « Mon dossier patient » : le personnel peut lui aussi être un patient.
+    const [showMyPatientFile, setShowMyPatientFile] = useState(false);
+    // Gestion du recrutement (admins + recruteurs).
+    const [showRecruitmentManager, setShowRecruitmentManager] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
     // Modal de sélection d'employé affichée à un admin qui clique sur
     // "Sauvegarder le rapport" : un admin peut sauvegarder pour n'importe quel
@@ -1533,24 +1539,27 @@ function MainApp({
                 {/* Message d'information si connecté en tant que Civil */}
                 {isCivilian && civilianProfile && (
                     <div style={{
-                        backgroundColor: '#1f3a2e',
+                        backgroundColor: isRecruiter ? '#2d1f3a' : '#1f3a2e',
                         color: '#fff',
                         padding: '10px 20px',
                         margin: '10px 20px',
                         borderRadius: '8px',
-                        border: '1px solid #2e7d32',
+                        border: `1px solid ${isRecruiter ? '#8957e5' : '#2e7d32'}`,
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px'
                     }}>
-                        <i className="fas fa-id-card" style={{ color: '#66bb6a' }}></i>
+                        <i className={`fas ${isRecruiter ? 'fa-user-tie' : 'fa-id-card'}`} style={{ color: isRecruiter ? '#b392f0' : '#66bb6a' }}></i>
                         <span>
-                            <strong>Connecté en tant que Civil :</strong> {
+                            <strong>{isRecruiter ? 'Connecté en tant que Recruteur :' : 'Connecté en tant que Civil :'}</strong> {
                                 civilianProfile.firstName && civilianProfile.lastName
                                     ? `${civilianProfile.firstName} ${civilianProfile.lastName}`
                                     : (civilianProfile.email || '')
                             } (ID patient : <strong>{civilianProfile.patientID}</strong>).
                             Vous pouvez sauvegarder et retrouver vos propres dossiers médicaux et candidatures.
+                            {isRecruiter && (
+                                <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement »).</>
+                            )}
                         </span>
                     </div>
                 )}
@@ -1604,6 +1613,16 @@ function MainApp({
                                         {!isCivilian && (currentEmployee || isAdmin) && (
                                             <Dropdown.Item onClick={() => {setShowPatientDossierModal(true); setShowToolsDropdown(false);}}>
                                                 <i className="fas fa-folder-open"></i> Dossier Patient
+                                            </Dropdown.Item>
+                                        )}
+                                        {canManageRecruitment && (
+                                            <Dropdown.Item onClick={() => {setShowRecruitmentManager(true); setShowToolsDropdown(false);}}>
+                                                <i className="fas fa-user-plus"></i> Gestion du recrutement
+                                            </Dropdown.Item>
+                                        )}
+                                        {!isCivilian && !!staffName && (
+                                            <Dropdown.Item onClick={() => {setShowMyPatientFile(true); setShowToolsDropdown(false);}}>
+                                                <i className="fas fa-user-injured"></i> Mon dossier patient
                                             </Dropdown.Item>
                                         )}
                                         {/* Formulaire AMA : réservé aux médecins (personnel PHMC) et aux admins. */}
@@ -2328,12 +2347,23 @@ function MainApp({
                             loadReport={loadReportForUser}
                             deleteReportsForUser={deleteReportsForUser}
                         />
+                        <RecruitmentManager
+                            show={showRecruitmentManager}
+                            onHide={() => setShowRecruitmentManager(false)}
+                            showNotification={showNotification}
+                        />
+                        <MyPatientFileModal
+                            show={showMyPatientFile}
+                            onHide={() => setShowMyPatientFile(false)}
+                            showNotification={showNotification}
+                        />
                         <MyJobApplicationsModal
                             show={showMyJobApplications}
                             onHide={() => setShowMyJobApplications(false)}
                             applications={myJobApplications}
                             isLoading={isLoadingJobApplications}
                             showNotification={showNotification}
+                            onDeleted={() => loadMyJobApplications()}
                             onUpdateStatus={async (applicantUid, applicationId, newStatus) => {
                                 const result = await updateJobApplicationStatus(applicantUid, applicationId, newStatus);
                                 if (result?.success) {

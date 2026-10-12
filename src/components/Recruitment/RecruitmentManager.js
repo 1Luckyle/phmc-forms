@@ -1,0 +1,256 @@
+// src/components/Recruitment/RecruitmentManager.js
+//
+// Gestion du recrutement, accessible depuis la boîte à outils aux ADMINS et aux
+// RECRUTEURS (compte Civil + drapeau recruiterUIDs, voir EmployeeAuthContext). Elle
+// regroupe ce qui se trouvait dans les onglets « Recrutement » et « Candidatures » du
+// panneau admin :
+//   • Postes : ouvrir/fermer, ajouter, modifier, renommer la clé, copier le BBCode des statuts ;
+//   • Candidatures : suivi du pipeline (entretiens, acceptation/refus, historique).
+// Les actions sont journalisées sur Discord comme avant (sendAdminActionWebhook).
+import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
+import { Button, Spinner, Nav } from 'react-bootstrap';
+import { ref, get, update } from 'firebase/database';
+import * as Sentry from '@sentry/react';
+import { database } from '../../firebase';
+import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { copyToClipboard } from '../notificationService';
+import { generateAdminView } from '../../formDefinitions';
+import { sendAdminActionWebhook } from '../Admin/adminUtils';
+import RoleModal from '../Admin/RoleModal';
+import RenameRoleKeyModal from '../Admin/RenameRoleKeyModal';
+import PendingJobApplications from '../Admin/PendingJobApplications';
+
+const RECRUITMENT_CATEGORIES = {
+    physician: { displayName: 'Physician Recruitment', path: 'selectOptions/physicianRecruitmentDetails' },
+    psych: { displayName: 'Psychologist/Psychiatrist Recruitment', path: 'selectOptions/psychPositionDetailsData' },
+    admin: { displayName: 'Admin Recruitment', path: 'selectOptions/adminPositionDetailsData' },
+    nursing: { displayName: 'Nursing Recruitment', path: 'selectOptions/nursePositionDetailsData' },
+    ems: { displayName: 'EMS Recruitment', path: 'selectOptions/emsPositionDetailsData' },
+    coroner: { displayName: 'Coroner Recruitment', path: 'selectOptions/coronerPositionDetailsData' },
+};
+
+const overlayStyle = {
+    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex',
+    justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+};
+const contentStyle = {
+    backgroundColor: '#0d1117', color: '#c9d1d9', padding: '20px', borderRadius: '6px',
+    width: '96%', maxWidth: '1200px', height: '90vh', display: 'flex', flexDirection: 'column',
+    position: 'relative', border: '1px solid #30363d', overflow: 'hidden',
+};
+const closeStyle = {
+    position: 'absolute', top: '12px', right: '16px', background: 'transparent', border: 'none',
+    color: '#f85149', fontSize: '28px', lineHeight: 1, cursor: 'pointer', zIndex: 5,
+};
+
+const RecruitmentManager = ({ show, onHide, showNotification }) => {
+    const { currentEmployee, isAdmin, isRecruiter, canManageRecruitment } = useEmployeeAuth();
+    const actorLabel = isAdmin ? 'Admin' : 'Recruteur';
+    const actorEmail = currentEmployee?.email || 'Inconnu';
+
+    const [tab, setTab] = useState('positions');
+    const [category, setCategory] = useState('');
+    const [positions, setPositions] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [roleToEdit, setRoleToEdit] = useState(null);
+    const [roleToRename, setRoleToRename] = useState(null);
+
+    const config = category ? RECRUITMENT_CATEGORIES[category] : null;
+
+    const loadPositions = useCallback(async () => {
+        if (!config) { setPositions({}); return; }
+        setIsLoading(true);
+        try {
+            const snapshot = await get(ref(database, config.path));
+            setPositions(snapshot.exists() ? snapshot.val() : {});
+        } catch (error) {
+            console.error(`Error loading ${config.displayName}:`, error);
+            showNotification(`Échec du chargement des postes (${config.displayName}).`, 'error');
+            setPositions({});
+        } finally {
+            setIsLoading(false);
+        }
+    }, [config, showNotification]);
+
+    useEffect(() => {
+        if (show) loadPositions();
+    }, [show, loadPositions]);
+
+    useEffect(() => {
+        if (!show) { setCategory(''); setTab('positions'); setShowRoleModal(false); setRoleToEdit(null); setRoleToRename(null); }
+    }, [show]);
+
+    const handleToggleStatus = async (positionKey, currentStatus) => {
+        const position = positions[positionKey];
+        if (!config || !position) return;
+        const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+        const name = position.displayName || position.name || positionKey;
+        setIsUpdating(true);
+        try {
+            await update(ref(database), { [`${config.path}/${positionKey}/status`]: newStatus });
+            showNotification(`${name} est maintenant ${newStatus} pour ${config.displayName}.`, 'check-circle');
+            sendAdminActionWebhook(actorEmail, 'Statut de recrutement modifié', `Poste : ${name}\nNouveau statut : ${newStatus}`, config.displayName, actorLabel);
+            await loadPositions();
+        } catch (error) {
+            console.error(`Error updating status for ${positionKey}:`, error);
+            Sentry.captureException(error, { extra: { context: 'RecruitmentManager toggle status', positionKey } });
+            showNotification(`Échec de la mise à jour du statut pour ${name}.`, 'error');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleRoleSaved = (savedRole, actionType) => {
+        loadPositions();
+        if (!savedRole) return;
+        sendAdminActionWebhook(
+            actorEmail,
+            actionType === 'edited' ? 'Rôle modifié' : 'Nouveau rôle ajouté',
+            `Nom du rôle : ${savedRole.displayName || savedRole.originalKey}\nCode court : ${savedRole.shortCode || 'N/A'}\nStatut : ${savedRole.status || 'N/A'}\nClé : ${savedRole.originalKey}`,
+            config?.displayName, actorLabel
+        );
+    };
+
+    const handleCopyStatusesBBCode = async () => {
+        if (!config) return;
+        const bbCode = generateAdminView({
+            isAdminAuthenticated: true,
+            adminDisplayData: Object.keys(positions).length ? positions : null,
+            adminSelectedCategoryName: config.displayName,
+        });
+        await copyToClipboard(bbCode, showNotification, 'BBCode des statuts de recrutement copié !');
+    };
+
+    if (!show) return null;
+
+    if (!canManageRecruitment) {
+        return ReactDOM.createPortal(
+            <div style={overlayStyle} onClick={onHide}>
+                <div style={{ ...contentStyle, height: 'auto', maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+                    <button onClick={onHide} style={closeStyle} aria-label="Fermer">&times;</button>
+                    <p style={{ margin: '30px 0', textAlign: 'center' }}>
+                        La gestion du recrutement est réservée aux administrateurs et aux recruteurs.
+                    </p>
+                </div>
+            </div>,
+            document.getElementById('modal-root')
+        );
+    }
+
+    return ReactDOM.createPortal(
+        <div style={overlayStyle} onClick={onHide}>
+            <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
+                <button onClick={onHide} style={closeStyle} aria-label="Fermer">&times;</button>
+                <h5 style={{ marginBottom: '4px' }}>
+                    <i className="fas fa-user-plus" style={{ marginRight: '8px' }}></i>Gestion du recrutement
+                </h5>
+                <p style={{ color: '#8b949e', fontSize: '0.85em', marginBottom: '10px' }}>
+                    Connecté en tant que <strong>{isAdmin ? 'administrateur' : 'recruteur'}</strong>
+                    {isRecruiter && !isAdmin ? ' (compte Civil + gestion du recrutement)' : ''}.
+                </p>
+
+                <Nav variant="tabs" activeKey={tab} onSelect={(key) => setTab(key)} style={{ marginBottom: '12px' }}>
+                    <Nav.Item><Nav.Link eventKey="positions"><i className="fas fa-briefcase me-2"></i>Postes</Nav.Link></Nav.Item>
+                    <Nav.Item><Nav.Link eventKey="applications"><i className="fas fa-file-signature me-2"></i>Candidatures</Nav.Link></Nav.Item>
+                </Nav>
+
+                <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                    {tab === 'positions' && (
+                        <>
+                            <div className="form-group mb-3">
+                                <label htmlFor="recruitmentCategory">Catégorie de recrutement</label>
+                                <select id="recruitmentCategory" className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+                                    <option value="">-- Sélectionnez une catégorie --</option>
+                                    {Object.entries(RECRUITMENT_CATEGORIES).map(([key, cat]) => (
+                                        <option key={key} value={key}>{cat.displayName}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {config ? (
+                                <>
+                                    <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                        <h6 className="mb-0">Postes — {config.displayName}</h6>
+                                        <div className="d-flex gap-2">
+                                            <Button variant="outline-info" size="sm" onClick={handleCopyStatusesBBCode} disabled={isLoading}
+                                                title="Copie le BBCode « Statuts de recrutement » de cette catégorie">
+                                                <i className="fas fa-copy"></i> Copier le BBCode des statuts
+                                            </Button>
+                                            <Button variant="success" size="sm" onClick={() => { setRoleToEdit(null); setShowRoleModal(true); }}>
+                                                <i className="fas fa-plus-circle"></i> Ajouter un rôle
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    {isLoading ? <Spinner animation="border" /> : Object.keys(positions).length > 0 ? (
+                                        <div className="list-group mb-3">
+                                            {Object.entries(positions).map(([key, position]) => (
+                                                <div key={key} className="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2"
+                                                    style={{ backgroundColor: '#161b22', color: '#c9d1d9', borderColor: '#30363d' }}>
+                                                    <div>
+                                                        {position.displayName || position.name || key} :{' '}
+                                                        <strong style={{ color: position.status === 'OPEN' ? '#3fb950' : '#f85149' }}>{position.status || 'N/A'}</strong>
+                                                        <br />
+                                                        <small style={{ color: '#8b949e' }}>Clé BD : {key}</small>
+                                                    </div>
+                                                    <div className="d-flex gap-2">
+                                                        <Button variant="outline-warning" size="sm" disabled={isUpdating}
+                                                            onClick={() => setRoleToRename({ key, data: position })}
+                                                            title="Renommer la clé de la base de données (sensible : change l'identifiant du poste)">
+                                                            <i className="fas fa-key"></i> Renommer la clé
+                                                        </Button>
+                                                        <Button variant="outline-secondary" size="sm" disabled={isUpdating}
+                                                            onClick={() => { setRoleToEdit({ ...position, originalKey: key }); setShowRoleModal(true); }}>
+                                                            <i className="fas fa-edit"></i> Modifier
+                                                        </Button>
+                                                        <Button variant={position.status === 'OPEN' ? 'outline-danger' : 'outline-success'} size="sm" disabled={isUpdating}
+                                                            onClick={() => handleToggleStatus(key, position.status)}>
+                                                            {position.status === 'OPEN' ? 'Fermer (CLOSED)' : 'Ouvrir (OPEN)'}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : <p>Aucun poste pour {config.displayName}.</p>}
+                                </>
+                            ) : <p style={{ color: '#8b949e' }}>Sélectionnez une catégorie pour gérer ses postes.</p>}
+                        </>
+                    )}
+
+                    {tab === 'applications' && <PendingJobApplications showNotification={showNotification} />}
+                </div>
+
+                {config && (
+                    <RoleModal
+                        show={showRoleModal}
+                        onHide={() => { setShowRoleModal(false); setRoleToEdit(null); }}
+                        categoryKey={category}
+                        categoryConfig={config}
+                        showNotification={showNotification}
+                        onRoleSaved={handleRoleSaved}
+                        roleToEdit={roleToEdit}
+                    />
+                )}
+                {config && roleToRename && (
+                    <RenameRoleKeyModal
+                        show={!!roleToRename}
+                        onHide={() => setRoleToRename(null)}
+                        categoryConfig={config}
+                        currentRoleKey={roleToRename.key}
+                        currentRoleData={roleToRename.data}
+                        showInAppNotification={showNotification}
+                        onKeyRenamed={() => { setRoleToRename(null); loadPositions(); }}
+                        sendAdminActionWebhook={(email, action, details, categoryName) => sendAdminActionWebhook(email, action, details, categoryName, actorLabel)}
+                        adminUserEmail={actorEmail}
+                    />
+                )}
+            </div>
+        </div>,
+        document.getElementById('modal-root')
+    );
+};
+
+export default RecruitmentManager;

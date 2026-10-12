@@ -35,3 +35,34 @@ export const sendDiscordNotification = async (webhookURL, payload, context, noti
         return false;
     }
 };
+// Journal des actions d'administration/recrutement sur Discord (même format que celui du
+// panneau admin). `actorLabel` : « Admin » ou « Recruteur » selon qui agit.
+export const sendAdminActionWebhook = async (actorEmail, action, details, categoryName = null, actorLabel = 'Admin') => {
+    const webhookURL = process.env.REACT_APP_ADMIN_ACTION_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+    if (!webhookURL) {
+        console.warn('Admin action webhook URL not configured. Skipping log.');
+        return;
+    }
+    let timeZone = 'N/A';
+    try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { /* ignoré */ }
+    const lines = [`**Action:** ${action || 'Action Inconnue'}`, `**${actorLabel}:** ${actorEmail || 'Inconnu'}`];
+    if (categoryName) lines.push(`**Catégorie:** ${categoryName}`);
+    const embed = {
+        title: 'Action Admin Enregistrée',
+        color: 0xFFA500,
+        description: lines.join('\n'),
+        fields: [{ name: 'Détails', value: `\`\`\`${String(details || '').substring(0, 1000)}\`\`\``, inline: false }],
+        timestamp: new Date().toISOString(),
+        footer: { text: `PHMC-FR Tools | ${timeZone}` },
+    };
+    try {
+        await fetch(webhookURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ embeds: [embed] }),
+        });
+    } catch (error) {
+        console.error('Error sending admin action webhook:', error);
+        Sentry.captureException(error, { extra: { context: 'Admin Action Webhook (recruitment)' } });
+    }
+};

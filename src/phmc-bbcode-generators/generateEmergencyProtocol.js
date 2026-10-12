@@ -89,7 +89,7 @@ ${patientChiefComplaint || 'N/A'}
 ${formData.patientInjuryMechanism || 'N/A'}
 [br][/br]
 [u]Niveau de douleur/Indice de gravité d'urgence (IGU): [/u][br][/br]
-[cb${formData.painLevel === 'patientNoPain' ? 'c' : ''}] [color=#0040FF]Niveau 5: pas de douleur/non urgent[/color] [cb${formData.painLevel === 'patientNormalPain' ? 'c' : ''}] [color=#00BF00]Niveau 4: douleur normale/moins urgent[/color] [cb${formData.painLevel === 'patientMildPain' ? 'c' : ''}] [color=#FFFF00]Niveau 3: douleur légère/urgent[/color] [cb${formData.painLevel === 'patientSeverePain' ? 'c' : ''}] [color=#FF8040]Niveau 2: douleur sévère/très urgent [/color][cb${formData.painLevel === 'patientCritical' ? 'c' : ''}] [color=#FF0000]Niveau 1: critique/émergence [/color][/left]
+[cb${formData.painLevel === 'patientNoPain' ? 'c' : ''}] [color=#0040FF]Niveau 5: pas de douleur/non urgent[/color] [cb${formData.painLevel === 'patientNormalPain' ? 'c' : ''}] [color=#00BF00]Niveau 4: douleur normale/moins urgent[/color] [cb${formData.painLevel === 'patientMildPain' ? 'c' : ''}] [color=#E6B800]Niveau 3: douleur légère/urgent[/color] [cb${formData.painLevel === 'patientSeverePain' ? 'c' : ''}] [color=#FF8040]Niveau 2: douleur sévère/très urgent [/color][cb${formData.painLevel === 'patientCritical' ? 'c' : ''}] [color=#FF0000]Niveau 1: critique/émergence [/color][/left]
 [/table]
 [divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Signes vitaux[/b][/color][/center][/divboxcolor]
 [table][tr][td][center]Température: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normale [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermique [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermique[/center]
