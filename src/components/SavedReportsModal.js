@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
+import { ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
 import { getFormDefinition } from '../formDefinitions';
 
 const modalStyle = {
@@ -260,10 +261,15 @@ const SavedReportsModal = ({
     onAttachReportSummaryRequest,
     preselectedEmployeeType,
     bbCodeVersion,
+    attachMode,
     loadSharedReportsForPatient,
     shareReportWithPatient,
     copyReportToOwnAccount,
 }) => {
+    // Mode « joindre » : l'Email DMEC attache des rapports de décès ; le certificat médical joint un
+    // rapport clinique accepté (un seul, voir filterByBbCodeVersions) sous forme de résumé simplifié.
+    const isAttachMode = !!attachMode || bbCodeVersion === 2;
+    const isCertificateAttach = !!attachMode && bbCodeVersion !== 2;
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedReportKeys, setSelectedReportKeys] = useState([]);
@@ -471,7 +477,11 @@ const SavedReportsModal = ({
         // copier leur BBCode, mais on ne CHARGE qu'un rapport à la fois (chaque rapport
         // remplace le formulaire correspondant). Seul l'attachement à l'Email DMEC en accepte
         // plusieurs.
-        if (bbCodeVersion !== 2) {
+        if (isCertificateAttach && selectedReportKeys.length > 1) {
+            showNotification("Un certificat ne peut recevoir qu'un seul rapport joint : sélectionnez-en un seul.", 'warning', 6000);
+            return;
+        }
+        if (!isAttachMode) {
             if (selectedReportKeys.length > 1) {
                 showNotification("Vous ne pouvez charger qu'un seul rapport à la fois. Désélectionnez les autres rapports (la suppression et la copie du BBCode restent possibles en sélection multiple).", 'warning', 7000);
                 return;
@@ -494,7 +504,7 @@ const SavedReportsModal = ({
             .filter((r) => selectedReportKeys.includes(r.key))
             .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
-        const isAttaching = bbCodeVersion === 2;
+        const isAttaching = isAttachMode;
         const actionFunction = isAttaching ? handleReportSelectedForAttachment : loadReport;
 
         for (let i = 0; i < reportsToLoad.length; i++) {
@@ -695,6 +705,15 @@ const SavedReportsModal = ({
                     )}
                 </div>
 
+                {isCertificateAttach && (
+                    <div style={{ backgroundColor: '#161b22', border: '1px solid #1f6feb', borderRadius: '5px', padding: '8px 12px', marginBottom: '10px', fontSize: '0.85em' }}>
+                        <strong>Pièce jointe d'un certificat médical.</strong> Seuls ces rapports sont proposés :{' '}
+                        {ACCEPTED_REPORT_LABELS.join(' · ')}. Le rapport n'est jamais joint en entier : il est remplacé par un
+                        <strong> résumé simplifié</strong> (type de prise en charge, établissement, date, et pour les urgences/consultations
+                        générales l'hospitalisation et le suivi) — le diagnostic, les traitements et les détails médicaux ne sont pas transmis.
+                    </div>
+                )}
+
                 <hr style={hrStyle} />
 
                 <div style={modalHeaderStyle} key={selectedEmployee ? selectedEmployee.value : 'noEmployee'}>
@@ -754,13 +773,13 @@ const SavedReportsModal = ({
                                             </td>
                                             <td style={tdStyle}>{new Date(report.timestamp).toLocaleString()}</td>
                                             <td style={actionsTdStyle}>
-                                                {isLoadable(report) && !report.sharedByStaff && (loadReport || bbCodeVersion === 2) && (
+                                                {isLoadable(report) && !report.sharedByStaff && (loadReport || isAttachMode) && (
                                                     <Button
                                                         variant="primary"
                                                         size="sm"
                                                         className="me-2"
                                                         onClick={() => {
-                                                            if (bbCodeVersion === 2) {
+                                                            if (isAttachMode) {
                                                                 handleReportSelectedForAttachment(report.key, selectedEmployee.value);
                                                             } else if (loadReport) {
                                                                 loadReport(report.key, selectedEmployee.value);
@@ -769,7 +788,7 @@ const SavedReportsModal = ({
                                                         }}
                                                         disabled={isLoadingReports || !selectedEmployee}
                                                     >
-                                                        {bbCodeVersion === 2 ? 'Attacher' : 'Charger'}
+                                                        {isAttachMode ? (isCertificateAttach ? 'Joindre' : 'Attacher') : 'Charger'}
                                                     </Button>
                                                 )}
                                                 {renderCopyMenu(report)}
@@ -861,11 +880,11 @@ const SavedReportsModal = ({
                                 <Dropdown.Item onClick={handleCopySelectedTitles}>Copier les titres sélectionnés</Dropdown.Item>
                             </Dropdown.Menu>
                         </Dropdown>
-                        {(loadReport || bbCodeVersion === 2) && (
+                        {(loadReport || isAttachMode) && (
                         <Button
                             style={actionButtonStyle}
-                            disabled={selectedReportKeys.length === 0 || isLoadingMultiple || (bbCodeVersion !== 2 && selectedReportKeys.length > 1)}
-                            title={bbCodeVersion !== 2 && selectedReportKeys.length > 1 ? 'Un seul rapport peut être chargé à la fois' : ''}
+                            disabled={selectedReportKeys.length === 0 || isLoadingMultiple || ((!isAttachMode || isCertificateAttach) && selectedReportKeys.length > 1)}
+                            title={(!isAttachMode || isCertificateAttach) && selectedReportKeys.length > 1 ? 'Un seul rapport peut être sélectionné à la fois' : ''}
                             onClick={handleLoadSelected}
                         >
                             {isLoadingMultiple ? (
@@ -874,7 +893,7 @@ const SavedReportsModal = ({
                                     Chargement...
                                 </>
                             ) : (
-                                `${bbCodeVersion === 2 ? 'Attacher la sélection' : 'Charger le rapport sélectionné'} (${selectedReportKeys.length})`
+                                `${isAttachMode ? (isCertificateAttach ? 'Joindre le rapport sélectionné' : 'Attacher la sélection') : 'Charger le rapport sélectionné'} (${selectedReportKeys.length})`
                             )}
                         </Button>
                         )}

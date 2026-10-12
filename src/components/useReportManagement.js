@@ -8,6 +8,7 @@ import { sendEyefindMail } from '../utils/eyefindMail';
 import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
+import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
@@ -862,9 +863,12 @@ export const useReportManagement = (
             // --- MODIFICATION END ---
 
             // The pending callback now primarily handles form-specific fields like 'attachedReportSummary'
-            pendingReportAttachmentCallback.current(reportData);
+            const attachOutcome = pendingReportAttachmentCallback.current(reportData);
 
-            showNotification(`Report "${reportData.originalKey}" attached successfully.`, 'check-circle');
+            // Un rapport refusé par le formulaire (ex. certificat : rapport non accepté) retourne false.
+            if (attachOutcome !== false) {
+                showNotification(`Report "${reportData.originalKey}" attached successfully.`, 'check-circle');
+            }
 
         } else {
             if (!result.success) {
@@ -889,7 +893,8 @@ export const useReportManagement = (
         // Même logique que toggleSavedReports : plus de gate sur le formulaire,
         // SavedReportsModal gère l'accès selon la connexion (voir plus haut).
         pendingReportAttachmentCallback.current = callback;
-        setReportSelectionFilter([ER_PROTOCOL_VERSION, CONSULTATION_NOTES_PHMC_VERSION, CONSULTATION_NOTES_PBC_VERSION]);
+        // Rapports acceptés pour un certificat médical (voir utils/employerSummary.js).
+        setReportSelectionFilter(ACCEPTED_REPORT_VERSIONS);
         setPreselectedEmployeeType('PHMC'); // Set to PHMC for this specific use case
         setShowSavedReports(true);
     }, [ER_PROTOCOL_VERSION, CONSULTATION_NOTES_PBC_VERSION, CONSULTATION_NOTES_PHMC_VERSION, setReportSelectionFilter, setPreselectedEmployeeType, setShowSavedReports]);

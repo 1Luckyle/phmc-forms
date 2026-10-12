@@ -1,5 +1,6 @@
 import React, { useState } from 'react'; // Import useState
-import { Form, InputGroup, Button } from 'react-bootstrap';
+import { Form, InputGroup, Button, Alert } from 'react-bootstrap';
+import { prepareAttachedReport, ACCEPTED_REPORT_VERSIONS, ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
 import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
 
@@ -11,10 +12,41 @@ const SicknessEmail = ({
     handleImageUpload,
     isUploading,
     onAttachReportSummaryRequest, 
-    handleSelectChange
+    handleSelectChange,
+    showNotification
 }) => {
     // New state to track if consent has been confirmed
     const [consentConfirmed, setConsentConfirmed] = useState(false);
+    const notify = showNotification || (() => {});
+
+    // Vérifie qu'un contenu est bien un rapport ACCEPTÉ (d'après ses titres), du bon patient, puis
+    // le remplace par son résumé simplifié. Retourne true si le rapport a été joint.
+    const acceptReport = (bbCode) => {
+        const result = prepareAttachedReport(bbCode, { patientName: formData.patientName });
+        if (!result.ok) {
+            notify(result.reason, 'warning', 8000);
+            return false;
+        }
+        setFormData((prev) => ({ ...prev, attachedReportSummary: result.summary }));
+        notify(`Rapport reconnu (${result.kindLabel}) : joint sous forme de résumé simplifié, sans les détails médicaux.`, 'check-circle', 7000);
+        return true;
+    };
+
+    // Le résumé ne se tape pas : on peut seulement le coller (vérifié) ou le vider.
+    const handleAttachedSummaryPaste = (event) => {
+        event.preventDefault();
+        if (!consentConfirmed) {
+            notify("Confirmez d'abord le consentement du patient avant de joindre un rapport.", 'warning');
+            return;
+        }
+        acceptReport(event.clipboardData.getData('text'));
+    };
+    const handleAttachedSummaryChange = (event) => {
+        if (!event.target.value.trim()) {
+            setFormData((prev) => ({ ...prev, attachedReportSummary: '' }));
+        }
+        // Toute autre modification manuelle est ignorée (la valeur reste celle du résumé vérifié).
+    };
 
     return (
         <>
@@ -141,48 +173,66 @@ const SicknessEmail = ({
                 </>
             )}
 
-            {/* NEW: Attach Report Summary Section with Consent Confirmation */}
+            {/* Rapport joint : seuls certains rapports sont acceptés, et ils sont toujours SIMPLIFIÉS
+                (le certificat est destiné à un tiers : employeur, école, assurance…). */}
             <Form.Group className="mb-3">
-                <Form.Label>Résumé de rapport joint (du protocole ER ou notes de consultation)</Form.Label>
+                <Form.Label>Rapport médical joint (résumé simplifié)</Form.Label>
+                <Alert variant="info" className="py-2 small">
+                    <strong>Rapports acceptés :</strong> {ACCEPTED_REPORT_LABELS.join(' · ')}. Tout autre rapport ou texte est refusé.
+                    <br />
+                    <strong>Le rapport est simplifié :</strong> ce certificat est destiné à un tiers (employeur, école…) à qui l'on ne doit pas
+                    transmettre d'informations médicales détaillées. Le rapport n'est donc <u>pas</u> joint en entier : seuls sont conservés le
+                    type de prise en charge, l'établissement, la date et — pour les urgences et les consultations générales — l'hospitalisation
+                    et le suivi. Le diagnostic, les traitements, les résultats d'examens, les antécédents et tout détail psychiatrique ou
+                    psychologique sont retirés. Le document l'indique au destinataire.
+                </Alert>
                 <InputGroup>
                     <Form.Control
                         as="textarea"
                         rows={6}
                         name="attachedReportSummary"
                         value={formData.attachedReportSummary || ''}
-                        onChange={handleChange}
+                        onChange={handleAttachedSummaryChange}
+                        onPaste={handleAttachedSummaryPaste}
                         placeholder={
                             consentConfirmed
-                                ? "Le résumé BBCode d'un rapport joint apparaîtra ici."
-                                : "Cliquez sur 'Confirmer le consentement' pour activer la pièce jointe de rapports. VOUS DEVEZ OBTENIR LE CONSENTEMENT DU PATIENT AVANT DE JOINDRE UN RAPPORT!!! GROSSE VIOLATION HIPAA SI AUCUNE APPROBATION ET VOUS INCLUEZ DES INFORMATIONS MÉDICALES IMPORTANTES"
+                                ? "Collez ici le BBCode d'un rapport accepté (ou utilisez « Joindre un rapport ») : il sera vérifié puis remplacé par son résumé simplifié."
+                                : "Cliquez sur « Confirmer le consentement » pour activer la pièce jointe de rapports. VOUS DEVEZ OBTENIR LE CONSENTEMENT DU PATIENT AVANT DE JOINDRE UN RAPPORT !"
                         }
-                        readOnly={!consentConfirmed} // Make textarea read-only until consent is confirmed
                     />
                     {!consentConfirmed ? (
-                        <Button
-                            variant="warning" // Use a warning color to draw attention
-                            onClick={() => setConsentConfirmed(true)}
-                        >
+                        <Button variant="warning" onClick={() => setConsentConfirmed(true)}>
                             <i className="fas fa-check-circle"></i> Confirmer le consentement
                         </Button>
                     ) : (
                         <Button
                             variant="info"
                             onClick={() => onAttachReportSummaryRequest((reportData) => {
-                                // This callback is executed when a report is selected in the modal
-                                // reportData will contain bbCode, data, originalKey, etc.
-                                setFormData(prev => ({
-                                    ...prev,
-                                    attachedReportSummary: reportData.bbCode // Populate with the full BBCode
-                                }));
+                                // Exécuté quand un rapport est choisi dans « Rapports enregistrés ».
+                                // Retourner false = rapport refusé (rien n'est joint).
+                                if (!ACCEPTED_REPORT_VERSIONS.includes(Number(reportData.bbCodeVersion))) {
+                                    notify(`Ce rapport n'est pas accepté pour un certificat. Rapports acceptés : ${ACCEPTED_REPORT_LABELS.join(', ')}.`, 'warning', 8000);
+                                    return false;
+                                }
+                                return acceptReport(reportData.bbCode);
                             })}
                         >
                             <i className="fas fa-paperclip"></i> Joindre un rapport
                         </Button>
                     )}
                 </InputGroup>
+                {formData.attachedReportSummary ? (
+                    <div className="small text-success mt-1">
+                        <i className="fas fa-check-circle"></i> Résumé simplifié joint (informations générales uniquement).{' '}
+                        <Button variant="link" size="sm" className="p-0 align-baseline"
+                            onClick={() => setFormData((prev) => ({ ...prev, attachedReportSummary: '' }))}>
+                            Retirer le rapport joint
+                        </Button>
+                    </div>
+                ) : null}
                 <span className="helper-text">
-                    D'abord, confirmez que vous avez le consentement du patient. Ensuite, cliquez sur "Joindre un rapport" pour sélectionner un rapport de protocole ER ou de notes de consultation sauvegardé. Son BBCode sera inséré ici.
+                    D'abord, confirmez que vous avez le consentement du patient. Ensuite, collez un rapport accepté ou cliquez sur « Joindre un rapport » :
+                    seul un résumé simplifié est conservé et imprimé dans le certificat. Il n'est pas possible de modifier ce résumé à la main.
                 </span>
             </Form.Group>
 

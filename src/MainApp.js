@@ -714,6 +714,14 @@ function MainApp({
         initialFormData
     );
 
+    // Fermer « Rapports enregistrés » abandonne aussi une pièce jointe en attente (sinon le filtre
+    // « rapports acceptés pour un certificat » resterait actif à la prochaine ouverture).
+    const closeSavedReports = () => {
+        setShowSavedReports(false);
+        setReportSelectionFilter(null);
+        if (pendingReportAttachmentCallback) pendingReportAttachmentCallback.current = null;
+    };
+
     const clearForm = () => {
         setFormData(prevFormData => ({
             ...initialFormData,
@@ -2295,8 +2303,8 @@ function MainApp({
 
                         <SavedReportsModal
                             show={showSavedReports}
-                            onHide={() => setShowSavedReports(false)}
-                            onClose={() => setShowSavedReports(false)}
+                            onHide={closeSavedReports}
+                            onClose={closeSavedReports}
                             savedReports={savedReports}
                             reportsForSelectedUser={savedReports}
                             loadReport={loadReportForUser}
@@ -2308,6 +2316,9 @@ function MainApp({
                             isLoading={isLoadingUserReports}
                             onAttachReportSelectedForAttachment={handleReportSelectedForAttachment}
                             reportSelectionFilter={reportSelectionFilter}
+                            // Mode « joindre » (certificat médical) : seuls les rapports acceptés sont listés.
+                            filterByBbCodeVersions={reportSelectionFilter}
+                            attachMode={!!reportSelectionFilter}
                             versionNames={versionNames}
                             onEmployeeSelect={(employeeValue) => {
                                 if (employeeValue) {

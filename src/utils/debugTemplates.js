@@ -10,6 +10,8 @@
 // donc de VRAIES valeurs d'options (h.opt / h.some) pour que react-select et
 // les <select> les affichent, avec une valeur de repli si la liste est vide.
 
+import { buildEmployerSummaryBBCode } from './employerSummary';
+
 const pad = (n) => String(n).padStart(2, '0');
 
 // Même normalisation que optionize() dans MainApp.js.
@@ -626,7 +628,9 @@ const TEMPLATES = {
         reasonForSickness: 'Grippe saisonnière avec forte fièvre.',
         illnessCondition: 'Repos complet recommandé.',
         confirmationPurpose: 'Justificatif pour l\'employeur.',
-        attachedReportSummary: LOREM_SHORT,
+        attachedReportSummary: buildEmployerSummaryBBCode('consult', {
+            facility: 'Centre médical Pillbox Hill', date: h.today.split('-').reverse().join('/'), admission: 'Non', followup: 'Recommandé',
+        }),
         phmcEmployeeSignatureImage: h.img(),
         SubmitDate: h.today,
     }),

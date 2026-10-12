@@ -1,4 +1,5 @@
 // src/phmc-bbcode-generators/generateSicknessEmail.js
+import { toEmployerSafeSummary } from '../utils/employerSummary';
 
 const generateSicknessEmail = (formData) => {
     const {
@@ -47,8 +48,11 @@ N'hésitez pas à nous contacter si vous avez besoin d'informations supplémenta
         subject = 'Courriel PHMC - Objet manquant';
         emailBody = 'Veuillez sélectionner un objet de courriel (Certificat médical ou Confirmation de maladie).';
     }
-    const reportSection = attachedReportSummary
-        ? `\n\n[b]Résumé du rapport médical joint:[/b]\n[altspoiler=Résumé du rapport médical][quote]${attachedReportSummary}[/quote][/altspoiler]`
+    // Le certificat part chez un tiers : seul un résumé SIMPLIFIÉ d'un rapport accepté est joint
+    // (filet de sécurité : un rapport complet, ancien brouillon ou contenu non reconnu n'est jamais imprimé).
+    const safeReportSummary = toEmployerSafeSummary(attachedReportSummary, { patientName });
+    const reportSection = safeReportSummary
+        ? `\n\n[altspoiler=Résumé simplifié du rapport médical joint][quote]${safeReportSummary}[/quote][/altspoiler]`
         : '';
 
     const signatureBBCode = phmcEmployeeSignatureImage ? `[img]${phmcEmployeeSignatureImage.trim()}[/img]` : '';

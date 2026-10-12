@@ -26,7 +26,7 @@ const Shrink = ({
     return (
         <>
         <p>Ce formulaire est utilisé pour documenter une consultation psychologique. Il doit être ajouté au dossier pour chaque rendez-vous de psychologie, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
-        <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/SAd4NxU9VJ" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
+        <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
         <Form.Control
             type="text"
             name="patientName"

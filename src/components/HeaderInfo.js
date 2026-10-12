@@ -95,7 +95,7 @@ function HeaderInfo({ commitInfo }) {
                         </span>
                         <span className="contact-info">
                             Traduction et support côté FR: Luckyle sur <a
-                                href="https://discord.gg/dffP46zFPq"
+                                href="https://discord.gg/Qupn5tWc6H"
                                 className="discord-link"
                             >
                                 Discord PHMC FR  <i className="fab fa-discord"></i>
