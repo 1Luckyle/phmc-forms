@@ -622,6 +622,7 @@ const TEMPLATES = {
         emailPurpose: 'Sickness Note',
         emailRecipient: 'Direction des Ressources Humaines',
         patientName: h.patient.fullName,
+        patientID: h.patient.id,
         dateOfVisit: h.today,
         sicknessStartDate: h.today,
         sicknessEndDate: h.daysFromToday(5),

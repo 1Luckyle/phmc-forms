@@ -121,6 +121,21 @@ const SicknessEmail = ({
             </Form.Group>
 
             <Form.Group className="mb-3">
+                <Form.Label>ID du patient</Form.Label>
+                <Form.Control
+                    type="text"
+                    name="patientID"
+                    value={formData.patientID || ''}
+                    onChange={handleChange}
+                    placeholder="ID Patient (optionnel, ex. PHMC-2752)"
+                    className="form-control"
+                />
+                <span className="helper-text">
+                    Sert à classer le certificat dans le bon dossier patient. Laissez vide si inconnu — vérifiez qu'il correspond bien à ce patient.
+                </span>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
                 <Form.Label>Date de consultation du patient au PHMC</Form.Label>
                 <Form.Control
                     type="date"

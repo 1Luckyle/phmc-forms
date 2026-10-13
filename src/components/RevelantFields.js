@@ -394,7 +394,7 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 35: // Certificat de maladie
             return [
-                'emailPurpose', 'emailRecipient', 'patientName', 'dateOfVisit',
+                'emailPurpose', 'emailRecipient', 'patientName', 'patientID', 'dateOfVisit',
                 'sicknessStartDate', 'sicknessEndDate', 'reasonForSickness',
                 'illnessCondition', 'confirmationPurpose', 'attachedReportSummary',
                 'phmcEmployee', 'lastName', 'phmcRank', 'phmcEmployeeSignatureImage', 'SubmitDate',
