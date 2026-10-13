@@ -274,12 +274,23 @@ const SavedReportsModal = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedReportKeys, setSelectedReportKeys] = useState([]);
     const [isLoadingMultiple, setIsLoadingMultiple] = useState(false);
-    const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [selectedEmployeeRaw, setSelectedEmployee] = useState(null);
 
     const lastLoadedEmployeeRef = useRef(null);
     const isManualSelectionRef = useRef(false);
 
     const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
+    // Personne de connecté = aucune liste, même si une sélection (ou des rapports) datait d'une session
+    // précédente : on ne peut ni afficher ni copier le titre / le BBCode d'un rapport sans compte.
+    const selectedEmployee = currentEmployee ? selectedEmployeeRaw : null;
+    useEffect(() => {
+        if (!currentEmployee && selectedEmployeeRaw) {
+            setSelectedEmployee(null);
+            lastLoadedEmployeeRef.current = null;
+            isManualSelectionRef.current = false;
+            setSelectedReportKeys([]);
+        }
+    }, [currentEmployee, selectedEmployeeRaw]);
     // Le personnel (admin ou employé identifié) peut partager/copier un
     // rapport lié à un patient — un civil ne le peut jamais (Lot 5).
     const isStaffViewer = isAdmin || !!employeeProfile;
@@ -423,8 +434,9 @@ const SavedReportsModal = ({
     }, [employeeOptions, preselectedEmployeeType, isAdmin, currentEmployee, employeeProfile, staffName]);
 
     const sortedReports = useMemo(() => {
+        if (!currentEmployee) return [];
         return [...(reportsForSelectedUser || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    }, [reportsForSelectedUser]);
+    }, [reportsForSelectedUser, currentEmployee]);
 
     const searchedAndFilteredReports = useMemo(() => {
         let reports = sortedReports;

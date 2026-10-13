@@ -1329,7 +1329,12 @@ export const useReportManagement = (
     // et c'est SavedReportsModal (via useEmployeeAuth) qui décide quoi montrer
     // — ses propres rapports si un employé est connecté, un sélecteur si
     // admin, ou un message de blocage si personne n'est connecté.
-    const toggleSavedReports = useCallback((filterVersions = null, employeeType = null, callback = null) => {
+    const toggleSavedReports = useCallback((rawFilterVersions = null, rawEmployeeType = null, rawCallback = null) => {
+        // Utilisé aussi directement comme onClick : on ignore tout argument qui n'est pas du bon type
+        // (le 1er argument est alors l'événement du clic, pas un filtre).
+        const filterVersions = Array.isArray(rawFilterVersions) ? rawFilterVersions : null;
+        const employeeType = typeof rawEmployeeType === 'string' ? rawEmployeeType : null;
+        const callback = typeof rawCallback === 'function' ? rawCallback : null;
         if (showSavedReports) {
             setShowSavedReports(false);
             setPreselectedEmployeeType(null);
