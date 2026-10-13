@@ -1137,6 +1137,7 @@ function MainApp({
                     value: employee.name,
                     label: employee.name,
                     category: employee.category,
+                    rank: employee.category || employee.rank || '',
                     lastName: employee.lastName
                 });
                 return groups;

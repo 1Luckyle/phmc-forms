@@ -28,6 +28,16 @@ const SicknessEmail = ({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    // Le grade imprimé suit TOUJOURS le médecin sélectionné (il n'y a pas de champ grade dans ce formulaire :
+    // sans cela, un grade d'un autre formulaire resté en mémoire, ex. « Medical Student », était imprimé).
+    useEffect(() => {
+        const doctor = phmcGroupedOptions.flatMap(group => group.options).find(option => option.value === formData.phmcEmployee);
+        const rank = doctor?.rank || '';
+        if ((formData.phmcRank || '') !== rank) {
+            setFormData(prev => ({ ...prev, phmcRank: rank }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.phmcEmployee, formData.phmcRank, phmcGroupedOptions]);
     const applyMySignature = () => {
         const mySignature = getCachedSignatureUrl();
         if (!mySignature) {
