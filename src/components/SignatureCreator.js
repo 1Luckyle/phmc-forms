@@ -48,7 +48,6 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
             showNotification('Création de la signature...', 'upload');
             const dataUrl = await renderSignatureDataUrl(text, styleKey);
             const uploaded = await uploadImageDetailed(dataUrl);
-            if (!uploaded) return;
             const { saved, previous } = await saveUserCreation(uid, CREATION_KINDS.signature, {
                 url: uploaded.url, deleteUrl: uploaded.deleteUrl, text, style: styleKey,
             });

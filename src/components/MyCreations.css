@@ -35,3 +35,12 @@
     background: #f4f4f4; border-radius: 6px; padding: 6px; text-align: center; margin-bottom: 10px;
 }
 .signature-preview-box img { max-width: 100%; height: auto; }
+
+/* La fenêtre défile elle-même (le bouton Enregistrer n'est plus caché par la barre des tâches) et
+   ne fait plus défiler la page en arrière-plan. */
+.business-card-modal.agency-selector-modal {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}

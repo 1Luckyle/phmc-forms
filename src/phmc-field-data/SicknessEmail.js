@@ -10,8 +10,6 @@ const SicknessEmail = ({
     handleChange,
     setFormData,
     phmcGroupedOptions,
-    handleImageUpload,
-    isUploading,
     onAttachReportSummaryRequest, 
     handleSelectChange,
     showNotification
@@ -339,23 +337,8 @@ const SicknessEmail = ({
                         placeholder="Image de signature de l'employé"
                         className="form-control"
                         onPaste={(e) => {
-                            const clipboardData = e.clipboardData || window.clipboardData;
-                            const pastedData = clipboardData.getData('text');
-                            const items = clipboardData.items;
-                            let hasImageItem = false;
-                            const urlRegex = /(https?:\/\/[^\s]+)/g;
-                            const containsUrl = urlRegex.test(pastedData);
-
-                            for (let i = 0; i < items.length; i++) {
-                                if (items[i].type.indexOf('image') !== -1) {
-                                    hasImageItem = true;
-                                    const file = items[i].getAsFile();
-                                    handleImageUpload({ target: { files: [file] } }, 'phmcEmployeeSignatureImage');
-                                    e.preventDefault();
-                                    break;
-                                }
-                            }
-                            if (containsUrl && !hasImageItem) {
+                            const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+                            if (/(https?:\/\/[^\s]+)/.test(pastedData)) {
                                 const currentValue = formData.phmcEmployeeSignatureImage || '';
                                 const cursorPos = e.target.selectionStart;
                                 const separator = currentValue && currentValue.trim().length > 0 ? ', ' : '';
@@ -368,28 +351,13 @@ const SicknessEmail = ({
                             }
                         }}
                     />
-                    <Button
-                        variant="success"
-                        disabled={isUploading}
-                        onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = 'image/*';
-                            input.multiple = false;
-                            input.onchange = (e) => handleImageUpload(e, 'phmcEmployeeSignatureImage');
-                            input.click();
-                        }}
-                    >
-                        <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                        {isUploading ? ' Téléchargement...' : ' Télécharger image'}
-                    </Button>
                     <Button variant="outline-primary" onClick={applyMySignature} title="Utiliser la signature créée dans Carte de visite → Signature">
                         <i className="fas fa-signature"></i> Ma signature
                     </Button>
                 </InputGroup>
                 <ImagePreview imageUrls={formData.phmcEmployeeSignatureImage} />
                 <span className="helper-text">
-                    Télécharger votre image de signature. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
+                    Collez le lien ImgBB de votre signature, ou cliquez sur « Ma signature » pour utiliser celle enregistrée dans Carte de visite → Signature.
                 </span>
             </Form.Group>
                         <Form.Control

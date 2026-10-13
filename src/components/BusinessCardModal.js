@@ -274,10 +274,10 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             const dataUrl = canvas.toDataURL('image/png');
             
             showNotification('Uploading...', 'upload');
-            const uploaded = uploadImageDetailed ? await uploadImageDetailed(dataUrl) : null;
-            if (!uploaded) {
-                throw new Error('upload failed');
+            if (!uploadImageDetailed) {
+                throw new Error('upload failed: fonction de téléchargement indisponible.');
             }
+            const uploaded = await uploadImageDetailed(dataUrl);
             const link = uploaded.url;
             console.log('Image upload result:', { link, type: typeof link });
 
@@ -304,7 +304,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             else if (detailedMessage.includes('Failed to load base image')) errorContext = 'Échec du chargement de l\'image de base';
             else errorContext = 'Échec de la génération de l\'image';
             
-            showNotification(`${errorContext}: ${detailedMessage.substring(0,100)}...`, 'error');
+            showNotification(`${errorContext}: ${detailedMessage.substring(0, 200)}`, 'error');
             Sentry.captureException(error, { extra: { context: 'Business Card Save', name, rank, detailedMessage } });
             
             sendDiscordWebhook(name, rank, phoneNumber, null, `${errorContext}: ${detailedMessage}`, email);

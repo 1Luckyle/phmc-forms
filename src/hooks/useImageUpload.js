@@ -98,30 +98,30 @@ export const useImageUpload = (showNotification, setFormData) => {
         }
     };
 
-    // Envoie UNE image (data URL) et retourne { url, deleteUrl } — ou null en cas d'échec.
+    // Envoie UNE image (data URL) et retourne { url, deleteUrl }.
+    // En cas d'échec, lève « upload failed: <raison> » pour que l'appelant affiche la vraie cause.
     // `deleteUrl` est la page de suppression ImgBB (ImgBB n'a pas d'API de suppression).
     const uploadImageDetailed = async (dataUrl) => {
         const imgbbApiKey = process.env.REACT_APP_IMGBB_API_KEY;
         if (!imgbbApiKey) {
-            showNotification('La clé API ImgBB n\'est pas configurée.', 'error');
-            return null;
+            throw new Error('upload failed: la clé API ImgBB (REACT_APP_IMGBB_API_KEY) n\'est pas configurée.');
         }
+        let data;
         try {
             const formData = new FormData();
             formData.append('image', dataUrl.split(',')[1]);
             const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, { method: 'POST', body: formData });
-            const data = await response.json();
-            if (!data.success) {
-                showNotification(`Le téléchargement ImgBB a échoué : ${data.error?.message || 'erreur inconnue'}`, 'exclamation-circle');
-                return null;
-            }
-            return { url: data.data.url, deleteUrl: data.data.delete_url || '' };
+            data = await response.json();
         } catch (error) {
             console.error('Upload failed:', error);
             Sentry.captureException(error, { extra: { context: 'uploadImageDetailed' } });
-            showNotification('Le téléchargement a échoué !', 'exclamation-circle');
-            return null;
+            throw new Error(`upload failed: ImgBB injoignable (${error.message || 'réseau'}).`);
         }
+        if (!data || !data.success) {
+            console.error('ImgBB upload failed:', data);
+            throw new Error(`upload failed: ImgBB a refusé l'image (${data?.error?.message || data?.status_txt || 'erreur inconnue'}).`);
+        }
+        return { url: data.data.url, deleteUrl: data.data.delete_url || '' };
     };
 
     return { isUploading, handleImageUpload, uploadImageDetailed };
