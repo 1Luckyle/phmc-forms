@@ -2198,107 +2198,117 @@ function MainApp({
                                 </div>
                             )}
 
-                            <div className="modern-output-controls">
-                                <Button
-                                    type="button"
-                                    onClick={() => setShowBBCode(prev => !prev)}
-                                    className="control-button"
-                                >
-                                    <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                                    {showBBCode ? 'Cacher BBCode' : 'Montrer BBCode'}
-                                </Button>
-                                {!(isCivilian && selectedAgencyGroup === 'PHMC Recruitment') && (
-                                    <Button
-                                        type="button"
-                                        onClick={toggleSavedReports}
-                                        className="control-button"
-                                    >
-                                        <i className="fas fa-save"></i>
-                                        {savedReportsButtonLabel}
-                                    </Button>
-                                )}
-                            </div>
-                            <p className="generated-title-label">Titre du Formulaire</p>
-                            <p className="generated-title-string">{generateTitle()}</p>
-
-                            {showBBCode && (
-                                <div className="generated-title-container">
-                                </div>
-                            )}
-                            
-                            <div className="modern-copy-controls">
-                                <Button
-                                    type="button"
-                                    onClick={handleCopyTitle}
-                                    className="copy-button-modern"
-                                >
-                                    <i className="fas fa-copy"></i>
-                                    Copier le Titre
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    onClick={handleCopyAndNotifyWrapper}
-                                    className="copy-button-modern"
-                                    disabled={isLockdownActive}
-                                    title={isLockdownActive ? 'BBCode copying is disabled during site lockdown' : ''}
-                                >
-                                    <i className="fas fa-copy"></i>
-                                    {getCopyButtonText()}
-                                </Button>
-
-                                {selectedAgencyGroup !== 'PHMC Recruitment' && (
-                                    <Button
-                                        type="button"
-                                        onClick={handleSaveReportWrapper}
-                                        className="copy-button-modern"
-                                        disabled={isLockdownActive}
-                                        title={isLockdownActive ? 'La sauvegarde des rapports est désactivée pendant le confinement du site' : ''}
-                                    >
-                                        <i className="fas fa-save"></i>
-                                        {isCivilian ? 'Sauvegarder le dossier' : 'Sauvegarder le rapport'}
-                                    </Button>
-                                )}
-
-                                {/* Pipeline de candidatures (Lot 6) : un Civil sur un formulaire de
-                                    candidature a le choix entre garder un brouillon et candidater
-                                    réellement (accusé de réception + notification admin). */}
-                                {selectedAgencyGroup === 'PHMC Recruitment' && isCivilian && (
-                                    <>
+                            {/* Sans compte connecté : ni titre, ni BBCode, ni boutons de copie / sauvegarde. */}
+                            {!currentEmployee ? (
+                                <p style={{ textAlign: 'center', opacity: 0.75, padding: '30px 10px' }}>
+                                    <i className="fas fa-lock" style={{ marginRight: '8px' }}></i>
+                                    Connectez-vous pour afficher et copier le titre et le BBCode.
+                                </p>
+                            ) : (
+                                <>
+                                    <div className="modern-output-controls">
                                         <Button
                                             type="button"
-                                            onClick={() => saveJobApplication('save')}
+                                            onClick={() => setShowBBCode(prev => !prev)}
+                                            className="control-button"
+                                        >
+                                            <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                            {showBBCode ? 'Cacher BBCode' : 'Montrer BBCode'}
+                                        </Button>
+                                        {!(isCivilian && selectedAgencyGroup === 'PHMC Recruitment') && (
+                                            <Button
+                                                type="button"
+                                                onClick={toggleSavedReports}
+                                                className="control-button"
+                                            >
+                                                <i className="fas fa-save"></i>
+                                                {savedReportsButtonLabel}
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <p className="generated-title-label">Titre du Formulaire</p>
+                                    <p className="generated-title-string">{generateTitle()}</p>
+
+                                    {showBBCode && (
+                                        <div className="generated-title-container">
+                                        </div>
+                                    )}
+                                    
+                                    <div className="modern-copy-controls">
+                                        <Button
+                                            type="button"
+                                            onClick={handleCopyTitle}
+                                            className="copy-button-modern"
+                                        >
+                                            <i className="fas fa-copy"></i>
+                                            Copier le Titre
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            onClick={handleCopyAndNotifyWrapper}
                                             className="copy-button-modern"
                                             disabled={isLockdownActive}
+                                            title={isLockdownActive ? 'BBCode copying is disabled during site lockdown' : ''}
                                         >
-                                            <i className="fas fa-save"></i>
-                                            Enregistrer
+                                            <i className="fas fa-copy"></i>
+                                            {getCopyButtonText()}
                                         </Button>
-                                        <Button
-                                            type="button"
-                                            onClick={() => saveJobApplication('submit')}
-                                            className="copy-button-modern"
-                                            disabled={isLockdownActive}
-                                        >
-                                            <i className="fas fa-paper-plane"></i>
-                                            Enregistrer et Candidater
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            onClick={() => { loadMyJobApplications(); setShowMyJobApplications(true); }}
-                                            className="copy-button-modern"
-                                        >
-                                            <i className="fas fa-list-check"></i>
-                                            Mes candidatures
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
 
-                            {showBBCode && (
-                                <pre className="bbcode-output">
-                                    {getBBCodeContent()}
-                                </pre>
+                                        {selectedAgencyGroup !== 'PHMC Recruitment' && (
+                                            <Button
+                                                type="button"
+                                                onClick={handleSaveReportWrapper}
+                                                className="copy-button-modern"
+                                                disabled={isLockdownActive}
+                                                title={isLockdownActive ? 'La sauvegarde des rapports est désactivée pendant le confinement du site' : ''}
+                                            >
+                                                <i className="fas fa-save"></i>
+                                                {isCivilian ? 'Sauvegarder le dossier' : 'Sauvegarder le rapport'}
+                                            </Button>
+                                        )}
+
+                                        {/* Pipeline de candidatures (Lot 6) : un Civil sur un formulaire de
+                                            candidature a le choix entre garder un brouillon et candidater
+                                            réellement (accusé de réception + notification admin). */}
+                                        {selectedAgencyGroup === 'PHMC Recruitment' && isCivilian && (
+                                            <>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => saveJobApplication('save')}
+                                                    className="copy-button-modern"
+                                                    disabled={isLockdownActive}
+                                                >
+                                                    <i className="fas fa-save"></i>
+                                                    Enregistrer
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => saveJobApplication('submit')}
+                                                    className="copy-button-modern"
+                                                    disabled={isLockdownActive}
+                                                >
+                                                    <i className="fas fa-paper-plane"></i>
+                                                    Enregistrer et Candidater
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => { loadMyJobApplications(); setShowMyJobApplications(true); }}
+                                                    className="copy-button-modern"
+                                                >
+                                                    <i className="fas fa-list-check"></i>
+                                                    Mes candidatures
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {showBBCode && (
+                                        <pre className="bbcode-output">
+                                            {getBBCodeContent()}
+                                        </pre>
+                                    )}
+                                </>
                             )}
 
                             {bbCodeVersion === 2 && formData.department && agencyDataStore && agencyDataStore[formData.department] && agencyDataStore[formData.department].logo && agencyDataStore[formData.department].url && (
