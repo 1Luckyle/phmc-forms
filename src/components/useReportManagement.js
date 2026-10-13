@@ -765,6 +765,10 @@ export const useReportManagement = (
     }, [pendingFormLoad, bbCodeVersion]);
 
     const handleReportSelectedForAttachment = useCallback(async (reportFirebaseKey, userId) => {
+        // Le rappel est lu TOUT DE SUITE : la fenêtre se ferme (et réinitialise le rappel en attente)
+        // pendant que le rapport se charge, ce qui provoquait « no callback » à la fin.
+        const attachCallback = pendingReportAttachmentCallback.current;
+
         // When multiple reports are being loaded, we need to delay closing the modal.
         // This clears any pending close command from a previous, rapidly-fired event.
         if (modalCloseTimer.current) {
@@ -779,7 +783,7 @@ export const useReportManagement = (
         // Remove the loading notification once done
         removeNotification(loadingNotifId);
 
-        if (result.success && pendingReportAttachmentCallback.current) {
+        if (result.success && attachCallback) {
             const reportData = result.reportData;
             const loadedFormData = reportData.data || {};
             const loadedVersion = reportData.bbCodeVersion;
@@ -863,7 +867,7 @@ export const useReportManagement = (
             // --- MODIFICATION END ---
 
             // The pending callback now primarily handles form-specific fields like 'attachedReportSummary'
-            const attachOutcome = pendingReportAttachmentCallback.current(reportData);
+            const attachOutcome = attachCallback(reportData);
 
             // Un rapport refusé par le formulaire (ex. certificat : rapport non accepté) retourne false.
             if (attachOutcome !== false) {
@@ -873,7 +877,7 @@ export const useReportManagement = (
         } else {
             if (!result.success) {
                 showNotification('Échec du chargement du rapport sélectionné.', 'error');
-            } else if (!pendingReportAttachmentCallback.current) {
+            } else if (!attachCallback) {
                 showNotification('Le processus de pièce jointe n’a pas pu être terminé (no callback).', 'error');
                 Sentry.captureMessage('handleReportSelectedForAttachment was called but pendingReportAttachmentCallback.current was null.');
             }

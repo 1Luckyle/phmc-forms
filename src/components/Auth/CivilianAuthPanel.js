@@ -72,6 +72,8 @@ const CivilianAuthPanel = ({
     const [verificationCode, setVerificationCode] = useState('');
     const [isSendingCode, setIsSendingCode] = useState(false);
     const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+    // Après un clic sur « Créer mon compte » incomplet : les étapes manquantes passent en rouge.
+    const [attemptedCreate, setAttemptedCreate] = useState(false);
 
     const EYEFIND_ADDRESS_REGEX = /^[^\s@]+@mail\.eyefind\.fr$/i;
 
@@ -98,12 +100,9 @@ const CivilianAuthPanel = ({
             zip: '90001',
             phone: '555-0142',
             discord: 'jean.testard',
-            email: 'jean.testard.debug@mail.eyefind.fr',
+            // L'e-mail n'est volontairement PAS rempli : il doit être une vraie adresse Eyefind Mail
+            // (un code de vérification y est envoyé), sinon la création est impossible.
         }));
-        // Changer l'email invalide toute vérification précédente.
-        setEmailCodeSent(false);
-        setEmailVerified(false);
-        setVerificationCode('');
     };
 
     const handleGtawCharacterForCreation = (character) => {
@@ -165,15 +164,31 @@ const CivilianAuthPanel = ({
         }
     };
 
-    const handleCreateAccount = async () => {
-        if (!emailVerified) {
-            showNotification('Veuillez d\'abord vérifier votre adresse email.', 'warning');
-            return;
+    // Ce qu'il reste à faire avant de pouvoir créer le compte (affiché en permanence, et détaillé si
+    // l'utilisateur clique sur « Créer mon compte » trop tôt).
+    const FIELD_LABELS = { dateOfBirth: 'date de naissance', gender: 'genre', address: 'adresse', zip: 'code postal', phone: 'téléphone' };
+    const getMissingSteps = () => {
+        const steps = [];
+        const emailValid = EYEFIND_ADDRESS_REGEX.test(accountData.email.trim());
+        if (!emailValid) {
+            steps.push({ key: 'email', text: 'Saisissez votre adresse Eyefind Mail (format prenomnom@mail.eyefind.fr).' });
+        } else if (!emailCodeSent) {
+            steps.push({ key: 'sendCode', text: 'Cliquez sur « Envoyer le code » : vous le recevrez dans votre messagerie Eyefind Mail.' });
+        } else if (!emailVerified) {
+            steps.push({ key: 'verify', text: 'Saisissez le code reçu dans Eyefind Mail, puis cliquez sur « Vérifier ».' });
         }
-        const required = ['email', 'dateOfBirth', 'gender', 'address', 'zip', 'phone'];
-        const missing = required.filter(f => !accountData[f]?.trim());
-        if (missing.length > 0) {
-            showNotification('Veuillez remplir tous les champs requis.', 'warning');
+        const emptyFields = Object.keys(FIELD_LABELS).filter((field) => !accountData[field]?.trim());
+        if (emptyFields.length > 0) {
+            steps.push({ key: 'fields', text: `Renseignez : ${emptyFields.map((field) => FIELD_LABELS[field]).join(', ')}.` });
+        }
+        return steps;
+    };
+
+    const handleCreateAccount = async () => {
+        const remaining = getMissingSteps();
+        if (remaining.length > 0) {
+            setAttemptedCreate(true);
+            showNotification(`Il reste à faire avant de créer votre compte : ${remaining.map((step) => step.text).join(' ')}`, 'warning', 12000);
             return;
         }
 
@@ -336,6 +351,27 @@ const CivilianAuthPanel = ({
                     </div>
                 )}
 
+                {/* Checklist : le bouton « Créer mon compte » reste cliquable ; s'il manque quelque chose,
+                    on explique quoi (au lieu d'un bouton grisé sans explication). */}
+                <div style={{
+                    marginBottom: '15px', padding: '10px 12px', borderRadius: '6px',
+                    backgroundColor: '#1a1a1a', border: `1px solid ${attemptedCreate && getMissingSteps().length > 0 ? '#f85149' : '#444'}`,
+                    fontSize: '0.9em',
+                }}>
+                    <div style={{ fontWeight: 600, marginBottom: '6px' }}>Pour créer votre compte :</div>
+                    {[
+                        { done: EYEFIND_ADDRESS_REGEX.test(accountData.email.trim()), label: 'Adresse Eyefind Mail saisie' },
+                        { done: emailCodeSent, label: 'Code de vérification envoyé (« Envoyer le code »)' },
+                        { done: emailVerified, label: 'Code reçu dans Eyefind Mail saisi et vérifié' },
+                        { done: Object.keys(FIELD_LABELS).every((field) => accountData[field]?.trim()), label: 'Date de naissance, genre, adresse, code postal et téléphone renseignés' },
+                    ].map((item) => (
+                        <div key={item.label} style={{ color: item.done ? '#3fb950' : (attemptedCreate ? '#f85149' : '#c9d1d9') }}>
+                            <i className={`fas ${item.done ? 'fa-check-circle' : 'fa-circle'}`} style={{ marginRight: '8px', fontSize: '0.8em' }}></i>
+                            {item.label}
+                        </div>
+                    ))}
+                </div>
+
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                     {/* Mode debug : remplit l'identité. La vérification du code envoyé
                         par mail reste obligatoire (contrôlée côté serveur). */}
@@ -343,7 +379,7 @@ const CivilianAuthPanel = ({
                     <Button variant="outline-secondary" onClick={() => { setMode('choice'); setSelectedGtawCharacter(null); }} disabled={isSubmitting}>
                         Retour
                     </Button>
-                    <Button variant="primary" onClick={handleCreateAccount} disabled={isSubmitting || !emailVerified}>
+                    <Button variant="primary" onClick={handleCreateAccount} disabled={isSubmitting}>
                         {isSubmitting ? 'Création...' : 'Créer mon compte'}
                     </Button>
                 </div>

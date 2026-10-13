@@ -1,0 +1,16 @@
+/* Polices manuscrites des signatures (Google Fonts, licence OFL) – embarquées localement. */
+@font-face {
+    font-family: 'Herr Von Muellerhoff';
+    src: url('../assets/fonts/muellerhoff.woff2') format('woff2');
+    font-weight: normal; font-style: normal; font-display: block;
+}
+@font-face {
+    font-family: 'Mrs Saint Delafield';
+    src: url('../assets/fonts/delafield.woff2') format('woff2');
+    font-weight: normal; font-style: normal; font-display: block;
+}
+@font-face {
+    font-family: 'Monsieur La Doulaise';
+    src: url('../assets/fonts/doulaise.woff2') format('woff2');
+    font-weight: normal; font-style: normal; font-display: block;
+}

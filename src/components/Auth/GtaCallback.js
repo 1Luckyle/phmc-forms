@@ -119,7 +119,9 @@ const GtaCallback = () => {
 
                     if (!response.ok || !data.customToken) {
                         const errorMessage = data.message || data.error || 'Erreur inconnue lors de la connexion avec GTA World';
-                        finish({ error: errorMessage });
+                        // « not-linked » : ce personnage n'a pas encore de compte → l'application redirige
+                        // vers la création de compte au lieu d'afficher une simple erreur.
+                        finish({ error: errorMessage, notLinked: data.error === 'not-linked' });
                         return;
                     }
 

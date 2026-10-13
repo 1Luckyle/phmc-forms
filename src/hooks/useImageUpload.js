@@ -98,5 +98,31 @@ export const useImageUpload = (showNotification, setFormData) => {
         }
     };
 
-    return { isUploading, handleImageUpload };
+    // Envoie UNE image (data URL) et retourne { url, deleteUrl } — ou null en cas d'échec.
+    // `deleteUrl` est la page de suppression ImgBB (ImgBB n'a pas d'API de suppression).
+    const uploadImageDetailed = async (dataUrl) => {
+        const imgbbApiKey = process.env.REACT_APP_IMGBB_API_KEY;
+        if (!imgbbApiKey) {
+            showNotification('La clé API ImgBB n\'est pas configurée.', 'error');
+            return null;
+        }
+        try {
+            const formData = new FormData();
+            formData.append('image', dataUrl.split(',')[1]);
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, { method: 'POST', body: formData });
+            const data = await response.json();
+            if (!data.success) {
+                showNotification(`Le téléchargement ImgBB a échoué : ${data.error?.message || 'erreur inconnue'}`, 'exclamation-circle');
+                return null;
+            }
+            return { url: data.data.url, deleteUrl: data.data.delete_url || '' };
+        } catch (error) {
+            console.error('Upload failed:', error);
+            Sentry.captureException(error, { extra: { context: 'uploadImageDetailed' } });
+            showNotification('Le téléchargement a échoué !', 'exclamation-circle');
+            return null;
+        }
+    };
+
+    return { isUploading, handleImageUpload, uploadImageDetailed };
 };

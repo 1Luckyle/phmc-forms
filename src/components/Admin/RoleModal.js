@@ -70,9 +70,14 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
 
+    // Valeurs à l'ouverture : sert à savoir si l'utilisateur a modifié quelque chose.
+    const [baseline, setBaseline] = useState('');
+
     useEffect(() => {
         if (show) {
-            setRoleData(roleToEdit ? { ...initialRoleState, ...roleToEdit } : initialRoleState);
+            const initial = roleToEdit ? { ...initialRoleState, ...roleToEdit } : initialRoleState;
+            setRoleData(initial);
+            setBaseline(JSON.stringify(initial));
             setError('');
         }
     }, [show, roleToEdit, initialRoleState]);
@@ -88,6 +93,14 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
         const validateForm = () => requiredFields.every(field => roleData.hasOwnProperty(field) && String(roleData[field]).trim() !== '');
         setIsFormValid(validateForm());
     }, [roleData, requiredFields]);
+
+    // CRÉATION : tous les champs sont requis. MODIFICATION : le bouton s'active dès qu'un champ change
+    // (un poste existant peut avoir des champs vides — anciens postes — sans qu'on puisse alors
+    // enregistrer la moindre correction) ; seul le nom affiché doit rester renseigné.
+    const isDirty = baseline !== '' && JSON.stringify(roleData) !== baseline;
+    const canSave = roleToEdit
+        ? isDirty && String(roleData.displayName || '').trim() !== ''
+        : isFormValid;
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -122,8 +135,10 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
         e.preventDefault();
         setError('');
 
-        if (!isFormValid) {
-            setError('Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.');
+        if (!canSave) {
+            setError(roleToEdit
+                ? 'Modifiez au moins un champ (le nom affiché ne peut pas être vide).'
+                : 'Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.');
             if (showNotification) showNotification('Veuillez remplir tous les champs du formulaire.', 'warning');
             return;
         }
@@ -175,7 +190,7 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
             if (showNotification) showNotification(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du rôle. ${dbError.message}`, "error");
         }
         setIsSaving(false);
-    }, [roleData, categoryKey, categoryConfig, showNotification, onRoleSaved, handleClose, isFormValid, roleToEdit]);
+    }, [roleData, categoryKey, categoryConfig, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
 
     useEffect(() => {
         const handleEsc = (event) => {
@@ -200,7 +215,7 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
                     </Button>
                 </div>
                 <div style={modalBodyStyle}>
-                    <BootstrapForm onSubmit={handleSubmit}>
+                    <BootstrapForm onSubmit={handleSubmit} noValidate>
                         {/* Display Name */}
                         <BootstrapForm.Group className="mb-3">
                             <BootstrapForm.Label>Nom d'affichage *</BootstrapForm.Label>
@@ -262,7 +277,7 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
                         <div style={modalFooterStyle}>
                             <DebugFillButton onFill={handleDebugFill} disabled={isSaving} style={{ marginRight: 'auto' }} />
                             <Button variant="secondary" onClick={handleClose} disabled={isSaving}>Annuler</Button>
-                            <Button variant="primary" type="submit" disabled={isSaving || !isFormValid} style={{ minWidth: '120px', marginLeft: '10px' }}>
+                            <Button variant="primary" type="submit" disabled={isSaving || !canSave} style={{ minWidth: '120px', marginLeft: '10px' }}>
                                 {isSaving ? <Spinner as="span" animation="border" size="sm" /> : submitButtonText}
                             </Button>
                         </div>

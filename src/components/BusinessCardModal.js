@@ -4,14 +4,23 @@ import * as Sentry from "@sentry/react";
 import BusinessCardImage from '../assets/business-card.png';
 import { copyToClipboard } from '../components/notificationService';
 import DebugFillButton from './DebugFillButton';
+import SignatureCreator from './SignatureCreator';
+import { MyCreationPanel, ImgbbDeleteNotice } from './MyCreationPanel';
+import { CREATION_KINDS, loadUserCreations, saveUserCreation, removeUserCreation } from '../utils/userCreations';
+import './MyCreations.css';
 
-const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload }) => {
+const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload, uploadImageDetailed, uid, defaultName }) => {
     const [name, setName] = useState('');
     const [rank, setRank] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [imageUrl, setImageUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    // Chaque personne a UNE carte et UNE signature (userCreations/{uid}).
+    const [tab, setTab] = useState('card');
+    const [creations, setCreations] = useState({ businessCard: null, signature: null });
+    const [editingCard, setEditingCard] = useState(false);
+    const [oldDeleteUrl, setOldDeleteUrl] = useState('');
 
     const nameRef = useRef(null);
     const rankRef = useRef(null);
@@ -29,8 +38,15 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             setPhoneNumber(localStorage.getItem('phoneNumber') || '');
             setEmail(localStorage.getItem('businessCardEmail') || '');
             setImageUrl(null);
+            setEditingCard(false);
+            setOldDeleteUrl('');
+            if (uid) {
+                loadUserCreations(uid)
+                    .then(setCreations)
+                    .catch((error) => console.error('Chargement de mes créations impossible :', error));
+            }
         }
-    }, [show]);
+    }, [show, uid]);
 
     const handleNameChange = (e) => setName(e.target.value);
     const handleRankChange = (e) => setRank(e.target.value);
@@ -191,6 +207,9 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
 
 
     const handleSave = useCallback(async () => {
+        if (creations.businessCard && !window.confirm('Vous avez déjà une carte de visite. La nouvelle va REMPLACER l\'ancienne (qui ne sera plus associée à votre compte). Continuer ?')) {
+            return;
+        }
         setIsSaving(true);
         showNotification('Traitement de la carte de visite...', 'upload');
 
@@ -255,10 +274,22 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             const dataUrl = canvas.toDataURL('image/png');
             
             showNotification('Uploading...', 'upload');
-            const link = await handleImageUpload(dataUrl);
+            const uploaded = uploadImageDetailed ? await uploadImageDetailed(dataUrl) : null;
+            if (!uploaded) {
+                throw new Error('upload failed');
+            }
+            const link = uploaded.url;
             console.log('Image upload result:', { link, type: typeof link });
-            
+
             setImageUrl(link);
+            if (uid) {
+                const { saved, previous } = await saveUserCreation(uid, CREATION_KINDS.card, {
+                    url: link, deleteUrl: uploaded.deleteUrl, name, rank, phone: phoneNumber, email,
+                });
+                setCreations((current) => ({ ...current, businessCard: saved }));
+                setEditingCard(false);
+                setOldDeleteUrl(previous?.deleteUrl || '');
+            }
             showNotification(`Carte de visite enregistrée et téléchargée : ${link}`, 'save');
             
             sendDiscordWebhook(name, rank, phoneNumber, link, null, email);
@@ -280,18 +311,36 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         } finally {
             setIsSaving(false);
         }
-    }, [name, rank, phoneNumber, email, contactLine, showNotification, handleImageUpload, sendDiscordWebhook, commitInfo, nameOverlayStyle, rankOverlayStyle, phoneNumberOverlayStyle]);
+    }, [name, rank, phoneNumber, email, contactLine, showNotification, uploadImageDetailed, uid, creations.businessCard, sendDiscordWebhook, commitInfo, nameOverlayStyle, rankOverlayStyle, phoneNumberOverlayStyle]);
 
 
     if (!show) {
         return null;
     }
 
+    const showCardPanel = !!creations.businessCard && !editingCard;
+    const shownLink = imageUrl || (showCardPanel ? creations.businessCard.url : null);
+
+    const handleDeleteCard = async () => {
+        if (!window.confirm('Supprimer votre carte de visite ? Elle ne sera plus associée à votre compte.')) return;
+        try {
+            const deleteUrl = creations.businessCard?.deleteUrl || '';
+            await removeUserCreation(uid, CREATION_KINDS.card);
+            setCreations((current) => ({ ...current, businessCard: null }));
+            setEditingCard(false);
+            setImageUrl(null);
+            setOldDeleteUrl(deleteUrl);
+            showNotification('Carte de visite supprimée.', 'save');
+        } catch (error) {
+            showNotification(`Suppression impossible : ${(error.message || '').substring(0, 100)}`, 'error');
+        }
+    };
+
     return (
         <div className="modal-overlay">
             <div className="agency-selector-modal business-card-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h4>Carte de visite</h4>
+                    <h4>{tab === 'signature' ? 'Signature' : 'Carte de visite'}</h4>
                     <Button
                         variant="secondary"
                         className="close"
@@ -301,22 +350,61 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         <i className="fas fa-times"></i>
                     </Button>
                 </div>
-                <div className="business-card-content">
-                    {imageUrl && (
-                        <div className="image-link-container">
-                            <p>
-                                <strong>Lien de l'image : </strong>
-                                <a href={imageUrl} target="_blank" rel="noopener noreferrer">
-                                    {imageUrl}
-                                </a>
-                            </p>
-                            Instructions !
-                            <br />
-                            1) /note [identifiant de l'élément de note vierge dans votre inventaire] [quantité] [nom pour les cartes]
-                            <br />
-                            2) /note [identifiant du nouvel élément de note dans votre inventaire] [quantité] [contenu] [URL depuis ImgBB]
-                        </div>
-                    )}
+                <div className="creation-tabs">
+                    <button type="button" className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
+                        <i className="fas fa-id-card"></i> Carte de visite
+                    </button>
+                    <button type="button" className={tab === 'signature' ? 'active' : ''} onClick={() => setTab('signature')}>
+                        <i className="fas fa-signature"></i> Signature
+                    </button>
+                </div>
+
+                {tab === 'signature' ? (
+                    <SignatureCreator
+                        uid={uid}
+                        defaultName={defaultName || name}
+                        creation={creations.signature}
+                        onCreationChange={(signature) => setCreations((current) => ({ ...current, signature }))}
+                        uploadImageDetailed={uploadImageDetailed}
+                        showNotification={showNotification}
+                    />
+                ) : (
+                    <>
+                        <div className="business-card-content">
+                            <ImgbbDeleteNotice deleteUrl={oldDeleteUrl} onDismiss={() => setOldDeleteUrl('')} />
+                            {showCardPanel && (
+                                <MyCreationPanel
+                                    title="Votre carte de visite"
+                                    creation={creations.businessCard}
+                                    onCopy={() => copyToClipboard(creations.businessCard.url, showNotification, 'Lien de l\'image copié dans le presse-papiers !')}
+                                    onChange={() => setEditingCard(true)}
+                                    onDelete={handleDeleteCard}
+                                />
+                            )}
+                            {shownLink && (
+                                <div className="image-link-container">
+                                    {!showCardPanel && (
+                                        <p>
+                                            <strong>Lien de l'image : </strong>
+                                            <a href={shownLink} target="_blank" rel="noopener noreferrer">
+                                                {shownLink}
+                                            </a>
+                                        </p>
+                                    )}
+                                    Instructions !
+                                    <br />
+                                    1) /note [identifiant de l'élément de note vierge dans votre inventaire] [quantité] [nom pour les cartes]
+                                    <br />
+                                    2) /note [identifiant du nouvel élément de note dans votre inventaire] [quantité] [contenu] [URL depuis ImgBB]
+                                </div>
+                            )}
+                            {!showCardPanel && (
+                                <>
+                                    {creations.businessCard && (
+                                        <p style={{ color: '#ffc107', fontSize: '0.9em' }}>
+                                            <i className="fas fa-exclamation-triangle"></i> Enregistrer une nouvelle carte remplacera l'actuelle.
+                                        </p>
+                                    )}
                     <div 
                         className="business-card-image-container" 
                         style={{
@@ -359,11 +447,24 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         <Form.Control className="mb-2" type="text" placeholder="Numéro de téléphone" value={phoneNumber} onChange={handlePhoneNumberChange} />
                         <Form.Control className="mb-2" type="email" placeholder="Adresse e-mail (imprimée après le numéro)" value={email} onChange={handleEmailChange} />
                     </div>
-                </div>
-                <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="mt-3 w-100" />
-                <Button className="mt-3 w-100" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? 'Enregistrement...' : 'Enregistrer et télécharger la carte de visite'}
-                </Button>
+                                </>
+                            )}
+                        </div>
+                        {!showCardPanel && (
+                            <>
+                                <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="mt-3 w-100" />
+                                <Button className="mt-3 w-100" onClick={handleSave} disabled={isSaving}>
+                                    {isSaving ? 'Enregistrement...' : (creations.businessCard ? 'Remplacer ma carte de visite' : 'Enregistrer et télécharger la carte de visite')}
+                                </Button>
+                                {creations.businessCard && (
+                                    <Button className="mt-2 w-100" variant="outline-secondary" onClick={() => setEditingCard(false)} disabled={isSaving}>
+                                        Annuler
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

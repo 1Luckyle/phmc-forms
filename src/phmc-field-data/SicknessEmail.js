@@ -1,4 +1,5 @@
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react'; // Import useState
+import { getCachedSignatureUrl } from '../utils/userCreations';
 import { Form, InputGroup, Button, Alert } from 'react-bootstrap';
 import { prepareAttachedReport, ACCEPTED_REPORT_VERSIONS, ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
 import Select from 'react-select';
@@ -18,6 +19,23 @@ const SicknessEmail = ({
     // New state to track if consent has been confirmed
     const [consentConfirmed, setConsentConfirmed] = useState(false);
     const notify = showNotification || (() => {});
+
+    // Ma signature (créée dans Carte de visite → Signature) : préremplie si le champ est vide.
+    useEffect(() => {
+        const mySignature = getCachedSignatureUrl();
+        if (mySignature && !formData.phmcEmployeeSignatureImage) {
+            setFormData(prev => (prev.phmcEmployeeSignatureImage ? prev : { ...prev, phmcEmployeeSignatureImage: mySignature }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    const applyMySignature = () => {
+        const mySignature = getCachedSignatureUrl();
+        if (!mySignature) {
+            notify('Vous n\'avez pas encore de signature : créez-la dans la boîte à outils → Carte de visite → onglet Signature.', 'warning');
+            return;
+        }
+        setFormData(prev => ({ ...prev, phmcEmployeeSignatureImage: mySignature }));
+    };
 
     // Vérifie qu'un contenu est bien un rapport ACCEPTÉ (d'après ses titres), du bon patient, puis
     // le remplace par son résumé simplifié. Retourne true si le rapport a été joint.
@@ -339,6 +357,9 @@ const SicknessEmail = ({
                     >
                         <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
                         {isUploading ? ' Téléchargement...' : ' Télécharger image'}
+                    </Button>
+                    <Button variant="outline-primary" onClick={applyMySignature} title="Utiliser la signature créée dans Carte de visite → Signature">
+                        <i className="fas fa-signature"></i> Ma signature
                     </Button>
                 </InputGroup>
                 <ImagePreview imageUrls={formData.phmcEmployeeSignatureImage} />

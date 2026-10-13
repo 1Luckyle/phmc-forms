@@ -68,6 +68,16 @@
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
 
+    // ─── Mes créations (carte de visite + signature) ─────────────────────────────
+    // userCreations/{uid}/businessCard | signature : { url, deleteUrl, createdAt, ... }.
+    // Une seule de chaque par personne ; lisible / modifiable par son propriétaire et les admins.
+    "userCreations": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
+      }
+    },
+
     "agencies": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"

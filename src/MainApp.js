@@ -21,6 +21,7 @@ import { useModal } from './contexts/ModalProvider';
 import { useSettings } from './contexts/SettingsProvider';
 import { useWebhooks } from './hooks/useWebhooks';
 import { useImageUpload } from './hooks/useImageUpload';
+import { loadUserCreations } from './utils/userCreations';
 import { useGitHubCommit } from './hooks/useGitHubCommit';
 import { useLockdown } from './contexts/LockdownContext';
 import LockdownBanner from './components/LockdownBanner';
@@ -140,6 +141,8 @@ function MainApp({
     // chaînes littérales pour ne pas forcer le chargement anticipé de ce
     // composant lazy-loaded).
     const [showLoginRoleChoice, setShowLoginRoleChoice] = useState(false);
+    // Le même choix de rôle sert à « Se connecter » et à « Créer un compte ».
+    const [roleChoiceMode, setRoleChoiceMode] = useState('login');
     const [quickCivilOnboarding, setQuickCivilOnboarding] = useState(false);
     // Outil personnel "Dossier Patient" (Lot 5) : recherche par ID patient,
     // voir PatientDossierModal.js.
@@ -196,7 +199,12 @@ function MainApp({
             if (resultRaw) {
                 sessionStorage.removeItem('gtaw-login-result');
                 const result = JSON.parse(resultRaw);
-                if (result.error) {
+                if (result.notLinked) {
+                    // Aucun compte lié à ce personnage : on emmène directement vers la création de compte.
+                    showNotification("Aucun compte n'est encore lié à ce personnage GTA World : créons-le ! Choisissez votre type de compte.", 'info-circle', 10000);
+                    setRoleChoiceMode('signup');
+                    setShowLoginRoleChoice(true);
+                } else if (result.error) {
                     showNotification(`Échec de la connexion avec GTA World : ${result.error}`, 'error');
                 }
             }
@@ -342,7 +350,12 @@ function MainApp({
         handleCctvWebhookSubmit,
     } = useWebhooks(formData, commitInfo, showNotification);
     // Get image upload functions
-    const { isUploading, handleImageUpload } = useImageUpload(showNotification, setFormData);
+    const { isUploading, handleImageUpload, uploadImageDetailed } = useImageUpload(showNotification, setFormData);
+    // Rafraîchit la copie locale de ma signature (proposée dans les formulaires qui la demandent).
+    const myCreationsUid = currentEmployee?.uid || null;
+    useEffect(() => {
+        if (myCreationsUid) loadUserCreations(myCreationsUid).catch(() => {});
+    }, [myCreationsUid]);
     // All references to bbCodeVersion now occur after its initialization
     const handleSelectAgencyGroup = (group) => {
         setSelectedAgencyGroup(group);
@@ -750,11 +763,23 @@ function MainApp({
     
     // Bouton « Se connecter » de la page principale : ouvre le choix de rôle.
     const handleOpenLoginRoleChoice = () => {
+        setRoleChoiceMode('login');
+        setShowLoginRoleChoice(true);
+    };
+
+    // Bouton « Créer un compte » : même choix de rôle, mais orienté création.
+    const handleOpenSignupRoleChoice = () => {
+        setRoleChoiceMode('signup');
         setShowLoginRoleChoice(true);
     };
 
     const handleChooseEmployeeLogin = () => {
         setShowLoginRoleChoice(false);
+        if (roleChoiceMode === 'signup') {
+            // Guide de configuration : demande de compte Personnel/DMEC (validée ensuite par un admin).
+            setShowOnboarding(true);
+            return;
+        }
         setShowLoginModal(true);
     };
 
@@ -1577,12 +1602,21 @@ function MainApp({
                         <div className="button-group">
                             <div className="floating-tools-container">
                                 {!currentEmployee && (
-                                    <Button
-                                        variant="outline-light"
-                                        onClick={handleOpenLoginRoleChoice}
-                                    >
-                                        <i className="fas fa-sign-in-alt"></i> Se connecter
-                                    </Button>
+                                    <>
+                                        <Button
+                                            variant="success"
+                                            onClick={handleOpenSignupRoleChoice}
+                                            title="Première visite ? Créez votre compte avec votre personnage GTA World"
+                                        >
+                                            <i className="fas fa-user-plus"></i> Créer un compte
+                                        </Button>
+                                        <Button
+                                            variant="outline-light"
+                                            onClick={handleOpenLoginRoleChoice}
+                                        >
+                                            <i className="fas fa-sign-in-alt"></i> Se connecter
+                                        </Button>
+                                    </>
                                 )}
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
@@ -1971,9 +2005,18 @@ function MainApp({
                                         <i className="fas fa-lock" style={{ fontSize: '3rem', marginBottom: '20px', opacity: 0.6 }}></i>
                                         <h4>Connexion requise</h4>
                                         <p>Vous devez être connecté (Personnel PHMC/DMEC ou Civil) pour remplir un formulaire.</p>
-                                        <Button variant="primary" size="lg" onClick={restartOnboarding}>
-                                            <i className="fas fa-play-circle"></i> Ouvrir le Guide de Configuration
-                                        </Button>
+                                        <p><strong>Première visite ?</strong> Commencez par créer votre compte (avec votre personnage GTA World) : se connecter ne fonctionnera pas sans compte.</p>
+                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                            <Button variant="success" size="lg" onClick={handleOpenSignupRoleChoice}>
+                                                <i className="fas fa-user-plus"></i> Créer un compte
+                                            </Button>
+                                            <Button variant="outline-light" size="lg" onClick={handleOpenLoginRoleChoice}>
+                                                <i className="fas fa-sign-in-alt"></i> Se connecter
+                                            </Button>
+                                            <Button variant="primary" size="lg" onClick={restartOnboarding}>
+                                                <i className="fas fa-play-circle"></i> Ouvrir le Guide de Configuration
+                                            </Button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <p>Veuillez sélectionner une agence, puis un type de formulaire.</p>
@@ -2054,12 +2097,24 @@ function MainApp({
                         <Modal show={showLoginRoleChoice} onHide={() => setShowLoginRoleChoice(false)} centered>
                             <Modal.Header closeButton style={{ backgroundColor: '#1a1a1a', color: '#fff', borderBottom: '1px solid #444' }}>
                                 <Modal.Title>
-                                    <i className="fas fa-sign-in-alt" style={{ marginRight: '10px' }}></i>
-                                    Se connecter
+                                    <i className={`fas ${roleChoiceMode === 'signup' ? 'fa-user-plus' : 'fa-sign-in-alt'}`} style={{ marginRight: '10px' }}></i>
+                                    {roleChoiceMode === 'signup' ? 'Créer un compte' : 'Se connecter'}
                                 </Modal.Title>
                             </Modal.Header>
                             <Modal.Body style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>
-                                <p>Quel type de compte souhaitez-vous utiliser ?</p>
+                                <p>
+                                    {roleChoiceMode === 'signup'
+                                        ? 'Quel type de compte souhaitez-vous créer ? Vous aurez besoin de votre personnage GTA World et d\'une adresse Eyefind Mail.'
+                                        : 'Quel type de compte souhaitez-vous utiliser ?'}
+                                </p>
+                                {roleChoiceMode === 'login' && (
+                                    <p style={{ fontSize: '0.85em', color: '#ffc107' }}>
+                                        Première visite ? Il faut d\'abord <strong>créer un compte</strong>.{' '}
+                                        <a href="#creer-un-compte" style={{ color: '#4a9eff' }} onClick={(e) => { e.preventDefault(); setRoleChoiceMode('signup'); }}>
+                                            Créer un compte
+                                        </a>
+                                    </p>
+                                )}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                     <button
                                         type="button"
@@ -2282,6 +2337,9 @@ function MainApp({
                                 showNotification={showNotification}
                                 commitInfo={commitInfo}
                                 handleImageUpload={handleImageUpload}
+                                uploadImageDetailed={uploadImageDetailed}
+                                uid={currentEmployee?.uid || null}
+                                defaultName={staffName || ''}
                             />
                         )}
 
