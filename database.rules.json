@@ -78,6 +78,19 @@
       }
     },
 
+    // ─── File des images ImgBB à supprimer ───────────────────────────────────────
+    // ImgBB n'a pas d'API de suppression : quand quelqu'un remplace / supprime sa carte ou sa
+    // signature, le lien de suppression ImgBB est ajouté ici. Tout utilisateur connecté peut AJOUTER
+    // une entrée (lien ibb.co uniquement) ; seuls les admins la lisent et la retirent (panneau admin
+    // → Images à supprimer).
+    "imgbbDeleteQueue": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      "$entryId": {
+        ".write": "auth != null && ((!data.exists() && newData.exists()) || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['deleteUrl', 'queuedAt']) && newData.child('deleteUrl').isString() && newData.child('deleteUrl').val().matches(/^https:\\/\\/ibb\\.co\\/.+/)"
+      }
+    },
+
     "agencies": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"

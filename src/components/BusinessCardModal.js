@@ -5,7 +5,7 @@ import BusinessCardImage from '../assets/business-card.png';
 import { copyToClipboard } from '../components/notificationService';
 import DebugFillButton from './DebugFillButton';
 import SignatureCreator from './SignatureCreator';
-import { MyCreationPanel, ImgbbDeleteNotice } from './MyCreationPanel';
+import { MyCreationPanel } from './MyCreationPanel';
 import { CREATION_KINDS, loadUserCreations, saveUserCreation, removeUserCreation } from '../utils/userCreations';
 import './MyCreations.css';
 
@@ -20,7 +20,6 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     const [tab, setTab] = useState('card');
     const [creations, setCreations] = useState({ businessCard: null, signature: null });
     const [editingCard, setEditingCard] = useState(false);
-    const [oldDeleteUrl, setOldDeleteUrl] = useState('');
 
     const nameRef = useRef(null);
     const rankRef = useRef(null);
@@ -39,7 +38,6 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             setEmail(localStorage.getItem('businessCardEmail') || '');
             setImageUrl(null);
             setEditingCard(false);
-            setOldDeleteUrl('');
             if (uid) {
                 loadUserCreations(uid)
                     .then(setCreations)
@@ -283,12 +281,11 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
 
             setImageUrl(link);
             if (uid) {
-                const { saved, previous } = await saveUserCreation(uid, CREATION_KINDS.card, {
+                const { saved } = await saveUserCreation(uid, CREATION_KINDS.card, {
                     url: link, deleteUrl: uploaded.deleteUrl, name, rank, phone: phoneNumber, email,
                 });
                 setCreations((current) => ({ ...current, businessCard: saved }));
                 setEditingCard(false);
-                setOldDeleteUrl(previous?.deleteUrl || '');
             }
             showNotification(`Carte de visite enregistrée et téléchargée : ${link}`, 'save');
             
@@ -324,13 +321,11 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     const handleDeleteCard = async () => {
         if (!window.confirm('Supprimer votre carte de visite ? Elle ne sera plus associée à votre compte.')) return;
         try {
-            const deleteUrl = creations.businessCard?.deleteUrl || '';
             await removeUserCreation(uid, CREATION_KINDS.card);
             setCreations((current) => ({ ...current, businessCard: null }));
             setEditingCard(false);
             setImageUrl(null);
-            setOldDeleteUrl(deleteUrl);
-            showNotification('Carte de visite supprimée.', 'save');
+            showNotification('Carte de visite supprimée (l\'image sera retirée d\'ImgBB par un administrateur).', 'save');
         } catch (error) {
             showNotification(`Suppression impossible : ${(error.message || '').substring(0, 100)}`, 'error');
         }
@@ -371,7 +366,6 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                 ) : (
                     <>
                         <div className="business-card-content">
-                            <ImgbbDeleteNotice deleteUrl={oldDeleteUrl} onDismiss={() => setOldDeleteUrl('')} />
                             {showCardPanel && (
                                 <MyCreationPanel
                                     title="Votre carte de visite"

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
-import { MyCreationPanel, ImgbbDeleteNotice } from './MyCreationPanel';
+import { MyCreationPanel } from './MyCreationPanel';
 import { SIGNATURE_STYLES, buildSignatureText, renderSignatureDataUrl } from '../utils/signatureRenderer';
 import { CREATION_KINDS, saveUserCreation, removeUserCreation } from '../utils/userCreations';
 import { copyToClipboard } from './notificationService';
@@ -17,7 +17,6 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
     const [previews, setPreviews] = useState({});
     const [editing, setEditing] = useState(false);
     const [busy, setBusy] = useState(false);
-    const [oldDeleteUrl, setOldDeleteUrl] = useState('');
 
     useEffect(() => { setName(defaultName || ''); }, [defaultName]);
 
@@ -48,12 +47,11 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
             showNotification('Création de la signature...', 'upload');
             const dataUrl = await renderSignatureDataUrl(text, styleKey);
             const uploaded = await uploadImageDetailed(dataUrl);
-            const { saved, previous } = await saveUserCreation(uid, CREATION_KINDS.signature, {
+            const { saved } = await saveUserCreation(uid, CREATION_KINDS.signature, {
                 url: uploaded.url, deleteUrl: uploaded.deleteUrl, text, style: styleKey,
             });
             onCreationChange(saved);
             setEditing(false);
-            setOldDeleteUrl(previous?.deleteUrl || '');
             showNotification('Signature enregistrée.', 'save');
             await copyToClipboard(uploaded.url, showNotification, 'Lien de la signature copié dans le presse-papiers !');
         } catch (error) {
@@ -69,12 +67,10 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
         if (!window.confirm('Supprimer votre signature ? Elle ne sera plus associée à votre compte.')) return;
         setBusy(true);
         try {
-            const deleteUrl = creation?.deleteUrl || '';
             await removeUserCreation(uid, CREATION_KINDS.signature);
             onCreationChange(null);
             setEditing(false);
-            setOldDeleteUrl(deleteUrl);
-            showNotification('Signature supprimée.', 'save');
+            showNotification('Signature supprimée (l\'image sera retirée d\'ImgBB par un administrateur).', 'save');
         } catch (error) {
             showNotification(`Suppression impossible : ${(error.message || '').substring(0, 100)}`, 'error');
         } finally {
@@ -84,8 +80,6 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
 
     return (
         <div className="signature-creator">
-            <ImgbbDeleteNotice deleteUrl={oldDeleteUrl} onDismiss={() => setOldDeleteUrl('')} />
-
             {creation && !editing && (
                 <MyCreationPanel
                     title="Votre signature"

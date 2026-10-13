@@ -8,6 +8,7 @@ import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
 import { useDebug } from '../../contexts/DebugContext';
 import UsersHub from './users/UsersHub';
+import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 
 const AdminDashboard = ({
     currentUser,
@@ -67,6 +68,7 @@ const AdminDashboard = ({
 }) => {
 
     const [selectedSection, setSelectedSection] = useState('serviceStatus');
+    const imgbbQueueCount = useImgbbQueueCount();
     const [testWebhookData, setTestWebhookData] = useState({ title: '', message: '', selectedWebhook: null });
     // Gestion du personnel/des civils, déplacée ici depuis la Boîte à Outils
     // (auparavant sur la page principale) — voir la section 'users' plus bas.
@@ -157,6 +159,7 @@ const AdminDashboard = ({
                         <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
                         <button className={`nav-link ${selectedSection === 'bingo' ? 'active' : ''}`} onClick={() => setSelectedSection('bingo')}><i className="fas fa-dice me-2"></i>Bingo</button>
                         <button className={`nav-link ${selectedSection === 'users' ? 'active' : ''}`} onClick={() => setSelectedSection('users')}><i className="fas fa-users-cog me-2"></i>Utilisateurs</button>
+                        <button className={`nav-link ${selectedSection === 'imageCleanup' ? 'active' : ''}`} onClick={() => setSelectedSection('imageCleanup')}><i className="fas fa-images me-2"></i>Images à supprimer{imgbbQueueCount > 0 && <span className="badge bg-warning text-dark ms-2">{imgbbQueueCount}</span>}</button>
                         <button className={`nav-link ${selectedSection === 'webhooks' ? 'active' : ''}`} onClick={() => setSelectedSection('webhooks')}><i className="fas fa-bullhorn me-2"></i>Webhooks</button>
                         <button className={`nav-link ${selectedSection === 'dev' ? 'active' : ''}`} onClick={() => setSelectedSection('dev')}><i className="fas fa-code me-2"></i>Développeur</button>
                         <button className={`nav-link ${selectedSection === 'database' ? 'active' : ''}`} onClick={() => setSelectedSection('database')}><i className="fas fa-database me-2"></i>Base de données</button>
@@ -475,6 +478,10 @@ const AdminDashboard = ({
                             showNotification={showInAppNotification}
                             onOpenMigrationTools={() => setShowUserManagementModal(true)}
                         />
+                    )}
+
+                    {selectedSection === 'imageCleanup' && (
+                        <PendingImageDeletions showNotification={showInAppNotification} />
                     )}
 
                     {selectedSection === 'webhooks' && (

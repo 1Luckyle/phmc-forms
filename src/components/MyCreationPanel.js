@@ -31,23 +31,3 @@ export const MyCreationPanel = ({ title, creation, transparent, busy, onCopy, on
         </div>
     );
 };
-
-// ImgBB n'a pas d'API de suppression : après avoir retiré l'image côté application, on propose
-// d'ouvrir la page de suppression d'ImgBB (lien direct, jamais bloqué comme une fenêtre auto-ouverte).
-export const ImgbbDeleteNotice = ({ deleteUrl, onDismiss }) => {
-    if (!deleteUrl) return null;
-    return (
-        <div className="imgbb-delete-notice">
-            <span>
-                L'ancienne image n'est plus associée à votre compte. Pour la supprimer aussi d'ImgBB, ouvrez la page de
-                suppression puis confirmez.
-            </span>
-            <div>
-                <a className="btn btn-sm btn-outline-warning" href={deleteUrl} target="_blank" rel="noopener noreferrer" onClick={onDismiss}>
-                    <i className="fas fa-external-link-alt"></i> Page de suppression ImgBB
-                </a>
-                <Button size="sm" variant="link" onClick={onDismiss}>Ignorer</Button>
-            </div>
-        </div>
-    );
-};
