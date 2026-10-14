@@ -2110,7 +2110,7 @@ function MainApp({
                                 </p>
                                 {roleChoiceMode === 'login' && (
                                     <p style={{ fontSize: '0.85em', color: '#ffc107' }}>
-                                        Première visite ? Il faut d\'abord <strong>créer un compte</strong>.{' '}
+                                        Première visite ? Il faut d'abord <strong>créer un compte</strong>.{' '}
                                         <a href="#creer-un-compte" style={{ color: '#4a9eff' }} onClick={(e) => { e.preventDefault(); setRoleChoiceMode('signup'); }}>
                                             Créer un compte
                                         </a>
