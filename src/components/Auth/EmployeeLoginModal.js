@@ -7,7 +7,7 @@ import { auth } from '../../firebase';
 import { buildGtawAuthUrl } from '../../utils/gtawOAuth';
 import { useAuthMethodsConfig } from '../../hooks/useAuthMethodsConfig';
 
-const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
+const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
     const { loginEmployee } = useEmployeeAuth();
     const { gtawOnly } = useAuthMethodsConfig();
     const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -135,7 +135,7 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
             <Modal.Header closeButton style={{ backgroundColor: '#1a1a1a', color: '#fff', borderBottom: '1px solid #444' }}>
                 <Modal.Title>
                     <i className="fas fa-sign-in-alt" style={{ marginRight: '10px' }}></i>
-                    Connexion Employé
+                    Connexion
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>
@@ -167,7 +167,7 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
                     <span>
                         <strong style={{ display: 'block' }}>Se connecter avec GTA World</strong>
                         <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                            Disponible si votre compte a été créé via GTA World
+                            Personnel PHMC / DMEC ou Civil — si votre compte a été créé via GTA World
                         </span>
                     </span>
                 </button>
@@ -271,6 +271,14 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess }) => {
                             </div>
                         </Form>
                     </>
+                )}
+                {onCreateAccount && (
+                    <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid #444', textAlign: 'center', fontSize: '0.9em' }}>
+                        Pas encore de compte ?{' '}
+                        <Button variant="link" style={{ color: '#66bb6a', padding: 0, verticalAlign: 'baseline' }} onClick={() => { handleClose(); onCreateAccount(); }}>
+                            Créer un compte
+                        </Button>
+                    </div>
                 )}
             </Modal.Body>
         </Modal>

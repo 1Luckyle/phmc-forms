@@ -49,7 +49,8 @@ import HeaderInfo from './components/HeaderInfo';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
-import { database } from './firebase'; // Your Firebase config
+import { database, auth } from './firebase'; // Your Firebase config
+import { signInWithCustomToken } from 'firebase/auth';
 import { getEmployeeDisplayName } from './utils/employeeName';
 import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 // Lazy-loaded components
@@ -140,9 +141,8 @@ function MainApp({
     // USER_TYPES.CIVILIAN dans OnboardingModal.js — valeurs dupliquées ici en
     // chaînes littérales pour ne pas forcer le chargement anticipé de ce
     // composant lazy-loaded).
-    const [showLoginRoleChoice, setShowLoginRoleChoice] = useState(false);
-    // Le même choix de rôle sert à « Se connecter » et à « Créer un compte ».
-    const [roleChoiceMode, setRoleChoiceMode] = useState('login');
+    // Compte GTAW lié à plusieurs comptes (ex. employé + civil) : liste à choisir après la redirection.
+    const [accountChoices, setAccountChoices] = useState(null);
     const [quickCivilOnboarding, setQuickCivilOnboarding] = useState(false);
     // Outil personnel "Dossier Patient" (Lot 5) : recherche par ID patient,
     // voir PatientDossierModal.js.
@@ -199,11 +199,13 @@ function MainApp({
             if (resultRaw) {
                 sessionStorage.removeItem('gtaw-login-result');
                 const result = JSON.parse(resultRaw);
-                if (result.notLinked) {
-                    // Aucun compte lié à ce personnage : on emmène directement vers la création de compte.
-                    showNotification("Aucun compte n'est encore lié à ce personnage GTA World : créons-le ! Choisissez votre type de compte.", 'info-circle', 10000);
-                    setRoleChoiceMode('signup');
-                    setShowLoginRoleChoice(true);
+                if (result.choices) {
+                    setAccountChoices(result.choices);
+                } else if (result.notLinked) {
+                    // Aucun compte lié à ce personnage : on emmène directement vers la création de compte
+                    // (Guide de Configuration).
+                    showNotification("Aucun compte n'est encore lié à ce personnage GTA World : créons-le avec le Guide de Configuration !", 'info-circle', 10000);
+                    restartOnboarding();
                 } else if (result.error) {
                     showNotification(`Échec de la connexion avec GTA World : ${result.error}`, 'error');
                 }
@@ -761,34 +763,24 @@ function MainApp({
         setShowCctvRequestModal(true);
     };
     
-    // Bouton « Se connecter » de la page principale : ouvre le choix de rôle.
-    const handleOpenLoginRoleChoice = () => {
-        setRoleChoiceMode('login');
-        setShowLoginRoleChoice(true);
-    };
+    // « Se connecter » : une seule fenêtre pour Personnel ET Civil (connexion GTA World ou e-mail).
+    const handleOpenLogin = () => setShowLoginModal(true);
 
-    // Bouton « Créer un compte » : même choix de rôle, mais orienté création.
-    const handleOpenSignupRoleChoice = () => {
-        setRoleChoiceMode('signup');
-        setShowLoginRoleChoice(true);
-    };
+    // « Créer un compte » : on passe par le Guide de Configuration, qui accompagne toutes les étapes.
+    const handleOpenSignup = () => restartOnboarding();
 
-    const handleChooseEmployeeLogin = () => {
-        setShowLoginRoleChoice(false);
-        if (roleChoiceMode === 'signup') {
-            // Guide de configuration : demande de compte Personnel/DMEC (validée ensuite par un admin).
-            setShowOnboarding(true);
-            return;
+    // Compte GTAW lié à plusieurs comptes : connexion avec le jeton du compte choisi.
+    const handleChooseAccount = async (choice) => {
+        try {
+            await signInWithCustomToken(auth, choice.customToken);
+            setAccountChoices(null);
+        } catch (error) {
+            console.error('Connexion au compte choisi impossible :', error);
+            showNotification('Connexion impossible : le lien de connexion a expiré, recommencez avec GTA World.', 'error');
+            setAccountChoices(null);
         }
-        setShowLoginModal(true);
     };
 
-    const handleChooseCivilLogin = () => {
-        setShowLoginRoleChoice(false);
-        setQuickCivilOnboarding(true);
-        setShowOnboarding(true);
-    };
-    
     const handleEmployeeLogout = async () => {
         try {
             await logoutEmployee();
@@ -1602,23 +1594,6 @@ function MainApp({
                     <div className="form-container">
                         <div className="button-group">
                             <div className="floating-tools-container">
-                                {!currentEmployee && (
-                                    <>
-                                        <Button
-                                            variant="success"
-                                            onClick={handleOpenSignupRoleChoice}
-                                            title="Première visite ? Créez votre compte avec votre personnage GTA World"
-                                        >
-                                            <i className="fas fa-user-plus"></i> Créer un compte
-                                        </Button>
-                                        <Button
-                                            variant="outline-light"
-                                            onClick={handleOpenLoginRoleChoice}
-                                        >
-                                            <i className="fas fa-sign-in-alt"></i> Se connecter
-                                        </Button>
-                                    </>
-                                )}
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
                                         <i className="fas fa-tools"></i> Boite à Outils
@@ -2006,16 +1981,17 @@ function MainApp({
                                         <i className="fas fa-lock" style={{ fontSize: '3rem', marginBottom: '20px', opacity: 0.6 }}></i>
                                         <h4>Connexion requise</h4>
                                         <p>Vous devez être connecté (Personnel PHMC/DMEC ou Civil) pour remplir un formulaire.</p>
-                                        <p><strong>Première visite ?</strong> Commencez par créer votre compte (avec votre personnage GTA World) : se connecter ne fonctionnera pas sans compte.</p>
+                                        <p style={{ maxWidth: '520px', margin: '0 auto 18px' }}>
+                                            <strong>Première visite ?</strong> Cliquez sur <strong>« Créer un compte »</strong> : le
+                                            {' '}<strong>Guide de Configuration</strong> vous accompagne pas à pas (personnage GTA World, vérification de
+                                            votre e-mail Eyefind Mail, préférences). Vous avez déjà un compte ? Utilisez « Se connecter ».
+                                        </p>
                                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                            <Button variant="success" size="lg" onClick={handleOpenSignupRoleChoice}>
-                                                <i className="fas fa-user-plus"></i> Créer un compte
+                                            <Button variant="success" size="lg" onClick={handleOpenSignup}>
+                                                <i className="fas fa-user-plus"></i> Créer un compte (Guide de Configuration)
                                             </Button>
-                                            <Button variant="outline-light" size="lg" onClick={handleOpenLoginRoleChoice}>
+                                            <Button variant="outline-light" size="lg" onClick={handleOpenLogin}>
                                                 <i className="fas fa-sign-in-alt"></i> Se connecter
-                                            </Button>
-                                            <Button variant="primary" size="lg" onClick={restartOnboarding}>
-                                                <i className="fas fa-play-circle"></i> Ouvrir le Guide de Configuration
                                             </Button>
                                         </div>
                                     </div>
@@ -2093,66 +2069,40 @@ function MainApp({
                             show={showLoginModal}
                             onHide={() => setShowLoginModal(false)}
                             onSuccess={handleLoginSuccess}
+                            onCreateAccount={handleOpenSignup}
                         />
 
-                        <Modal show={showLoginRoleChoice} onHide={() => setShowLoginRoleChoice(false)} centered>
+                        <Modal show={!!accountChoices} onHide={() => setAccountChoices(null)} centered>
                             <Modal.Header closeButton style={{ backgroundColor: '#1a1a1a', color: '#fff', borderBottom: '1px solid #444' }}>
                                 <Modal.Title>
-                                    <i className={`fas ${roleChoiceMode === 'signup' ? 'fa-user-plus' : 'fa-sign-in-alt'}`} style={{ marginRight: '10px' }}></i>
-                                    {roleChoiceMode === 'signup' ? 'Créer un compte' : 'Se connecter'}
+                                    <i className="fas fa-users" style={{ marginRight: '10px' }}></i>
+                                    Quel compte utiliser ?
                                 </Modal.Title>
                             </Modal.Header>
                             <Modal.Body style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>
-                                <p>
-                                    {roleChoiceMode === 'signup'
-                                        ? 'Quel type de compte souhaitez-vous créer ? Vous aurez besoin de votre personnage GTA World et d\'une adresse Eyefind Mail.'
-                                        : 'Quel type de compte souhaitez-vous utiliser ?'}
-                                </p>
-                                {roleChoiceMode === 'login' && (
-                                    <p style={{ fontSize: '0.85em', color: '#ffc107' }}>
-                                        Première visite ? Il faut d'abord <strong>créer un compte</strong>.{' '}
-                                        <a href="#creer-un-compte" style={{ color: '#4a9eff' }} onClick={(e) => { e.preventDefault(); setRoleChoiceMode('signup'); }}>
-                                            Créer un compte
-                                        </a>
-                                    </p>
-                                )}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={handleChooseEmployeeLogin}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '12px',
-                                            backgroundColor: '#1a1a1a', border: '1px solid #007bff',
-                                            borderRadius: '8px', padding: '15px', color: '#fff',
-                                            cursor: 'pointer', textAlign: 'left'
-                                        }}
-                                    >
-                                        <i className="fas fa-user-md" style={{ fontSize: '1.4rem', color: '#4a9eff' }}></i>
-                                        <span>
-                                            <strong style={{ display: 'block' }}>Personnel PHMC / DMEC</strong>
-                                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                                                Employé du Pillbox Hill Medical Center ou du DMEC (coroner).
+                                <p>Plusieurs comptes sont liés à votre compte GTA World. Choisissez celui avec lequel vous connecter :</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {(accountChoices || []).map((choice, index) => (
+                                        <button
+                                            type="button"
+                                            key={index}
+                                            onClick={() => handleChooseAccount(choice)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '12px',
+                                                backgroundColor: '#1a1a1a',
+                                                border: `1px solid ${choice.accountType === 'civilian' ? '#2e7d32' : '#007bff'}`,
+                                                borderRadius: '8px', padding: '14px', color: '#fff', cursor: 'pointer', textAlign: 'left'
+                                            }}
+                                        >
+                                            <i className={`fas ${choice.accountType === 'civilian' ? 'fa-id-card' : 'fa-user-md'}`} style={{ fontSize: '1.3rem' }}></i>
+                                            <span>
+                                                <strong style={{ display: 'block' }}>{choice.label || 'Compte'}</strong>
+                                                <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                                    {choice.accountType === 'civilian' ? 'Civil' : (choice.accountType === 'coroner' ? 'Personnel DMEC' : 'Personnel PHMC')}
+                                                </span>
                                             </span>
-                                        </span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleChooseCivilLogin}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '12px',
-                                            backgroundColor: '#1a1a1a', border: '1px solid #2e7d32',
-                                            borderRadius: '8px', padding: '15px', color: '#fff',
-                                            cursor: 'pointer', textAlign: 'left'
-                                        }}
-                                    >
-                                        <i className="fas fa-id-card" style={{ fontSize: '1.4rem', color: '#66bb6a' }}></i>
-                                        <span>
-                                            <strong style={{ display: 'block' }}>Civil</strong>
-                                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                                                Retrouvez vos dossiers médicaux et vos candidatures.
-                                            </span>
-                                        </span>
-                                    </button>
+                                        </button>
+                                    ))}
                                 </div>
                             </Modal.Body>
                         </Modal>

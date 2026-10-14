@@ -699,9 +699,10 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
             return Array.isArray(val) ? val : Object.values(val);
         };
 
-        const [phmcSnap, coronerSnap] = await Promise.all([
+        const [phmcSnap, coronerSnap, civiliansSnap] = await Promise.all([
             db.ref('staff/phmc').once('value'),
             db.ref('staff/coroner').once('value'),
+            db.ref('civilians').once('value'),
         ]);
 
         const matchesIdentity = (e) => {
@@ -716,10 +717,51 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
         const coronerMatch = !phmcMatch ? toArray(coronerSnap.val()).find(matchesIdentity) : null;
         const match = phmcMatch || coronerMatch;
 
+        // Comptes Civils (recruteurs compris) de ce compte GTAW : par personnage précis si le client le
+        // fournit, sinon par gtawUserId ou par l'un des personnages réellement renvoyés par l'UCP.
+        const ownedIds = new Set((userData?.user?.character || []).map((c) => String(c.id)));
+        const civilMatches = toArray(civiliansSnap.val()).filter((e) => {
+            if (!e || !e.uid) return false;
+            if (gtawCharacterId != null) return e.gtawCharacterId != null && String(e.gtawCharacterId) === String(gtawCharacterId);
+            return (e.gtawUserId != null && String(e.gtawUserId) === String(gtawUserId))
+                || (e.gtawCharacterId != null && ownedIds.has(String(e.gtawCharacterId)));
+        });
+
+        // Candidats dédoublonnés par uid (un Civil converti en Personnel garde le même uid).
+        const candidates = [];
+        const pushCandidate = (uid, accountType, label) => {
+            if (uid && !candidates.some((c) => c.uid === uid)) candidates.push({ uid, accountType, label });
+        };
+        if (match) {
+            pushCandidate(match.uid, phmcMatch ? 'phmc' : 'coroner',
+                match.name || [match.firstName, match.lastName].filter(Boolean).join(' '));
+        }
+        for (const civil of civilMatches) {
+            pushCandidate(civil.uid, 'civilian', [civil.firstName, civil.lastName].filter(Boolean).join(' ') || civil.email || '');
+        }
+
+        if (candidates.length > 1) {
+            // Plusieurs comptes pour ce compte GTAW (ex. un personnage employé + un personnage civil) : le
+            // code OAuth est à usage unique, on renvoie donc un jeton prêt à l'emploi par compte (tous
+            // appartiennent au compte GTAW qui vient de s'authentifier) et le client fait choisir.
+            const choices = [];
+            for (const candidate of candidates) {
+                const token = await admin.auth().createCustomToken(candidate.uid, { gtawLogin: true });
+                choices.push({ customToken: token, accountType: candidate.accountType, label: candidate.label });
+            }
+            res.status(200).json({ choices });
+            return;
+        }
+        if (candidates.length === 1 && candidates[0].accountType === 'civilian') {
+            const civilToken = await admin.auth().createCustomToken(candidates[0].uid, { gtawLogin: true });
+            res.status(200).json({ customToken: civilToken, employeeType: 'civilian' });
+            return;
+        }
+
         if (!match || !match.uid) {
             res.status(404).json({
                 error: 'not-linked',
-                message: 'Aucun compte PHMC-FR n\'est lié à ce personnage GTA World. Créez votre compte en vous connectant avec GTA World depuis l\'écran de création de compte.'
+                message: 'Aucun compte PHMC-FR n\'est lié à ce personnage GTA World. Créez d\'abord votre compte avec le Guide de Configuration.'
             });
             return;
         }

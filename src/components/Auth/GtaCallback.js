@@ -42,7 +42,7 @@ const GtaCallback = () => {
             // composant qui a démarré la redirection) et sa route de retour.
             const finish = (result) => {
                 if (flowType === 'employee-login') {
-                    if (result?.error) {
+                    if (result?.error || result?.choices) {
                         try { sessionStorage.setItem('gtaw-login-result', JSON.stringify(result)); }
                         catch (err) { console.error('Failed to store GTA World login result:', err); }
                     }
@@ -115,6 +115,13 @@ const GtaCallback = () => {
                         data = JSON.parse(responseText);
                     } catch (parseError) {
                         throw new Error(`Réponse JSON invalide du serveur. Reçue : ${responseText.substring(0, 100)}...`);
+                    }
+
+                    // Plusieurs comptes (ex. personnage employé + personnage civil) : la page principale
+                    // fait choisir, puis connecte avec le jeton correspondant.
+                    if (response.ok && Array.isArray(data.choices) && data.choices.length > 0) {
+                        finish({ choices: data.choices });
+                        return;
                     }
 
                     if (!response.ok || !data.customToken) {
