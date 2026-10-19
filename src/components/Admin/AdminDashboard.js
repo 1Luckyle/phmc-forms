@@ -8,6 +8,7 @@ import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
 import { useDebug } from '../../contexts/DebugContext';
 import UsersHub from './users/UsersHub';
+import DebugWhitelist from './DebugWhitelist';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 
 const AdminDashboard = ({
@@ -131,7 +132,7 @@ const AdminDashboard = ({
         try {
             await setDebugAutofillEnabled(enabled, currentUser?.email);
             if (showInAppNotification) {
-                showInAppNotification(`Mode debug ${enabled ? 'activé' : 'désactivé'} pour tous les utilisateurs.`, enabled ? 'check-circle' : 'info-circle');
+                showInAppNotification(`Mode debug ${enabled ? 'activé' : 'désactivé'} (liste blanche uniquement).`, enabled ? 'check-circle' : 'info-circle');
             }
         } catch (error) {
             console.error('Error updating debug autofill setting:', error);
@@ -316,11 +317,11 @@ const AdminDashboard = ({
                             <div className="card-header">Mode debug</div>
                             <div className="card-body">
                                 <p className="text-muted">
-                                    <strong>Remplissage automatique des formulaires.</strong> Quand il est activé, <strong>tous les utilisateurs</strong> (visiteurs, civils, employés, admins)
+                                    <strong>Remplissage automatique des formulaires.</strong> Quand il est activé, <strong>les personnes de la liste blanche</strong> ci-dessous
                                     voient un bouton « Remplir (debug) » sur chaque formulaire (rapports, emails, candidatures,
                                     dossiers civils) et sur les modales (création de compte, demandes, etc.). Il remplit le
-                                    formulaire avec des données de test sans rien envoyer ni sauvegarder. Pratique pour tester
-                                    les formulaires et les permissions de chaque rôle. À désactiver en production.
+                                    formulaire avec des données de test sans rien envoyer ni sauvegarder. Les autres utilisateurs
+                                    ne voient jamais le bouton : on peut donc l'utiliser directement en production.
                                 </p>
                                 <div className="form-check form-switch mb-3">
                                     <input
@@ -333,14 +334,15 @@ const AdminDashboard = ({
                                         onChange={(e) => handleToggleDebugAutofill(e.target.checked)}
                                     />
                                     <label className="form-check-label" htmlFor="debugAutofillSwitch">
-                                        Activer le bouton « Remplir (debug) » pour tout le monde
+                                        Activer le bouton « Remplir (debug) » pour la liste blanche
                                         {isUpdatingDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
                                     </label>
                                 </div>
-                                <p className={`mb-0 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
+                                <p className={`mb-3 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
                                     <i className={`fas ${debugAutofillEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
-                                    État actuel : {debugAutofillEnabled ? 'ACTIVÉ' : 'désactivé'}
+                                    État actuel : {debugAutofillEnabled ? 'ACTIVÉ (pour la liste blanche uniquement)' : 'désactivé'}
                                 </p>
+                                <DebugWhitelist currentUser={currentUser} showInAppNotification={showInAppNotification} />
                                 <hr />
                                 <p className="text-muted">
                                     <strong>Suppression des candidatures.</strong> Quand cet interrupteur est activé, un bouton « Supprimer »

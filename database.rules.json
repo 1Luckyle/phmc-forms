@@ -36,9 +36,38 @@
     // Lecture publique : les sélecteurs d'employés dans les formulaires sont
     // accessibles à tous (civils, recrutement, etc.).
     // Écriture : admins uniquement.
+    //
+    // Auto-édition du profil : chaque membre peut modifier SEUL son téléphone (phNumber) et son
+    // Discord sur SA fiche (uid de la fiche === auth.uid). Nom, grade, badge et e-mail restent
+    // réservés aux admins ; l'e-mail ne change que via les Cloud Functions requestStaffEmailChange /
+    // confirmStaffEmailChange (code envoyé à la nouvelle adresse), qui contournent ces règles.
     "staff": {
       ".read":  true,
-      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
+      "phmc": {
+        "$key": {
+          "phNumber": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "(newData.isString() && newData.val().length <= 40) || newData.isNumber()"
+          },
+          "discord": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "(newData.isString() && newData.val().length <= 64) || newData.isNumber()"
+          }
+        }
+      },
+      "coroner": {
+        "$key": {
+          "phNumber": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "(newData.isString() && newData.val().length <= 40) || newData.isNumber()"
+          },
+          "discord": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "(newData.isString() && newData.val().length <= 64) || newData.isNumber()"
+          }
+        }
+      }
     },
 
     // ─── Options des formulaires & agences ───────────────────────────────────
@@ -288,6 +317,66 @@
     "emailVerifications": {
       ".read":  false,
       ".write": false
+    },
+
+    // ─── Demandes de changement d'adresse du personnel ────────────────────────
+    // emailChangeRequests/{uid} : nouvelle adresse + code de vérification à 6 chiffres. Gérées
+    // exclusivement côté serveur (requestStaffEmailChange / confirmStaffEmailChange) : lecture et
+    // écriture client bloquées pour que personne ne puisse lire le code ni se l'auto-valider.
+    "emailChangeRequests": {
+      ".read":  false,
+      ".write": false
+    },
+
+    // ─── Contrats de travail ──────────────────────────────────────────────────
+    // contracts/{id} : contrat rattaché à un membre du personnel (employeeUid), statut
+    // draft -> sent -> signed (voir src/utils/contracts.js).
+    //   • Lecture de TOUT le nœud : admins et recruteurs. Un employé ne lit que SES contrats
+    //     déjà envoyés (jamais un brouillon), un par un, via l'index contractsByEmployee.
+    //   • Écriture : admins sans restriction ; recruteurs tant que le contrat n'est pas signé
+    //     et sans jamais pouvoir poser le statut « signed » (seul l'employé signe).
+    //   • Signature : l'employé destinataire pose signature + signedAt + statut « signed »,
+    //     uniquement depuis « sent » et uniquement avec l'image de SA signature enregistrée
+    //     (userCreations/{uid}/signature).
+    "contracts": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$contractId": {
+        ".read": "auth != null && data.child('employeeUid').val() === auth.uid && data.child('status').val() !== 'draft'",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruiterUIDs').child(auth.uid).val() === true && newData.child('status').val() !== 'signed' && (!data.exists() || data.child('status').val() !== 'signed')))",
+        ".validate": "newData.hasChildren(['employeeUid', 'status']) && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'sent' || newData.child('status').val() === 'signed')",
+        "status": {
+          ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.val() === 'sent' && newData.val() === 'signed' && newData.parent().child('signature').child('url').exists()"
+        },
+        "signature": {
+          ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.parent().child('status').val() === 'sent' && !data.exists() && newData.child('signedByUid').val() === auth.uid",
+          ".validate": "newData.child('url').val() === root.child('userCreations').child(auth.uid).child('signature').child('url').val() && (!newData.child('dataUrl').exists() || (newData.child('dataUrl').isString() && newData.child('dataUrl').val().length <= 300000))"
+        },
+        "signedAt": {
+          ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.parent().child('status').val() === 'sent' && !data.exists()"
+        }
+      }
+    },
+
+    // Rôle facultatif « en attente de signature de contrat » : contractCandidates/{uid} = { setBy,
+    // setByName, setAt, applicationId, position }. Posé et retiré par les admins et recruteurs sur
+    // le compte Civil d'un candidat accepté ; lisible par le titulaire (son propre uid).
+    "contractCandidates": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)"
+      }
+    },
+
+    // Index « mes contrats » : contractsByEmployee/{uid}/{contractId}: true, posé à l'envoi du
+    // contrat et retiré s'il est retiré/supprimé. Lisible par l'employé concerné et les admins.
+    "contractsByEmployee": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        "$contractId": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)"
+        }
+      }
     }
   }
 }

@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, database } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, onValue } from 'firebase/database';
 import { canonicalPatientId } from '../utils/patientId';
 
 const CREATE_GTAW_CIVILIAN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawCivilianAccount';
@@ -22,6 +22,14 @@ export const EmployeeAuthProvider = ({ children }) => {
     // son adresse e-mail au lieu de son nom.
     const [adminStaffProfile, setAdminStaffProfile] = useState(null);
     const isCivilian = !isAdmin && !employeeProfile && !!civilianProfile;
+
+    // Le profil n'est lu qu'à la connexion : après une auto-édition (téléphone, Discord, e-mail
+    // depuis « Mon profil »), on fusionne les champs modifiés dans l'état local pour que
+    // l'interface les reflète sans devoir se reconnecter.
+    const updateLocalStaffProfile = (patch) => {
+        setEmployeeProfile((prev) => (prev ? { ...prev, ...patch } : prev));
+        setAdminStaffProfile((prev) => (prev ? { ...prev, ...patch } : prev));
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -368,6 +376,22 @@ export const EmployeeAuthProvider = ({ children }) => {
         })();
         return () => { cancelled = true; };
     }, [uid]);
+    // Rôle facultatif « en attente de signature de contrat » (contractCandidates/{uid}), posé par un
+    // recruteur sur le compte Civil d'un candidat accepté. En direct (onValue) : le candidat voit
+    // « Mes contrats » apparaître sans avoir à se reconnecter.
+    const [isContractCandidate, setIsContractCandidate] = useState(false);
+    useEffect(() => {
+        if (!uid) {
+            setIsContractCandidate(false);
+            return undefined;
+        }
+        const unsubscribe = onValue(
+            ref(database, `contractCandidates/${uid}`),
+            (snapshot) => setIsContractCandidate(snapshot.exists()),
+            () => setIsContractCandidate(false)
+        );
+        return () => unsubscribe();
+    }, [uid]);
     // Peut accéder à la gestion des recrutements (admins + recruteurs).
     const canManageRecruitment = isAdmin || isRecruiter;
 
@@ -386,11 +410,13 @@ export const EmployeeAuthProvider = ({ children }) => {
 
     const value = {
         isRecruiter,
+        isContractCandidate,
         canManageRecruitment,
         myPatientID,
         currentEmployee,
         employeeProfile,
         staffProfile,
+        updateLocalStaffProfile,
         staffName,
         isPhmcStaff,
         canUseAma,

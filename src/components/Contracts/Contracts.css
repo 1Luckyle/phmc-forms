@@ -1,0 +1,56 @@
+/* Contrats : document lisible sur fond clair (comme une feuille), quel que soit le thème sombre de l'app. */
+.contract-doc {
+    background: #f6f8fa;
+    color: #1f2328;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    max-height: 55vh;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.contract-doc-title {
+    text-align: center;
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+}
+
+.contract-doc-heading {
+    margin: 0.9rem 0 0.25rem;
+    color: #0969da;
+}
+
+.contract-doc-paragraph {
+    margin: 0 0 0.35rem;
+}
+
+.contract-doc-gap {
+    height: 0.15rem;
+}
+
+.contract-doc-signature {
+    margin-top: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #8c959f;
+}
+
+.contract-doc-signature-label {
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+}
+
+.contract-doc-signature img {
+    max-height: 90px;
+    max-width: 100%;
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.contracts-row-actions {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}

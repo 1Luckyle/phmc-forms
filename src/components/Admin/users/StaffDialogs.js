@@ -12,6 +12,7 @@ import {
 } from '../../../utils/staffAdmin';
 import { sendAdminActionWebhook } from '../adminUtils';
 import { canonicalPatientId } from '../../../utils/patientId';
+import EmailChangeFlow from '../../EmailChangeFlow';
 
 const DigitsInput = ({ value, onChange, ...rest }) => (
     <Form.Control
@@ -39,6 +40,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
     const isEdit = !!member;
     const [service, setService] = useState(defaultService);
     const [form, setForm] = useState({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+    const [emailShown, setEmailShown] = useState('');
     const { busy, error, setError, run } = useBusy();
 
     useEffect(() => {
@@ -46,6 +48,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
         setError('');
         if (member) {
             setService(member.service);
+            setEmailShown(member.email || '');
             const parts = staffNameParts(member);
             setForm({
                 firstName: parts.firstName, lastName: parts.lastName,
@@ -144,6 +147,12 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
                     <Form.Label>Discord</Form.Label>
                     <Form.Control value={form.discord} onChange={set('discord')} />
                 </Form.Group>
+                {isEdit && member.uid && (
+                    <div className="mt-3">
+                        {/* E-mail : modifiable uniquement s'il s'agit d'une adresse Eyefind Mail, après code de vérification. */}
+                        <EmailChangeFlow currentEmail={emailShown} targetUid={member.uid} onChanged={(email) => { setEmailShown(email); onDone(); }} />
+                    </div>
+                )}
                 {!isEdit && (
                     <p className="text-muted small mt-3 mb-0">
                         Cette fiche n'a pas de compte de connexion : la personne en obtient un via « Demandes de compte », ou en

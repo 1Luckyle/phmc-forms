@@ -7,6 +7,8 @@
 //   • Postes : ouvrir/fermer, ajouter, modifier, copier le BBCode des statuts ; renommer la clé
 //     (sensible) est réservé aux ADMINS, y compris côté règles Firebase ;
 //   • Candidatures : suivi du pipeline (entretiens, acceptation/refus, historique).
+//   • Contrats : rédiger un contrat (modèle verrouillé) et l'envoyer à un membre du personnel qui le
+//     signe depuis « Mes contrats » (voir components/Contracts).
 // Les actions sont journalisées sur Discord comme avant (sendAdminActionWebhook).
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
@@ -21,6 +23,7 @@ import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import RoleModal from '../Admin/RoleModal';
 import RenameRoleKeyModal from '../Admin/RenameRoleKeyModal';
 import PendingJobApplications from '../Admin/PendingJobApplications';
+import ContractsManager from '../Contracts/ContractsManager';
 
 const RECRUITMENT_CATEGORIES = {
     physician: { displayName: 'Physician Recruitment', path: 'selectOptions/physicianRecruitmentDetails' },
@@ -157,6 +160,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                 <Nav variant="tabs" activeKey={tab} onSelect={(key) => setTab(key)} style={{ marginBottom: '12px' }}>
                     <Nav.Item><Nav.Link eventKey="positions"><i className="fas fa-briefcase me-2"></i>Postes</Nav.Link></Nav.Item>
                     <Nav.Item><Nav.Link eventKey="applications"><i className="fas fa-file-signature me-2"></i>Candidatures</Nav.Link></Nav.Item>
+                    <Nav.Item><Nav.Link eventKey="contracts"><i className="fas fa-file-contract me-2"></i>Contrats</Nav.Link></Nav.Item>
                 </Nav>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
@@ -225,6 +229,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                     )}
 
                     {tab === 'applications' && <PendingJobApplications showNotification={showNotification} />}
+                    {tab === 'contracts' && <ContractsManager showNotification={showNotification} />}
                 </div>
 
                 {config && (

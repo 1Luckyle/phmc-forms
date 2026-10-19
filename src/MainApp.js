@@ -69,6 +69,9 @@ const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
 const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'));
+const MyProfileModal = lazy(() => import('./components/MyProfileModal'));
+const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendarModal'));
+const MyContractsModal = lazy(() => import('./components/Contracts/MyContractsModal'));
 const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
@@ -132,7 +135,7 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, canManageRecruitment, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
@@ -149,6 +152,12 @@ function MainApp({
     const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
     // « Mon dossier patient » : le personnel peut lui aussi être un patient.
     const [showMyPatientFile, setShowMyPatientFile] = useState(false);
+    // « Mon profil » : le personnel modifie lui-même téléphone, Discord et adresse Eyefind Mail.
+    const [showMyProfile, setShowMyProfile] = useState(false);
+    // Calendrier des événements de sensibilisation médicale (Octobre Rose, Movember...).
+    const [showAwarenessCalendar, setShowAwarenessCalendar] = useState(false);
+    // « Mes contrats » : le personnel lit et signe les contrats envoyés par les recruteurs.
+    const [showMyContracts, setShowMyContracts] = useState(false);
     // Gestion du recrutement (admins + recruteurs).
     const [showRecruitmentManager, setShowRecruitmentManager] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
@@ -1586,6 +1595,13 @@ function MainApp({
                             {isRecruiter && (
                                 <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement ») et pouvez créer votre carte de visite.</>
                             )}
+                            {isContractCandidate && (
+                                <> <strong style={{ color: '#58a6ff' }}>Votre contrat vous attend :</strong> lisez-le et signez-le depuis « Mes contrats » (vous pouvez y créer votre signature).{' '}
+                                    <Button variant="info" size="sm" className="ms-1" onClick={() => setShowMyContracts(true)}>
+                                        <i className="fas fa-file-contract me-1"></i>Mes contrats
+                                    </Button>
+                                </>
+                            )}
                         </span>
                     </div>
                 )}
@@ -1625,6 +1641,9 @@ function MainApp({
                                         <Dropdown.Item onClick={() => {setShowFeatureRequestModal(true); setShowToolsDropdown(false);}}>
                                             <i className="fas fa-bug"></i> Rapport de Bug/Ajout
                                         </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => {setShowAwarenessCalendar(true); setShowToolsDropdown(false);}}>
+                                            <i className="fas fa-calendar-alt"></i> Calendrier de la santé
+                                        </Dropdown.Item>
                                         <Dropdown.Item onClick={() => {toggleSavedReports(); setShowToolsDropdown(false);}}>
                                             <i className="fas fa-save"></i> {savedReportsButtonLabel}
                                         </Dropdown.Item>
@@ -1636,6 +1655,16 @@ function MainApp({
                                         {canManageRecruitment && (
                                             <Dropdown.Item onClick={() => {setShowRecruitmentManager(true); setShowToolsDropdown(false);}}>
                                                 <i className="fas fa-user-plus"></i> Gestion du recrutement
+                                            </Dropdown.Item>
+                                        )}
+                                        {!isCivilian && !!staffName && (
+                                            <Dropdown.Item onClick={() => {setShowMyProfile(true); setShowToolsDropdown(false);}}>
+                                                <i className="fas fa-id-badge"></i> Mon profil
+                                            </Dropdown.Item>
+                                        )}
+                                        {((!isCivilian && !!staffName) || isContractCandidate) && (
+                                            <Dropdown.Item onClick={() => {setShowMyContracts(true); setShowToolsDropdown(false);}}>
+                                                <i className="fas fa-file-contract"></i> Mes contrats
                                             </Dropdown.Item>
                                         )}
                                         {!isCivilian && !!staffName && (
@@ -2381,6 +2410,21 @@ function MainApp({
                         <RecruitmentManager
                             show={showRecruitmentManager}
                             onHide={() => setShowRecruitmentManager(false)}
+                            showNotification={showNotification}
+                        />
+                        <AwarenessCalendarModal
+                            show={showAwarenessCalendar}
+                            onHide={() => setShowAwarenessCalendar(false)}
+                        />
+                        <MyContractsModal
+                            show={showMyContracts}
+                            onHide={() => setShowMyContracts(false)}
+                            showNotification={showNotification}
+                            uploadImageDetailed={uploadImageDetailed}
+                        />
+                        <MyProfileModal
+                            show={showMyProfile}
+                            onHide={() => setShowMyProfile(false)}
                             showNotification={showNotification}
                         />
                         <MyPatientFileModal

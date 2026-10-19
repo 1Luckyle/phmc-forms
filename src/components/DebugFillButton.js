@@ -1,15 +1,16 @@
 // src/components/DebugFillButton.js
 //
 // Bouton « Remplir (debug) » : n'apparaît que si un admin a activé le mode
-// debug (voir DebugContext). À placer dans chaque formulaire / modale avec un
+// debug ET que la personne connectée figure dans la liste blanche (voir
+// DebugContext, section Debug du panneau admin). À placer dans chaque formulaire / modale avec un
 // onFill qui renseigne les champs avec des données de test.
 import React from 'react';
 import { Button } from 'react-bootstrap';
 import { useDebug } from '../contexts/DebugContext';
 
 const DebugFillButton = ({ onFill, label = 'Remplir (debug)', className = '', style, size, disabled }) => {
-    const { debugAutofillEnabled } = useDebug();
-    if (!debugAutofillEnabled || typeof onFill !== 'function') return null;
+    const { canUseDebugFill } = useDebug();
+    if (!canUseDebugFill || typeof onFill !== 'function') return null;
 
     return (
         <Button

@@ -11,6 +11,9 @@ import { database } from '../../firebase';
 import { ref, get, set, remove } from 'firebase/database';
 import { useDebug } from '../../contexts/DebugContext';
 import { sendEyefindMail } from '../../utils/eyefindMail';
+import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { loadContractCandidates, setContractCandidate, clearContractCandidate } from '../../utils/contractCandidates';
+import { sendAdminActionWebhook } from './adminUtils';
 
 const sendMailBestEffort = (params) => {
     sendEyefindMail(params).then((result) => {
@@ -44,10 +47,61 @@ const PendingJobApplications = ({ showNotification }) => {
     const [interviewInputs, setInterviewInputs] = useState({});
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
+    const { currentEmployee, isAdmin, staffName, civilianProfile } = useEmployeeAuth();
+    // Rôle facultatif « en attente de contrat » : uid -> infos (voir utils/contractCandidates.js).
+    const [contractCandidates, setContractCandidates] = useState({});
 
     useEffect(() => {
         loadApplications();
+        loadContractCandidates().then(setContractCandidates).catch((error) => console.warn('Rôles de contrat illisibles :', error));
     }, []);
+
+    // Pose ou retire le rôle « en attente de signature de contrat » sur un candidat ACCEPTÉ.
+    // C'est au recruteur de décider : rien n'est posé automatiquement à l'acceptation.
+    const handleToggleContractRole = async (application) => {
+        const hasRole = !!contractCandidates[application.applicantUid];
+        const actorName = staffName
+            || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ')
+            || currentEmployee?.email || 'Le recrutement';
+        const label = isAdmin ? 'Admin' : 'Recruteur';
+        try {
+            if (hasRole) {
+                if (!window.confirm(`Retirer le rôle « en attente de contrat » à ${application.applicantName} ? Il n'aura plus accès à ses contrats ni à la création de sa signature par ce biais.`)) return;
+                await clearContractCandidate(application.applicantUid);
+                setContractCandidates((current) => { const next = { ...current }; delete next[application.applicantUid]; return next; });
+                sendAdminActionWebhook(currentEmployee?.email || 'Inconnu', 'Rôle « en attente de contrat » retiré', `Candidat : ${application.applicantName}`, null, label);
+                showNotification('Rôle « en attente de contrat » retiré.', 'info');
+                return;
+            }
+            if (!window.confirm(`Passer ${application.applicantName} en « attente de signature de contrat » ?
+
+Il pourra consulter et signer son contrat, et créer sa signature, depuis la Boîte à outils.`)) return;
+            await setContractCandidate(application.applicantUid, {
+                byUid: currentEmployee?.uid, byName: actorName, applicationId: application.applicationId, position: application.position || null,
+            });
+            setContractCandidates((current) => ({ ...current, [application.applicantUid]: { setByName: actorName, setAt: Date.now() } }));
+            sendAdminActionWebhook(currentEmployee?.email || 'Inconnu', 'Rôle « en attente de contrat » posé', `Candidat : ${application.applicantName}
+Poste : ${application.position || '—'}`, null, label);
+            const email = await getApplicantEmail(application);
+            if (email) {
+                sendMailBestEffort({
+                    to: email,
+                    subject: 'Votre contrat vous attend - PHMC',
+                    body: `Bonjour ${application.applicantName || ''},
+
+Votre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la Boîte à outils, « Mes contrats » vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.
+
+Cordialement,
+Pillbox Hill Medical Center`,
+                    html: `<p>Bonjour ${application.applicantName || ''},</p><p>Votre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la <b>Boîte à outils</b>, <b>« Mes contrats »</b> vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+                });
+            }
+            showNotification('Candidat passé en attente de contrat (notifié).', 'success');
+        } catch (error) {
+            console.error('Error toggling contract role:', error);
+            showNotification(`Action impossible : ${error.message}`, 'error');
+        }
+    };
 
     const handleDeleteApplication = async (application) => {
         if (!window.confirm(`Supprimer définitivement la candidature de ${application.applicantName || 'ce candidat'} (${application.position || 'poste inconnu'}) ?`)) return;
@@ -266,6 +320,14 @@ const PendingJobApplications = ({ showNotification }) => {
                                             {application.status === 'interview_completed' && (
                                                 <Button size="sm" variant="success" onClick={() => handleAccept(application)}>
                                                     Accepter
+                                                </Button>
+                                            )}
+                                            {application.status === 'accepted' && (
+                                                <Button size="sm" variant={contractCandidates[application.applicantUid] ? 'outline-warning' : 'info'}
+                                                    onClick={() => handleToggleContractRole(application)}
+                                                    title="Rôle facultatif : donne au candidat accès à son contrat et à la création de sa signature">
+                                                    <i className="fas fa-file-signature"></i>{' '}
+                                                    {contractCandidates[application.applicantUid] ? 'Retirer « attente de contrat »' : 'Passer en attente de contrat'}
                                                 </Button>
                                             )}
                                             {['submitted', 'interview_scheduled', 'interview_completed'].includes(application.status) && (

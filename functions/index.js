@@ -1457,3 +1457,271 @@ export const verifyEmailCode = onRequest({}, async (req, res) => {
         res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de la vérification.' });
     }
 });
+
+// --- Changement d'adresse Eyefind Mail d'un membre du personnel ---
+// Un membre du personnel (sur SA fiche) ou un admin (sur n'importe quelle fiche) peut changer
+// l'adresse Eyefind Mail liée à un compte, mais le changement n'est appliqué qu'après saisie d'un
+// code à 6 chiffres envoyé à la NOUVELLE adresse : on prouve ainsi que la personne contrôle bien
+// cette boîte (pas de changement au hasard, pas d'usurpation, pas d'adresse inexistante).
+//
+// Contrairement à emailVerifications (indexé par email, avant la création du compte), la demande
+// est ici liée à l'uid du compte ciblé : emailChangeRequests/{uid}. Un code ne peut donc servir
+// qu'à ce compte, expire au bout de 15 min et est bloqué après 5 essais ratés.
+//
+// Seules les adresses @mail.eyefind.fr sont modifiables : une fiche dont l'adresse est un
+// ancien e-mail de connexion par mot de passe (Gmail…) est refusée, car changer cette adresse
+// casserait la connexion de la personne.
+const EMAIL_CHANGE_TTL_MS = 15 * 60 * 1000;
+const EMAIL_CHANGE_MAX_ATTEMPTS = 5;
+const EMAIL_CHANGE_MIN_INTERVAL_MS = 60 * 1000;
+
+const setJsonCors = (req, res) => {
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+};
+
+// Identifie l'appelant via son jeton Firebase et résout le compte visé : lui-même par défaut, un
+// autre compte seulement s'il est admin (adminUIDs, même source de vérité que database.rules.json).
+// Répond directement (401/403) et retourne null en cas d'échec.
+const resolveStaffEmailChangeTarget = async (req, res, requestedUid) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.status(401).json({ error: 'unauthorized', message: 'Connexion requise.' });
+        return null;
+    }
+    let decoded;
+    try {
+        decoded = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
+    } catch (error) {
+        res.status(401).json({ error: 'unauthorized', message: 'Session invalide, reconnectez-vous.' });
+        return null;
+    }
+    const targetUid = requestedUid || decoded.uid;
+    if (targetUid !== decoded.uid) {
+        const adminSnap = await db.ref(`adminUIDs/${decoded.uid}`).once('value');
+        if (adminSnap.val() !== true) {
+            res.status(403).json({ error: 'forbidden', message: 'Vous ne pouvez modifier que votre propre adresse.' });
+            return null;
+        }
+    }
+    return { callerUid: decoded.uid, targetUid };
+};
+
+// Retrouve l'enregistrement qui porte l'adresse d'un compte : { path, entry } — la fiche du
+// personnel (staff/phmc/{clé}) en priorité, sinon le profil Civil (civilians/{uid}).
+// Les listes du personnel peuvent être des tableaux OU des objets à clés poussées.
+const findStaffEntryByUid = async (uid) => {
+    for (const listName of ['staff/phmc', 'staff/coroner']) {
+        const snap = await db.ref(listName).once('value');
+        if (!snap.exists()) continue;
+        const value = snap.val();
+        const entries = Array.isArray(value) ? value.map((entry, index) => [String(index), entry]) : Object.entries(value);
+        const found = entries.find(([, entry]) => entry && entry.uid === uid);
+        if (found) return { path: `${listName}/${found[0]}`, entry: found[1] };
+    }
+    const civilianSnap = await db.ref(`civilians/${uid}`).once('value');
+    if (civilianSnap.exists()) return { path: `civilians/${uid}`, entry: civilianSnap.val() };
+    return null;
+};
+
+const authEmailExists = async (email) => {
+    try {
+        await admin.auth().getUserByEmail(email);
+        return true;
+    } catch (error) {
+        if (error.code === 'auth/user-not-found') return false;
+        throw error;
+    }
+};
+
+export const requestStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API Eyefind Mail n\'est pas configurée.' });
+        return;
+    }
+
+    const data = req.body.data || req.body;
+    const newEmail = (data?.newEmail || '').trim();
+    if (!EYEFIND_ADDRESS_REGEX.test(newEmail)) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Adresse Eyefind Mail invalide (format attendu : prenomnom@mail.eyefind.fr).' });
+        return;
+    }
+
+    try {
+        const target = await resolveStaffEmailChangeTarget(req, res, data?.targetUid);
+        if (!target) return;
+        const { callerUid, targetUid } = target;
+
+        const staff = await findStaffEntryByUid(targetUid);
+        if (!staff) {
+            res.status(404).json({ error: 'not-found', message: 'Aucune fiche ou aucun profil lié à ce compte.' });
+            return;
+        }
+        const currentEmail = (staff.entry.email || '').trim();
+        if (!EYEFIND_ADDRESS_REGEX.test(currentEmail)) {
+            res.status(403).json({ error: 'legacy-email', message: 'Ce compte utilise un ancien e-mail de connexion (hors Eyefind Mail) : son adresse ne peut pas être modifiée ici.' });
+            return;
+        }
+        if (currentEmail.toLowerCase() === newEmail.toLowerCase()) {
+            res.status(400).json({ error: 'same-email', message: 'C\'est déjà l\'adresse actuelle.' });
+            return;
+        }
+        if (await authEmailExists(newEmail)) {
+            res.status(409).json({ error: 'email-already-exists', message: 'Cette adresse est déjà utilisée par un autre compte.' });
+            return;
+        }
+
+        const requestRef = db.ref(`emailChangeRequests/${targetUid}`);
+        const previous = (await requestRef.once('value')).val();
+        if (previous && Date.now() - previous.createdAt < EMAIL_CHANGE_MIN_INTERVAL_MS) {
+            res.status(429).json({ error: 'too-many-requests', message: 'Un code vient d\'être envoyé. Patientez une minute avant d\'en redemander un.' });
+            return;
+        }
+
+        const code = String(crypto.randomInt(100000, 1000000));
+        // Envoi AVANT l'enregistrement : si l'adresse n'existe pas (recipient_not_found), aucune
+        // demande n'est créée et l'erreur est relayée telle quelle au client.
+        await sendEyefindMailInternal({
+            apiKey,
+            to: newEmail,
+            subject: 'Code de vérification - changement d\'adresse PHMC',
+            body: `Votre code de vérification pour changer l'adresse de votre compte PHMC-FR est : ${code}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
+            html: `<p>Votre code de vérification pour changer l'adresse de votre compte PHMC-FR est :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#2ea043;">${code}</p><p>Ce code expire dans 15 minutes.</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
+        });
+        await requestRef.set({
+            newEmail,
+            code,
+            attempts: 0,
+            requestedBy: callerUid,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + EMAIL_CHANGE_TTL_MS,
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        if (error && error.status && error.body) {
+            res.status(error.status).json(error.body);
+            return;
+        }
+        console.error('Error requesting staff email change:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de l\'envoi du code.' });
+    }
+});
+
+export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const data = req.body.data || req.body;
+    const code = String(data?.code || '').trim();
+    if (!code) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Le code est obligatoire.' });
+        return;
+    }
+
+    try {
+        const target = await resolveStaffEmailChangeTarget(req, res, data?.targetUid);
+        if (!target) return;
+        const { targetUid } = target;
+
+        const requestRef = db.ref(`emailChangeRequests/${targetUid}`);
+        const request = (await requestRef.once('value')).val();
+        if (!request) {
+            res.status(404).json({ error: 'not-found', message: 'Aucune demande de changement en cours. Redemandez un code.' });
+            return;
+        }
+        if (Date.now() > request.expiresAt) {
+            await requestRef.remove();
+            res.status(410).json({ error: 'expired', message: 'Ce code a expiré. Redemandez-en un nouveau.' });
+            return;
+        }
+        if ((request.attempts || 0) >= EMAIL_CHANGE_MAX_ATTEMPTS) {
+            await requestRef.remove();
+            res.status(429).json({ error: 'too-many-attempts', message: 'Trop d\'essais incorrects. Redemandez un nouveau code.' });
+            return;
+        }
+        if (String(request.code) !== code) {
+            await requestRef.update({ attempts: (request.attempts || 0) + 1 });
+            res.status(400).json({ error: 'invalid-code', message: 'Code incorrect.' });
+            return;
+        }
+
+        const staff = await findStaffEntryByUid(targetUid);
+        if (!staff) {
+            res.status(404).json({ error: 'not-found', message: 'Aucune fiche ou aucun profil lié à ce compte.' });
+            return;
+        }
+        const oldEmail = (staff.entry.email || '').trim();
+        const newEmail = request.newEmail;
+        // Contrôle refait au moment d'appliquer : la fiche a pu changer depuis la demande.
+        if (!EYEFIND_ADDRESS_REGEX.test(oldEmail)) {
+            res.status(403).json({ error: 'legacy-email', message: 'Ce compte utilise un ancien e-mail de connexion : son adresse ne peut pas être modifiée ici.' });
+            return;
+        }
+        if (await authEmailExists(newEmail)) {
+            await requestRef.remove();
+            res.status(409).json({ error: 'email-already-exists', message: 'Cette adresse est déjà utilisée par un autre compte.' });
+            return;
+        }
+
+        // Compte de connexion d'abord, puis fiche : si l'écriture de la fiche échoue, on remet
+        // l'ancienne adresse pour ne jamais laisser la fiche et le compte désynchronisés.
+        await admin.auth().updateUser(targetUid, { email: newEmail });
+        try {
+            await db.ref(staff.path).update({ email: newEmail });
+        } catch (dbError) {
+            await admin.auth().updateUser(targetUid, { email: oldEmail }).catch((revertError) => console.error('Revert of Auth email failed:', revertError));
+            throw dbError;
+        }
+
+        // Profils annexes qui reprennent la même adresse (ex. Civil converti en Personnel, liste admin legacy).
+        const civilianEmailRef = db.ref(`civilians/${targetUid}/email`);
+        if ((await civilianEmailRef.once('value')).exists()) await civilianEmailRef.set(newEmail);
+        const adminUsersSnap = await db.ref('adminUsers').once('value');
+        if (adminUsersSnap.exists()) {
+            const adminValue = adminUsersSnap.val();
+            const adminEntries = Array.isArray(adminValue) ? adminValue.map((v, i) => [String(i), v]) : Object.entries(adminValue);
+            for (const [key, value] of adminEntries) {
+                if (typeof value === 'string' && value.toLowerCase() === oldEmail.toLowerCase()) {
+                    await db.ref(`adminUsers/${key}`).set(newEmail);
+                }
+            }
+        }
+
+        await requestRef.remove();
+
+        // Prévient l'ancienne adresse (alerte anti-usurpation) — jamais bloquant.
+        try {
+            const apiKey = process.env.EYEFIND_API_KEY;
+            if (apiKey) {
+                await sendEyefindMailInternal({
+                    apiKey,
+                    to: oldEmail,
+                    subject: 'Adresse de votre compte PHMC modifiée',
+                    body: `L'adresse de votre compte PHMC-FR a été remplacée par ${newEmail}.\n\nSi vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.`,
+                    html: `<p>L'adresse de votre compte PHMC-FR a été remplacée par <b>${newEmail}</b>.</p><p>Si vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.</p>`,
+                });
+            }
+        } catch (mailError) {
+            console.warn('Could not notify old address of email change:', mailError && mailError.body ? mailError.body : mailError);
+        }
+
+        res.status(200).json({ success: true, email: newEmail });
+    } catch (error) {
+        if (error && error.code === 'auth/email-already-exists') {
+            res.status(409).json({ error: 'email-already-exists', message: 'Cette adresse est déjà utilisée par un autre compte.' });
+            return;
+        }
+        console.error('Error confirming staff email change:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors du changement d\'adresse.' });
+    }
+});

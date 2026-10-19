@@ -4,9 +4,13 @@
 // serveur (Secret Manager) : le navigateur ne parle qu'à notre Cloud Function
 // sendEyefindMail, jamais directement à eyefind.fr (l'API est explicitement
 // réservée à un usage serveur-à-serveur — voir la doc fournie par le staff).
+import { auth } from '../firebase';
+
 const SEND_MAIL_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/sendEyefindMail';
 const SEND_VERIFICATION_CODE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/sendEmailVerificationCode';
 const VERIFY_EMAIL_CODE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/verifyEmailCode';
+const REQUEST_EMAIL_CHANGE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/requestStaffEmailChange';
+const CONFIRM_EMAIL_CHANGE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/confirmStaffEmailChange';
 
 // URL où un joueur crée son adresse Eyefind Mail (prenomnom@mail.eyefind.fr)
 // s'il n'en a pas encore — affichée dans les formulaires de création de compte.
@@ -113,3 +117,36 @@ export const verifyEmailCode = async (email, code) => {
         return { ok: false, error: 'network-error', message: 'Erreur réseau lors de la vérification du code.' };
     }
 };
+
+// Adresse modifiable ? Seules les adresses Eyefind Mail le sont : une adresse d'ancien système de
+// connexion (Gmail…) sert d'identifiant de connexion par mot de passe et ne doit pas changer.
+export const isEyefindAddress = (email) => /^[^\s@]+@mail\.eyefind\.fr$/i.test(String(email || '').trim());
+
+// Appel authentifié (jeton Firebase de la personne connectée) d'une fonction de changement d'adresse.
+// Ne lève jamais : retourne { ok, message } pour affichage direct. targetUid : compte visé
+// (facultatif, réservé aux admins — par défaut, le compte de la personne connectée).
+const callEmailChange = async (url, payload) => {
+    try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) return { ok: false, error: 'unauthorized', message: 'Vous devez être connecté.' };
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) return { ok: false, error: data.error, message: data.message || 'Échec de la demande.' };
+        return { ok: true, ...data };
+    } catch (err) {
+        console.error('Failed to call email change function:', err);
+        return { ok: false, error: 'network-error', message: 'Erreur réseau.' };
+    }
+};
+
+// Étape 1 : envoie un code à 6 chiffres à la NOUVELLE adresse.
+export const requestStaffEmailChange = (newEmail, targetUid = null) =>
+    callEmailChange(REQUEST_EMAIL_CHANGE_URL, { newEmail, targetUid });
+
+// Étape 2 : le code saisi valide le changement (compte de connexion + fiche mis à jour côté serveur).
+export const confirmStaffEmailChange = (code, targetUid = null) =>
+    callEmailChange(CONFIRM_EMAIL_CHANGE_URL, { code, targetUid });

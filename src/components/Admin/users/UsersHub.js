@@ -10,6 +10,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Dropdown, Form, Modal, Alert, Spinner, Badge } from 'react-bootstrap';
 import './UsersHub.css';
 import UserStats from '../UserStats';
+import EmailChangeFlow from '../../EmailChangeFlow';
 import AdminReportsTools from '../AdminReportsTools';
 import { sendAdminActionWebhook } from '../adminUtils';
 import {
@@ -60,11 +61,11 @@ const StaffTab = ({ staff, civilUids, adminEmail, showNotification, reload }) =>
     const [toCivil, setToCivil] = useState(null);
 
     const rows = useMemo(() => staff.filter((m) => (service === 'all' || m.service === service)
-        && matches(query, m.displayName, m.rank, m.badge, m.discord, m.email)), [staff, service, query]);
+        && matches(query, m.displayName, m.rank, m.badge, m.discord, m.email, m.phNumber)), [staff, service, query]);
 
     return (
         <>
-            <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un membre (nom, grade, badge, Discord…)">
+            <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un membre (nom, grade, badge, téléphone, Discord…)">
                 <Form.Select className="uh-filter" value={service} onChange={(e) => setService(e.target.value)}>
                     <option value="all">Tous les services</option>
                     {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -73,7 +74,7 @@ const StaffTab = ({ staff, civilUids, adminEmail, showNotification, reload }) =>
             </SearchBar>
             <div className="table-responsive">
                 <table className="table table-hover align-middle uh-table">
-                    <thead><tr><th>Nom</th><th>Service</th><th>Grade</th><th>Badge</th><th>Discord</th><th>Compte</th><th></th></tr></thead>
+                    <thead><tr><th>Nom</th><th>Service</th><th>Grade</th><th>Badge</th><th>Téléphone</th><th>Discord</th><th>Compte</th><th></th></tr></thead>
                     <tbody>
                         {rows.map((m) => (
                             <tr key={`${m.service}-${m.storageKey}`}>
@@ -81,6 +82,7 @@ const StaffTab = ({ staff, civilUids, adminEmail, showNotification, reload }) =>
                                 <td><RoleBadge role={m.service} /></td>
                                 <td>{rankLabel(m.service, m.rank)}</td>
                                 <td>{m.badge || '—'}</td>
+                                <td>{m.phNumber || '—'}</td>
                                 <td>{m.discord || '—'}</td>
                                 <td>{m.uid
                                     ? <span className="text-success" title={m.email || ''}><i className="fas fa-check-circle"></i> lié</span>
@@ -97,7 +99,7 @@ const StaffTab = ({ staff, civilUids, adminEmail, showNotification, reload }) =>
                                 </td>
                             </tr>
                         ))}
-                        {rows.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">Aucun membre ne correspond.</td></tr>}
+                        {rows.length === 0 && <tr><td colSpan={8} className="text-center text-muted py-4">Aucun membre ne correspond.</td></tr>}
                     </tbody>
                 </table>
             </div>
@@ -156,10 +158,13 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
                     <Form.Group className="flex-fill"><Form.Label>Téléphone</Form.Label><Form.Control value={form.phone || ''} onChange={set('phone')} /></Form.Group>
                     <Form.Group className="flex-fill"><Form.Label>Discord</Form.Label><Form.Control value={form.discord || ''} onChange={set('discord')} /></Form.Group>
                 </div>
-                <div className="d-flex gap-2">
-                    <Form.Group className="flex-fill"><Form.Label>ID patient</Form.Label><Form.Control value={form.patientID || ''} disabled /></Form.Group>
-                    <Form.Group className="flex-fill"><Form.Label>E-mail (connexion)</Form.Label><Form.Control value={form.email || ''} disabled /></Form.Group>
-                </div>
+                <Form.Group className="mb-3"><Form.Label>ID patient</Form.Label><Form.Control value={form.patientID || ''} disabled /></Form.Group>
+                {/* Changement d'e-mail : code de vérification envoyé à la nouvelle adresse (à relayer par la personne). */}
+                <EmailChangeFlow
+                    currentEmail={form.email}
+                    targetUid={civilian.uid}
+                    onChanged={(email) => { setForm((p) => ({ ...p, email })); onDone(); }}
+                />
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>

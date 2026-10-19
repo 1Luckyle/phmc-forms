@@ -457,10 +457,34 @@ export async function deleteCivilianAccount(civilian) {
     }
     // Un recruteur supprimé ne doit pas laisser un drapeau orphelin.
     try { await set(ref(database, `recruiterUIDs/${civilian.uid}`), null); } catch (e) { /* ignoré */ }
+    try { await set(ref(database, `contractCandidates/${civilian.uid}`), null); } catch (e) { /* ignoré */ }
     sendMailBestEffort({
         to: civilian.email,
         subject: 'Votre compte Civil a été supprimé - Pillbox Hill Medical Center',
         body: `Bonjour ${displayName},\n\nVotre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur.\n\nCordialement,\nPillbox Hill Medical Center`,
         html: `<p>Bonjour ${displayName},</p><p>Votre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
     });
+}
+
+// ───────────────────────────── Auto-édition du profil ─────────────────────────────
+
+// Modifie le téléphone et/ou le Discord de SA PROPRE fiche (database.rules.json n'autorise que ces
+// deux champs, et uniquement quand l'uid de la fiche est celui de la personne connectée). Le nom,
+// le grade, le badge et l'e-mail restent réservés aux admins (l'e-mail passe par un code de
+// vérification : voir requestStaffEmailChange dans eyefindMail.js).
+export async function updateOwnStaffContact(uid, { phNumber, discord }) {
+    if (!uid) throw new Error('Compte introuvable.');
+    for (const service of Object.values(STAFF_SERVICES)) {
+        const snap = await get(ref(database, service.path));
+        if (!snap.exists()) continue;
+        const entries = Object.entries(snap.val() || {});
+        const found = entries.find(([, entry]) => entry && entry.uid === uid);
+        if (!found) continue;
+        const patch = {};
+        if (phNumber !== undefined) patch[`${service.path}/${found[0]}/phNumber`] = String(phNumber).trim();
+        if (discord !== undefined) patch[`${service.path}/${found[0]}/discord`] = String(discord).trim();
+        await update(ref(database), patch);
+        return { service: service.key, key: found[0] };
+    }
+    throw new Error('Votre fiche du personnel est introuvable.');
 }

@@ -1,0 +1,161 @@
+/* Calendrier de la santé : cartes repliables sur le fond sombre de BaseModal. */
+.awareness-section-title {
+    margin: 0 0 0.5rem;
+    color: #adbac7;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.awareness-card {
+    background: #22272e;
+    border: 1px solid #444c56;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.awareness-card-active {
+    border-color: #2ea043;
+    box-shadow: 0 0 0 1px rgba(46, 160, 67, 0.4);
+}
+
+.awareness-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.awareness-card-head:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.awareness-card-title {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.awareness-card-title small {
+    color: #8b949e;
+}
+
+.awareness-card-badges {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.awareness-chevron {
+    color: #8b949e;
+    font-size: 0.8rem;
+}
+
+.awareness-ribbon {
+    width: 1.6em;
+    text-align: center;
+    flex: none;
+}
+
+.awareness-ribbon-none {
+    color: #8b949e;
+}
+
+/* Ruban multicolore : le dégradé est découpé dans la forme de l'icône. */
+.awareness-ribbon-multi {
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.awareness-card-body {
+    padding: 0.2rem 1rem 0.9rem 3.1rem;
+    border-top: 1px solid #373e47;
+}
+
+.awareness-card-body h6 {
+    margin: 0.8rem 0 0.25rem;
+    color: #adbac7;
+    font-size: 0.85rem;
+}
+
+.awareness-card-body p,
+.awareness-card-body ul {
+    margin-bottom: 0.4rem;
+}
+
+.awareness-symbols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.awareness-swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.15rem 0.6rem;
+    border: 1px solid #444c56;
+    border-radius: 999px;
+    font-size: 0.85rem;
+}
+
+.awareness-swatch-muted {
+    color: #8b949e;
+}
+
+.awareness-swatch-dot {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.awareness-symbols-text {
+    margin-top: 0.4rem;
+    color: #adbac7;
+    font-size: 0.9rem;
+}
+
+.awareness-months {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 0.6rem;
+}
+
+.awareness-chip {
+    padding: 0.15rem 0.7rem;
+    background: transparent;
+    border: 1px solid #444c56;
+    border-radius: 999px;
+    color: #adbac7;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.awareness-chip.current {
+    border-color: #2ea043;
+}
+
+.awareness-chip.on {
+    background: #2ea043;
+    border-color: #2ea043;
+    color: #fff;
+}
+
+@media (max-width: 576px) {
+    .awareness-card-body {
+        padding-left: 1rem;
+    }
+}
