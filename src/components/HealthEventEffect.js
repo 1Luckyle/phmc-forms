@@ -10,26 +10,20 @@ import { makeEmojiImage } from './AmbientSeasonalEffect';
 const MAX_PARTICLES = 28;
 const RADIUS = [10, 24];
 
-const channel = (hex, start) => parseInt(hex.slice(start, start + 2), 16);
-const darken = (hex, factor = 0.62) => {
-    const clean = hex.length === 7 ? hex : '#888888';
-    return `rgb(${Math.round(channel(clean, 1) * factor)},${Math.round(channel(clean, 3) * factor)},${Math.round(channel(clean, 5) * factor)})`;
-};
+// Ruban : exactement la forme de l'icône du calendrier (Font Awesome « ribbon »), découpée en bandes
+// verticales nettes quand la cause a plusieurs couleurs (ex. turquoise + violet) — comme dans le
+// calendrier et l'infobulle. Une seule couleur : ruban uni.
+const RIBBON_PATH = 'M333.2 322.8s0 0 0 0l-133.9-146s0 0 0 0L146 118.6c7.8-5.1 37-22.6 78-22.6s70.2 17.4 78 22.6L245.7 180l85.6 93.4 27.4-29.8c16.3-17.7 25.3-40.9 25.3-65l0-29.5c0-19-5.6-37.5-16.1-53.3L327.8 35.6C312.9 13.4 287.9 0 261.2 0l-76 0c-25.8 0-50.1 12.5-65.1 33.5L81.9 87C70.3 103.2 64 122.8 64 142.8L64 164c0 23.2 8.4 45.6 23.6 63.1l56 64.2s0 0 0 0l83.3 95.6s0 0 0 0l91.8 105.3c10 11.5 26.8 14.3 40 6.8l54.5-31.1c17.8-10.2 21.6-34.3 7.7-49.4l-87.7-95.7zM205.2 410.6l-83.3-95.6L27.1 418.5c-13.9 15.1-10.1 39.2 7.7 49.4l55.1 31.5c13 7.4 29.3 4.9 39.4-6.1l75.9-82.6z';
 
-// Ruban SVG (deux brins qui se croisent). Une couleur : liseré plus foncé ; plusieurs : liseré = 1re
-// couleur, cœur = 2e, filet central = 3e (ex. ruban bleu-rose-vert des maladies rares).
 const makeRibbonImage = (colors, size) => {
     const hexes = colors.map((c) => c.hex);
-    const outer = hexes.length > 1 ? hexes[0] : darken(hexes[0]);
-    const middle = hexes.length > 1 ? hexes[1] : hexes[0];
-    const strands = (stroke, width) => (
-        `<path d="M32 8 C22 8 16 16 20 26 C24 36 36 44 44 58" stroke="${stroke}" stroke-width="${width}"/>`
-        + `<path d="M32 8 C42 8 48 16 44 26 C40 36 28 44 20 58" stroke="${stroke}" stroke-width="${width}"/>`
-    );
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">`
-        + `<g fill="none" stroke-linecap="round" stroke-linejoin="round">`
-        + strands(outer, 11) + strands(middle, 7) + (hexes[2] ? strands(hexes[2], 3) : '')
-        + `</g></svg>`;
+    const stops = hexes.length > 1
+        ? hexes.map((hex, i) => `<stop offset="${(i * 100) / hexes.length}%" stop-color="${hex}"/><stop offset="${((i + 1) * 100) / hexes.length}%" stop-color="${hex}"/>`).join('')
+        : `<stop offset="0%" stop-color="${hexes[0]}"/><stop offset="100%" stop-color="${hexes[0]}"/>`;
+    // viewBox élargi à 512 de large pour centrer le ruban (448 de large) dans une image carrée.
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-32 0 512 512">`
+        + `<defs><linearGradient id="r" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="448" y2="0">${stops}</linearGradient></defs>`
+        + `<path d="${RIBBON_PATH}" fill="url(#r)"/></svg>`;
     const img = document.createElement('img');
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     img.width = size;
@@ -42,7 +36,7 @@ const HealthEventEffect = ({ events }) => {
     const key = events.map((event) => event.id).join('|');
     const images = useMemo(() => events.map((event) => {
         const emoji = getEventEffectEmoji(event);
-        return emoji ? makeEmojiImage(emoji, 30) : makeRibbonImage(event.ribbon, 32);
+        return emoji ? makeEmojiImage(emoji, 30) : makeRibbonImage(event.ribbon, 34);
     }), [key]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (images.length === 0) return null;

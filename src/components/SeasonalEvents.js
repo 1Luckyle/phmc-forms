@@ -8,6 +8,7 @@ import Default from '../assets/Generic.png';
 import HalloweenEffect from './HalloweenEffect';
 import HealthEventEffect from './HealthEventEffect';
 import AmbientSeasonalEffect from './AmbientSeasonalEffect';
+import ChocolateEggEffect from './ChocolateEggEffect';
 import Snowfall from 'react-snowfall';
 import { getEffectEvents } from '../data/awarenessEvents';
 import { getEffectiveDate } from '../utils/debugSeasonDate';
@@ -87,8 +88,10 @@ function seasonalEvents({ imageType, season: seasonOverride }) {
     // ralentissements sensibles sur les machines moins puissantes.
     if (season === "AprilFools") {
         className = 'april-fools';
+        effect = <AmbientSeasonalEffect emojis={['🐟', '🐠']} count={22} size={26} radius={[8, 18]} />;
     } else if (season === "Easter") {
         className = 'easter-bounce';
+        effect = <ChocolateEggEffect />;
     } else if (season === "Halloween") {
         effect = <HalloweenEffect />;
     } else if (season === "HealthEvent") {

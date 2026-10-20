@@ -19,8 +19,13 @@ export const makeEmojiImage = (emoji, size) => {
 // Effet de particules génériques (confettis, cœurs, feuilles, trèfles...) pour
 // les périodes de l'année qui n'ont pas d'image PHMC dédiée : voir
 // SeasonalEvents.js, qui choisit l'emoji et la densité selon la saison.
-const AmbientSeasonalEffect = ({ emoji, count = 30, size = 28, radius = [10, 20] }) => {
-    const images = useMemo(() => [makeEmojiImage(emoji, size)], [emoji, size]);
+// `emojis` (liste) permet de mélanger plusieurs particules (ex. 🐟 et 🐠 pour le poisson d'avril).
+const AmbientSeasonalEffect = ({ emoji, emojis, count = 30, size = 28, radius = [10, 20] }) => {
+    const emojiKey = emojis ? emojis.join('|') : emoji;
+    const images = useMemo(
+        () => (emojis || [emoji]).map((item) => makeEmojiImage(item, size)),
+        [emojiKey, size] // eslint-disable-line react-hooks/exhaustive-deps
+    );
 
     return (
         <Snowfall
