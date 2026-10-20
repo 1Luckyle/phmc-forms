@@ -5,6 +5,8 @@ import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebas
 import { ref, get, update, remove, set, serverTimestamp, onValue, push } from "firebase/database";
 import { collection, addDoc, deleteDoc, doc, getDocs } from 'firebase/firestore'; 
 import AddRoleModal from './RoleModal';
+import { RECRUITMENT_CATEGORIES, STATUT_OUVERT, STATUT_FERME, isPositionOpen } from '../../constants/recruitment';
+import { loadPositions as loadCategoryPositions, setPositionOpen } from '../../utils/recruitmentStore';
 import RenameRoleKeyModal from './RenameRoleKeyModal';
 
 import { captureMessage, captureException } from "@sentry/react";
@@ -17,14 +19,12 @@ import AdminDashboard from './AdminDashboard';
 import UserDataExchangeModal from './UserDataExchangeModal';
 
 
-const recruitmentCategories = {
-    physician: { displayName: "Physician Recruitment", path: 'selectOptions/physicianRecruitmentDetails' },
-    psych: { displayName: "Psychologist/Psychiatrist Recruitment", path: 'selectOptions/psychPositionDetailsData' },
-    admin: { displayName: "Admin Recruitment", path: 'selectOptions/adminPositionDetailsData' },
-    nursing: { displayName: "Nursing Recruitment", path: 'selectOptions/nursePositionDetailsData' },
-    ems: { displayName: "EMS Recruitment", path: 'selectOptions/emsPositionDetailsData' },
-    coroner: { displayName: "Coroner Recruitment", path: 'selectOptions/coronerPositionDetailsData' },
-};
+// Catégories de recrutement (référentiel constants/recruitment.js) indexées par leur ANCIENNE clé, que ce panneau
+// historique utilise encore pour sa sélection. `displayName` = libellé français ; `category` = la catégorie complète.
+const recruitmentCategories = Object.fromEntries(RECRUITMENT_CATEGORIES.map((category) => [
+    category.legacyKey,
+    { displayName: category.label, category },
+]));
 const BINGO_TYPES = [
     { id: 'er', name: 'Emergency Room', path: 'ER' },
     { id: 'ems', name: 'EMS', path: 'EMS' },
@@ -444,10 +444,8 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
         setIsLoadingRecruitmentData(true);
         const categoryConfig = recruitmentCategories[categoryKey];
         try {
-            const dataRef = ref(database, categoryConfig.path);
-            const snapshot = await get(dataRef);
-            if (snapshot.exists()) {
-                const data = snapshot.val();
+            const { positions: data } = await loadCategoryPositions(categoryConfig.category);
+            if (Object.keys(data).length > 0) {
                 setCurrentRecruitmentData(data);
                 setFormData(prev => ({ ...prev, adminDisplayData: data, adminSelectedCategoryName: categoryConfig.displayName }));
             } else {
@@ -686,10 +684,10 @@ const handleTogglePositionStatus = async (positionKey, currentStatus) => {
     }
 
     // Extract frequently used or calculated values into clear variables.
-    const positionDisplayName = positionDetails.displayName || positionDetails.name || positionKey;
-    const newStatus = currentStatus === "OPEN" ? "CLOSED" : "OPEN";
+    const positionDisplayName = positionDetails.nom || positionKey;
+    const willOpen = !isPositionOpen(positionDetails);
+    const newStatus = willOpen ? STATUT_OUVERT : STATUT_FERME;
     const categoryConfig = recruitmentCategories[selectedRecruitmentCategory];
-    const positionStatusPath = `${categoryConfig.path}/${positionKey}/status`;
     const { userAgent, timeZone } = getUserContext(); // Capture user context for logging.
 
     // Indicate that an asynchronous operation is in progress.
@@ -697,7 +695,7 @@ const handleTogglePositionStatus = async (positionKey, currentStatus) => {
 
     try {
         // --- 4. Core Operation: Firebase Update ---
-        await update(ref(database), { [positionStatusPath]: newStatus });
+        await setPositionOpen(categoryConfig.category, positionKey, willOpen);
 
         // --- 5. Success Path: Notifications & Webhooks ---
         const successMessage = `${positionDisplayName} est maintenant ${newStatus} pour ${categoryConfig.displayName}.`;
@@ -756,23 +754,23 @@ Erreur : ${dbError.message}`,
         const { userAgent, timeZone } = getUserContext(); // Capture user context
         if (currentUser?.email && savedRoleData) {
             const categoryConfig = recruitmentCategories[selectedRecruitmentCategory];
-            const action = actionType === 'edited' ? "Edited Role" : "Added New Role";
+            const action = actionType === 'edited' ? "Poste modifié" : "Nouveau poste ajouté";
             sendAdminActionWebhook(
                 currentUser.email, action,
-                `Nom du rôle : ${savedRoleData.displayName || savedRoleData.originalKey}\
-Code court : ${savedRoleData.shortCode || 'N/A'}\
-Statut : ${savedRoleData.status || 'N/A'}\
-Clé : ${savedRoleData.originalKey}`,
+                `Nom du poste : ${savedRoleData.nom || savedRoleData.cle}\
+Code court : ${savedRoleData.codeCourt || 'N/A'}\
+Statut : ${savedRoleData.statut || 'N/A'}\
+Clé : ${savedRoleData.cle}`,
                 categoryConfig?.displayName || "Catégorie inconnue",
                 userAgent,
                 timeZone
             );
-            if (desktopNotificationPermission === "granted" && savedRoleData?.displayName) {
+            if (desktopNotificationPermission === "granted" && savedRoleData?.nom) {
                  const notificationTitle = actionType === 'edited' ? `Rôle mis à jour : ${categoryConfig?.displayName || 'Recrutement'}` : `Nouveau rôle ajouté : ${categoryConfig?.displayName || 'Recrutement'}`;
                  const notificationBody = actionType === 'edited'
-                    ? `Rôle \"${savedRoleData.displayName}\" (${savedRoleData.shortCode || 'N/A'}) a été mis à jour.`
-                    : `Rôle \"${savedRoleData.displayName}\" (${savedRoleData.shortCode || 'N/A'}) a été ajouté.`;
-                showDesktopNotification(notificationTitle, { body: notificationBody, icon: '/phmc512.png', tag: `${actionType}-role-${selectedRecruitmentCategory}-${savedRoleData.originalKey}` });
+                    ? `Poste \"${savedRoleData.nom}\" (${savedRoleData.codeCourt || 'N/A'}) a été mis à jour.`
+                    : `Poste \"${savedRoleData.nom}\" (${savedRoleData.codeCourt || 'N/A'}) a été ajouté.`;
+                showDesktopNotification(notificationTitle, { body: notificationBody, icon: '/phmc512.png', tag: `${actionType}-role-${selectedRecruitmentCategory}-${savedRoleData.cle}` });
             }
         }
     };
@@ -785,10 +783,10 @@ Clé : ${savedRoleData.originalKey}`,
     };
 
     const handleEditRoleClick = (roleKey, roleData) => {
-        setRoleToEdit({ ...roleData, originalKey: roleKey });
+        setRoleToEdit({ ...roleData, cle: roleKey });
         setShowRoleModal(true);
         const { userAgent, timeZone } = getUserContext(); // Capture user context
-        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture de la fenêtre modale de modification de rôle", `L'administrateur a ouvert la fenêtre modale pour modifier le rôle : ${roleData.displayName || roleKey}`, recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
+        sendAdminActionWebhook(currentUser?.email || "Utilisateur inconnu", "Ouverture de la fenêtre modale de modification de rôle", `L'administrateur a ouvert la fenêtre modale pour modifier le poste : ${roleData.nom || roleKey}`, recruitmentCategories[selectedRecruitmentCategory]?.displayName, userAgent, timeZone);
     };
 
     const handleCloseRoleModal = () => {
@@ -812,7 +810,7 @@ Clé : ${savedRoleData.originalKey}`,
         if (currentUser?.email && roleToRenameKeyDetails && desktopNotificationPermission === "granted") {
             const categoryConfig = recruitmentCategories[selectedRecruitmentCategory];
             showDesktopNotification(`Clé de rôle renommée : ${categoryConfig?.displayName || 'Recrutement'}`, 
-                { body: `La clé pour \"${roleToRenameKeyDetails.data.displayName || roleToRenameKeyDetails.key}\" a été modifiée.`, 
+                { body: `La clé pour \"${roleToRenameKeyDetails.data.nom || roleToRenameKeyDetails.key}\" a été modifiée.`, 
                 icon: '/phmc512.png', 
                 tag: `rename-key-${selectedRecruitmentCategory}-${roleToRenameKeyDetails.key}` 
             });
@@ -1516,10 +1514,10 @@ Clé : ${savedRoleData.originalKey}`,
             />
 
             {selectedRecruitmentCategory && recruitmentCategories[selectedRecruitmentCategory] && (
-                <AddRoleModal show={showRoleModal} onHide={handleCloseRoleModal} categoryKey={selectedRecruitmentCategory} categoryConfig={recruitmentCategories[selectedRecruitmentCategory]} showNotification={showInAppNotification} onRoleSaved={handleRoleSaved} roleToEdit={roleToEdit} />
+                <AddRoleModal show={showRoleModal} onHide={handleCloseRoleModal} category={recruitmentCategories[selectedRecruitmentCategory].category} showNotification={showInAppNotification} onRoleSaved={handleRoleSaved} roleToEdit={roleToEdit} />
             )}
             {roleToRenameKeyDetails && selectedRecruitmentCategory && recruitmentCategories[selectedRecruitmentCategory] && (
-                <RenameRoleKeyModal show={showRenameKeyModal} onHide={() => { setShowRenameKeyModal(false); setRoleToRenameKeyDetails(null); }} categoryConfig={recruitmentCategories[selectedRecruitmentCategory]} currentRoleKey={roleToRenameKeyDetails.key} currentRoleData={roleToRenameKeyDetails.data} showInAppNotification={showInAppNotification} onKeyRenamed={handleRoleKeyRenamed} sendAdminActionWebhook={sendAdminActionWebhook} adminUserEmail={currentUser?.email} />
+                <RenameRoleKeyModal show={showRenameKeyModal} onHide={() => { setShowRenameKeyModal(false); setRoleToRenameKeyDetails(null); }} category={recruitmentCategories[selectedRecruitmentCategory].category} currentRoleKey={roleToRenameKeyDetails.key} currentRoleData={roleToRenameKeyDetails.data} showInAppNotification={showInAppNotification} onKeyRenamed={handleRoleKeyRenamed} sendAdminActionWebhook={sendAdminActionWebhook} adminUserEmail={currentUser?.email} />
             )}
 
 

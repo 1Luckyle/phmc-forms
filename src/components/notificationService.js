@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react";
+import { getCategoryPositions } from '../constants/recruitment';
 import { ref, get, set, push } from 'firebase/database';
 import { database } from '../firebase';
 import getRelevantFields from './RevelantFields';
@@ -569,29 +570,29 @@ export const sendPhmcRecruitmentWebhook = async ({
     if (formDefinition) {
         switch (formDefinition.titleKey) {
             case "phmcGeneralApplication":
-                positionDetailsSource = selectOptions.physicianRecruitmentDetails;
+                positionDetailsSource = getCategoryPositions(selectOptions, 'medecine');
                 break;
             case "phmcPsychApplication":
-                positionDetailsSource = selectOptions.psychPositionDetailsData;
+                positionDetailsSource = getCategoryPositions(selectOptions, 'psychologie');
                 break;
             case "phmcAdminApplication":
-                positionDetailsSource = selectOptions.adminPositionDetailsData;
+                positionDetailsSource = getCategoryPositions(selectOptions, 'administration');
                 break;
             case "phmcNursingApplication":
-                positionDetailsSource = selectOptions.nursePositionDetailsData;
+                positionDetailsSource = getCategoryPositions(selectOptions, 'soinsInfirmiers');
                 break;
             case "phmcCoronerRecruitmentApplication":
-                positionDetailsSource = selectOptions.coronerPositionDetailsData;
+                positionDetailsSource = getCategoryPositions(selectOptions, 'medecineLegale');
                 break;
             case "phmcEMSApplication":
-                positionDetailsSource = selectOptions.emsPositionDetailsData;
+                positionDetailsSource = getCategoryPositions(selectOptions, 'paramedical');
                 break;
             default:
                 console.warn(`No specific positionDetailsSource mapping for PHMC Recruitment form: ${formDefinition.titleKey} in webhook.`);
         }
     }
 
-    const positionDisplayName = positionDetailsSource?.[recruitmentPosition]?.displayName || recruitmentPosition || "N/A";
+    const positionDisplayName = positionDetailsSource?.[recruitmentPosition]?.nom || recruitmentPosition || "N/A";
     const formNameForTitle = formDefinition?.name || "PHMC Recruitment Application";
 
     const fields = [

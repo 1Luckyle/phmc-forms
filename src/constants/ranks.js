@@ -44,6 +44,8 @@ export const ROLES = [
     // ── PHMC · Soignant ──
     { value: 'Chef de Service', badgePrefix: 'CS', pole: 'soignant', filiere: 'Encadrement', needsServiceDirige: true },
     { value: 'Médecin Titulaire', badgePrefix: 'MD', pole: 'soignant', filiere: 'Médecine', doctor: true },
+    { value: 'Psychiatre', badgePrefix: 'PY', pole: 'soignant', filiere: 'Médecine', doctor: true },
+    { value: 'Assistant(e) Médecin', badgePrefix: 'AMD', pole: 'soignant', filiere: 'Médecine' },
     { value: 'Chirurgien(ne)', badgePrefix: 'SG', pole: 'soignant', filiere: 'Médecine', doctor: true },
     { value: 'Docteur Junior', badgePrefix: 'DJ', pole: 'soignant', filiere: 'Médecine', doctor: true },
     { value: 'Interne en Médecine', badgePrefix: 'IN', pole: 'soignant', filiere: 'Médecine' },
@@ -58,6 +60,7 @@ export const ROLES = [
     { value: 'Psychologue', badgePrefix: 'PS', pole: 'soignant', filiere: 'Autres professions de santé' },
     { value: 'Pharmacien(ne)', badgePrefix: 'PH', pole: 'soignant', filiere: 'Autres professions de santé' },
     { value: 'Kinésithérapeute', badgePrefix: 'PT', pole: 'soignant', filiere: 'Autres professions de santé' },
+    { value: 'Dentiste', badgePrefix: 'DT', pole: 'soignant', filiere: 'Autres professions de santé' },
     // ── PHMC · Administration & Direction ──
     { value: 'Directeur(trice)', badgePrefix: 'DIR', pole: 'administration', filiere: 'Direction' },
     { value: 'Assistant(e) de Direction', badgePrefix: 'AD', pole: 'administration', filiere: 'Direction' },
@@ -136,6 +139,27 @@ export const familyOfMember = (member, service) => {
     if (fromRole) return fromRole;
     if (member?.pole && STAFF_FAMILIES[member.pole]) return member.pole;
     return DEFAULT_FAMILY_OF_SERVICE[service] || 'soignant';
+};
+
+// CUMUL de rôles : une fiche a un rôle principal (`rank`, qui fixe aussi le préfixe de badge) et peut avoir des rôles
+// SUPPLÉMENTAIRES (`extraRanks`), de n'importe quelle famille — ex. Médecin Titulaire + Directeur(trice), ou un
+// membre du DMEC avec un rôle d'administration. Valeurs normalisées, sans doublon ni rôle principal, rôles connus seulement.
+export const cleanExtraRanks = (extraRanks, mainRank) => {
+    const main = normalizeRank(mainRank);
+    const list = Array.isArray(extraRanks) ? extraRanks : Object.values(extraRanks || {});
+    return [...new Set(list.map(normalizeRank))].filter((value) => value !== main && ROLE_BY_VALUE[value]);
+};
+
+export const extraRanksOf = (member) => cleanExtraRanks(member?.extraRanks, member?.rank || member?.category);
+
+// Toutes les familles d'une fiche : celle du rôle principal d'abord, puis celles des rôles supplémentaires.
+export const familiesOfMember = (member, service) => {
+    const families = [familyOfMember(member, service)];
+    extraRanksOf(member).forEach((value) => {
+        const family = getRoleInfo(value)?.pole;
+        if (family && !families.includes(family)) families.push(family);
+    });
+    return families;
 };
 
 export const familyOfRank = (rank, service) => getRoleInfo(rank)?.pole || DEFAULT_FAMILY_OF_SERVICE[service] || 'soignant';

@@ -1,3 +1,4 @@
+import { getCategoryPositions, matchesPosition } from '../constants/recruitment';
 const generateEMS = (formData) => {
     const {
         // Section 1: Informations personnelles
@@ -62,7 +63,7 @@ const generateEMS = (formData) => {
     } = formData;
 
     // Utiliser les détails de poste spécifiques EMS
-    const positionDetailsMap = selectOptions?.emsPositionDetailsData || {};
+    const positionDetailsMap = getCategoryPositions(selectOptions, 'paramedical');
     console.log("DEBUG: positionDetailsMap in generateEMS.js:", positionDetailsMap);
 
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
@@ -72,8 +73,8 @@ const generateEMS = (formData) => {
         const selectedPositionKey = recruitmentPosition.toUpperCase();
         if (positionDetailsMap[selectedPositionKey]) {
             console.log(`positionDetailsMap[${selectedPositionKey}]`, positionDetailsMap[selectedPositionKey]);
-            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].displayName || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].url || dynamicJobPostingUrl;
+            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
+            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             // Ce console.warn fera maintenant correctement référence au nom de la source de données
@@ -103,7 +104,10 @@ const generateEMS = (formData) => {
 [quote][i]${applicantMotivationLetter || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]`;
 
-    if (recruitmentPosition === "Paramedic") {
+    const isParamedicPosition = matchesPosition(positionDetailsMap, recruitmentPosition, { roles: ['Paramedic'], keys: ['Paramedic'] });
+    const isEmtPosition = matchesPosition(positionDetailsMap, recruitmentPosition, { roles: ['Technicien(ne) Ambulancier(ère) (EMT)'], keys: ['EMT', 'Technicien(ne) Ambulancier(ère) (EMT)'] });
+
+    if (isParamedicPosition) {
         sections3onwardsBBCode = commonSections3And4 +
 `[divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]
 [hr][/hr]
@@ -118,7 +122,7 @@ const generateEMS = (formData) => {
 [list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
 [b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
 [quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
-    } else if (recruitmentPosition === "EMT") { // Technicien médical d'urgence régulier
+    } else if (isEmtPosition) { // Technicien médical d'urgence régulier
         const oocFieldsBBCode = `[b][color=#FF0000]5.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.2[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
 [list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]

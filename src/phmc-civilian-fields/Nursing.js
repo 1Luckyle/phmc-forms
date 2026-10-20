@@ -1,5 +1,6 @@
 // c:\Users\cross\Documents\GitHub\phmc-forms\src\phmc-civilian-fields\Nursing.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { getCategoryPositions, isPositionClosed, matchesPosition } from '../constants/recruitment';
 import { Form, Button, InputGroup, Spinner } from 'react-bootstrap'; // Added InputGroup and Spinner
 
 // Helper component for collapsible section headers
@@ -54,7 +55,7 @@ const NursingFields = ({
     isUploading        // Added prop
 }) => {
     // Use nursePositionDetailsData from selectOptions for position dropdown
-    const positionDetails = selectOptions?.nursePositionDetailsData || {};
+    const positionDetails = getCategoryPositions(selectOptions, 'soinsInfirmiers');
 
     const [isPersonalInfoOpen, setIsPersonalInfoOpen] = useState(true);
     const [isEducationalInfoOpen, setIsEducationalInfoOpen] = useState(true);
@@ -116,9 +117,7 @@ const NursingFields = ({
         }
     }, [formData]);
 
-    const isSpecificNurseRole =
-        formData.recruitmentPosition === "Registered Nurse" ||
-        formData.recruitmentPosition === "Nurse Practitioner";
+    const isSpecificNurseRole = matchesPosition(positionDetails, formData.recruitmentPosition, { roles: ['Infirmier(ère)', 'Infirmier(ère) en Pratique Avancée'], keys: ['Registered Nurse', 'Nurse Practitioner', "Infirmier(ère) Diplômé(e) d'État (RN)", 'Infirmier(ère) en Pratique Avancée (NP)'] });
 
     const checkFieldsCompletion = useCallback((fieldsToCheck) => {
         for (const field of fieldsToCheck) {
@@ -216,10 +215,10 @@ const NursingFields = ({
                                 <option
                                     key={key}
                                     value={key}
-                                    style={position.status === "CLOSED" ? { color: 'red', fontWeight: 'bold' } : {}}
-                                    disabled={position.status === "CLOSED"}
+                                    style={isPositionClosed(position) ? { color: 'red', fontWeight: 'bold' } : {}}
+                                    disabled={isPositionClosed(position)}
                                 >
-                                    {position.displayName}{position.status === "CLOSED" ? " (Candidatures fermées)" : ""}
+                                    {position.nom}{isPositionClosed(position) ? " (Candidatures fermées)" : ""}
                                 </option>
                             ))}
                         </Form.Select>

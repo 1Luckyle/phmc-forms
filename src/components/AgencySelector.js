@@ -1,5 +1,6 @@
 // src/components/AgencySelector.js
 import React, { useState, useEffect } from 'react';
+import { isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Form, Image } from 'react-bootstrap';
 import { getPrimaryFormsForUserType } from '../formDefinitions';
 
@@ -160,13 +161,14 @@ const AgencySelector = ({
             54: coronerRecruitmentDetails || {},
             55: emsRecruitmentDetails || {},
         };
+        // Catégorie (clé française) de chaque formulaire de candidature : voir constants/recruitment.js.
         const recruitmentGroupMap = {
-            50: "Physician",
-            51: "Psych",
-            52: "Admin",
-            53: "Nurse",
-            54: "Coroner",
-            55: "EMS",
+            50: "medecine",
+            51: "psychologie",
+            52: "administration",
+            53: "soinsInfirmiers",
+            54: "medecineLegale",
+            55: "paramedical",
         };
 
     const overlayStyle = {
@@ -404,8 +406,8 @@ const AgencySelector = ({
                                             const details = recruitmentDetailsMap[form.version];
                                             const groupFilter = recruitmentGroupMap[form.version]; // Get the group filter
                                             buttonDisplayProps.isRecruitmentForm = true;
-                                            buttonDisplayProps.openPositions = Object.values(details).filter(pos => pos.status === 'OPEN' && pos.group === groupFilter).map(pos => pos.displayName);
-                                            buttonDisplayProps.closedPositions = Object.values(details).filter(pos => pos.status === 'CLOSED' && pos.group === groupFilter).map(pos => pos.displayName);
+                                            buttonDisplayProps.openPositions = Object.values(details).filter(pos => isPositionOpen(pos) && pos.groupe === groupFilter).map(pos => pos.nom);
+                                            buttonDisplayProps.closedPositions = Object.values(details).filter(pos => isPositionClosed(pos) && pos.groupe === groupFilter).map(pos => pos.nom);
                                             buttonDisplayProps.statusKnown = Object.keys(details).length > 0;
                                             buttonDisplayProps.overallOpen = buttonDisplayProps.openPositions.length > 0;
                                         }

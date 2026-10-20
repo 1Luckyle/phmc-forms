@@ -1,5 +1,6 @@
 // src/components/RecruitmentStatusDisplay.js
 import React, { useEffect } from 'react';
+import { CATEGORY_BY_KEY, isPositionOpen, isPositionClosed } from '../constants/recruitment';
 
 const RecruitmentStatusDisplay = ({
     selectedAgencyGroup,
@@ -14,17 +15,17 @@ const RecruitmentStatusDisplay = ({
     useEffect(() => {
     }, [selectedAgencyGroup, bbCodeVersion]);
 
-    let mainTitle = "Recruitment Overview";
+    let mainTitle = "Aperçu du recrutement";
     let sectionsToShow = [];
 
     if (selectedAgencyGroup === 'PHMC Recruitment') {
         const allPhmcSections = [
-            { title: "Postes Médicaux", data: physicianRecruitmentDetails, groupFilter: "Physician", isActive: bbCodeVersion === 50 },
-            { title: "Postes Psychologue/Psychiatre", data: psychRecruitmentDetails, groupFilter: "Psych", isActive: bbCodeVersion === 51 },
-            { title: "Postes Administratifs", data: adminRecruitmentDetails, groupFilter: "Admin", isActive: bbCodeVersion === 52 },
-            { title: "Postes Infirmiers", data: nurseRecruitmentDetails, groupFilter: "Nurse", isActive: bbCodeVersion === 53 },
-            { title: "Postes DMEC", data: coronerRecruitmentDetails, groupFilter: "Coroner", isActive: bbCodeVersion === 54 },
-            { title: "Postes EMS", data: emsRecruitmentDetails, groupFilter: "EMS", isActive: bbCodeVersion === 55 },
+            { title: CATEGORY_BY_KEY.medecine.title, data: physicianRecruitmentDetails, groupFilter: "medecine", isActive: bbCodeVersion === 50 },
+            { title: CATEGORY_BY_KEY.psychologie.title, data: psychRecruitmentDetails, groupFilter: "psychologie", isActive: bbCodeVersion === 51 },
+            { title: CATEGORY_BY_KEY.administration.title, data: adminRecruitmentDetails, groupFilter: "administration", isActive: bbCodeVersion === 52 },
+            { title: CATEGORY_BY_KEY.soinsInfirmiers.title, data: nurseRecruitmentDetails, groupFilter: "soinsInfirmiers", isActive: bbCodeVersion === 53 },
+            { title: CATEGORY_BY_KEY.medecineLegale.title, data: coronerRecruitmentDetails, groupFilter: "medecineLegale", isActive: bbCodeVersion === 54 },
+            { title: CATEGORY_BY_KEY.paramedical.title, data: emsRecruitmentDetails, groupFilter: "paramedical", isActive: bbCodeVersion === 55 },
         ];
 
         const activeSection = allPhmcSections.find(s => s.isActive);
@@ -81,9 +82,9 @@ const RecruitmentStatusDisplay = ({
                     return null;
                 }
 
-                const positions = Object.values(section.data).filter(pos => pos.group === section.groupFilter);
-                const openPositions = positions.filter(pos => pos.status === "OPEN");
-                const closedPositions = positions.filter(pos => pos.status === "CLOSED");
+                const positions = Object.values(section.data).filter(pos => pos.groupe === section.groupFilter);
+                const openPositions = positions.filter(isPositionOpen);
+                const closedPositions = positions.filter(isPositionClosed);
 
                 const sectionStyle = (index > 0 && sectionsToShow.length > 1) ? { marginTop: '1.5rem' } : {};
 
@@ -112,8 +113,8 @@ const RecruitmentStatusDisplay = ({
                                 <strong style={styles.openStrong}>Postes Ouverts :</strong>
                                 <ul style={styles.listStyle}>
                                     {openPositions.map(pos => (
-                                        <li key={`${section.title}-open-${pos.displayName}`} style={styles.listItemStyle}>
-                                            <span style={styles.openSpan}>{pos.displayName}</span>
+                                        <li key={`${section.title}-open-${pos.nom}`} style={styles.listItemStyle}>
+                                            <span style={styles.openSpan}>{pos.nom}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -124,8 +125,8 @@ const RecruitmentStatusDisplay = ({
                                 <strong style={styles.closedStrong}>Postes Fermés :</strong>
                                 <ul style={styles.listStyle}>
                                     {closedPositions.map(pos => (
-                                        <li key={`${section.title}-closed-${pos.displayName}`} style={{ ...styles.listItemStyle, color: '#dc3545' }}>
-                                            {pos.displayName} (Candidatures Fermées)
+                                        <li key={`${section.title}-closed-${pos.nom}`} style={{ ...styles.listItemStyle, color: '#dc3545' }}>
+                                            {pos.nom} (Candidatures Fermées)
                                         </li>
                                     ))}
                                 </ul>

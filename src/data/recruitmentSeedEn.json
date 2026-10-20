@@ -1,0 +1,274 @@
+{
+ "medecine": {
+  "Rotation (Medical Students)": {
+   "displayName": "Sub-Intern",
+   "poc": "",
+   "shortCode": "MED ROTATION",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others, every effort, every detail, and every second matters. As a full time medical student within our Rotation program, you will receive first-hand insight on the day-to-day operations at a hospital. Medical students are in a pivotal moment in their academic and future professional career when seeking out a formal internship. Through our program, students will gain first-hand experience alongside medical professionals with decades of experience, helping to prepare them for the ever-expanding medical field. \n\nThis program is designed for those who are currently enrolled in an accredited medical school program, and have completed their pre-clinical coursework. Students will be expected to work alongside our medical professionals, and will be given the opportunity to shadow them in various departments. Students will also be expected to complete a series of assignments and projects throughout the program, which will help to prepare them for their future careers in medicine. \n\n If you are interested in applying for this program, please submit your application through our website. We look forward to hearing from you!",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Dentist": {
+   "displayName": "Dentist",
+   "poc": "",
+   "shortCode": "Dentist",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others... (rest of your overview)",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Attending Physician": {
+   "displayName": "Attending Physician",
+   "poc": "",
+   "shortCode": "Attending Physician",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others... (rest of your overview)",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Physical Therapist": {
+   "displayName": "Physical Therapist",
+   "poc": "",
+   "shortCode": "Physical",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others... (rest of your overview)",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Pharmacist": {
+   "displayName": "Pharmacist",
+   "poc": "",
+   "shortCode": "Pharmacist",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others... (rest of your overview)",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Surgical Resident": {
+   "displayName": "Surgical Resident",
+   "poc": " Dr. Caterina Rosati",
+   "shortCode": "Surgical Resident",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others... (rest of your overview)",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Physician Assistant": {
+   "displayName": "Physician Assistant",
+   "poc": "",
+   "shortCode": "PA",
+   "Overview": "When the work you do every single day has a crucial impact on the lives of others... (rest of your overview)",
+   "skill1": "Strong observational abilities.",
+   "skill2": "Eagerness to learn and adapt.",
+   "skill3": "Basic medical terminology understanding.",
+   "EduRequirement": "Currently enrolled in an accredited medical school program. Completion of pre-clinical coursework preferred."
+  },
+  "Resident Physician": {
+   "displayName": "Resident Physician",
+   "poc": "",
+   "shortCode": "Resident",
+   "Overview": "A Resident Physician, often simply referred to as a 'resident,' is a medical doctor who has completed medical school and is undergoing further training in a specific medical specialty. Residents work in hospitals and healthcare facilities under the supervision of experienced attending physicians. Their duties include diagnosing and treating patients, conducting medical procedures, and learning the intricacies of their chosen specialty. Resident Physicians play a vital role in patient care, as they gain hands-on experience, develop clinical skills, and gradually become more independent in their medical practice. This phase of training typically lasts several years, after which they may pursue board certification in their chosen specialty.",
+   "skill1": "Critical thinking skills, decisive judgment and the ability to work independently as well as in a group is required.\n- The ability to be able to work in a stressful environment and to take appropriate action is a must.The applicant must be in a good physical condition in order to perform requirements such a moving and lifting patients along with the abilities of full body motion, manual finger dexterity with good eye-hand condition.",
+   "skill2": "Strong interpersonal skills to interact with patients and staff is mandatory.\n- Must be at least twenty-six (26) years of age and possess a legal address in the state of San Andreas;",
+   "skill3": "Must have a satisfactory physical and mental health status to perform the essential functions of the role safely.\n- Must not have been convicted of a felony or a misdemeanor in the recent past.",
+   "EduRequirement": "Must have a degree from a college or university with accreditation recognized in the United States of America. \n- Must be a licensed Medical Doctor (MD) or Doctor of Osteopathic Medicine (DO) in the State of San Andreas.\n- Must have prior experience working in emergency or internal medicine."
+  }
+ },
+ "psychologie": {
+  "Counseling Psychologist": {
+   "displayName": "Counseling Psychologist",
+   "poc": "",
+   "shortCode": "PSYCH INTERN",
+   "Overview": "Entry-level internship for aspiring psychologists...",
+   "skill1": "Basic psychological principles.",
+   "skill2": "Communication skills.",
+   "skill3": "Empathy.",
+   "EduRequirement": "Enrolled in/graduated Bachelor's or Master's in Psychology."
+  },
+  "Resident Psychiatrist": {
+   "displayName": "Resident Psychologist",
+   "poc": "",
+   "shortCode": "RES PSYCH",
+   "Overview": "Training position for post-graduate psychologists...",
+   "skill1": "Advanced psychological theories.",
+   "skill2": "Clinical assessment experience.",
+   "skill3": "Team collaboration.",
+   "EduRequirement": "Doctoral degree (Ph.D./Psy.D.) in Psychology. Licensure eligibility."
+  },
+  "Attending Psychiatrist": {
+   "displayName": "Attending Psychiatrist",
+   "poc": "",
+   "shortCode": "ATTND PSYCH",
+   "Overview": "Licensed medical doctor specializing in psychiatry...",
+   "skill1": "Psychopharmacology expertise.",
+   "skill2": "Leadership skills.",
+   "skill3": "Complex case management.",
+   "EduRequirement": "MD/DO. Psychiatric residency. Board certification. Licensed."
+  },
+  "Psychologist": {
+   "displayName": "Psychologist",
+   "poc": "",
+   "shortCode": "LCSW",
+   "Overview": "Provides counseling and therapy services...",
+   "skill1": "Assessment & crisis intervention.",
+   "skill2": "Knowledge of community resources.",
+   "skill3": "Cultural competence.",
+   "EduRequirement": "MSW. LCSW license."
+  }
+ },
+ "administration": {
+  "Janitor": {
+   "displayName": "Janitor",
+   "poc": "Mr. David Wayland",
+   "shortCode": "JANITOR",
+   "Overview": "A janitor performs a variety of cleaning, sanitizing and janitorial tasks in and around hospital buildings or official event sites and minor ground-keeping tasks adjacent to said buildings. They have to ensure that everything is in working condition and if not, they shall take care of the problem and have to repair it immediately. The scope of the duties will be very diverse. Primarily, however, the practical-technical work is in the focus, such as cleaning the stairs, operating the central heating system and ensuring a general smooth running of the hospital.",
+   "skill1": "Must be at least twenty-one (21) years of age and possess a legal address in the state of San Andreas.\nMust not have been convicted of a felony or a misdemeanor in the recent past.",
+   "skill2": "Must be able to work well within a team, but show ability to work independently at times as well.\nShall be in good health and physical shape to withstand stress from frequent physical activities such as lifting, bending and kneeling as well as standing, walking and reaching around the hospital.",
+   "skill3": "Must adhere to all hospital policies and ethical guidelines.\nShould have a clean public image/ notable footprint within the city's social networks and corporate circles.",
+   "EduRequirement": "Must have prior experience with custodial work in previous positions, or undergone training that provides custodial experience."
+  },
+  "Cafeteria Staff": {
+   "displayName": "Cafeteria Staff",
+   "poc": "Mr. David Wayland",
+   "shortCode": "CAFETERIA",
+   "Overview": "The Cafeteria Staff has to cook foodstuffs according to menus, special dietary or nutritional restrictions and the number of portions to be served. They have to ensure that everyone is getting a meal that is compatible with their digestive tolerance.\nThe job position as a cook shall not be underestimated, since there are several important requirements and responsibilities you have to accomplish, like clean the kitchen area, cut and cook meat, fish, and poultry as well as providing a varied menu for the hospital staff and the patients.",
+   "skill1": "Must be at least twenty-one (21) years of age and possess a legal address in the state of San Andreas.",
+   "skill2": "Must not have been convicted of a felony or a misdemeanor in the recent past.",
+   "skill3": "Must adhere to all hospital policies and ethical guidelines.",
+   "EduRequirement": "Must have prior experience."
+  },
+  "Human Resources Assistant": {
+   "displayName": "Human Resources",
+   "poc": "Mr. David Wayland",
+   "shortCode": "HR",
+   "Overview": "As a member of Human Resources, you will have the option to focus your time on helping the footstaff in the hospital conduct their duties. You will be expected to apply prior experience to help you fulfill your duties, as well as maintaining a clean public image for both yourself and the hospital. Additionall, you will aid each department with recruitment and onboarding matters, conduct background checks, perform interviews and forward transcripts to supervisors and directors.",
+   "skill1": "Must be at least twenty-one (21) years of age and possess a legal address in the state of San Andreas.",
+   "skill2": "Must not have been convicted of a felony or a misdemeanor in the recent past.",
+   "skill3": "Must adhere to all hospital policies and ethical guidelines.",
+   "EduRequirement": "Must have prior experience."
+  }
+ },
+ "soinsInfirmiers": {
+  "Registered Nurse": {
+   "displayName": "Registered Nurse",
+   "poc": "Ms Lindsay Thompson",
+   "shortCode": "RN",
+   "Overview": "Conduct comprehensive patient assessments, develop individualized care plans, and evaluate outcomes.\nAdminister medications, perform treatments and procedures, and provide emotional support to patients and families.\nSupervise and delegate tasks to Licensed Vocational Nurses (LVNs), Nurse Interns, and other support staff while ensuring compliance with hospital protocols. \nEducate patients and families about diagnoses, treatment plans, and post-discharge care to promote health and recovery.NWork closely with physicians, advanced practice providers, and other healthcare professionals to coordinate comprehensive care.\nAct as a first responder in medical emergencies, initiating life-saving measures as needed.",
+   "skill1": "Must demonstrate the ability to make sound clinical judgments and prioritize effectively in a dynamic healthcare environment.\nMust perform effectively in high-pressure situations, including emergencies.\nMust be in good physical condition to lift, move, and reposition patients, with the ability to meet the physical demands of 12-hour shifts. \nMust have strong verbal and written communication abilities to interact with diverse patients, families, and teams.",
+   "skill2": "Must have satisfactory physical and mental health to perform essential functions safely, and must adhere to all hospital policies and professional ethical standards.\nPrior clinical experience in a hospital or acute care setting is preferred but not mandatory for new graduates. ",
+   "skill3": "\n(( If roleplaying prior clinical experience, this should be in the character's background story. ))\nMust be at least 20 to 21 years old.\nMust not have been convicted of a felony or relevant misdemeanor in the past..",
+   "EduRequirement": "Must hold an Associate’s Degree in Nursing (ADN) or Bachelor of Science in Nursing (BSN) from an accredited program. A BSN is preferred. (( This should be a part of the character background story. ))\nMust possess an active, unencumbered San Andreas Registered Nurse license (RN). (( NPCd ))\nMust hold current Basic Life Support (BLS) certification. Advanced Cardiac Life Support (ACLS), Pediatric Advanced Life Support (PALS), and other department-specific certifications (e.g., TNCC for trauma nurses) are also welcome. (( This should be a part of the character background story. ))\nMust reside in the state of San Andreas or possess the ability to relocate."
+  },
+  "Nurse Practitioner": {
+   "displayName": "Nurse Practitioner",
+   "poc": "Ms Lindsay Thompson",
+   "shortCode": "NP",
+   "Overview": "Perform comprehensive health assessments, including history-taking, physical examinations, and diagnostic testing.\nFormulate and implement evidence-based treatment plans tailored to individual patient needs.\nPrescribe medications, order diagnostic tests, and recommend therapeutic interventions in compliance with San Andreas Board of Nursing regulations.\nWork closely with physicians, nurses, and allied health professionals in managing complex cases.\nProvide patients and their families with information about health conditions, treatments, and preventative care..\nMentor nursing staff and contribute to staff education initiatives to enhance clinical competencies across the team.\nRespond to acute care situations, initiate life-saving measures, and stabilize critically ill patients.",
+   "skill1": "Must demonstrate exceptional analytical skills and the ability to make autonomous clinical decisions.\nMust remain composed and effective in high-pressure, fast-paced environments.",
+   "skill2": "Must be in good physical condition to meet the demands of patient care, including extended shifts and emergencies.\nStrong communication skills to engage effectively with patients, families, and multidisciplinary teams, as well as leadership abilities to mentor and guide staff.",
+   "skill3": "Must demonstrate satisfactory physical and mental health to perform essential functions safely. Must adhere to all hospital policies and ethical standards.",
+   "EduRequirement": "Must hold a Master of Science in Nursing (MSN) or Doctor of Nursing Practice (DNP) from an accredited program. (( This should be a part of your character's story. ))\nMust possess an active San Andreas RN license. (( **NPCd** ))\nMust have national board certification in a specialty area (e.g., AANP, ANCC). (( **This should be a part of your character's story**. ))\nA minimum of two years of clinical nursing experience is preferred. Experience as an NP in a similar healthcare setting is highly desirable."
+  },
+  "Student Nurse": {
+   "displayName": "Student Nurse",
+   "poc": "Ms Lindsay Thompson",
+   "shortCode": "SN",
+   "Overview": "Perform tasks such as measuring vital signs, assisting with hygiene, and reporting observations under the direct supervision of an RN or LVN.\nShadow experienced nurses and participate in non-invasive procedures to build foundational knowledge.\nAid in administrative tasks, restocking supplies, and maintaining clean, organized workspaces.\nParticipate in scheduled training sessions, simulations, and department meetings to enhance clinical competencies.",
+   "skill1": "Critical thinking skills, decisive judgment, and the ability to adapt to various clinical situations under supervision are required.",
+   "skill2": "The ability to work in a fast-paced, high-pressure environment while maintaining composure is essential.\nApplicants must be in good physical condition to perform tasks such as moving and lifting patients, with full body motion, manual finger dexterity, and good eye-hand coordination.",
+   "skill3": "Effective communication and teamwork are mandatory for interacting with patients, families, and staff.\nApplicants must reside in the state of San Andreas and be at least 18 years of age.\nMust not have been convicted of a felony or relevant misdemeanor in the past.",
+   "EduRequirement": "Must maintain satisfactory physical and mental health to perform essential functions safely and comply with all hospital policies and ethical guidelines."
+  },
+  "Nursing Intern": {
+   "displayName": "Nursing Intern",
+   "poc": "Ms Lindsay Thompson",
+   "shortCode": "NURSE INTERN",
+   "Overview": "Assist licensed nurses with patient hygiene, mobility, nutrition, and comfort measures.\nPerform basic clinical tasks, such as obtaining vital signs, preparing equipment, and monitoring patient conditions under RN or LVN supervision.\nAttend in-service education, simulations, and staff development sessions to enhance clinical competencies.\nEnsure that patient care areas are clean, well-stocked, and organized.",
+   "skill1": "Critical thinking skills, decisive judgment, and the ability to work both independently and collaboratively within a healthcare team are required.",
+   "skill2": "Must demonstrate resilience and composure in a high-pressure clinical environment.\nApplicants must be able to meet the physical demands of patient care, including moving and lifting patients, full body motion, and fine motor skills.",
+   "skill3": "Effective communication and collaboration with patients, families, and healthcare staff are essential.\nMust demonstrate satisfactory physical and mental health to perform essential functions safely and comply with all hospital policies and ethical guidelines.\nMust not have been convicted of a felony or relevant misdemeanor in the past.",
+   "EduRequirement": "Must have completed at least one year of a San Andreas-approved nursing program or have recently graduated. Must provide proof of ongoing or recent enrollment."
+  }
+ },
+ "paramedical": {
+  "Paramedic": {
+   "displayName": "Paramedic",
+   "poc": "Mr. Kaden Malik",
+   "shortCode": "PARAMEDIC",
+   "Overview": "Paramedics are advanced pre-hospital care providers responsible for responding to emergency medical calls, assessing patient conditions, and administering critical medical interventions. They work in dynamic environments, often under high-pressure, to stabilize patients and transport them to medical facilities. Key responsibilities include advanced life support, medication administration, and trauma care.",
+   "skill1": "Proficiency in advanced life support (ALS) techniques and emergency medical protocols.",
+   "skill2": "Strong decision-making skills and the ability to remain calm and effective under pressure.",
+   "skill3": "Excellent communication and interpersonal skills for patient and team interaction.",
+   "EduRequirement": "Completion of an accredited Paramedic program and current state certification/licensure as a Paramedic. Valid driver's license."
+  },
+  "EMT": {
+   "displayName": "Emergency Medical Technician (EMT)",
+   "poc": "Mr. Kaden Malik",
+   "shortCode": "EMT",
+   "Overview": "EMTs provide basic life support (BLS) and emergency medical care to patients at the scene of an incident and during transport to a hospital. They assess patient conditions, manage airways, control bleeding, and assist with medication administration under medical direction. EMTs are crucial first responders in the emergency medical system.",
+   "skill1": "Competency in basic life support (BLS) skills and patient assessment.",
+   "skill2": "Ability to work effectively in a team and follow medical protocols accurately.",
+   "skill3": "Good physical stamina and the ability to lift and move patients safely.",
+   "EduRequirement": "Completion of an accredited EMT program and current state certification/licensure as an EMT. Valid driver's license."
+  },
+  "Part-Time EMS Program": {
+   "displayName": "Part-Time EMS Program",
+   "poc": "Mr. Kaden Malik",
+   "shortCode": "PT EMS",
+   "Overview": "The Part-Time EMS Program offers flexible opportunities for certified EMTs and Paramedics to contribute to emergency medical services on a part-time basis. Participants will respond to calls, provide patient care, and work alongside full-time staff, maintaining their skills and serving the community. This program is ideal for those seeking to balance EMS work with other commitments.",
+   "skill1": "Current EMT or Paramedic certification/licensure in good standing.",
+   "skill2": "Ability to adapt to varying schedules and work environments.",
+   "skill3": "Commitment to maintaining clinical proficiency and adhering to EMS protocols.",
+   "EduRequirement": "Valid state EMT or Paramedic certification/licensure. Prior field experience is often preferred."
+  }
+ },
+ "medecineLegale": {
+  "Coroner Internship": {
+   "displayName": "Coroner Intern",
+   "poc": "Dr. Anne Carter",
+   "shortCode": "Coroner Intern",
+   "Overview": "As an Intern within our department, you’ll be able to accompany our teams into the field and witness the bulk of our work, from basic crime scene investigation to body transportation. You’ll also be able to attend autopsies and thus witness how our Medical Examiners ascertain someone’s cause of death.\nYour duties will mainly include following our Coroners around on the field, although you may not interact with the scene directly, you may be asked for a synopsis of what you saw at a scene so that you can develop your skills in field investigation. You will also be able to watch autopsies and accompany their whole process with opportunities for you to practice autopsies yourself, of course you will be practicing on animals such as pigs and not actual human cadavers.",
+   "skill1": "A strong stomach and the ability to function well under extreme stress.",
+   "skill2": "Must be at least eighteen (18) years of age and possess a legal address in the state of San Andreas.\nA good ability to work within a team and follow directions.",
+   "skill3": "Must not have been convicted of a felony or a misdemeanor in the recent past.",
+   "EduRequirement": "Must be enrolled at a college or university with accreditation recognized in the United States of America."
+  },
+  "Medical Examiner": {
+   "displayName": "Medical Examiner",
+   "poc": "Dr. Anne Carter",
+   "shortCode": "MEDICAL EXAMINER",
+   "Overview": "Medical examiners, also known as forensic pathologists, are physician specialists trained in forensic and anatomical pathology. They use their medical skills to determine the cause of death, whether natural, accidental or intentional of the decedents. They also may be required to testify in legal cases, where their skills have been utilized. Furthermore, they may be gathering and examining evidence to determine the cause of death in criminal cases and unnatural or unattended deaths. Moreover, they may be present at the scene of the death to ensure that collected evidence gets safely transported to the laboratory for analysis. It's in the medical examiner's job to obtain medical records from hospitals and offices for evaluation. Once they have completed their investigation, medical examiners summarize their findings in writing and give verbal reports. They can serve as expert witness and testify in pre-trial and court hearings. Responsibilities of a Deputy Medical Examiner will be to perform autopsies to determine the cause of death, undertaking examinations of specimens, tissues, organs, fluids and blood to determine abnormalities that may have resulted in the death, investigating sudden and/or unnatural deaths, in conjunction with law enforcement while also preparing reports of findings and providing expert testimony in court. Throughout they remain informed of developments in forensic pathology and attend seminars as well as courses in forensic medicine for continuing education and research.",
+   "skill1": "Working knowledge of applicable laws and statutes governing forensic services.",
+   "skill2": "Exceptional analytical and research skills.",
+   "skill3": "Experience using lab testing equipment.\nExcellent communication and writing skills.",
+   "EduRequirement": "Must have a Bachelor's degree in biology, physical sciences, or a related field\nMedical Degree (Doctorate) and USMLE certificate."
+  },
+  "Coroner Investigator": {
+   "displayName": "Coroner Investigator",
+   "poc": "Dr. Anne Carter",
+   "shortCode": "CORONER",
+   "Overview": "Coroner Investigators investigate and report death cases which fall within the jurisdiction of the Los Santos Department of Medical Examiner-Coroner. Incumbents in this position take charge of the death scene and the body of the deceased, safeguard the personal property of the deceased, locate and notify the next of kin and conduct other duties as required. In addition to examining bodies and crime scenes, this role aims to complete various administrative tasks when working as one, keeping accurate records of the findings and presenting those findings to a court when necessary. This job requires excellent communication and writing skills. Furthermore, if one individual is the lead member of a team for the morgue, they may also supervise the work of morgue assistants or autopsy technicians. Responsibilities of a Coroner Investigator range from investigating deaths under the jurisdiction of the department, assisting in the establishing cause, manner and circumstances of death, confering with law enforcement agencies to coordinate investigations of death resulting from criminal acts and making positive identification of deceased by taking fingerprints, photographs in order to create case files. A Coroner Investigator may notify family of the deceased, interview witnesses, physicians, law enforcement and family members to obtain facts concerning deaths. They are responsible of the transportation of deceased corpses and may work on special projects assigned to them while also filling death certificates and deciding on when a decendent may be released.",
+   "skill1": "Working knowledge of applicable laws and statutes governing forensic services.",
+   "skill2": "Exceptional analytical and research skills.",
+   "skill3": "Experience using lab testing equipment.\nExcellent communication and writing skills.",
+   "EduRequirement": "Must have a Bachelor's degree in biology, physical sciences, or a related field."
+  },
+  "Trainee Forensic Attendant": {
+   "displayName": "Trainee Forensic Attendant",
+   "poc": "Dr. Anne Carter",
+   "shortCode": "TRAINEE FA",
+   "Overview": "New applicants will go through training provided by our facility to become a Coroner, as a new hire your main job is to complete the field training program and become a fully qualified Coroner. You will have the same duties as a coroner, however, you will not be permitted to receive calls alone until they have completed their field training phase. New applicants will become the backbone of the entire department, making up the highest percentage of members. Without the new hires, day-to-day duties will become difficult, the department requires new hires to sustain itself. New applicants are encouraged to dedicate themselves to the department and will likely be the primary point of contact for the public on a daily basis, as they will handle the most common calls. As a Trainee Forensic Attendant employed at Pillbox Hill Medical Center, you will be you will be taught in aspects of field response to incoming calls, where you will be of assistance to the public, to other departments but most importantly to your own colleagues.",
+   "skill1": "A high level of literacy is required together with the ability to frame correspondence in a timely manner to fellow departments is crucial.",
+   "skill2": "The ability to be able to work in a stressful environment and to take appropriate action is a must.",
+   "skill3": "The applicant must be in a good physical condition in order to perform requirements such a moving and lifting bodies, along with the abilities of full body motion, manual finger dexterity with good eye-hand condition.",
+   "EduRequirement": "Applicants should possess a high school diploma as an absolute minimum\nMust have a satisfactory physical and mental health status to perform the essential functions of the role safely."
+  }
+ }
+}

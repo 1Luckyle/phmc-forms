@@ -356,7 +356,7 @@ export const EmployeeAuthProvider = ({ children }) => {
     };
 
     // Rôle « recruteur » : un compte Civil (mêmes accès qu'un civil) + un drapeau
-    // recruiterUIDs/{uid} posé par un admin, qui donne en plus l'onglet Recrutement de la
+    // recruteurs/{uid} (ancien nom : recruiterUIDs) posé par un admin, qui donne en plus l'onglet Recrutement de la
     // boîte à outils. Un recruteur reste donc `isCivilian`.
     const [isRecruiter, setIsRecruiter] = useState(false);
     const uid = currentEmployee?.uid || null;
@@ -368,15 +368,19 @@ export const EmployeeAuthProvider = ({ children }) => {
         let cancelled = false;
         (async () => {
             try {
-                const recruiterSnap = await get(ref(database, `recruiterUIDs/${uid}`));
-                if (!cancelled) setIsRecruiter(recruiterSnap.val() === true);
+                // Nœud français d'abord, ancien nœud en repli (tant que la migration n'a pas été faite).
+                const [newSnap, oldSnap] = await Promise.all([
+                    get(ref(database, `recruteurs/${uid}`)),
+                    get(ref(database, `recruiterUIDs/${uid}`)).catch(() => null),
+                ]);
+                if (!cancelled) setIsRecruiter(newSnap.val() === true || oldSnap?.val() === true);
             } catch (error) {
                 if (!cancelled) setIsRecruiter(false);
             }
         })();
         return () => { cancelled = true; };
     }, [uid]);
-    // Rôle facultatif « en attente de signature de contrat » (contractCandidates/{uid}), posé par un
+    // Rôle facultatif « en attente de signature de contrat » (candidatsContrat/{uid}), posé par un
     // recruteur sur le compte Civil d'un candidat accepté. En direct (onValue) : le candidat voit
     // « Mes contrats » apparaître sans avoir à se reconnecter.
     const [isContractCandidate, setIsContractCandidate] = useState(false);
@@ -385,12 +389,13 @@ export const EmployeeAuthProvider = ({ children }) => {
             setIsContractCandidate(false);
             return undefined;
         }
-        const unsubscribe = onValue(
-            ref(database, `contractCandidates/${uid}`),
-            (snapshot) => setIsContractCandidate(snapshot.exists()),
-            () => setIsContractCandidate(false)
-        );
-        return () => unsubscribe();
+        // Nouveau nœud français et ancien nœud (avant migration) : l'un OU l'autre suffit.
+        let inNew = false;
+        let inOld = false;
+        const refresh = () => setIsContractCandidate(inNew || inOld);
+        const unsubscribeNew = onValue(ref(database, `candidatsContrat/${uid}`), (snapshot) => { inNew = snapshot.exists(); refresh(); }, () => { inNew = false; refresh(); });
+        const unsubscribeOld = onValue(ref(database, `contractCandidates/${uid}`), (snapshot) => { inOld = snapshot.exists(); refresh(); }, () => { inOld = false; refresh(); });
+        return () => { unsubscribeNew(); unsubscribeOld(); };
     }, [uid]);
     // Identité EFFECTIVE : la vraie, ou le profil simulé par un admin (« visualiser en tant que »). Tout ce que
     // l'application consulte (droits, menu, formulaires) passe par elle ; l'accès Firebase, lui, reste celui du

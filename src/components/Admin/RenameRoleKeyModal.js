@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal as BootstrapModal, Button, Form, Spinner } from 'react-bootstrap';
 import { database } from '../../firebase';
 import { ref, get, set, remove } from "firebase/database";
+import { getActiveStore, positionsPath } from '../../utils/recruitmentStore';
+import { toStoredPosition, toLegacyPosition } from '../../constants/recruitment';
 import * as Sentry from "@sentry/react";
 
 // Modal Styles (can be shared or defined per modal)
@@ -18,7 +20,7 @@ const closeButtonStyle = { /* ... (same as RoleModal) ... */ };
 const RenameRoleKeyModal = ({
     show,
     onHide,
-    categoryConfig, // Contains { displayName, path }
+    category, // Catégorie de recrutement (constants/recruitment.js)
     currentRoleKey,
     currentRoleData,
     showInAppNotification,
@@ -38,9 +40,9 @@ const RenameRoleKeyModal = ({
     }, [show]);
 
     const handleNewKeyChange = (e) => {
-        // Basic sanitization: replace spaces with underscores, remove Firebase invalid chars
-        let sanitizedValue = e.target.value.replace(/\s+/g, '_');
-        sanitizedValue = sanitizedValue.replace(/[.#$[\]/]/g, '');
+        // Les clés de postes sont des noms français lisibles (espaces et accents permis) : on retire seulement
+        // les caractères interdits par Firebase.
+        const sanitizedValue = e.target.value.replace(/[.#$[\]/]/g, '');
         setNewKey(sanitizedValue);
     };
 
@@ -61,7 +63,8 @@ const RenameRoleKeyModal = ({
 
         setIsProcessing(true);
 
-        const basePath = categoryConfig.path;
+        const store = await getActiveStore(category);
+        const basePath = positionsPath(category, store);
         const oldPath = `${basePath}/${currentRoleKey}`;
         const newPath = `${basePath}/${newKey}`;
 
@@ -77,7 +80,9 @@ const RenameRoleKeyModal = ({
             }
 
             // 2. Copy data to the new key
-            await set(ref(database, newPath), currentRoleData);
+            await set(ref(database, newPath), store === 'nouveau'
+                ? toStoredPosition(currentRoleData)
+                : toLegacyPosition(currentRoleData, category.legacyGroup));
 
             // 3. Delete the old key
             await remove(ref(database, oldPath));
@@ -88,8 +93,8 @@ const RenameRoleKeyModal = ({
                 sendAdminActionWebhook(
                     adminUserEmail,
                     "Clé de rôle renommée",
-                    `Catégorie : ${categoryConfig.displayName}\nAncienne clé : ${currentRoleKey}\nNouvelle clé : ${newKey}\nNom d'affichage du rôle : ${currentRoleData.displayName || 'N/A'}`,
-                    categoryConfig.displayName
+                    `Catégorie : ${category.label}\nAncienne clé : ${currentRoleKey}\nNouvelle clé : ${newKey}\nNom du poste : ${currentRoleData.nom || 'N/A'}`,
+                    category.label
                 );
             }
 
@@ -114,15 +119,16 @@ const RenameRoleKeyModal = ({
         <div style={modalOverlayStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
                 <BootstrapModal.Header style={modalHeaderStyle} closeButton={false}> {/* Remove default closeButton if using custom */}
-                    <BootstrapModal.Title style={modalTitleStyle}>Renommer la clé de rôle : {currentRoleData?.displayName || currentRoleKey}</BootstrapModal.Title>
+                    <BootstrapModal.Title style={modalTitleStyle}>Renommer la clé du poste : {currentRoleData?.nom || currentRoleKey}</BootstrapModal.Title>
                     <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 </BootstrapModal.Header>
                 <BootstrapModal.Body style={modalBodyStyle}>
                     <p>Clé actuelle : <strong>{currentRoleKey}</strong></p>
+                    <p className="text-warning small">Les candidatures déjà déposées gardent l'ancienne clé comme référence du poste.</p>
                     <p className="text-warning small">
                         Attention : Renommer la clé modifie son identifiant dans la base de données.
-                        Il s'agit d'un changement technique et n'affecte pas le "Nom d'affichage" visible par les utilisateurs, sauf si vous modifiez également le rôle.
-                        Assurez-vous que la nouvelle clé est unique et ne contient pas d'espaces ni de caractères invalides pour Firebase (par exemple, ., $, #, [, ], /).
+                        Il s'agit d'un changement technique et n'affecte pas le nom du poste visible par les utilisateurs.
+                        Assurez-vous que la nouvelle clé est unique et ne contient pas de caractères invalides pour Firebase (., $, #, [, ], /).
                     </p>
                     <Form onSubmit={handleSubmit}>
                         <Form.Group className="mb-3">
@@ -132,11 +138,11 @@ const RenameRoleKeyModal = ({
                                 value={newKey}
                                 onChange={handleNewKeyChange}
                                 required
-                                placeholder="Enter new unique key (no spaces/invalid chars)"
+                                placeholder="Nouvelle clé unique (sans . # $ [ ] /)"
                                 disabled={isProcessing}
                             />
                             <Form.Text className="text-muted">
-                                Les espaces seront remplacés par des underscores. Les caractères invalides seront supprimés.
+                                Les caractères invalides pour Firebase sont supprimés automatiquement.
                             </Form.Text>
                         </Form.Group>
                         {error && <p className="text-danger mt-2 mb-0">{error}</p>}

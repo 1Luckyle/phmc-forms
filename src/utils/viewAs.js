@@ -12,7 +12,7 @@
 //     écrire au nom d'un faux profil ;
 //   • la simulation ne vit que dans le navigateur de l'admin (localStorage) et n'est honorée que si le
 //     vrai compte est administrateur.
-import { getRoleInfo, familyOfMember } from '../constants/ranks';
+import { getRoleInfo, familiesOfMember } from '../constants/ranks';
 
 const KEY = 'debugViewAs';
 
@@ -89,7 +89,8 @@ export const deriveIdentity = ({ employeeProfile, civilianProfile, adminStaffPro
     const isPhmcStaff = staffProfile?.type === 'phmc';
     // Personnel SOIGNANT : famille « PHMC · Soignant » (médecins, infirmiers, paramédicaux, autres professions de
     // santé). Ni l'administration, ni le polyvalent, ni le DMEC n'en font partie.
-    const isCareStaff = !!staffProfile && familyOfMember(staffProfile, staffProfile.type) === 'soignant';
+    // Avec le cumul de rôles, il suffit que l'UNE des familles de la personne soit soignante.
+    const isCareStaff = !!staffProfile && familiesOfMember(staffProfile, staffProfile.type).includes('soignant');
     return {
         isCivilian,
         staffProfile,
@@ -114,6 +115,8 @@ export const getToolAccess = (identity) => {
         myProfile: isStaffMember,
         myContracts: isStaffMember || !!isContractCandidate || !!isRecruiter,
         myPatientFile: isStaffMember,
+        // Le Bingo est réservé au personnel (une fiche du personnel) : ni visiteurs, ni Civils, ni candidats.
+        bingo: isStaffMember,
         savedReports: !!currentEmployee,
         patientDossier: !isCivilian && !!(currentEmployee || isAdmin),
         recruitment: !!canManageRecruitment,
@@ -126,6 +129,7 @@ export const TOOL_ACCESS_LABELS = {
     myProfile: 'Mon profil',
     myContracts: 'Mes contrats',
     myPatientFile: 'Mon dossier patient',
+    bingo: 'Bingo',
     savedReports: 'Rapports enregistrés',
     patientDossier: 'Dossier Patient',
     recruitment: 'Gestion du recrutement',

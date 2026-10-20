@@ -15,6 +15,7 @@ import UserStats from '../UserStats';
 import EmailChangeFlow from '../../EmailChangeFlow';
 import AdminReportsTools from '../AdminReportsTools';
 import RankMigrationPanel from './RankMigrationPanel';
+import RecruitmentMigrationPanel from './RecruitmentMigrationPanel';
 import { sendAdminActionWebhook } from '../adminUtils';
 import {
     StaffEditDialog, RemoveStaffDialog, ConvertToCivilDialog, ConvertToStaffDialog,
@@ -24,6 +25,7 @@ import {
     setRecruiterRole, saveCivilianProfile, deleteCivilianAccount,
 } from '../../../utils/staffAdmin';
 import { STAFF_FAMILIES } from '../../../constants/ranks';
+import { loadContractCandidates } from '../../../utils/contractCandidates';
 
 const matches = (query, ...values) => {
     const q = query.trim().toLowerCase();
@@ -75,6 +77,8 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, show
     const [removing, setRemoving] = useState(null);
     const [toCivil, setToCivil] = useState(null);
 
+    // Avec le cumul de rôles, une personne n'est comptée qu'UNE fois : par la famille de son rôle principal
+    // (ses badges montrent quand même toutes ses familles). Les filtres suivent les mêmes compteurs.
     const familyCounts = useMemo(() => {
         const counts = {};
         staff.forEach((m) => { counts[m.family] = (counts[m.family] || 0) + 1; });
@@ -82,7 +86,7 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, show
     }, [staff]);
 
     const rows = useMemo(() => staff.filter((m) => (family === 'all' || m.family === family)
-        && matches(query, m.displayName, rankLabel(m.service, m.rank || m.category), m.serviceDirige, m.badge, m.discord, m.email, m.phNumber)),
+        && matches(query, m.displayName, rankLabel(m.service, m.rank || m.category), ...m.extraRanks, m.serviceDirige, m.badge, m.discord, m.email, m.phNumber)),
     [staff, family, query]);
 
     const toggleRecruiter = async (member) => {
@@ -139,13 +143,14 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, show
                                     <tr>
                                         <td className="fw-semibold">
                                             {m.displayName}{' '}
-                                            <RoleBadge role={m.family} />
+                                            {m.families.map((f) => <React.Fragment key={f}><RoleBadge role={f} />{' '}</React.Fragment>)}
                                             {recruiterUids[m.uid] === true && <> <RoleBadge role="recruiter" /></>}
                                             {adminUids[m.uid] === true && <> <RoleBadge role="admin" /></>}
                                             {m.uid && civilUids.has(m.uid) && <small className="text-muted ms-1" title="Ce compte a aussi un profil Civil (conservé)">+ profil Civil</small>}
                                         </td>
                                         <td>
                                             {rankLabel(m.service, m.rank || m.category)}
+                                            {m.extraRanks.length > 0 && <small className="d-block text-muted">+ {m.extraRanks.join(' · ')}</small>}
                                             {m.serviceDirige && <small className="d-block text-muted">Service : {m.serviceDirige}</small>}
                                         </td>
                                         <td>{m.badge || '—'}</td>
@@ -251,7 +256,7 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
 // ───────────────────────────── Civils (comptes Civils purs) ─────────────────────────────
 // Un Civil « pur » n'a pas de fiche du personnel. Une personne qui a une fiche (y compris un recruteur) est
 // dans l'onglet Personnel, même si elle garde aussi son profil Civil.
-const CiviliansTab = ({ civilians, recruiterUids, adminEmail, showNotification, reload }) => {
+const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, adminEmail, showNotification, reload }) => {
     const [query, setQuery] = useState('');
     const [editing, setEditing] = useState(null);
     const [toStaff, setToStaff] = useState(null); // { civilian, recruiter }
@@ -309,6 +314,11 @@ const CiviliansTab = ({ civilians, recruiterUids, adminEmail, showNotification, 
                                     <td>{c.discord || '—'}</td>
                                     <td>
                                         <RoleBadge role="civil" />
+                                        {candidateRoles[c.uid] && (
+                                            <> <Badge bg="info" text="dark" title={candidateRoles[c.uid].poste ? `Candidat accepté pour : ${candidateRoles[c.uid].poste}` : 'Candidat accepté'}>
+                                                En attente de contrat{candidateRoles[c.uid].role ? ` · ${candidateRoles[c.uid].role}` : ''}
+                                            </Badge></>
+                                        )}
                                         {flaggedRecruiter && <> <span title="Ancien recruteur resté Civil : créez sa fiche du personnel"><RoleBadge role="recruiterNoFile" /></span></>}
                                     </td>
                                     <td className="text-end">
@@ -337,6 +347,7 @@ const CiviliansTab = ({ civilians, recruiterUids, adminEmail, showNotification, 
 
             <CivilianEditDialog show={!!editing} onHide={() => setEditing(null)} civilian={editing} showNotification={showNotification} onDone={reload} />
             <ConvertToStaffDialog show={!!toStaff} onHide={() => setToStaff(null)} civilian={toStaff?.civilian || null} presetRecruiter={!!toStaff?.recruiter}
+                suggestedRole={toStaff?.civilian ? (candidateRoles[toStaff.civilian.uid]?.role || '') : ''}
                 adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
             <Modal show={!!deleting} onHide={() => setDeleting(null)} centered>
                 <Modal.Header closeButton><Modal.Title>Supprimer le compte Civil</Modal.Title></Modal.Header>
@@ -466,6 +477,7 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
     const [civilians, setCivilians] = useState([]);
     const [recruiterUids, setRecruiterUids] = useState({});
     const [adminUids, setAdminUids] = useState({});
+    const [candidateRoles, setCandidateRoles] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
 
@@ -473,9 +485,10 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
         setIsLoading(true);
         setLoadError('');
         try {
-            const [staffList, civilList, recruiters, admins] = await Promise.all([
-                loadStaffMembers(), loadCivilians(), loadRecruiterUids(), loadAdminUids().catch(() => ({})),
+            const [staffList, civilList, recruiters, admins, candidates] = await Promise.all([
+                loadStaffMembers(), loadCivilians(), loadRecruiterUids(), loadAdminUids().catch(() => ({})), loadContractCandidates().catch(() => ({})),
             ]);
+            setCandidateRoles(candidates);
             setStaff(staffList);
             setCivilians(civilList);
             setRecruiterUids(recruiters);
@@ -526,11 +539,13 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                 {isLoading && tab !== 'tools' ? <div className="text-center py-5"><Spinner animation="border" /></div> : (
                     <div className="uh-panel">
                         {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} recruiterUids={recruiterUids} adminUids={adminUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
-                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} candidateRoles={candidateRoles} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
                         {tab === 'recruiters' && <RecruitersTab staff={staff} civilians={civilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
                         {tab === 'tools' && (
                             <>
                                 <RankMigrationPanel adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
+                                <hr />
+                                <RecruitmentMigrationPanel adminEmail={adminEmail} showNotification={showNotification} />
                                 <hr />
                                 <div className="d-flex gap-2 flex-wrap mb-2">
                                     <Button variant="outline-secondary" onClick={onOpenMigrationTools}>

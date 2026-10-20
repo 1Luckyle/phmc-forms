@@ -83,10 +83,10 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
                         <ListGroup.Item key={c.id} action active={c.id === selectedId} onClick={() => { setSelectedId(c.id); setAgreed(false); setError(''); }}
                             className="d-flex justify-content-between align-items-center">
                             <span>
-                                {c.fields?.position || 'Contrat'} — {c.fields?.contractType === 'cdd' ? 'CDD' : 'CDI'}
-                                <small className="d-block opacity-75">Envoyé par {c.createdByName || 'le recrutement'}{c.sentAt ? ` le ${new Date(c.sentAt).toLocaleDateString('fr-FR')}` : ''}</small>
+                                {c.champs?.poste || 'Contrat'} — {c.champs?.typeContrat === 'cdd' ? 'CDD' : 'CDI'}
+                                <small className="d-block opacity-75">Envoyé par {c.creeParNom || 'le recrutement'}{c.envoyeLe ? ` le ${new Date(c.envoyeLe).toLocaleDateString('fr-FR')}` : ''}</small>
                             </span>
-                            <Badge bg={CONTRACT_STATUS[c.status]?.variant || 'secondary'}>{CONTRACT_STATUS[c.status]?.label || c.status}</Badge>
+                            <Badge bg={CONTRACT_STATUS[c.statut]?.variant || 'secondary'}>{CONTRACT_STATUS[c.statut]?.label || c.statut}</Badge>
                         </ListGroup.Item>
                     ))}
                 </ListGroup>
@@ -94,14 +94,14 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
 
             {selected && (
                 <>
-                    <ContractDocument text={selected.renderedText} signature={selected.signature} signedAt={selected.signedAt} />
+                    <ContractDocument text={selected.texteFige} signature={selected.signature} signedAt={selected.signeLe} />
                     <div className="d-flex justify-content-end mt-2">
-                        <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(selected.renderedText, showNotification, 'Texte du contrat copié.')}>
+                        <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(selected.texteFige, showNotification, 'Texte du contrat copié.')}>
                             <i className="fas fa-copy me-1"></i>Copier le texte
                         </Button>
                     </div>
 
-                    {selected.status === 'sent' && (
+                    {selected.statut === 'envoye' && (
                         <div className="mt-3">
                             {!signature?.url ? (
                                 <Alert variant="warning" className="mb-0">

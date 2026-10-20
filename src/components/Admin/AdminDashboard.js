@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './AdminDashboard.css';
 import DatabaseEditor from './DatabaseEditor';
 import WebhookLogs from './WebhookLogs';
@@ -70,7 +70,9 @@ const AdminDashboard = ({
     logRefreshTrigger
 }) => {
 
-    const [selectedSection, setSelectedSection] = useState('serviceStatus');
+    // La section peut être imposée par la navigation (ex. retour de « Visualiser en tant que » → Debug).
+    const location = useLocation();
+    const [selectedSection, setSelectedSection] = useState(location.state?.section || 'serviceStatus');
     const imgbbQueueCount = useImgbbQueueCount();
     const [testWebhookData, setTestWebhookData] = useState({ title: '', message: '', selectedWebhook: null });
     // Gestion du personnel/des civils, déplacée ici depuis la Boîte à Outils

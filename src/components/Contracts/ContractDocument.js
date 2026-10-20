@@ -21,9 +21,9 @@ const ContractDocument = ({ text, signature, signedAt, children }) => {
             {signature && (
                 <div className="contract-doc-signature">
                     <div className="contract-doc-signature-label">
-                        Signé électroniquement par <strong>{signature.signedByName}</strong> le {formatDateTime(signedAt || signature.signedAt)}
+                        Signé électroniquement par <strong>{signature.signeParNom}</strong> le {formatDateTime(signedAt || signature.signeLe)}
                     </div>
-                    <img src={signature.dataUrl || signature.url} alt={`Signature de ${signature.signedByName}`} />
+                    <img src={signature.imageData || signature.url} alt={`Signature de ${signature.signeParNom}`} />
                 </div>
             )}
             {children}

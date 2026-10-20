@@ -1,3 +1,4 @@
+import { matchesPosition } from '../constants/recruitment';
 const generateNursing = (formData) => {
     const {
         // Section 1: Informations personnelles
@@ -68,8 +69,8 @@ const generateNursing = (formData) => {
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
-            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].displayName || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].url || dynamicJobPostingUrl;
+            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
+            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey; // Repli sur la clé elle-même
             console.warn(`Position nursing "${selectedPositionKey}" not found in nursePositionDetailsData.. Using default URL and position key as display name.`);
@@ -82,9 +83,7 @@ const generateNursing = (formData) => {
     // --- BBCode conditionnel pour les sections 1.6 et suivantes ---
     let personalInfoContinuation = '';
 
-    const isSpecificNurseRole =
-        recruitmentPosition === "Registered Nurse" ||
-        recruitmentPosition === "Nurse Practitioner";
+    const isSpecificNurseRole = matchesPosition(positionDetailsMap, recruitmentPosition, { roles: ['Infirmier(ère)', 'Infirmier(ère) en Pratique Avancée'], keys: ['Registered Nurse', 'Nurse Practitioner', "Infirmier(ère) Diplômé(e) d'État (RN)", 'Infirmier(ère) en Pratique Avancée (NP)'] });
 
     if (isSpecificNurseRole) {
         // Structure pour 'Registered Nurse' OU 'Nurse Practitioner'

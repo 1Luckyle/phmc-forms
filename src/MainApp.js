@@ -544,17 +544,17 @@ function MainApp({
 
                 if (definition.group === "PHMC Recruitment") {
                     if (definition.titleKey === "phmcCarrieresMedicales") {
-                        specificPositionData = selectOptions.physicianRecruitmentDetails || {};
+                        specificPositionData = physicianRecruitmentDetails || {};
                     } else if (definition.titleKey === "phmcCarrieresPsychologue") {
-                        specificPositionData = selectOptions.psychPositionDetailsData || {};
+                        specificPositionData = psychRecruitmentDetails || {};
                     } else if (definition.titleKey === "phmcCarrieresAdministration") {
-                        specificPositionData = selectOptions.adminPositionDetailsData || {};
+                        specificPositionData = adminRecruitmentDetails || {};
                     } else if (definition.titleKey === "phmcCarrieresInfirmieres") {
-                        specificPositionData = selectOptions.nursePositionDetailsData || {};
+                        specificPositionData = nurseRecruitmentDetails || {};
                     } else if (definition.titleKey === "phmcCarrieresDMEC") {
-                        specificPositionData = selectOptions.coronerPositionDetailsData || {};
+                        specificPositionData = coronerRecruitmentDetails || {};
                     } else if (definition.titleKey === "phmcCarrieresEMS") {
-                        specificPositionData = selectOptions.emsPositionDetailsData || {};
+                        specificPositionData = emsRecruitmentDetails || {};
                     }
                 }
 
@@ -1386,7 +1386,7 @@ function MainApp({
     // cliquant ; le personnel garde le libellé générique dans tous les
     // contextes. Sur un formulaire de candidature, ce bouton (qui pointe vers
     // savedReports, jamais alimenté par saveJobApplication) est masqué pour un
-    // civil — "Mes candidatures" (jobApplications) est le seul suivi pertinent
+    // civil — "Mes candidatures" (candidatures) est le seul suivi pertinent
     // là, le garder en plus créait une confusion entre deux boutons dont l'un
     // ne menait jamais à rien.
     const savedReportsButtonLabel = isCivilian ? 'Dossier Patient' : 'Rapports Sauvegardés';
@@ -1413,13 +1413,13 @@ function MainApp({
                     show={showAgencyGroupSelectorModal && !selectedAgencyGroup && onboardingComplete}
                     onSelectGroup={handleSelectAgencyGroup}
                     onHideSelectorPreference={handleHideAgencyGroupSelectorPreference}
-                    physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails || {}}
-                    psychRecruitmentDetails={selectOptions.psychPositionDetailsData || {}}
-                    adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
-                    emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
+                    physicianRecruitmentDetails={physicianRecruitmentDetails || {}}
+                    psychRecruitmentDetails={psychRecruitmentDetails || {}}
+                    adminRecruitmentDetails={adminRecruitmentDetails || {}}
+                    emsRecruitmentDetails={emsRecruitmentDetails || {}}
                     handleFormSelect={handleAgencySelect}
-                    nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
-                    coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
+                    nurseRecruitmentDetails={nurseRecruitmentDetails || {}}
+                    coronerRecruitmentDetails={coronerRecruitmentDetails || {}}
                     onShowCctvRequest={handleShowCctvRequestModal}
                 />
 
@@ -1433,12 +1433,12 @@ function MainApp({
                         setShowPHMCModal(false);
                     }}
                     isMobile={isMobile}
-                    physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails}
-                    psychRecruitmentStatus={selectOptions.psychPositionDetailsData}
-                    adminRecruitmentDetails={selectOptions.adminPositionDetailsData}
-                    emsRecruitmentDetails={selectOptions.emsPositionDetailsData}
-                    nurseRecruitmentDetails={selectOptions.nursePositionDetailsData}
-                    coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData}
+                    physicianRecruitmentDetails={physicianRecruitmentDetails}
+                    psychRecruitmentStatus={psychRecruitmentDetails}
+                    adminRecruitmentDetails={adminRecruitmentDetails}
+                    emsRecruitmentDetails={emsRecruitmentDetails}
+                    nurseRecruitmentDetails={nurseRecruitmentDetails}
+                    coronerRecruitmentDetails={coronerRecruitmentDetails}
                     formDefinitions={formDefinitions}
                     userPreferences={userOnboardingPreferences}
                 />
@@ -1812,21 +1812,21 @@ function MainApp({
                                     const currentFormDef = getFormDefinition(bbCodeVersion);
 
                                     if (currentFormDef?.titleKey === "phmcCarrieresMedicales") {
-                                        currentRecruitmentDetailsSource = selectOptions.physicianRecruitmentDetails;
+                                        currentRecruitmentDetailsSource = physicianRecruitmentDetails;
                                     } else if (currentFormDef?.titleKey === "phmcCarrieresPsychologue") {
-                                        currentRecruitmentDetailsSource = selectOptions.psychPositionDetailsData;
+                                        currentRecruitmentDetailsSource = psychRecruitmentDetails;
                                     } else if (currentFormDef?.titleKey === "phmcCarrieresAdministration") {
-                                        currentRecruitmentDetailsSource = selectOptions.adminPositionDetailsData;
+                                        currentRecruitmentDetailsSource = adminRecruitmentDetails;
                                     } else if (currentFormDef?.titleKey === "phmcCarrieresInfirmieres") {
-                                        currentRecruitmentDetailsSource = selectOptions.nursePositionDetailsData;
+                                        currentRecruitmentDetailsSource = nurseRecruitmentDetails;
                                     } else if (currentFormDef?.titleKey === "phmcCarrieresEMS") {
-                                        currentRecruitmentDetailsSource = selectOptions.emsPositionDetailsData;
+                                        currentRecruitmentDetailsSource = emsRecruitmentDetails;
                                     } else if (currentFormDef?.titleKey === "phmcCarrieresDMEC") {
-                                        currentRecruitmentDetailsSource = selectOptions.coronerPositionDetailsData;
+                                        currentRecruitmentDetailsSource = coronerRecruitmentDetails;
                                     }
 
                                     if (currentRecruitmentDetailsSource && currentRecruitmentDetailsSource[formData.recruitmentPosition]) {
-                                        positionDisplayNameForTitle = currentRecruitmentDetailsSource[formData.recruitmentPosition].displayName || formData.recruitmentPosition;
+                                        positionDisplayNameForTitle = currentRecruitmentDetailsSource[formData.recruitmentPosition].nom || formData.recruitmentPosition;
                                     }
 
                                     if (currentRecruitmentDetailsSource && Object.keys(currentRecruitmentDetailsSource).length > 0) {
@@ -2059,17 +2059,20 @@ function MainApp({
                     
                     <div className="output-container">
                         <div className="floating-admin-button-container">
-                            <Button
-                                type="button"
-                                variant="warning"
-                                className="changelog-button"
-                                onClick={() => setShowEmsBingoModal(true)}
-                                title="Ouvrir le Bingo!"
-                                // disabled // [BINGO DISABLED]
-                            >
-                                <i className="fas fa-trophy"></i>
-                                Bingo
-                            </Button>
+                            {/* Bingo : réservé au personnel (voir getToolAccess). */}
+                            {toolAccess.bingo && (
+                                <Button
+                                    type="button"
+                                    variant="warning"
+                                    className="changelog-button"
+                                    onClick={() => setShowEmsBingoModal(true)}
+                                    title="Ouvrir le Bingo!"
+                                    // disabled // [BINGO DISABLED]
+                                >
+                                    <i className="fas fa-trophy"></i>
+                                    Bingo
+                                </Button>
+                            )}
                             <Button
                                 type="button"
                                 variant="danger"
@@ -2087,12 +2090,13 @@ function MainApp({
                             bbCodeVersion={bbCodeVersion}
                             physicianRecruitmentDetails={physicianRecruitmentDetails}
                             psychRecruitmentDetails={psychRecruitmentDetails}
-                            adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
-                            emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
-                            nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
-                            coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
+                            adminRecruitmentDetails={adminRecruitmentDetails || {}}
+                            emsRecruitmentDetails={emsRecruitmentDetails || {}}
+                            nurseRecruitmentDetails={nurseRecruitmentDetails || {}}
+                            coronerRecruitmentDetails={coronerRecruitmentDetails || {}}
                         />
 
+                        {toolAccess.bingo && (
                         <EmsBingoModal
                             show={showEmsBingoModal}
                             onHide={handleHideEmsBingoModal}
@@ -2109,6 +2113,7 @@ function MainApp({
                                 sendPhraseRequestNotification({ requester, phrase, bingoType, commitInfo })
                             }
                         />
+                        )}
 
                         <EmployeeLoginModal
                             show={showLoginModal}
@@ -2356,13 +2361,13 @@ function MainApp({
                             forms={switchableFormsList}
                             handleFormSelect={handleAgencySelect}
                             isMobile={isMobile}
-                            physicianRecruitmentDetails={selectOptions.physicianRecruitmentDetails}
+                            physicianRecruitmentDetails={physicianRecruitmentDetails}
                             psychRecruitmentStatus={psychRecruitmentDetails}
                             formDefinitions={formDefinitions}
-                            adminRecruitmentDetails={selectOptions.adminPositionDetailsData || {}}
-                            nurseRecruitmentDetails={selectOptions.nursePositionDetailsData || {}}
-                            coronerRecruitmentDetails={selectOptions.coronerPositionDetailsData || {}}
-                            emsRecruitmentDetails={selectOptions.emsPositionDetailsData || {}}
+                            adminRecruitmentDetails={adminRecruitmentDetails || {}}
+                            nurseRecruitmentDetails={nurseRecruitmentDetails || {}}
+                            coronerRecruitmentDetails={coronerRecruitmentDetails || {}}
+                            emsRecruitmentDetails={emsRecruitmentDetails || {}}
                             userPreferences={userOnboardingPreferences}
                         />
 

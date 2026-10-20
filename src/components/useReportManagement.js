@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
+import { normalizeApplicationStatus } from '../constants/recruitment';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
 import { database } from '../firebase'; // Assuming this path
 import { ref, get, set } from 'firebase/database';
@@ -1181,43 +1183,43 @@ export const useReportManagement = (
             return { success: false };
         }
 
+        // Identifiant conservé tel quel (« form_{version} ») : le changer dupliquerait les candidatures déjà déposées.
         const applicationId = `form_${bbCodeVersion}`;
-        const applicationPath = `jobApplications/${civilianProfile.uid}/${applicationId}`;
         const bbCodeContent = getBBCodeContent();
         const applicantName = formData.applicantTitleAndFullName
             || `${civilianProfile.firstName || ''} ${civilianProfile.lastName || ''}`.trim();
-        const newStatus = submitAction === 'submit' ? 'submitted' : 'saved';
+        const newStatus = submitAction === 'submit' ? 'soumise' : 'brouillon';
 
         try {
-            const existingSnap = await get(ref(database, applicationPath));
-            const existing = existingSnap.exists() ? existingSnap.val() : null;
+            // Candidature existante (nouveau nœud « candidatures » ou ancien « jobApplications »).
+            const existing = await loadApplication(civilianProfile.uid, applicationId);
 
             // Une décision admin (acceptée/refusée) est définitive : on ne laisse
             // pas un nouvel envoi depuis le formulaire l'écraser silencieusement.
-            if (existing && ['accepted', 'refused'].includes(existing.status)) {
+            if (existing && ['acceptee', 'refusee'].includes(existing.statut)) {
                 showNotification('Cette candidature a déjà été traitée par l\'administration et ne peut plus être modifiée.', 'warning');
                 return { success: false };
             }
 
-            const history = existing?.history ? [...existing.history] : [];
-            history.push({ status: newStatus, timestamp: Date.now() });
+            const historique = existing?.historique ? [...existing.historique] : [];
+            historique.push({ statut: newStatus, horodatage: Date.now() });
 
             const payload = sanitizeForFirebase({
-                applicantUid: civilianProfile.uid,
-                patientID: civilianProfile.patientID,
-                applicantName,
-                position: formData.recruitmentPosition || definition.name,
-                bbCodeVersion,
-                data: filterFormData(formData, bbCodeVersion),
-                bbCode: bbCodeContent,
-                status: newStatus,
-                interviewDateTime: existing?.interviewDateTime || null,
-                createdAt: existing?.createdAt || Date.now(),
-                updatedAt: Date.now(),
-                history,
+                candidatUid: civilianProfile.uid,
+                idPatient: civilianProfile.patientID,
+                nomCandidat: applicantName,
+                poste: formData.recruitmentPosition || definition.name,
+                versionBBCode: bbCodeVersion,
+                donnees: filterFormData(formData, bbCodeVersion),
+                bbcode: bbCodeContent,
+                statut: newStatus,
+                dateEntretien: existing?.dateEntretien || null,
+                creeLe: existing?.creeLe || Date.now(),
+                modifieLe: Date.now(),
+                historique,
             });
 
-            await set(ref(database, applicationPath), payload);
+            await saveApplication(civilianProfile.uid, applicationId, payload);
 
             if (submitAction === 'submit') {
                 // Best-effort : un mail/webhook raté ne doit jamais faire échouer
@@ -1265,14 +1267,8 @@ export const useReportManagement = (
         }
         setIsLoadingJobApplications(true);
         try {
-            const snap = await get(ref(database, `jobApplications/${civilianProfile.uid}`));
-            if (snap.exists()) {
-                const apps = Object.entries(snap.val()).map(([id, app]) => ({ id, ...app }));
-                apps.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-                setMyJobApplications(apps);
-            } else {
-                setMyJobApplications([]);
-            }
+            const apps = await loadApplicationsOf(civilianProfile.uid);
+            setMyJobApplications(apps);
         } catch (error) {
             console.error('Error loading job applications:', error);
             Sentry.captureException(error, { extra: { context: 'loadMyJobApplications' } });
@@ -1289,24 +1285,23 @@ export const useReportManagement = (
     const updateJobApplicationStatus = useCallback(async (applicantUid, applicationId, newStatus, extra = {}) => {
         if (!applicantUid || !applicationId || !newStatus) return { success: false };
         try {
-            const appPath = `jobApplications/${applicantUid}/${applicationId}`;
-            const snap = await get(ref(database, appPath));
-            if (!snap.exists()) {
+            const existing = await loadApplication(applicantUid, applicationId);
+            if (!existing) {
                 showNotification('Candidature introuvable.', 'error');
                 return { success: false };
             }
-            const existing = snap.val();
-            const history = existing.history ? [...existing.history] : [];
-            history.push({ status: newStatus, timestamp: Date.now() });
+            const statut = normalizeApplicationStatus(newStatus);
+            const historique = existing.historique ? [...existing.historique] : [];
+            historique.push({ statut, horodatage: Date.now() });
             const updated = sanitizeForFirebase({
                 ...existing,
                 ...extra,
-                status: newStatus,
-                updatedAt: Date.now(),
-                history,
+                statut,
+                modifieLe: Date.now(),
+                historique,
             });
-            await set(ref(database, appPath), updated);
-            return { success: true, application: updated };
+            await saveApplication(applicantUid, applicationId, updated);
+            return { success: true, application: { ...updated, id: applicationId } };
         } catch (error) {
             console.error('Error updating job application status:', error);
             Sentry.captureException(error, { extra: { context: 'updateJobApplicationStatus', applicantUid, applicationId, newStatus } });

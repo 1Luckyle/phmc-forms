@@ -60,8 +60,8 @@ const generateAdmin = (formData) => {
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
-            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].displayName || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].url || dynamicJobPostingUrl;
+            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
+            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             console.warn(`Admin Position "${selectedPositionKey}" not found in adminPositionDetailsData. Using default URL and position key as display name.`);

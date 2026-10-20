@@ -73,8 +73,8 @@ const generatePhysician = (formData) => {
     if (formData.recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = formData.recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
-            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].displayName;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].url;
+            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom;
+            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             // Updated console warning to reflect the new variable name

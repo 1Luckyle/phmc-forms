@@ -11,6 +11,7 @@
 // les <select> les affichent, avec une valeur de repli si la liste est vide.
 
 import { buildEmployerSummaryBBCode } from './employerSummary';
+import { getCategoryPositions } from '../constants/recruitment';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -334,7 +335,7 @@ const recruitmentBase = (h) => ({
 const openPosition = (details, optionValues = null) => {
     const entries = details && typeof details === 'object' ? details : {};
     const keys = optionValues && optionValues.length > 0 ? optionValues : Object.keys(entries);
-    const open = keys.find((k) => entries[k]?.status !== 'CLOSED');
+    const open = keys.find((k) => entries[k]?.statut !== 'FERMÉ' && entries[k]?.status !== 'CLOSED');
     return open || keys[0] || '';
 };
 
@@ -671,36 +672,35 @@ const TEMPLATES = {
     // Candidatures
     50: (h) => ({
         ...recruitmentBase(h),
-        recruitmentPosition: openPosition(h.selectOptions.physicianRecruitmentDetails),
+        recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'medecine')),
         applicantDOB: h.patient.dob,
         applicantBirthPlace: 'Los Santos, San Andreas',
     }),
     51: (h) => ({
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(
-            h.selectOptions.psychPositionDetailsData,
-            h.list('psychRecruitmentPositions').map((o) => o.value)
+            getCategoryPositions(h.selectOptions, 'psychologie')
         ),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     52: (h) => ({
         ...recruitmentBase(h),
-        recruitmentPosition: openPosition(h.selectOptions.adminPositionDetailsData),
+        recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'administration')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     53: (h) => ({
         ...recruitmentBase(h),
-        recruitmentPosition: openPosition(h.selectOptions.nursePositionDetailsData),
+        recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'soinsInfirmiers')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     54: (h) => ({
         ...recruitmentBase(h),
-        recruitmentPosition: openPosition(h.selectOptions.coronerPositionDetailsData),
+        recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'medecineLegale')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     55: (h) => ({
         ...recruitmentBase(h),
-        recruitmentPosition: openPosition(h.selectOptions.emsPositionDetailsData),
+        recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'paramedical')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
         emsLicenseLink: h.img(),
         emsPartTimeReason: LOREM_SHORT,

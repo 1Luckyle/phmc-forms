@@ -1,5 +1,6 @@
 // src/components/SwitchableFormsModal.js
 import React, { useEffect, useState } from 'react'; // Added useState
+import { isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Image } from 'react-bootstrap';
 import { getPrimaryFormsForUserType } from '../formDefinitions';
 
@@ -109,13 +110,13 @@ const getRecruitmentButtonProps = (
 
     if (statusKnown) {
         Object.values(positionDetailsForGroup).forEach(position => {
-            if (position.status === "OPEN") {
+            if (isPositionOpen(position)) {
                 overallRecruitmentOpen = true;
-                openPositionDetails.push(position.displayName);
-            } else if (position.status === "CLOSED") {
-                closedPositionDetails.push(position.displayName);
+                openPositionDetails.push(position.nom);
+            } else if (isPositionClosed(position)) {
+                closedPositionDetails.push(position.nom);
             }
-            allPositionsStatusMessages.push(`${position.displayName}: ${position.status || 'N/A'}`);
+            allPositionsStatusMessages.push(`${position.nom}: ${position.statut || 'N/A'}`);
         });
     }
 

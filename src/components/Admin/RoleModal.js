@@ -1,43 +1,35 @@
 // src/components/Admin/RoleModal.js
+//
+// Fenêtre d'ajout / de modification d'un POSTE de recrutement, en français : les champs suivent le schéma
+// de constants/recruitment.js (nom, statut OUVERT/FERMÉ, contact, codeCourt, lien, presentation,
+// competence1-3, diplome). Chaque poste est relié à un RÔLE du personnel (référentiel constants/ranks.js) :
+// c'est le rôle que la personne recevra à l'embauche (conversion en personnel, contrat).
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Form as BootstrapForm, Spinner } from 'react-bootstrap';
 import { database } from '../../firebase';
-import { ref, set, get } from "firebase/database"; // Removed 'update' as 'set' is used for both add/edit
+import { ref, get } from "firebase/database";
 import ReactDOM from 'react-dom';
 import DebugFillButton from '../DebugFillButton';
+import { STAFF_FAMILIES, rolesByFiliere, normalizeRank } from '../../constants/ranks';
+import { STATUT_OUVERT, STATUT_FERME, makePositionKey } from '../../constants/recruitment';
+import { savePosition, positionsPath, getActiveStore } from '../../utils/recruitmentStore';
 
-// Helper to map categoryKey to the correct group identifier for Firebase
-const getGroupIdentifier = (categoryKey) => {
-    const map = {
-        physician: "Physician",
-        psych: "Psych",
-        admin: "Admin",
-        nursing: "Nurse",
-        ems: "EMS",
-        coroner: "Coroner",
-        saaa: "SAAA", // Assuming SAAA roles should also have group: "SAAA"
-    };
-    // Fallback to capitalizing the categoryKey if not in the specific map,
-    // or return as is if it's already in the desired format.
-    return map[categoryKey] || (categoryKey ? categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1) : 'Unknown');
-};
-
-// Define initialRoleState outside the component
-const getInitialRoleState = (categoryDisplayName = '') => ({
-    displayName: '',
-    group: categoryDisplayName, // This is for display in the form (read-only)
-    status: 'OPEN',
-    poc: '',
-    shortCode: '',
-    url: '',
-    Overview: '',
-    skill1: '',
-    skill2: '',
-    skill3: '',
-    EduRequirement: '',
+const getInitialRoleState = (category) => ({
+    nom: '',
+    groupe: category?.key || '',
+    statut: STATUT_OUVERT,
+    role: '',
+    contact: '',
+    codeCourt: '',
+    lien: '',
+    presentation: '',
+    competence1: '',
+    competence2: '',
+    competence3: '',
+    diplome: '',
 });
 
-// --- Custom Modal Styles (remain the same) ---
+// --- Styles ---
 const modalOverlayStyle = {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.65)', display: 'flex',
@@ -62,10 +54,10 @@ const modalFooterStyle = {
     display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #444',
     paddingTop: '20px', marginTop: '25px',
 };
-// --- End Custom Modal Styles ---
 
-const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification, onRoleSaved, roleToEdit }) => {
-    const initialRoleState = useMemo(() => getInitialRoleState(categoryConfig?.displayName || ''), [categoryConfig?.displayName]);
+// `category` : catégorie de recrutement (RECRUITMENT_CATEGORIES). `roleToEdit` : poste français (avec `cle`).
+const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, roleToEdit }) => {
+    const initialRoleState = useMemo(() => getInitialRoleState(category), [category]);
     const [roleData, setRoleData] = useState(() => roleToEdit ? { ...initialRoleState, ...roleToEdit } : initialRoleState);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
@@ -75,7 +67,9 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
 
     useEffect(() => {
         if (show) {
-            const initial = roleToEdit ? { ...initialRoleState, ...roleToEdit } : initialRoleState;
+            const initial = roleToEdit
+                ? { ...initialRoleState, ...roleToEdit, role: normalizeRank(roleToEdit.role || '') }
+                : initialRoleState;
             setRoleData(initial);
             setBaseline(JSON.stringify(initial));
             setError('');
@@ -83,45 +77,38 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
     }, [show, roleToEdit, initialRoleState]);
 
     const requiredFields = useMemo(() => [
-        'displayName', 'group', 'shortCode', 'poc', 'url',
-        'Overview', 'skill1', 'skill2', 'skill3', 'EduRequirement'
+        'nom', 'codeCourt', 'contact', 'lien', 'presentation', 'competence1', 'competence2', 'competence3', 'diplome',
     ], []);
-
-    const [isFormValid, setIsFormValid] = useState(false);
-
-    useEffect(() => {
-        const validateForm = () => requiredFields.every(field => roleData.hasOwnProperty(field) && String(roleData[field]).trim() !== '');
-        setIsFormValid(validateForm());
-    }, [roleData, requiredFields]);
+    const isFormValid = requiredFields.every((field) => String(roleData[field] ?? '').trim() !== '');
 
     // CRÉATION : tous les champs sont requis. MODIFICATION : le bouton s'active dès qu'un champ change
     // (un poste existant peut avoir des champs vides — anciens postes — sans qu'on puisse alors
-    // enregistrer la moindre correction) ; seul le nom affiché doit rester renseigné.
+    // enregistrer la moindre correction) ; seul le nom doit rester renseigné.
     const isDirty = baseline !== '' && JSON.stringify(roleData) !== baseline;
     const canSave = roleToEdit
-        ? isDirty && String(roleData.displayName || '').trim() !== ''
+        ? isDirty && String(roleData.nom || '').trim() !== ''
         : isFormValid;
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
-        setRoleData(prev => ({ ...prev, [name]: value }));
+        setRoleData((prev) => ({ ...prev, [name]: value }));
     }, []);
 
-    // Mode debug : remplit un rôle de test (le nom d'un rôle existant en
-    // modification n'est pas touché : il détermine la clé Firebase).
+    // Mode debug : remplit un poste de test (le nom d'un poste existant en modification n'est pas touché :
+    // il détermine la clé Firebase).
     const handleDebugFill = useCallback(() => {
-        setRoleData(prev => ({
+        setRoleData((prev) => ({
             ...prev,
-            ...(roleToEdit ? {} : { displayName: '[TEST] Poste de démonstration' }),
-            status: 'OPEN',
-            poc: 'Testeur Debug (testeur.debug)',
-            shortCode: 'TEST-DBG',
-            url: 'https://phmc.gta.world/viewtopic.php?t=10291',
-            Overview: "[TEST] Poste généré par le mode debug pour vérifier l'affichage.",
-            skill1: 'Compétence de test numéro 1',
-            skill2: 'Compétence de test numéro 2',
-            skill3: 'Compétence de test numéro 3',
-            EduRequirement: 'Diplôme de test',
+            ...(roleToEdit ? {} : { nom: '[TEST] Poste de démonstration' }),
+            statut: STATUT_OUVERT,
+            contact: 'Testeur Debug (testeur.debug)',
+            codeCourt: 'TEST-DBG',
+            lien: 'https://phmc.gta.world/viewtopic.php?t=10291',
+            presentation: "[TEST] Poste généré par le mode debug pour vérifier l'affichage.",
+            competence1: 'Compétence de test numéro 1',
+            competence2: 'Compétence de test numéro 2',
+            competence3: 'Compétence de test numéro 3',
+            diplome: 'Diplôme de test',
         }));
     }, [roleToEdit]);
 
@@ -137,60 +124,47 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
 
         if (!canSave) {
             setError(roleToEdit
-                ? 'Modifiez au moins un champ (le nom affiché ne peut pas être vide).'
+                ? 'Modifiez au moins un champ (le nom ne peut pas être vide).'
                 : 'Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.');
             if (showNotification) showNotification('Veuillez remplir tous les champs du formulaire.', 'warning');
             return;
         }
 
-        const roleKeyForFirebase = roleToEdit?.originalKey || roleData.displayName.trim().replace(/[.#$[\]/]/g, '_').replace(/\s+/g, '_');
-        if (!roleKeyForFirebase) {
-            setError('Le nom affiché ne peut pas être vide ou invalide pour la génération de la clé.');
-            if (showNotification) showNotification('Le nom d\'affichage n\'est pas valide pour cette clé.', 'warning');
+        const key = roleToEdit?.cle || makePositionKey(roleData.nom);
+        if (!key) {
+            setError('Le nom ne peut pas être vide ou invalide pour la génération de la clé.');
+            if (showNotification) showNotification('Le nom n\'est pas valide pour cette clé.', 'warning');
+            return;
+        }
+        if (!category) {
+            setError('Configuration de catégorie invalide.');
             return;
         }
 
         setIsSaving(true);
-        if (!categoryConfig || !categoryConfig.path) {
-            setError('Configuration de catégorie invalide.');
-            if (showNotification) showNotification('Erreur de configuration de la catégorie.', 'error');
-            setIsSaving(false);
-            return;
-        }
-
-        const rolePath = `${categoryConfig.path}/${roleKeyForFirebase}`;
-
         try {
+            const store = await getActiveStore(category);
             if (!roleToEdit) {
-                const existingRoleRef = ref(database, rolePath);
-                const snapshot = await get(existingRoleRef);
+                const snapshot = await get(ref(database, `${positionsPath(category, store)}/${key}`));
                 if (snapshot.exists()) {
-                    setError(`Un rôle clé "${roleKeyForFirebase}" existe déjà.`);
-                    if (showNotification) showNotification(`La clé de rôle "${roleKeyForFirebase}" existe déjà.`, 'error');
+                    setError(`Un poste de clé "${key}" existe déjà.`);
+                    if (showNotification) showNotification(`La clé de poste "${key}" existe déjà.`, 'error');
                     setIsSaving(false);
                     return;
                 }
             }
 
-            const dataToSave = { ...roleData };
-            // *** KEY CHANGE: Set the correct 'group' identifier for Firebase ***
-            dataToSave.group = getGroupIdentifier(categoryKey);
+            const { cle, ...position } = roleData; // eslint-disable-line no-unused-vars
+            await savePosition(category, key, { ...position, groupe: category.key }, store);
 
-            await set(ref(database, rolePath), dataToSave);
-
-            if (onRoleSaved) {
-                onRoleSaved({
-                    ...dataToSave,
-                    originalKey: roleKeyForFirebase
-                }, roleToEdit ? 'edited' : 'added');
-            }
+            if (onRoleSaved) onRoleSaved({ ...position, groupe: category.key, cle: key }, roleToEdit ? 'edited' : 'added');
             handleClose();
         } catch (dbError) {
-            setError(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du rôle : ${dbError.message}`);
-            if (showNotification) showNotification(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du rôle. ${dbError.message}`, "error");
+            setError(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du poste : ${dbError.message}`);
+            if (showNotification) showNotification(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du poste. ${dbError.message}`, "error");
         }
         setIsSaving(false);
-    }, [roleData, categoryKey, categoryConfig, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
+    }, [roleData, category, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
 
     useEffect(() => {
         const handleEsc = (event) => {
@@ -202,74 +176,82 @@ const RoleModal = ({ show, onHide, categoryKey, categoryConfig, showNotification
 
     if (!show) return null;
 
-    const modalTitleText = roleToEdit ? ` ${roleToEdit.displayName || roleToEdit.originalKey}` : `Ajouter un nouveau rôle à ${categoryConfig?.displayName || 'Catégorie'}`;
-    const submitButtonText = roleToEdit ? (isSaving ? 'Enregistrement...' : 'Enregistrer les modifications') : (isSaving ? 'Enregistrement...' : 'Enregistrer le rôle');
+    const modalTitleText = roleToEdit ? ` ${roleToEdit.nom || roleToEdit.cle}` : `Ajouter un poste — ${category?.label || 'Catégorie'}`;
+    const submitButtonText = roleToEdit ? (isSaving ? 'Enregistrement...' : 'Enregistrer les modifications') : (isSaving ? 'Enregistrement...' : 'Enregistrer le poste');
 
     const modalPortalContent = (
         <div style={modalOverlayStyle} onClick={handleClose}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <div style={modalHeaderStyle}>
                     <h5 style={modalTitleStyle}>{modalTitleText}</h5>
-                    <Button variant="link" onClick={handleClose} aria-label="Close" style={{ color: '#aaa', textDecoration: 'none', fontSize: '1.5rem', padding: '0 .5rem', lineHeight: 1 }}>
+                    <Button variant="link" onClick={handleClose} aria-label="Fermer" style={{ color: '#aaa', textDecoration: 'none', fontSize: '1.5rem', padding: '0 .5rem', lineHeight: 1 }}>
                         &times;
                     </Button>
                 </div>
                 <div style={modalBodyStyle}>
                     <BootstrapForm onSubmit={handleSubmit} noValidate>
-                        {/* Display Name */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Nom d'affichage *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="displayName" value={roleData.displayName || ''} onChange={handleChange} required placeholder="ex., Senior Paramedic" />
+                            <BootstrapForm.Label>Nom du poste *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" name="nom" value={roleData.nom || ''} onChange={handleChange} required placeholder="ex. Paramedic Sénior" />
                         </BootstrapForm.Group>
 
-                        {/* Group (Read-only, derived from categoryConfig.displayName) */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Groupe (Catégorie) *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="group" value={roleData.group || ''} onChange={handleChange} required readOnly />
+                            <BootstrapForm.Label>Catégorie de recrutement</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" value={category?.label || ''} readOnly />
                         </BootstrapForm.Group>
 
-                        {/* Status */}
+                        <BootstrapForm.Group className="mb-3">
+                            <BootstrapForm.Label>Rôle du personnel obtenu à l'embauche</BootstrapForm.Label>
+                            <BootstrapForm.Select name="role" value={roleData.role || ''} onChange={handleChange}>
+                                <option value="">— Non défini —</option>
+                                {Object.values(STAFF_FAMILIES).map((family) => (
+                                    <optgroup key={family.key} label={family.label}>
+                                        {rolesByFiliere(family.key).flatMap((group) => group.roles).map((role) => (
+                                            <option key={role.value} value={role.value}>{role.label}</option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </BootstrapForm.Select>
+                            <BootstrapForm.Text className="text-muted">
+                                Sert à pré-remplir le rôle quand un candidat accepté devient membre du personnel, et son contrat.
+                            </BootstrapForm.Text>
+                        </BootstrapForm.Group>
+
                         <BootstrapForm.Group className="mb-3">
                             <BootstrapForm.Label>Statut *</BootstrapForm.Label>
-                            <BootstrapForm.Select name="status" value={roleData.status || 'OPEN'} onChange={handleChange} required>
-                                <option value="OPEN">OUVERT</option>
-                                <option value="CLOSED">FERMÉ</option>
+                            <BootstrapForm.Select name="statut" value={roleData.statut || STATUT_OUVERT} onChange={handleChange} required>
+                                <option value={STATUT_OUVERT}>OUVERT</option>
+                                <option value={STATUT_FERME}>FERMÉ</option>
                             </BootstrapForm.Select>
                         </BootstrapForm.Group>
 
-                        {/* POC */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Point de contact (POC) *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="poc" value={roleData.poc || ''} onChange={handleChange} required placeholder="ex., John Doe (johndoe#1234)" />
+                            <BootstrapForm.Label>Point de contact *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" name="contact" value={roleData.contact || ''} onChange={handleChange} required placeholder="ex. Jean Dupont (jeandupont#1234)" />
                         </BootstrapForm.Group>
 
-                        {/* Short Code */}
                         <BootstrapForm.Group className="mb-3">
                             <BootstrapForm.Label>Code court *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="shortCode" value={roleData.shortCode || ''} onChange={handleChange} required placeholder="e.g., SRPARA" />
+                            <BootstrapForm.Control type="text" name="codeCourt" value={roleData.codeCourt || ''} onChange={handleChange} required placeholder="ex. PARAMEDIC" />
                         </BootstrapForm.Group>
 
-                        {/* URL */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>URL de l'application *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="url" name="url" value={roleData.url || ''} onChange={handleChange} required placeholder="https://forum.example.com/link" />
+                            <BootstrapForm.Label>Lien de l'annonce *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="url" name="lien" value={roleData.lien || ''} onChange={handleChange} required placeholder="https://forum.example.com/lien" />
                         </BootstrapForm.Group>
 
-                        {/* Overview */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Aperçu *</BootstrapForm.Label>
-                            <BootstrapForm.Control as="textarea" rows={3} name="Overview" value={roleData.Overview || ''} onChange={handleChange} required placeholder="Bref aperçu du rôle..." />
+                            <BootstrapForm.Label>Présentation du poste *</BootstrapForm.Label>
+                            <BootstrapForm.Control as="textarea" rows={4} name="presentation" value={roleData.presentation || ''} onChange={handleChange} required placeholder="Description du poste, missions…" />
                         </BootstrapForm.Group>
 
-                        {/* Skills */}
-                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Exigence de compétence 1 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill1" value={roleData.skill1 || ''} onChange={handleChange} required placeholder="ex., Advanced Life Support" /></BootstrapForm.Group>
-                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Exigence de compétence 2 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill2" value={roleData.skill2 || ''} onChange={handleChange} required placeholder="ex., Emergency Driving" /></BootstrapForm.Group>
-                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Exigence de compétence 3 *</BootstrapForm.Label><BootstrapForm.Control type="text" name="skill3" value={roleData.skill3 || ''} onChange={handleChange} required placeholder="ex., Patient Assessment" /></BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Compétence requise 1 *</BootstrapForm.Label><BootstrapForm.Control as="textarea" rows={2} name="competence1" value={roleData.competence1 || ''} onChange={handleChange} required placeholder="ex. Soins de réanimation avancés" /></BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Compétence requise 2 *</BootstrapForm.Label><BootstrapForm.Control as="textarea" rows={2} name="competence2" value={roleData.competence2 || ''} onChange={handleChange} required placeholder="ex. Conduite d'urgence" /></BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3"><BootstrapForm.Label>Compétence requise 3 *</BootstrapForm.Label><BootstrapForm.Control as="textarea" rows={2} name="competence3" value={roleData.competence3 || ''} onChange={handleChange} required placeholder="ex. Évaluation du patient" /></BootstrapForm.Group>
 
-                        {/* Education */}
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Exigence d'éducation *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" name="EduRequirement" value={roleData.EduRequirement || ''} onChange={handleChange} required placeholder="ex., Certification EMT-P" />
+                            <BootstrapForm.Label>Diplôme / formation exigés *</BootstrapForm.Label>
+                            <BootstrapForm.Control as="textarea" rows={3} name="diplome" value={roleData.diplome || ''} onChange={handleChange} required placeholder="ex. Certification EMT-P (les diplômes américains restent en anglais : MD, DO, BSN…)" />
                         </BootstrapForm.Group>
 
                         {error && <p className="text-danger mt-2 mb-0">{error}</p>}

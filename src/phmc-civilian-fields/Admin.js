@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { getCategoryPositions, isPositionClosed } from '../constants/recruitment';
 import { Form, Button, InputGroup, Spinner } from 'react-bootstrap'; // Added InputGroup and Spinner
 
 // Helper component for collapsible section headers
@@ -39,7 +40,7 @@ const AdminFields = ({
 
 }) => {
     // Use adminPositionDetailsData from selectOptions for position dropdown
-    const positionDetails = selectOptions?.adminPositionDetailsData || {};
+    const positionDetails = getCategoryPositions(selectOptions, 'administration');
 
     const [isPersonalInfoOpen, setIsPersonalInfoOpen] = useState(true);
     const [isEducationalInfoOpen, setIsEducationalInfoOpen] = useState(true);
@@ -131,10 +132,10 @@ const AdminFields = ({
                                 <option
                                     key={key}
                                     value={key} // Assuming key is the value to store (e.g., "OfficeAssistant")
-                                    style={position.status === "CLOSED" ? { color: 'red', fontWeight: 'bold' } : {}}
-                                    disabled={position.status === "CLOSED"}
+                                    style={isPositionClosed(position) ? { color: 'red', fontWeight: 'bold' } : {}}
+                                    disabled={isPositionClosed(position)}
                                 >
-                                    {position.displayName}{position.status === "CLOSED" ? " (Candidatures fermées)" : ""}
+                                    {position.nom}{isPositionClosed(position) ? " (Candidatures fermées)" : ""}
                                 </option>
                             ))}
                         </Form.Select>

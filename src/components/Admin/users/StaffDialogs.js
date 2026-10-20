@@ -10,7 +10,7 @@ import {
     rankLabel, badgeDigits, buildBadge, staffNameParts, updateStaffMember, addStaffMember,
     removeStaffMember, convertCivilianToStaff, convertStaffToCivilian, setRecruiterRole,
 } from '../../../utils/staffAdmin';
-import { STAFF_FAMILIES, familyOfMember, normalizeRank, RECRUITER_DEFAULT_RANK } from '../../../constants/ranks';
+import { STAFF_FAMILIES, familyOfMember, normalizeRank, getRoleInfo, RECRUITER_DEFAULT_RANK } from '../../../constants/ranks';
 import RolePicker from './RolePicker';
 import { sendAdminActionWebhook } from '../adminUtils';
 import { canonicalPatientId } from '../../../utils/patientId';
@@ -46,6 +46,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
     const [family, setFamily] = useState(defaultFamily);
     const [form, setForm] = useState({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
     const [serviceDirige, setServiceDirige] = useState('');
+    const [extraRanks, setExtraRanks] = useState([]);
     const [recruiter, setRecruiter] = useState(false);
     const [emailShown, setEmailShown] = useState('');
     const { busy, error, setError, run } = useBusy();
@@ -59,6 +60,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             setFamily(familyOfMember(member, member.service));
             setEmailShown(member.email || '');
             setServiceDirige(member.serviceDirige || '');
+            setExtraRanks(member.extraRanks || []);
             setRecruiter(isRecruiter);
             const parts = staffNameParts(member);
             setForm({
@@ -70,6 +72,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
         } else {
             setFamily(defaultFamily);
             setServiceDirige('');
+            setExtraRanks([]);
             setRecruiter(false);
             setForm({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
         }
@@ -87,7 +90,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 `Renommer « ${member.displayName} » en « ${newName} » ?\n\nSes rapports sauvegardés et leurs dossiers patients sont migrés automatiquement vers le nouveau nom. Son ID employé (${member.badge}) ne change pas.`
             )) return;
             const outcome = await updateStaffMember(member, {
-                firstName: form.firstName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige,
+                firstName: form.firstName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige, extraRanks,
             });
             if (member.uid && recruiter !== isRecruiter) {
                 await setRecruiterRole(member.uid, recruiter);
@@ -99,7 +102,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             if (!form.firstName.trim() || !form.lastName.trim()) throw new Error('Prénom et nom obligatoires.');
             await addStaffMember(service, {
                 firstName: form.firstName.trim(), lastName: form.lastName.trim(),
-                discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge, serviceDirige,
+                discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge, serviceDirige, extraRanks,
             });
             sendAdminActionWebhook(adminEmail, 'Membre du personnel ajouté', `Membre : ${form.firstName} ${form.lastName}\nFamille : ${STAFF_FAMILIES[family].label}\nRôle : ${rankLabel(service, form.rank)}`, null, 'Admin');
             showNotification(`${form.firstName} ${form.lastName} ajouté(e) au personnel (sans compte de connexion).`, 'success');
@@ -138,6 +141,8 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     onRankChange={(value) => setForm((p) => ({ ...p, rank: value }))}
                     serviceDirige={serviceDirige}
                     onServiceDirigeChange={setServiceDirige}
+                    extraRanks={extraRanks}
+                    onExtraRanksChange={setExtraRanks}
                     allowedServices={isEdit ? [member.service] : null}
                     idPrefix="staff-edit"
                 />
@@ -307,10 +312,12 @@ export const ConvertToCivilDialog = ({ show, onHide, member, hasCivilProfile, ad
 // rôle par défaut « Chargé de Recrutement ») : il se connecte par le portail personnel et figure dans la liste
 // des membres du PHMC. Ses droits ne changent pas : le droit Recruteur reste une case indépendante du rôle,
 // et son profil Civil est conservé.
-export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter = false, adminEmail, showNotification, onDone }) => {
+// `suggestedRole` : rôle relié au poste de la candidature acceptée (poste de recrutement → rôle), proposé par défaut.
+export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter = false, suggestedRole = '', adminEmail, showNotification, onDone }) => {
     const [family, setFamily] = useState('soignant');
     const [rank, setRank] = useState('');
     const [serviceDirige, setServiceDirige] = useState('');
+    const [extraRanks, setExtraRanks] = useState([]);
     const [recruiter, setRecruiter] = useState(false);
     const [badge, setBadge] = useState('');
     const { busy, error, setError, run } = useBusy();
@@ -318,14 +325,16 @@ export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter =
     useEffect(() => {
         if (!show || !civilian) return;
         setError('');
-        setFamily(presetRecruiter ? 'administration' : 'soignant');
-        setRank(presetRecruiter ? RECRUITER_DEFAULT_RANK : '');
+        const suggested = !presetRecruiter && suggestedRole ? getRoleInfo(suggestedRole) : null;
+        setFamily(presetRecruiter ? 'administration' : (suggested?.pole || 'soignant'));
+        setRank(presetRecruiter ? RECRUITER_DEFAULT_RANK : (suggested?.value || ''));
         setServiceDirige('');
+        setExtraRanks([]);
         setRecruiter(presetRecruiter);
         // L'ID du personnage GTA World sert de badge s'il tient sur 4-5 chiffres ; sinon à saisir.
         const characterId = civilian.gtawCharacterId != null ? String(civilian.gtawCharacterId) : '';
         setBadge(/^\d{4,5}$/.test(characterId) ? characterId : '');
-    }, [show, civilian, presetRecruiter, setError]);
+    }, [show, civilian, presetRecruiter, suggestedRole, setError]);
     if (!civilian) return null;
     const name = `${civilian.firstName || ''} ${civilian.lastName || ''}`.trim() || civilian.email;
     const service = STAFF_FAMILIES[family].service;
@@ -347,6 +356,8 @@ export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter =
                     onRankChange={setRank}
                     serviceDirige={serviceDirige}
                     onServiceDirigeChange={setServiceDirige}
+                    extraRanks={extraRanks}
+                    onExtraRanksChange={setExtraRanks}
                     idPrefix="convert-staff"
                 />
                 <Form.Group className="mb-3">
@@ -364,7 +375,7 @@ export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter =
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
                 <Button variant="success" disabled={busy || !rank || !/^\d{4,5}$/.test(badge)} onClick={() => run(async () => {
-                    await convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue: badge, serviceDirige });
+                    await convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue: badge, serviceDirige, extraRanks });
                     if (recruiter) await setRecruiterRole(civilian.uid, true);
                     sendAdminActionWebhook(adminEmail, recruiter ? 'Civil → Personnel (recruteur)' : 'Civil → Personnel', `Compte : ${name}\nFamille : ${STAFF_FAMILIES[family].label}\nRôle : ${rankLabel(service, rank)}`, null, 'Admin');
                     showNotification(`${name} est maintenant membre du personnel${recruiter ? ' et recruteur' : ''}.`, 'success');

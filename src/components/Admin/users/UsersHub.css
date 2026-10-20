@@ -68,11 +68,16 @@
 
 .uh-chip {
     padding: 3px 12px;
-    background: transparent;
+    background: #fff;
+    color: #212529;
     border: 1px solid #adb5bd;
     border-radius: 999px;
     font-size: 0.85rem;
     cursor: pointer;
+}
+
+.uh-chip:hover {
+    background: #e9ecef;
 }
 
 .uh-chip.on {
@@ -82,6 +87,7 @@
 }
 
 .uh-group-row td {
+    color: #212529;
     background: rgba(13, 110, 253, 0.08);
     border-top: 2px solid #0d6efd;
 }

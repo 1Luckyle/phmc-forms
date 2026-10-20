@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback, use
 import { database } from '../firebase';
 import { ref, get, onValue } from 'firebase/database';
 import { useNotification } from './NotificationContext';
+import { positionsFromSelectOptions } from '../constants/recruitment';
 
 // Define cache segments
 const CACHE_SEGMENTS = {
@@ -49,7 +50,8 @@ export const DataProvider = ({ children }) => {
   const SEGMENT_VERSIONS = {
     [CACHE_SEGMENTS.STAFF]: '1.0',
     [CACHE_SEGMENTS.AGENCIES]: '1.0',
-    [CACHE_SEGMENTS.SELECT_OPTIONS]: '1.0'
+    // 2.0 : postes de recrutement en français (nœuds postes*) — on invalide les anciens caches.
+    [CACHE_SEGMENTS.SELECT_OPTIONS]: '2.0'
   };
 
   const getSegmentVersion = (segment) => SEGMENT_VERSIONS[segment] || '1.0';
@@ -119,12 +121,16 @@ export const DataProvider = ({ children }) => {
         break;
       case CACHE_SEGMENTS.SELECT_OPTIONS:
         setSelectOptions(data || {});
-        setPhysicianRecruitmentDetails(data?.physicianRecruitmentDetails || {});
-        setPsychRecruitmentDetails(data?.psychPositionDetailsData || {});
-        setAdminRecruitmentDetails(data?.adminPositionDetailsData || {});
-        setEmsRecruitmentDetails(data?.emsPositionDetailsData || {});
-        setNurseRecruitmentDetails(data?.nursePositionDetailsData || {});
-        setCoronerRecruitmentDetails(data?.coronerPositionDetailsData || {});
+        // Postes de recrutement au format FRANÇAIS (nouveaux nœuds postes*, ou anciens nœuds anglais avant migration).
+        {
+          const positions = positionsFromSelectOptions(data);
+          setPhysicianRecruitmentDetails(positions.medecine);
+          setPsychRecruitmentDetails(positions.psychologie);
+          setAdminRecruitmentDetails(positions.administration);
+          setEmsRecruitmentDetails(positions.paramedical);
+          setNurseRecruitmentDetails(positions.soinsInfirmiers);
+          setCoronerRecruitmentDetails(positions.medecineLegale);
+        }
         break;
       default:
         console.warn(`Unknown cache segment: ${segment}`);

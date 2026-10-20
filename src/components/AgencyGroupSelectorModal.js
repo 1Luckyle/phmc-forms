@@ -1,5 +1,6 @@
 // src/components/AgencyGroupSelectorModal.js
 import React from 'react'; // Removed useEffect as it's not needed for this change
+import { CATEGORY_BY_KEY, STATUT_OUVERT, STATUT_FERME, isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Form, Image } from 'react-bootstrap';
 import phmcLogo from '../assets/phmc.png';
 
@@ -18,11 +19,11 @@ const getRecruitmentSummaryData = (recruitmentSources) => {
             const positions = [];
 
             Object.values(details).forEach(position => {
-                if (position.status === "OPEN") groupOpenCount++;
-                if (position.status === "CLOSED") groupClosedCount++;
+                if (isPositionOpen(position)) groupOpenCount++;
+                if (isPositionClosed(position)) groupClosedCount++;
                 positions.push({
-                    name: position.displayName + (position.status === "CLOSED" ? " [FERMÉ]" : ""), // MODIFICATION HERE
-                    status: position.status || "N/A"
+                    name: position.nom + (isPositionClosed(position) ? " [FERMÉ]" : ""),
+                    status: position.statut || "N/A"
                 });
             });
 
@@ -124,12 +125,12 @@ const AgencyGroupSelectorModal = ({
 
     // Prepare data for the recruitment summary
     const phmcRecruitmentSources = {
-        Physician: physicianRecruitmentDetails,
-        Psych: psychRecruitmentDetails,
-        Admin: adminRecruitmentDetails,
-        EMS: emsRecruitmentDetails,
-        Nursing: nurseRecruitmentDetails,
-        Coroner: coronerRecruitmentDetails,
+        [CATEGORY_BY_KEY.medecine.label]: physicianRecruitmentDetails,
+        [CATEGORY_BY_KEY.psychologie.label]: psychRecruitmentDetails,
+        [CATEGORY_BY_KEY.administration.label]: adminRecruitmentDetails,
+        [CATEGORY_BY_KEY.paramedical.label]: emsRecruitmentDetails,
+        [CATEGORY_BY_KEY.soinsInfirmiers.label]: nurseRecruitmentDetails,
+        [CATEGORY_BY_KEY.medecineLegale.label]: coronerRecruitmentDetails,
     };
 
     const recruitmentData = getRecruitmentSummaryData(phmcRecruitmentSources);
@@ -243,8 +244,8 @@ const AgencyGroupSelectorModal = ({
                                                         <li
                                                             key={pos.name}
                                                             style={
-                                                                pos.status === "OPEN" ? summaryPositionItemOpenStyle :
-                                                                pos.status === "CLOSED" ? summaryPositionItemClosedStyle :
+                                                                pos.status === STATUT_OUVERT ? summaryPositionItemOpenStyle :
+                                                                pos.status === STATUT_FERME ? summaryPositionItemClosedStyle :
                                                                 summaryPositionItemOtherStyle
                                                             }
                                                             title={`${pos.name}: ${pos.status}`}

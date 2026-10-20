@@ -12,6 +12,7 @@ import '../DarkUi.css';
 import ContractDocument from './ContractDocument';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
+import { normalizeRank, getRoleInfo } from '../../constants/ranks';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
@@ -36,8 +37,8 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
     const [error, setError] = useState('');
 
     const isNew = !contract;
-    const ownContract = !!contract && contract.employeeUid === issuer.uid && !issuer.isAdmin;
-    const readOnly = (!!contract && contract.status !== 'draft') || ownContract;
+    const ownContract = !!contract && contract.employeUid === issuer.uid && !issuer.isAdmin;
+    const readOnly = (!!contract && contract.statut !== 'brouillon') || ownContract;
 
     useEffect(() => {
         if (!show) return;
@@ -45,7 +46,7 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
         setFilter('');
         setEmployeeUid(contract?.employeeUid || '');
         setCandidateService(contract?.service || 'phmc');
-        setFields({ ...emptyContractFields(), ...(contract?.fields || {}) });
+        setFields({ ...emptyContractFields(), ...(contract?.champs || {}) });
     }, [show, contract]);
 
     // Personnel avec un compte de connexion (seul un compte lié peut recevoir et signer).
@@ -64,12 +65,18 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
         setEmployeeUid(uid);
         const picked = staff.find((m) => m.uid === uid);
         // Pré-remplit grade et fonction avec ceux de la fiche (modifiables : c'est parfois une promotion).
-        if (picked && picked.kind === 'staff') setFields((prev) => ({ ...prev, rank: prev.rank || picked.rank || '', position: prev.position || rankLabel(picked.service, picked.rank) }));
+        if (picked && picked.kind === 'staff') {
+            setFields((prev) => ({ ...prev, role: prev.role || normalizeRank(picked.rank || ''), poste: prev.poste || rankLabel(picked.service, picked.rank) }));
+        } else if (picked?.role) {
+            // Candidat accepté : le rôle relié à son poste de recrutement pré-remplit le contrat (service compris).
+            setCandidateService(getRoleInfo(picked.role)?.pole === 'dmec' ? 'coroner' : 'phmc');
+            setFields((prev) => ({ ...prev, role: prev.role || picked.role, poste: prev.poste || picked.poste || picked.role }));
+        }
     };
 
     const preview = useMemo(() => {
-        if (readOnly || !employee || !fields.rank) return null;
-        return renderContract({ service, employeeName: employee.displayName, employeeBadge: employee.badge, fields, issuerName: issuer.name });
+        if (readOnly || !employee || !fields.role) return null;
+        return renderContract({ service, employeeName: employee.displayName, employeeBadge: employee.badge, champs: fields, issuerName: issuer.name });
     }, [readOnly, employee, fields, service, issuer.name]);
 
     const guard = async (fn) => {
@@ -87,10 +94,10 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
         const errors = validateContractFields(fields);
         if (errors.length) throw new Error(errors.join(' '));
         if (thenSend && !window.confirm(`Envoyer le contrat à ${employee.displayName} ?\n\nLe texte sera figé : pour le modifier ensuite, il faudra le retirer.`)) return;
-        const id = await saveContractDraft({ id: contract?.id, employee, service, fields, issuer });
+        const id = await saveContractDraft({ id: contract?.id, employee, service, champs: fields, issuer });
         if (thenSend) {
             await sendContract(id, issuer.name);
-            sendAdminActionWebhook(issuer.email, 'Contrat envoyé', `Employé : ${employee.displayName}\nFonction : ${fields.position}`, null, issuer.label);
+            sendAdminActionWebhook(issuer.email, 'Contrat envoyé', `Employé : ${employee.displayName}\nFonction : ${fields.poste}`, null, issuer.label);
             if (employee.email) {
                 sendEyefindMail({
                     to: employee.email,
@@ -114,15 +121,15 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
     });
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title={isNew ? 'Nouveau contrat' : `Contrat — ${contract.employeeName}`} modalSize="large" zIndex={1100} className="dark-ui">
+        <BaseModal isOpen={show} onClose={onHide} title={isNew ? 'Nouveau contrat' : `Contrat — ${contract.employeNom}`} modalSize="large" zIndex={1100} className="dark-ui">
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 
             {readOnly ? (
                 <>
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                        <Badge bg={CONTRACT_STATUS[contract.status]?.variant}>{CONTRACT_STATUS[contract.status]?.label}</Badge>
-                        {contract.renderedText && (
-                            <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(contract.renderedText, showNotification, 'Texte du contrat copié.')}>
+                        <Badge bg={CONTRACT_STATUS[contract.statut]?.variant}>{CONTRACT_STATUS[contract.statut]?.label}</Badge>
+                        {contract.texteFige && (
+                            <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(contract.texteFige, showNotification, 'Texte du contrat copié.')}>
                                 <i className="fas fa-copy me-1"></i>Copier le texte
                             </Button>
                         )}
@@ -130,13 +137,13 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                     {ownContract && (
                         <Alert variant="info" className="py-2">
                             Il s'agit de votre propre contrat : un recruteur ne peut pas le modifier, c'est un admin ou un autre recruteur qui s'en charge.
-                            {contract.status !== 'signed' && ' Vous le lirez et le signerez depuis « Mes contrats » dès qu\'il vous aura été envoyé.'}
+                            {contract.statut !== 'signe' && ' Vous le lirez et le signerez depuis « Mes contrats » dès qu\'il vous aura été envoyé.'}
                         </Alert>
                     )}
-                    {contract.renderedText
-                        ? <ContractDocument text={contract.renderedText} signature={contract.signature} signedAt={contract.signedAt} />
+                    {contract.texteFige
+                        ? <ContractDocument text={contract.texteFige} signature={contract.signature} signedAt={contract.signeLe} />
                         : <Alert variant="secondary" className="py-2 mb-0">Brouillon en cours de rédaction : le texte n'est visible qu'une fois le contrat envoyé.</Alert>}
-                    {contract.status === 'sent' && !ownContract && (
+                    {contract.statut === 'envoye' && !ownContract && (
                         <div className="mt-3 d-flex justify-content-end">
                             <Button variant="outline-warning" onClick={retract} disabled={busy}>
                                 {busy ? <Spinner size="sm" animation="border" /> : 'Retirer pour modifier'}
@@ -167,14 +174,14 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                                 </Form.Text>
                             </>
                         ) : (
-                            <Form.Control value={`${contract.employeeName} — ${STAFF_SERVICES[service]?.label || service}`} disabled />
+                            <Form.Control value={`${contract.employeNom} — ${STAFF_SERVICES[service]?.label || service}`} disabled />
                         )}
                     </Form.Group>
 
                     {isCandidate && (
                         <Form.Group className="mb-3">
                             <Form.Label>Service</Form.Label>
-                            <Form.Select value={candidateService} onChange={(e) => { setCandidateService(e.target.value); setFields((p) => ({ ...p, rank: '' })); }}>
+                            <Form.Select value={candidateService} onChange={(e) => { setCandidateService(e.target.value); setFields((p) => ({ ...p, role: '' })); }}>
                                 {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                             </Form.Select>
                         </Form.Group>
@@ -182,11 +189,11 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                     <div className="d-flex gap-2 mb-3">
                         <Form.Group className="flex-fill">
                             <Form.Label>Fonction exercée</Form.Label>
-                            <Form.Control value={fields.position} onChange={set('position')} placeholder="ex. Médecin urgentiste" />
+                            <Form.Control value={fields.poste} onChange={set('poste')} placeholder="ex. Médecin urgentiste" />
                         </Form.Group>
                         <Form.Group className="flex-fill">
                             <Form.Label>Grade</Form.Label>
-                            <Form.Select value={fields.rank} onChange={set('rank')}>
+                            <Form.Select value={fields.role} onChange={set('role')}>
                                 <option value="">Sélectionner…</option>
                                 {ranks.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </Form.Select>
@@ -195,39 +202,39 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                     <div className="d-flex gap-2 mb-3 flex-wrap">
                         <Form.Group className="flex-fill">
                             <Form.Label>Type de contrat</Form.Label>
-                            <Form.Select value={fields.contractType} onChange={set('contractType')}>
+                            <Form.Select value={fields.typeContrat} onChange={set('typeContrat')}>
                                 {Object.entries(CONTRACT_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                             </Form.Select>
                         </Form.Group>
                         <Form.Group className="flex-fill">
                             <Form.Label>Date de début</Form.Label>
-                            <Form.Control type="date" value={fields.startDate} onChange={set('startDate')} />
+                            <Form.Control type="date" value={fields.dateDebut} onChange={set('dateDebut')} />
                         </Form.Group>
-                        {fields.contractType === 'cdd' && (
+                        {fields.typeContrat === 'cdd' && (
                             <Form.Group className="flex-fill">
                                 <Form.Label>Date de fin</Form.Label>
-                                <Form.Control type="date" value={fields.endDate} onChange={set('endDate')} />
+                                <Form.Control type="date" value={fields.dateFin} onChange={set('dateFin')} />
                             </Form.Group>
                         )}
                     </div>
                     <div className="d-flex gap-2 mb-3">
                         <Form.Group className="flex-fill">
                             <Form.Label>Rémunération</Form.Label>
-                            <Form.Control value={fields.salary} onChange={set('salary')} placeholder="ex. 85 $ de l'heure" />
+                            <Form.Control value={fields.remuneration} onChange={set('remuneration')} placeholder="ex. 85 $ de l'heure" />
                         </Form.Group>
                         <Form.Group style={{ maxWidth: 190 }}>
                             <Form.Label>Période d'essai (jours)</Form.Label>
-                            <Form.Control inputMode="numeric" value={fields.trialDays} onChange={(e) => setFields((p) => ({ ...p, trialDays: e.target.value.replace(/\D/g, '') }))} placeholder="0 = aucune" />
+                            <Form.Control inputMode="numeric" value={fields.essaiJours} onChange={(e) => setFields((p) => ({ ...p, essaiJours: e.target.value.replace(/\D/g, '') }))} placeholder="0 = aucune" />
                         </Form.Group>
                     </div>
                     <div className="d-flex gap-2 mb-3">
                         <Form.Group className="flex-fill">
                             <Form.Label>Responsable hiérarchique <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Control value={fields.supervisor} onChange={set('supervisor')} />
+                            <Form.Control value={fields.responsable} onChange={set('responsable')} />
                         </Form.Group>
                         <Form.Group className="flex-fill">
                             <Form.Label>Horaires / disponibilités <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Control value={fields.schedule} onChange={set('schedule')} />
+                            <Form.Control value={fields.horaires} onChange={set('horaires')} />
                         </Form.Group>
                     </div>
 
@@ -296,7 +303,8 @@ const ContractsManager = ({ showNotification }) => {
                 displayName: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || c.uid,
                 email: c.email || '',
                 badge: '',
-                position: roleMap[c.uid].position || '',
+                poste: roleMap[c.uid].poste || '',
+                role: roleMap[c.uid].role || '',
             })));
         } catch (err) {
             console.error('Chargement des contrats impossible :', err);
@@ -329,17 +337,17 @@ const ContractsManager = ({ showNotification }) => {
 
     const rows = useMemo(() => {
         const q = query.trim().toLowerCase();
-        return contracts.filter((c) => !q || (c.employeeName || '').toLowerCase().includes(q) || (c.fields?.position || '').toLowerCase().includes(q));
+        return contracts.filter((c) => !q || (c.employeNom || '').toLowerCase().includes(q) || (c.champs?.poste || '').toLowerCase().includes(q));
     }, [contracts, query]);
 
     const handleDelete = async (contract) => {
-        const warning = contract.status === 'signed'
-            ? `Supprimer DÉFINITIVEMENT le contrat SIGNÉ de ${contract.employeeName} ? L'employé n'y aura plus accès.`
-            : `Supprimer le contrat de ${contract.employeeName} ?`;
+        const warning = contract.statut === 'signe'
+            ? `Supprimer DÉFINITIVEMENT le contrat SIGNÉ de ${contract.employeNom} ? L'employé n'y aura plus accès.`
+            : `Supprimer le contrat de ${contract.employeNom} ?`;
         if (!window.confirm(warning)) return;
         try {
             await deleteContract(contract.id);
-            sendAdminActionWebhook(issuer.email, 'Contrat supprimé', `Employé : ${contract.employeeName}\nStatut : ${CONTRACT_STATUS[contract.status]?.label}`, null, issuer.label);
+            sendAdminActionWebhook(issuer.email, 'Contrat supprimé', `Employé : ${contract.employeNom}\nStatut : ${CONTRACT_STATUS[contract.statut]?.label}`, null, issuer.label);
             showNotification('Contrat supprimé.', 'info');
             load();
         } catch (err) {
@@ -365,7 +373,7 @@ const ContractsManager = ({ showNotification }) => {
                     <div className="d-flex flex-wrap gap-2">
                         {candidates.map((candidate) => (
                             <Badge key={candidate.uid} bg="info" text="dark" className="d-inline-flex align-items-center gap-2 py-2">
-                                {candidate.displayName}{candidate.position ? ` · ${candidate.position}` : ''}
+                                {candidate.displayName}{candidate.poste ? ` · ${candidate.poste}` : ''}
                                 <button type="button" className="btn-close btn-sm" style={{ fontSize: '0.6rem' }} aria-label="Retirer le rôle"
                                     title="Retirer le rôle « en attente de contrat »" onClick={() => handleRemoveRole(candidate)}></button>
                             </Badge>
@@ -385,21 +393,21 @@ const ContractsManager = ({ showNotification }) => {
                         <tbody>
                             {rows.map((c) => (
                                 <tr key={c.id}>
-                                    <td className="fw-semibold">{c.employeeName}</td>
-                                    <td>{c.fields?.position || '—'}</td>
-                                    <td>{c.fields?.contractType === 'cdd' ? 'CDD' : 'CDI'}</td>
-                                    <td>{c.fields?.startDate ? new Date(c.fields.startDate).toLocaleDateString('fr-FR') : '—'}</td>
-                                    <td><Badge bg={CONTRACT_STATUS[c.status]?.variant || 'secondary'}>{CONTRACT_STATUS[c.status]?.label || c.status}</Badge></td>
-                                    <td>{c.createdByName || '—'}</td>
+                                    <td className="fw-semibold">{c.employeNom}</td>
+                                    <td>{c.champs?.poste || '—'}</td>
+                                    <td>{c.champs?.typeContrat === 'cdd' ? 'CDD' : 'CDI'}</td>
+                                    <td>{c.champs?.dateDebut ? new Date(c.champs.dateDebut).toLocaleDateString('fr-FR') : '—'}</td>
+                                    <td><Badge bg={CONTRACT_STATUS[c.statut]?.variant || 'secondary'}>{CONTRACT_STATUS[c.statut]?.label || c.statut}</Badge></td>
+                                    <td>{c.creeParNom || '—'}</td>
                                     <td>
                                         <div className="contracts-row-actions">
                                             <Button size="sm" variant="outline-light" onClick={() => setEditing(c)}>
-                                                {c.status === 'draft' && (isAdmin || c.employeeUid !== issuer.uid)
+                                                {c.statut === 'brouillon' && (isAdmin || c.employeUid !== issuer.uid)
                                                     ? <><i className="fas fa-edit me-1"></i>Modifier</>
                                                     : <><i className="fas fa-eye me-1"></i>Voir</>}
                                             </Button>
                                             {/* Un contrat signé ne se supprime que par un admin (règles Firebase). */}
-                                            {(isAdmin || (c.status !== 'signed' && c.employeeUid !== issuer.uid)) && (
+                                            {(isAdmin || (c.statut !== 'signe' && c.employeUid !== issuer.uid)) && (
                                                 <Button size="sm" variant="outline-danger" onClick={() => handleDelete(c)}><i className="fas fa-trash"></i></Button>
                                             )}
                                         </div>

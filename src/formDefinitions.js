@@ -81,9 +81,10 @@ export const generateAdminView = (viewData) => {
 
     if (viewData.adminDisplayData && typeof viewData.adminDisplayData === 'object' && Object.keys(viewData.adminDisplayData).length > 0) {
         const statusEntries = Object.entries(viewData.adminDisplayData).map(([key, position]) => {
-            const displayName = position.displayName || position.name || key;
-            const status = position.status || 'N/A';
-            const statusColor = status === "OPEN" ? "green" : "red";
+            const displayName = position.nom || position.displayName || position.name || key;
+            // adminDisplayData est normalisé en français (statut OUVERT / FERMÉ) ; ancien format toléré.
+            const status = position.statut || (position.status === 'OPEN' ? 'OUVERT' : position.status === 'CLOSED' ? 'FERMÉ' : 'N/A');
+            const statusColor = status === "OUVERT" ? "green" : "red";
             // Format each position and its status, using color for visual cue
             return `${displayName}: [color=${statusColor}]${status}[/color]`;
         });

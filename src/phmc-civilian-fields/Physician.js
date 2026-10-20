@@ -1,5 +1,6 @@
 // c:\Users\cross\Documents\GitHub\phmc-forms\src\phmc-civilian-fields\Physician.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { isPositionClosed } from '../constants/recruitment';
 import { Form, Button, InputGroup, Spinner } from 'react-bootstrap'; // Added InputGroup and Spinner
 
 // Helper component for collapsible section headers (remains the same)
@@ -195,10 +196,10 @@ const PhysicianFields = ({
                                 <option
                                     key={key}
                                     value={key}
-                                    style={position.status === "CLOSED" ? { color: 'red', fontWeight: 'bold' } : {}}
-                                    disabled={position.status === "CLOSED"}
+                                    style={isPositionClosed(position) ? { color: 'red', fontWeight: 'bold' } : {}}
+                                    disabled={isPositionClosed(position)}
                                 >
-                                    {position.displayName}{position.status === "CLOSED" ? " (Candidatures fermées)" : ""}
+                                    {position.nom}{isPositionClosed(position) ? " (Candidatures fermées)" : ""}
                                 </option>
                             ))}
                         </Form.Select>

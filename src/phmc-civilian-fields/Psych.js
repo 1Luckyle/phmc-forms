@@ -1,5 +1,6 @@
 // c:\Users\cross\Documents\GitHub\phmc-forms\src\phmc-civilian-fields\Psych.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { isPositionClosed } from '../constants/recruitment';
 import { Form, Button, InputGroup, Spinner } from 'react-bootstrap'; // Added InputGroup and Spinner
 
 // Helper component for collapsible section headers (from Physician.js)
@@ -55,7 +56,8 @@ const PsychFields = ({
     }) => {
 
     const currentPositionDetails = psychRecruitmentDetails || {};
-    const currentRecruitmentOptions = selectOptions.psychRecruitmentPositions || []; 
+    // Les options sont les postes eux-mêmes (clé = valeur, nom = libellé).
+    const currentRecruitmentOptions = Object.entries(currentPositionDetails).map(([key, position]) => ({ value: key, label: position.nom }));
 
     const selectedRecruitmentPositionValue = formData.recruitmentPosition;
     const selectedRecruitmentPosition = currentRecruitmentOptions.find(
@@ -63,8 +65,7 @@ const PsychFields = ({
     );
 
     const shouldShowSimplifiedLayout =
-        selectedRecruitmentPositionValue === "Counseling Psychologist" ||
-        selectedRecruitmentPositionValue === "Psychologist";
+        ['Psychologue Conseil', 'Psychologue', 'Counseling Psychologist', 'Psychologist'].includes(selectedRecruitmentPositionValue);
 
     const [isPersonalInfoOpen, setIsPersonalInfoOpen] = useState(true);
     const [isEducationalInfoOpen, setIsEducationalInfoOpen] = useState(true);
@@ -219,11 +220,11 @@ const PsychFields = ({
                                 <option
                                     key={opt.value}
                                     value={opt.value}
-                                    disabled={currentPositionDetails[opt.value]?.status === "CLOSED"}
-                                    style={currentPositionDetails[opt.value]?.status === "CLOSED" ? { color: 'red', fontWeight: 'bold' } : {}}
+                                    disabled={isPositionClosed(currentPositionDetails[opt.value])}
+                                    style={isPositionClosed(currentPositionDetails[opt.value]) ? { color: 'red', fontWeight: 'bold' } : {}}
                                 >
                                     {opt.label}
-                                    {currentPositionDetails[opt.value]?.status === "CLOSED" ? " (Candidatures fermées)" : ""}
+                                    {isPositionClosed(currentPositionDetails[opt.value]) ? " (Candidatures fermées)" : ""}
                                 </option>
                             ))}
                         </Form.Select>

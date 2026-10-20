@@ -1,12 +1,11 @@
 // src/components/MyJobApplicationsModal.js
 //
 // Vue Civil "Mes candidatures" (Lot 6 du plan Civil) : suivi de statut +
-// actions (Mettre en pause / Retirer / Candidater) sur jobApplications/{uid}.
+// actions (Mettre en pause / Retirer / Candidater) sur candidatures/{uid} (ancien nœud jobApplications lu aussi).
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Button } from 'react-bootstrap';
-import { ref, remove } from 'firebase/database';
-import { database } from '../firebase';
+import { removeApplication } from '../utils/recruitmentStore';
 import { useDebug } from '../contexts/DebugContext';
 
 const modalStyle = {
@@ -34,17 +33,17 @@ const cardStyle = {
 };
 
 const STATUS_LABELS = {
-    saved: { text: 'Brouillon enregistré', color: '#8b949e' },
-    submitted: { text: 'Candidature envoyée', color: '#58a6ff' },
-    interview_scheduled: { text: 'Entretien programmé', color: '#d29922' },
-    interview_completed: { text: 'Entretien effectué', color: '#d29922' },
-    accepted: { text: 'Acceptée', color: '#3fb950' },
-    refused: { text: 'Refusée', color: '#f85149' },
-    withdrawn: { text: 'Retirée', color: '#8b949e' },
-    paused: { text: 'En pause', color: '#8b949e' },
+    brouillon: { text: 'Brouillon enregistré', color: '#8b949e' },
+    soumise: { text: 'Candidature envoyée', color: '#58a6ff' },
+    entretien_programme: { text: 'Entretien programmé', color: '#d29922' },
+    entretien_effectue: { text: 'Entretien effectué', color: '#d29922' },
+    acceptee: { text: 'Acceptée', color: '#3fb950' },
+    refusee: { text: 'Refusée', color: '#f85149' },
+    retiree: { text: 'Retirée', color: '#8b949e' },
+    en_pause: { text: 'En pause', color: '#8b949e' },
 };
 
-const ACTIVE_STATUSES = ['submitted', 'interview_scheduled', 'interview_completed'];
+const ACTIVE_STATUSES = ['soumise', 'entretien_programme', 'entretien_effectue'];
 
 const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdateStatus, showNotification, onDeleted }) => {
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
@@ -54,7 +53,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdat
     const handleDelete = async (application) => {
         if (!window.confirm('Supprimer définitivement cette candidature de votre historique ?')) return;
         try {
-            await remove(ref(database, `jobApplications/${application.applicantUid}/${application.id}`));
+            await removeApplication(application.candidatUid, application.id);
             showNotification('Candidature supprimée.', 'trash');
             if (onDeleted) onDeleted();
         } catch (error) {
@@ -64,10 +63,10 @@ const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdat
     };
 
     const handleAction = async (application, newStatus) => {
-        const result = await onUpdateStatus(application.applicantUid, application.id, newStatus);
+        const result = await onUpdateStatus(application.candidatUid, application.id, newStatus);
         if (result?.success) {
             showNotification(
-                newStatus === 'submitted' ? 'Candidature (re)soumise.' : 'Statut mis à jour.',
+                newStatus === 'soumise' ? 'Candidature (re)soumise.' : 'Statut mis à jour.',
                 'check-circle'
             );
         }
@@ -87,45 +86,45 @@ const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdat
                         </p>
                     )}
                     {!isLoading && applications.map((application) => {
-                        const statusInfo = STATUS_LABELS[application.status] || { text: application.status, color: '#8b949e' };
+                        const statusInfo = STATUS_LABELS[application.statut] || { text: application.statut, color: '#8b949e' };
                         return (
                             <div key={application.id} style={cardStyle}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <strong>{application.position || 'Poste inconnu'}</strong>
+                                    <strong>{application.poste || 'Poste inconnu'}</strong>
                                     <span style={{ color: statusInfo.color, fontWeight: 'bold' }}>{statusInfo.text}</span>
                                 </div>
-                                {application.interviewDateTime && (
+                                {application.dateEntretien && (
                                     <p style={{ margin: '5px 0', fontSize: '0.9em', color: '#8b949e' }}>
                                         <i className="fas fa-calendar-alt" style={{ marginRight: '6px' }}></i>
-                                        Entretien : {new Date(application.interviewDateTime).toLocaleString()}
+                                        Entretien : {new Date(application.dateEntretien).toLocaleString('fr-FR')}
                                     </p>
                                 )}
                                 <p style={{ margin: '5px 0', fontSize: '0.85em', color: '#8b949e' }}>
-                                    Dernière mise à jour : {application.updatedAt ? new Date(application.updatedAt).toLocaleString() : 'N/A'}
+                                    Dernière mise à jour : {application.modifieLe ? new Date(application.modifieLe).toLocaleString('fr-FR') : 'N/A'}
                                 </p>
                                 <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                    {application.status === 'saved' && (
-                                        <Button size="sm" variant="primary" onClick={() => handleAction(application, 'submitted')}>
+                                    {application.statut === 'brouillon' && (
+                                        <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>
                                             Candidater
                                         </Button>
                                     )}
-                                    {application.status === 'paused' && (
-                                        <Button size="sm" variant="primary" onClick={() => handleAction(application, 'submitted')}>
+                                    {application.statut === 'en_pause' && (
+                                        <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>
                                             Reprendre ma candidature
                                         </Button>
                                     )}
-                                    {ACTIVE_STATUSES.includes(application.status) && (
-                                        <Button size="sm" variant="secondary" onClick={() => handleAction(application, 'paused')}>
+                                    {ACTIVE_STATUSES.includes(application.statut) && (
+                                        <Button size="sm" variant="secondary" onClick={() => handleAction(application, 'en_pause')}>
                                             Mettre en pause
                                         </Button>
                                     )}
-                                    {(ACTIVE_STATUSES.includes(application.status) || application.status === 'saved' || application.status === 'paused') && (
+                                    {(ACTIVE_STATUSES.includes(application.statut) || application.statut === 'brouillon' || application.statut === 'en_pause') && (
                                         <Button
                                             size="sm"
                                             variant="danger"
                                             onClick={() => {
                                                 if (window.confirm('Retirer cette candidature ?')) {
-                                                    handleAction(application, 'withdrawn');
+                                                    handleAction(application, 'retiree');
                                                 }
                                             }}
                                         >

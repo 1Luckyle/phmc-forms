@@ -110,30 +110,30 @@ const PositionInfoModal = ({
         return null;
     }
 
-    const jobInformationContent = `**Poste :** ${positionData.displayName || 'N/A'}
+    const jobInformationContent = `**Poste :** ${positionData.nom || 'N/A'}
 
-**Point de Contact:** ${positionData.poc || '[Aucun contact fourni]'}
+**Point de Contact:** ${positionData.contact || '[Aucun contact fourni]'}
 
 **Aperçu :**
-${positionData.Overview || '[Aucune description de poste n’est disponible.]'}
+${positionData.presentation || '[Aucune description de poste n’est disponible.]'}
 
 Pour plus d'informations détaillées, veuillez consulter l'annonce officielle :
-[url]${positionData.url || 'Aucune URL fournie'}[/url]
+[url]${positionData.lien || 'Aucune URL fournie'}[/url]
     `;
 
     // --- MODIFIED skillsQualificationsContent ---
-    const skillsQualificationsContent = `**Poste :** ${positionData.displayName || 'N/A'}
+    const skillsQualificationsContent = `**Poste :** ${positionData.nom || 'N/A'}
 
 **Compétences requises :**
-- ${positionData.skill1 || '[Compétence 1 non spécifiée]'}
-- ${positionData.skill2 || '[Compétence 2 non spécifiée]'}
-- ${positionData.skill3 || '[Compétence 3 non spécifiée]'}
+- ${positionData.competence1 || '[Compétence 1 non spécifiée]'}
+- ${positionData.competence2 || '[Compétence 2 non spécifiée]'}
+- ${positionData.competence3 || '[Compétence 3 non spécifiée]'}
 
 **Exigences éducatives :**
-- ${positionData.EduRequirement || '[Exigences éducatives non spécifiées]'}
+- ${positionData.diplome || '[Exigences éducatives non spécifiées]'}
 
 Pour plus d'informations détaillées, veuillez consulter l'annonce officielle :
-[url]${positionData.url || 'Aucune URL fournie'}[/url]
+[url]${positionData.lien || 'Aucune URL fournie'}[/url]
     `;
     // --- END MODIFICATION ---
 
@@ -161,7 +161,7 @@ Pour plus d'informations détaillées, veuillez consulter l'annonce officielle 
                     &times;
                 </button>
                 <div style={modalHeaderStyle}>
-                    Informations pour : {positionData.displayName || "Poste sélectionné"}
+                    Informations pour : {positionData.nom || "Poste sélectionné"}
                 </div>
 
                 <div style={buttonContainerStyle}>

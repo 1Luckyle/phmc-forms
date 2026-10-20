@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getCategoryPositions, isPositionClosed, matchesPosition } from '../constants/recruitment';
 import { Form, Button } from 'react-bootstrap';
 
 // Helper component for collapsible section headers
@@ -29,12 +30,12 @@ const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
 
 const EMSFields = ({ formData, handleChange, setFormData, selectOptions
 }) => {
-    const positionDetails = selectOptions?.emsPositionDetailsData || {};
+    const positionDetails = getCategoryPositions(selectOptions, 'paramedical');
 
     const selectedRole = formData.recruitmentPosition || '';
 
-    const isParamedic = selectedRole === 'Paramedic';
-    const isEMT = selectedRole === 'EMT';
+    const isParamedic = matchesPosition(positionDetails, selectedRole, { roles: ['Paramedic'], keys: ['Paramedic'] });
+    const isEMT = matchesPosition(positionDetails, selectedRole, { roles: ['Technicien(ne) Ambulancier(ère) (EMT)'], keys: ['EMT', 'Technicien(ne) Ambulancier(ère) (EMT)'] });
     const isOtherEMS = selectedRole && !isParamedic && !isEMT;
 
     const [openSections, setOpenSections] = useState({
@@ -76,10 +77,10 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                                 <option
                                     key={key}
                                     value={key}
-                                    style={position.status === "CLOSED" ? { color: 'red', fontWeight: 'bold' } : {}}
-                                    disabled={position.status === "CLOSED"}
+                                    style={isPositionClosed(position) ? { color: 'red', fontWeight: 'bold' } : {}}
+                                    disabled={isPositionClosed(position)}
                                 >
-                                    {position.displayName}{position.status === "CLOSED" ? " (Candidatures fermées)" : ""}
+                                    {position.nom}{isPositionClosed(position) ? " (Candidatures fermées)" : ""}
                                 </option>
                             ))}
                         </Form.Select>

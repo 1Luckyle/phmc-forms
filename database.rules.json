@@ -71,7 +71,9 @@
     },
 
     // ─── Options des formulaires & agences ───────────────────────────────────
-    // Les postes de recrutement (statut OUVERT/FERMÉ, description…) sont aussi gérés
+    // Les postes de recrutement sont stockés dans les nœuds postes* (FRANÇAIS : nom, statut OUVERT/FERMÉ,
+    // presentation…) ; les anciens nœuds anglais (physicianRecruitmentDetails…) gardent les mêmes droits jusqu'à
+    // leur nettoyage. Les postes de recrutement (statut OUVERT/FERMÉ, description…) sont aussi gérés
     // par les RECRUTEURS (recruiterUIDs, posé par un admin) : ils n'ont accès en écriture
     // qu'à ces six nœuds, pas au reste de selectOptions, et peuvent AJOUTER ou MODIFIER un
     // poste mais jamais en supprimer un (newData.exists()) : le renommage d'une clé de poste
@@ -79,12 +81,18 @@
     "selectOptions": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
-      "physicianRecruitmentDetails": { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
-      "psychPositionDetailsData":    { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
-      "adminPositionDetailsData":    { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
-      "nursePositionDetailsData":    { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
-      "emsPositionDetailsData":      { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } },
-      "coronerPositionDetailsData":  { "$positionKey": { ".write": "auth != null && root.child('recruiterUIDs').child(auth.uid).val() === true && newData.exists()" } }
+      "physicianRecruitmentDetails": { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "psychPositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "adminPositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "nursePositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "emsPositionDetailsData":      { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "coronerPositionDetailsData":  { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "postesMedecine":                 { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "postesPsychologie":              { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "postesAdministration":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "postesSoinsInfirmiers":          { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "postesParamedical":              { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
+      "postesMedecineLegale":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } }
     },
 
     // ─── Rôle « recruteur » ───────────────────────────────────────────────────
@@ -93,6 +101,14 @@
     // Recrutement de la boîte à outils. Lisible par tout utilisateur connecté (l'app
     // vérifie son propre uid au chargement).
     "recruiterUIDs": {
+      ".read":  "auth != null",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // ─── Droit « Recruteur » (nouveau nom de recruiterUIDs) ───────────────────
+    // recruteurs/{uid}: true — posé/retiré par un admin. recruiterUIDs reste reconnu tant que la migration
+    // « Recrutement en français » n'a pas déplacé les drapeaux (voir les règles qui testent les deux).
+    "recruteurs": {
       ".read":  "auth != null",
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
@@ -290,7 +306,22 @@
           // Suppression : admins ; recruteurs et candidats (pour LEURS candidatures)
           // uniquement tant que l'interrupteur Debug « suppression des candidatures » est
           // activé dans le panneau admin (adminSettings/debugDeleteApplications).
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruiterUIDs').child(auth.uid).val() === true || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true))"
+          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true))"
+        }
+      }
+    },
+
+    // ─── Candidatures (nouveau nom de jobApplications) ────────────────────────
+    // candidatures/{candidatUid}/{candidatureId} — mêmes droits que jobApplications (lecture par tout
+    // connecté, écriture par tout connecté, suppression réservée aux admins ; recruteurs et candidats ne
+    // suppriment les leurs que si le mode Debug « suppression des candidatures » est actif). Les champs
+    // sont en français (statut : brouillon, soumise, entretien_programme, entretien_effectue, acceptee,
+    // refusee, retiree, en_pause). L'ancien nœud jobApplications reste lu jusqu'à sa migration.
+    "candidatures": {
+      ".read": "auth != null",
+      "$candidatUid": {
+        "$candidatureId": {
+          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true))"
         }
       }
     },
@@ -328,56 +359,74 @@
       ".write": false
     },
 
-    // ─── Contrats de travail ──────────────────────────────────────────────────
-    // contracts/{id} : contrat rattaché à un membre du personnel (employeeUid), statut
-    // draft -> sent -> signed (voir src/utils/contracts.js).
-    //   • Lecture de TOUT le nœud : admins et recruteurs. Un employé ne lit que SES contrats
-    //     déjà envoyés (jamais un brouillon), un par un, via l'index contractsByEmployee.
-    //   • Écriture : admins sans restriction ; recruteurs tant que le contrat n'est pas signé,
-    //     sans jamais pouvoir poser le statut « signed » (seul l'employé signe) et sans pouvoir
-    //     créer ni modifier leur PROPRE contrat (employeeUid === leur uid) : c'est un admin ou
-    //     un autre recruteur qui s'en charge.
-    //   • Signature : l'employé destinataire pose signature + signedAt + statut « signed »,
-    //     uniquement depuis « sent » et uniquement avec l'image de SA signature enregistrée
-    //     (userCreations/{uid}/signature).
-    "contracts": {
-      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+    // ─── Contrats de travail (FRANÇAIS) ───────────────────────────────────────
+    // contrats/{id} : contrat rattaché à un membre du personnel, un recruteur ou un candidat accepté
+    // (employeUid), statut brouillon -> envoye -> signe (voir src/utils/contracts.js).
+    //   • Lecture de TOUT le nœud : admins et recruteurs. Un employé ne lit que SES contrats déjà envoyés
+    //     (jamais un brouillon), un par un, via l'index contratsParEmploye.
+    //   • Écriture : admins sans restriction ; recruteurs tant que le contrat n'est pas signé, sans jamais
+    //     pouvoir poser le statut « signe » (seul l'employé signe) et sans pouvoir créer ni modifier leur
+    //     PROPRE contrat (employeUid === leur uid) : c'est un admin ou un autre recruteur qui s'en charge.
+    //   • Signature : l'employé destinataire pose signature + signeLe + statut « signe », uniquement depuis
+    //     « envoye » et uniquement avec l'image de SA signature enregistrée (userCreations/{uid}/signature).
+    "contrats": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
       "$contractId": {
-        ".read": "auth != null && data.child('employeeUid').val() === auth.uid && data.child('status').val() !== 'draft'",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruiterUIDs').child(auth.uid).val() === true && newData.child('status').val() !== 'signed' && (!data.exists() || data.child('status').val() !== 'signed') && newData.child('employeeUid').val() !== auth.uid && data.child('employeeUid').val() !== auth.uid))",
-        ".validate": "newData.hasChildren(['employeeUid', 'status']) && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'sent' || newData.child('status').val() === 'signed')",
-        "status": {
-          ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.val() === 'sent' && newData.val() === 'signed' && newData.parent().child('signature').child('url').exists()"
+        ".read": "auth != null && data.child('employeUid').val() === auth.uid && data.child('statut').val() !== 'brouillon'",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid))",
+        ".validate": "newData.hasChildren(['employeUid', 'statut']) && (newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'envoye' || newData.child('statut').val() === 'signe')",
+        "statut": {
+          ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()"
         },
         "signature": {
-          ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.parent().child('status').val() === 'sent' && !data.exists() && newData.child('signedByUid').val() === auth.uid",
-          ".validate": "newData.child('url').val() === root.child('userCreations').child(auth.uid).child('signature').child('url').val() && (!newData.child('dataUrl').exists() || (newData.child('dataUrl').isString() && newData.child('dataUrl').val().length <= 300000))"
+          ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists() && newData.child('signeParUid').val() === auth.uid",
+          ".validate": "newData.child('url').val() === root.child('userCreations').child(auth.uid).child('signature').child('url').val() && (!newData.child('imageData').exists() || (newData.child('imageData').isString() && newData.child('imageData').val().length <= 300000))"
         },
-        "signedAt": {
-          ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.parent().child('status').val() === 'sent' && !data.exists()"
+        "signeLe": {
+          ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists()"
         }
       }
     },
 
-    // Rôle facultatif « en attente de signature de contrat » : contractCandidates/{uid} = { setBy,
-    // setByName, setAt, applicationId, position }. Posé et retiré par les admins et recruteurs sur
-    // le compte Civil d'un candidat accepté ; lisible par le titulaire (son propre uid).
-    "contractCandidates": {
-      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)"
-      }
-    },
-
-    // Index « mes contrats » : contractsByEmployee/{uid}/{contractId}: true, posé à l'envoi du
-    // contrat et retiré s'il est retiré/supprimé. Lisible par l'employé concerné et les admins.
-    "contractsByEmployee": {
+    // Index « mes contrats » : contratsParEmploye/{uid}/{contractId}: true, posé à l'envoi du contrat et
+    // retiré s'il est retiré/supprimé. Lisible par l'employé concerné et les admins ; un recruteur ne peut pas
+    // s'y ajouter lui-même.
+    "contratsParEmploye": {
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$contractId": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruiterUIDs').child(auth.uid).val() === true && $uid !== auth.uid))"
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid))"
         }
+      }
+    },
+
+    // Rôle facultatif « en attente de signature de contrat » : candidatsContrat/{uid} = { definiPar,
+    // definiParNom, definiLe, candidatureId, poste, role }. Posé et retiré par les admins et recruteurs sur le
+    // compte Civil d'un candidat accepté ; lisible par le titulaire (son propre uid).
+    "candidatsContrat": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid))"
+      }
+    },
+
+    // ─── Anciens nœuds de contrats (anglais) : migration et nettoyage uniquement ──
+    // Remplacés par contrats / contratsParEmploye. contractCandidates reste LU par les recruteurs et son
+    // titulaire tant que la migration n'a pas été faite (rôle « en attente de contrat » déjà posé).
+    "contracts": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+    "contractsByEmployee": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+    "contractCandidates": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))"
       }
     }
   }

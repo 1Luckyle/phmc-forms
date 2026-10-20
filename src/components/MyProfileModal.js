@@ -10,6 +10,7 @@ import BaseModal from './BaseModal';
 import EmailChangeFlow from './EmailChangeFlow';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { updateOwnStaffContact, rankLabel } from '../utils/staffAdmin';
+import { extraRanksOf } from '../constants/ranks';
 
 const MyProfileModal = ({ show, onHide, showNotification }) => {
     const { currentEmployee, staffProfile, staffName, updateLocalStaffProfile } = useEmployeeAuth();
@@ -55,7 +56,8 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                     <div className="mb-3">
                         <div className="fw-semibold">{staffName}</div>
                         <small className="text-muted">
-                            {rankLabel(staffProfile.type, staffProfile.rank)} · Badge {staffProfile.badge || '—'}
+                            {rankLabel(staffProfile.type, staffProfile.rank)}
+                            {extraRanksOf(staffProfile).length > 0 && ` + ${extraRanksOf(staffProfile).join(' · ')}`} · Badge {staffProfile.badge || '—'}
                         </small>
                         <div><small className="text-muted">Le nom, le grade et le badge sont gérés par les administrateurs.</small></div>
                     </div>

@@ -12,7 +12,7 @@
 // poussées : tout passe par des clés lues au moment de l'écriture.
 import { ref, get, set, update, push, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
-import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, sortKeyOfRank } from '../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, familiesOfMember, extraRanksOf, cleanExtraRanks, sortKeyOfRank } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';
 import { sendEyefindMail } from './eyefindMail';
 import { canonicalPatientId } from './patientId';
@@ -63,6 +63,8 @@ export async function loadStaffMembers() {
             members.push({
                 ...entry, service: service.key, storageKey: key, displayName: getEmployeeDisplayName(entry),
                 family: familyOfMember(entry, service.key),
+                families: familiesOfMember(entry, service.key),
+                extraRanks: extraRanksOf(entry),
             });
         });
     }
@@ -79,8 +81,9 @@ export async function loadCivilians() {
 }
 
 export async function loadRecruiterUids() {
-    const snap = await get(ref(database, 'recruiterUIDs'));
-    return snap.exists() ? snap.val() : {};
+    // Droit Recruteur : nœud français « recruteurs » fusionné avec l'ancien « recruiterUIDs » (avant migration).
+    const [newSnap, oldSnap] = await Promise.all([get(ref(database, 'recruteurs')), get(ref(database, 'recruiterUIDs')).catch(() => null)]);
+    return { ...(oldSnap && oldSnap.exists() ? oldSnap.val() : {}), ...(newSnap.exists() ? newSnap.val() : {}) };
 }
 
 // ───────────────────────────── Personnel ─────────────────────────────
@@ -198,7 +201,7 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
 // numéro de badge), pas sur le nom : le prénom et le nom sont modifiables, et les rapports de la
 // personne suivent automatiquement (renameReportOwner). Le numéro de badge — l'ID employé, aussi
 // son ID patient PHMC-{badge} — n'est JAMAIS modifié ici (seul le préfixe suit le grade).
-export async function updateStaffMember(member, { firstName, lastName, rank, discord, phNumber, serviceDirige }) {
+export async function updateStaffMember(member, { firstName, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[member.service];
     const snap = await get(ref(database, cfg.path));
     if (!snap.exists()) throw new Error('Liste du personnel introuvable.');
@@ -232,7 +235,14 @@ export async function updateStaffMember(member, { firstName, lastName, rank, dis
     // Famille (pole) déduite du rôle ; « service dirigé » uniquement pour un Chef de Service.
     const finalRank = updated.rank || current.rank;
     updated.pole = familyOfRank(finalRank, member.service);
-    if (getRoleInfo(finalRank)?.needsServiceDirige) {
+    // Rôles supplémentaires (cumul) : absents du paramètre = inchangés ; liste vide = retirés.
+    if (extraRanks !== undefined) {
+        const cleaned = cleanExtraRanks(extraRanks, finalRank);
+        if (cleaned.length > 0) updated.extraRanks = cleaned;
+        else delete updated.extraRanks;
+    }
+    const allRanks = [finalRank, ...cleanExtraRanks(updated.extraRanks, finalRank)];
+    if (allRanks.some((value) => getRoleInfo(value)?.needsServiceDirige)) {
         if (serviceDirige !== undefined) updated.serviceDirige = String(serviceDirige).trim();
     } else {
         delete updated.serviceDirige;
@@ -252,7 +262,7 @@ export async function updateStaffMember(member, { firstName, lastName, rank, dis
 }
 
 // Ajoute une fiche SANS compte de connexion (même écriture que l'ancien « Ajouter un employé »).
-export async function addStaffMember(service, { firstName, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige }) {
+export async function addStaffMember(service, { firstName, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[service];
     const name = `${firstName} ${lastName}`.trim();
     const listSnap = await get(ref(database, cfg.path));
@@ -265,7 +275,9 @@ export async function addStaffMember(service, { firstName, lastName, discord, ph
         : { name, lastName, discord: discord || '', phNumber: phNumber || '', badge: buildBadge(service, rank, badgeDigitsValue), rank, category: rank };
     if (service === 'phmc') payload.firstName = firstName;
     payload.pole = familyOfRank(rank, service);
-    if (getRoleInfo(rank)?.needsServiceDirige && serviceDirige) payload.serviceDirige = String(serviceDirige).trim();
+    const extras = cleanExtraRanks(extraRanks, rank);
+    if (extras.length > 0) payload.extraRanks = extras;
+    if ([rank, ...extras].some((value) => getRoleInfo(value)?.needsServiceDirige) && serviceDirige) payload.serviceDirige = String(serviceDirige).trim();
     await set(push(ref(database, cfg.path)), payload);
     return payload;
 }
@@ -344,7 +356,8 @@ export async function isUidStaff(uid) {
 }
 
 // Civil → Personnel. Le profil Civil et ses rapports sont CONSERVÉS.
-export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige }) {
+export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige, extraRanks }) {
+    const extras = cleanExtraRanks(extraRanks, rank);
     if (!civilian?.uid) throw new Error('Ce compte Civil n\'a pas d\'identifiant de connexion (uid).');
     if (await isUidStaff(civilian.uid)) throw new Error('Cette personne est déjà membre du personnel.');
     const cfg = STAFF_SERVICES[service];
@@ -367,7 +380,8 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
         phNumber: phNumber ?? civilian.phone ?? '',
         category: rank,
         pole: familyOfRank(rank, service),
-        ...(getRoleInfo(rank)?.needsServiceDirige && serviceDirige ? { serviceDirige: String(serviceDirige).trim() } : {}),
+        ...(extras.length > 0 ? { extraRanks: extras } : {}),
+        ...([rank, ...extras].some((value) => getRoleInfo(value)?.needsServiceDirige) && serviceDirige ? { serviceDirige: String(serviceDirige).trim() } : {}),
         uid: civilian.uid,
         email: civilian.email || '',
         createdAt: new Date().toISOString(),
@@ -432,7 +446,9 @@ export async function convertStaffToCivilian(member, civilData = {}) {
 // ───────────────────────────── Civils / Recruteurs ─────────────────────────────
 
 export async function setRecruiterRole(uid, enabled) {
-    await set(ref(database, `recruiterUIDs/${uid}`), enabled ? true : null);
+    await set(ref(database, `recruteurs/${uid}`), enabled ? true : null);
+    // Retire aussi l'éventuel ancien drapeau, sinon un recruteur « retiré » resterait reconnu via l'ancien nœud.
+    try { await set(ref(database, `recruiterUIDs/${uid}`), null); } catch (error) { /* ancien nœud absent ou non modifiable */ }
 }
 
 // uid des administrateurs (adminUIDs, lisible par tout compte connecté) : sert à afficher le badge Admin.
@@ -483,8 +499,9 @@ export async function deleteCivilianAccount(civilian) {
         console.warn(`Could not delete Auth account for civilian ${civilian.uid}:`, authError);
     }
     // Un recruteur supprimé ne doit pas laisser un drapeau orphelin.
-    try { await set(ref(database, `recruiterUIDs/${civilian.uid}`), null); } catch (e) { /* ignoré */ }
-    try { await set(ref(database, `contractCandidates/${civilian.uid}`), null); } catch (e) { /* ignoré */ }
+    for (const path of ['recruteurs', 'recruiterUIDs', 'candidatsContrat', 'contractCandidates']) {
+        try { await set(ref(database, `${path}/${civilian.uid}`), null); } catch (e) { /* ignoré */ }
+    }
     sendMailBestEffort({
         to: civilian.email,
         subject: 'Votre compte Civil a été supprimé - Pillbox Hill Medical Center',

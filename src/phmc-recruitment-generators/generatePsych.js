@@ -64,8 +64,8 @@ const generatePsych = (formData) => {
     if (formData.recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = formData.recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
-            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].displayName;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].url;
+            dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom;
+            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             console.warn(`Position "${selectedPositionKey}" not found in positionDetailsData from Firebase. Using default URL.`);
@@ -81,9 +81,7 @@ const generatePsych = (formData) => {
     let personalInfoContinuation = '';
 
     // Déterminer si la vue simplifiée (Condition médicale + Citoyenneté directement comme 1.6, 1.7) doit être affichée
-    const showSimplifiedPersonalInfo =
-        formData.recruitmentPosition === "Counseling Psychologist" ||
-        formData.recruitmentPosition === "Psychologist";
+    const showSimplifiedPersonalInfo = ['Counseling Psychologist', 'Psychologist', 'Psychologue Conseil', 'Psychologue'].includes(formData.recruitmentPosition);
 
     if (showSimplifiedPersonalInfo) {
         // BBCode pour "Counseling Psychologist" et "Psychologist"
