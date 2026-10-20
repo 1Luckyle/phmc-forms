@@ -333,8 +333,10 @@
     // draft -> sent -> signed (voir src/utils/contracts.js).
     //   • Lecture de TOUT le nœud : admins et recruteurs. Un employé ne lit que SES contrats
     //     déjà envoyés (jamais un brouillon), un par un, via l'index contractsByEmployee.
-    //   • Écriture : admins sans restriction ; recruteurs tant que le contrat n'est pas signé
-    //     et sans jamais pouvoir poser le statut « signed » (seul l'employé signe).
+    //   • Écriture : admins sans restriction ; recruteurs tant que le contrat n'est pas signé,
+    //     sans jamais pouvoir poser le statut « signed » (seul l'employé signe) et sans pouvoir
+    //     créer ni modifier leur PROPRE contrat (employeeUid === leur uid) : c'est un admin ou
+    //     un autre recruteur qui s'en charge.
     //   • Signature : l'employé destinataire pose signature + signedAt + statut « signed »,
     //     uniquement depuis « sent » et uniquement avec l'image de SA signature enregistrée
     //     (userCreations/{uid}/signature).
@@ -342,7 +344,7 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
       "$contractId": {
         ".read": "auth != null && data.child('employeeUid').val() === auth.uid && data.child('status').val() !== 'draft'",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruiterUIDs').child(auth.uid).val() === true && newData.child('status').val() !== 'signed' && (!data.exists() || data.child('status').val() !== 'signed')))",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruiterUIDs').child(auth.uid).val() === true && newData.child('status').val() !== 'signed' && (!data.exists() || data.child('status').val() !== 'signed') && newData.child('employeeUid').val() !== auth.uid && data.child('employeeUid').val() !== auth.uid))",
         ".validate": "newData.hasChildren(['employeeUid', 'status']) && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'sent' || newData.child('status').val() === 'signed')",
         "status": {
           ".write": "auth != null && data.parent().child('employeeUid').val() === auth.uid && data.val() === 'sent' && newData.val() === 'signed' && newData.parent().child('signature').child('url').exists()"
@@ -374,7 +376,7 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$contractId": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)"
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruiterUIDs').child(auth.uid).val() === true && $uid !== auth.uid))"
         }
       }
     }

@@ -177,6 +177,10 @@ export async function loadMyContracts(uid) {
 
 // Crée ou met à jour un BROUILLON (un contrat envoyé doit d'abord être retiré).
 export async function saveContractDraft({ id, employee, service, fields, issuer }) {
+    // Un recruteur ne rédige pas son propre contrat (aussi imposé par database.rules.json) ; un admin le peut.
+    if (employee.uid === issuer.uid && !issuer.isAdmin) {
+        throw new Error('Vous ne pouvez pas rédiger votre propre contrat : demandez à un admin ou à un autre recruteur.');
+    }
     const now = Date.now();
     const base = {
         employeeUid: employee.uid,

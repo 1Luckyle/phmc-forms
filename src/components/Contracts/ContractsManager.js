@@ -11,7 +11,7 @@ import BaseModal from '../BaseModal';
 import '../DarkUi.css';
 import ContractDocument from './ContractDocument';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
-import { STAFF_SERVICES, loadStaffMembers, loadCivilians, rankLabel } from '../../utils/staffAdmin';
+import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
@@ -22,8 +22,11 @@ import {
 } from '../../utils/contracts';
 
 // ───────────────────────────── Éditeur / lecture d'un contrat ─────────────────────────────
-// `staff` = destinataires possibles : membres du personnel (kind « staff ») et candidats acceptés
-// ayant le rôle « en attente de contrat » (kind « candidate », sans fiche : le service se choisit ici).
+// `staff` = destinataires possibles : membres du personnel (kind « staff »), recruteurs (kind
+// « recruiter ») et candidats acceptés ayant le rôle « en attente de contrat » (kind « candidate »).
+// Recruteurs et candidats sont des comptes Civils sans fiche : le service se choisit dans l'éditeur.
+// Un recruteur ne peut jamais rédiger SON PROPRE contrat (un admin ou un autre recruteur le fait) :
+// règle appliquée ici, dans saveContractDraft et dans database.rules.json.
 const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, showNotification }) => {
     const [employeeUid, setEmployeeUid] = useState('');
     const [candidateService, setCandidateService] = useState('phmc');
@@ -33,7 +36,8 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
     const [error, setError] = useState('');
 
     const isNew = !contract;
-    const readOnly = !!contract && contract.status !== 'draft';
+    const ownContract = !!contract && contract.employeeUid === issuer.uid && !issuer.isAdmin;
+    const readOnly = (!!contract && contract.status !== 'draft') || ownContract;
 
     useEffect(() => {
         if (!show) return;
@@ -47,10 +51,10 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
     // Personnel avec un compte de connexion (seul un compte lié peut recevoir et signer).
     const candidates = useMemo(() => {
         const q = filter.trim().toLowerCase();
-        return staff.filter((m) => m.uid && (!q || m.displayName.toLowerCase().includes(q)));
-    }, [staff, filter]);
+        return staff.filter((m) => m.uid && (issuer.isAdmin || m.uid !== issuer.uid) && (!q || m.displayName.toLowerCase().includes(q)));
+    }, [staff, filter, issuer.uid, issuer.isAdmin]);
     const employee = staff.find((m) => m.uid === employeeUid) || null;
-    const isCandidate = employee?.kind === 'candidate';
+    const isCandidate = !!employee && employee.kind !== 'staff'; // compte Civil sans fiche : service à choisir
     const service = isCandidate ? candidateService : (employee?.service || contract?.service || 'phmc');
     const ranks = STAFF_SERVICES[service]?.ranks || [];
 
@@ -60,7 +64,7 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
         setEmployeeUid(uid);
         const picked = staff.find((m) => m.uid === uid);
         // Pré-remplit grade et fonction avec ceux de la fiche (modifiables : c'est parfois une promotion).
-        if (picked && picked.kind !== 'candidate') setFields((prev) => ({ ...prev, rank: prev.rank || picked.rank || '', position: prev.position || rankLabel(picked.service, picked.rank) }));
+        if (picked && picked.kind === 'staff') setFields((prev) => ({ ...prev, rank: prev.rank || picked.rank || '', position: prev.position || rankLabel(picked.service, picked.rank) }));
     };
 
     const preview = useMemo(() => {
@@ -79,7 +83,7 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
     };
 
     const save = async ({ thenSend }) => guard(async () => {
-        if (!employee) throw new Error('Choisissez le membre du personnel concerné.');
+        if (!employee) throw new Error('Choisissez le destinataire du contrat.');
         const errors = validateContractFields(fields);
         if (errors.length) throw new Error(errors.join(' '));
         if (thenSend && !window.confirm(`Envoyer le contrat à ${employee.displayName} ?\n\nLe texte sera figé : pour le modifier ensuite, il faudra le retirer.`)) return;
@@ -117,12 +121,22 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                 <>
                     <div className="d-flex justify-content-between align-items-center mb-2">
                         <Badge bg={CONTRACT_STATUS[contract.status]?.variant}>{CONTRACT_STATUS[contract.status]?.label}</Badge>
-                        <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(contract.renderedText, showNotification, 'Texte du contrat copié.')}>
-                            <i className="fas fa-copy me-1"></i>Copier le texte
-                        </Button>
+                        {contract.renderedText && (
+                            <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(contract.renderedText, showNotification, 'Texte du contrat copié.')}>
+                                <i className="fas fa-copy me-1"></i>Copier le texte
+                            </Button>
+                        )}
                     </div>
-                    <ContractDocument text={contract.renderedText} signature={contract.signature} signedAt={contract.signedAt} />
-                    {contract.status === 'sent' && (
+                    {ownContract && (
+                        <Alert variant="info" className="py-2">
+                            Il s'agit de votre propre contrat : un recruteur ne peut pas le modifier, c'est un admin ou un autre recruteur qui s'en charge.
+                            {contract.status !== 'signed' && ' Vous le lirez et le signerez depuis « Mes contrats » dès qu\'il vous aura été envoyé.'}
+                        </Alert>
+                    )}
+                    {contract.renderedText
+                        ? <ContractDocument text={contract.renderedText} signature={contract.signature} signedAt={contract.signedAt} />
+                        : <Alert variant="secondary" className="py-2 mb-0">Brouillon en cours de rédaction : le texte n'est visible qu'une fois le contrat envoyé.</Alert>}
+                    {contract.status === 'sent' && !ownContract && (
                         <div className="mt-3 d-flex justify-content-end">
                             <Button variant="outline-warning" onClick={retract} disabled={busy}>
                                 {busy ? <Spinner size="sm" animation="border" /> : 'Retirer pour modifier'}
@@ -133,7 +147,7 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
             ) : (
                 <>
                     <Form.Group className="mb-3">
-                        <Form.Label>Membre du personnel</Form.Label>
+                        <Form.Label>Destinataire</Form.Label>
                         {isNew ? (
                             <>
                                 <Form.Control className="mb-1" type="search" placeholder="Filtrer par nom…" value={filter} onChange={(e) => setFilter(e.target.value)} />
@@ -141,13 +155,15 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                                     <option value="">Sélectionner…</option>
                                     {candidates.map((m) => (
                                         <option key={m.uid} value={m.uid}>
-                                            {m.kind === 'candidate' ? `${m.displayName} — candidat accepté (en attente de contrat)` : `${m.displayName} — ${STAFF_SERVICES[m.service].label} — ${rankLabel(m.service, m.rank)}`}
+                                            {m.kind === 'candidate' ? `${m.displayName} — candidat accepté (en attente de contrat)`
+                                                : m.kind === 'recruiter' ? `${m.displayName} — recruteur`
+                                                    : `${m.displayName} — ${STAFF_SERVICES[m.service].label} — ${rankLabel(m.service, m.rank)}`}
                                         </option>
                                     ))}
                                 </Form.Select>
                                 <Form.Text className="text-muted">
-                                    Membres du personnel avec un compte de connexion, et candidats acceptés à qui vous avez passé le rôle
-                                    « en attente de contrat » (bouton dans l'onglet Candidatures).
+                                    Membres du personnel avec un compte de connexion, recruteurs (hors vous-même, sauf admin) et candidats
+                                    acceptés à qui vous avez passé le rôle « en attente de contrat » (bouton dans l'onglet Candidatures).
                                 </Form.Text>
                             </>
                         ) : (
@@ -239,6 +255,7 @@ const ContractsManager = ({ showNotification }) => {
     const [contracts, setContracts] = useState([]);
     const [staff, setStaff] = useState([]);
     const [candidates, setCandidates] = useState([]);
+    const [recruiters, setRecruiters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [query, setQuery] = useState('');
@@ -252,17 +269,26 @@ const ContractsManager = ({ showNotification }) => {
             || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ')
             || currentEmployee?.email || 'Le recrutement',
         label: isAdmin ? 'Admin' : 'Recruteur',
+        isAdmin,
     }), [currentEmployee, staffName, civilianProfile, isAdmin]);
 
     const load = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const [list, members, roleMap, civilians] = await Promise.all([
-                loadAllContracts(), loadStaffMembers(), loadContractCandidates(), loadCivilians(),
+            const [list, members, roleMap, civilians, recruiterMap] = await Promise.all([
+                loadAllContracts(), loadStaffMembers(), loadContractCandidates(), loadCivilians(), loadRecruiterUids(),
             ]);
             setContracts(list);
             setStaff(members.map((m) => ({ ...m, kind: 'staff' })));
+            // Recruteurs : comptes Civils portant le drapeau recruiterUIDs (techniquement des employés).
+            setRecruiters(civilians.filter((c) => recruiterMap[c.uid] === true).map((c) => ({
+                uid: c.uid,
+                kind: 'recruiter',
+                displayName: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || c.uid,
+                email: c.email || '',
+                badge: '',
+            })));
             // Candidats avec le rôle : on retrouve leur profil Civil (nom, e-mail).
             setCandidates(civilians.filter((c) => roleMap[c.uid]).map((c) => ({
                 uid: c.uid,
@@ -283,7 +309,12 @@ const ContractsManager = ({ showNotification }) => {
     useEffect(() => { load(); }, [load]);
 
     // Destinataires : personnel lié à un compte + candidats en attente de contrat.
-    const recipients = useMemo(() => [...staff, ...candidates], [staff, candidates]);
+    // Dédoublonnés par uid (un compte apparaît une seule fois : fiche du personnel > recruteur > candidat).
+    const recipients = useMemo(() => {
+        const byUid = new Map();
+        [...staff, ...recruiters, ...candidates].forEach((m) => { if (m.uid && !byUid.has(m.uid)) byUid.set(m.uid, m); });
+        return [...byUid.values()];
+    }, [staff, recruiters, candidates]);
 
     const handleRemoveRole = async (candidate) => {
         if (!window.confirm(`Retirer le rôle « en attente de contrat » à ${candidate.displayName} ?`)) return;
@@ -350,7 +381,7 @@ const ContractsManager = ({ showNotification }) => {
             {rows.length > 0 && (
                 <div className="table-responsive">
                     <Table variant="dark" hover size="sm" className="align-middle">
-                        <thead><tr><th>Employé</th><th>Fonction</th><th>Type</th><th>Début</th><th>Statut</th><th>Créé par</th><th></th></tr></thead>
+                        <thead><tr><th>Destinataire</th><th>Fonction</th><th>Type</th><th>Début</th><th>Statut</th><th>Créé par</th><th></th></tr></thead>
                         <tbody>
                             {rows.map((c) => (
                                 <tr key={c.id}>
@@ -363,10 +394,12 @@ const ContractsManager = ({ showNotification }) => {
                                     <td>
                                         <div className="contracts-row-actions">
                                             <Button size="sm" variant="outline-light" onClick={() => setEditing(c)}>
-                                                {c.status === 'draft' ? <><i className="fas fa-edit me-1"></i>Modifier</> : <><i className="fas fa-eye me-1"></i>Voir</>}
+                                                {c.status === 'draft' && (isAdmin || c.employeeUid !== issuer.uid)
+                                                    ? <><i className="fas fa-edit me-1"></i>Modifier</>
+                                                    : <><i className="fas fa-eye me-1"></i>Voir</>}
                                             </Button>
                                             {/* Un contrat signé ne se supprime que par un admin (règles Firebase). */}
-                                            {(c.status !== 'signed' || isAdmin) && (
+                                            {(isAdmin || (c.status !== 'signed' && c.employeeUid !== issuer.uid)) && (
                                                 <Button size="sm" variant="outline-danger" onClick={() => handleDelete(c)}><i className="fas fa-trash"></i></Button>
                                             )}
                                         </div>

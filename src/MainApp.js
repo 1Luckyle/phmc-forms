@@ -1595,6 +1595,9 @@ function MainApp({
                             {isRecruiter && (
                                 <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement ») et pouvez créer votre carte de visite.</>
                             )}
+                            {isRecruiter && !isContractCandidate && (
+                                <> Si un admin ou un autre recruteur vous prépare un contrat, vous le trouverez dans « Mes contrats » (Boîte à outils).</>
+                            )}
                             {isContractCandidate && (
                                 <> <strong style={{ color: '#58a6ff' }}>Votre contrat vous attend :</strong> lisez-le et signez-le depuis « Mes contrats » (vous pouvez y créer votre signature).{' '}
                                     <Button variant="info" size="sm" className="ms-1" onClick={() => setShowMyContracts(true)}>
@@ -1662,7 +1665,7 @@ function MainApp({
                                                 <i className="fas fa-id-badge"></i> Mon profil
                                             </Dropdown.Item>
                                         )}
-                                        {((!isCivilian && !!staffName) || isContractCandidate) && (
+                                        {((!isCivilian && !!staffName) || isContractCandidate || isRecruiter) && (
                                             <Dropdown.Item onClick={() => {setShowMyContracts(true); setShowToolsDropdown(false);}}>
                                                 <i className="fas fa-file-contract"></i> Mes contrats
                                             </Dropdown.Item>
