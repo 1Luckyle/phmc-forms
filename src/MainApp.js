@@ -1,7 +1,7 @@
 // src/MainApp.js
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, Fragment } from 'react';
 import { formDefinitions, getFormDefinition } from './formDefinitions'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { Button, Dropdown, Modal } from 'react-bootstrap';
@@ -1638,60 +1638,16 @@ function MainApp({
                                             </>
                                         ) : null}
                                         {/* "Gérer le Personnel" déplacé dans le Panneau Admin (section
-                                            Utilisateurs) — cette modale reste montée ci-dessous pour les
+                                            Utilisateurs) — la modale reste montée ci-dessous pour les
                                             boutons "Nom manquant ?" des formulaires (setShowEmployeeModal),
                                             un usage self-service distinct de la gestion admin complète. */}
-                                        <Dropdown.Item onClick={() => {setShowFeatureRequestModal(true); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-bug"></i> Rapport de Bug/Ajout
-                                        </Dropdown.Item>
-                                        <Dropdown.Item onClick={() => {setShowAwarenessCalendar(true); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-calendar-alt"></i> Calendrier de la santé
-                                        </Dropdown.Item>
-                                        <Dropdown.Item onClick={() => {toggleSavedReports(); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-save"></i> {savedReportsButtonLabel}
-                                        </Dropdown.Item>
-                                        {!isCivilian && (currentEmployee || isAdmin) && (
-                                            <Dropdown.Item onClick={() => {setShowPatientDossierModal(true); setShowToolsDropdown(false);}}>
-                                                <i className="fas fa-folder-open"></i> Dossier Patient
-                                            </Dropdown.Item>
-                                        )}
-                                        {canManageRecruitment && (
-                                            <Dropdown.Item onClick={() => {setShowRecruitmentManager(true); setShowToolsDropdown(false);}}>
-                                                <i className="fas fa-user-plus"></i> Gestion du recrutement
-                                            </Dropdown.Item>
-                                        )}
-                                        {!isCivilian && !!staffName && (
-                                            <Dropdown.Item onClick={() => {setShowMyProfile(true); setShowToolsDropdown(false);}}>
-                                                <i className="fas fa-id-badge"></i> Mon profil
-                                            </Dropdown.Item>
-                                        )}
-                                        {((!isCivilian && !!staffName) || isContractCandidate || isRecruiter) && (
-                                            <Dropdown.Item onClick={() => {setShowMyContracts(true); setShowToolsDropdown(false);}}>
-                                                <i className="fas fa-file-contract"></i> Mes contrats
-                                            </Dropdown.Item>
-                                        )}
-                                        {!isCivilian && !!staffName && (
-                                            <Dropdown.Item onClick={() => {setShowMyPatientFile(true); setShowToolsDropdown(false);}}>
-                                                <i className="fas fa-user-injured"></i> Mon dossier patient
-                                            </Dropdown.Item>
-                                        )}
-                                        {/* Formulaire AMA : réservé aux médecins (personnel PHMC) et aux admins. */}
-                                        {canUseAma && (
-                                            <Dropdown.Item onClick={() => {setShowEmsAmaModal(prev => !prev); setShowToolsDropdown(false);}}>
-                                                <i className="fa-solid fa-truck-medical"></i> EMS Contre Avis Médical
-                                            </Dropdown.Item>
-                                        )}
-                                        <Dropdown.Item onClick={() => {toggleSeasonalEffects(); setShowToolsDropdown(false);}}>
-                                            <i className={`fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`}></i> 
-                                            {seasonalEffectsEnabled ? ' Désactiver' : ' Activer'} Effet de Saison
-                                        </Dropdown.Item>
-                                        <Dropdown.Item onClick={() => {restartOnboarding(); setShowToolsDropdown(false);}}>
-                                            <i className="fas fa-play-circle"></i> Guide de Configuration
-                                        </Dropdown.Item>
-                                        <Dropdown.Divider />
-                                        <Dropdown.Item 
-                                            onClick={() => {
-                                                setShowToolsDropdown(false);
+                                        {/* Menu organisé en catégories ; une catégorie sans entrée visible pour le rôle
+                                            de la personne (visiteur, civil, candidat, recruteur, personnel, admin) n'est
+                                            pas affichée, ni son séparateur. */}
+                                        {(() => {
+                                            const closeAnd = (action) => () => { action(); setShowToolsDropdown(false); };
+                                            const isStaffMember = !isCivilian && !!staffName;
+                                            const handleClearCache = () => {
                                                 const confirmed = window.confirm(
                                                     "\u26a0\ufe0f Vider le cache et actualiser\n\n" +
                                                     "Cette action va :\n" +
@@ -1710,28 +1666,71 @@ function MainApp({
                                                     sessionStorage.clear();
                                                     window.location.reload();
                                                 }
-                                            }}
-                                            style={{ color: '#dc3545' }}
-                                        >
-                                            <i className="fas fa-sync-alt"></i> Vider le Cache & Actualiser
-                                        </Dropdown.Item>
-                                        {currentEmployee && (
-                                            <>
-                                                <Dropdown.Divider />
-                                                <Dropdown.Item onClick={handleEmployeeLogout}>
-                                                    <i className="fas fa-sign-out-alt"></i> Déconnexion
-                                                </Dropdown.Item>
-                                            </>
-                                        )}
-                                        <Dropdown.Divider />
-                                        <Dropdown.Item onClick={() => {{
-                                            localStorage.removeItem('selectedAgencyGroup');
-                                            setSelectedAgencyGroup(null);
-                                            setShowAgencyGroupSelectorModal(true);
-                                            setShowToolsDropdown(false);
-                                        }}}>
-                                            <i className="fas fa-users"></i> Changer de Formulaire
-                                        </Dropdown.Item>
+                                            };
+                                            const sections = [
+                                                {
+                                                    key: 'account', label: 'Mon espace', items: [
+                                                        isStaffMember && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
+                                                        (isStaffMember || isContractCandidate || isRecruiter) && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
+                                                        isStaffMember && { key: 'myfile', icon: 'fas fa-user-injured', label: 'Mon dossier patient', onClick: closeAnd(() => setShowMyPatientFile(true)) },
+                                                    ],
+                                                },
+                                                {
+                                                    key: 'reports', label: 'Rapports & dossiers', items: [
+                                                        { key: 'saved', icon: 'fas fa-save', label: savedReportsButtonLabel, onClick: closeAnd(toggleSavedReports) },
+                                                        !isCivilian && (currentEmployee || isAdmin) && { key: 'dossier', icon: 'fas fa-folder-open', label: 'Dossier Patient', onClick: closeAnd(() => setShowPatientDossierModal(true)) },
+                                                    ],
+                                                },
+                                                {
+                                                    // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
+                                                    key: 'work', label: 'Gestion & outils métier', items: [
+                                                        canManageRecruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
+                                                        canUseAma && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
+                                                    ],
+                                                },
+                                                {
+                                                    key: 'info', label: 'Santé & informations', items: [
+                                                        { key: 'calendar', icon: 'fas fa-calendar-alt', label: 'Calendrier de la santé', onClick: closeAnd(() => setShowAwarenessCalendar(true)) },
+                                                    ],
+                                                },
+                                                {
+                                                    key: 'app', label: 'Application', items: [
+                                                        { key: 'season', icon: `fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`, label: `${seasonalEffectsEnabled ? 'Désactiver' : 'Activer'} Effet de Saison`, onClick: closeAnd(toggleSeasonalEffects) },
+                                                        { key: 'guide', icon: 'fas fa-play-circle', label: 'Guide de Configuration', onClick: closeAnd(restartOnboarding) },
+                                                        { key: 'bug', icon: 'fas fa-bug', label: 'Rapport de Bug/Ajout', onClick: closeAnd(() => setShowFeatureRequestModal(true)) },
+                                                        {
+                                                            key: 'agency', icon: 'fas fa-users', label: 'Changer de Formulaire', onClick: closeAnd(() => {
+                                                                localStorage.removeItem('selectedAgencyGroup');
+                                                                setSelectedAgencyGroup(null);
+                                                                setShowAgencyGroupSelectorModal(true);
+                                                            }),
+                                                        },
+                                                    ],
+                                                },
+                                                {
+                                                    key: 'session', label: 'Session', items: [
+                                                        { key: 'cache', icon: 'fas fa-sync-alt', label: 'Vider le Cache & Actualiser', onClick: closeAnd(handleClearCache), style: { color: '#dc3545' } },
+                                                        currentEmployee && { key: 'logout', icon: 'fas fa-sign-out-alt', label: 'Déconnexion', onClick: handleEmployeeLogout },
+                                                    ],
+                                                },
+                                            ]
+                                                .map((section) => ({ ...section, items: section.items.filter(Boolean) }))
+                                                .filter((section) => section.items.length > 0);
+
+                                            return sections.map((section, index) => (
+                                                <Fragment key={section.key}>
+                                                    {index > 0 && <Dropdown.Divider />}
+                                                    <Dropdown.Header style={{ textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.06em', paddingBottom: '2px' }}>
+                                                        {section.label}
+                                                    </Dropdown.Header>
+                                                    {section.items.map((item) => (
+                                                        <Dropdown.Item key={item.key} onClick={item.onClick} style={item.style}>
+                                                            <i className={item.icon}></i> {item.label}
+                                                        </Dropdown.Item>
+                                                    ))}
+                                                </Fragment>
+                                            ));
+                                        })()}
                                     </Dropdown.Menu>
                                 </Dropdown>
                             </div>
