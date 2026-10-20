@@ -10,6 +10,7 @@ import HealthEventEffect from './HealthEventEffect';
 import AmbientSeasonalEffect from './AmbientSeasonalEffect';
 import Snowfall from 'react-snowfall';
 import { getEffectEvents } from '../data/awarenessEvents';
+import { getEffectiveDate } from '../utils/debugSeasonDate';
 
 const seasonalImages = {
     deathReport: {
@@ -58,7 +59,8 @@ function getBackgroundSeason(month) { // 0 = janvier ... 11 = décembre
 
 // Saison retenue pour une date : { season, healthEvents }. `season` vaut 'HealthEvent' quand c'est
 // le calendrier de la santé qui pilote l'effet (healthEvents = événements à afficher).
-export function resolveSeason(date = new Date()) {
+// Sans argument, la date est celle du jour — ou la date SIMULÉE depuis le panneau admin (Debug).
+export function resolveSeason(date = getEffectiveDate()) {
     const month = date.getMonth();
     const day = date.getDate();
 

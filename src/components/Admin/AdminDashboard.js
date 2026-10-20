@@ -9,6 +9,7 @@ import PendingModificationRequests from './PendingModificationRequests';
 import { useDebug } from '../../contexts/DebugContext';
 import UsersHub from './users/UsersHub';
 import DebugWhitelist from './DebugWhitelist';
+import DebugSeasonTester from './DebugSeasonTester';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 
 const AdminDashboard = ({
@@ -369,6 +370,8 @@ const AdminDashboard = ({
                                     <i className={`fas ${debugDeleteApplicationsEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
                                     État actuel : {debugDeleteApplicationsEnabled ? 'ACTIVÉ' : 'désactivé'}
                                 </p>
+                                <hr />
+                                <DebugSeasonTester showInAppNotification={showInAppNotification} />
                             </div>
                         </div>
                     )}

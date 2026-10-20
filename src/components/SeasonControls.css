@@ -37,6 +37,24 @@
     border-color: #58a6ff;
 }
 
+/* Date simulée (testeur du panneau admin) : bien visible pour ne pas l'oublier. */
+.season-control-button.simulated {
+    width: auto;
+    padding: 0 10px;
+    gap: 6px;
+    border-radius: 16px;
+    background: #bf8700;
+    border-color: #d4a72c;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.season-control-button.simulated:hover {
+    background: #d4a72c;
+    color: #fff;
+}
+
 .season-control-button.info {
     color: #e6edf3;
 }

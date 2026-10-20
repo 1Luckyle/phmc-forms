@@ -10,6 +10,7 @@ import RibbonIcon from './RibbonIcon';
 import {
     AWARENESS_EVENTS, AWARENESS_CATEGORIES, formatEventDates, getEventRange, isEventActive, daysUntilEvent, eventTouchesMonth,
 } from '../data/awarenessEvents';
+import { getEffectiveDate } from '../utils/debugSeasonDate';
 import './AwarenessCalendar.css';
 
 const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
@@ -60,7 +61,7 @@ const EventCard = ({ event, today, open, onToggle }) => {
 };
 
 const AwarenessCalendarModal = ({ show, onHide }) => {
-    const today = useMemo(() => new Date(), [show]); // eslint-disable-line react-hooks/exhaustive-deps -- recalculé à chaque ouverture
+    const today = useMemo(() => getEffectiveDate(), [show]); // eslint-disable-line react-hooks/exhaustive-deps -- recalculé à chaque ouverture
     const [month, setMonth] = useState('all'); // 'all' | 1..12
     const [category, setCategory] = useState('all');
     const [query, setQuery] = useState('');

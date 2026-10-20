@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { OverlayTrigger, Popover, Button } from 'react-bootstrap';
 import { useSettings } from '../contexts/SettingsProvider';
+import { getEffectiveDate, getSimulatedDateString, clearSimulatedDate } from '../utils/debugSeasonDate';
 import RibbonIcon from './RibbonIcon';
 import { getActiveEvents, getNextEvent, formatEventDates, getEventDurationDays, SHORT_EVENT_MAX_DAYS } from '../data/awarenessEvents';
 import './SeasonControls.css';
@@ -16,7 +17,9 @@ const SeasonControls = ({ onOpenCalendar }) => {
     const [open, setOpen] = useState(false);
 
     // Recalculé à chaque rendu (MainApp se re-rend chaque seconde) : bascule seule à minuit.
-    const today = new Date();
+    // (ou la date simulée depuis le panneau admin → Debug, signalée par le badge 🧪 ci-dessous)
+    const today = getEffectiveDate();
+    const simulatedDate = getSimulatedDateString();
     const active = getActiveEvents(today).sort(
         (a, b) => getEventDurationDays(a, today.getFullYear()) - getEventDurationDays(b, today.getFullYear())
     );
@@ -82,6 +85,17 @@ const SeasonControls = ({ onOpenCalendar }) => {
             >
                 <i className={`fas ${seasonalEffectsEnabled ? 'fa-wand-magic-sparkles' : 'fa-ban'}`}></i>
             </button>
+            {simulatedDate && (
+                <button
+                    type="button"
+                    className="season-control-button simulated"
+                    onClick={() => clearSimulatedDate()}
+                    title={`Date simulée (debug) : ${today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. Cliquer pour revenir à la date réelle.`}
+                >
+                    <i className="fas fa-flask"></i>
+                    <span>{today.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                </button>
+            )}
             <OverlayTrigger
                 show={open}
                 onToggle={(next_) => setOpen(next_)}
