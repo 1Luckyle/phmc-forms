@@ -46,6 +46,7 @@ import { sendMissingEmployeeNotification } from './components/notificationServic
 import './App.css';
 import './buttons.css';
 import HeaderInfo from './components/HeaderInfo';
+import SeasonControls from './components/SeasonControls';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
@@ -1493,7 +1494,9 @@ function MainApp({
                     />
                 )}
 
-                <div className="header-info-wrapper">
+                {/* Accès rapide (haut gauche) : effets de saison + infobulle du calendrier de la santé en cours. */}
+                <div className="header-info-wrapper header-with-season-controls">
+                    <SeasonControls onOpenCalendar={() => setShowAwarenessCalendar(true)} />
                     <HeaderInfo commitInfo={commitInfo} /> 
                 </div>
 

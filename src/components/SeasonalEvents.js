@@ -6,9 +6,10 @@ import phmcEaster from '../assets/easter.png';
 import halloween from '../assets/halloween-rip.png';
 import Default from '../assets/Generic.png';
 import HalloweenEffect from './HalloweenEffect';
-import PinkRibbonEffect from './PinkRibbonEffect';
+import HealthEventEffect from './HealthEventEffect';
 import AmbientSeasonalEffect from './AmbientSeasonalEffect';
 import Snowfall from 'react-snowfall';
+import { getEffectEvents } from '../data/awarenessEvents';
 
 const seasonalImages = {
     deathReport: {
@@ -27,76 +28,57 @@ const seasonalImages = {
     },
 };
 
-// Calendrier des saisons/évènements de l'année. Les images PHMC dédiées
-// n'existent que pour Noël, Pâques et Halloween (voir seasonalImages
-// ci-dessus) ; les autres périodes gardent l'image générique mais reçoivent
-// un effet de particules ambiant (voir seasonalEvents ci-dessous) pour qu'il
-// se passe toujours quelque chose, quelle que soit la date. L'ordre des
-// vérifications compte : chaque période est traitée du plus spécifique
-// (jours précis) au plus large, pour ne jamais se faire écraser par une
-// plage plus large qui la contiendrait.
-function getSeason() {
-    const now = new Date();
-    const month = now.getMonth(); // 0 = janvier ... 11 = décembre
-    const day = now.getDate();
+// Les effets de saison suivent désormais le CALENDRIER DE LA SANTÉ (data/awarenessEvents.js).
+// Ordre de priorité, du plus fort au plus faible :
+//   1. Jours de fête précis (ci-dessous) : Halloween, Noël, Nouvel An, 1er avril, Saint-Valentin ;
+//   2. événements de santé d'un jour ou d'une semaine (ex. 10 octobre, Santé mentale) ;
+//   3. événements de santé d'un mois entier — s'il y en a plusieurs (septembre : Septembre en Or,
+//      prostate, ovaire), leurs rubans tombent ensemble (voir HealthEventEffect) ;
+//   4. rien de tout ça : l'ancien effet de saison sert de « fond » (Pâques en avril, Noël en
+//      décembre, hiver en février, été en juin et août). Ces périodes creuses sont celles où le
+//      calendrier de la santé n'a pas d'événement long.
+// Saint-Patrick n'a plus d'effet : mars est couvert par Mars Bleu et l'endométriose.
+const FESTIVE_DAYS = [
+    { season: 'Halloween', matches: (month, day) => month === 9 && day === 31 },
+    { season: 'Christmas', matches: (month, day) => month === 11 && (day === 24 || day === 25) },
+    { season: 'NewYear', matches: (month, day) => (month === 11 && day === 31) || (month === 0 && day === 1) },
+    { season: 'AprilFools', matches: (month, day) => month === 3 && day === 1 },
+    { season: 'Valentine', matches: (month, day) => month === 1 && day === 14 },
+];
 
-    // Octobre : ruban rose (Octobre Rose) du 1er au 30 ; les tombes d'Halloween
-    // uniquement le 31 octobre. Doit rester AVANT les autres plages.
-    if (month === 9) {
-        return day === 31 ? "Halloween" : "PinkOctober";
-    }
-    // Poisson d'avril (1er-2 avril)
-    if (month === 3 && day >= 1 && day <= 2) {
-        return "AprilFools";
-    }
-    // Pâques (3-30 avril)
-    if (month === 3 && day >= 3 && day <= 30) {
-        return "Easter";
-    }
-    // Noël (1er décembre au 1er janvier)
-    if ((month === 11 && day >= 1) || (month === 0 && day <= 1)) {
-        return "Christmas";
-    }
-    // Nouvel An (2-6 janvier)
-    if (month === 0 && day >= 2 && day <= 6) {
-        return "NewYear";
-    }
-    // Saint-Patrick (15-17 mars)
-    if (month === 2 && day >= 15 && day <= 17) {
-        return "StPatrick";
-    }
-    // Saint-Valentin (10-14 février)
-    if (month === 1 && day >= 10 && day <= 14) {
-        return "Valentine";
-    }
-    // Hiver (reste de janvier, février, début mars)
-    if (month === 0 || month === 1 || (month === 2 && day <= 14)) {
-        return "Winter";
-    }
-    // Printemps (mi-mars à mai, hors Poisson d'avril/Pâques déjà couverts)
-    if ((month === 2 && day >= 18) || month === 4) {
-        return "Spring";
-    }
-    // Été (juin à août)
-    if (month === 5 || month === 6 || month === 7) {
-        return "Summer";
-    }
-    // Automne / rentrée (septembre, novembre — octobre est Halloween)
-    if (month === 8 || month === 10) {
-        return "Autumn";
-    }
+// Effet de fond quand ni jour de fête ni événement de santé ne s'applique.
+function getBackgroundSeason(month) { // 0 = janvier ... 11 = décembre
+    if (month === 3) return 'Easter';
+    if (month === 11) return 'Christmas';
+    if (month === 0 || month === 1) return 'Winter';
+    if (month === 2 || month === 4) return 'Spring';
+    if (month >= 5 && month <= 7) return 'Summer';
+    return 'Autumn'; // septembre-novembre (en pratique couverts par un événement de santé)
+}
 
-    return "Default"; // Filet de sécurité, ne devrait normalement jamais être atteint
+// Saison retenue pour une date : { season, healthEvents }. `season` vaut 'HealthEvent' quand c'est
+// le calendrier de la santé qui pilote l'effet (healthEvents = événements à afficher).
+export function resolveSeason(date = new Date()) {
+    const month = date.getMonth();
+    const day = date.getDate();
+
+    const festive = FESTIVE_DAYS.find((entry) => entry.matches(month, day));
+    if (festive) return { season: festive.season, healthEvents: [] };
+
+    const { events } = getEffectEvents(date);
+    if (events.length > 0) return { season: 'HealthEvent', healthEvents: events };
+
+    return { season: getBackgroundSeason(month), healthEvents: [] };
 }
 
 function seasonalEvents({ imageType, season: seasonOverride }) {
-    const season = seasonOverride || getSeason();
+    const resolved = seasonOverride ? { season: seasonOverride, healthEvents: [] } : resolveSeason();
+    const { season, healthEvents } = resolved;
     const imageSource = seasonalImages[imageType]?.[season] || seasonalImages[imageType]?.Default;
 
 
     let className = '';
     let effect = null;
-    //console.log(imageSource, className, season); // Debugging line to check values
 
     // Nombre de particules volontairement modeste : au-delà d'une quarantaine
     // de flocons/éléments animés en simultané sur un canvas, on observe des
@@ -107,16 +89,14 @@ function seasonalEvents({ imageType, season: seasonOverride }) {
         className = 'easter-bounce';
     } else if (season === "Halloween") {
         effect = <HalloweenEffect />;
-    } else if (season === "PinkOctober") {
-        effect = <PinkRibbonEffect />;
+    } else if (season === "HealthEvent") {
+        effect = <HealthEventEffect events={healthEvents} />;
     } else if (season === "Christmas") {
         effect = <Snowfall snowflakeCount={40} />;
     } else if (season === "NewYear") {
         effect = <AmbientSeasonalEffect emoji="🎉" count={22} size={26} radius={[8, 18]} />;
     } else if (season === "Valentine") {
         effect = <AmbientSeasonalEffect emoji="❤️" count={18} size={24} radius={[8, 16]} />;
-    } else if (season === "StPatrick") {
-        effect = <AmbientSeasonalEffect emoji="☘️" count={18} size={26} radius={[8, 18]} />;
     } else if (season === "Winter") {
         effect = <Snowfall snowflakeCount={22} />;
     } else if (season === "Spring") {
@@ -127,6 +107,6 @@ function seasonalEvents({ imageType, season: seasonOverride }) {
         effect = <AmbientSeasonalEffect emoji="🍁" count={18} size={26} radius={[8, 18]} />;
     }
 
-    return { imageSource, className, season, effect };
+    return { imageSource, className, season, effect, healthEvents };
 }
 export default seasonalEvents;

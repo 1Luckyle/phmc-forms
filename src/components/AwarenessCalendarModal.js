@@ -6,28 +6,13 @@
 import React, { useMemo, useState } from 'react';
 import { Badge, Form } from 'react-bootstrap';
 import BaseModal from './BaseModal';
+import RibbonIcon from './RibbonIcon';
 import {
     AWARENESS_EVENTS, AWARENESS_CATEGORIES, formatEventDates, getEventRange, isEventActive, daysUntilEvent, eventTouchesMonth,
 } from '../data/awarenessEvents';
 import './AwarenessCalendar.css';
 
 const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-
-// Ruban de la/des couleur(s) de la cause : dégradé à paliers nets quand il y en a plusieurs.
-const RibbonIcon = ({ ribbon, size = 28 }) => {
-    if (!ribbon || ribbon.length === 0) {
-        return <i className="fas fa-hand-holding-medical awareness-ribbon awareness-ribbon-none" style={{ fontSize: size }} aria-hidden="true"></i>;
-    }
-    if (ribbon.length === 1) {
-        return <i className="fas fa-ribbon awareness-ribbon" style={{ fontSize: size, color: ribbon[0].hex }} aria-hidden="true"></i>;
-    }
-    const step = 100 / ribbon.length;
-    const stops = ribbon.map((c, i) => `${c.hex} ${i * step}% ${(i + 1) * step}%`).join(', ');
-    return (
-        <i className="fas fa-ribbon awareness-ribbon awareness-ribbon-multi" aria-hidden="true"
-            style={{ fontSize: size, backgroundImage: `linear-gradient(90deg, ${stops})` }}></i>
-    );
-};
 
 const EventCard = ({ event, today, open, onToggle }) => {
     const active = isEventActive(event, today);

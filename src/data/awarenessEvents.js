@@ -418,3 +418,66 @@ export const eventTouchesMonth = (event, month) => {
     const { startMonth, endMonth = startMonth } = event.period;
     return month >= startMonth && month <= endMonth;
 };
+
+// ───────────────────────────── Lien avec les effets de saison ─────────────────────────────
+// Les effets visuels suivent ce calendrier (voir components/SeasonalEvents.js) :
+//   • un événement d'un jour ou d'une semaine (≤ 7 jours) passe AVANT les événements d'un mois entier ;
+//   • s'il y a plusieurs événements au même niveau (ex. septembre : Septembre en Or, prostate, ovaire),
+//     leurs rubans tombent ensemble, à parts égales.
+export const SHORT_EVENT_MAX_DAYS = 7;
+
+export const getEventDurationDays = (event, year) => {
+    const { start, end } = getEventRange(event, year);
+    return Math.round((end - start) / 86400000);
+};
+
+// Tous les événements en cours à cette date (jours, semaines et mois confondus) : liste du calendrier / infobulle.
+export const getActiveEvents = (date) => AWARENESS_EVENTS.filter((event) => isEventActive(event, date));
+
+// Événements qui pilotent l'effet visuel : les courts s'ils existent, sinon ceux du mois.
+export const getEffectEvents = (date) => {
+    const active = getActiveEvents(date);
+    const short = active.filter((event) => getEventDurationDays(event, date.getFullYear()) <= SHORT_EVENT_MAX_DAYS);
+    if (short.length > 0) return { tier: 'short', events: short };
+    if (active.length > 0) return { tier: 'month', events: active };
+    return { tier: null, events: [] };
+};
+
+// Prochain événement à venir (hors événements déjà en cours) et nombre de jours avant son début.
+export const getNextEvent = (date) => {
+    let best = null;
+    AWARENESS_EVENTS.forEach((event) => {
+        if (isEventActive(event, date)) return;
+        const days = daysUntilEvent(event, date);
+        // Année du prochain début (l'an prochain si l'événement de cette année est déjà passé).
+        const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const year = getEventRange(event, date.getFullYear()).start < today ? date.getFullYear() + 1 : date.getFullYear();
+        if (!best || days < best.days) best = { event, days, year };
+    });
+    return best;
+};
+
+// Emblème en emoji pour les événements SANS ruban (ou dont l'emblème est plus parlant que le ruban).
+// Emojis anciens uniquement : les récents s'affichent en carré vide sur certains systèmes.
+const EFFECT_EMOJI = {
+    'tuberculose': '🌬️',
+    'sante-mondiale': '🌍',
+    'parkinson': '🌷',
+    'croix-rouge': '⛑️',
+    'infirmiers': '🩺',
+    'sans-tabac': '🚭',
+    'don-sang': '🩸',
+    'hemophilie': '🩸',
+    'allaitement': '🍼',
+    'securite-patients': '🩺',
+    'polio': '💉',
+    'maladies-rares': '🦓',
+    'trisomie-21': '🧦',
+    'movember': '🧔',
+};
+
+// Emoji de l'effet pour cet événement, ou null s'il doit utiliser son ruban coloré.
+export const getEventEffectEmoji = (event) => {
+    if (EFFECT_EMOJI[event.id]) return EFFECT_EMOJI[event.id];
+    return event.ribbon.length === 0 ? '🩺' : null;
+};

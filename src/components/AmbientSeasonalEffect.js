@@ -5,7 +5,7 @@ import Snowfall from 'react-snowfall';
 // servir de particule à react-snowfall sans avoir besoin d'un asset PNG dédié
 // par saison (voir HalloweenEffect.js pour l'équivalent avec un vrai fichier
 // image). Simple et synchrone : pas de chargement réseau à attendre.
-const makeEmojiImage = (emoji, size) => {
+export const makeEmojiImage = (emoji, size) => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">`
         + `<text x="50%" y="52%" font-size="${size * 0.85}" text-anchor="middle" dominant-baseline="central">${emoji}</text>`
         + `</svg>`;

@@ -1,0 +1,92 @@
+/* Boutons d'accès rapide en haut à gauche du header (effets de saison + infobulle santé). */
+.header-with-season-controls {
+    position: relative;
+    padding: 0 84px;
+}
+
+.season-controls {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    z-index: 5;
+    display: flex;
+    gap: 6px;
+}
+
+.season-control-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #30363d;
+    background: #161b22;
+    color: #8b949e;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.season-control-button:hover {
+    background: #21262d;
+    color: #e6edf3;
+}
+
+.season-control-button.on {
+    color: #58a6ff;
+    border-color: #58a6ff;
+}
+
+.season-control-button.info {
+    color: #e6edf3;
+}
+
+/* Infobulle : clair sur fond blanc de Bootstrap, avec défilement si plusieurs événements. */
+.season-popover {
+    max-width: 380px;
+    width: calc(100vw - 24px);
+}
+
+.season-popover .popover-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    color: #212529;
+}
+
+.season-popover-event {
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.season-popover-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.season-popover-title span {
+    display: flex;
+    flex-direction: column;
+}
+
+.season-popover-title small,
+.season-popover-ribbon,
+.season-popover-note {
+    color: #6c757d;
+    font-size: 0.82rem;
+}
+
+.season-popover p {
+    margin: 0.3rem 0;
+}
+
+.season-popover-cause {
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .header-with-season-controls {
+        padding: 44px 8px 0;
+    }
+}
