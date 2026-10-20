@@ -57,3 +57,31 @@
 .users-hub .uh-actions-toggle::after {
     margin-left: 6px;
 }
+
+/* Filtres par famille du personnel et en-têtes de groupe (« qui est quoi »). */
+.uh-family-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 10px;
+}
+
+.uh-chip {
+    padding: 3px 12px;
+    background: transparent;
+    border: 1px solid #adb5bd;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.uh-chip.on {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.uh-group-row td {
+    background: rgba(13, 110, 253, 0.08);
+    border-top: 2px solid #0d6efd;
+}

@@ -12,7 +12,7 @@
 // poussées : tout passe par des clés lues au moment de l'écriture.
 import { ref, get, set, update, push, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
-import { PHMC_RANKS, CORONER_RANKS } from '../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, sortKeyOfRank } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';
 import { sendEyefindMail } from './eyefindMail';
 import { canonicalPatientId } from './patientId';
@@ -32,13 +32,16 @@ const sendMailBestEffort = (params) => {
     });
 };
 
-export const rankLabel = (service, rankValue) =>
-    (STAFF_SERVICES[service]?.ranks || []).find((r) => r.value === rankValue)?.label || rankValue || '—';
+// Libellé français d'un rôle ; une ancienne valeur anglaise (avant migration) est traduite à la volée.
+export const rankLabel = (service, rankValue) => {
+    const normalized = normalizeRank(rankValue);
+    return (STAFF_SERVICES[service]?.ranks || []).find((r) => r.value === normalized)?.label || normalized || '—';
+};
 
 // Badge complet « PRÉFIXE-chiffres » (le préfixe dépend du grade).
 export const buildBadge = (service, rankValue, digits) => {
     const cfg = STAFF_SERVICES[service];
-    const prefix = cfg.ranks.find((r) => r.value === rankValue)?.badgePrefix || cfg.defaultPrefix;
+    const prefix = cfg.ranks.find((r) => r.value === normalizeRank(rankValue))?.badgePrefix || cfg.defaultPrefix;
     return `${prefix}-${String(digits).replace(/\D/g, '')}`;
 };
 export const badgeDigits = (badge) => {
@@ -56,10 +59,16 @@ export async function loadStaffMembers() {
         if (!snap.exists()) continue;
         Object.entries(snap.val() || {}).forEach(([key, entry]) => {
             if (!entry || !entry.name) return;
-            members.push({ ...entry, service: service.key, storageKey: key, displayName: getEmployeeDisplayName(entry) });
+            // family : famille du personnel (soignant / administration / polyvalent / dmec), déduite du rôle si absente.
+            members.push({
+                ...entry, service: service.key, storageKey: key, displayName: getEmployeeDisplayName(entry),
+                family: familyOfMember(entry, service.key),
+            });
         });
     }
-    return members.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    // Tri : famille, puis rôle du plus élevé au moins élevé, puis nom.
+    return members.sort((a, b) => (sortKeyOfRank(a.rank || a.category, a.service) - sortKeyOfRank(b.rank || b.category, b.service))
+        || a.displayName.localeCompare(b.displayName));
 }
 
 export async function loadCivilians() {
@@ -189,7 +198,7 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
 // numéro de badge), pas sur le nom : le prénom et le nom sont modifiables, et les rapports de la
 // personne suivent automatiquement (renameReportOwner). Le numéro de badge — l'ID employé, aussi
 // son ID patient PHMC-{badge} — n'est JAMAIS modifié ici (seul le préfixe suit le grade).
-export async function updateStaffMember(member, { firstName, lastName, rank, discord, phNumber }) {
+export async function updateStaffMember(member, { firstName, lastName, rank, discord, phNumber, serviceDirige }) {
     const cfg = STAFF_SERVICES[member.service];
     const snap = await get(ref(database, cfg.path));
     if (!snap.exists()) throw new Error('Liste du personnel introuvable.');
@@ -220,9 +229,17 @@ export async function updateStaffMember(member, { firstName, lastName, rank, dis
     if (digits) updated.badge = buildBadge(member.service, updated.rank || current.rank, digits); // chiffres inchangés
     if (discord !== undefined) updated.discord = discord;
     if (phNumber !== undefined) updated.phNumber = phNumber;
+    // Famille (pole) déduite du rôle ; « service dirigé » uniquement pour un Chef de Service.
+    const finalRank = updated.rank || current.rank;
+    updated.pole = familyOfRank(finalRank, member.service);
+    if (getRoleInfo(finalRank)?.needsServiceDirige) {
+        if (serviceDirige !== undefined) updated.serviceDirige = String(serviceDirige).trim();
+    } else {
+        delete updated.serviceDirige;
+    }
     await set(ref(database, `${cfg.path}/${key}`), updated);
 
-    if (rank && rank !== current.rank) {
+    if (rank && rank !== normalizeRank(current.rank)) {
         const label = rankLabel(member.service, rank);
         sendMailBestEffort({
             to: current.email,
@@ -235,7 +252,7 @@ export async function updateStaffMember(member, { firstName, lastName, rank, dis
 }
 
 // Ajoute une fiche SANS compte de connexion (même écriture que l'ancien « Ajouter un employé »).
-export async function addStaffMember(service, { firstName, lastName, discord, phNumber, rank, badgeDigitsValue }) {
+export async function addStaffMember(service, { firstName, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige }) {
     const cfg = STAFF_SERVICES[service];
     const name = `${firstName} ${lastName}`.trim();
     const listSnap = await get(ref(database, cfg.path));
@@ -247,6 +264,8 @@ export async function addStaffMember(service, { firstName, lastName, discord, ph
         ? { name, firstName, discord, rank, badge: buildBadge(service, rank, badgeDigitsValue), phNumber: phNumber || '', category: rank }
         : { name, lastName, discord: discord || '', phNumber: phNumber || '', badge: buildBadge(service, rank, badgeDigitsValue), rank, category: rank };
     if (service === 'phmc') payload.firstName = firstName;
+    payload.pole = familyOfRank(rank, service);
+    if (getRoleInfo(rank)?.needsServiceDirige && serviceDirige) payload.serviceDirige = String(serviceDirige).trim();
     await set(push(ref(database, cfg.path)), payload);
     return payload;
 }
@@ -325,7 +344,7 @@ export async function isUidStaff(uid) {
 }
 
 // Civil → Personnel. Le profil Civil et ses rapports sont CONSERVÉS.
-export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber }) {
+export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige }) {
     if (!civilian?.uid) throw new Error('Ce compte Civil n\'a pas d\'identifiant de connexion (uid).');
     if (await isUidStaff(civilian.uid)) throw new Error('Cette personne est déjà membre du personnel.');
     const cfg = STAFF_SERVICES[service];
@@ -347,6 +366,8 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
         badge: buildBadge(service, rank, badgeDigitsValue),
         phNumber: phNumber ?? civilian.phone ?? '',
         category: rank,
+        pole: familyOfRank(rank, service),
+        ...(getRoleInfo(rank)?.needsServiceDirige && serviceDirige ? { serviceDirige: String(serviceDirige).trim() } : {}),
         uid: civilian.uid,
         email: civilian.email || '',
         createdAt: new Date().toISOString(),
@@ -412,6 +433,12 @@ export async function convertStaffToCivilian(member, civilData = {}) {
 
 export async function setRecruiterRole(uid, enabled) {
     await set(ref(database, `recruiterUIDs/${uid}`), enabled ? true : null);
+}
+
+// uid des administrateurs (adminUIDs, lisible par tout compte connecté) : sert à afficher le badge Admin.
+export async function loadAdminUids() {
+    const snap = await get(ref(database, 'adminUIDs'));
+    return snap.exists() ? snap.val() : {};
 }
 
 // Nom sous lequel un Civil range ses rapports : « Prénom Nom [ID patient] » (voir

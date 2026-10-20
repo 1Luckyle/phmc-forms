@@ -47,6 +47,8 @@ import './App.css';
 import './buttons.css';
 import HeaderInfo from './components/HeaderInfo';
 import SeasonControls from './components/SeasonControls';
+import ViewAsBanner from './components/ViewAsBanner';
+import { getToolAccess } from './utils/viewAs';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
@@ -136,7 +138,9 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    // Ce que la personne (ou le profil simulé par un admin) voit dans la Boîte à outils : une seule définition, voir utils/viewAs.js.
+    const toolAccess = getToolAccess({ currentEmployee, employeeProfile, isAdmin, isRecruiter, isContractCandidate, isCivilian, staffName, canUseAma, canManageRecruitment });
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
@@ -901,6 +905,10 @@ function MainApp({
     ]);
 
     const handleSaveReportWrapper = useCallback(() => {
+        if (viewAs) {
+            showNotification('Simulation de rôle active : l\'enregistrement est désactivé (rien ne doit être écrit au nom d\'un faux profil).', 'warning');
+            return;
+        }
         if (!currentEmployee) {
             showNotification('Vous devez être connecté pour enregistrer un rapport.', 'error');
             return;
@@ -930,7 +938,7 @@ function MainApp({
             return;
         }
         runSaveReport(authorName);
-    }, [currentEmployee, isAdmin, isCivilian, civilianProfile, employeeProfile, runSaveReport, showNotification]);
+    }, [viewAs, currentEmployee, isAdmin, isCivilian, civilianProfile, employeeProfile, runSaveReport, showNotification]);
 
     const handleConfirmSaveAsEmployee = useCallback((employeeName) => {
         setShowSaveAsEmployeeModal(false);
@@ -1494,6 +1502,9 @@ function MainApp({
                     />
                 )}
 
+                {/* Simulation « visualiser en tant que » (admin) : rappel + sortie. */}
+                <ViewAsBanner />
+
                 {/* Accès rapide (haut gauche) : effets de saison + infobulle du calendrier de la santé en cours. */}
                 <div className="header-info-wrapper header-with-season-controls">
                     <SeasonControls onOpenCalendar={() => setShowAwarenessCalendar(true)} />
@@ -1649,7 +1660,6 @@ function MainApp({
                                             pas affichée, ni son séparateur. */}
                                         {(() => {
                                             const closeAnd = (action) => () => { action(); setShowToolsDropdown(false); };
-                                            const isStaffMember = !isCivilian && !!staffName;
                                             const handleClearCache = () => {
                                                 const confirmed = window.confirm(
                                                     "\u26a0\ufe0f Vider le cache et actualiser\n\n" +
@@ -1673,22 +1683,23 @@ function MainApp({
                                             const sections = [
                                                 {
                                                     key: 'account', label: 'Mon espace', items: [
-                                                        isStaffMember && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
-                                                        (isStaffMember || isContractCandidate || isRecruiter) && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
-                                                        isStaffMember && { key: 'myfile', icon: 'fas fa-user-injured', label: 'Mon dossier patient', onClick: closeAnd(() => setShowMyPatientFile(true)) },
+                                                        toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
+                                                        toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
+                                                        toolAccess.myPatientFile && { key: 'myfile', icon: 'fas fa-user-injured', label: 'Mon dossier patient', onClick: closeAnd(() => setShowMyPatientFile(true)) },
                                                     ],
                                                 },
                                                 {
                                                     key: 'reports', label: 'Rapports & dossiers', items: [
-                                                        { key: 'saved', icon: 'fas fa-save', label: savedReportsButtonLabel, onClick: closeAnd(toggleSavedReports) },
-                                                        !isCivilian && (currentEmployee || isAdmin) && { key: 'dossier', icon: 'fas fa-folder-open', label: 'Dossier Patient', onClick: closeAnd(() => setShowPatientDossierModal(true)) },
+                                                        // Sans compte connecté il n'y a aucun rapport à retrouver : on ne l'affiche pas.
+                                                        toolAccess.savedReports && { key: 'saved', icon: 'fas fa-save', label: savedReportsButtonLabel, onClick: closeAnd(toggleSavedReports) },
+                                                        toolAccess.patientDossier && { key: 'dossier', icon: 'fas fa-folder-open', label: 'Dossier Patient', onClick: closeAnd(() => setShowPatientDossierModal(true)) },
                                                     ],
                                                 },
                                                 {
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
-                                                        canManageRecruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
-                                                        canUseAma && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
+                                                        toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
+                                                        toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
                                                 },
                                                 {
@@ -1756,8 +1767,8 @@ function MainApp({
                                 setShowFeatureRequestModal={setShowFeatureRequestModal}
                             />
 
-                            {/* Carte de visite : personnel, admins et recruteurs (un recruteur reste un Civil). */}
-                            {(isAdmin || employeeProfile || isRecruiter) && (
+                            {/* Carte de visite ET signature (même fenêtre, deux onglets) : personnel, admins et recruteurs. */}
+                            {toolAccess.businessCard && (
                                 <Button
                                     variant="secondary"
                                     type="button"
@@ -1765,7 +1776,7 @@ function MainApp({
                                     onClick={() => setShowBusinessCard(prev => !prev)}
                                 >
                                     <i className="fa-solid fa-address-card"></i>
-                                    Carte de Visite
+                                    Carte de Visite &amp; Signature
                                 </Button>
                             )}
 
@@ -2325,7 +2336,7 @@ function MainApp({
                             />
                         </div>
 
-                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && (isAdmin || employeeProfile || isRecruiter) && (
+                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && toolAccess.businessCard && (
                             <BusinessCardModal
                                 show={showBusinessCard}
                                 onHide={() => setShowBusinessCard(false)}

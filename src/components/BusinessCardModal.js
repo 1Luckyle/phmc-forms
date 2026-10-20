@@ -335,7 +335,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         <div className="modal-overlay">
             <div className="agency-selector-modal business-card-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h4>{tab === 'signature' ? 'Signature' : 'Carte de visite'}</h4>
+                    <h4>Carte de visite &amp; signature</h4>
                     <Button
                         variant="secondary"
                         className="close"
@@ -345,6 +345,9 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         <i className="fas fa-times"></i>
                     </Button>
                 </div>
+                <p style={{ color: '#8b949e', fontSize: '0.85em', margin: '0 0 10px' }}>
+                    Créez ici votre <strong>carte de visite</strong> et votre <strong>signature</strong> (onglet « Signature », utilisée dans les emails et les contrats).
+                </p>
                 <div className="creation-tabs">
                     <button type="button" className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
                         <i className="fas fa-id-card"></i> Carte de visite

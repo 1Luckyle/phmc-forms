@@ -4,12 +4,14 @@
 // suppression définitive, conversions Civil ⇄ Personnel. Toutes les écritures passent par
 // utils/staffAdmin.js. Les actions sensibles demandent une confirmation explicite et disent
 // ce qui est conservé et ce qui ne l'est pas.
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import {
-    STAFF_SERVICES, rankLabel, badgeDigits, buildBadge, staffNameParts, updateStaffMember, addStaffMember,
-    removeStaffMember, convertCivilianToStaff, convertStaffToCivilian,
+    rankLabel, badgeDigits, buildBadge, staffNameParts, updateStaffMember, addStaffMember,
+    removeStaffMember, convertCivilianToStaff, convertStaffToCivilian, setRecruiterRole,
 } from '../../../utils/staffAdmin';
+import { STAFF_FAMILIES, familyOfMember, normalizeRank, RECRUITER_DEFAULT_RANK } from '../../../constants/ranks';
+import RolePicker from './RolePicker';
 import { sendAdminActionWebhook } from '../adminUtils';
 import { canonicalPatientId } from '../../../utils/patientId';
 import EmailChangeFlow from '../../EmailChangeFlow';
@@ -36,36 +38,47 @@ const useBusy = () => {
 };
 
 // ─────────────── Fiche du personnel : ajout / modification ───────────────
-export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc', adminEmail, showNotification, onDone }) => {
+// Le rôle se choisit par famille (PHMC Soignant / Administration & Direction / Polyvalent / DMEC) ;
+// en modification, la liste d'origine (PHMC ou DMEC) ne change pas : on reste dans ses familles.
+// Le droit Recruteur est une case indépendante du rôle (elle n'existe que pour une fiche avec compte).
+export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignant', isRecruiter = false, adminEmail, showNotification, onDone }) => {
     const isEdit = !!member;
-    const [service, setService] = useState(defaultService);
+    const [family, setFamily] = useState(defaultFamily);
     const [form, setForm] = useState({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+    const [serviceDirige, setServiceDirige] = useState('');
+    const [recruiter, setRecruiter] = useState(false);
     const [emailShown, setEmailShown] = useState('');
     const { busy, error, setError, run } = useBusy();
+
+    const service = STAFF_FAMILIES[family].service;
 
     useEffect(() => {
         if (!show) return;
         setError('');
         if (member) {
-            setService(member.service);
+            setFamily(familyOfMember(member, member.service));
             setEmailShown(member.email || '');
+            setServiceDirige(member.serviceDirige || '');
+            setRecruiter(isRecruiter);
             const parts = staffNameParts(member);
             setForm({
                 firstName: parts.firstName, lastName: parts.lastName,
                 discord: member.discord || '', phNumber: member.phNumber || '',
-                rank: member.rank || '', badge: badgeDigits(member.badge),
+                // Un ancien rôle anglais (avant migration) est présélectionné sous son équivalent français.
+                rank: normalizeRank(member.rank || member.category || ''), badge: badgeDigits(member.badge),
             });
         } else {
-            setService(defaultService);
+            setFamily(defaultFamily);
+            setServiceDirige('');
+            setRecruiter(false);
             setForm({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
         }
-    }, [show, member, defaultService, setError]);
+    }, [show, member, defaultFamily, isRecruiter, setError]);
 
-    const ranks = STAFF_SERVICES[service].ranks;
     const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
     const handleSave = () => run(async () => {
-        if (!form.rank) throw new Error('Choisissez un grade.');
+        if (!form.rank) throw new Error('Choisissez un rôle.');
         // L'ID employé n'est validé qu'à la création : en modification il n'est jamais touché.
         if (!isEdit && !/^\d{4,5}$/.test(form.badge)) throw new Error('Le numéro de badge doit contenir 4 ou 5 chiffres.');
         if (isEdit) {
@@ -73,16 +86,22 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
             if (newName && newName !== member.name && !window.confirm(
                 `Renommer « ${member.displayName} » en « ${newName} » ?\n\nSes rapports sauvegardés et leurs dossiers patients sont migrés automatiquement vers le nouveau nom. Son ID employé (${member.badge}) ne change pas.`
             )) return;
-            const outcome = await updateStaffMember(member, { firstName: form.firstName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber });
-            sendAdminActionWebhook(adminEmail, 'Fiche du personnel modifiée', `Membre : ${outcome.renamed ? `${outcome.previousName} → ${newName}` : member.displayName}\nGrade : ${rankLabel(member.service, form.rank)}\nID employé : ${member.badge}`, null, 'Admin');
+            const outcome = await updateStaffMember(member, {
+                firstName: form.firstName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige,
+            });
+            if (member.uid && recruiter !== isRecruiter) {
+                await setRecruiterRole(member.uid, recruiter);
+                sendAdminActionWebhook(adminEmail, recruiter ? 'Rôle recruteur attribué' : 'Rôle recruteur retiré', `Membre : ${member.displayName}`, null, 'Admin');
+            }
+            sendAdminActionWebhook(adminEmail, 'Fiche du personnel modifiée', `Membre : ${outcome.renamed ? `${outcome.previousName} → ${newName}` : member.displayName}\nRôle : ${rankLabel(member.service, form.rank)}\nID employé : ${member.badge}`, null, 'Admin');
             showNotification(outcome.renamed ? `${outcome.previousName} renommé(e) en ${newName} (rapports migrés).` : `Fiche de ${member.displayName} mise à jour.`, 'success');
         } else {
             if (!form.firstName.trim() || !form.lastName.trim()) throw new Error('Prénom et nom obligatoires.');
             await addStaffMember(service, {
                 firstName: form.firstName.trim(), lastName: form.lastName.trim(),
-                discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge,
+                discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge, serviceDirige,
             });
-            sendAdminActionWebhook(adminEmail, 'Membre du personnel ajouté', `Membre : ${form.firstName} ${form.lastName}\nService : ${STAFF_SERVICES[service].label}\nGrade : ${rankLabel(service, form.rank)}`, null, 'Admin');
+            sendAdminActionWebhook(adminEmail, 'Membre du personnel ajouté', `Membre : ${form.firstName} ${form.lastName}\nFamille : ${STAFF_FAMILIES[family].label}\nRôle : ${rankLabel(service, form.rank)}`, null, 'Admin');
             showNotification(`${form.firstName} ${form.lastName} ajouté(e) au personnel (sans compte de connexion).`, 'success');
         }
         onDone();
@@ -96,14 +115,6 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
             </Modal.Header>
             <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
-                {!isEdit && (
-                    <Form.Group className="mb-3">
-                        <Form.Label>Service</Form.Label>
-                        <Form.Select value={service} onChange={(e) => { setService(e.target.value); setForm((p) => ({ ...p, rank: '' })); }}>
-                            {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                        </Form.Select>
-                    </Form.Group>
-                )}
                 <div className="d-flex gap-2 mb-3">
                     <Form.Group className="flex-fill">
                         <Form.Label>Prénom</Form.Label>
@@ -120,13 +131,16 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
                         et les rapports de la personne suivent automatiquement le nouveau nom.
                     </p>
                 )}
-                <Form.Group className="mb-3">
-                    <Form.Label>Grade</Form.Label>
-                    <Form.Select value={form.rank} onChange={set('rank')}>
-                        <option value="">Sélectionner…</option>
-                        {ranks.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </Form.Select>
-                </Form.Group>
+                <RolePicker
+                    family={family}
+                    onFamilyChange={(value) => { setFamily(value); setForm((p) => ({ ...p, rank: '' })); }}
+                    rank={form.rank}
+                    onRankChange={(value) => setForm((p) => ({ ...p, rank: value }))}
+                    serviceDirige={serviceDirige}
+                    onServiceDirigeChange={setServiceDirige}
+                    allowedServices={isEdit ? [member.service] : null}
+                    idPrefix="staff-edit"
+                />
                 <div className="d-flex gap-2 mb-3">
                     <Form.Group className="flex-fill">
                         <Form.Label>{isEdit ? 'ID employé (badge) — non modifiable' : 'ID employé / badge (4 ou 5 chiffres)'}</Form.Label>
@@ -147,6 +161,16 @@ export const StaffEditDialog = ({ show, onHide, member, defaultService = 'phmc',
                     <Form.Label>Discord</Form.Label>
                     <Form.Control value={form.discord} onChange={set('discord')} />
                 </Form.Group>
+                {isEdit && member.uid && (
+                    <Form.Check
+                        className="mt-3"
+                        type="switch"
+                        id="staff-edit-recruiter"
+                        checked={recruiter}
+                        onChange={(e) => setRecruiter(e.target.checked)}
+                        label="Droit Recruteur (gestion du recrutement et des contrats)"
+                    />
+                )}
                 {isEdit && member.uid && (
                     <div className="mt-3">
                         {/* E-mail : modifiable uniquement s'il s'agit d'une adresse Eyefind Mail, après code de vérification. */}
@@ -266,7 +290,7 @@ export const ConvertToCivilDialog = ({ show, onHide, member, hasCivilProfile, ad
                 <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
                 <Button variant="warning" disabled={busy || needsId} onClick={() => run(async () => {
                     await convertStaffToCivilian(member, { patientID });
-                    sendAdminActionWebhook(adminEmail, 'Personnel → Civil', `Membre : ${member.displayName}\nGrade retiré : ${rankLabel(member.service, member.rank)}`, null, 'Admin');
+                    sendAdminActionWebhook(adminEmail, 'Personnel → Civil', `Membre : ${member.displayName}\nRôle retiré : ${rankLabel(member.service, member.rank)}`, null, 'Admin');
                     showNotification(`${member.displayName} est maintenant un compte Civil.`, 'success');
                     onDone();
                     onHide();
@@ -279,58 +303,71 @@ export const ConvertToCivilDialog = ({ show, onHide, member, hasCivilProfile, ad
 };
 
 // ─────────────── Civil → Personnel ───────────────
-export const ConvertToStaffDialog = ({ show, onHide, civilian, adminEmail, showNotification, onDone }) => {
-    const [service, setService] = useState('phmc');
+// `presetRecruiter` : nommer un recruteur. Un recruteur est du personnel (famille Administration & Direction,
+// rôle par défaut « Chargé de Recrutement ») : il se connecte par le portail personnel et figure dans la liste
+// des membres du PHMC. Ses droits ne changent pas : le droit Recruteur reste une case indépendante du rôle,
+// et son profil Civil est conservé.
+export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter = false, adminEmail, showNotification, onDone }) => {
+    const [family, setFamily] = useState('soignant');
     const [rank, setRank] = useState('');
+    const [serviceDirige, setServiceDirige] = useState('');
+    const [recruiter, setRecruiter] = useState(false);
     const [badge, setBadge] = useState('');
     const { busy, error, setError, run } = useBusy();
 
     useEffect(() => {
         if (!show || !civilian) return;
         setError('');
-        setService('phmc');
-        setRank('');
+        setFamily(presetRecruiter ? 'administration' : 'soignant');
+        setRank(presetRecruiter ? RECRUITER_DEFAULT_RANK : '');
+        setServiceDirige('');
+        setRecruiter(presetRecruiter);
         // L'ID du personnage GTA World sert de badge s'il tient sur 4-5 chiffres ; sinon à saisir.
         const characterId = civilian.gtawCharacterId != null ? String(civilian.gtawCharacterId) : '';
         setBadge(/^\d{4,5}$/.test(characterId) ? characterId : '');
-    }, [show, civilian, setError]);
-    const ranks = useMemo(() => STAFF_SERVICES[service].ranks, [service]);
+    }, [show, civilian, presetRecruiter, setError]);
     if (!civilian) return null;
     const name = `${civilian.firstName || ''} ${civilian.lastName || ''}`.trim() || civilian.email;
+    const service = STAFF_FAMILIES[family].service;
 
     return (
         <Modal show={show} onHide={onHide} centered>
-            <Modal.Header closeButton><Modal.Title>Passer {name} en Personnel</Modal.Title></Modal.Header>
+            <Modal.Header closeButton><Modal.Title>{presetRecruiter ? `Nommer ${name} recruteur` : `Passer ${name} en Personnel`}</Modal.Title></Modal.Header>
             <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
                 <p className="small">
-                    La fiche du personnel est créée avec le <strong>même compte de connexion</strong>. Le profil Civil et les dossiers
-                    de patient sont <strong>conservés</strong>. La personne doit se reconnecter pour voir ses nouveaux outils.
+                    La fiche du personnel est créée avec le <strong>même compte de connexion</strong> : la personne se connecte désormais par le
+                    portail du personnel. Le profil Civil et les dossiers de patient sont <strong>conservés</strong>. Elle doit se reconnecter
+                    pour voir ses nouveaux outils.
                 </p>
+                <RolePicker
+                    family={family}
+                    onFamilyChange={(value) => { setFamily(value); setRank(''); }}
+                    rank={rank}
+                    onRankChange={setRank}
+                    serviceDirige={serviceDirige}
+                    onServiceDirigeChange={setServiceDirige}
+                    idPrefix="convert-staff"
+                />
                 <Form.Group className="mb-3">
-                    <Form.Label>Service</Form.Label>
-                    <Form.Select value={service} onChange={(e) => { setService(e.target.value); setRank(''); }}>
-                        {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group className="mb-3">
-                    <Form.Label>Grade</Form.Label>
-                    <Form.Select value={rank} onChange={(e) => setRank(e.target.value)}>
-                        <option value="">Sélectionner…</option>
-                        {ranks.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group>
                     <Form.Label>Badge (4 ou 5 chiffres)</Form.Label>
                     <DigitsInput value={badge} onChange={setBadge} placeholder="00000" />
                 </Form.Group>
+                <Form.Check
+                    type="switch"
+                    id="convert-staff-recruiter"
+                    checked={recruiter}
+                    onChange={(e) => setRecruiter(e.target.checked)}
+                    label="Droit Recruteur (gestion du recrutement et des contrats)"
+                />
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
                 <Button variant="success" disabled={busy || !rank || !/^\d{4,5}$/.test(badge)} onClick={() => run(async () => {
-                    await convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue: badge });
-                    sendAdminActionWebhook(adminEmail, 'Civil → Personnel', `Compte : ${name}\nService : ${STAFF_SERVICES[service].label}\nGrade : ${rankLabel(service, rank)}`, null, 'Admin');
-                    showNotification(`${name} est maintenant membre du personnel.`, 'success');
+                    await convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue: badge, serviceDirige });
+                    if (recruiter) await setRecruiterRole(civilian.uid, true);
+                    sendAdminActionWebhook(adminEmail, recruiter ? 'Civil → Personnel (recruteur)' : 'Civil → Personnel', `Compte : ${name}\nFamille : ${STAFF_FAMILIES[family].label}\nRôle : ${rankLabel(service, rank)}`, null, 'Admin');
+                    showNotification(`${name} est maintenant membre du personnel${recruiter ? ' et recruteur' : ''}.`, 'success');
                     onDone();
                     onHide();
                 })}>

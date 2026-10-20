@@ -10,6 +10,7 @@ import { useDebug } from '../../contexts/DebugContext';
 import UsersHub from './users/UsersHub';
 import DebugWhitelist from './DebugWhitelist';
 import DebugSeasonTester from './DebugSeasonTester';
+import DebugViewAs from './DebugViewAs';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 
 const AdminDashboard = ({
@@ -372,6 +373,8 @@ const AdminDashboard = ({
                                 </p>
                                 <hr />
                                 <DebugSeasonTester showInAppNotification={showInAppNotification} />
+                                <hr />
+                                <DebugViewAs showInAppNotification={showInAppNotification} />
                             </div>
                         </div>
                     )}

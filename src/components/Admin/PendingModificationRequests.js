@@ -4,7 +4,7 @@ import { Form, Button, Table, Badge } from 'react-bootstrap';
 import Select from 'react-select';
 import { database } from '../../firebase';
 import { ref, get, set, update, remove } from 'firebase/database';
-import { PHMC_RANKS, CORONER_RANKS } from '../../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, normalizeRank } from '../../constants/ranks';
 
 const PendingModificationRequests = ({ showNotification, currentUser }) => {
     const [pendingRequests, setPendingRequests] = useState([]);
@@ -275,7 +275,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                     <Form.Label style={{ color: '#c9d1d9' }}>Rang</Form.Label>
                                     <Select
                                         options={CORONER_RANKS}
-                                        value={CORONER_RANKS.find(r => r.value === editingRequest.newData.rank)}
+                                        value={CORONER_RANKS.find(r => r.value === normalizeRank(editingRequest.newData.rank))}
                                         onChange={(selectedOption) => setEditingRequest({
                                             ...editingRequest,
                                             newData: {...editingRequest.newData, rank: selectedOption.value, category: selectedOption.value}
@@ -358,7 +358,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                     <Form.Label style={{ color: '#c9d1d9' }}>Rang</Form.Label>
                                     <Select
                                         options={PHMC_RANKS}
-                                        value={PHMC_RANKS.find(r => r.value === editingRequest.newData.rank)}
+                                        value={PHMC_RANKS.find(r => r.value === normalizeRank(editingRequest.newData.rank))}
                                         onChange={(selectedOption) => setEditingRequest({
                                             ...editingRequest,
                                             newData: {...editingRequest.newData, rank: selectedOption.value, category: selectedOption.value}

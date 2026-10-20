@@ -22,7 +22,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
     // ID du patient : ne s'imprime PAS sur le document, il sert uniquement à ranger l'AMA
     // dans les rapports du médecin et dans le dossier du patient.
     const [patientID, setPatientID] = useState('');
-    // L'AMA est réservé aux médecins (personnel PHMC) et aux admins.
+    // L'AMA est réservé au personnel soignant du PHMC (famille « PHMC · Soignant ») et aux admins.
     const { canUseAma, staffName } = useEmployeeAuth();
     const [isPreviewVisible, setIsPreviewVisible] = useState(true);
 
@@ -169,7 +169,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
 
     const handleSave = useCallback(async () => {
         if (!canUseAma) {
-            showNotification('Le formulaire AMA est réservé aux médecins.', 'warning');
+            showNotification('Le formulaire AMA est réservé au personnel soignant.', 'warning');
             return;
         }
         if (!patientID.trim()) {
@@ -349,7 +349,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
                         </Button>
                     </div>
                     <div className="ems-ama-modal-body">
-                        <p>Le formulaire AMA est réservé aux médecins (personnel PHMC) connectés.</p>
+                        <p>Le formulaire AMA est réservé au personnel soignant du PHMC connecté.</p>
                     </div>
                 </div>
             </div>

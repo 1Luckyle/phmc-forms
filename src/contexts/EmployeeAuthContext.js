@@ -4,6 +4,7 @@ import { auth, database } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth';
 import { ref, get, set, onValue } from 'firebase/database';
 import { canonicalPatientId } from '../utils/patientId';
+import { getViewAs, saveViewAs, buildSimulatedIdentity, deriveIdentity } from '../utils/viewAs';
 
 const CREATE_GTAW_CIVILIAN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawCivilianAccount';
 
@@ -21,7 +22,18 @@ export const EmployeeAuthProvider = ({ children }) => {
     // staff/phmc|coroner : sans elle, ses rapports/copies étaient rangés sous
     // son adresse e-mail au lieu de son nom.
     const [adminStaffProfile, setAdminStaffProfile] = useState(null);
-    const isCivilian = !isAdmin && !employeeProfile && !!civilianProfile;
+    // « Visualiser en tant que » (panneau admin → Debug) : profil simulé, mémorisé dans le navigateur. Il n'est
+    // honoré que si le VRAI compte est administrateur (voir plus bas).
+    const [viewAs, setViewAsState] = useState(() => getViewAs());
+    const setViewAs = (view) => {
+        saveViewAs(view);
+        setViewAsState(view);
+    };
+    useEffect(() => {
+        const onStorage = () => setViewAsState(getViewAs());
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
+    }, []);
 
     // Le profil n'est lu qu'à la connexion : après une auto-édition (téléphone, Discord, e-mail
     // depuis « Mon profil »), on fusionne les champs modifiés dans l'état local pour que
@@ -343,18 +355,6 @@ export const EmployeeAuthProvider = ({ children }) => {
         }
     };
 
-    // Identité « personnel » unifiée : fiche de l'employé connecté, ou fiche
-    // staff d'un admin. C'est LE nom sous lequel les rapports sont rangés
-    // (savedReports/{nom}) — jamais l'e-mail.
-    const staffProfile = employeeProfile || adminStaffProfile;
-    const staffName = staffProfile
-        ? (staffProfile.name
-            || (staffProfile.firstName && staffProfile.lastName ? `${staffProfile.firstName} ${staffProfile.lastName}` : null))
-        : null;
-    // Le formulaire AMA est réservé aux médecins (personnel PHMC) et aux admins.
-    const isPhmcStaff = staffProfile?.type === 'phmc';
-    const canUseAma = isAdmin || isPhmcStaff;
-
     // Rôle « recruteur » : un compte Civil (mêmes accès qu'un civil) + un drapeau
     // recruiterUIDs/{uid} posé par un admin, qui donne en plus l'onglet Recrutement de la
     // boîte à outils. Un recruteur reste donc `isCivilian`.
@@ -392,8 +392,16 @@ export const EmployeeAuthProvider = ({ children }) => {
         );
         return () => unsubscribe();
     }, [uid]);
-    // Peut accéder à la gestion des recrutements (admins + recruteurs).
-    const canManageRecruitment = isAdmin || isRecruiter;
+    // Identité EFFECTIVE : la vraie, ou le profil simulé par un admin (« visualiser en tant que »). Tout ce que
+    // l'application consulte (droits, menu, formulaires) passe par elle ; l'accès Firebase, lui, reste celui du
+    // vrai compte.
+    const simulation = isAdmin && viewAs ? buildSimulatedIdentity(viewAs, currentEmployee) : null;
+    const effective = simulation || { currentEmployee, employeeProfile, civilianProfile, adminStaffProfile, isAdmin, isRecruiter, isContractCandidate };
+    // Identité « personnel » unifiée : fiche de l'employé connecté, ou fiche staff d'un admin. C'est LE nom
+    // sous lequel les rapports sont rangés (savedReports/{nom}) — jamais l'e-mail. Le formulaire AMA est
+    // réservé au personnel soignant du PHMC et aux admins ; la gestion du recrutement aux admins et recruteurs.
+    const derived = deriveIdentity(effective);
+    const { staffProfile } = derived;
 
     // ID patient de la personne connectée : celui de son profil Civil ; pour le personnel,
     // PHMC-{ID employé} — l'ID employé est le numéro de badge (les chiffres après le préfixe, qui
@@ -403,27 +411,32 @@ export const EmployeeAuthProvider = ({ children }) => {
         ? String(staffProfile.badge).split('-').slice(1).join('')
         : String(staffProfile?.badge || '').replace(/\D/g, '');
     const myPatientID = canonicalPatientId(
-        civilianProfile?.patientID
+        effective.civilianProfile?.patientID
         || (staffProfile?.gtawCharacterId != null ? `PHMC-${staffProfile.gtawCharacterId}` : '')
         || (staffBadgeDigits ? `PHMC-${staffBadgeDigits}` : '')
     );
 
     const value = {
-        isRecruiter,
-        isContractCandidate,
-        canManageRecruitment,
+        isRecruiter: effective.isRecruiter,
+        isContractCandidate: effective.isContractCandidate,
+        canManageRecruitment: derived.canManageRecruitment,
         myPatientID,
-        currentEmployee,
-        employeeProfile,
+        currentEmployee: effective.currentEmployee,
+        employeeProfile: effective.employeeProfile,
         staffProfile,
         updateLocalStaffProfile,
-        staffName,
-        isPhmcStaff,
-        canUseAma,
-        civilianProfile,
-        isCivilian,
+        staffName: derived.staffName,
+        isPhmcStaff: derived.isPhmcStaff,
+        canUseAma: derived.canUseAma,
+        civilianProfile: effective.civilianProfile,
+        isCivilian: derived.isCivilian,
         isLoading,
-        isAdmin,
+        isAdmin: effective.isAdmin,
+        // Simulation « visualiser en tant que » : profil actif (null = aucune), son réglage, et les valeurs réelles.
+        viewAs: simulation ? viewAs : null,
+        setViewAs,
+        realIsAdmin: isAdmin,
+        realCurrentEmployee: currentEmployee,
         requestEmployeeAccount,
         createEmployeeAccount,
         createCivilianAccountFromGtaw,

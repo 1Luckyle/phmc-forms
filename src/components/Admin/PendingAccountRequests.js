@@ -7,7 +7,7 @@ import { ref, get, set, remove } from 'firebase/database';
 import { initializeApp, deleteApp, getApps } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
-import { PHMC_RANKS, CORONER_RANKS } from '../../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../constants/ranks';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
@@ -151,10 +151,12 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 firstName,
                 lastName,
                 discord: request.discord || '',
-                rank: request.rank,
+                // Une demande déposée avant la migration peut porter un ancien rôle anglais : on l'enregistre en français.
+                rank: normalizeRank(request.rank),
                 badge: request.badge || '',
                 phNumber: request.phNumber || '',
-                category: request.rank,
+                category: normalizeRank(request.rank),
+                pole: familyOfRank(request.rank, request.isCoroner ? 'coroner' : 'phmc'),
                 uid: user.uid,
                 email: request.email,
                 createdAt: new Date().toISOString(),
@@ -305,7 +307,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                             <Form.Label style={{ color: '#c9d1d9' }}>Grade</Form.Label>
                             <Select
                                 options={editingRequest.isCoroner ? CORONER_RANKS : PHMC_RANKS}
-                                value={(editingRequest.isCoroner ? CORONER_RANKS : PHMC_RANKS).find(r => r.value === editingRequest.rank)}
+                                value={(editingRequest.isCoroner ? CORONER_RANKS : PHMC_RANKS).find(r => r.value === normalizeRank(editingRequest.rank))}
                                 onChange={(selectedOption) => setEditingRequest({...editingRequest, rank: selectedOption.value})}
                                 placeholder="Sélectionner le grade..."
                                 styles={{

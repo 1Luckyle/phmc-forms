@@ -3,23 +3,27 @@
 // Menu unique « Utilisateurs » du panneau admin : il remplace les anciennes fenêtres
 // « Gérer le Personnel » et « Gérer les Civils » (styles et logiques différents) par UNE
 // interface, découpée en catégories :
-//   Personnel · Civils · Recruteurs · Outils (statistiques, rapports, migration, réindexation)
-// Les rôles se gèrent ici : recruteur (ajout/retrait direct), Civil ⇄ Personnel (conversion
-// encadrée, avec confirmation et sans rien supprimer). L'admin n'est pas géré depuis ce menu.
+//   Personnel · Civils · Recruteurs · Outils (rôles en français, statistiques, rapports, migration, réindexation)
+// Deux grandes familles de comptes : Civil (pur) et Personnel — lui-même en 4 familles (PHMC Soignant,
+// PHMC Administration & Direction, PHMC Polyvalent, DMEC). Un recruteur est du personnel avec en plus le
+// droit Recruteur. Civil ⇄ Personnel : conversion encadrée, avec confirmation et sans rien supprimer.
+// L'admin n'est pas géré depuis ce menu (un badge Admin signale simplement ces comptes).
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Dropdown, Form, Modal, Alert, Spinner, Badge } from 'react-bootstrap';
 import './UsersHub.css';
 import UserStats from '../UserStats';
 import EmailChangeFlow from '../../EmailChangeFlow';
 import AdminReportsTools from '../AdminReportsTools';
+import RankMigrationPanel from './RankMigrationPanel';
 import { sendAdminActionWebhook } from '../adminUtils';
 import {
     StaffEditDialog, RemoveStaffDialog, ConvertToCivilDialog, ConvertToStaffDialog,
 } from './StaffDialogs';
 import {
-    STAFF_SERVICES, rankLabel, loadStaffMembers, loadCivilians, loadRecruiterUids,
+    rankLabel, loadStaffMembers, loadCivilians, loadRecruiterUids, loadAdminUids,
     setRecruiterRole, saveCivilianProfile, deleteCivilianAccount,
 } from '../../../utils/staffAdmin';
+import { STAFF_FAMILIES } from '../../../constants/ranks';
 
 const matches = (query, ...values) => {
     const q = query.trim().toLowerCase();
@@ -33,15 +37,21 @@ const SearchBar = ({ value, onChange, placeholder, children }) => (
     </div>
 );
 
+// Badges « qui est quoi » : une famille du personnel, Civil, Recruteur, Admin.
+const BADGES = {
+    soignant: { text: 'PHMC Soignant', bg: 'primary' },
+    administration: { text: 'PHMC Administration', bg: 'warning', textColor: 'dark' },
+    polyvalent: { text: 'PHMC Polyvalent', bg: 'secondary' },
+    dmec: { text: 'DMEC', bg: 'dark' },
+    civil: { text: 'Civil', bg: 'success' },
+    recruiter: { text: 'Recruteur', bg: 'info', textColor: 'dark' },
+    recruiterNoFile: { text: 'Recruteur sans fiche personnel', bg: 'danger' },
+    admin: { text: 'Admin', bg: 'danger' },
+};
+
 const RoleBadge = ({ role }) => {
-    const map = {
-        phmc: { text: 'PHMC', bg: 'primary' },
-        coroner: { text: 'DMEC', bg: 'dark' },
-        civil: { text: 'Civil', bg: 'success' },
-        recruiter: { text: 'Recruteur', bg: 'info' },
-    };
-    const info = map[role] || { text: role, bg: 'secondary' };
-    return <Badge bg={info.bg} className="uh-role">{info.text}</Badge>;
+    const info = BADGES[role] || { text: role, bg: 'secondary' };
+    return <Badge bg={info.bg} text={info.textColor} className="uh-role">{info.text}</Badge>;
 };
 
 const ActionsMenu = ({ children }) => (
@@ -51,61 +61,125 @@ const ActionsMenu = ({ children }) => (
     </Dropdown>
 );
 
+const nameOfCivilian = (c) => `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
+
 // ───────────────────────────── Personnel ─────────────────────────────
-const StaffTab = ({ staff, civilUids, adminEmail, showNotification, reload }) => {
+// Quatre familles : PHMC Soignant, PHMC Administration & Direction, PHMC Polyvalent, DMEC. Chaque ligne
+// montre la famille, le rôle (en français), le service dirigé d'un Chef de Service et les droits
+// supplémentaires (Recruteur, Admin).
+const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, showNotification, reload }) => {
     const [query, setQuery] = useState('');
-    const [service, setService] = useState('all');
+    const [family, setFamily] = useState('all');
     const [editing, setEditing] = useState(null);
     const [adding, setAdding] = useState(false);
     const [removing, setRemoving] = useState(null);
     const [toCivil, setToCivil] = useState(null);
 
-    const rows = useMemo(() => staff.filter((m) => (service === 'all' || m.service === service)
-        && matches(query, m.displayName, m.rank, m.badge, m.discord, m.email, m.phNumber)), [staff, service, query]);
+    const familyCounts = useMemo(() => {
+        const counts = {};
+        staff.forEach((m) => { counts[m.family] = (counts[m.family] || 0) + 1; });
+        return counts;
+    }, [staff]);
+
+    const rows = useMemo(() => staff.filter((m) => (family === 'all' || m.family === family)
+        && matches(query, m.displayName, rankLabel(m.service, m.rank || m.category), m.serviceDirige, m.badge, m.discord, m.email, m.phNumber)),
+    [staff, family, query]);
+
+    const toggleRecruiter = async (member) => {
+        const enabled = recruiterUids[member.uid] !== true;
+        if (!window.confirm(enabled
+            ? `Donner le droit Recruteur à ${member.displayName} ? Rôle et famille ne changent pas.`
+            : `Retirer le droit Recruteur à ${member.displayName} ? Rôle et famille ne changent pas.`)) return;
+        try {
+            await setRecruiterRole(member.uid, enabled);
+            sendAdminActionWebhook(adminEmail, enabled ? 'Rôle recruteur attribué' : 'Rôle recruteur retiré', `Membre : ${member.displayName}`, null, 'Admin');
+            showNotification(enabled ? `${member.displayName} est maintenant recruteur.` : `${member.displayName} n'est plus recruteur.`, 'success');
+            reload();
+        } catch (error) {
+            console.error(error);
+            showNotification('Impossible de modifier le droit (règles Firebase à déployer ?).', 'error');
+        }
+    };
+
+    // En-têtes de groupe quand toutes les familles sont affichées.
+    let lastFamily = null;
 
     return (
         <>
-            <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un membre (nom, grade, badge, téléphone, Discord…)">
-                <Form.Select className="uh-filter" value={service} onChange={(e) => setService(e.target.value)}>
-                    <option value="all">Tous les services</option>
-                    {Object.values(STAFF_SERVICES).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                </Form.Select>
+            <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un membre (nom, rôle, service, badge, téléphone, Discord…)">
                 <Button variant="primary" size="sm" onClick={() => setAdding(true)}><i className="fas fa-user-plus"></i> Ajouter</Button>
             </SearchBar>
+            <div className="uh-family-filters">
+                <button type="button" className={`uh-chip${family === 'all' ? ' on' : ''}`} onClick={() => setFamily('all')}>
+                    Tous <Badge bg="secondary">{staff.length}</Badge>
+                </button>
+                {Object.values(STAFF_FAMILIES).map((f) => (
+                    <button key={f.key} type="button" className={`uh-chip${family === f.key ? ' on' : ''}`} onClick={() => setFamily(f.key)} title={f.description}>
+                        {f.label} <Badge bg="secondary">{familyCounts[f.key] || 0}</Badge>
+                    </button>
+                ))}
+            </div>
             <div className="table-responsive">
                 <table className="table table-hover align-middle uh-table">
-                    <thead><tr><th>Nom</th><th>Service</th><th>Grade</th><th>Badge</th><th>Téléphone</th><th>Discord</th><th>Compte</th><th></th></tr></thead>
+                    <thead><tr><th>Nom</th><th>Rôle</th><th>Badge</th><th>Téléphone</th><th>Discord</th><th>Compte</th><th></th></tr></thead>
                     <tbody>
-                        {rows.map((m) => (
-                            <tr key={`${m.service}-${m.storageKey}`}>
-                                <td className="fw-semibold">{m.displayName}</td>
-                                <td><RoleBadge role={m.service} /></td>
-                                <td>{rankLabel(m.service, m.rank)}</td>
-                                <td>{m.badge || '—'}</td>
-                                <td>{m.phNumber || '—'}</td>
-                                <td>{m.discord || '—'}</td>
-                                <td>{m.uid
-                                    ? <span className="text-success" title={m.email || ''}><i className="fas fa-check-circle"></i> lié</span>
-                                    : <span className="text-muted" title="Fiche sans compte de connexion"><i className="fas fa-minus-circle"></i> aucun</span>}</td>
-                                <td className="text-end">
-                                    <ActionsMenu>
-                                        <Dropdown.Item onClick={() => setEditing(m)}><i className="fas fa-edit me-2"></i>Modifier (grade, badge…)</Dropdown.Item>
-                                        <Dropdown.Item disabled={!m.uid} onClick={() => setToCivil(m)}>
-                                            <i className="fas fa-user me-2"></i>Passer en Civil{!m.uid ? ' (compte requis)' : ''}
-                                        </Dropdown.Item>
-                                        <Dropdown.Divider />
-                                        <Dropdown.Item className="text-danger" onClick={() => setRemoving(m)}><i className="fas fa-trash me-2"></i>Supprimer définitivement…</Dropdown.Item>
-                                    </ActionsMenu>
-                                </td>
-                            </tr>
-                        ))}
-                        {rows.length === 0 && <tr><td colSpan={8} className="text-center text-muted py-4">Aucun membre ne correspond.</td></tr>}
+                        {rows.map((m) => {
+                            const header = family === 'all' && m.family !== lastFamily;
+                            lastFamily = m.family;
+                            return (
+                                <React.Fragment key={`${m.service}-${m.storageKey}`}>
+                                    {header && (
+                                        <tr className="uh-group-row">
+                                            <td colSpan={7}>
+                                                <strong>{STAFF_FAMILIES[m.family]?.label}</strong>
+                                                <small className="ms-2">{STAFF_FAMILIES[m.family]?.description}</small>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    <tr>
+                                        <td className="fw-semibold">
+                                            {m.displayName}{' '}
+                                            <RoleBadge role={m.family} />
+                                            {recruiterUids[m.uid] === true && <> <RoleBadge role="recruiter" /></>}
+                                            {adminUids[m.uid] === true && <> <RoleBadge role="admin" /></>}
+                                            {m.uid && civilUids.has(m.uid) && <small className="text-muted ms-1" title="Ce compte a aussi un profil Civil (conservé)">+ profil Civil</small>}
+                                        </td>
+                                        <td>
+                                            {rankLabel(m.service, m.rank || m.category)}
+                                            {m.serviceDirige && <small className="d-block text-muted">Service : {m.serviceDirige}</small>}
+                                        </td>
+                                        <td>{m.badge || '—'}</td>
+                                        <td>{m.phNumber || '—'}</td>
+                                        <td>{m.discord || '—'}</td>
+                                        <td>{m.uid
+                                            ? <span className="text-success" title={m.email || ''}><i className="fas fa-check-circle"></i> lié</span>
+                                            : <span className="text-muted" title="Fiche sans compte de connexion"><i className="fas fa-minus-circle"></i> aucun</span>}</td>
+                                        <td className="text-end">
+                                            <ActionsMenu>
+                                                <Dropdown.Item onClick={() => setEditing(m)}><i className="fas fa-edit me-2"></i>Modifier (rôle, badge…)</Dropdown.Item>
+                                                <Dropdown.Item disabled={!m.uid} onClick={() => toggleRecruiter(m)}>
+                                                    <i className="fas fa-user-tie me-2"></i>{recruiterUids[m.uid] === true ? 'Retirer le droit Recruteur' : 'Donner le droit Recruteur'}{!m.uid ? ' (compte requis)' : ''}
+                                                </Dropdown.Item>
+                                                <Dropdown.Item disabled={!m.uid} onClick={() => setToCivil(m)}>
+                                                    <i className="fas fa-user me-2"></i>Passer en Civil{!m.uid ? ' (compte requis)' : ''}
+                                                </Dropdown.Item>
+                                                <Dropdown.Divider />
+                                                <Dropdown.Item className="text-danger" onClick={() => setRemoving(m)}><i className="fas fa-trash me-2"></i>Supprimer définitivement…</Dropdown.Item>
+                                            </ActionsMenu>
+                                        </td>
+                                    </tr>
+                                </React.Fragment>
+                            );
+                        })}
+                        {rows.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">Aucun membre ne correspond.</td></tr>}
                     </tbody>
                 </table>
             </div>
 
-            <StaffEditDialog show={!!editing} onHide={() => setEditing(null)} member={editing} adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
-            <StaffEditDialog show={adding} onHide={() => setAdding(false)} member={null} adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
+            <StaffEditDialog show={!!editing} onHide={() => setEditing(null)} member={editing} isRecruiter={!!editing && recruiterUids[editing.uid] === true}
+                adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
+            <StaffEditDialog show={adding} onHide={() => setAdding(false)} member={null} defaultFamily={family === 'all' ? 'soignant' : family}
+                adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
             <RemoveStaffDialog show={!!removing} onHide={() => setRemoving(null)} member={removing} allStaff={staff} adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
             <ConvertToCivilDialog show={!!toCivil} onHide={() => setToCivil(null)} member={toCivil}
                 hasCivilProfile={!!toCivil && civilUids.has(toCivil.uid)} adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
@@ -174,29 +248,28 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
     );
 };
 
-const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNotification, reload }) => {
+// ───────────────────────────── Civils (comptes Civils purs) ─────────────────────────────
+// Un Civil « pur » n'a pas de fiche du personnel. Une personne qui a une fiche (y compris un recruteur) est
+// dans l'onglet Personnel, même si elle garde aussi son profil Civil.
+const CiviliansTab = ({ civilians, recruiterUids, adminEmail, showNotification, reload }) => {
     const [query, setQuery] = useState('');
     const [editing, setEditing] = useState(null);
-    const [toStaff, setToStaff] = useState(null);
+    const [toStaff, setToStaff] = useState(null); // { civilian, recruiter }
     const [deleting, setDeleting] = useState(null);
 
     const rows = useMemo(() => civilians.filter((c) => matches(query, c.firstName, c.lastName, c.patientID, c.email, c.phone, c.discord)), [civilians, query]);
-    const nameOf = (c) => `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
+    const nameOf = nameOfCivilian;
 
-    const toggleRecruiter = async (civilian) => {
-        const isRecruiter = recruiterUids[civilian.uid] === true;
-        const question = isRecruiter
-            ? `Retirer le rôle de recruteur à ${nameOf(civilian)} ? Il garde son compte Civil.`
-            : `Donner le rôle de recruteur à ${nameOf(civilian)} ? Il gardera ses accès de Civil et gérera en plus les postes et les candidatures.`;
-        if (!window.confirm(question)) return;
+    const removeRecruiterFlag = async (civilian) => {
+        if (!window.confirm(`Retirer le droit Recruteur à ${nameOf(civilian)} ? Il garde son compte Civil.`)) return;
         try {
-            await setRecruiterRole(civilian.uid, !isRecruiter);
-            sendAdminActionWebhook(adminEmail, isRecruiter ? 'Rôle recruteur retiré' : 'Rôle recruteur attribué', `Compte : ${nameOf(civilian)} (${civilian.patientID})`, null, 'Admin');
-            showNotification(isRecruiter ? `${nameOf(civilian)} n'est plus recruteur.` : `${nameOf(civilian)} est maintenant recruteur.`, 'success');
+            await setRecruiterRole(civilian.uid, false);
+            sendAdminActionWebhook(adminEmail, 'Rôle recruteur retiré', `Compte : ${nameOf(civilian)} (${civilian.patientID})`, null, 'Admin');
+            showNotification(`${nameOf(civilian)} n'est plus recruteur.`, 'success');
             reload();
         } catch (error) {
             console.error(error);
-            showNotification('Impossible de modifier le rôle (règles Firebase à déployer ?).', 'error');
+            showNotification('Impossible de modifier le droit (règles Firebase à déployer ?).', 'error');
         }
     };
 
@@ -216,14 +289,17 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
 
     return (
         <>
+            <p className="text-muted small">
+                Comptes <strong>Civils purs</strong> (sans fiche du personnel). Un recruteur est du <strong>personnel</strong> : pour en nommer un,
+                utilisez « Nommer recruteur » (le compte passe en Personnel, famille Administration & Direction, sans perdre son profil Civil).
+            </p>
             <SearchBar value={query} onChange={setQuery} placeholder="Rechercher un civil (nom, ID patient, e-mail, téléphone, Discord…)" />
             <div className="table-responsive">
                 <table className="table table-hover align-middle uh-table">
-                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th>Téléphone</th><th>Discord</th><th>Rôle</th><th></th></tr></thead>
+                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th>Téléphone</th><th>Discord</th><th>Statut</th><th></th></tr></thead>
                     <tbody>
                         {rows.map((c) => {
-                            const isStaff = staffUids.has(c.uid);
-                            const isRecruiter = recruiterUids[c.uid] === true;
+                            const flaggedRecruiter = recruiterUids[c.uid] === true;
                             return (
                                 <tr key={c.uid}>
                                     <td className="fw-semibold">{nameOf(c)}</td>
@@ -232,18 +308,21 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
                                     <td>{c.phone || '—'}</td>
                                     <td>{c.discord || '—'}</td>
                                     <td>
-                                        {isStaff ? <span title="Ce compte a aussi une fiche du personnel (elle a la priorité)"><RoleBadge role="phmc" /> <small className="text-muted">+ profil Civil</small></span>
-                                            : isRecruiter ? <RoleBadge role="recruiter" /> : <RoleBadge role="civil" />}
+                                        <RoleBadge role="civil" />
+                                        {flaggedRecruiter && <> <span title="Ancien recruteur resté Civil : créez sa fiche du personnel"><RoleBadge role="recruiterNoFile" /></span></>}
                                     </td>
                                     <td className="text-end">
                                         <ActionsMenu>
                                             <Dropdown.Item onClick={() => setEditing(c)}><i className="fas fa-edit me-2"></i>Modifier le profil</Dropdown.Item>
-                                            <Dropdown.Item disabled={isStaff} onClick={() => toggleRecruiter(c)}>
-                                                <i className="fas fa-user-tie me-2"></i>{isRecruiter ? 'Retirer le rôle de recruteur' : 'Donner le rôle de recruteur'}
+                                            <Dropdown.Item onClick={() => setToStaff({ civilian: c, recruiter: true })}>
+                                                <i className="fas fa-user-tie me-2"></i>{flaggedRecruiter ? 'Créer sa fiche du personnel (recruteur)…' : 'Nommer recruteur…'}
                                             </Dropdown.Item>
-                                            <Dropdown.Item disabled={isStaff} onClick={() => setToStaff(c)}>
-                                                <i className="fas fa-user-md me-2"></i>Passer en Personnel…{isStaff ? ' (déjà personnel)' : ''}
+                                            <Dropdown.Item onClick={() => setToStaff({ civilian: c, recruiter: false })}>
+                                                <i className="fas fa-user-md me-2"></i>Passer en Personnel…
                                             </Dropdown.Item>
+                                            {flaggedRecruiter && (
+                                                <Dropdown.Item onClick={() => removeRecruiterFlag(c)}><i className="fas fa-user-slash me-2"></i>Retirer le droit Recruteur</Dropdown.Item>
+                                            )}
                                             <Dropdown.Divider />
                                             <Dropdown.Item className="text-danger" onClick={() => setDeleting(c)}><i className="fas fa-trash me-2"></i>Supprimer le compte…</Dropdown.Item>
                                         </ActionsMenu>
@@ -257,7 +336,8 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
             </div>
 
             <CivilianEditDialog show={!!editing} onHide={() => setEditing(null)} civilian={editing} showNotification={showNotification} onDone={reload} />
-            <ConvertToStaffDialog show={!!toStaff} onHide={() => setToStaff(null)} civilian={toStaff} adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
+            <ConvertToStaffDialog show={!!toStaff} onHide={() => setToStaff(null)} civilian={toStaff?.civilian || null} presetRecruiter={!!toStaff?.recruiter}
+                adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
             <Modal show={!!deleting} onHide={() => setDeleting(null)} centered>
                 <Modal.Header closeButton><Modal.Title>Supprimer le compte Civil</Modal.Title></Modal.Header>
                 <Modal.Body>
@@ -279,60 +359,95 @@ const CiviliansTab = ({ civilians, staffUids, recruiterUids, adminEmail, showNot
 };
 
 // ───────────────────────────── Recruteurs ─────────────────────────────
-const RecruitersTab = ({ civilians, recruiterUids, adminEmail, showNotification, reload }) => {
-    const [selectedUid, setSelectedUid] = useState('');
-    const recruiters = civilians.filter((c) => recruiterUids[c.uid] === true);
-    const candidates = civilians.filter((c) => recruiterUids[c.uid] !== true);
-    const nameOf = (c) => `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
+// Un recruteur est un membre du PERSONNEL (fiche PHMC, famille de son choix — par défaut Administration &
+// Direction) qui a en plus le droit Recruteur. Cet onglet les liste tous, y compris les anciens recruteurs
+// restés Civils sans fiche, à régulariser.
+const RecruitersTab = ({ staff, civilians, recruiterUids, adminEmail, showNotification, reload }) => {
+    const [selected, setSelected] = useState('');
+    const [toStaff, setToStaff] = useState(null);
+    const staffUidSet = useMemo(() => new Set(staff.map((m) => m.uid).filter(Boolean)), [staff]);
 
-    const change = async (civilian, enabled) => {
-        if (!window.confirm(enabled
-            ? `Donner le rôle de recruteur à ${nameOf(civilian)} ?`
-            : `Retirer le rôle de recruteur à ${nameOf(civilian)} ? Il garde son compte Civil.`)) return;
+    const staffRecruiters = staff.filter((m) => m.uid && recruiterUids[m.uid] === true);
+    const civilRecruiters = civilians.filter((c) => recruiterUids[c.uid] === true && !staffUidSet.has(c.uid));
+    const staffCandidates = staff.filter((m) => m.uid && recruiterUids[m.uid] !== true);
+    const civilCandidates = civilians.filter((c) => recruiterUids[c.uid] !== true && !staffUidSet.has(c.uid));
+
+    const setFlag = async (uid, label, enabled) => {
+        if (!window.confirm(enabled ? `Donner le droit Recruteur à ${label} ?` : `Retirer le droit Recruteur à ${label} ? Son rôle et son compte ne changent pas.`)) return;
         try {
-            await setRecruiterRole(civilian.uid, enabled);
-            sendAdminActionWebhook(adminEmail, enabled ? 'Rôle recruteur attribué' : 'Rôle recruteur retiré', `Compte : ${nameOf(civilian)} (${civilian.patientID})`, null, 'Admin');
-            showNotification(enabled ? `${nameOf(civilian)} est maintenant recruteur.` : `${nameOf(civilian)} n'est plus recruteur.`, 'success');
-            setSelectedUid('');
+            await setRecruiterRole(uid, enabled);
+            sendAdminActionWebhook(adminEmail, enabled ? 'Rôle recruteur attribué' : 'Rôle recruteur retiré', `Compte : ${label}`, null, 'Admin');
+            showNotification(enabled ? `${label} est maintenant recruteur.` : `${label} n'est plus recruteur.`, 'success');
+            setSelected('');
             reload();
         } catch (error) {
             console.error(error);
-            showNotification('Impossible de modifier le rôle (règles Firebase à déployer ?).', 'error');
+            showNotification('Impossible de modifier le droit (règles Firebase à déployer ?).', 'error');
+        }
+    };
+
+    const nominate = () => {
+        const [kind, uid] = selected.split(':');
+        if (kind === 'staff') {
+            const member = staff.find((m) => m.uid === uid);
+            if (member) setFlag(uid, member.displayName, true);
+        } else {
+            const civilian = civilians.find((c) => c.uid === uid);
+            if (civilian) setToStaff(civilian);
         }
     };
 
     return (
         <>
             <p className="text-muted small">
-                Un recruteur est un compte <strong>Civil</strong> qui garde tous ses accès, avec en plus la « Gestion du recrutement »
-                (postes et candidatures) dans sa Boîte à Outils.
+                Un recruteur est du <strong>personnel</strong> : il se connecte par le portail du personnel et figure dans la liste des membres du PHMC.
+                Ses droits sont ceux d'un compte Civil amélioré (gestion du recrutement, contrats) : le droit Recruteur est indépendant de son rôle.
             </p>
             <div className="uh-toolbar">
-                <Form.Select className="uh-search" value={selectedUid} onChange={(e) => setSelectedUid(e.target.value)}>
-                    <option value="">Choisir un compte Civil à nommer recruteur…</option>
-                    {candidates.map((c) => <option key={c.uid} value={c.uid}>{nameOf(c)} — {c.patientID}</option>)}
+                <Form.Select className="uh-search" value={selected} onChange={(e) => setSelected(e.target.value)}>
+                    <option value="">Choisir qui nommer recruteur…</option>
+                    <optgroup label="Personnel (le droit est ajouté, rien d'autre ne change)">
+                        {staffCandidates.map((m) => <option key={m.uid} value={`staff:${m.uid}`}>{m.displayName} — {rankLabel(m.service, m.rank || m.category)}</option>)}
+                    </optgroup>
+                    <optgroup label="Civils (passage en Personnel, famille Administration par défaut)">
+                        {civilCandidates.map((c) => <option key={c.uid} value={`civil:${c.uid}`}>{nameOfCivilian(c)} — {c.patientID}</option>)}
+                    </optgroup>
                 </Form.Select>
-                <Button variant="primary" size="sm" disabled={!selectedUid} onClick={() => change(civilians.find((c) => c.uid === selectedUid), true)}>
+                <Button variant="primary" size="sm" disabled={!selected} onClick={nominate}>
                     <i className="fas fa-user-plus"></i> Nommer recruteur
                 </Button>
             </div>
             <div className="table-responsive">
                 <table className="table table-hover align-middle uh-table">
-                    <thead><tr><th>Nom</th><th>ID patient</th><th>E-mail</th><th>Discord</th><th></th></tr></thead>
+                    <thead><tr><th>Nom</th><th>Famille & rôle</th><th>Fiche du personnel</th><th>Discord</th><th></th></tr></thead>
                     <tbody>
-                        {recruiters.map((c) => (
-                            <tr key={c.uid}>
-                                <td className="fw-semibold">{nameOf(c)} <RoleBadge role="recruiter" /></td>
-                                <td>{c.patientID}</td>
-                                <td>{c.email}</td>
-                                <td>{c.discord || '—'}</td>
-                                <td className="text-end"><Button size="sm" variant="outline-danger" onClick={() => change(c, false)}>Retirer le rôle</Button></td>
+                        {staffRecruiters.map((m) => (
+                            <tr key={`s-${m.uid}`}>
+                                <td className="fw-semibold">{m.displayName} <RoleBadge role="recruiter" /></td>
+                                <td><RoleBadge role={m.family} /> {rankLabel(m.service, m.rank || m.category)}</td>
+                                <td className="text-success"><i className="fas fa-check-circle"></i> oui</td>
+                                <td>{m.discord || '—'}</td>
+                                <td className="text-end"><Button size="sm" variant="outline-danger" onClick={() => setFlag(m.uid, m.displayName, false)}>Retirer le droit</Button></td>
                             </tr>
                         ))}
-                        {recruiters.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">Aucun recruteur pour le moment.</td></tr>}
+                        {civilRecruiters.map((c) => (
+                            <tr key={`c-${c.uid}`}>
+                                <td className="fw-semibold">{nameOfCivilian(c)} <RoleBadge role="recruiterNoFile" /></td>
+                                <td><RoleBadge role="civil" /> —</td>
+                                <td className="text-danger"><i className="fas fa-exclamation-triangle"></i> manquante</td>
+                                <td>{c.discord || '—'}</td>
+                                <td className="text-end">
+                                    <Button size="sm" variant="success" className="me-1" onClick={() => setToStaff(c)}>Créer la fiche</Button>
+                                    <Button size="sm" variant="outline-danger" onClick={() => setFlag(c.uid, nameOfCivilian(c), false)}>Retirer le droit</Button>
+                                </td>
+                            </tr>
+                        ))}
+                        {staffRecruiters.length + civilRecruiters.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">Aucun recruteur pour le moment.</td></tr>}
                     </tbody>
                 </table>
             </div>
+            <ConvertToStaffDialog show={!!toStaff} onHide={() => setToStaff(null)} civilian={toStaff} presetRecruiter
+                adminEmail={adminEmail} showNotification={showNotification} onDone={() => { setSelected(''); reload(); }} />
         </>
     );
 };
@@ -350,6 +465,7 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
     const [staff, setStaff] = useState([]);
     const [civilians, setCivilians] = useState([]);
     const [recruiterUids, setRecruiterUids] = useState({});
+    const [adminUids, setAdminUids] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
 
@@ -357,10 +473,13 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
         setIsLoading(true);
         setLoadError('');
         try {
-            const [staffList, civilList, recruiters] = await Promise.all([loadStaffMembers(), loadCivilians(), loadRecruiterUids()]);
+            const [staffList, civilList, recruiters, admins] = await Promise.all([
+                loadStaffMembers(), loadCivilians(), loadRecruiterUids(), loadAdminUids().catch(() => ({})),
+            ]);
             setStaff(staffList);
             setCivilians(civilList);
             setRecruiterUids(recruiters);
+            setAdminUids(admins);
         } catch (error) {
             console.error('Error loading users:', error);
             setLoadError(error.message || String(error));
@@ -372,17 +491,23 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
 
     const staffUids = useMemo(() => new Set(staff.map((m) => m.uid).filter(Boolean)), [staff]);
     const civilUids = useMemo(() => new Set(civilians.map((c) => c.uid)), [civilians]);
-    const recruiterCount = civilians.filter((c) => recruiterUids[c.uid] === true).length;
-    const counts = { staff: staff.length, civilians: civilians.length, recruiters: recruiterCount };
+    // Civils purs : sans fiche du personnel (les autres sont dans l'onglet Personnel).
+    const pureCivilians = useMemo(() => civilians.filter((c) => !staffUids.has(c.uid)), [civilians, staffUids]);
+    const recruiterCount = useMemo(() => new Set([
+        ...staff.filter((m) => m.uid && recruiterUids[m.uid] === true).map((m) => m.uid),
+        ...civilians.filter((c) => recruiterUids[c.uid] === true).map((c) => c.uid),
+    ]).size, [staff, civilians, recruiterUids]);
+    const counts = { staff: staff.length, civilians: pureCivilians.length, recruiters: recruiterCount };
     const adminEmail = currentUser?.email;
+    const familyCount = (key) => staff.filter((m) => m.family === key).length;
 
     return (
         <div className="card users-hub">
             <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span>Gestion des utilisateurs</span>
                 <small className="text-muted">
-                    {staff.filter((m) => m.service === 'phmc').length} PHMC · {staff.filter((m) => m.service === 'coroner').length} DMEC ·{' '}
-                    {civilians.length} Civils · {recruiterCount} recruteur(s)
+                    Personnel {staff.length} (Soignant {familyCount('soignant')} · Administration {familyCount('administration')} · Polyvalent {familyCount('polyvalent')} · DMEC {familyCount('dmec')}) ·{' '}
+                    {pureCivilians.length} Civils · {recruiterCount} recruteur(s)
                 </small>
             </div>
             <div className="card-body">
@@ -400,11 +525,13 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                 {loadError && <Alert variant="danger">Chargement impossible : {loadError}</Alert>}
                 {isLoading && tab !== 'tools' ? <div className="text-center py-5"><Spinner animation="border" /></div> : (
                     <div className="uh-panel">
-                        {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
-                        {tab === 'civilians' && <CiviliansTab civilians={civilians} staffUids={staffUids} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
-                        {tab === 'recruiters' && <RecruitersTab civilians={civilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} recruiterUids={recruiterUids} adminUids={adminUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'recruiters' && <RecruitersTab staff={staff} civilians={civilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
                         {tab === 'tools' && (
                             <>
+                                <RankMigrationPanel adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
+                                <hr />
                                 <div className="d-flex gap-2 flex-wrap mb-2">
                                     <Button variant="outline-secondary" onClick={onOpenMigrationTools}>
                                         <i className="fas fa-exchange-alt"></i> Outils de migration des rapports
