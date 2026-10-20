@@ -69,7 +69,7 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
     };
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title="Mes contrats" modalSize="large">
+        <BaseModal isOpen={show} onClose={onHide} title="Mes contrats" modalSize="large" className="dark-ui">
             {loading && <Spinner animation="border" size="sm" />}
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 

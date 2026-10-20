@@ -106,7 +106,7 @@ const AwarenessCalendarModal = ({ show, onHide }) => {
     const card = (event) => <EventCard key={event.id} event={event} today={today} open={openId === event.id} onToggle={() => toggle(event.id)} />;
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title="Calendrier de la santé" modalSize="large">
+        <BaseModal isOpen={show} onClose={onHide} title="Calendrier de la santé" modalSize="large" className="dark-ui">
             <p className="text-muted small mb-3">
                 Journées et mois de sensibilisation : de quoi il s'agit, comment soutenir la cause et que signifient les rubans et symboles.
                 Aujourd'hui : {today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.

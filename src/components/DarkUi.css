@@ -1,0 +1,85 @@
+/* Lisibilité sur fond sombre (BaseModal #2d333b, Gestion du recrutement #0d1117).
+   À poser via className="dark-ui" : les textes grisés de Bootstrap (text-muted, form-text) et les
+   liens bleu foncé de l'app y étaient presque illisibles. */
+.dark-ui {
+    color: #e6edf3;
+}
+
+.dark-ui .text-muted,
+.dark-ui .form-text,
+.dark-ui small {
+    color: #aab6c3 !important;
+}
+
+/* Dans une alerte (fond clair), on garde le texte foncé de Bootstrap. */
+.dark-ui .alert small,
+.dark-ui .alert .text-muted,
+.dark-ui .alert .form-text {
+    color: inherit !important;
+}
+
+.dark-ui a:not(.btn) {
+    color: #58a6ff;
+}
+
+.dark-ui .alert a:not(.btn) {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.dark-ui .form-label {
+    margin-right: 0 !important;
+    margin-bottom: 0.4rem;
+    color: #c9d1d9;
+}
+
+/* L'app impose width: 85% et une marge basse à tous les <input>/<select> : on les neutralise ici. */
+.dark-ui input.form-control,
+.dark-ui select.form-select,
+.dark-ui textarea.form-control {
+    width: 100%;
+    margin-bottom: 0;
+    background-color: #16202c;
+    color: #e6edf3;
+}
+
+.dark-ui .form-control:disabled,
+.dark-ui .form-select:disabled {
+    background-color: #1c2531;
+    color: #aab6c3;
+    opacity: 1;
+}
+
+.dark-ui .form-control::placeholder {
+    color: #7d8590 !important;
+}
+
+.dark-ui .form-check-label {
+    color: #e6edf3;
+}
+
+.dark-ui .list-group-item {
+    background-color: #22272e;
+    color: #e6edf3;
+    border-color: #444c56;
+}
+
+.dark-ui .list-group-item-action:hover,
+.dark-ui .list-group-item-action:focus {
+    background-color: #2d333b;
+    color: #fff;
+}
+
+.dark-ui .list-group-item.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.dark-ui .list-group-item.active small {
+    color: #e6edf3 !important;
+}
+
+.dark-ui .btn-link {
+    color: #58a6ff;
+}

@@ -45,7 +45,7 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
     };
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title="Mon profil" modalSize="medium">
+        <BaseModal isOpen={show} onClose={onHide} title="Mon profil" modalSize="medium" className="dark-ui">
             {!ownsProfile ? (
                 <Alert variant="warning" className="mb-0">
                     Aucune fiche du personnel n'est liée à votre compte : il n'y a rien à modifier ici.

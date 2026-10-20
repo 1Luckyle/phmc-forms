@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import './BaseModal.css';
+import './DarkUi.css';
 
 const BaseModal = ({
     isOpen,
@@ -15,6 +16,12 @@ const BaseModal = ({
 }) => {
     const modalRef = useRef(null);
     const previousActiveElement = useRef(null);
+    // onClose est le plus souvent une fonction fléchée recréée à chaque rendu du parent (MainApp se
+    // re-rend chaque seconde à cause de l'horloge UTC). On la lit via une ref : placée dans les
+    // dépendances de l'effet ci-dessous, elle le rejouerait chaque seconde et volerait le focus au
+    // champ en cours de saisie (champs et listes qui "se désélectionnent tout seuls").
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; });
 
     useEffect(() => {
         if (isOpen) {
@@ -24,13 +31,15 @@ const BaseModal = ({
             // Lock body scroll
             document.body.style.overflow = 'hidden';
             
-            // Focus the modal
-            modalRef.current?.focus();
+            // Focus the modal (sauf si le focus est déjà à l'intérieur)
+            if (!modalRef.current?.contains(document.activeElement)) {
+                modalRef.current?.focus();
+            }
 
             // Handle escape key
             const handleEscape = (e) => {
-                if (e.key === 'Escape' && onClose) {
-                    onClose();
+                if (e.key === 'Escape' && onCloseRef.current) {
+                    onCloseRef.current();
                 }
             };
             window.addEventListener('keydown', handleEscape);
@@ -44,7 +53,7 @@ const BaseModal = ({
                 previousActiveElement.current?.focus();
             };
         }
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

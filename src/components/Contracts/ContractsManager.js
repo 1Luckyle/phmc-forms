@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, Spinner, Table } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
 import BaseModal from '../BaseModal';
+import '../DarkUi.css';
 import ContractDocument from './ContractDocument';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, rankLabel } from '../../utils/staffAdmin';
@@ -109,7 +110,7 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
     });
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title={isNew ? 'Nouveau contrat' : `Contrat — ${contract.employeeName}`} modalSize="large" zIndex={1100}>
+        <BaseModal isOpen={show} onClose={onHide} title={isNew ? 'Nouveau contrat' : `Contrat — ${contract.employeeName}`} modalSize="large" zIndex={1100} className="dark-ui">
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 
             {readOnly ? (
@@ -316,7 +317,7 @@ const ContractsManager = ({ showNotification }) => {
     };
 
     return (
-        <>
+        <div className="dark-ui">
             <div className="d-flex gap-2 mb-3 flex-wrap">
                 <Form.Control type="search" style={{ maxWidth: 320 }} placeholder="Rechercher (employé, fonction)…" value={query} onChange={(e) => setQuery(e.target.value)} />
                 <Button variant="success" size="sm" onClick={() => setEditing(null)} disabled={loading}>
@@ -386,7 +387,7 @@ const ContractsManager = ({ showNotification }) => {
                 onChanged={load}
                 showNotification={showNotification}
             />
-        </>
+        </div>
     );
 };
 
