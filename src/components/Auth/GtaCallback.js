@@ -8,13 +8,39 @@
 // d'autorisation reçu, et où renvoyer l'utilisateur ensuite.
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { signInWithCustomToken } from 'firebase/auth';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { ref, get } from 'firebase/database';
 import * as Sentry from "@sentry/react";
-import { auth } from '../../firebase';
+import { auth, database } from '../../firebase';
 import { GTAW_OAUTH_FLOW_KEY, getGtawRedirectUri } from '../../utils/gtawOAuth';
 
 const EXCHANGE_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/exchangeAuthCodeForToken';
 const LOGIN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/gtawEmployeeLogin';
+
+// Même critère que le panneau admin (AdminAuthAndActions) : l'e-mail ou l'uid figure dans adminUsers.
+const isAdminAccount = async (user) => {
+    const snapshot = await get(ref(database, 'adminUsers'));
+    if (!snapshot.exists()) return false;
+    const adminList = snapshot.val();
+    const entries = Array.isArray(adminList) ? adminList : Object.values(adminList);
+    return entries.some((admin) => admin === user.email || admin === user.uid);
+};
+
+// Connexion admin alors que le compte GTA World a PLUSIEURS comptes liés (ex. un personnage employé et un
+// personnage civil) : le serveur renvoie un jeton par compte. On essaie chacun et on garde le premier qui est
+// administrateur, sans demander de choisir (la page /admin n'a de toute façon d'intérêt que pour un admin).
+const signInWithFirstAdminAccount = async (choices) => {
+    for (const choice of choices) {
+        try {
+            const credential = await signInWithCustomToken(auth, choice.customToken);
+            if (await isAdminAccount(credential.user)) return true;
+        } catch (err) {
+            console.warn('Connexion admin : un des comptes liés a échoué :', err);
+        }
+        try { await signOut(auth); } catch (err) { /* ignoré */ }
+    }
+    return false;
+};
 
 const GtaCallback = () => {
     const location = useLocation();
@@ -120,6 +146,15 @@ const GtaCallback = () => {
                     // Plusieurs comptes (ex. personnage employé + personnage civil) : la page principale
                     // fait choisir, puis connecte avec le jeton correspondant.
                     if (response.ok && Array.isArray(data.choices) && data.choices.length > 0) {
+                        if (flowType === 'admin-login') {
+                            // Avant ce correctif, la réponse à choix multiples était ignorée pour ce flux : retour
+                            // silencieux vers /login, sans connexion ni message.
+                            const connected = await signInWithFirstAdminAccount(data.choices);
+                            finish(connected
+                                ? { success: true }
+                                : { error: 'Aucun des comptes liés à ce compte GTA World n\'est administrateur.' });
+                            return;
+                        }
                         finish({ choices: data.choices });
                         return;
                     }
