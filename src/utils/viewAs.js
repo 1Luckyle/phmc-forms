@@ -37,9 +37,64 @@ export const saveViewAs = (view) => {
 
 export const sameView = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
 
+// ───────────── Personnages (profils précis plutôt que rôles génériques) ─────────────
+// Une vue peut porter un `character` (identifiant du personnage), un `label` et un `profile` : la fiche utilisée
+// pour construire l'identité simulée à la place du profil générique « Simulation ».
+
+// Patient de test des gabarits « Remplir (debug) » (voir utils/debugTemplates.js) : Civil PHMC-99999.
+export const TEST_PATIENT_CHARACTER = 'patient-test';
+export const TEST_PATIENT_VIEW = {
+    kind: 'civil',
+    character: TEST_PATIENT_CHARACTER,
+    label: 'Jean Michel Testard',
+    profile: {
+        firstName: 'Jean', middleName: 'Michel', lastName: 'Testard', patientID: 'PHMC-99999',
+        dateOfBirth: '1990-05-17', gender: 'Male', address: '1234 Vinewood Blvd, Los Santos', zip: '90001',
+        phone: '555-0142', email: 'jean.testard@eyefind.info', discord: 'jean.testard',
+    },
+};
+
+// Personnel nommé : Edmund Messina (DMEC). Sa fiche réelle est lue dans la base au moment du choix (voir
+// DebugViewAs) ; s'il est introuvable, on invente un profil de médecin légiste à son nom.
+export const EDMUND_CHARACTER = 'edmund-messina';
+export const EDMUND_MATCH = { first: 'edmund', last: 'messina' };
+
+// Vue « personnel » à partir d'une fiche réelle (loadStaffMembers) — `recruiter` : a-t-il le droit Recruteur.
+export const buildStaffCharacterView = ({ character, member, recruiter }) => {
+    const rank = member.rank || member.category;
+    const role = getRoleInfo(rank);
+    return {
+        kind: 'staff',
+        character,
+        label: member.displayName || member.name,
+        rank,
+        recruiter: !!recruiter,
+        profile: {
+            name: member.name, firstName: member.firstName, lastName: member.lastName,
+            rank, category: member.category || rank, pole: member.pole || role?.pole,
+            badge: member.badge, type: member.service || (role?.pole === 'dmec' ? 'coroner' : 'phmc'),
+            extraRanks: member.extraRanks || [], serviceDirige: member.serviceDirige || null,
+            phone: member.phone || null, gtawCharacterId: member.gtawCharacterId ?? null,
+        },
+    };
+};
+
+// Profil inventé quand la fiche réelle n'existe pas (ou n'est pas lisible).
+export const buildInventedEdmundView = () => buildStaffCharacterView({
+    character: EDMUND_CHARACTER,
+    member: {
+        name: 'Edmund Messina', firstName: 'Edmund', lastName: 'Messina', displayName: 'Edmund Messina (profil inventé)',
+        rank: 'Médecin Légiste', badge: 'TF-00001', service: 'coroner',
+    },
+});
+
 // Libellé lisible d'un profil simulé.
 export const describeViewAs = (view) => {
     if (!view) return 'Administrateur (vous)';
+    if (view.character && view.label) {
+        if (view.kind === 'civil') return `${view.label} (${view.profile?.patientID || 'Civil'})`;
+        return `${view.label} — ${view.rank}${view.recruiter ? ' + droit Recruteur' : ''}`;
+    }
     if (view.kind === 'visitor') return 'Visiteur non connecté';
     if (view.kind === 'civil') return view.candidate ? 'Civil — candidat en attente de contrat' : 'Civil';
     return `${view.rank}${view.recruiter ? ' + droit Recruteur' : ''}`;
@@ -63,6 +118,9 @@ export const buildSimulatedIdentity = (view, realUser) => {
             isContractCandidate: !!view.candidate,
             civilianProfile: {
                 uid: realUser?.uid, email: realUser?.email, firstName: 'Simulation', lastName: 'Civil', patientID: 'PHMC-00000',
+                // Personnage précis (ex. patient de test PHMC-99999) : sa fiche remplace le profil générique,
+                // sauf l'identité de connexion qui reste celle du vrai compte admin (rien n'est écrit en son nom).
+                ...(view.profile || {}),
             },
         };
     }
@@ -75,6 +133,9 @@ export const buildSimulatedIdentity = (view, realUser) => {
             uid: realUser?.uid, email: realUser?.email, type: service,
             name: 'Simulation Test', firstName: 'Simulation', lastName: 'Test',
             rank: view.rank, category: view.rank, pole: role?.pole, badge: `${role?.badgePrefix || 'XX'}-00000`,
+            // Personnage précis (ex. Edmund Messina) : sa fiche remplace le profil générique.
+            // (uid et e-mail restent ceux du vrai compte admin : le profil n'en contient pas.)
+            ...(view.profile || {}),
         },
     };
 };

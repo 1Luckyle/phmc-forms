@@ -9,9 +9,14 @@ import { Alert, Button, Form, Table } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_FAMILIES, rolesByFiliere, RECRUITER_DEFAULT_RANK } from '../../constants/ranks';
+import { loadStaffMembers, loadRecruiterUids } from '../../utils/staffAdmin';
 import {
     describeViewAs, sameView, buildSimulatedIdentity, deriveIdentity, getToolAccess, TOOL_ACCESS_LABELS,
+    TEST_PATIENT_VIEW, TEST_PATIENT_CHARACTER, EDMUND_CHARACTER, EDMUND_MATCH,
+    buildStaffCharacterView, buildInventedEdmundView,
 } from '../../utils/viewAs';
+
+const normalizeName = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Profils représentatifs de la matrice (tous les rôles ne sont pas utiles à comparer côte à côte).
 const MATRIX_COLUMNS = [
@@ -38,11 +43,37 @@ const DebugViewAs = ({ showInAppNotification }) => {
     const { viewAs, setViewAs, realIsAdmin } = useEmployeeAuth();
     const navigate = useNavigate();
     const [withRecruiter, setWithRecruiter] = useState(false);
+    const [loadingCharacter, setLoadingCharacter] = useState(false);
 
     const apply = (view) => {
         setViewAs(view);
         if (showInAppNotification) {
             showInAppNotification(view ? `Visualisation en tant que : ${describeViewAs(view)}.` : 'Retour à votre profil administrateur.', view ? 'eye' : 'info-circle');
+        }
+    };
+
+    // Edmund Messina (DMEC) : on cherche sa vraie fiche dans la liste du personnel (rang, badge, droit Recruteur
+    // réels) ; sinon on invente un médecin légiste à son nom.
+    const applyEdmund = async () => {
+        setLoadingCharacter(true);
+        try {
+            const [members, recruiters] = await Promise.all([loadStaffMembers(), loadRecruiterUids().catch(() => ({}))]);
+            const member = members.find((m) => {
+                const text = normalizeName(`${m.name} ${m.firstName || ''} ${m.lastName || ''}`);
+                return text.includes(EDMUND_MATCH.first) && text.includes(EDMUND_MATCH.last);
+            });
+            if (member) {
+                apply(buildStaffCharacterView({ character: EDMUND_CHARACTER, member, recruiter: !!(member.uid && recruiters[member.uid]) }));
+            } else {
+                apply(buildInventedEdmundView());
+                if (showInAppNotification) showInAppNotification("Fiche d'Edmund Messina introuvable : profil de médecin légiste inventé.", 'info-circle');
+            }
+        } catch (error) {
+            console.error('Could not load the staff list for the Edmund Messina view:', error);
+            apply(buildInventedEdmundView());
+            if (showInAppNotification) showInAppNotification("Liste du personnel illisible : profil d'Edmund Messina inventé.", 'warning');
+        } finally {
+            setLoadingCharacter(false);
         }
     };
 
@@ -89,6 +120,28 @@ const DebugViewAs = ({ showInAppNotification }) => {
                 {button('visitor', 'Visiteur non connecté', { kind: 'visitor' })}
                 {button('civil', 'Civil', { kind: 'civil' })}
                 {button('candidate', 'Civil — candidat en attente de contrat', { kind: 'civil', candidate: true })}
+            </div>
+
+            <h6>Personnages</h6>
+            <p className="text-muted small mb-1">
+                Voir le site tel que le verrait une personne précise. Le patient de test sert aux gabarits « Remplir (debug) » ; Edmund Messina est lu
+                dans la liste du personnel (sa fiche réelle, en lecture seule : rien n'est écrit en son nom).
+            </p>
+            <div className="mb-3">
+                <Button
+                    size="sm" className="me-1 mb-1"
+                    variant={viewAs?.character === TEST_PATIENT_CHARACTER ? 'primary' : 'outline-secondary'}
+                    onClick={() => apply(TEST_PATIENT_VIEW)}
+                >
+                    <i className="fas fa-user-injured me-1"></i>Jean Michel Testard — patient de test (PHMC-99999)
+                </Button>
+                <Button
+                    size="sm" className="me-1 mb-1" disabled={loadingCharacter}
+                    variant={viewAs?.character === EDMUND_CHARACTER ? 'primary' : 'outline-secondary'}
+                    onClick={applyEdmund}
+                >
+                    <i className="fas fa-user-md me-1"></i>{loadingCharacter ? 'Chargement…' : 'Edmund Messina — DMEC'}
+                </Button>
             </div>
 
             <h6>Personnel</h6>
