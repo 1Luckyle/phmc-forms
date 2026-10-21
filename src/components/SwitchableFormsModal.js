@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'; // Added useState
 import { isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Image } from 'react-bootstrap';
 import { getPrimaryFormsForUserType } from '../formDefinitions';
+import useFormAccess from '../hooks/useFormAccess';
 
 // Style definitions (consistent with AgencySelector)
 const modalOverlayStyle = {
@@ -160,7 +161,7 @@ const getRecruitmentButtonProps = (
 
 
 const SwitchableFormsModal = ({
-    show, onHide, title, forms, handleFormSelect, isMobile,
+    show, onHide, title, forms: allForms, handleFormSelect, isMobile,
     physicianRecruitmentDetails,
     psychRecruitmentStatus, // Assuming this prop is correctly named and passed for Psych data
     adminRecruitmentDetails,
@@ -170,6 +171,10 @@ const SwitchableFormsModal = ({
     formDefinitions,
     userPreferences // Add user preferences prop
 }) => {
+    // Accès par rôle du personnel : on ne propose que les formulaires autorisés (voir utils/formAccess.js).
+    const { canAccess: canAccessForm } = useFormAccess();
+    const forms = (allForms || []).filter((form) => canAccessForm(form.version));
+
     // State to track whether to show personalized or all forms
     const [showPersonalizedForms, setShowPersonalizedForms] = useState(true);
     

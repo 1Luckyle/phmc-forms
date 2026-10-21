@@ -49,6 +49,7 @@ import HeaderInfo from './components/HeaderInfo';
 import SeasonControls from './components/SeasonControls';
 import ViewAsBanner from './components/ViewAsBanner';
 import { getToolAccess } from './utils/viewAs';
+import useFormAccess from './hooks/useFormAccess';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
@@ -138,9 +139,9 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, staffProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     // Ce que la personne (ou le profil simulé par un admin) voit dans la Boîte à outils : une seule définition, voir utils/viewAs.js.
-    const toolAccess = getToolAccess({ currentEmployee, employeeProfile, isAdmin, isRecruiter, isContractCandidate, isCivilian, staffName, canUseAma, canManageRecruitment });
+    const toolAccess = getToolAccess({ currentEmployee, employeeProfile, staffProfile, isAdmin, isRecruiter, isContractCandidate, isCivilian, staffName, canUseAma, canManageRecruitment });
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
@@ -1390,6 +1391,20 @@ function MainApp({
     // là, le garder en plus créait une confusion entre deux boutons dont l'un
     // ne menait jamais à rien.
     const savedReportsButtonLabel = isCivilian ? 'Dossier Patient' : 'Rapports Sauvegardés';
+
+    // Garde du formulaire courant : si le rôle de la personne (ou le profil simulé par un admin) n'y donne pas accès,
+    // on bascule sur le premier formulaire autorisé — ex. un membre du DMEC qui avait gardé une consultation en mémoire.
+    const { canAccess: canAccessCurrentForm } = useFormAccess();
+    useEffect(() => {
+        if (authLoading || canAccessCurrentForm(bbCodeVersion)) return;
+        const allowed = formDefinitions.filter((form) => canAccessCurrentForm(form.version));
+        const fallback = allowed.find((form) => !form.name.startsWith('[Civil]') && !form.isHiddenInSelector && !form.name.includes('(PBC)')) || allowed[0];
+        if (fallback) {
+            setBbCodeVersion(fallback.version);
+            showNotification('Ce formulaire n\'est pas accessible avec votre rôle : bascule sur « ' + fallback.name + ' ».', 'warning');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bbCodeVersion, canAccessCurrentForm, authLoading]);
 
     return (
         <Suspense fallback={<LoadingSpinner />}>

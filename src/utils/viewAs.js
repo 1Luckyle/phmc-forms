@@ -13,6 +13,7 @@
 //   • la simulation ne vit que dans le navigateur de l'admin (localStorage) et n'est honorée que si le
 //     vrai compte est administrateur.
 import { getRoleInfo, familiesOfMember } from '../constants/ranks';
+import { getFormAccess, summarizeFormAccess } from './formAccess';
 
 const KEY = 'debugViewAs';
 
@@ -108,20 +109,29 @@ export const deriveIdentity = ({ employeeProfile, civilianProfile, adminStaffPro
 export const getToolAccess = (identity) => {
     const {
         currentEmployee, employeeProfile, isAdmin, isRecruiter, isContractCandidate,
-        isCivilian, staffName, canUseAma, canManageRecruitment,
+        isCivilian, staffName, canUseAma, canManageRecruitment, staffProfile,
     } = identity;
     const isStaffMember = !isCivilian && !!staffName;
+    // Familles de la fiche : le Dossier Patient (dossiers médicaux de tous les patients) est réservé au personnel
+    // soignant et au DMEC ; l'administration et le polyvalent n'y ont pas accès.
+    const families = staffProfile ? familiesOfMember(staffProfile, staffProfile.type) : [];
+    const careOrDmec = families.includes('soignant') || families.includes('dmec');
+    const forms = summarizeFormAccess(getFormAccess({ isAdmin, isCivilian, staffProfile }));
     return {
+        ...forms,
         myProfile: isStaffMember,
         myContracts: isStaffMember || !!isContractCandidate || !!isRecruiter,
         myPatientFile: isStaffMember,
         // Le Bingo est réservé au personnel (une fiche du personnel) : ni visiteurs, ni Civils, ni candidats.
         bingo: isStaffMember,
         savedReports: !!currentEmployee,
-        patientDossier: !isCivilian && !!(currentEmployee || isAdmin),
+        patientDossier: !isCivilian && !!(isAdmin || (currentEmployee && (!staffProfile || careOrDmec))),
         recruitment: !!canManageRecruitment,
         ama: !!canUseAma,
+        // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
+        // (depuis « Mes contrats ») mais pas sa carte de visite.
         businessCard: !!(isAdmin || employeeProfile || isRecruiter),
+        signature: !!(isAdmin || employeeProfile || isRecruiter || isContractCandidate),
     };
 };
 
@@ -134,5 +144,10 @@ export const TOOL_ACCESS_LABELS = {
     patientDossier: 'Dossier Patient',
     recruitment: 'Gestion du recrutement',
     ama: 'EMS Contre Avis Médical',
-    businessCard: 'Carte de visite & signature',
+    businessCard: 'Créer sa carte de visite',
+    signature: 'Créer sa signature',
+    formsMedical: 'Formulaires médicaux (soins)',
+    formsDmec: 'Formulaires DMEC (médecine légale)',
+    formsShared: 'Note de Service & PHMC Email Interne',
+    formsCivilian: 'Dossiers médicaux Civil & candidatures',
 };

@@ -19,9 +19,9 @@ const MATRIX_COLUMNS = [
     { label: 'Civil', view: { kind: 'civil' } },
     { label: 'Candidat (contrat)', view: { kind: 'civil', candidate: true } },
     { label: 'Recruteur', view: { kind: 'staff', rank: RECRUITER_DEFAULT_RANK, recruiter: true } },
-    { label: 'Infirmier(ère)', view: { kind: 'staff', rank: 'Infirmier(ère)' } },
-    { label: 'Médecin Titulaire', view: { kind: 'staff', rank: 'Médecin Titulaire' } },
-    { label: 'Personnel Polyvalent', view: { kind: 'staff', rank: 'Personnel Polyvalent' } },
+    // Tous les rôles d'une même famille ont les mêmes droits : une colonne par famille suffit.
+    { label: 'Soignant', view: { kind: 'staff', rank: 'Infirmier(ère)' } },
+    { label: 'Polyvalent', view: { kind: 'staff', rank: 'Personnel Polyvalent' } },
     { label: 'DMEC', view: { kind: 'staff', rank: 'Médecin Légiste' } },
     { label: 'Admin', view: null },
 ];
@@ -131,8 +131,9 @@ const DebugViewAs = ({ showInAppNotification }) => {
                 </Table>
             </div>
             <p className="text-muted small mb-0">
-                Tous les rôles du personnel voient la même chose, sauf « EMS Contre Avis Médical » (famille PHMC Soignant et admins) ; seul le droit Recruteur change
-                le reste. La matrice et le menu du site utilisent la même définition (utils/viewAs.js).
+                Tous les rôles d'une famille ont les mêmes droits (la colonne « Soignant » vaut pour Infirmier, Médecin Titulaire, etc.). Le droit Recruteur est
+                indépendant du rôle ; un cumul de rôles donne l'union des accès de ses familles. La matrice, le menu et les sélecteurs de formulaires utilisent
+                la même définition (utils/viewAs.js et utils/formAccess.js). Visiteurs et Civils : inchangés.
             </p>
         </div>
     );

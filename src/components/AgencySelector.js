@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Form, Image } from 'react-bootstrap';
 import { getPrimaryFormsForUserType } from '../formDefinitions';
+import useFormAccess from '../hooks/useFormAccess';
 
 // Style definitions for recruitment forms
 const positionStatusListStyle = {
@@ -62,6 +63,8 @@ const AgencySelector = ({
     // contrairement au filtrage userPreferences ci-dessous (issu du Guide de
     // Configuration), qui ne fait que prioriser sans jamais masquer le reste.
     const CIVILIAN_ALLOWED_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
+    // Accès par rôle du personnel (soignant / DMEC / polyvalent / administration) : voir utils/formAccess.js.
+    const { canAccess: canAccessForm } = useFormAccess();
     // State to track whether to show personalized or all forms
     const [showPersonalizedForms, setShowPersonalizedForms] = useState(true);
     
@@ -101,6 +104,7 @@ const AgencySelector = ({
     let allAgencyGroupForms = isCivilian
         ? formDefinitions.filter(form => CIVILIAN_ALLOWED_VERSIONS.includes(form.version) && !form.name.includes('(PBC)'))
         : formDefinitions.filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
+    allAgencyGroupForms = allAgencyGroupForms.filter(form => canAccessForm(form.version));
 
     // Filter forms based on user preferences (existing functionality). Un
     // compte Civil réel saute cette étape : userPreferences.userType reflète

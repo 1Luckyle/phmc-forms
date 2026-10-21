@@ -3,6 +3,7 @@ import React from 'react'; // Removed useEffect as it's not needed for this chan
 import { CATEGORY_BY_KEY, STATUT_OUVERT, STATUT_FERME, isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Form, Image } from 'react-bootstrap';
 import phmcLogo from '../assets/phmc.png';
+import useFormAccess from '../hooks/useFormAccess';
 
 const getRecruitmentSummaryData = (recruitmentSources) => {
     const groupSummaries = [];
@@ -78,6 +79,8 @@ const AgencyGroupSelectorModal = ({
     coronerRecruitmentDetails,
     onShowCctvRequest
 }) => {
+    // Un groupe sans aucun formulaire accessible pour ce rôle n'est pas proposé (ex. candidatures pour le personnel restreint).
+    const { groupHasForms } = useFormAccess();
     if (!show) {
         return null;
     }
@@ -208,6 +211,7 @@ const AgencyGroupSelectorModal = ({
                     </div>
 
                     {/* PHMC Recruitment (Development) Button - remains as is, will take full width of its parent */}
+                        {groupHasForms('PHMC Recruitment') && (
                         <Button
                             variant="outline-light"
                             style={{ // This button will take the full width of its parent by default
@@ -266,6 +270,7 @@ const AgencyGroupSelectorModal = ({
                                 </span>
                             )}
                         </Button>
+                        )}
                                    <Button
                         variant="outline-light"
                         style={{
