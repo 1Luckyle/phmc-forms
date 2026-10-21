@@ -7,6 +7,9 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
 import { ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
 import { getFormDefinition } from '../formDefinitions';
+import PatientInvoicesPanel, { InvoiceStatusBadge } from './PatientInvoicesPanel';
+import useReportInvoices from '../hooks/useReportInvoices';
+import { formatMoney } from '../utils/patientBilling';
 
 const modalStyle = {
     position: 'fixed',
@@ -280,6 +283,8 @@ const SavedReportsModal = ({
     const isManualSelectionRef = useRef(false);
 
     const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
+    // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
+    const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     // Personne de connecté = aucune liste, même si une sélection (ou des rapports) datait d'une session
     // précédente : on ne peut ni afficher ni copier le titre / le BBCode d'un rapport sans compte.
     const selectedEmployee = currentEmployee ? selectedEmployeeRaw : null;
@@ -726,6 +731,13 @@ const SavedReportsModal = ({
                     </div>
                 )}
 
+                {isCivilian && civilianProfile?.patientID && (
+                    <div style={{ marginBottom: '10px' }}>
+                        <h6 style={{ marginBottom: '8px' }}>Mes factures</h6>
+                        <PatientInvoicesPanel patientID={civilianProfile.patientID} showNotification={showNotification} />
+                    </div>
+                )}
+
                 <hr style={hrStyle} />
 
                 <div style={modalHeaderStyle} key={selectedEmployee ? selectedEmployee.value : 'noEmployee'}>
@@ -756,6 +768,7 @@ const SavedReportsModal = ({
                                     <th style={thStyle}>Titre du rapport</th>
                                     <th style={thStyle}>Créé par</th>
                                     <th style={thStyle}>Date et heure d'enregistrement</th>
+                                    <th style={thStyle}>Paiement</th>
                                     <th style={thStyle}>Actions</th>
                                 </tr>
                             </thead>
@@ -784,6 +797,20 @@ const SavedReportsModal = ({
                                                 )}
                                             </td>
                                             <td style={tdStyle}>{new Date(report.timestamp).toLocaleString()}</td>
+                                            <td style={tdStyle}>
+                                                {(() => {
+                                                    const invoice = invoiceOf(report);
+                                                    if (!invoice) return <span style={{ color: '#6e7681' }}>—</span>;
+                                                    return (
+                                                        <>
+                                                            <InvoiceStatusBadge status={invoice.statutEffectif} />
+                                                            {invoice.statutEffectif !== 'sans_paiement' && (
+                                                                <span style={{ marginLeft: '6px', fontSize: '0.8em', color: '#8b949e' }}>{formatMoney(invoice.montant)}</span>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </td>
                                             <td style={actionsTdStyle}>
                                                 {isLoadable(report) && !report.sharedByStaff && (loadReport || isAttachMode) && (
                                                     <Button

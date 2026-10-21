@@ -250,6 +250,20 @@ async function removeIndexEntry(indexRef) {
     }
 }
 
+// Retire la facture d'un rapport supprimé tant qu'elle n'est pas payée (best-effort).
+async function removeUnpaidInvoice(patientNode, indexKey) {
+    try {
+        const node = canonicalPatientId(patientNode);
+        const invoiceRef = ref(database, `facturesPatients/${node}/${indexKey}`);
+        const snap = await get(invoiceRef);
+        if (!snap.exists() || snap.val().statut === 'paye') return;
+        await remove(invoiceRef);
+        await remove(ref(database, `facturesEnAttente/${node}/${indexKey}`));
+    } catch (error) {
+        console.warn('Could not remove the invoice of a deleted report:', error);
+    }
+}
+
 // Applique les règles de suppression pour UN rapport. `viewer` :
 //   { role: 'civil' | 'staff', isAdmin, staffName }
 // `report` : { reportPath, key, patientID, patientNode?, sharedByStaff?, isCopy? }.
@@ -283,6 +297,11 @@ export async function deleteReportWithRules(report, viewer) {
     const hardDelete = async () => {
         if (reportPath) await remove(ref(database, reportPath));
         if (indexRef) await removeIndexEntry(indexRef);
+        // Facture impayée d'un rapport supprimé par le personnel (erreur de saisie) : retirée aussi.
+        // Un patient ne peut pas effacer sa propre facture (règles) ; une facture déjà payée reste.
+        if (viewer.role !== 'civil' && indexRef) {
+            await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
+        }
     };
     // « Retiré » : le rapport reste en base pour les médecins qui en ont une copie.
     const hide = async () => {

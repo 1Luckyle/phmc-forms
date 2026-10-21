@@ -1,3 +1,4 @@
+import { staffPaymentLine } from '../utils/patientBilling';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs
@@ -125,7 +126,7 @@ En tapant mon nom ci-dessous, je soussigné(e), ${patientFullName}, certifie que
 [b]Date:[/b]
 [i]${SubmitDate}[/i]
 ${formData.filledByStaff && approximateCost > 0 ? `
-    Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.` : (payNow === true || payNow === 'true') && approximateCost > 0 ? `
+    ${staffPaymentLine(24, formData)}` : (payNow === true || payNow === 'true') && approximateCost > 0 ? `
     Je soussigné(e), ${patientFullName || 'le soussigné'}, joins ce paiement de ${approximateCost.toLocaleString()}$ pour les frais de divulgation des dossiers médicaux. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Image jointe[/url]` : '[i][/i]'}` : ''}
 [/list]
     [/divbox]`; // <-- Moved the closing divbox tag here

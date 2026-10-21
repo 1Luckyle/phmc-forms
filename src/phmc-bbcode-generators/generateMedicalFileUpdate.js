@@ -1,3 +1,4 @@
+import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -68,7 +69,7 @@ const generateMedicalFileUpdate = (formData) => {
     // Payment/Exempt logic
     let paymentSection = '';
     if (formData.filledByStaff) {
-        paymentSection = 'Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.';
+        paymentSection = staffPaymentLine(26, formData);
     } else if (paymentProofPhotos) {
         paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
     }

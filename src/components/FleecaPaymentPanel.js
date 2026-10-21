@@ -14,7 +14,9 @@ import { ref, onValue, get } from 'firebase/database';
 import { database } from '../firebase';
 import { createFleecaPayment, checkFleecaPaymentStatus } from '../utils/fleecaPayment';
 
-const FleecaPaymentPanel = ({ amount, description, paymentId, onPaymentIdChange, onPaymentConfirmed }) => {
+// openOnCreate : ouvre le lien Fleeca dans un nouvel onglet dès sa création (le patient qui paie lui-même).
+// Mis à false quand le personnel prépare le lien pour le patient : il le copie et le lui remet.
+const FleecaPaymentPanel = ({ amount, description, paymentId, onPaymentIdChange, onPaymentConfirmed, openOnCreate = true }) => {
     const [payment, setPayment] = useState(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
@@ -76,7 +78,7 @@ const FleecaPaymentPanel = ({ amount, description, paymentId, onPaymentIdChange,
         try {
             const { payment_id, payment_link } = await createFleecaPayment({ amount, description });
             onPaymentIdChange(payment_id);
-            window.open(payment_link, '_blank', 'noopener,noreferrer');
+            if (openOnCreate) window.open(payment_link, '_blank', 'noopener,noreferrer');
         } catch (err) {
             console.error('Failed to create Fleeca payment:', err);
             setError(err.message || 'Impossible de créer le lien de paiement.');
@@ -154,6 +156,16 @@ const FleecaPaymentPanel = ({ amount, description, paymentId, onPaymentIdChange,
                 <Button variant="outline-secondary" size="sm" onClick={handleCheckStatus} disabled={isChecking}>
                     {isChecking ? 'Vérification...' : 'Vérifier le statut'}
                 </Button>
+                {!openOnCreate && payment?.paymentLink && (
+                    <Button
+                        variant="outline-info"
+                        size="sm"
+                        className="ms-2"
+                        onClick={() => navigator.clipboard?.writeText(payment.paymentLink)}
+                    >
+                        <i className="fas fa-copy" style={{ marginRight: '6px' }}></i>Copier le lien
+                    </Button>
+                )}
                 {error && <div style={{ color: '#dc3545', marginTop: '8px', fontSize: '0.85em' }}>{error}</div>}
             </div>
         );

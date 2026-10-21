@@ -1,3 +1,4 @@
+import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
         // Placeholder utilisé pour les informations attendues mais non renseignées,
         // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -57,7 +58,7 @@ import withoutBlanks from './shared/withoutBlanks';
         // Payment/Exempt logic
         let paymentSection = '';
         if (formData.filledByStaff) {
-            paymentSection = 'Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.';
+            paymentSection = staffPaymentLine(3, formData);
         } else if (formData.isExempt === true || formData.isExempt === 'true') {
             paymentSection = 'Je suis exempté de payer ce service conformément aux politiques du PHMC.';
         } else {

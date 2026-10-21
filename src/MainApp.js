@@ -57,6 +57,7 @@ import { database, auth } from './firebase'; // Your Firebase config
 import { signInWithCustomToken } from 'firebase/auth';
 import { getEmployeeDisplayName } from './utils/employeeName';
 import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
+import PatientInvoiceNotifier from './components/PatientInvoiceNotifier';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -2463,6 +2464,7 @@ function MainApp({
                             onHide={() => setShowMyProfile(false)}
                             showNotification={showNotification}
                         />
+                        <PatientInvoiceNotifier showNotification={showNotification} />
                         <MyPatientFileModal
                             show={showMyPatientFile}
                             onHide={() => setShowMyPatientFile(false)}

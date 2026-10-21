@@ -1075,6 +1075,14 @@ export const fleecaWebhook = onRequest({ secrets: [...FLEECA_SECRETS, 'EYEFIND_A
             updatedAt: admin.database.ServerValue.TIMESTAMP,
         });
 
+        // Factures patient couvertes par ce paiement (voir createInvoicePayment) : réglées côté serveur.
+        try {
+            const paymentSnap = await db.ref(`fleecaPayments/${paymentId}`).once('value');
+            await settleInvoicesOfPayment(paymentId, paymentSnap.val());
+        } catch (invoiceError) {
+            console.warn(`Failed to settle invoices for payment ${paymentId}:`, invoiceError);
+        }
+
         // Reçu de paiement par mail Eyefind, en best-effort : une erreur ici
         // (ex. adresse introuvable si le nom ne suit pas exactement la
         // convention prénom.nom) ne doit jamais faire échouer la confirmation
@@ -1174,6 +1182,13 @@ export const getFleecaPaymentStatus = onRequest({ secrets: FLEECA_SECRETS }, asy
             paidAt: payment.paid_at || null,
             updatedAt: admin.database.ServerValue.TIMESTAMP,
         });
+
+        try {
+            const paymentSnap = await db.ref(`fleecaPayments/${paymentId}`).once('value');
+            await settleInvoicesOfPayment(paymentId, paymentSnap.val());
+        } catch (invoiceError) {
+            console.warn(`Failed to settle invoices for payment ${paymentId}:`, invoiceError);
+        }
 
         res.status(200).json({ status: payment.status, payerName: payment.payer_name || null, paidAt: payment.paid_at || null });
     } catch (error) {
@@ -1723,5 +1738,308 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
         }
         console.error('Error confirming staff email change:', error);
         res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors du changement d\'adresse.' });
+    }
+});
+
+// --- Factures patient (paiement des rapports médicaux civils) ---
+// facturesPatients/{ID patient}/{clé du rapport} : voir src/utils/patientInvoices.js. Le statut « paye »
+// n'est écrit que d'ici (webhook Fleeca / contrôle de statut), jamais par le navigateur.
+// facturesEnAttente/{ID patient}/{clé} : file des factures à payer, parcourue par les deux fonctions
+// planifiées (mails groupés + rappel quotidien) pour ne pas lire tout l'historique.
+const INVOICE_SITE_URL = 'https://1Luckyle.github.io/phmc-forms';
+const INVOICE_MAIL_BATCH_DELAY_MS = 5 * 60 * 1000;        // regroupement : on attend 5 min après la dernière facture
+const INVOICE_REMINDER_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000; // un rappel au plus par jour
+const INVOICE_MAIL_MAX_FAILURES = 5;
+
+const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const formatInvoiceMoney = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} $`;
+
+// Règle les factures couvertes par un paiement Fleeca confirmé (celles listées dans
+// fleecaPayments/{id}/factures, créées par createInvoicePayment).
+const settleInvoicesOfPayment = async (paymentId, payment) => {
+    if (!payment || payment.status !== 'payment_successful') return 0;
+    const covered = payment.factures || {};
+    const updates = {};
+    const paidAt = payment.paidAt ? new Date(payment.paidAt).getTime() || Date.now() : Date.now();
+    Object.entries(covered).forEach(([invoiceId, patientNode]) => {
+        updates[`facturesPatients/${patientNode}/${invoiceId}/statut`] = 'paye';
+        updates[`facturesPatients/${patientNode}/${invoiceId}/payeLe`] = paidAt;
+        updates[`facturesPatients/${patientNode}/${invoiceId}/paiementId`] = paymentId;
+        updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
+    });
+    if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    return Object.keys(covered).length;
+};
+
+const verifyCallerToken = async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.status(401).json({ error: 'unauthorized', message: 'Connexion requise.' });
+        return null;
+    }
+    try {
+        return await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
+    } catch (error) {
+        res.status(401).json({ error: 'unauthorized', message: 'Session invalide, reconnectez-vous.' });
+        return null;
+    }
+};
+
+// Crée UN lien de paiement Fleeca pour une ou plusieurs factures d'un patient. Le montant est recalculé
+// ici d'après les factures enregistrées (jamais envoyé par le navigateur). Si les mêmes factures ont déjà
+// un lien en attente, il est réutilisé (évite deux liens ouverts pour la même dette).
+export const createInvoicePayment = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const apiKey = process.env.FLEECA_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API Fleeca n\'est pas configurée.' });
+        return;
+    }
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+
+    const data = req.body.data || req.body;
+    const patientNode = String(data?.patientID || '').trim();
+    const invoiceIds = Array.isArray(data?.invoiceIds) ? [...new Set(data.invoiceIds.map(String))] : [];
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(patientNode) || invoiceIds.length === 0 || invoiceIds.length > 50) {
+        res.status(400).json({ error: 'invalid-argument', message: 'ID patient ou factures invalides.' });
+        return;
+    }
+
+    try {
+        const due = [];
+        for (const invoiceId of invoiceIds) {
+            const snap = await db.ref(`facturesPatients/${patientNode}/${invoiceId}`).once('value');
+            const invoice = snap.val();
+            if (!invoice || invoice.statut !== 'a_payer') continue;
+            // Déjà payée via un lien créé depuis le formulaire ? On la règle au lieu de la refacturer.
+            if (invoice.paiementId) {
+                const paymentSnap = await db.ref(`fleecaPayments/${invoice.paiementId}`).once('value');
+                const payment = paymentSnap.val();
+                if (payment && payment.status === 'payment_successful' && Number(payment.amount) >= Number(invoice.montant || 0)) {
+                    await db.ref().update({
+                        [`facturesPatients/${patientNode}/${invoiceId}/statut`]: 'paye',
+                        [`facturesPatients/${patientNode}/${invoiceId}/payeLe`]: Date.now(),
+                        [`facturesEnAttente/${patientNode}/${invoiceId}`]: null,
+                    });
+                    continue;
+                }
+            }
+            due.push({ id: invoiceId, invoice });
+        }
+        if (due.length === 0) {
+            res.status(409).json({ error: 'nothing-due', message: 'Aucune de ces factures n\'est à payer (déjà réglées ?).' });
+            return;
+        }
+
+        const total = due.reduce((sum, { invoice }) => sum + Number(invoice.montant || 0), 0);
+        if (!Number.isInteger(total) || total < 1 || total > 99999999) {
+            res.status(400).json({ error: 'invalid-amount', message: 'Montant total invalide.' });
+            return;
+        }
+
+        // Réutilise le lien en attente si toutes les factures partagent le même et que rien n'a changé.
+        const sharedPaymentId = due[0].invoice.paiementId;
+        if (sharedPaymentId && due.every(({ invoice }) => invoice.paiementId === sharedPaymentId)) {
+            const existingSnap = await db.ref(`fleecaPayments/${sharedPaymentId}`).once('value');
+            const existing = existingSnap.val();
+            const coveredIds = Object.keys(existing?.factures || {}).sort().join('|');
+            if (existing && existing.status === 'awaiting_payment' && existing.paymentLink
+                && Number(existing.amount) === total && coveredIds === due.map(({ id }) => id).sort().join('|')) {
+                res.status(200).json({ payment_id: sharedPaymentId, payment_link: existing.paymentLink, amount: total, reused: true });
+                return;
+            }
+        }
+
+        const patientName = due[0].invoice.patientNom || patientNode;
+        const description = (due.length === 1
+            ? `Facture PHMC - ${due[0].invoice.titre || due[0].id}`
+            : `Factures PHMC (${due.length}) - ${patientName}`).slice(0, 255);
+
+        const fleecaResponse = await fetch(`${FLEECA_API_BASE}/v2/payment`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ amount: total, mode: 1, description }),
+        });
+        const fleecaText = await fleecaResponse.text();
+        let fleecaData;
+        try {
+            fleecaData = JSON.parse(fleecaText);
+        } catch (parseError) {
+            console.error('Fleeca invoice payment response is not JSON:', fleecaText.substring(0, 500));
+            res.status(502).json({ error: 'fleeca-invalid-response', message: 'Réponse invalide de Fleeca.' });
+            return;
+        }
+        if (!fleecaResponse.ok || !fleecaData.payment_id || !fleecaData.payment_link) {
+            console.error('Fleeca invoice payment creation failed:', fleecaResponse.status, fleecaData);
+            res.status(fleecaResponse.status || 502).json({
+                error: 'fleeca-payment-failed',
+                message: fleecaData.message || 'Échec de la création du paiement Fleeca.',
+            });
+            return;
+        }
+
+        const covered = {};
+        const updates = {};
+        due.forEach(({ id }) => {
+            covered[id] = patientNode;
+            updates[`facturesPatients/${patientNode}/${id}/paiementId`] = fleecaData.payment_id;
+            updates[`facturesPatients/${patientNode}/${id}/lienPaiement`] = fleecaData.payment_link;
+        });
+        updates[`fleecaPayments/${fleecaData.payment_id}`] = {
+            status: 'awaiting_payment',
+            amount: total,
+            description,
+            paymentLink: fleecaData.payment_link,
+            patientID: patientNode,
+            factures: covered,
+            createdAt: admin.database.ServerValue.TIMESTAMP,
+            updatedAt: admin.database.ServerValue.TIMESTAMP,
+        };
+        await db.ref().update(updates);
+
+        res.status(201).json({ payment_id: fleecaData.payment_id, payment_link: fleecaData.payment_link, amount: total });
+    } catch (error) {
+        console.error('Error creating invoice payment:', error);
+        res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue lors de la création du paiement.' });
+    }
+});
+
+// Adresse Eyefind d'une facture : l'e-mail saisi dans le formulaire s'il a la bonne forme, sinon
+// dérivée du nom du patient (prénom + nom), comme pour le reçu de paiement.
+const invoiceRecipientOf = (invoice) => {
+    const email = String(invoice?.patientEmail || '').trim();
+    if (EYEFIND_ADDRESS_REGEX.test(email)) return email;
+    const [first, ...rest] = String(invoice?.patientNom || '').trim().split(/\s+/);
+    return deriveEyefindAddress(first, rest.join(' '));
+};
+
+const sendInvoiceMail = async ({ apiKey, to, patientName, invoices, reminder }) => {
+    const total = invoices.reduce((sum, invoice) => sum + Number(invoice.montant || 0), 0);
+    const lines = invoices.map((invoice) => `- ${invoice.titre || 'Rapport médical'} : ${formatInvoiceMoney(invoice.montant)}`).join('\n');
+    const htmlLines = invoices.map((invoice) => `<li>${escapeHtml(invoice.titre || 'Rapport médical')} — <b>${formatInvoiceMoney(invoice.montant)}</b></li>`).join('');
+    const intro = reminder
+        ? 'Un petit rappel : les rapports médicaux suivants établis à votre nom sont toujours à régler.'
+        : 'Des rapports médicaux ont été établis à votre nom et sont à régler.';
+    const subject = reminder
+        ? `Rappel : ${invoices.length} paiement(s) en attente - Pillbox Hill Medical Center`
+        : `${invoices.length} paiement(s) à effectuer - Pillbox Hill Medical Center`;
+    await sendEyefindMailInternal({
+        apiKey,
+        to,
+        subject,
+        body: `Bonjour ${patientName || ''},\n\n${intro}\n\n${lines}\n\nTotal à payer : ${formatInvoiceMoney(total)}\n\nConnectez-vous à l'outil PHMC-FR (${INVOICE_SITE_URL}) : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.\n\nCordialement,\nPillbox Hill Medical Center`,
+        html: `<p>Bonjour ${escapeHtml(patientName || '')},</p><p>${intro}</p><ul>${htmlLines}</ul><p>Total à payer : <b>${formatInvoiceMoney(total)}</b></p><p>Connectez-vous à <a href="${INVOICE_SITE_URL}">l'outil PHMC-FR</a> : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+    });
+};
+
+// Lit la file des factures à payer et regroupe par patient : [{ patientNode, items: [{ id, invoice }] }].
+// Nettoie au passage les entrées orphelines ou déjà réglées (paiement Fleeca confirmé).
+const collectPendingInvoices = async () => {
+    const queueSnap = await db.ref('facturesEnAttente').once('value');
+    const queue = queueSnap.val() || {};
+    const groups = [];
+    const cleanup = {};
+    for (const [patientNode, ids] of Object.entries(queue)) {
+        const items = [];
+        for (const invoiceId of Object.keys(ids || {})) {
+            const snap = await db.ref(`facturesPatients/${patientNode}/${invoiceId}`).once('value');
+            const invoice = snap.val();
+            if (!invoice || invoice.statut !== 'a_payer') { cleanup[`facturesEnAttente/${patientNode}/${invoiceId}`] = null; continue; }
+            if (invoice.paiementId) {
+                const paymentSnap = await db.ref(`fleecaPayments/${invoice.paiementId}`).once('value');
+                const payment = paymentSnap.val();
+                if (payment && payment.status === 'payment_successful' && Number(payment.amount) >= Number(invoice.montant || 0)) {
+                    cleanup[`facturesPatients/${patientNode}/${invoiceId}/statut`] = 'paye';
+                    cleanup[`facturesPatients/${patientNode}/${invoiceId}/payeLe`] = Date.now();
+                    cleanup[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
+                    continue;
+                }
+            }
+            items.push({ id: invoiceId, invoice });
+        }
+        if (items.length > 0) groups.push({ patientNode, items });
+    }
+    if (Object.keys(cleanup).length > 0) await db.ref().update(cleanup);
+    return groups;
+};
+
+// Mails groupés : toutes les 5 minutes, un seul mail par patient pour les factures encore jamais
+// notifiées, une fois la dernière d'entre elles vieille de 5 minutes (le temps qu'un médecin enchaîne
+// plusieurs rapports pour le même patient).
+export const invoiceMailBatcher = onSchedule({
+    schedule: 'every 5 minutes',
+    timeZone: 'UTC',
+    secrets: ['EYEFIND_API_KEY'],
+}, async () => {
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) { console.error('invoiceMailBatcher: EYEFIND_API_KEY manquante.'); return; }
+    const now = Date.now();
+    const groups = await collectPendingInvoices();
+    for (const { patientNode, items } of groups) {
+        const unsent = items.filter(({ invoice }) => !invoice.mailEnvoyeLe);
+        if (unsent.length === 0) continue;
+        if (unsent.some(({ invoice }) => now - Number(invoice.creeLe || 0) < INVOICE_MAIL_BATCH_DELAY_MS)) continue; // regroupement en cours
+        const newest = [...unsent].sort((a, b) => Number(b.invoice.creeLe || 0) - Number(a.invoice.creeLe || 0))[0].invoice;
+        const to = invoiceRecipientOf(newest);
+        const updates = {};
+        if (!to) {
+            // Aucune adresse exploitable : inutile de réessayer, la notification à la connexion reste.
+            unsent.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/mailEnvoyeLe`] = now; updates[`facturesPatients/${patientNode}/${id}/mailErreur`] = 'adresse-introuvable'; });
+            await db.ref().update(updates);
+            continue;
+        }
+        try {
+            // Le mail liste TOUTES les factures dues du patient (pas seulement les nouvelles) : un seul récapitulatif.
+            await sendInvoiceMail({ apiKey, to, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: false });
+            unsent.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/mailEnvoyeLe`] = now; });
+        } catch (error) {
+            console.warn(`invoiceMailBatcher: échec d'envoi pour ${patientNode}:`, error && error.body ? error.body : error);
+            unsent.forEach(({ id, invoice }) => {
+                const failures = Number(invoice.mailEchecs || 0) + 1;
+                updates[`facturesPatients/${patientNode}/${id}/mailEchecs`] = failures;
+                if (failures >= INVOICE_MAIL_MAX_FAILURES) {
+                    updates[`facturesPatients/${patientNode}/${id}/mailEnvoyeLe`] = now;
+                    updates[`facturesPatients/${patientNode}/${id}/mailErreur`] = 'echecs-repetes';
+                }
+            });
+        }
+        if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    }
+});
+
+// Rappel quotidien (18 h, heure de Paris) : un mail groupé par patient qui a encore des factures à payer
+// déjà notifiées. Au plus un rappel toutes les ~20 h par patient.
+export const invoiceDailyReminder = onSchedule({
+    schedule: 'every day 18:00',
+    timeZone: 'Europe/Paris',
+    secrets: ['EYEFIND_API_KEY'],
+}, async () => {
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) { console.error('invoiceDailyReminder: EYEFIND_API_KEY manquante.'); return; }
+    const now = Date.now();
+    const groups = await collectPendingInvoices();
+    for (const { patientNode, items } of groups) {
+        const notified = items.filter(({ invoice }) => invoice.mailEnvoyeLe && !invoice.mailErreur);
+        if (notified.length === 0) continue;
+        const lastContact = Math.max(...notified.map(({ invoice }) => Number(invoice.dernierRappelLe || invoice.mailEnvoyeLe || 0)));
+        if (now - lastContact < INVOICE_REMINDER_MIN_INTERVAL_MS) continue;
+        const newest = [...notified].sort((a, b) => Number(b.invoice.creeLe || 0) - Number(a.invoice.creeLe || 0))[0].invoice;
+        const to = invoiceRecipientOf(newest);
+        if (!to) continue;
+        try {
+            await sendInvoiceMail({ apiKey, to, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: true });
+            const updates = {};
+            items.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/dernierRappelLe`] = now; });
+            await db.ref().update(updates);
+        } catch (error) {
+            console.warn(`invoiceDailyReminder: échec d'envoi pour ${patientNode}:`, error && error.body ? error.body : error);
+        }
     }
 });

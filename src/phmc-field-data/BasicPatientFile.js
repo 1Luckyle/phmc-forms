@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import './phmc-tooltips.css';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 
@@ -427,9 +428,12 @@ const BasicPatientFile = ({
                 <div id="collapse-payment-info" onFocusCapture={() => setActiveSection('payment-info')}>
 
             {filledByStaff ? (
-                <span className="helper-text">
-                    Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.
-                </span>
+                <StaffBillingNotice
+                    bbCodeVersion={25}
+                    formData={formData}
+                    setFormData={setFormData}
+                    description={`Dossier patient de base${formData.patientName ? ' - ' + formData.patientName : ''}`}
+                />
             ) : (
                 <>
                     <Form.Label style={{ marginTop: '5px', color: '#28a745', fontWeight: 'bold' }}>

@@ -29,6 +29,9 @@ import {
     loadPatientDossier, listIndexedPatientIds, groupDossierEntries, canonicalPatientId,
     reportTitleOf, reportCreatorOf, comprehensiveSanitize,
 } from '../utils/patientRecords';
+import { InvoiceStatusBadge } from './PatientInvoicesPanel';
+import useReportInvoices from '../hooks/useReportInvoices';
+import { formatMoney } from '../utils/patientBilling';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -117,6 +120,9 @@ const PatientDossierModal = ({
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState([]);
+    // État de paiement de chaque rapport payant (rechargé à chaque recherche / « Actualiser »).
+    const [invoiceRefresh, setInvoiceRefresh] = useState(0);
+    const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
 
     // Liste déroulante : patients avec compte (civils) + patients sans compte, connus
     // uniquement par des rapports du personnel. On peut aussi taper un ID librement.
@@ -184,6 +190,7 @@ const PatientDossierModal = ({
         setIsLoading(true);
         setSearchedPatientId(canonical);
         setSelectedKeys([]);
+        setInvoiceRefresh((n) => n + 1);
         try {
             const dossier = await loadPatientDossier(canonical);
             setEntries(dossier);
@@ -378,6 +385,7 @@ const PatientDossierModal = ({
                                     <th style={thStyle} title="Médecins qui ont récupéré une copie de ce rapport">Copies</th>
                                     <th style={thStyle}>Date</th>
                                     <th style={thStyle}>Visibilité</th>
+                                    <th style={thStyle}>Paiement</th>
                                     <th style={thStyle}>Actions</th>
                                 </tr>
                             </thead>
@@ -415,6 +423,20 @@ const PatientDossierModal = ({
                                             </td>
                                             <td style={tdStyle}>{root.timestamp ? new Date(root.timestamp).toLocaleString() : 'N/A'}</td>
                                             <td style={tdStyle}>{visibilityBadge(root)}</td>
+                                            <td style={tdStyle}>
+                                                {(() => {
+                                                    const invoice = invoiceOf(root);
+                                                    if (!invoice) return <span style={{ color: '#6e7681' }}>—</span>;
+                                                    return (
+                                                        <>
+                                                            <InvoiceStatusBadge status={invoice.statutEffectif} />
+                                                            {invoice.statutEffectif !== 'sans_paiement' && (
+                                                                <span style={{ marginLeft: '6px', fontSize: '0.8em', color: '#8b949e' }}>{formatMoney(invoice.montant)}</span>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </td>
                                             <td style={actionsTdStyle}>
                                                 {loadReport && isLoadable(root) && (
                                                     <Button size="sm" variant="primary" className="me-2" onClick={() => handleLoad(root)}>

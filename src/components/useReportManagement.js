@@ -10,6 +10,7 @@ import { sendEyefindMail } from '../utils/eyefindMail';
 import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
+import { recordInvoiceForReport } from '../utils/patientInvoices';
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
@@ -402,6 +403,22 @@ export const useReportManagement = (
                     });
                 } catch (indexError) {
                     console.warn('Could not index report under patientRecords:', indexError);
+                }
+
+                // Facturation : les 4 formulaires médicaux civils payants créent une facture au nom du patient
+                // (notification à sa connexion, état de paiement dans son dossier, mails groupés). Best-effort.
+                try {
+                    await recordInvoiceForReport({
+                        patientID: formData.patientID,
+                        indexKey: sanitizedKey,
+                        reportPath,
+                        bbCodeVersion,
+                        title: pureTitle,
+                        formData,
+                        createdBy: currentAuthor,
+                    });
+                } catch (invoiceError) {
+                    console.warn('Could not record patient invoice:', invoiceError);
                 }
             }
 

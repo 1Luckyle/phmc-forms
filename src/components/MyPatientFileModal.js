@@ -14,6 +14,7 @@ import { Dropdown } from 'react-bootstrap';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
 import { loadPatientDossier, reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
+import PatientInvoicesPanel from './PatientInvoicesPanel';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -84,6 +85,13 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                         Aucun ID patient n'est rattaché à votre fiche du personnel. Contactez un administrateur : lui seul
                         peut le renseigner.
                     </p>
+                )}
+
+                {myPatientID && (
+                    <div style={{ marginBottom: '16px' }}>
+                        <h6 style={{ marginBottom: '8px' }}>Mes factures</h6>
+                        <PatientInvoicesPanel patientID={myPatientID} showNotification={showNotification} />
+                    </div>
                 )}
 
                 {myPatientID && (

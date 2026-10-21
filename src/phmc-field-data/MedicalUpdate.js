@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 const customSelectStyles = {
@@ -811,9 +812,12 @@ const MedicalRelease = ({
                 </Form.Label>
             )}
             {approximateCost > 0 && filledByStaff && (
-                <span className="helper-text">
-                    Rempli par le personnel PHMC — le paiement est à la charge du civil et ne se fait pas via cet outil.
-                </span>
+                <StaffBillingNotice
+                    bbCodeVersion={26}
+                    formData={formData}
+                    setFormData={setFormData}
+                    description={`Mise à jour du dossier médical${formData.patientName ? ' - ' + formData.patientName : ''}`}
+                />
             )}
             {approximateCost > 0 && !filledByStaff && (
                 <Form.Group className="mb-3" style={{ marginTop: '15px' }}>
