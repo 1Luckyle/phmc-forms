@@ -133,7 +133,7 @@ const DebugViewAs = ({ showInAppNotification }) => {
             <p className="text-muted small mb-0">
                 Tous les rôles d'une famille ont les mêmes droits (la colonne « Soignant » vaut pour Infirmier, Médecin Titulaire, etc.). Le droit Recruteur est
                 indépendant du rôle ; un cumul de rôles donne l'union des accès de ses familles. La matrice, le menu et les sélecteurs de formulaires utilisent
-                la même définition (utils/viewAs.js et utils/formAccess.js). Visiteurs et Civils : inchangés.
+                la même définition (utils/viewAs.js et utils/formAccess.js). Tout le personnel garde l'accès aux dossiers médicaux Civil et aux candidatures (il peut être patient ou candidat). Visiteurs et Civils : inchangés.
             </p>
         </div>
     );

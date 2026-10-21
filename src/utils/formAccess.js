@@ -10,6 +10,8 @@
 //   DMEC                           les formulaires DMEC + Note de Service + PHMC Email Interne ;
 //   PHMC Polyvalent / Administration & Direction (recruteurs compris)
 //                                  Note de Service + PHMC Email Interne uniquement ;
+//   TOUT le personnel              + les dossiers médicaux Civil et les candidatures : un membre du personnel peut
+//                                  aussi être patient, ou candidat à un autre poste ;
 //   cumul de rôles                 l'UNION des accès de chacune des familles de la personne ;
 //   Civil / candidat               inchangé : ses dossiers médicaux et ses candidatures (voir AgencySelector) ;
 //   visiteur non connecté          inchangé : pas de restriction.
@@ -25,7 +27,7 @@ export const SHARED_STAFF_FORM_VERSIONS = [22, 23, 27];
 // Panneau de contrôle admin (connexion admin) : réservé à la famille soignante (en plus des admins).
 const ADMIN_PANEL_VERSION = 999;
 
-// Dossiers médicaux Civils et candidatures : réservés aux comptes Civils (voir AgencySelector).
+// Dossiers médicaux Civils et candidatures : ouverts aux comptes Civils (qui n'ont QUE ça, voir AgencySelector) et à tout le personnel.
 export const CIVILIAN_ALLOWED_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
 
 // Accès d'une identité : { kind: 'all' | 'civil' | 'restricted', families, canAccess(version) }.
@@ -39,6 +41,7 @@ export const getFormAccess = ({ isAdmin, isCivilian, staffProfile }) => {
     const isDmec = families.includes('dmec');
     const canAccess = (version) => {
         if (SHARED_STAFF_FORM_VERSIONS.includes(version)) return true;           // toute la famille du personnel
+        if (CIVILIAN_ALLOWED_VERSIONS.includes(version)) return true;            // patient ou candidat : tout le personnel
         if (DMEC_FORM_VERSIONS.includes(version)) return isDmec;                // DMEC : ses formulaires
         if (version === ADMIN_PANEL_VERSION) return isCare;
         return isCare;                                                          // reste des formulaires PHMC : soignant
