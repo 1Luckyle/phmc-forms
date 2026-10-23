@@ -2,6 +2,7 @@ import { translateResultValue } from '../constants/clinicalOptions';
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
+import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 
 const generateEmergencyProtocol = (formData) => {
     const {
@@ -74,12 +75,8 @@ ID PATIENT: ${patientID || 'N/A'}
 Date: ${date || 'N/A'}
 
 Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
-ELGIN AVE. / STRAWBERRY AVE.
-BP 742
-LOS SANTOS, SAN ANDREAS
-T: 50056[/size][/center][/table][/divbox]
-${buildPatientContextBBCode(formData)}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+${phmcHeaderEnd()}
+${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Arrivée: [/u] ${ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
 [br][/br]
 [u]Plainte principale: [/u][br][/br]
@@ -89,30 +86,30 @@ ${patientChiefComplaint || 'N/A'}
 ${formData.patientInjuryMechanism || 'N/A'}
 [br][/br]
 [u]Niveau de douleur/Indice de gravité d'urgence (IGU): [/u][br][/br]
-[cb${formData.painLevel === 'patientNoPain' ? 'c' : ''}] [color=#0040FF]Niveau 5: pas de douleur/non urgent[/color] [cb${formData.painLevel === 'patientNormalPain' ? 'c' : ''}] [color=#00BF00]Niveau 4: douleur normale/moins urgent[/color] [cb${formData.painLevel === 'patientMildPain' ? 'c' : ''}] [color=#E6B800]Niveau 3: douleur légère/urgent[/color] [cb${formData.painLevel === 'patientSeverePain' ? 'c' : ''}] [color=#FF8040]Niveau 2: douleur sévère/très urgent [/color][cb${formData.painLevel === 'patientCritical' ? 'c' : ''}] [color=#FF0000]Niveau 1: critique/émergence [/color][/left]
+${checkbox(formData.painLevel === 'patientNoPain')} [color=#0040FF]Niveau 5: pas de douleur/non urgent[/color] ${checkbox(formData.painLevel === 'patientNormalPain')} [color=#00BF00]Niveau 4: douleur normale/moins urgent[/color] ${checkbox(formData.painLevel === 'patientMildPain')} [color=#E6B800]Niveau 3: douleur légère/urgent[/color] ${checkbox(formData.painLevel === 'patientSeverePain')} [color=#FF8040]Niveau 2: douleur sévère/très urgent [/color]${checkbox(formData.painLevel === 'patientCritical')} [color=#FF0000]Niveau 1: critique/émergence [/color][/left]
 [/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Signes vitaux[/b][/color][/center][/divboxcolor]
-[table][tr][td][center]Température: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normale [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermique [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermique[/center]
-[td][center]Fréquence cardiaque: [cb${formData.heartRate === 'patientHeartRateNormal' ? 'c' : ''}] Normale [cb${formData.heartRate === 'patientHeartRateBradycardia' ? 'c' : ''}] Bradycardie [cb${formData.heartRate === 'patientHeartRateTachycardia' ? 'c' : ''}] Tachycardie[/center][/table]
-[table][tr][td][center]Respiration: [cb${formData.breathing === 'patientBreathingNormal' ? 'c' : ''}] Normale [cb${formData.breathing === 'patientBreathingSlow' ? 'c' : ''}] Lente [cb${formData.breathing === 'patientBreathingFast' ? 'c' : ''}] Rapide [cb${formData.breathing === 'patientBreathingObstructed' ? 'c' : ''}] Obstruée[/center]
-[td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]${buildVitalValuesBBCode(formData)}
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
-[table][tr][td][center]État de santé général (ESG): [cb${formData.findings === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientImpared' ? 'c' : ''}] Altéré[/center]
-[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.lungs === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.lungs === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
-[table][tr][td][center]Pupilles: [cb${formData.pupils === 'patientPupilsNormal' ? 'c' : ''}] Normales [cb${formData.pupils === 'patientPupilsAbnormal' ? 'c' : ''}] Anormales [/center]
-[td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]${imagingSectionBBCode}
-[table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]
-[td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluides [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Changement tissulaire[/center][/table]
+${sectionBanner(`Signes vitaux`)}
+[table][tr][td][center]Température: ${checkbox(formData.temperature === 'patientTempNormal')} Normale ${checkbox(formData.temperature === 'patientHypothermic')} Hypothermique ${checkbox(formData.temperature === 'patientHyperthermic')} Hyperthermique[/center]
+[td][center]Fréquence cardiaque: ${checkbox(formData.heartRate === 'patientHeartRateNormal')} Normale ${checkbox(formData.heartRate === 'patientHeartRateBradycardia')} Bradycardie ${checkbox(formData.heartRate === 'patientHeartRateTachycardia')} Tachycardie[/center][/table]
+[table][tr][td][center]Respiration: ${checkbox(formData.breathing === 'patientBreathingNormal')} Normale ${checkbox(formData.breathing === 'patientBreathingSlow')} Lente ${checkbox(formData.breathing === 'patientBreathingFast')} Rapide ${checkbox(formData.breathing === 'patientBreathingObstructed')} Obstruée[/center]
+[td][center]Tension artérielle: ${checkbox(formData.bloodPressure === 'patientBloodPressureNormal')} Normale ${checkbox(formData.bloodPressure === 'patientBloodPressureHypotension')} Hypotension ${checkbox(formData.bloodPressure === 'patientBloodPressureHypertension')} Hypertension [/center][/table]${buildVitalValuesBBCode(formData)}
+${sectionBanner(`Constatations`)}
+[table][tr][td][center]État de santé général (ESG): ${checkbox(formData.findings === 'patientNormal')} Normal ${checkbox(formData.findings === 'patientImpared')} Altéré[/center]
+[td][center]Poumons (Auscultation): ${checkbox(formData.lungs === 'patientNormal')} Normal ${checkbox(formData.lungs === 'patientRhonchi')} Ronchi ${checkbox(formData.lungs === 'patientCrack')} Crépitants [/center][/table]
+[table][tr][td][center]Pupilles: ${checkbox(formData.pupils === 'patientPupilsNormal')} Normales ${checkbox(formData.pupils === 'patientPupilsAbnormal')} Anormales [/center]
+[td][center]Blessures: ${checkbox(formData.wounds === 'patientFractures')} Fracture(s) ${checkbox(formData.wounds === 'patientBleeding')} Saignement ${checkbox(formData.wounds === 'patientHematoma')} Hématome ${checkbox(formData.wounds === 'patientNoWounds')} Aucune [/center][/table]${imagingSectionBBCode}
+[table][tr][td][center]ECG: ${checkbox(formData.ecg === 'patientSinusRhythm')} Rythme sinusal ${checkbox(formData.ecg === 'patientArrhythmia')} Arythmie ${checkbox(formData.ecg === 'patientInfaction')} Infarctus [/center]
+[td][center]Sono: ${checkbox(formData.sono === 'patientNormal')} Normal ${checkbox(formData.sono === 'patientFluids')} Fluides ${checkbox(formData.sono === 'patientTissue')} Changement tissulaire[/center][/table]
 ${buildLabBBCode(formData)}
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Diagnostic préliminaire[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Diagnostic préliminaire`)}
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis || 'N/A'}
 [br][/br][u]Diagnostic secondaire: [/u][br][/br]
 ${patientSecondaryDiagnosis || 'N/A'}[/left][/list][/table]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Thérapie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Thérapie`)}
 [table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-[cb${formData.admission === 'Yes' ? 'c' : ''}] Oui
-[cb${formData.admission === 'No' ? 'c' : ''}] Non
+${checkbox(formData.admission === 'Yes')} Oui
+${checkbox(formData.admission === 'No')} Non
 [br][/br]
 [u]Procédure/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
@@ -123,9 +120,9 @@ ${patientMedicine || 'N/A'}
 ${prescriptionImageBBCode}
 [br][/br]
 [u]Suivi: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
-[cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
-[cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
+${checkbox(formData.followup === 'AsNeeded')} Au besoin
+${checkbox(formData.followup === 'Recommended')} Recommandé
+${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
 
 [/left][/list][/table]`;
     return bbCode;

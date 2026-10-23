@@ -22,6 +22,9 @@ import { useSettings } from './contexts/SettingsProvider';
 import { useWebhooks } from './hooks/useWebhooks';
 import { useImageUpload } from './hooks/useImageUpload';
 import { loadUserCreations } from './utils/userCreations';
+import { normalizeBBCodeLineBreaks } from './utils/bbcodeLineBreaks';
+import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './utils/bbcodeToHtml';
+import ForumCopyNoticeModal, { isForumNoticeHidden } from './components/ForumCopyNoticeModal';
 import { useGitHubCommit } from './hooks/useGitHubCommit';
 import { useLockdown } from './contexts/LockdownContext';
 import LockdownBanner from './components/LockdownBanner';
@@ -382,11 +385,20 @@ function MainApp({
         setShowAgencySelector(true);
     };
 
+    // Changer de formulaire efface l'ID patient mémorisé : il venait du formulaire précédent et ne doit pas
+    // « suivre » vers un formulaire qui ne le demande pas (il serait enregistré dans le dossier d'un autre
+    // patient). Charger un rapport sauvegardé ne passe PAS par ici : son propre ID est conservé.
+    const clearStalePatientId = useCallback((nextVersion) => {
+        if (nextVersion === bbCodeVersion) return;
+        setFormData((prev) => (prev.patientID ? { ...prev, patientID: '' } : prev));
+    }, [bbCodeVersion, setFormData]);
+
     const handleAgencySelect = useCallback((version) => {
+        clearStalePatientId(version);
         setBbCodeVersion(version);
         setShowAgencySelector(false);
         setShowPHMCModal(false);
-    }, [setBbCodeVersion, setShowAgencySelector, setShowPHMCModal]);
+    }, [clearStalePatientId, setBbCodeVersion, setShowAgencySelector, setShowPHMCModal]);
 
     const handleHideAgencyGroupSelectorPreference = (hide) => {
         setHideAgencyGroupSelectorPreference(hide);
@@ -508,6 +520,32 @@ function MainApp({
         });
     };
 
+    // Fenêtre d'aide « forums » : 'bbcode' (après une copie) ou 'html' (après un téléchargement).
+    const [forumNotice, setForumNotice] = useState(null);
+    const openForumNotice = (kind, force = false) => {
+        if (force || !isForumNoticeHidden(kind)) setForumNotice(kind);
+    };
+
+    // Export HTML : converti depuis le BBCode courant AU CLIC (état le plus récent du formulaire),
+    // entièrement dans le navigateur — aucun appel serveur, donc aucun coût Firebase.
+    const handleDownloadHtml = () => {
+        const bbCode = getBBCodeContent();
+        if (!bbCode || !String(bbCode).trim()) {
+            showNotification('Rien à exporter : le BBCode est vide.', 'warning');
+            return;
+        }
+        try {
+            const title = generateTitle();
+            downloadHtmlFile(buildHtmlFileName(title), bbcodeToHtmlDocument(bbCode, { title }));
+            showNotification('Fichier HTML téléchargé !', 'check-circle');
+            openForumNotice('html');
+        } catch (error) {
+            console.error('Export HTML impossible :', error);
+            Sentry.captureException(error, { extra: { context: 'Export HTML', bbCodeVersion } });
+            showNotification(`Échec de la génération du HTML : ${(error.message || '').substring(0, 120)}`, 'error');
+        }
+    };
+
     const handleCopyTitle = () => {
         const title = generateTitle();
         navigator.clipboard.writeText(title);
@@ -568,7 +606,8 @@ function MainApp({
                     positionDetailsData: specificPositionData || {},
                     agencyDataStore: agencyDataStore,
                 };
-                return definition.generator(generatorArgs);
+                // Un retour à la ligne ET [br][/br] côte à côte faisaient deux sauts : on les fusionne (voir utils/bbcodeLineBreaks.js).
+                return normalizeBBCodeLineBreaks(definition.generator(generatorArgs));
             }
         } else {
             Sentry.captureMessage(`No BBCode generator found for version: ${bbCodeVersion}`);
@@ -844,9 +883,10 @@ function MainApp({
     // reste donc géré à part. Pour tous les autres formulaires, copier ne fait
     // plus que copier : la sauvegarde (et ses conditions/validations) est
     // désormais déclenchée séparément par handleSaveReportWrapper.
-    const handleCopyAndNotifyWrapper = useCallback(() => {
+    const handleCopyAndNotifyWrapper = useCallback(async () => {
+        let copied = false;
         if (selectedAgencyGroup === 'PHMC Recruitment') {
-            handlePhmcRecruitmentCopyAndNotify({
+            copied = await handlePhmcRecruitmentCopyAndNotify({
                 formData,
                 getBBCodeContent,
                 showNotification,
@@ -855,13 +895,15 @@ function MainApp({
                 formDefinition: getFormDefinition(bbCodeVersion),
             });
         } else {
-            handleCopyBBCodeOnly({
+            copied = await handleCopyBBCodeOnly({
                 getBBCodeContent,
                 getFormDefinition,
                 bbCodeVersion,
                 showNotification,
             });
         }
+        // Rappel : le BBCode marche sur le forum PHMC, pas sur le forum GTA World (voir ForumCopyNoticeModal).
+        if (copied) openForumNotice('bbcode');
     }, [
         selectedAgencyGroup,
         formData,
@@ -870,6 +912,7 @@ function MainApp({
         commitInfo,
         selectOptions,
         bbCodeVersion,
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     ]);
 
     // Sauvegarde un rapport pour l'auteur donné (compte connecté, ou employé
@@ -1445,6 +1488,7 @@ function MainApp({
                     title={switchableModalTitle}
                     forms={switchableFormsList}
                     handleFormSelect={(version) => {
+                        clearStalePatientId(version);
                         setBbCodeVersion(version);
                         setShowPHMCModal(false);
                     }}
@@ -2138,6 +2182,13 @@ function MainApp({
                             onCreateAccount={handleOpenSignup}
                         />
 
+                        <ForumCopyNoticeModal
+                            kind={forumNotice || 'bbcode'}
+                            show={!!forumNotice}
+                            onHide={() => setForumNotice(null)}
+                            onDownloadHtml={handleDownloadHtml}
+                        />
+
                         <Modal show={!!accountChoices} onHide={() => setAccountChoices(null)} centered>
                             <Modal.Header closeButton style={{ backgroundColor: '#1a1a1a', color: '#fff', borderBottom: '1px solid #444' }}>
                                 <Modal.Title>
@@ -2271,6 +2322,27 @@ function MainApp({
                                             {getCopyButtonText()}
                                         </Button>
 
+                                {/* Export HTML : à coller en texte enrichi sur le forum GTA World (et PHMC). */}
+                                <Button
+                                    type="button"
+                                    onClick={handleDownloadHtml}
+                                    className="copy-button-modern"
+                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                    title={isLockdownActive ? 'Le téléchargement est désactivé pendant le confinement du site' : 'Télécharge le rapport mis en page, à copier-coller sur le forum'}
+                                >
+                                    <i className="fas fa-file-code"></i>
+                                    Télécharger le HTML
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline-light"
+                                    onClick={() => openForumNotice('html', true)}
+                                    aria-label="Comment publier le HTML sur le forum ?"
+                                    title="Comment publier le HTML sur le forum ?"
+                                >
+                                    <i className="fas fa-circle-question"></i>
+                                </Button>
+
                                         {selectedAgencyGroup !== 'PHMC Recruitment' && (
                                             <Button
                                                 type="button"
@@ -2357,7 +2429,8 @@ function MainApp({
                             />
                         </div>
 
-                        {(selectedAgencyGroup === 'PHMC' || selectedAgencyGroup === 'PHMC Recruitment') && toolAccess.businessCard && (
+                        {/* Carte de visite : accessible depuis TOUS les groupes (PHMC, DMEC, recrutement…). */}
+                        {toolAccess.businessCard && (
                             <BusinessCardModal
                                 show={showBusinessCard}
                                 onHide={() => setShowBusinessCard(false)}

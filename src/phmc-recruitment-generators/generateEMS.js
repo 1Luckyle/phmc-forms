@@ -1,4 +1,5 @@
 import { getCategoryPositions, matchesPosition } from '../constants/recruitment';
+import { checkbox } from '../phmc-bbcode-generators/shared/bbStyles';
 const generateEMS = (formData) => {
     const {
         // Section 1: Informations personnelles
@@ -85,8 +86,6 @@ const generateEMS = (formData) => {
         // Ce console.warn fera maintenant correctement référence au nom de la source de données
         console.warn(`positionDetailsMap is empty or not provided. Using default URL for "${recruitmentPosition}".`);
     }
-
-    const eduCheck = (field) => field ? 'c' : '';
     let sections3onwardsBBCode = '';
 
     // ... le reste de votre logique generateEMS.js reste identique ...
@@ -158,7 +157,7 @@ const generateEMS = (formData) => {
         const section3Licensing = `[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Informations sur les Licences et la Demande[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]3.1[/color] Copie de votre licence de technicien médical d'urgence (( /licenses )):[/b] [i]${emsLicenseLink || 'RÉPONSE/LIEN'}[/i]
-[b][color=#FF0000]3.2[/color][/color] Veuillez écrire un court paragraphe expliquant pourquoi vous pensez que vous devriez obtenir une place dans notre programme à temps partiel:
+[b][color=#FF0000]3.2[/color] Veuillez écrire un court paragraphe expliquant pourquoi vous pensez que vous devriez obtenir une place dans notre programme à temps partiel:[/b]
 [quote][i]${emsPartTimeReason || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]`;
 
@@ -190,31 +189,31 @@ Centre de carrière [center][/center]
 [hr][/hr]
 [list=none][b][color=#FF0000]1.1[/color]  Titre et nom complet:[/b] [i]${applicantTitleAndFullName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.2[/color]  Genre:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${genderMale ? 'c' : ''}] Homme
-[cb${genderFemale ? 'c' : ''}] Femme
-[cb${genderOther ? 'c' : ''}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
+[list=none]${checkbox(genderMale)} Homme
+${checkbox(genderFemale)} Femme
+${checkbox(genderOther)} Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
 [b][color=#FF0000]1.3[/color] Date et lieu de naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
-[cb${citizenPermanent ? 'c' : ''}] Résident permanent et demande de citoyenneté en cours
-[cb${citizenNone ? 'c' : ''}] Aucune des réponses ci-dessus
+[list=none]${checkbox(citizenUS)} Citoyen des États-Unis
+${checkbox(citizenPermanent)} Résident permanent et demande de citoyenneté en cours
+${checkbox(citizenNone)} Aucune des réponses ci-dessus
 [br][/br][/list][/list][/divbox]
 [br][/br]
 [divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation Académique[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'éducation le plus élevé:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none]
-[cb${eduCheck(eduHighSchool)}] Diplôme d’Études Secondaires (High School Diploma)
-[cb${eduCheck(eduCertificate)}] Certificat (Sous-licence ou Professionnel/Technique)
-[cb${eduCheck(eduDiploma)}] Diplôme (Sous-licence ou Professionnel/Technique)
-[cb${eduCheck(eduAssociate)}] Diplôme d’Associé (Associate Degree)
-[cb${eduCheck(eduBachelor)}] Licence/Baccalauréat (Bachelor’s Degree)
-[cb${eduCheck(eduMaster)}] Master (Master’s Degree)
-[cb${eduCheck(eduDoctorate)}] Doctorat (PhD)
+${checkbox(eduHighSchool)} Diplôme d’Études Secondaires (High School Diploma)
+${checkbox(eduCertificate)} Certificat (Sous-licence ou Professionnel/Technique)
+${checkbox(eduDiploma)} Diplôme (Sous-licence ou Professionnel/Technique)
+${checkbox(eduAssociate)} Diplôme d’Associé (Associate Degree)
+${checkbox(eduBachelor)} Licence/Baccalauréat (Bachelor’s Degree)
+${checkbox(eduMaster)} Master (Master’s Degree)
+${checkbox(eduDoctorate)} Doctorat (PhD)
 [/list]
 [b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
 [list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]

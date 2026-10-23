@@ -4,6 +4,7 @@
 // supplémentaire est explicitement optionnel ("laisser vide si aucun") et
 // garde une chaîne vide.
 import { buildPatientContextBBCode } from './shared/patientContext';
+import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 
 const NOT_FILLED = 'Non renseigné';
 
@@ -38,19 +39,15 @@ PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 Date: ${date}
 Signé: ${phmcRank} ${lastName}
 
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
-ELGIN AVE. / STRAWBERRY AVE.
-BP 742
-LOS SANTOS, SAN ANDREAS
-T: 50056[/size][/center][/table][/divbox]
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Personnel[/b][/color][/center][/divboxcolor]
+${phmcHeaderEnd()}
+${sectionBanner(`Personnel`)}
 [table][tr][td]Chirurgien principal[/td][td]
 ${phmcEmployee}
 [/td][/tr]
 [tr][td]Personnel supplémentaire [i](laisser vide si aucun)[/i][/td][td]
 ${extraStaff}
 [/td][/tr][/table]
-${buildPatientContextBBCode(formData)}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Enquête chirurgicale[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData)}${sectionBanner(`Enquête chirurgicale`)}
 [table]
 
 [tr][td]Diagnostic pré-opératoire[/td][td]
@@ -66,26 +63,26 @@ ${ANESTHESIA_LABELS[formData.surgeryAnesthesiaType] || NOT_FILLED} | ${formData.
 [/td][/tr]
 
 [tr][td]Le patient ou sa famille a-t-il donné son consentement, ou avait-il une blessure potentiellement mortelle ou grave nécessitant une intervention chirurgicale immédiate?[/td][td]
-[cb${formData.patientConsentOption === 'Yes' ? 'c' : ''}] Oui
-[cb${formData.patientConsentOption === 'No' ? 'c' : ''}] Non
+${checkbox(formData.patientConsentOption === 'Yes')} Oui
+${checkbox(formData.patientConsentOption === 'No')} Non
 
 
 [/td][/tr]
 
 [tr][td]Des complications médicales sont-elles survenues pendant la chirurgie?[/td][td]
-[cb${formData.patientComplicationOptions === 'Yes' ? 'c' : ''}] Oui
-[cb${formData.patientComplicationOptions === 'No' ? 'c' : ''}] Non
+${checkbox(formData.patientComplicationOptions === 'Yes')} Oui
+${checkbox(formData.patientComplicationOptions === 'No')} Non
 ${formData.patientComplicationOptions === 'Yes' && formData.patientComplicationsYes ? `[br][/br][i]Détails :[/i] ${formData.patientComplicationsYes}` : ''}
 [/td][/tr]
 
 [tr][td]La procédure a-t-elle été complétée avec succès et a-t-elle abouti au résultat clinique souhaité?[/td][td]
-[cb${formData.procedureGoodOptions === 'Yes' ? 'c' : ''}] Oui
-[cb${formData.procedureGoodOptions === 'No' ? 'c' : ''}] Non
+${checkbox(formData.procedureGoodOptions === 'Yes')} Oui
+${checkbox(formData.procedureGoodOptions === 'No')} Non
 ${formData.procedureGoodOptions === 'No' && formData.procedureGoodNo ? `[br][/br][i]Détails :[/i] ${formData.procedureGoodNo}` : ''}
 [/td][/tr]
 [/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Rapport post-anesthésie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Rapport post-anesthésie`)}
 [table]
 
 [tr][td]Type et dosage d'anesthésie administrée[/td][td] ${patientSummaryConsultation}
@@ -96,7 +93,7 @@ ${formData.procedureGoodOptions === 'No' && formData.procedureGoodNo ? `[br][/br
 
 [/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Résumé de la procédure chirurgicale[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Résumé de la procédure chirurgicale`)}
 [table]
 
 [tr][td]

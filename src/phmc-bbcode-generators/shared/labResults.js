@@ -1,6 +1,7 @@
 import { LEGACY_LAB_KEYS } from '../../constants/clinicalOptions';
+import { checkbox } from './bbStyles';
 
-const box = (selected, key) => `[cb${selected.includes(key) ? 'c' : ''}]`;
+const box = (selected, key) => `${checkbox(selected.includes(key))}`;
 
 /**
  * Section « Labo » du BBCode : les sept cases historiques (inchangées), plus

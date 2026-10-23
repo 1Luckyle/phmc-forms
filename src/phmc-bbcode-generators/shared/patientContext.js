@@ -1,3 +1,4 @@
+import { sectionBanner } from './bbStyles';
 const GENDER_LABELS = {
     Male: 'Masculin',
     Female: 'Féminin',
@@ -31,7 +32,7 @@ ${orNA(formData.patientChronicDiseases)}
 [br][/br][u]Traitements habituels: [/u][br][/br]
 ${orNA(formData.patientCurrentMedicine)}`;
     }
-    return `[divboxcolor=black][center][color=${accentColor}]>[/color] [color=#FFFFFF][b]Contexte patient[/b][/color][/center][/divboxcolor]
+    return `${sectionBanner('Contexte patient', { accent: accentColor })}
 [table][tr][td][left][list=none]${body}[/left][/list][/table]
 `;
 };

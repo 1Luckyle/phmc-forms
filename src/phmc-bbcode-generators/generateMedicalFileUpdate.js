@@ -1,5 +1,6 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
+import { checkbox, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
@@ -82,21 +83,21 @@ ${patientName}
 [/size]
 
 [/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img]
-[b][size=150]MISE À JOUR DES INFORMATIONS DU PATIENT[/size][/center][/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations du patient[/b][/color][/size][/center][/divboxcolor]
+[b][size=150]MISE À JOUR DES INFORMATIONS DU PATIENT[/size][/b][/center][/table]
+${sectionBanner(`Informations du patient`, { size: 115 })}
 [table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
 [tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Informations mises à jour[/b][/color][/size][/center][/divboxcolor]
+${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [u]Je demande par la présente la mise à jour des informations suivantes:[/u]
 [i](Cochez les champs pertinents en modifiant le préfixe [cb] en [cbc] et fournissez les nouvelles informations. Veuillez fournir les informations complètes pour les catégories demandées (cochées!), y compris les informations non mises à jour. N'ajoutez pas d'informations dans les catégories que vous n'avez pas cochées![/i]
 
 `;
 
     if (UpdateMedicalFile?.includes('GeneralInformation')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Informations générales[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Informations générales[/b]
 [altspoiler=Nouvelles informations générales]
 [table][tr][td] Titre: ${patientTitleNew}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientNameNew}
 [tr][td] Date de naissance: ${patientDateOfBirthNew} [/td][td] Adresse: ${patientAddressNew}
@@ -106,7 +107,7 @@ ${patientName}
     }
 
     if (UpdateMedicalFile?.includes('EmergencyContact')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Contact d'urgence[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Contact d'urgence[/b]
 [altspoiler=Nouveaux détails du contact d'urgence]
 [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
 [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
@@ -114,11 +115,11 @@ ${patientName}
     }
 
     if (UpdateMedicalFile?.includes('MedicalHistory')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Antécédents médicaux[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Antécédents médicaux[/b]
         [altspoiler=Nouveaux antécédents médicaux]
 
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
-[tr][td] Groupe sanguin: [/td][td] [cb${patientBloodType === 'A+' ? 'c' : ''}] A+ [cb${patientBloodType === 'A-' ? 'c' : ''}] A- [cb${patientBloodType === 'B+' ? 'c' : ''}] B+ [cb${patientBloodType === 'B-' ? 'c' : ''}] B- [cb${patientBloodType === 'O+' ? 'c' : ''}] O+ [cb${patientBloodType === 'O-' ? 'c' : ''}] O- [cb${patientBloodType === 'AB+' ? 'c' : ''}] AB+ [cb${patientBloodType === 'AB-' ? 'c' : ''}] AB-
+[tr][td] Groupe sanguin: [/td][td] ${checkbox(patientBloodType === 'A+')} A+ ${checkbox(patientBloodType === 'A-')} A- ${checkbox(patientBloodType === 'B+')} B+ ${checkbox(patientBloodType === 'B-')} B- ${checkbox(patientBloodType === 'O+')} O+ ${checkbox(patientBloodType === 'O-')} O- ${checkbox(patientBloodType === 'AB+')} AB+ ${checkbox(patientBloodType === 'AB-')} AB-
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
 [tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
 [tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}
@@ -127,7 +128,7 @@ ${patientName}
     }
 
     if (UpdateMedicalFile?.includes('MentalHealth')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Antécédents de santé mentale[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Antécédents de santé mentale[/b]
         [altspoiler=Nouveaux antécédents de santé mentale]
 [table][tr][td] Troubles de santé mentale diagnostiqués: [/td][td] ${patientMental}
 [tr][td] Thérapies et séances de conseil: [/td][td] ${patientTherapy}
@@ -138,7 +139,7 @@ ${patientName}
     }
 
     if (UpdateMedicalFile?.includes('FamilyMedicalHistory')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Antécédents médicaux familiaux[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Antécédents médicaux familiaux[/b]
         [altspoiler=Nouveaux antécédents médicaux familiaux]
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Membres de la famille immédiate: [/td][td] ${patientFam}
@@ -148,15 +149,15 @@ ${patientName}
     }
 
     if (UpdateMedicalFile?.includes('SocialInformation')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold]Informations sociales[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b]Informations sociales[/b]
         [altspoiler=Nouvelles informations sociales]
-[table][tr][td] État civil: [cb${formData.maritalStatus === 'Single' ? 'c' : ''}] Célibataire [cb${formData.maritalStatus === 'DomesticPartnership' ? 'c' : ''}] En couple / Union civile [cb${formData.maritalStatus === 'Married' ? 'c' : ''}] Marié(e) [cb${formData.maritalStatus === 'Divorced' ? 'c' : ''}] Divorcé(e) [cb${formData.maritalStatus === 'Widowed' ? 'c' : ''}] Veuf(ve) [/td][td] Nombre d'enfants: [cb${formData.numberChildren === '0' ? 'c' : ''}] 0 [cb${formData.numberChildren === '1' ? 'c' : ''}] 1 [cb${formData.numberChildren === '2' ? 'c' : ''}] 2 [cb${formData.numberChildren === '3+' ? 'c' : ''}] 3 ou plus
-[tr][td] Considérations culturelles et/ou religieuses: ${patientReligion} [/td][td] Situation financière: [cb${formData.financialStatus === 'LowIncome' ? 'c' : ''}] Faible revenu [cb${formData.financialStatus === 'MiddleIncome' ? 'c' : ''}] Revenu moyen [cb${formData.financialStatus === 'HighIncome' ? 'c' : ''}] Revenu élevé
+[table][tr][td] État civil: ${checkbox(formData.maritalStatus === 'Single')} Célibataire ${checkbox(formData.maritalStatus === 'DomesticPartnership')} En couple / Union civile ${checkbox(formData.maritalStatus === 'Married')} Marié(e) ${checkbox(formData.maritalStatus === 'Divorced')} Divorcé(e) ${checkbox(formData.maritalStatus === 'Widowed')} Veuf(ve) [/td][td] Nombre d'enfants: ${checkbox(formData.numberChildren === '0')} 0 ${checkbox(formData.numberChildren === '1')} 1 ${checkbox(formData.numberChildren === '2')} 2 ${checkbox(formData.numberChildren === '3+')} 3 ou plus
+[tr][td] Considérations culturelles et/ou religieuses: ${patientReligion} [/td][td] Situation financière: ${checkbox(formData.financialStatus === 'LowIncome')} Faible revenu ${checkbox(formData.financialStatus === 'MiddleIncome')} Revenu moyen ${checkbox(formData.financialStatus === 'HighIncome')} Revenu élevé
 [/table][/altspoiler]`;
     }
 
     if (UpdateMedicalFile?.includes('LifestyleInformation')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Informations sur le mode de vie[/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Informations sur le mode de vie[/b]
         [altspoiler=Nouvelles informations sur le mode de vie]
 [table][tr][td] Statut tabagique: ${patientSmoker} [/td][td] Consommation d'alcool: ${patientAlcohol}[/td][td] Autres substances: ${patientDrugs}
 [tr][td] Habitudes d'exercice: ${patientExercise}[/td][td] Informations diététiques: ${patientDiet}[/td][td] Habitudes de sommeil: ${patientSleep}
@@ -166,25 +167,25 @@ ${patientName}
     }
 
     if (UpdateMedicalFile?.includes('AdvancedDirectives')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [bold] Directives anticipées [/bold]
+        bbCode += `[cbc][color=#FF0000]>[/color] [b] Directives anticipées [/b]
         [altspoiler=Nouvelles directives anticipées]
 [divbox=transparent][list=none]Je soussigné(e), ${patientName}, fournis par la présente les directives anticipées suivantes concernant mes soins de santé, à suivre dans l'éventualité où je deviendrais incapable de prendre des décisions concernant mon traitement médical:
 
 [list=1][*] [size=110]Testament de vie[/size]: Dans l'éventualité où je serais incapable de communiquer, je demande ce qui suit concernant les traitements de maintien de la vie:
-[cb${formData.dnr === 'ProlongLife' ? 'c' : ''}][/cb${formData.dnr === 'ProlongLife' ? 'c' : ''}]Je veux que toutes les mesures disponibles soient prises pour prolonger ma vie.
-[cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}][/cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}]Je ne veux que des traitements axés sur le confort et la qualité de vie, même si cela signifie ne pas prolonger la vie.
-[cb${formData.dnr === 'other' ? 'c' : ''}][/cb${formData.dnr === 'other' ? 'c' : ''}]Autres instructions: ${dnrOther}
+${checkbox(formData.dnr === 'ProlongLife')}[/cb${formData.dnr === 'ProlongLife' ? 'c' : ''}]Je veux que toutes les mesures disponibles soient prises pour prolonger ma vie.
+${checkbox(formData.dnr === 'ComfortOfLife')}[/cb${formData.dnr === 'ComfortOfLife' ? 'c' : ''}]Je ne veux que des traitements axés sur le confort et la qualité de vie, même si cela signifie ne pas prolonger la vie.
+${checkbox(formData.dnr === 'other')}[/cb${formData.dnr === 'other' ? 'c' : ''}]Autres instructions: ${dnrOther}
 
 [*][size=110]Procuration en matière de soins de santé[/size]:
-[cb${formData.attorney === 'Yes' ? 'c' : ''}][/cb${formData.attorney === 'Yes' ? 'c' : ''}]J'ai désigné la personne suivante comme mon mandataire/représentant en matière de soins de santé pour prendre des décisions médicales en mon nom:
+${checkbox(formData.attorney === 'Yes')}[/cb${formData.attorney === 'Yes' ? 'c' : ''}]J'ai désigné la personne suivante comme mon mandataire/représentant en matière de soins de santé pour prendre des décisions médicales en mon nom:
 [list=none]Prénom (Deuxième Prénom) & Nom: ${attorneyName}
 Relation avec le patient: ${attorneyRelation}
 Numéro de téléphone: ${attorneyPH}[/list]
 
-[cb${formData.attorney === 'No' ? 'c' : ''}][/cb${formData.attorney === 'No' ? 'c' : ''}]Je n'ai pas désigné de mandataire/représentant en matière de soins de santé pour le moment.
+${checkbox(formData.attorney === 'No')}[/cb${formData.attorney === 'No' ? 'c' : ''}]Je n'ai pas désigné de mandataire/représentant en matière de soins de santé pour le moment.
 [*] [size=110]Ordre de non-réanimation (DNR)[/size]:
-[cb${formData.dnrOrder === 'Yes' ? 'c' : ''}][/cb${formData.dnrOrder === 'Yes' ? 'c' : ''}]J'ai un ordre DNR en place, demandant au personnel médical de ne pas effectuer de RCR ou d'autres mesures de sauvetage si mon cœur s'arrête.
-[cb${formData.dnrOrder === 'No' ? 'c' : ''}][/cb${formData.dnrOrder === 'No' ? 'c' : ''}]Je n'ai pas d'ordre DNR en place pour le moment.
+${checkbox(formData.dnrOrder === 'Yes')}[/cb${formData.dnrOrder === 'Yes' ? 'c' : ''}]J'ai un ordre DNR en place, demandant au personnel médical de ne pas effectuer de RCR ou d'autres mesures de sauvetage si mon cœur s'arrête.
+${checkbox(formData.dnrOrder === 'No')}[/cb${formData.dnrOrder === 'No' ? 'c' : ''}]Je n'ai pas d'ordre DNR en place pour le moment.
 
 [*][size=110]Consentement au partage des directives anticipées[/size]:
 J'autorise le Pillbox Hill Medical Center à conserver une copie de mes directives anticipées dans mon dossier médical et à partager cette information avec le personnel médical et les services d'urgence au besoin pour garantir le respect de mes volontés en matière de soins de santé.[/list]
@@ -195,13 +196,13 @@ Date: ${date}[/divbox][/altspoiler]`;
     }
 
     bbCode += `
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Clause de non-responsabilité[/b][/color][/size][/center][/divboxcolor]
+${sectionBanner(`Clause de non-responsabilité`, { size: 115 })}
 [divbox=transparent][list=none]Je soussigné(e), ${patientName}, déclare par la présente que les informations fournies dans ce formulaire d'antécédents médicaux sont vraies, exactes et complètes selon mes meilleures connaissances. Je comprends que ces informations seront stockées en toute sécurité dans les systèmes du Pillbox Hill Medical Center et peuvent être consultées par les professionnels de la santé autorisés impliqués dans mes soins.
 
 Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partage de mes informations médicales entre les professionnels de la santé du Pillbox Hill Medical Center dans le but de fournir des services de soins de santé complets et coordonnés. Je reconnais que ces informations peuvent être utilisées pour le diagnostic, le traitement et d'autres activités liées aux soins de santé conformément aux lois et règlements applicables, y compris la loi sur la portabilité et la responsabilité en matière d'assurance maladie (HIPAA).
 
 Je soussigné(e), ${patientName}, conserve le droit de révoquer ce consentement à tout moment en avisant le Pillbox Hill Medical Center par écrit. Cependant, je comprends également que la révocation du consentement peut limiter la capacité des professionnels de la santé à me fournir des soins optimaux et coordonnés.[/list][/divbox]
-[divboxcolor=black][center][size=115][color=#FF0000]>[/color] [color=#FFFFFF][b]Paiement[/b][/color][/size][/center][/divboxcolor]
+${sectionBanner(`Paiement`, { size: 115 })}
 [table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.[/td][td]
     ${paymentProofPhotos ? `[url=${paymentProofPhotos}]Preuve de paiement[/url]` : 'Aucune preuve de paiement fournie'}
 [/table]`;

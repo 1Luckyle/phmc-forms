@@ -1,5 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode } from './shared/patientContext';
+import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -33,36 +34,36 @@ PALETO BAY BLVD.
 BP 685
 PALETO BAY, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
-${buildPatientContextBBCode(formData, { accentColor: '#0080FF' })}[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData, { accentColor: '#0080FF' })}${sectionBanner(`Anamnèse`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint}
 [br][/br]
 [u]Département assigné: [/u][br][/br]
-[cb${formData.paletoClinicDepartment === 'InternalMedicine' ? 'c' : ''}] Médecine interne 
-[cb${formData.paletoClinicDepartment === 'SurgicalDepartment' ? 'c' : ''}] Département chirurgical
+${checkbox(formData.paletoClinicDepartment === 'InternalMedicine')} Médecine interne 
+${checkbox(formData.paletoClinicDepartment === 'SurgicalDepartment')} Département chirurgical
 [/table]
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Signes vitaux[/b][/color][/center][/divboxcolor]
-[table][tr][td][center]Température: [cb${formData.temperature === 'patientTempNormal' ? 'c' : ''}] Normale [cb${formData.temperature === 'patientHypothermic' ? 'c' : ''}] Hypothermique [cb${formData.temperature === 'patientHyperthermic' ? 'c' : ''}] Hyperthermique[/center]
-[td][center]Fréquence cardiaque: [cb${formData.heartRate === 'patientHeartRateNormal' ? 'c' : ''}] Normale [cb${formData.heartRate === 'patientHeartRateBradycardia' ? 'c' : ''}] Bradycardie [cb${formData.heartRate === 'patientHeartRateTachycardia' ? 'c' : ''}] Tachycardie[/center][/table]
-[table][tr][td][center]Respiration: [cb${formData.breathing === 'patientBreathingNormal' ? 'c' : ''}] Normale [cb${formData.breathing === 'patientBreathingSlow' ? 'c' : ''}] Lente [cb${formData.breathing === 'patientBreathingFast' ? 'c' : ''}] Rapide [cb${formData.breathing === 'patientBreathingObstructed' ? 'c' : ''}] Obstruée[/center]
-[td][center]Tension artérielle: [cb${formData.bloodPressure === 'patientBloodPressureNormal' ? 'c' : ''}] Normale [cb${formData.bloodPressure === 'patientBloodPressureHypotension' ? 'c' : ''}] Hypotension [cb${formData.bloodPressure === 'patientBloodPressureHypertension' ? 'c' : ''}] Hypertension [/center][/table]
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
-[table][tr][td][center]État de santé général (ESG): [cb${formData.findings === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.findings === 'patientImpared' ? 'c' : ''}] Altéré[/center]
-[td][center]Poumons (Auscultation): [cb${formData.lungs === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.lungs === 'patientRhonchi' ? 'c' : ''}] Ronchi [cb${formData.lungs === 'patientCrack' ? 'c' : ''}] Crépitants [/center][/table]
-[table][tr][td][center]Pupilles: [cb${formData.pupils === 'patientPupilsNormal' ? 'c' : ''}] Normales [cb${formData.pupils === 'patientPupilsAbnormal' ? 'c' : ''}] Anormales [/center]
-[td][center]Blessures: [cb${formData.wounds === 'patientFractures' ? 'c' : ''}] Fracture(s) [cb${formData.wounds === 'patientBleeding' ? 'c' : ''}] Saignement [cb${formData.wounds === 'patientHematoma' ? 'c' : ''}] Hématome [cb${formData.wounds === 'patientNoWounds' ? 'c' : ''}] Aucune [/center][/table]
-[table][tr][td][center]ECG: [cb${formData.ecg === 'patientSinusRhythm' ? 'c' : ''}] Rythme sinusal [cb${formData.ecg === 'patientArrhythmia' ? 'c' : ''}] Arythmie [cb${formData.ecg === 'patientInfaction' ? 'c' : ''}] Infarctus [/center]
-[td][center]Sono: [cb${formData.sono === 'patientNormal' ? 'c' : ''}] Normal [cb${formData.sono === 'patientFluids' ? 'c' : ''}] Fluides [cb${formData.sono === 'patientTissue' ? 'c' : ''}] Changement tissulaire[/center][/table]
+${sectionBanner(`Signes vitaux`, { accent: BB_COLORS.blue })}
+[table][tr][td][center]Température: ${checkbox(formData.temperature === 'patientTempNormal')} Normale ${checkbox(formData.temperature === 'patientHypothermic')} Hypothermique ${checkbox(formData.temperature === 'patientHyperthermic')} Hyperthermique[/center]
+[td][center]Fréquence cardiaque: ${checkbox(formData.heartRate === 'patientHeartRateNormal')} Normale ${checkbox(formData.heartRate === 'patientHeartRateBradycardia')} Bradycardie ${checkbox(formData.heartRate === 'patientHeartRateTachycardia')} Tachycardie[/center][/table]
+[table][tr][td][center]Respiration: ${checkbox(formData.breathing === 'patientBreathingNormal')} Normale ${checkbox(formData.breathing === 'patientBreathingSlow')} Lente ${checkbox(formData.breathing === 'patientBreathingFast')} Rapide ${checkbox(formData.breathing === 'patientBreathingObstructed')} Obstruée[/center]
+[td][center]Tension artérielle: ${checkbox(formData.bloodPressure === 'patientBloodPressureNormal')} Normale ${checkbox(formData.bloodPressure === 'patientBloodPressureHypotension')} Hypotension ${checkbox(formData.bloodPressure === 'patientBloodPressureHypertension')} Hypertension [/center][/table]
+${sectionBanner(`Constatations`, { accent: BB_COLORS.blue })}
+[table][tr][td][center]État de santé général (ESG): ${checkbox(formData.findings === 'patientNormal')} Normal ${checkbox(formData.findings === 'patientImpared')} Altéré[/center]
+[td][center]Poumons (Auscultation): ${checkbox(formData.lungs === 'patientNormal')} Normal ${checkbox(formData.lungs === 'patientRhonchi')} Ronchi ${checkbox(formData.lungs === 'patientCrack')} Crépitants [/center][/table]
+[table][tr][td][center]Pupilles: ${checkbox(formData.pupils === 'patientPupilsNormal')} Normales ${checkbox(formData.pupils === 'patientPupilsAbnormal')} Anormales [/center]
+[td][center]Blessures: ${checkbox(formData.wounds === 'patientFractures')} Fracture(s) ${checkbox(formData.wounds === 'patientBleeding')} Saignement ${checkbox(formData.wounds === 'patientHematoma')} Hématome ${checkbox(formData.wounds === 'patientNoWounds')} Aucune [/center][/table]
+[table][tr][td][center]ECG: ${checkbox(formData.ecg === 'patientSinusRhythm')} Rythme sinusal ${checkbox(formData.ecg === 'patientArrhythmia')} Arythmie ${checkbox(formData.ecg === 'patientInfaction')} Infarctus [/center]
+[td][center]Sono: ${checkbox(formData.sono === 'patientNormal')} Normal ${checkbox(formData.sono === 'patientFluids')} Fluides ${checkbox(formData.sono === 'patientTissue')} Changement tissulaire[/center][/table]
 ${buildLabBBCode(formData)}
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Diagnostic de sortie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Diagnostic de sortie`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis}
 [br][/br][u]Diagnostic secondaire: [/u][br][/br]
 ${patientSecondaryDiagnosis}[/left][/list][/table]
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Thérapie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Thérapie`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-[cb${formData.admission === 'Yes' ? 'c' : ''}] Oui
-[cb${formData.admission === 'No' ? 'c' : ''}] Non
+${checkbox(formData.admission === 'Yes')} Oui
+${checkbox(formData.admission === 'No')} Non
 [br][/br]
 [u]Plan de traitement/Texte libre: [/u][br][/br]
 ${patientProcedure}
@@ -74,9 +75,9 @@ ${patientNotes}
 ${patientMedicine}
 [br][/br]
 [u]Suivi: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
-[cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
-[cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
+${checkbox(formData.followup === 'AsNeeded')} Au besoin
+${checkbox(formData.followup === 'Recommended')} Recommandé
+${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
 [/left][/list][/table]`
             return bbCode;
             };

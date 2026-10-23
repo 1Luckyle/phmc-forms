@@ -1,3 +1,4 @@
+import { checkbox } from '../phmc-bbcode-generators/shared/bbStyles';
 const generatePsych = (formData) => {
     const {
         // Section 1: Informations personnelles
@@ -88,22 +89,22 @@ const generatePsych = (formData) => {
         // (Condition médicale comme 1.6, Citoyenneté comme 1.7)
         personalInfoContinuation = `[b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
-[cb${citizenPermanent ? 'c' : ''}] Résident permanent et demande de citoyenneté en cours
-[cb${citizenNone ? 'c' : ''}] Aucune des réponses ci-dessus
+[list=none]${checkbox(citizenUS)} Citoyen des États-Unis
+${checkbox(citizenPermanent)} Résident permanent et demande de citoyenneté en cours
+${checkbox(citizenNone)} Aucune des réponses ci-dessus
 [br][/br][/list]`;
     } else {
         // BBCode pour les AUTRES carrières psychiatriques (par exemple, "Resident Psychiatrist", "Attending Psychiatrist")
         // Ce bloc inclura SEULEMENT "Lieu d'emploi souhaité" comme 1.6
         personalInfoContinuation = `[b][color=#FF0000]1.6[/color]  Lieu d'Emploi Souhaité:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color])[/i] [color=#FF0000][u][b]LES POSTES SONT UNIQUEMENT OUVERT SUR LE PHMC DE LOS SANTOS[/b][/u][/color]
-[list=none][cbc${locationPHMC ? 'c' : ''}] Pillbox Hill Medical Center(Ville de Los Santos)
-[cb${locationPBC ? 'c' : ''}] Clinique PHMC de Paleto Bay (Paleto Bay)
+[list=none]${checkbox(locationPHMC)} Pillbox Hill Medical Center(Ville de Los Santos)
+${checkbox(locationPBC)} Clinique PHMC de Paleto Bay (Paleto Bay)
 [/list]
 [b][color=#FF0000]1.7[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.8[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
-[cb${citizenPermanent ? 'c' : ''}] Résident permanent et demande de citoyenneté en cours
-[cb${citizenNone ? 'c' : ''}] Aucune des réponses ci-dessus
+[list=none]${checkbox(citizenUS)} Citoyen des États-Unis
+${checkbox(citizenPermanent)} Résident permanent et demande de citoyenneté en cours
+${checkbox(citizenNone)} Aucune des réponses ci-dessus
 [br][/br][/list]`
     }
     // --- Fin BBCode conditionnel ---
@@ -118,9 +119,9 @@ Centre de carrière [center][/center]
 [hr][/hr]
 [list=none][b][color=#FF0000]1.1[/color]  Titre et Nom Complet:[/b] [i]${applicantTitleAndFullName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.2[/color]  Genre:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${genderMale ? 'c' : ''}] Homme
-[cb${genderFemale ? 'c' : ''}] Femme
-[cb${genderOther ? 'c' : ''}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
+[list=none]${checkbox(genderMale)} Homme
+${checkbox(genderFemale)} Femme
+${checkbox(genderOther)} Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
 [b][color=#FF0000]1.3[/color] Date et Lieu de Naissance:[/b] [i]${applicantDOBAndPlace || 'JJ/MMM/AAAA à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
@@ -132,13 +133,13 @@ ${personalInfoContinuation}
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'éducation le plus élevé:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none]
-[cb${eduHighSchool ? 'c' : ''}] Diplôme d’Études Secondaires (High School Diploma)
-[cb${eduCertificate ? 'c' : ''}] Certificat (Sous-licence ou Professionnel/Technique)
-[cb${eduDiploma ? 'c' : ''}] Diplôme (Sous-licence ou Professionnel/Technique)
-[cb${eduAssociate ? 'c' : ''}] Diplôme d’Associé (Associate Degree)
-[cb${eduBachelor ? 'c' : ''}] Licence/Baccalauréat (Bachelor’s Degree)
-[cb${eduMaster ? 'c' : ''}] Master (Master’s Degree)
-[cb${eduDoctorate ? 'c' : ''}] Doctorat (PhD)
+${checkbox(eduHighSchool)} Diplôme d’Études Secondaires (High School Diploma)
+${checkbox(eduCertificate)} Certificat (Sous-licence ou Professionnel/Technique)
+${checkbox(eduDiploma)} Diplôme (Sous-licence ou Professionnel/Technique)
+${checkbox(eduAssociate)} Diplôme d’Associé (Associate Degree)
+${checkbox(eduBachelor)} Licence/Baccalauréat (Bachelor’s Degree)
+${checkbox(eduMaster)} Master (Master’s Degree)
+${checkbox(eduDoctorate)} Doctorat (PhD)
 [/list]
 [b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
 [list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]
@@ -155,7 +156,7 @@ ${personalInfoContinuation}
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]4[/color].  Lettre de motivation[/size][/b][/list]
 [hr][/hr]
-[list=none][b][color=#FF0000]4.1[/color] Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent:[/b] i[/i]
+[list=none][b][color=#FF0000]4.1[/color] Décrivez pourquoi vous souhaitez nous rejoindre, pourquoi nous devrions vous choisir plutôt qu'une autre personne, et pourquoi les qualités requises pour ce poste vous correspondent:[/b]
 [quote][i]${applicantMotivationLetter || 'RÉPONSE ICI'}[/i][/quote][/list]
 [br][/br][/divbox]
 [divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations Hors Roleplay ))[/size][/b][/list]

@@ -23,7 +23,7 @@ const generateCertificate = (formData) => {
 
 [hr][/hr]
 [center][size=125][b]CERTIFICAT DE DÉCÈS ÉMIS PAR LE
-DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/center][/b][/size]
+DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/b][/size][/center]
 [hr][/hr][br]
 
 [center]Je soussigné(e), [b]${coronerEmployee}[/b], au nom du Département de Pathologie et de Médecine Légale du Pillbox Hill Medical Center, dans l'État de San Andreas, documente, enregistre, scelle et certifie par la présente le décès de [b]${decedentName}[/b]. Je confirme que les informations suivantes sont exactes au meilleur de mes capacités:[/center][br][/br]
@@ -54,10 +54,10 @@ SIGNATURE DU TÉMOIN:
 NOM: ${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}
 
 DATE D'ÉMISSION DU CERTIFICAT: ${date}
-[/list]
+[/left][/list]
 
 [br][hr][/hr]
-[center]Note: Ceci est la copie originale du certificat de décès. Des copies supplémentaires peuvent être demandées moyennant des frais additionnels[/center][br][/br]`
+[center]Note: Ceci est la copie originale du certificat de décès. Des copies supplémentaires peuvent être demandées moyennant des frais additionnels[/center][br][/br][/divbox]`
     return bbCode;
     };
 export default generateCertificate;

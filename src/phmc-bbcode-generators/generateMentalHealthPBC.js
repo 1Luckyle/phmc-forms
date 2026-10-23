@@ -1,4 +1,5 @@
 import { buildPatientContextBBCode } from './shared/patientContext';
+import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -29,7 +30,7 @@ PALETO BAY BLVD.
 BP 685
 PALETO BAY, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
-${buildPatientContextBBCode(formData, { accentColor: '#0080FF', showHistory: true })}[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData, { accentColor: '#0080FF', showHistory: true })}${sectionBanner(`Anamnèse`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint}
 [br][/br]
@@ -37,15 +38,15 @@ ${patientChiefComplaint}
 [cbc] Santé mentale
 [br][/br][/left]
 [/table]
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Constatations`, { accent: BB_COLORS.blue })}
 [table][tr][td][list=none]Notes: ${patientNotes}[/list][/table]
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Diagnostic de sortie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Diagnostic de sortie`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis}[/list][/table]
-[divboxcolor=black][center][color=#0080FF]>[/color] [color=#FFFFFF][b]Thérapie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Thérapie`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-[cb${formData.admission === 'Yes' ? 'c' : ''}] Oui
-[cb${formData.admission === 'No' ? 'c' : ''}] Non
+${checkbox(formData.admission === 'Yes')} Oui
+${checkbox(formData.admission === 'No')} Non
 [br][/br]
 [u]Procédure: [/u][br][/br]
 ${patientProcedure}
@@ -54,9 +55,9 @@ ${patientProcedure}
 ${patientMedicine}
 [br][/br]
 [u]Suivi: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin
-[cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé
-[cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective 
+${checkbox(formData.followup === 'AsNeeded')} Au besoin
+${checkbox(formData.followup === 'Recommended')} Recommandé
+${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective 
 [/left][/list][/table]
 `;
 

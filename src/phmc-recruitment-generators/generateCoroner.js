@@ -1,3 +1,4 @@
+import { checkbox } from '../phmc-bbcode-generators/shared/bbStyles';
 const generateCoroner = (formData) => {
     const {
         // Section 1: Personal Information
@@ -76,7 +77,6 @@ const generateCoroner = (formData) => {
     }
 
     // Helper for education/citizenship/gender checkboxes
-    const check = (field) => field ? 'c' : '';
 
     const bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 Centre de Carrières [center][/center]
@@ -88,31 +88,31 @@ Centre de Carrières [center][/center]
 [hr][/hr]
 [list=none][b][color=#FF0000]1.1[/color]  Titre & Nom Complet:[/b] [i]${applicantTitleAndFullName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.2[/color]  Genre:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${check(genderMale)}] Homme
-[cb${check(genderFemale)}] Femme
-[cb${check(genderOther)}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
+[list=none]${checkbox(genderMale)} Homme
+${checkbox(genderFemale)} Femme
+${checkbox(genderOther)} Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
 [b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOBAndPlace || 'jj/mm/aaaa à VILLE'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.7[/color]  Citoyenneté:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${check(citizenUS)}] Citoyen des États-Unis
-[cb${check(citizenPermanent)}] Résident permanent et demande de citoyenneté en cours
-[cb${check(citizenNone)}] Aucun des deux
+[list=none]${checkbox(citizenUS)} Citoyen des États-Unis
+${checkbox(citizenPermanent)} Résident permanent et demande de citoyenneté en cours
+${checkbox(citizenNone)} Aucun des deux
 [br][/br][/list][/list][/divbox]
 [br][/br]
 [divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation académique[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'Études le Plus Élevé:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
 [list=none]
-[cb${check(eduHighSchool)}] Diplôme d’Études Secondaires (High School Diploma)
-[cb${check(eduCertificate)}] Certificat (Sous-licence ou Professionnel/Technique)
-[cb${check(eduDiploma)}] Diplôme (Sous-licence ou Professionnel/Technique)
-[cb${check(eduAssociate)}] Diplôme d’Associé (Associate Degree)
-[cb${check(eduBachelor)}] Licence/Baccalauréat (Bachelor’s Degree)
-[cb${check(eduMaster)}] Master (Master’s Degree)
-[cb${check(eduDoctorate)}] Doctorat (PhD)
+${checkbox(eduHighSchool)} Diplôme d’Études Secondaires (High School Diploma)
+${checkbox(eduCertificate)} Certificat (Sous-licence ou Professionnel/Technique)
+${checkbox(eduDiploma)} Diplôme (Sous-licence ou Professionnel/Technique)
+${checkbox(eduAssociate)} Diplôme d’Associé (Associate Degree)
+${checkbox(eduBachelor)} Licence/Baccalauréat (Bachelor’s Degree)
+${checkbox(eduMaster)} Master (Master’s Degree)
+${checkbox(eduDoctorate)} Doctorat (PhD)
 [/list]
 [b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
 [list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]

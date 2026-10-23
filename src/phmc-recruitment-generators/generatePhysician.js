@@ -1,3 +1,4 @@
+import { checkbox } from '../phmc-bbcode-generators/shared/bbStyles';
 // src/phmc-recruitment-generators/generatePhysician.js
 const generatePhysician = (formData) => {
     const {
@@ -96,35 +97,35 @@ Centre de Carrières [center][/center]
 [hr][/hr]
 [list=none][b][color=#FF0000]1.1[/color]  Titre & Nom Complet:[/b] [i]${applicantTitleAndFullName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.2[/color]  Genre:[/b] [i](ajoutez un c, le cas échéant comme ceci cb[color=#FF0000][u][b]c[/b][/u][/color]) [/i]
-[list=none][cb${genderMale ? 'c' : ''}] Homme
-[cb${genderFemale ? 'c' : ''}] Femme
-[cb${genderOther ? 'c' : ''}] Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
+[list=none]${checkbox(genderMale)} Homme
+${checkbox(genderFemale)} Femme
+${checkbox(genderOther)} Autre: ${genderOther && applicantGenderOtherText ? applicantGenderOtherText : ''}
 [/list]
 [b][color=#FF0000]1.3[/color] Date & Lieu de Naissance:[/b] [i]${applicantDOB || 'JJ/MMM/AAAA'} à ${applicantBirthPlace || 'Lieu de Naissance'}[/i]
 [b][color=#FF0000]1.4[/color]  Adresse:[/b] [i]${applicantAddress || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.5[/color]  Coordonnées:[/b] [i]Tél: ${applicantPhone || 'RÉPONSE'} — Email: ${applicantEmail || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.6[/color]  Lieu d'Emploi Souhaité:[/b] [color=#FF0000][u][b]LES POSTES SONT UNIQUEMENT OUVERT SUR LE PHMC DE LOS SANTOS[/b][/u][/color]
-[list=none][cbc${locationPHMC ? 'c' : ''}] Pillbox Hill Medical Center(Ville de Los Santos)
-[cb${locationPBC ? 'c' : ''}] Clinique PHMC de Paleto Bay (Paleto Bay)
+[list=none]${checkbox(locationPHMC)} Pillbox Hill Medical Center(Ville de Los Santos)
+${checkbox(locationPBC)} Clinique PHMC de Paleto Bay (Paleto Bay)
 [/list]
 [b][color=#FF0000]1.7[/color] Avez-vous été diagnostiqué avec une condition médicale?:[/b] [i]${applicantMedicalConditions || 'RÉPONSE'}[/i]
 [b][color=#FF0000]1.8[/color]  Citoyenneté:[/b]
-[list=none][cb${citizenUS ? 'c' : ''}] Citoyen des États-Unis
-[cb${citizenPermanent ? 'c' : ''}] Résident permanent et demande de citoyenneté en cours
-[cb${citizenNone ? 'c' : ''}] Aucun des deux
+[list=none]${checkbox(citizenUS)} Citoyen des États-Unis
+${checkbox(citizenPermanent)} Résident permanent et demande de citoyenneté en cours
+${checkbox(citizenNone)} Aucun des deux
 [br][/br][/list][/list][/divbox]
 [br][/br]
 [divbox=na][list=none][b][size=110][color=#FF0000]2[/color].  Formation Académique[/size][/b][/list]
 [hr][/hr]
 [list=none][b][color=#FF0000]2.1[/color] Niveau d'Études le Plus Élevé:[/b]
 [list=none]
-[cb${eduHighSchool ? 'c' : ''}] Diplôme d’Études Secondaires (High School Diploma)
-[cb${eduCertificate ? 'c' : ''}] Certificat (Sous-licence ou Professionnel/Technique)
-[cb${eduDiploma ? 'c' : ''}] Diplôme (Sous-licence ou Professionnel/Technique)
-[cb${eduAssociate ? 'c' : ''}] Diplôme d’Associé (Associate Degree)
-[cb${eduBachelor ? 'c' : ''}] Licence/Baccalauréat (Bachelor’s Degree)
-[cb${eduMaster ? 'c' : ''}] Master (Master’s Degree)
-[cb${eduDoctorate ? 'c' : ''}] Doctorat (PhD)
+${checkbox(eduHighSchool)} Diplôme d’Études Secondaires (High School Diploma)
+${checkbox(eduCertificate)} Certificat (Sous-licence ou Professionnel/Technique)
+${checkbox(eduDiploma)} Diplôme (Sous-licence ou Professionnel/Technique)
+${checkbox(eduAssociate)} Diplôme d’Associé (Associate Degree)
+${checkbox(eduBachelor)} Licence/Baccalauréat (Bachelor’s Degree)
+${checkbox(eduMaster)} Master (Master’s Degree)
+${checkbox(eduDoctorate)} Doctorat (PhD)
 [/list]
 [b][color=#FF0000]2.2[/color] Établissement Fréquenté:[/b] 
 [list=none][color=#FF0000][b]2.2.1[/color] Nom de l'Établissement:[/b]  [i]${applicantSchoolName || 'RÉPONSE'}[/i]

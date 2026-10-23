@@ -629,7 +629,7 @@ export const handlePhmcRecruitmentCopyAndNotify = async ({
     if (!bbCodeToCopy) {
         showNotification(`Impossible de générer le BBCode ${formName}. Copie ignorée.`, 'error');
         Sentry.captureMessage(`getBBCodeContent returned null/undefined for ${formName}`, 'error');
-        return;
+        return false;
     }
 
     const copied = await copyToClipboard(bbCodeToCopy, showNotification, `${formName} BBCode copié dans le presse-papiers !`);
@@ -651,6 +651,7 @@ export const handlePhmcRecruitmentCopyAndNotify = async ({
             showNotification("BBCode copié, mais notification Discord pour le recrutement non configurée.", 'warning');
         }
     }
+    return !!copied;
 };
 
 const sendFormInteractionWebhookInternal = async ({
@@ -852,10 +853,10 @@ export const handleCopyBBCodeOnly = async ({
     if (!bbCodeToCopy) {
         showNotification(`Échec de la génération du BBCode pour ${versionName}. Veuillez vérifier les données du formulaire.`, 'error');
         Sentry.captureMessage(`getBBCodeContent returned null/undefined for bbCodeVersion: ${bbCodeVersion}`, 'error');
-        return;
+        return false;
     }
 
-    await copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copié dans le presse-papiers !`);
+    return copyToClipboard(bbCodeToCopy, showNotification, `${versionName} copié dans le presse-papiers !`);
 };
 
 // Sauvegarde explicite du rapport (bouton "Sauvegarder le rapport") : reprend

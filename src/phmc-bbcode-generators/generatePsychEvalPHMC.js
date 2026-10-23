@@ -1,4 +1,5 @@
 import { buildPatientContextBBCode } from './shared/patientContext';
+import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -45,13 +46,9 @@ const generatePsychEvalPHMC = (formData) => {
 PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 Date: ${date}
 Signé: ${phmcRank} ${lastName}
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
-ELGIN AVE. / STRAWBERRY AVE.
-BP 742
-LOS SANTOS, SAN ANDREAS
-T: 50056[/size][/center][/table][/divbox]
+${phmcHeaderEnd()}
 
-${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: false })}[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Anamnèse[/b][/color][/center][/divboxcolor]
+${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: false })}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint}
 [br][/br]
@@ -59,7 +56,7 @@ ${patientChiefComplaint}
 [cbc] Santé mentale
 [br][/br][/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Problème présenté[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Problème présenté`)}
 [table][tr][td][left][list=none][u]Description du problème (ex: anxiété, dépression, psychose): [/u][br][/br]
 ${patientVisitReason}
 [br][/br]
@@ -73,37 +70,37 @@ ${patientTriggers}
 ${patientStress}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Examen de l'état mental (EEM)[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Examen de l'état mental (EEM)`)}
 [table][tr][td][left][list=none]
 [u]Apparence: [/u][br][/br]
-[cb${formData.Appearance === 'Good' ? 'c' : ''}] Soigné [cb${formData.Appearance === 'Disheveled' ? 'c' : ''}] Négligé [cb${formData.Appearance === 'Inappropriate' ? 'c' : ''}] Inapproprié
+${checkbox(formData.Appearance === 'Good')} Soigné ${checkbox(formData.Appearance === 'Disheveled')} Négligé ${checkbox(formData.Appearance === 'Inappropriate')} Inapproprié
 [br][/br]
 [u]Comportement: [/u][br][/br]
-[cb${formData.Behavior === 'Cooperative' ? 'c' : ''}] Coopératif [cb${formData.Behavior === 'Agitated' ? 'c' : ''}] Agité [cb${formData.Behavior === 'Withdrawn' ? 'c' : ''}] Replié
+${checkbox(formData.Behavior === 'Cooperative')} Coopératif ${checkbox(formData.Behavior === 'Agitated')} Agité ${checkbox(formData.Behavior === 'Withdrawn')} Replié
 [br][/br]
 [u]Élocution: [/u][br][/br]
-[cb${formData.Speech === 'Normal' ? 'c' : ''}] Normale [cb${formData.Speech === 'Pressured' ? 'c' : ''}] Pressée [cb${formData.Speech === 'Slurred' ? 'c' : ''}] Indistincte [cbcb${formData.Speech === 'Slow' ? 'c' : ''}] Lente
+${checkbox(formData.Speech === 'Normal')} Normale ${checkbox(formData.Speech === 'Pressured')} Pressée ${checkbox(formData.Speech === 'Slurred')} Indistincte ${checkbox(formData.Speech === 'Slow')} Lente
 [br][/br]
 [u]Humeur: [/u][br][/br]
-[cb${formData.Mood === 'Euthymic' ? 'c' : ''}] Euthymique [cb${formData.Mood === 'Depressed' ? 'c' : ''}] Déprimé [cb${formData.Mood === 'Anxious' ? 'c' : ''}] Anxieux [cb${formData.Mood === 'Angry' ? 'c' : ''}] Colérique
+${checkbox(formData.Mood === 'Euthymic')} Euthymique ${checkbox(formData.Mood === 'Depressed')} Déprimé ${checkbox(formData.Mood === 'Anxious')} Anxieux ${checkbox(formData.Mood === 'Angry')} Colérique
 [br][/br]
 [u]Aspect: [/u][br][/br]
-[cb${formData.Affect === 'Congruent' ? 'c' : ''}] Congruent [cb${formData.Affect === 'Flat' ? 'c' : ''}] Émoussé [cb${formData.Affect === 'Inappropriate' ? 'c' : ''}] Inapproprié
+${checkbox(formData.Affect === 'Congruent')} Congruent ${checkbox(formData.Affect === 'Flat')} Émoussé ${checkbox(formData.Affect === 'Inappropriate')} Inapproprié
 [br][/br]
 [u]Processus de pensée: [/u][br][/br]
-[cb${formData.ThoughtProcess === 'Logical' ? 'c' : ''}] Logique [cb${formData.ThoughtProcess === 'Organized' ? 'c' : ''}] Organisé [cb${formData.ThoughtProcess === 'Tangential' ? 'c' : ''}] Tangentiel [cb${formData.ThoughtProcess === 'Disorganized' ? 'c' : ''}] Désorganisé
+${checkbox(formData.ThoughtProcess === 'Logical')} Logique ${checkbox(formData.ThoughtProcess === 'Organized')} Organisé ${checkbox(formData.ThoughtProcess === 'Tangential')} Tangentiel ${checkbox(formData.ThoughtProcess === 'Disorganized')} Désorganisé
 [br][/br]
 [u]Contenu de la pensée: [/u][br][/br]
-[cb${formData.ThoughtContent === 'Nodelusions' ? 'c' : ''}] Pas de délires [cb${formData.ThoughtContent === 'Delusions' ? 'c' : ''}] Délires [cb${formData.ThoughtContent === 'Hallucinations' ? 'c' : ''}] Hallucinations [cb${formData.ThoughtContent === 'Suicidal' ? 'c' : ''}] Pensées suicidaires [cb${formData.ThoughtContent === 'Homicidal' ? 'c' : ''}] Pensées homicidaires
+${checkbox(formData.ThoughtContent === 'Nodelusions')} Pas de délires ${checkbox(formData.ThoughtContent === 'Delusions')} Délires ${checkbox(formData.ThoughtContent === 'Hallucinations')} Hallucinations ${checkbox(formData.ThoughtContent === 'Suicidal')} Pensées suicidaires ${checkbox(formData.ThoughtContent === 'Homicidal')} Pensées homicidaires
 [br][/br]
 [u]Perspicacité et jugement: [/u][br][/br]
-[cb${formData.Insight === 'Intact' ? 'c' : ''}] Intact [cb${formData.Insight === 'Limited' ? 'c' : ''}] Limité [cb${formData.Insight === 'Poor' ? 'c' : ''}] Pauvre
+${checkbox(formData.Insight === 'Intact')} Intact ${checkbox(formData.Insight === 'Limited')} Limité ${checkbox(formData.Insight === 'Poor')} Pauvre
 [br][/br]
 [u]Cognition: [/u][br][/br]
-[cb${formData.Cognition === 'Oriented' ? 'c' : ''}] Orienté dans le temps, l'espace, la personne [cb${formData.Cognition === 'Memory' ? 'c' : ''}] Mémoire intacte [cb${formData.Cognition === 'Attention' ? 'c' : ''}] Attention intacte
+${checkbox(formData.Cognition === 'Oriented')} Orienté dans le temps, l'espace, la personne ${checkbox(formData.Cognition === 'Memory')} Mémoire intacte ${checkbox(formData.Cognition === 'Attention')} Attention intacte
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents psychiatriques[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Antécédents psychiatriques`)}
 [table][tr][td][left][list=none]
 [u]Diagnostics et traitements psychiatriques passés: [/u][br][/br]
 ${patientTreatment}
@@ -118,7 +115,7 @@ ${patientFamily}
 ${patientJobRisks}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents médicaux[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Antécédents médicaux`)}
 [table][tr][td][left][list=none]
 [u]Conditions médicales actuelles et passées: [/u][br][/br]
 ${patientCondition}
@@ -130,7 +127,7 @@ ${patientChronicDiseases}
 ${patientAllergies}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents de consommation de substances[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Antécédents de consommation de substances`)}
 [table][tr][td][left][list=none]
 [u]Utilisation d'alcool, drogues, nicotine et autres substances: [/u][br][/br]
 ${patientDrugs}
@@ -142,7 +139,7 @@ ${patientDrugsUsage}
 ${patientMental}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Antécédents psychosociaux[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Antécédents psychosociaux`)}
 [table][tr][td][left][list=none]
 [u]Enfance et contexte familial: [/u][br][/br]
 ${patientFam}
@@ -157,28 +154,28 @@ ${patientRelationship}
 ${patientLegal}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Évaluation des risques[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Évaluation des risques`)}
 [table][tr][td][left][list=none]
-[cb${formData.Risk === 'Suicidal' ? 'c' : ''}] Idées ou tentatives suicidaires [cb${formData.Risk === 'Homicidal' ? 'c' : ''}] Pensées homicidaires ou comportement violent [cb${formData.Risk === 'Self' ? 'c' : ''}] Automutilation ou danger pour autrui
+${checkbox(formData.Risk === 'Suicidal')} Idées ou tentatives suicidaires ${checkbox(formData.Risk === 'Homicidal')} Pensées homicidaires ou comportement violent ${checkbox(formData.Risk === 'Self')} Automutilation ou danger pour autrui
 [br][/br]
 [u]Détails: [/u][br][/br]
 ${patientRiskAssessment}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Constatations[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Constatations`)}
 [table][tr][td][list=none]
 Notes: ${patientFindings}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Diagnostic de sortie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Diagnostic de sortie`)}
 [table][tr][td][left][list=none]
 [u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis}
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Thérapie[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Thérapie`)}
 [table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-[cb${formData.admission === 'Yes' ? 'c' : ''}] Oui [cb${formData.admission === 'No' ? 'c' : ''}] Non
+${checkbox(formData.admission === 'Yes')} Oui ${checkbox(formData.admission === 'No')} Non
 [br][/br]
 [u]Plan de traitement: [/u][br][/br]
 ${patientTreatmentPlan}
@@ -187,11 +184,11 @@ ${patientTreatmentPlan}
 ${patientTherapyMedicine}
 [br][/br]
 [u]Suivi: [/u][br][/br]
-[cb${formData.followup === 'AsNeeded' ? 'c' : ''}] Au besoin [cb${formData.followup === 'Recommended' ? 'c' : ''}] Recommandé [cb${formData.followup === 'Electiveprocedure' ? 'c' : ''}] Procédure élective (Non-urgent / Non-planifié)
+${checkbox(formData.followup === 'AsNeeded')} Au besoin ${checkbox(formData.followup === 'Recommended')} Recommandé ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
 
 [/list][/td][/tr][/table]
 
-[divboxcolor=black][center][color=#FF0000]>[/color] [color=#FFFFFF][b]Plan de traitement/Recommandations[/b][/color][/center][/divboxcolor]
+${sectionBanner(`Plan de traitement/Recommandations`)}
 [table][tr][td][left][list=none]
 [u]Médicaments: [/u][br][/br]
 ${patientTreatmentMedicine}
