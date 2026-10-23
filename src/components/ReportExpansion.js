@@ -4,7 +4,7 @@
 // patient, Mes candidatures, Gestion du recrutement) : onglets « Aperçu » (le rapport tel qu'il sera publié, images
 // comprises), « BBCode » (le texte brut) et, au besoin, d'autres onglets (historique, détails).
 // Le bouton qui l'ouvre (ExpandToggle) la déplie ET la replie. Tout est converti dans le navigateur (aucun appel serveur).
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // (useState sert à useExpansions)
 import { Button } from 'react-bootstrap';
 import { bbcodeToHtmlDocument, escapeHtml } from '../utils/bbcodeToHtml';
@@ -64,20 +64,72 @@ const buildPreviewDocument = (bbCode, title) => {
 // ~0,4 s après la dernière modification (le formulaire change à chaque frappe).
 export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
     const [settled, setSettled] = useState(bbCode);
+    // Hauteur du contenu (mesurée dans le cadre) ; manualHeight : hauteur choisie par l'utilisateur en tirant le coin.
+    const [contentHeight, setContentHeight] = useState(null);
+    const [manualHeight, setManualHeight] = useState(null);
+    const wrapperRef = useRef(null);
+    const iframeRef = useRef(null);
+    const observerRef = useRef(null);
+
     useEffect(() => {
         const timer = setTimeout(() => setSettled(bbCode), 400);
         return () => clearTimeout(timer);
     }, [bbCode]);
     const previewDocument = useMemo(() => (settled ? buildPreviewDocument(settled, title) : ''), [settled, title]);
+
+    useEffect(() => () => { if (observerRef.current) observerRef.current.disconnect(); }, []);
+
+    // Par défaut l'aperçu s'étend jusqu'au bas du dernier texte ; on suit aussi le chargement des images.
+    const handleLoad = () => {
+        const doc = iframeRef.current?.contentDocument;
+        if (!doc || !doc.documentElement) return;
+        const measure = () => {
+            const measured = Math.max(doc.documentElement.scrollHeight, doc.body ? doc.body.scrollHeight : 0);
+            if (measured > 0) setContentHeight(Math.min(30000, measured + 4));
+        };
+        measure();
+        if (observerRef.current) observerRef.current.disconnect();
+        if (typeof ResizeObserver !== 'undefined') {
+            observerRef.current = new ResizeObserver(measure);
+            observerRef.current.observe(doc.documentElement);
+        }
+    };
+
+    // Dès que l'utilisateur redimensionne le cadre (coin en bas à droite), on garde SA hauteur.
+    const handleResizeEnd = () => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper || contentHeight == null) return;
+        const current = wrapper.offsetHeight;
+        if (Math.abs(current - (manualHeight ?? contentHeight)) > 3) setManualHeight(current);
+    };
+
+    const shownHeight = manualHeight ?? contentHeight ?? height;
     return (
-        <div style={{ resize: 'vertical', overflow: 'auto', height: `${height}px`, minHeight: '200px', border: '1px solid #30363d', borderRadius: '4px', backgroundColor: '#fff' }}>
-            <iframe
-                title={`Aperçu - ${title || 'rapport'}`}
-                sandbox=""
-                referrerPolicy="no-referrer"
-                srcDoc={previewDocument}
-                style={{ width: '100%', height: '100%', border: 0 }}
-            />
+        <div>
+            <div
+                ref={wrapperRef}
+                onMouseUp={handleResizeEnd}
+                onTouchEnd={handleResizeEnd}
+                style={{ resize: 'vertical', overflow: 'auto', height: `${shownHeight}px`, minHeight: '120px', border: '1px solid #30363d', borderRadius: '4px', backgroundColor: '#fff' }}
+            >
+                <iframe
+                    ref={iframeRef}
+                    title={`Aperçu - ${title || 'rapport'}`}
+                    // Scripts désactivés (aucun `allow-scripts`) : `allow-same-origin` ne sert qu'à mesurer la hauteur du contenu.
+                    sandbox="allow-same-origin"
+                    referrerPolicy="no-referrer"
+                    srcDoc={previewDocument}
+                    onLoad={handleLoad}
+                    style={{ width: '100%', height: manualHeight ? '100%' : `${contentHeight ?? height}px`, minHeight: '100%', border: 0, display: 'block' }}
+                />
+            </div>
+            {manualHeight && (
+                <div style={{ textAlign: 'right', marginTop: '4px' }}>
+                    <button type="button" onClick={() => setManualHeight(null)} style={{ background: 'transparent', border: 0, color: '#58a6ff', fontSize: '0.8em', cursor: 'pointer' }}>
+                        Afficher tout l'aperçu
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
