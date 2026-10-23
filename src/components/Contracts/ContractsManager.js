@@ -17,6 +17,7 @@ import { loadContractCandidates, clearContractCandidate } from '../../utils/cont
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import { copyToClipboard } from '../notificationService';
+import { downloadBbCodeAsHtml, contractToBbCode, contractTitle } from '../../utils/reportExport';
 import {
     CONTRACT_STATUS, CONTRACT_TYPES, emptyContractFields, validateContractFields, renderContract,
     loadAllContracts, saveContractDraft, sendContract, retractContract, deleteContract,
@@ -129,9 +130,15 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
                     <div className="d-flex justify-content-between align-items-center mb-2">
                         <Badge bg={CONTRACT_STATUS[contract.statut]?.variant}>{CONTRACT_STATUS[contract.statut]?.label}</Badge>
                         {contract.texteFige && (
-                            <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(contract.texteFige, showNotification, 'Texte du contrat copié.')}>
-                                <i className="fas fa-copy me-1"></i>Copier le texte
-                            </Button>
+                            <div className="d-flex gap-2">
+                                <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(contract.texteFige, showNotification, 'Texte du contrat copié.')}>
+                                    <i className="fas fa-copy me-1"></i>Copier le texte
+                                </Button>
+                                <Button variant="outline-light" size="sm" title="Le HTML est destiné au forum GTA World"
+                                    onClick={() => downloadBbCodeAsHtml({ bbCode: contractToBbCode(contract), title: contractTitle(contract), showNotification })}>
+                                    <i className="fas fa-download me-1"></i>Télécharger le HTML
+                                </Button>
+                            </div>
                         )}
                     </div>
                     {ownContract && (

@@ -351,9 +351,6 @@ function MainApp({
     const [bbcodeTitleRequest, setBbcodeTitleRequest] = useState('');
     const [bbcodeRequestText, setBbcodeRequestText] = useState('');
     const [currentUtcTime, setCurrentUtcTime] = useState('');
-    const [phmcRecruitmentOptIn, setPhmcRecruitmentOptIn] = useState(() => {
-        return localStorage.getItem('phmcRecruitmentOptIn') === 'true';
-    });
 
     const { seasonalEffectsEnabled, toggleSeasonalEffects } = useSettings();
     const { lockdownConfig, showDialog, hideDialog, isLockdownActive } = useLockdown();
@@ -403,12 +400,6 @@ function MainApp({
     const handleHideAgencyGroupSelectorPreference = (hide) => {
         setHideAgencyGroupSelectorPreference(hide);
         localStorage.setItem('hideAgencyGroupSelectorPreference', hide);
-    };
-
-    const handleRecruitmentOptIn = (optIn) => {
-        setPhmcRecruitmentOptIn(optIn);
-        localStorage.setItem('phmcRecruitmentOptIn', optIn);
-        showNotification(`Notification de Recrutement du PHMC ${optIn ? 'activé' : 'désactivé'}.`, 'info');
     };
 
     const handleMainFormSelectionButtonClick = () => {
@@ -738,6 +729,7 @@ function MainApp({
         copyReportToOwnAccount,
         saveJobApplication,
         loadMyJobApplications,
+        loadApplicationIntoForm,
         updateJobApplicationStatus,
         myJobApplications,
         isLoadingJobApplications,
@@ -1851,19 +1843,6 @@ function MainApp({
                                 BBcode → Discord
                             </Button>
 
-                            <div className="floating-top-right-tools">
-                                {selectedAgencyGroup === 'PHMC Recruitment' && (
-                                    <Button
-                                        variant={phmcRecruitmentOptIn ? "outline-success" : "outline-secondary"}
-                                        onClick={() => handleRecruitmentOptIn(!phmcRecruitmentOptIn)}
-                                        className="changelog-button"
-                                        title={phmcRecruitmentOptIn ? "Click to Opt-out of PHMC Recruitment Notifications" : "Click to Opt-in to PHMC Recruitment Notifications"}
-                                    > Activer/désactiver l'alerte de bureau
-                                        <i className={`fas ${phmcRecruitmentOptIn ? 'fa-bell-slash' : 'fa-bell'}`}></i>
-                                    </Button>
-                                )}
-                            </div>
-
                             {(() => {
                                 if (selectedAgencyGroup === 'PHMC Recruitment' && formData.recruitmentPosition) {
 
@@ -2550,6 +2529,9 @@ function MainApp({
                             isLoading={isLoadingJobApplications}
                             showNotification={showNotification}
                             onDeleted={() => loadMyJobApplications()}
+                            onLoad={(application) => {
+                                if (loadApplicationIntoForm(application)) setShowMyJobApplications(false);
+                            }}
                             onUpdateStatus={async (applicantUid, applicationId, newStatus) => {
                                 const result = await updateJobApplicationStatus(applicantUid, applicationId, newStatus);
                                 if (result?.success) {
@@ -2800,8 +2782,6 @@ function MainAppWrapper() {
         applicantMotivationLetter: '',
         exemptCheckbox: false,
         oocMedicalExperience: '',
-        oocAdminRecordLink: '',
-        oocStatsLink: '',
         applicantTitleAndFullName: '',
         genderMale: '',
         genderFemale: '',
@@ -2815,7 +2795,6 @@ function MainAppWrapper() {
         oocForumName: '',
         oocDiscord: '',
         oocTimezone: '',
-        charBackground: '',
         oocOtherCharLicenseProof: '',
         dfpSanFireLink: '',
         dfpPhmcLink: '',

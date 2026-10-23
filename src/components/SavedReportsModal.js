@@ -10,6 +10,9 @@ import { getFormDefinition } from '../formDefinitions';
 import PatientInvoicesPanel, { InvoiceStatusBadge } from './PatientInvoicesPanel';
 import useReportInvoices from '../hooks/useReportInvoices';
 import { formatMoney } from '../utils/patientBilling';
+import ForumHint from './ForumHint';
+import useForumNotice from '../hooks/useForumNotice';
+import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 
 const modalStyle = {
     position: 'fixed',
@@ -80,6 +83,7 @@ const controlsContainerStyle = {
 const tableContainerStyle = {
     flexGrow: 1,
     overflowY: 'auto',
+    overflowX: 'auto',
     marginTop: '10px',
 };
 
@@ -113,6 +117,16 @@ const tdStyle = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+};
+
+// Titre et créateur : tout le texte reste visible (retour à la ligne) au lieu d'être tronqué par « … ».
+const wrapCellStyle = {
+    ...tdStyle,
+    maxWidth: 'none',
+    overflow: 'visible',
+    textOverflow: 'clip',
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
 };
 
 const tdCheckboxStyle = {
@@ -285,6 +299,7 @@ const SavedReportsModal = ({
     const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
+    const { openForumNotice, forumNoticeModal } = useForumNotice();
     // Personne de connecté = aucune liste, même si une sélection (ou des rapports) datait d'une session
     // précédente : on ne peut ni afficher ni copier le titre / le BBCode d'un rapport sans compte.
     const selectedEmployee = currentEmployee ? selectedEmployeeRaw : null;
@@ -581,6 +596,25 @@ const SavedReportsModal = ({
         }
     };
 
+    // Téléchargement HTML (forum GTA World) : un rapport, ou la sélection en un seul fichier.
+    const handleDownloadHtml = (report) => {
+        if (downloadBbCodeAsHtml({ bbCode: report?.bbCode, title: reportTitleOf(report) || report?.originalKey, showNotification })) {
+            openForumNotice('html');
+        }
+    };
+
+    const handleDownloadSelectedHtml = () => {
+        if (selectedReportKeys.length === 0) {
+            showNotification('Aucun rapport sélectionné à exporter.', 'warning');
+            return;
+        }
+        const reportsToExport = sortedReports.filter((r) => selectedReportKeys.includes(r.key));
+        const title = reportsToExport.length === 1
+            ? (reportTitleOf(reportsToExport[0]) || reportsToExport[0].originalKey)
+            : `${reportsToExport.length} rapports`;
+        if (downloadBbCodeAsHtml({ bbCode: combineBbCodes(reportsToExport), title, showNotification })) openForumNotice('html');
+    };
+
     // Rapport rechargeable dans un formulaire ? (un formulaire AMA, par exemple, n'en a pas)
     const isLoadable = (report) => report.kind !== 'ama' && !!getFormDefinition(report.bbCodeVersion)?.FieldComponent;
 
@@ -630,7 +664,7 @@ const SavedReportsModal = ({
     // Menu « Copier ▾ » d'une ligne : BBCode + titre (ou titre + lien de l'image pour un AMA).
     const renderCopyMenu = (report) => (
         <Dropdown className="d-inline-block me-2">
-            <Dropdown.Toggle size="sm" style={{ backgroundColor: '#2f81f7', border: 'none' }} title="Copier le BBCode, le titre…">
+            <Dropdown.Toggle size="sm" style={{ backgroundColor: '#2f81f7', border: 'none' }} title="Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…">
                 Copier
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
@@ -643,7 +677,12 @@ const SavedReportsModal = ({
                     </>
                 ) : (
                     <>
-                        <Dropdown.Item onClick={() => handleCopyBBCode(report.key)}>Copier le BBCode</Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleCopyBBCode(report.key)} title={COPY_BBCODE_HINT}>
+                            Copier le BBCode<ForumHint kind="bbcode" />
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleDownloadHtml(report)} disabled={!report.bbCode} title={DOWNLOAD_HTML_HINT}>
+                            Télécharger le HTML<ForumHint kind="html" />
+                        </Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
                     </>
                 )}
@@ -668,6 +707,7 @@ const SavedReportsModal = ({
     return ReactDOM.createPortal(
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
+                {forumNoticeModal}
                 <div style={modalHeaderStyle}>
                     <h5 style={{ margin: 0 }}>Rapports enregistrés</h5>
                     <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">
@@ -785,10 +825,10 @@ const SavedReportsModal = ({
                                                     onChange={(e) => handleCheckboxChange(report.key, e.target.checked)}
                                                 />
                                             </td>
-                                            <td style={{ ...tdStyle, maxWidth: '420px' }} title={reportTitleOf(report) || report.originalKey}>
+                                            <td style={{ ...wrapCellStyle, minWidth: '220px' }} title={reportTitleOf(report) || report.originalKey}>
                                                 {report.originalKey}
                                             </td>
-                                            <td style={tdStyle} title="Créateur d'origine du rapport">
+                                            <td style={{ ...wrapCellStyle, minWidth: '200px' }} title="Créateur d'origine du rapport">
                                                 {reportCreatorOf(report) || 'N/A'}
                                                 {report.isCopy && (
                                                     <span style={{ marginLeft: '6px', fontSize: '0.75em', padding: '1px 6px', borderRadius: '8px', backgroundColor: '#1f6feb', color: '#fff' }}>
@@ -915,7 +955,12 @@ const SavedReportsModal = ({
                                 Copier la sélection ({selectedReportKeys.length})
                             </Dropdown.Toggle>
                             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                                <Dropdown.Item onClick={handleCopySelectedBBCode}>Copier le BBCode sélectionné</Dropdown.Item>
+                                <Dropdown.Item onClick={handleCopySelectedBBCode} title={COPY_BBCODE_HINT}>
+                                    Copier le BBCode sélectionné<ForumHint kind="bbcode" />
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={handleDownloadSelectedHtml} title={DOWNLOAD_HTML_HINT}>
+                                    Télécharger le HTML sélectionné<ForumHint kind="html" />
+                                </Dropdown.Item>
                                 <Dropdown.Item onClick={handleCopySelectedTitles}>Copier les titres sélectionnés</Dropdown.Item>
                             </Dropdown.Menu>
                         </Dropdown>

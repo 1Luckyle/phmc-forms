@@ -513,9 +513,9 @@ export async function deleteCivilianAccount(civilian) {
 // ───────────────────────────── Auto-édition du profil ─────────────────────────────
 
 // Modifie le téléphone et/ou le Discord de SA PROPRE fiche (database.rules.json n'autorise que ces
-// deux champs, et uniquement quand l'uid de la fiche est celui de la personne connectée). Le nom,
-// le grade, le badge et l'e-mail restent réservés aux admins (l'e-mail passe par un code de
-// vérification : voir requestStaffEmailChange dans eyefindMail.js).
+// champs et le nom, et uniquement quand l'uid de la fiche est celui de la personne connectée). Le grade,
+// le badge et l'e-mail restent réservés aux admins (l'e-mail passe par un code de vérification : voir
+// requestStaffEmailChange dans eyefindMail.js).
 export async function updateOwnStaffContact(uid, { phNumber, discord }) {
     if (!uid) throw new Error('Compte introuvable.');
     for (const service of Object.values(STAFF_SERVICES)) {
@@ -529,6 +529,44 @@ export async function updateOwnStaffContact(uid, { phNumber, discord }) {
         if (discord !== undefined) patch[`${service.path}/${found[0]}/discord`] = String(discord).trim();
         await update(ref(database), patch);
         return { service: service.key, key: found[0] };
+    }
+    throw new Error('Votre fiche du personnel est introuvable.');
+}
+
+// Change le prénom / nom de SA PROPRE fiche. Tout est rattaché à l'ID (compte de connexion, badge = ID employé
+// et ID patient) : le badge ne bouge pas, et les rapports enregistrés suivent le nouveau nom (renameReportOwner,
+// comme pour une modification par un admin). Refuse un nom déjà porté par une autre fiche.
+export async function updateOwnStaffName(uid, { firstName, lastName }) {
+    if (!uid) throw new Error('Compte introuvable.');
+    const newFirst = String(firstName ?? '').trim();
+    const newLast = String(lastName ?? '').trim();
+    if (!newFirst) throw new Error('Le prénom est obligatoire.');
+    if (newFirst.length > 40 || newLast.length > 40) throw new Error('Le prénom et le nom sont limités à 40 caractères.');
+    const newName = `${newFirst} ${newLast}`.trim();
+
+    for (const service of Object.values(STAFF_SERVICES)) {
+        const snap = await get(ref(database, service.path));
+        if (!snap.exists()) continue;
+        const found = Object.entries(snap.val() || {}).find(([, entry]) => entry && entry.uid === uid);
+        if (!found) continue;
+        const [key, current] = found;
+        const previousName = current.name;
+
+        if (newName !== previousName) {
+            const everyone = await loadStaffMembers();
+            const clash = everyone.find((m) => m.name.toLowerCase() === newName.toLowerCase()
+                && !(m.service === service.key && String(m.storageKey) === String(key)));
+            if (clash) throw new Error(`Une fiche du personnel nommée "${newName}" existe déjà.`);
+            await renameReportOwner(previousName, newName);
+        }
+
+        const patch = {
+            [`${service.path}/${key}/name`]: newName,
+            [`${service.path}/${key}/firstName`]: newFirst,
+        };
+        if (service.key === 'phmc') patch[`${service.path}/${key}/lastName`] = newLast;
+        await update(ref(database), patch);
+        return { service: service.key, key, name: newName, firstName: newFirst, lastName: newLast, previousName, renamed: newName !== previousName };
     }
     throw new Error('Votre fiche du personnel est introuvable.');
 }

@@ -46,6 +46,18 @@
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
       "phmc": {
         "$key": {
+          "name": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+          },
+          "firstName": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "lastName": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
           "phNumber": {
             ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
             ".validate": "(newData.isString() && newData.val().length <= 40) || newData.isNumber()"
@@ -58,6 +70,14 @@
       },
       "coroner": {
         "$key": {
+          "name": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+          },
+          "firstName": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
           "phNumber": {
             ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
             ".validate": "(newData.isString() && newData.val().length <= 40) || newData.isNumber()"

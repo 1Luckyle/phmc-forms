@@ -325,10 +325,6 @@ const recruitmentBase = (h) => ({
     oocDiscord: 'jean.testard',
     oocTimezone: 'GMT+1',
     oocMedicalExperience: 'Trois ans d\'expérience médicale en jeu.',
-    // Ces champs demandent un lien direct vers une image (ImgBB).
-    oocAdminRecordLink: h.img(),
-    oocStatsLink: h.img(),
-    charBackground: LOREM_LONG,
 });
 
 // Premier poste ouvert d'une liste de détails de poste (clé → { status }).

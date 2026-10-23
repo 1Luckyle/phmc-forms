@@ -7,7 +7,7 @@ const Notification = ({ message, icon, onDismiss, actions }) => (
     <div className="notification-content" style={{ display: 'flex', flexDirection: 'column' }}> {/* Ensure flex column layout */}
       <div style={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}> {/* Main content row */}
         {icon && <i className={`${icon} notification-icon`} style={{ marginRight: '10px' }}></i>}
-        <span className="notification-message" style={{ flexGrow: 1, wordBreak: 'break-word' }}>{message}</span>
+        <span className="notification-message" style={{ flexGrow: 1, wordBreak: 'break-word', whiteSpace: 'pre-line' }}>{message}</span>
         <button onClick={onDismiss} className="notification-dismiss" style={{ marginLeft: '10px' }}>
           <i className="fas fa-times"></i>
         </button>

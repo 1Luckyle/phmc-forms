@@ -13,6 +13,7 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { loadUserCreations } from '../../utils/userCreations';
 import { CONTRACT_STATUS, loadMyContracts, signContract } from '../../utils/contracts';
 import { copyToClipboard } from '../notificationService';
+import { downloadBbCodeAsHtml, contractToBbCode, contractTitle } from '../../utils/reportExport';
 
 const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed }) => {
     const { currentEmployee, staffName, civilianProfile } = useEmployeeAuth();
@@ -95,9 +96,13 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
             {selected && (
                 <>
                     <ContractDocument text={selected.texteFige} signature={selected.signature} signedAt={selected.signeLe} />
-                    <div className="d-flex justify-content-end mt-2">
+                    <div className="d-flex justify-content-end gap-2 mt-2">
                         <Button variant="outline-light" size="sm" onClick={() => copyToClipboard(selected.texteFige, showNotification, 'Texte du contrat copié.')}>
                             <i className="fas fa-copy me-1"></i>Copier le texte
+                        </Button>
+                        <Button variant="outline-light" size="sm" title="Le HTML est destiné au forum GTA World"
+                            onClick={() => downloadBbCodeAsHtml({ bbCode: contractToBbCode(selected), title: contractTitle(selected), showNotification })}>
+                            <i className="fas fa-download me-1"></i>Télécharger le HTML
                         </Button>
                     </div>
 

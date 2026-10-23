@@ -11,6 +11,7 @@ import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
 import { recordInvoiceForReport } from '../utils/patientInvoices';
+import { validateReport, validateApplication, formatIssues } from '../utils/formValidation';
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
@@ -141,133 +142,20 @@ export const useReportManagement = (
         const bbCodeContent = getBBCodeContent();
         const currentAuthor = authorOverride || getCurrentReportAuthor(formData);
 
-        // --- Validation logic to determine the key ---
-        if (bbCodeVersion === 1) { // Death Report
-            if (!formData.decedentOOC || !formData.dateTime) {
-                const message = `Please fill in Decedent OOC and Date/Time fields.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        } else if (bbCodeVersion === 4) { // Autopsy Report
-            if (!formData.decedentName || !formData.decedentOOC || !formData.autopsyDate) {
-                const message = `Please fill in Decedent IC Name, OOC Name, and Autopsy Date fields.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        } else if (bbCodeVersion === 3) { // Detailed Patient File (PatientAdvanced)
-            if (!formData.patientName || !formData.patientDateOfBirth || !formData.patientEmail || !formData.patientID) {
-                const message = `Veuillez remplir le nom, la date de naissance, l'email et l'ID patient.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        } else if (((bbCodeVersion > 3 && bbCodeVersion <= 7) && bbCodeVersion !== 4)) { // SurgicalOps (5), PhysEval PHMC/PBC (6,7)
-            // L'ID patient est un champ à part désormais, mais reste optionnel sur
-            // ces formulaires remplis par le personnel (le patient n'est pas
-            // toujours identifié avec certitude) — seuls le nom et la date sont
-            // requis.
-            let patientNameMissing = !formData.patientName;
-            let dateMissing = !formData.date;
-
-            if (patientNameMissing || dateMissing) {
-                let missingFieldLabels = [];
-                if (patientNameMissing) missingFieldLabels.push('Nom du patient');
-                if (dateMissing) missingFieldLabels.push('Date');
-                if (missingFieldLabels.length > 0) {
-                    const message = `Please fill in ${missingFieldLabels.join(', ')} fields.`;
-                    showNotification(message, 'exclamation-circle');
-                    return { success: false, error: message };
-                }
-            }
-
-        } else if (bbCodeVersion === 19) { // EmergencyProtocol
-            if (!formData.patientName || !formData.date) {
-                const message = `Please fill in Patient Name, and Date fields.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        } else if (bbCodeVersion === 25) { // BasicPatientFile
-            if (!formData.patientName || !formData.patientDateOfBirth || !formData.patientEmail || !formData.patientID) {
-                const message = `Veuillez remplir le nom, la date de naissance, l'email et l'ID patient.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        } else if (bbCodeVersion === 24) { // Medical Record Release (MedicalRelease.js)
-            // Le formulaire réel utilise patientFirstName/patientLastName, pas
-            // registrantFullName/dateOfRequest (qui n'existent dans aucun champ
-            // de ce formulaire) — l'ancienne validation ci-dessous échouait donc
-            // systématiquement, empêchant toute sauvegarde de ce type de rapport.
-            if ((!formData.patientFirstName && !formData.patientLastName) || !formData.patientEmail || !formData.patientID) {
-                const message = `Veuillez remplir le prénom ou le nom du patient, l'email et l'ID patient.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        } else if (bbCodeVersion === 26) { // Medical File Update (MedicalUpdate.js)
-            if (!formData.patientName || !formData.date || !formData.patientEmail || !formData.patientID) {
-                const message = `Veuillez remplir le nom du patient, la date de naissance, l'email et l'ID patient.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        }
-        // --- Add more 'else if' blocks here for other specific bbCodeVersions ---
-        // Example for Coroner Email (bbCodeVersion 2)
-        else if (bbCodeVersion === 2) {
-            if (!formData.coronerEmployee || !formData.requestingOfficer || (!formData.decedentName && !formData.decedentOOC)) {
-                const message = `Please fill in Coroner, Requesting Officer, and Decedent Name/OOC for Coroner Email.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        }
-        // Example for Agency Feedback (bbCodeVersion 18)
-        else if (bbCodeVersion === 18) {
-            if (!formData.department || !formData.dateTime || !formData.synopsis) {
-                const message = `Please fill in Department, Date/Time, and Synopsis for Agency Feedback.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        }
-        // --- MODIFICATION FOR PHMC RECRUITMENT ---
-        // Le personnel n'a toujours pas besoin de sauvegarder une candidature —
-        // seul un compte Civil le peut désormais (voir garde isCivilian en tête
-        // de fonction). Si isCivilian est vrai ici, ce bbCodeVersion a déjà été
-        // validé comme faisant partie de CIVILIAN_ALLOWED_BBCODE_VERSIONS.
-        else if (getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !isCivilian) {
+        // --- Conditions d'enregistrement (voir utils/formValidation.js) ---
+        // Le personnel n'enregistre pas de candidature : seul un compte Civil le peut (garde isCivilian plus haut).
+        if (getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !isCivilian) {
             return { success: false, error: 'PHMC Recruitment forms cannot be saved to Firebase.' };
         }
-        // --- END MODIFICATION ---
-        else if (bbCodeVersion === 11) { // Mass Fatality Report
-            const { decedents, dateTime } = formData;
-            if (!decedents || decedents.length === 0) {
-                const message = `Please add at least one decedent to the report.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-            const firstDecedent = decedents[0];
-            if (!firstDecedent.decedentName || !dateTime) {
-                const message = `The first decedent must have a name and the main date/time must be set.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
+        const validation = validateReport(bbCodeVersion, formData, { isCivilian, civilianPatientId: civilianProfile?.patientID });
+        if (validation.errors.length > 0) {
+            const message = formatIssues(validation.errors, { title: 'Enregistrement impossible :' });
+            showNotification(message, 'exclamation-circle', 9000);
+            return { success: false, error: message };
         }
-        else if (bbCodeVersion === 37) { // Death Record
-            if (!formData.deathReportPostId || !formData.decedentName || !formData.dateOfDeath) {
-                const message = `Please fill in Case Number, Decedent Name, and Date of Death fields.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        }
-        else if (bbCodeVersion === 22 || bbCodeVersion === 23) { // Commentary Note
-            if (!formData.patientName || !formData.date) {
-                const message = `Please fill in Patient Name and Date fields.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
-        }
-        else if (bbCodeVersion === 27) { // Email Forms
-            if (!formData.internalEmailSubject || !formData.internalEmailRecipient) {
-                const message = `Please fill in Email Subject and Recipient fields.`;
-                showNotification(message, 'exclamation-circle');
-                return { success: false, error: message };
-            }
+        // Cas légitimes mais rares (ex. patient non identifié) : on demande confirmation.
+        if (validation.warnings.length > 0 && !window.confirm(`${validation.warnings.join('\n\n')}\n\nEnregistrer quand même ?`)) {
+            return { success: false, error: 'Enregistrement annulé.' };
         }
 
         // Le titre est fabriqué par buildReportTitle : exactement celui affiché dans
@@ -1218,6 +1106,19 @@ export const useReportManagement = (
                 return { success: false };
             }
 
+            // Conditions d'enregistrement : un brouillon exige au moins un poste ; l'envoi exige une candidature
+            // complète pour un poste ouvert (voir utils/formValidation.js).
+            const applicationCheck = validateApplication(bbCodeVersion, formData, {
+                mode: submitAction === 'submit' ? 'submit' : 'draft', existing, selectOptions,
+            });
+            if (applicationCheck.errors.length > 0) {
+                showNotification(
+                    formatIssues(applicationCheck.errors, { title: submitAction === 'submit' ? 'Candidature incomplète :' : 'Brouillon impossible :' }),
+                    'exclamation-circle', 10000
+                );
+                return { success: false };
+            }
+
             const historique = existing?.historique ? [...existing.historique] : [];
             historique.push({ statut: newStatus, horodatage: Date.now() });
 
@@ -1294,6 +1195,22 @@ export const useReportManagement = (
         }
     }, [civilianProfile]);
 
+    // « Recharger » une candidature de « Mes candidatures » : même mécanisme que le chargement d'un rapport
+    // (bascule sur le bon formulaire de candidature puis le remplit avec ses réponses enregistrées).
+    const loadApplicationIntoForm = useCallback((application) => {
+        const version = Number(application?.versionBBCode);
+        if (!version || !getFormDefinition(version)?.FieldComponent || !application?.donnees) {
+            showNotification('Cette candidature ne peut pas être rechargée (aucune réponse enregistrée).', 'warning');
+            return false;
+        }
+        setPendingFormLoad({
+            version,
+            data: { ...application.donnees },
+            label: application.poste || 'Candidature',
+        });
+        return true;
+    }, [showNotification]);
+
     // Transition de statut générique, utilisée aussi bien par le civil
     // (Mettre en pause / Retirer / Candidater depuis "saved") que par le
     // panneau admin (Planifier un entretien / Marquer effectué / Accepter /
@@ -1308,6 +1225,14 @@ export const useReportManagement = (
                 return { success: false };
             }
             const statut = normalizeApplicationStatus(newStatus);
+            // Candidater / reprendre un brouillon ou une candidature en pause : mêmes conditions qu'un envoi depuis le formulaire.
+            if (statut === 'soumise' && ['brouillon', 'en_pause'].includes(existing.statut)) {
+                const check = validateApplication(existing.versionBBCode, existing.donnees, { mode: 'submit', existing, selectOptions });
+                if (check.errors.length > 0) {
+                    showNotification(formatIssues(check.errors, { title: 'Candidature incomplète :' }), 'exclamation-circle', 10000);
+                    return { success: false };
+                }
+            }
             const historique = existing.historique ? [...existing.historique] : [];
             historique.push({ statut, horodatage: Date.now() });
             const updated = sanitizeForFirebase({
@@ -1325,7 +1250,7 @@ export const useReportManagement = (
             showNotification('Erreur lors de la mise à jour de la candidature.', 'error');
             return { success: false };
         }
-    }, [showNotification]);
+    }, [showNotification, selectOptions]);
 
     const showRareEasterEggDirectly = useCallback(() => {
         setShowEasterEggModal(true);
@@ -1404,6 +1329,7 @@ export const useReportManagement = (
         copyReportToOwnAccount,
         saveJobApplication,
         loadMyJobApplications,
+        loadApplicationIntoForm,
         updateJobApplicationStatus,
         myJobApplications,
         isLoadingJobApplications,

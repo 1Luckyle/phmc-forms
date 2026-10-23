@@ -331,59 +331,21 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                                 <Form.Label>5.1 Nom d'utilisateur du panneau de contrôle utilisateur (UCP)</Form.Label>
                                 <Form.Control type="text" name="oocUcpName" value={formData.oocUcpName || ''} onChange={handleChange} required className={`form-control ${!formData.oocUcpName ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
-
-                            {isParamedic && (
-                                <Form.Group className="mb-3">
-                                    <Form.Label>5.2 Nom de compte du forum GTA:W</Form.Label>
-                                    <Form.Control type="text" name="oocForumName" value={formData.oocForumName || ''} onChange={handleChange} required className={`form-control ${!formData.oocForumName ? 'is-invalid' : ''} mb-4`} />
-                                </Form.Group>
-                            )}
-                            {isEMT && (
-                                <Form.Group className="mb-3">
-                                    <Form.Label>5.2 Capture d'écran non modifiée de votre dossier administratif</Form.Label>
-                                    <Form.Control type="text" name="oocAdminRecordLink" value={formData.oocAdminRecordLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''} mb-4`} />
-                                </Form.Group>
-                            )}
-
                             <Form.Group className="mb-3">
-                                <Form.Label>{isParamedic ? '5.3' : '5.3'} Nom Discord</Form.Label>
+                                <Form.Label>5.2 Nom de compte du forum GTA:W</Form.Label>
+                                <Form.Control type="text" name="oocForumName" value={formData.oocForumName || ''} onChange={handleChange} required className={`form-control ${!formData.oocForumName ? 'is-invalid' : ''} mb-4`} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>5.3 Nom Discord</Form.Label>
                                 <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
-
                             <Form.Group className="mb-3">
-                                <Form.Label>{isParamedic ? '5.4' : (isEMT ? '5.4 Nom de compte du forum GTA:W' : '5.4 Fuseau horaire')}</Form.Label>
-                                {isEMT ? (
-                                    <Form.Control type="text" name="oocForumName" value={formData.oocForumName || ''} onChange={handleChange} required className={`form-control ${!formData.oocForumName ? 'is-invalid' : ''} mb-4`} />
-                                ) : (
-                                    <Form.Control type="text" name="oocTimezone" value={formData.oocTimezone || ''} onChange={handleChange} placeholder="ex: UTC+0, EST, PST" required className={`form-control ${!formData.oocTimezone ? 'is-invalid' : ''} mb-4`} />
-                                )}
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>{isParamedic ? '5.5' : (isEMT ? '5.5 Fuseau horaire' : '5.5 Expérience médicale réelle ou RP médical passé')}</Form.Label>
-                                {isEMT ? (
-                                    <Form.Control type="text" name="oocTimezone" value={formData.oocTimezone || ''} onChange={handleChange} placeholder="ex: UTC+0, EST, PST" required className={`form-control ${!formData.oocTimezone ? 'is-invalid' : ''} mb-4`} />
-                                ) : (
-                                    <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décrivez toute expérience pertinente (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
-                                )}
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>{isParamedic ? '5.6 Capture d\'écran non modifiée de votre dossier administratif' : (isEMT ? '5.6 Expérience médicale réelle ou RP médical passé' : '5.6 Dossier administratif')}</Form.Label>
-                                {isEMT ? (
-                                    <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décriver toute expérience pertinente (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
-                                ) : (
-                                    <Form.Control type="text" name="oocAdminRecordLink" value={formData.oocAdminRecordLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''} mb-4`} />
-                                )}
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>5.7 Capture d'écran des statistiques du personnage (/stats)</Form.Label>
-                                <Form.Control type="text" name="oocStatsLink" value={formData.oocStatsLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocStatsLink ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Label>5.4 Fuseau horaire</Form.Label>
+                                <Form.Control type="text" name="oocTimezone" value={formData.oocTimezone || ''} onChange={handleChange} placeholder="ex: UTC+0, EST, PST" required className={`form-control ${!formData.oocTimezone ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>5.8 Background du personnage (Bref résumé)</Form.Label>
-                                <Form.Control as="textarea" rows={5} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} required className={`form-control ${!formData.charBackground ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Label>5.5 Expérience médicale réelle ou RP médical passé</Form.Label>
+                                <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} placeholder="Décrivez toute expérience pertinente (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                         </div>
                     )}
@@ -405,38 +367,26 @@ const EMSFields = ({ formData, handleChange, setFormData, selectOptions
                                 <Form.Control type="text" name="oocUcpName" value={formData.oocUcpName || ''} onChange={handleChange} required className={`form-control ${!formData.oocUcpName ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.2 Capture d'écran non modifiée de votre dossier administratif</Form.Label>
-                                <Form.Control type="text" name="oocAdminRecordLink" value={formData.oocAdminRecordLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''} mb-4`} />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>4.3 Nom de compte du forum GTA:W</Form.Label>
+                                <Form.Label>4.2 Nom de compte du forum GTA:W</Form.Label>
                                 <Form.Control type="text" name="oocForumName" value={formData.oocForumName || ''} onChange={handleChange} required className={`form-control ${!formData.oocForumName ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.4 Nom Discord</Form.Label>
-                                <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange}required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
+                                <Form.Label>4.3 Nom Discord</Form.Label>
+                                <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} required className={`form-control ${!formData.oocDiscord ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.5 Fuseau horaire</Form.Label>
+                                <Form.Label>4.4 Fuseau horaire</Form.Label>
                                 <Form.Control type="text" name="oocTimezone" value={formData.oocTimezone || ''} onChange={handleChange} placeholder="ex: UTC+0, EST, PST" required className={`form-control ${!formData.oocTimezone ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.6 Détenez-vous une licence BLS/ALS valide sur un autre personnage? Si oui, fournir une preuve via /licenses</Form.Label>
+                                <Form.Label>4.5 Détenez-vous une licence BLS/ALS valide sur un autre personnage? Si oui, fournir une preuve via /licenses</Form.Label>
                                 <Form.Control type="text" name="oocOtherCharLicenseProof" value={formData.oocOtherCharLicenseProof || ''} onChange={handleChange} placeholder="RÉPONSE/LIEN (SI APPLICABLE)" className="form-control mb-4" />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>4.7 Capture d'écran des statistiques du personnage (/stats)</Form.Label>
-                                <Form.Control type="text" name="oocStatsLink" value={formData.oocStatsLink || ''} onChange={handleChange} placeholder="Lien direct vers l'image (ex: ImgBB)" required className={`form-control ${!formData.oocStatsLink ? 'is-invalid' : ''} mb-4`} />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>4.8 Fournir un lien de preuve de votre DFP de SANFIRE, PHMC et Legal Faction Management:</Form.Label>
+                                <Form.Label>4.6 Fournir un lien de preuve de votre DFP de SANFIRE, PHMC et Legal Faction Management:</Form.Label>
                                 <Form.Control type="text" name="dfpSanFireLink" value={formData.dfpSanFireLink || ''} onChange={handleChange} placeholder="Lien DFP SAN FIRE (ou N/A)" className="form-control mb-2" />
                                 <Form.Control type="text" name="dfpPhmcLink" value={formData.dfpPhmcLink || ''} onChange={handleChange} placeholder="Lien DFP PHMC (ou N/A)" className="form-control mb-2" />
                                 <Form.Control type="text" name="dfpLegalFactionLink" value={formData.dfpLegalFactionLink || ''} onChange={handleChange} placeholder="Lien DFP Legal Faction Management (ou N/A)" className="form-control mb-4" />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>4.9 Background du personnage (Bref résumé)</Form.Label>
-                                <Form.Control as="textarea" rows={5} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} required className={`form-control ${!formData.charBackground ? 'is-invalid' : ''} mb-4`} />
                             </Form.Group>
                         </div>
                     )}

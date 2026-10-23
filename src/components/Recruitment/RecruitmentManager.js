@@ -24,6 +24,8 @@ import RoleModal from '../Admin/RoleModal';
 import RenameRoleKeyModal from '../Admin/RenameRoleKeyModal';
 import PendingJobApplications from '../Admin/PendingJobApplications';
 import ContractsManager from '../Contracts/ContractsManager';
+import useForumNotice from '../../hooks/useForumNotice';
+import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -53,6 +55,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [roleToEdit, setRoleToEdit] = useState(null);
     const [roleToRename, setRoleToRename] = useState(null);
+    const { openForumNotice, forumNoticeModal } = useForumNotice();
 
     const config = category ? CATEGORY_BY_KEY[category] : null;
 
@@ -112,14 +115,22 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
         );
     };
 
+    const buildStatusesBBCode = () => generateAdminView({
+        isAdminAuthenticated: true,
+        adminDisplayData: Object.keys(positions).length ? positions : null,
+        adminSelectedCategoryName: config.label,
+    });
+
     const handleCopyStatusesBBCode = async () => {
         if (!config) return;
-        const bbCode = generateAdminView({
-            isAdminAuthenticated: true,
-            adminDisplayData: Object.keys(positions).length ? positions : null,
-            adminSelectedCategoryName: config.label,
-        });
-        await copyToClipboard(bbCode, showNotification, 'BBCode des statuts de recrutement copié !');
+        await copyToClipboard(buildStatusesBBCode(), showNotification, 'BBCode des statuts de recrutement copié !');
+    };
+
+    const handleDownloadStatusesHtml = () => {
+        if (!config) return;
+        if (downloadBbCodeAsHtml({ bbCode: buildStatusesBBCode(), title: `Statuts de recrutement - ${config.label}`, showNotification })) {
+            openForumNotice('html');
+        }
     };
 
     if (!show) return null;
@@ -145,6 +156,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                 <h5 style={{ marginBottom: '4px' }}>
                     <i className="fas fa-user-plus" style={{ marginRight: '8px' }}></i>Gestion du recrutement
                 </h5>
+                {forumNoticeModal}
                 <p style={{ color: '#8b949e', fontSize: '0.85em', marginBottom: '10px' }}>
                     Connecté en tant que <strong>{isAdmin ? 'administrateur' : 'recruteur'}</strong>
                     {isRecruiter && !isAdmin ? ' (compte Civil + gestion du recrutement)' : ''}.
@@ -175,8 +187,12 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                                         <h6 className="mb-0">Postes — {config.label}</h6>
                                         <div className="d-flex gap-2">
                                             <Button variant="outline-info" size="sm" onClick={handleCopyStatusesBBCode} disabled={isLoading}
-                                                title="Copie le BBCode « Statuts de recrutement » de cette catégorie">
+                                                title={`Copie le BBCode « Statuts de recrutement » de cette catégorie. ${COPY_BBCODE_HINT}.`}>
                                                 <i className="fas fa-copy"></i> Copier le BBCode des statuts
+                                            </Button>
+                                            <Button variant="outline-info" size="sm" onClick={handleDownloadStatusesHtml} disabled={isLoading}
+                                                title={`Télécharge les « Statuts de recrutement » de cette catégorie en HTML. ${DOWNLOAD_HTML_HINT}.`}>
+                                                <i className="fas fa-download"></i> Télécharger le HTML des statuts
                                             </Button>
                                             <Button variant="success" size="sm" onClick={() => { setRoleToEdit(null); setShowRoleModal(true); }}>
                                                 <i className="fas fa-plus-circle"></i> Ajouter un rôle

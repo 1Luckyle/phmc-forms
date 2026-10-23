@@ -1,7 +1,7 @@
 // c:\Users\cross\Documents\GitHub\phmc-forms\src\phmc-civilian-fields\Nursing.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getCategoryPositions, isPositionClosed, matchesPosition } from '../constants/recruitment';
-import { Form, Button, InputGroup, Spinner } from 'react-bootstrap'; // Added InputGroup and Spinner
+import { Form, Button } from 'react-bootstrap';
 
 // Helper component for collapsible section headers
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
@@ -43,7 +43,6 @@ const nursingFormFields = [
     'applicantPrevEmployment', 'applicantPrevDuties', 'applicantPrevDismissalReason',
     'applicantMotivationLetter', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone',
     'oocMedicalExperience', // Specific OOC question for nursing
-    'oocAdminRecordLink', 'oocStatsLink', 'charBackground'
 ];
 
 const NursingFields = ({
@@ -174,7 +173,6 @@ const NursingFields = ({
         oocInfo: [
             'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone',
             'oocMedicalExperience',
-            'oocAdminRecordLink', 'oocStatsLink', 'charBackground'
         ]
     };
 
@@ -477,72 +475,6 @@ const NursingFields = ({
                     <Form.Group className="mb-3">
                         <Form.Label>5.5 Expérience médicale réelle ou RP médical passé</Form.Label>
                         <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')} placeholder="Décrivez toute expérience pertinente (ou N/A)" required className={`form-control ${!formData.oocMedicalExperience ? 'is-invalid' : ''} mb-4`} />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>5.6 Capture d'écran non modifiée de votre dossier administratif</Form.Label>
-                        <InputGroup>
-                            <Form.Control
-                                type="url"
-                                name="oocAdminRecordLink"
-                                value={formData.oocAdminRecordLink || ''}
-                                onChange={handleChange}
-                                onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')}
-                                placeholder="Lien direct vers l'image (ex: ImgBB)"
-                                required
-                                className={`form-control ${!formData.oocAdminRecordLink ? 'is-invalid' : ''}`}
-                            />
-                            <Button
-                                variant="outline-secondary"
-                                onClick={() => document.getElementById('nursing-oocAdminRecordUpload').click()}
-                                disabled={isUploading}
-                            >
-                                {isUploading ? <Spinner as="span" animation="border" size="sm" /> : <i className="fas fa-upload"></i>}
-                            </Button>
-                        </InputGroup>
-                        <input
-                            type="file"
-                            id="nursing-oocAdminRecordUpload"
-                            style={{ display: 'none' }}
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'oocAdminRecordLink')}
-                        />
-                        <div className="mb-4"></div> {/* Spacer */}
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>5.7 Capture d'écran des statistiques du personnage (/stats)</Form.Label>
-                        <InputGroup>
-                            <Form.Control
-                                type="url"
-                                name="oocStatsLink"
-                                value={formData.oocStatsLink || ''}
-                                onChange={handleChange}
-                                onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')}
-                                placeholder="Lien direct vers l'image (ex: ImgBB)"
-                                required
-                                className={`form-control ${!formData.oocStatsLink ? 'is-invalid' : ''}`}
-                            />
-                            <Button
-                                variant="outline-secondary"
-                                onClick={() => document.getElementById('nursing-oocStatsUpload').click()}
-                                disabled={isUploading}
-                            >
-                                {isUploading ? <Spinner as="span" animation="border" size="sm" /> : <i className="fas fa-upload"></i>}
-                            </Button>
-                        </InputGroup>
-                        <input
-                            type="file"
-                            id="nursing-oocStatsUpload"
-                            style={{ display: 'none' }}
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'oocStatsLink')}
-                        />
-                        <div className="mb-4"></div> {/* Spacer */}
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>5.8 Background du personnage (Bref résumé)</Form.Label>
-                        <Form.Control as="textarea" rows={8} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')} required className={`form-control ${!formData.charBackground ? 'is-invalid' : ''} mb-4`} />
                     </Form.Group>
                 </div>
             )}

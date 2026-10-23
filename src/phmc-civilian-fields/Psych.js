@@ -1,7 +1,7 @@
 // c:\Users\cross\Documents\GitHub\phmc-forms\src\phmc-civilian-fields\Psych.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { isPositionClosed } from '../constants/recruitment';
-import { Form, Button, InputGroup, Spinner } from 'react-bootstrap'; // Added InputGroup and Spinner
+import { Form, Button } from 'react-bootstrap';
 
 // Helper component for collapsible section headers (from Physician.js)
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
@@ -41,7 +41,7 @@ const psychFormFields = [
     'applicantSchoolName', 'applicantEnrollmentTerm', 'applicantMajor', 'applicantLanguages',
     'applicantPrevEmployment', 'applicantPrevDuties', 'applicantPrevDismissalReason',
     'applicantMotivationLetter', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone',
-    'oocMedicalExperience', 'oocAdminRecordLink', 'oocStatsLink', 'charBackground'
+    'oocMedicalExperience'
 ];
 
 
@@ -157,7 +157,7 @@ const PsychFields = ({
         motivationalLetter: ['applicantMotivationLetter'],
         oocInfo: [
             'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone',
-            'oocMedicalExperience', 'oocAdminRecordLink', 'oocStatsLink', 'charBackground'
+            'oocMedicalExperience'
         ]
     };
 
@@ -464,73 +464,6 @@ const PsychFields = ({
                         <Form.Label className="field-label">5.5 Expérience médicale réelle ou RP médical passé</Form.Label>
                         <Form.Control as="textarea" rows={3} name="oocMedicalExperience" value={formData.oocMedicalExperience || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')} placeholder="Décrivez toute expérience pertinente" required className={`form-control ${!formData.oocMedicalExperience?.trim() ? 'is-invalid' : ''}`} />
                         {!formData.oocMedicalExperience?.trim() && <div className="invalid-feedback d-block">Ce champ est requis.</div>}
-                    </Form.Group>
-                    <Form.Group className="mb-3" controlId="psychOocAdminRecordLink">
-                        <Form.Label className="field-label">5.6 Capture d'écran non modifiée de votre dossier administratif</Form.Label>
-                        <InputGroup>
-                            <Form.Control
-                                type="url"
-                                name="oocAdminRecordLink"
-                                value={formData.oocAdminRecordLink || ''}
-                                onChange={handleChange}
-                                onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')}
-                                placeholder="Lien direct vers l'image (ex : ImgBB)"
-                                required
-                                className={`form-control ${!formData.oocAdminRecordLink?.trim() ? 'is-invalid' : ''}`}
-                            />
-                            <Button
-                                variant="outline-secondary"
-                                onClick={() => document.getElementById('psych-oocAdminRecordUpload').click()}
-                                disabled={isUploading}
-                            >
-                                {isUploading ? <Spinner as="span" animation="border" size="sm" /> : <i className="fas fa-upload"></i>}
-                            </Button>
-                        </InputGroup>
-                        <input
-                            type="file"
-                            id="psych-oocAdminRecordUpload"
-                            style={{ display: 'none' }}
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'oocAdminRecordLink')}
-                        />
-                        {!formData.oocAdminRecordLink?.trim() && <div className="invalid-feedback d-block">Le lien du dossier administratif est requis.</div>}
-                    </Form.Group>
-
-                    <Form.Group className="mb-3" controlId="psychOocStatsLink">
-                        <Form.Label className="field-label">5.7 Capture d'écran des statistiques du personnage (/stats)</Form.Label>
-                        <InputGroup>
-                            <Form.Control
-                                type="url"
-                                name="oocStatsLink"
-                                value={formData.oocStatsLink || ''}
-                                onChange={handleChange}
-                                onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')}
-                                placeholder="Lien direct vers l'image (ex : ImgBB)"
-                                required
-                                className={`form-control ${!formData.oocStatsLink?.trim() ? 'is-invalid' : ''}`}
-                            />
-                            <Button
-                                variant="outline-secondary"
-                                onClick={() => document.getElementById('psych-oocStatsUpload').click()}
-                                disabled={isUploading}
-                            >
-                                {isUploading ? <Spinner as="span" animation="border" size="sm" /> : <i className="fas fa-upload"></i>}
-                            </Button>
-                        </InputGroup>
-                        <input
-                            type="file"
-                            id="psych-oocStatsUpload"
-                            style={{ display: 'none' }}
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'oocStatsLink')}
-                        />
-                        {!formData.oocStatsLink?.trim() && <div className="invalid-feedback d-block">Le lien des statistiques est requis.</div>}
-                    </Form.Group>
-
-                    <Form.Group className="mb-3" controlId="psychCharBackground">
-                        <Form.Label className="field-label">5.8 Background du personnage</Form.Label>
-                        <Form.Control as="textarea" rows={8} name="charBackground" value={formData.charBackground || ''} onChange={handleChange} onBlur={() => handleSectionFieldBlur('oocInfo', isOocInfoOpen, setIsOocInfoOpen, 'oocInfo')}required className={`form-control ${!formData.charBackground?.trim() ? 'is-invalid' : ''} mb-4`} />
-                        {!formData.charBackground?.trim() && <div className="invalid-feedback d-block">Le Background du personnage est requise.</div>}
                     </Form.Group>
                 </div>
             )}

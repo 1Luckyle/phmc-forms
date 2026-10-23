@@ -125,7 +125,7 @@ const SicknessEmail = ({
                     name="patientID"
                     value={formData.patientID || ''}
                     onChange={handleChange}
-                    placeholder="ID Patient (optionnel, ex. PHMC-2752)"
+                    placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
                     className="form-control"
                 />
                 <span className="helper-text">

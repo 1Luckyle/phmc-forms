@@ -44,9 +44,6 @@ const generateCoroner = (formData) => {
         oocDiscord,
         oocTimezone,
         oocMedicalExperience,
-        oocAdminRecordLink,
-        oocStatsLink,
-        charBackground,
         positionDetailsData
         // Data for position details - This will be accessed via formData.coronerPositionDetailsData
         // coronerPositionDetailsData, // Removed from direct destructuring
@@ -138,13 +135,7 @@ ${checkbox(eduDoctorate)} Doctorat (PhD)
 [b][color=#FF0000]5.2[/color] Nom sur le Forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.4[/color] Fuseau Horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
-[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
-[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
-[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]
+[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i][/list][/divbox]
 [divboxcolor=black][center][url=][color=#FF0000]>[/color] [color=#FFFFFF]Département de Médecine Légale & Pathologie[/url]  |[/color]  [url=][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'Emploi[/url] |[/color] [url=][color=#FF0000]>[/color]  [color=#FFFFFF]Guide des Visiteurs[/color][/url][/center][/divboxcolor]`;
 
     return bbCode;

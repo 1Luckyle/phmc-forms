@@ -32,9 +32,6 @@ const generateEMS = (formData) => {
         oocDiscord,
         oocTimezone,
         oocMedicalExperience, // Utilisé dans toutes les sections HRP maintenant
-        oocAdminRecordLink,
-        oocStatsLink,
-        charBackground,
         // Genre
         genderMale,
         genderFemale,
@@ -114,25 +111,13 @@ const generateEMS = (formData) => {
 [b][color=#FF0000]5.2[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
-[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
-[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
-[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
+[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i][/list][/divbox]`;
     } else if (isEmtPosition) { // Technicien médical d'urgence régulier
         const oocFieldsBBCode = `[b][color=#FF0000]5.1[/color] Nom d'utilisateur du panneau de contrôle utilisateur (UCP):[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.2[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
-[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.3[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.4[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.5[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.6[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
-[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.8[/color] Background du personnage (Bref résumé):[/b]
-[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote]`;
+[b][color=#FF0000]5.2[/color] Nom du compte forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
+[b][color=#FF0000]5.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]`;
 
         sections3onwardsBBCode = commonSections3And4 +
     `[divbox=na][list=none][b][size=110][color=#FF0000]5[/color].  (( Informations hors personnage ))[/size][/b][/list]
@@ -146,13 +131,7 @@ const generateEMS = (formData) => {
 [b][color=#FF0000]4.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.5[/color] Avez-vous une expérience médicale réelle ou avez-vous fait du roleplay dans des factions médicales par le passé ?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
-[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]4.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
-[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]4.8[/color] Si vous faites partie d'une autre faction officielle, veuillez poster un lien vers votre demande DFP de la part de [b]Pillbox Hill Medical Center[/b] [u]et[/u] de votre faction actuelle. Si vous utilisez le même personnage, les autorisations du LFM doivent être acquises et fournies également:[/b] [i]${oocOtherFactionDfpLfm || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.9[/color] Background du personnage (Bref résumé):[/b]
-[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
+[b][color=#FF0000]4.6[/color] Si vous faites partie d'une autre faction officielle, veuillez poster un lien vers votre demande DFP de la part de [b]Pillbox Hill Medical Center[/b] [u]et[/u] de votre faction actuelle. Si vous utilisez le même personnage, les autorisations du LFM doivent être acquises et fournies également:[/b] [i]${oocOtherFactionDfpLfm || 'RÉPONSE'}[/i][/list][/divbox]`;
     } else { // Autres rôles EMS (par exemple, programme à temps partiel)
         const section3Licensing = `[divbox=na][list=none][b][size=110][color=#FF0000]3[/color].  Informations sur les Licences et la Demande[/size][/b][/list]
 [hr][/hr]
@@ -169,13 +148,7 @@ const generateEMS = (formData) => {
 [b][color=#FF0000]4.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.4[/color] Fuseau horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
 [b][color=#FF0000]4.5[/color] Avez-vous une expérience médicale réelle ou avez-vous déjà joué dans des factions médicales par le passé?:[/b] [i]${oocMedicalExperience || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.6[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
-[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]4.7[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
-[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]4.8[/color] Si vous faites partie d'une autre faction officielle, veuillez poster un lien vers votre demande DFP de la part de [b]Pillbox Hill Medical Center[/b] [u]et[/u] de votre faction actuelle. Si vous utilisez le même personnage, les autorisations du LFM doivent être acquises et fournies également:[/b] [i]${oocOtherFactionDfpLfm || 'RÉPONSE'}[/i]
-[b][color=#FF0000]4.9[/color] Background du personnage (Bref résumé):[/b]
-[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]`;
+[b][color=#FF0000]4.6[/color] Si vous faites partie d'une autre faction officielle, veuillez poster un lien vers votre demande DFP de la part de [b]Pillbox Hill Medical Center[/b] [u]et[/u] de votre faction actuelle. Si vous utilisez le même personnage, les autorisations du LFM doivent être acquises et fournies également:[/b] [i]${oocOtherFactionDfpLfm || 'RÉPONSE'}[/i][/list][/divbox]`;
         sections3onwardsBBCode = section3Licensing + section4OOC_OtherEMS;
     }
     

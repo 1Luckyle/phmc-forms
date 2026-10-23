@@ -221,7 +221,7 @@ const EmergencyForm = ({
                 name="patientID"
                 value={formData.patientID}
                 onChange={handleChange}
-                placeholder="ID Patient (optionnel, si connu)"
+                placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
                 className="form-control"
                 style={{ marginTop: '10px' }}
             />

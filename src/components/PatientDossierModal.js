@@ -32,6 +32,9 @@ import {
 import { InvoiceStatusBadge } from './PatientInvoicesPanel';
 import useReportInvoices from '../hooks/useReportInvoices';
 import { formatMoney } from '../utils/patientBilling';
+import ForumHint from './ForumHint';
+import useForumNotice from '../hooks/useForumNotice';
+import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -123,6 +126,7 @@ const PatientDossierModal = ({
     // État de paiement de chaque rapport payant (rechargé à chaque recherche / « Actualiser »).
     const [invoiceRefresh, setInvoiceRefresh] = useState(0);
     const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
+    const { openForumNotice, forumNoticeModal } = useForumNotice();
 
     // Liste déroulante : patients avec compte (civils) + patients sans compte, connus
     // uniquement par des rapports du personnel. On peut aussi taper un ID librement.
@@ -287,6 +291,17 @@ const PatientDossierModal = ({
         handleLoad(selectedFamilies[0].root);
     };
 
+    // Téléchargement HTML (forum GTA World) : un rapport, ou la sélection en un seul fichier.
+    const downloadHtml = (bbCode, title) => {
+        if (downloadBbCodeAsHtml({ bbCode, title, showNotification })) openForumNotice('html');
+    };
+
+    const handleDownloadSelectedHtml = () => {
+        const roots = selectedFamilies.map((f) => f.root);
+        const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
+        downloadHtml(combineBbCodes(roots), title);
+    };
+
     const renderCopyMenu = (entry) => (
         <Dropdown className="d-inline-block me-2">
             <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
@@ -300,7 +315,12 @@ const PatientDossierModal = ({
                     </>
                 ) : (
                     <>
-                        <Dropdown.Item onClick={() => copyText(entry.bbCode, 'BBCode copié !', 'Aucun BBCode trouvé pour ce rapport.')}>Copier le BBCode</Dropdown.Item>
+                        <Dropdown.Item onClick={() => copyText(entry.bbCode, 'BBCode copié !', 'Aucun BBCode trouvé pour ce rapport.')} title={COPY_BBCODE_HINT}>
+                            Copier le BBCode<ForumHint kind="bbcode" />
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => downloadHtml(entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode} title={DOWNLOAD_HTML_HINT}>
+                            Télécharger le HTML<ForumHint kind="html" />
+                        </Dropdown.Item>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
                     </>
                 )}
@@ -328,6 +348,7 @@ const PatientDossierModal = ({
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
+                {forumNoticeModal}
                 <h5 style={{ marginBottom: '10px' }}>Dossier Patient</h5>
                 <p style={{ color: '#8b949e', fontSize: '0.9em', marginBottom: '10px' }}>
                     Recherchez tous les rapports d'un patient avec ou sans compte : choisissez-le dans la liste ou tapez son ID
@@ -406,7 +427,7 @@ const PatientDossierModal = ({
                                                     onChange={(e) => toggleKey(root.indexKey, e.target.checked)}
                                                 />
                                             </td>
-                                            <td style={{ ...tdStyle, maxWidth: '380px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={reportTitleOf(root) || root.originalKey}>
+                                            <td style={{ ...tdStyle, minWidth: '220px', overflowWrap: 'anywhere' }} title={reportTitleOf(root) || root.originalKey}>
                                                 {root.originalKey}
                                                 {iAmHolder && <span style={{ ...chipStyle(true), marginLeft: '6px' }}>Mon rapport</span>}
                                             </td>
@@ -519,7 +540,10 @@ const PatientDossierModal = ({
                                 <Dropdown.Item onClick={() => copyText(
                                     selectedFamilies.map((f) => f.root.bbCode).filter(Boolean).join('\n\n'),
                                     'BBCode copié !', 'Aucun BBCode trouvé dans la sélection.'
-                                )}>Copier le BBCode sélectionné</Dropdown.Item>
+                                )} title={COPY_BBCODE_HINT}>Copier le BBCode sélectionné<ForumHint kind="bbcode" /></Dropdown.Item>
+                                <Dropdown.Item onClick={handleDownloadSelectedHtml} title={DOWNLOAD_HTML_HINT}>
+                                    Télécharger le HTML sélectionné<ForumHint kind="html" />
+                                </Dropdown.Item>
                                 <Dropdown.Item onClick={() => copyText(
                                     selectedFamilies.map((f) => reportTitleOf(f.root)).filter(Boolean).join('\n'),
                                     'Titres copiés !', 'Aucun titre trouvé dans la sélection.'

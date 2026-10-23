@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 
 // Fenêtres d'aide affichées après une copie du BBCode ou un téléchargement du HTML :
-//   • BBCode copié  → utilisable sur le forum PHMC, PAS sur le forum GTA World (Invision Community) ;
-//   • HTML téléchargé → étapes pour copier-coller le rapport (fonctionne sur les DEUX forums).
+//   • BBCode copié  → destiné au forum PHMC (pas encore disponible actuellement), PAS au forum GTA World (Invision Community) ;
+//   • HTML téléchargé → destiné au forum GTA World : étapes pour copier-coller le rapport.
 // Chaque fenêtre peut être masquée définitivement (« Ne plus afficher »), préférence gardée dans ce
 // navigateur ; le bouton « ? » à côté du téléchargement la rouvre toujours.
 const STORAGE_PREFIX = 'hideForumNotice_';
@@ -52,7 +52,13 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
                         <div style={rowStyle}>
                             <i className="fas fa-circle-check" style={{ color: '#3fb950', fontSize: '1.3rem', marginTop: '2px' }}></i>
                             <span>
-                                Le copier-coller du HTML <strong>fonctionne sur les deux forums</strong> : le forum PHMC et le forum GTA World.
+                                Le HTML est destiné au <strong>forum GTA World</strong> : le copier-coller de ce fichier y fonctionne.
+                            </span>
+                        </div>
+                        <div style={rowStyle}>
+                            <i className="fas fa-circle-info" style={{ color: '#58a6ff', fontSize: '1.3rem', marginTop: '2px' }}></i>
+                            <span>
+                                Le <strong>forum PHMC</strong> n'est <strong>pas encore disponible</strong> actuellement : c'est lui qui utilisera le BBCode.
                             </span>
                         </div>
                         <ol style={{ paddingLeft: '1.2rem', marginBottom: '14px' }}>
@@ -66,7 +72,9 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
                     <>
                         <div style={rowStyle}>
                             <i className="fas fa-circle-check" style={{ color: '#3fb950', fontSize: '1.3rem', marginTop: '2px' }}></i>
-                            <span>Ce BBCode peut être utilisé sur le <strong>forum PHMC</strong>.</span>
+                            <span>
+                                Ce BBCode est destiné au <strong>forum PHMC</strong>, qui n'est <strong>pas encore disponible</strong> actuellement.
+                            </span>
                         </div>
                         <div style={rowStyle}>
                             <i className="fas fa-circle-xmark" style={{ color: '#f85149', fontSize: '1.3rem', marginTop: '2px' }}></i>
@@ -78,8 +86,8 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
                         <div style={{ ...rowStyle, marginBottom: 0 }}>
                             <i className="fas fa-lightbulb" style={{ color: '#d29922', fontSize: '1.3rem', marginTop: '2px' }}></i>
                             <span>
-                                Pour publier sur le forum GTA World, utilisez <strong>« Télécharger le HTML »</strong> : le copier-coller du
-                                HTML fonctionne sur <strong>les deux forums</strong>.
+                                Pour publier sur le forum GTA World, utilisez <strong>« Télécharger le HTML »</strong> : le HTML est fait pour
+                                <strong> ce forum</strong> (le BBCode est réservé au forum PHMC).
                             </span>
                         </div>
                     </>

@@ -15,6 +15,9 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
 import { loadPatientDossier, reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
+import ForumHint from './ForumHint';
+import useForumNotice from '../hooks/useForumNotice';
+import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -37,6 +40,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
     const { myPatientID } = useEmployeeAuth();
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const { openForumNotice, forumNoticeModal } = useForumNotice();
 
     const load = useCallback(async () => {
         if (!myPatientID) return;
@@ -63,12 +67,17 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
         ? copyToClipboard(text, showNotification, message)
         : showNotification('Rien à copier.', 'warning'));
 
+    const downloadHtml = (entry) => {
+        if (downloadBbCodeAsHtml({ bbCode: entry.bbCode, title: reportTitleOf(entry) || entry.originalKey, showNotification })) openForumNotice('html');
+    };
+
     if (!show) return null;
 
     return ReactDOM.createPortal(
         <div style={overlayStyle} onClick={onHide}>
             <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeStyle} aria-label="Fermer">&times;</button>
+                {forumNoticeModal}
                 <h5>Mon dossier patient</h5>
                 <p style={{ color: '#8b949e', fontSize: '0.9em' }}>
                     Comme n'importe quel patient, vous avez un dossier rattaché à votre ID patient : vous y retrouvez
@@ -126,7 +135,12 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <Dropdown.Item onClick={() => copy(entry.bbCode, 'BBCode copié !')}>Copier le BBCode</Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => copy(entry.bbCode, 'BBCode copié !')} title={COPY_BBCODE_HINT}>
+                                                                Copier le BBCode<ForumHint kind="bbcode" />
+                                                            </Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => downloadHtml(entry)} disabled={!entry.bbCode} title={DOWNLOAD_HTML_HINT}>
+                                                                Télécharger le HTML<ForumHint kind="html" />
+                                                            </Dropdown.Item>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>
                                                         </>
                                                     )}

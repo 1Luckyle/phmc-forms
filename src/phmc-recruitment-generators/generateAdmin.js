@@ -44,9 +44,6 @@ const generateAdmin = (formData) => {
         oocDiscord,
         oocTimezone,
         // oocPriorExperience, // Removed as not in new BBCode
-        oocAdminRecordLink,
-        oocStatsLink,
-        charBackground,
 
         // Data for position details
         positionDetailsData,
@@ -132,13 +129,7 @@ ${checkbox(eduDoctorate)} Doctorat (PhD)
 [list=none][b][color=#FF0000]5.1[/color] Nom d'Utilisateur UCP:[/b] [i]${oocUcpName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.2[/color] Nom sur le Forum GTA:W:[/b] [i]${oocForumName || 'RÉPONSE'}[/i]
 [b][color=#FF0000]5.3[/color] Nom Discord:[/b] [i]${oocDiscord || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.4[/color] Fuseau Horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i]
-[b][color=#FF0000]5.5[/color] Capture d'écran [u]non modifiée[/u] de votre dossier administratif:[/b]
-[list=none][altspoiler=Dossier Administratif][img]${oocAdminRecordLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.6[/color] Capture d'écran des statistiques de votre personnage (/stats) avec lequel vous postulez:[/b] 
-[list=none][altspoiler=Statistiques][img]${oocStatsLink || 'LIEN'}[/img][/altspoiler][/list]
-[b][color=#FF0000]5.7[/color] Background du personnage (Bref résumé):[/b]
-[quote][i]${charBackground || 'RÉPONSE ICI'}[/i][/quote][/list][/divbox]
+[b][color=#FF0000]5.4[/color] Fuseau Horaire:[/b] [i]${oocTimezone || 'RÉPONSE'}[/i][/list][/divbox]
 [divboxcolor=black][center][url=][color=#FF0000]>[/color] [color=#FFFFFF]Administration[/url] |[/color]  [url=][color=#FF0000]>[/color] [color=#FFFFFF]Informations sur l'Emploi[/url] |[/color] [url=][color=#FF0000]>[/color]  [color=#FFFFFF]Guide des Visiteurs[/color][/url][/center][/divboxcolor]`;
 
     return bbCode;
