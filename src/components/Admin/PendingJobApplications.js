@@ -17,6 +17,11 @@ import { sendEyefindMail } from '../../utils/eyefindMail';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { loadContractCandidates, setContractCandidate, clearContractCandidate } from '../../utils/contractCandidates';
 import { sendAdminActionWebhook } from './adminUtils';
+import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
+import useForumNotice from '../../hooks/useForumNotice';
+import { copyToClipboard } from '../notificationService';
+import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
+import { getFormDefinition } from '../../formDefinitions';
 
 const sendMailBestEffort = (params) => {
     sendEyefindMail(params).then((result) => {
@@ -43,6 +48,8 @@ const PendingJobApplications = ({ showNotification }) => {
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { currentEmployee, isAdmin, staffName, civilianProfile } = useEmployeeAuth();
     const { selectOptions } = useData();
+    const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     // Rôle du personnel relié au poste de la candidature (champ `role` du poste), s'il est défini.
     const roleOfPosition = (poste) => {
@@ -241,6 +248,57 @@ Pillbox Hill Medical Center`,
         loadApplications();
     };
 
+    const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
+
+    const handleCopyBbCode = (application) => {
+        if (!application.bbcode) { showNotification('Aucun BBCode enregistré pour cette candidature.', 'warning'); return; }
+        copyToClipboard(application.bbcode, showNotification, 'BBCode copié !');
+    };
+
+    const handleDownloadHtml = (application) => {
+        if (downloadBbCodeAsHtml({ bbCode: application.bbcode, title: applicationTitle(application), showNotification })) openForumNotice('html');
+    };
+
+    const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString('fr-FR') : '—');
+
+    // Onglet « Détails » : tout ce qu'on sait de la candidature et de son parcours.
+    const renderDetails = (application) => {
+        const history = [...(application.historique || [])].sort((a, b) => (b.horodatage || 0) - (a.horodatage || 0));
+        return (
+            <div style={{ fontSize: '0.9em' }}>
+                <table style={{ borderCollapse: 'collapse', marginBottom: '10px' }}>
+                    <tbody>
+                        {[
+                            ['Candidat', application.nomCandidat || 'N/A'],
+                            ['ID patient', application.idPatient || '—'],
+                            ['Poste', application.poste || 'N/A'],
+                            ['Formulaire', getFormDefinition(application.versionBBCode)?.name || application.versionBBCode || '—'],
+                            ['Statut', STATUS_LABELS[application.statut] || application.statut],
+                            ['Déposée le', formatDate(application.creeLe)],
+                            ['Dernière mise à jour', formatDate(application.modifieLe)],
+                            ['Entretien', application.dateEntretien ? formatDate(application.dateEntretien) : '—'],
+                        ].map(([label, value]) => (
+                            <tr key={label}>
+                                <td style={{ padding: '2px 14px 2px 0', color: '#8b949e' }}>{label}</td>
+                                <td style={{ padding: '2px 0' }}>{value}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <div style={{ fontWeight: 600, marginBottom: '4px' }}>Historique</div>
+                {history.length === 0 ? <span style={{ color: '#8b949e' }}>Aucun historique enregistré.</span> : (
+                    <ul style={{ paddingLeft: '1.1rem', marginBottom: 0 }}>
+                        {history.map((entry, index) => (
+                            <li key={`${entry.statut}-${entry.horodatage}-${index}`}>
+                                {STATUS_LABELS[entry.statut] || entry.statut} — {formatDate(entry.horodatage)}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        );
+    };
+
     const visibleApplications = showAll
         ? applications
         : applications.filter((app) => ACTIONABLE_STATUSES.includes(app.statut));
@@ -251,6 +309,7 @@ Pillbox Hill Medical Center`,
 
     return (
         <div style={{ padding: '20px' }}>
+            {forumNoticeModal}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 style={{ color: '#c9d1d9', margin: 0 }}>
                     <i className="fas fa-user-plus" style={{ marginRight: '10px' }}></i>
@@ -281,7 +340,8 @@ Pillbox Hill Medical Center`,
                         {visibleApplications.map((application) => {
                             const inputKey = application.id + application.candidatUid;
                             return (
-                                <tr key={inputKey}>
+                                <React.Fragment key={inputKey}>
+                                <tr>
                                     <td>{application.nomCandidat || 'N/A'} {application.idPatient ? `(${application.idPatient})` : ''}</td>
                                     <td>{application.poste || 'N/A'}</td>
                                     <td>{STATUS_LABELS[application.statut] || application.statut}</td>
@@ -301,6 +361,14 @@ Pillbox Hill Medical Center`,
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                                            <ExpandToggle open={!!openRows[inputKey]} onClick={() => toggleRow(inputKey, 'preview')} label="Aperçu" title="Déplier / replier l'aperçu de la candidature" />
+                                            <ExpandToggle open={openRows[inputKey] === 'details'} onClick={() => toggleRow(inputKey, 'details')} label="Détails" icon="fa-circle-info" title="Informations et historique de la candidature" />
+                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
+                                                <i className="fas fa-copy"></i> BBCode
+                                            </Button>
+                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT} onClick={() => handleDownloadHtml(application)}>
+                                                <i className="fas fa-download"></i> HTML
+                                            </Button>
                                             {application.statut === 'soumise' && (
                                                 <Button size="sm" variant="primary" onClick={() => handleScheduleInterview(application)}>
                                                     Planifier un entretien
@@ -338,6 +406,20 @@ Pillbox Hill Medical Center`,
                                         </div>
                                     </td>
                                 </tr>
+                                {openRows[inputKey] && (
+                                    <tr>
+                                        <td colSpan={5} style={{ backgroundColor: '#0d1117' }}>
+                                            <ReportExpansion
+                                                tab={openRows[inputKey]}
+                                                onTabChange={(tab) => setRowTab(inputKey, tab)}
+                                                bbCode={application.bbcode}
+                                                title={applicationTitle(application)}
+                                                extraTabs={[{ key: 'details', label: 'Détails', content: renderDetails(application) }]}
+                                            />
+                                        </td>
+                                    </tr>
+                                )}
+                                </React.Fragment>
                             );
                         })}
                     </tbody>

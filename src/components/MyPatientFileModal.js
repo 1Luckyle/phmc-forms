@@ -18,6 +18,7 @@ import PatientInvoicesPanel from './PatientInvoicesPanel';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -41,6 +42,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     const load = useCallback(async () => {
         if (!myPatientID) return;
@@ -120,11 +122,15 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                             </thead>
                             <tbody>
                                 {entries.map((entry) => (
-                                    <tr key={entry.indexKey}>
+                                    <React.Fragment key={entry.indexKey}>
+                                    <tr>
                                         <td style={tdStyle}>{entry.originalKey}</td>
                                         <td style={tdStyle}>{reportCreatorOf(entry) || 'N/A'}</td>
                                         <td style={tdStyle}>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}</td>
                                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                                            {(entry.bbCode || entry.imageUrl) && (
+                                                <ExpandToggle open={!!openRows[entry.indexKey]} onClick={() => toggleRow(entry.indexKey)} title="Déplier / replier l'aperçu du rapport" />
+                                            )}
                                             <Dropdown className="d-inline-block">
                                                 <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
                                                 <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
@@ -148,6 +154,20 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                                             </Dropdown>
                                         </td>
                                     </tr>
+                                    {openRows[entry.indexKey] && (
+                                        <tr>
+                                            <td colSpan={4} style={{ ...tdStyle, backgroundColor: '#0d1117' }}>
+                                                <ReportExpansion
+                                                    tab={openRows[entry.indexKey]}
+                                                    onTabChange={(tab) => setRowTab(entry.indexKey, tab)}
+                                                    bbCode={entry.bbCode}
+                                                    imageUrl={entry.imageUrl}
+                                                    title={reportTitleOf(entry) || entry.originalKey}
+                                                />
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>

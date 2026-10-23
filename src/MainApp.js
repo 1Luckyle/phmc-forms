@@ -382,20 +382,13 @@ function MainApp({
         setShowAgencySelector(true);
     };
 
-    // Changer de formulaire efface l'ID patient mémorisé : il venait du formulaire précédent et ne doit pas
-    // « suivre » vers un formulaire qui ne le demande pas (il serait enregistré dans le dossier d'un autre
-    // patient). Charger un rapport sauvegardé ne passe PAS par ici : son propre ID est conservé.
-    const clearStalePatientId = useCallback((nextVersion) => {
-        if (nextVersion === bbCodeVersion) return;
-        setFormData((prev) => (prev.patientID ? { ...prev, patientID: '' } : prev));
-    }, [bbCodeVersion, setFormData]);
-
+    // L'ID patient saisi reste en place quand on passe d'un formulaire à l'autre : on enchaîne souvent plusieurs
+    // rapports pour le même patient.
     const handleAgencySelect = useCallback((version) => {
-        clearStalePatientId(version);
         setBbCodeVersion(version);
         setShowAgencySelector(false);
         setShowPHMCModal(false);
-    }, [clearStalePatientId, setBbCodeVersion, setShowAgencySelector, setShowPHMCModal]);
+    }, [setBbCodeVersion, setShowAgencySelector, setShowPHMCModal]);
 
     const handleHideAgencyGroupSelectorPreference = (hide) => {
         setHideAgencyGroupSelectorPreference(hide);
@@ -1480,7 +1473,6 @@ function MainApp({
                     title={switchableModalTitle}
                     forms={switchableFormsList}
                     handleFormSelect={(version) => {
-                        clearStalePatientId(version);
                         setBbCodeVersion(version);
                         setShowPHMCModal(false);
                     }}

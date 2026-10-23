@@ -3,17 +3,18 @@
 // Vue Civil "Mes candidatures" (Lot 6 du plan Civil) : suivi de statut + actions (Mettre en pause / Retirer /
 // Candidater) sur candidatures/{uid} (ancien nœud jobApplications lu aussi), et sur chaque candidature :
 // la recharger dans son formulaire, copier le BBCode (forum PHMC, pas encore disponible), télécharger le HTML
-// (forum GTA World), voir le détail (historique des statuts + aperçu de la candidature).
-import React, { useState } from 'react';
+// (forum GTA World), et déplier sous la carte l'aperçu de la candidature (images comprises), son BBCode et son
+// historique de statuts.
+import React from 'react';
 import ReactDOM from 'react-dom';
 import { Button } from 'react-bootstrap';
 import { removeApplication } from '../utils/recruitmentStore';
 import { useDebug } from '../contexts/DebugContext';
 import { copyToClipboard } from './notificationService';
-import { bbcodeToHtmlDocument } from '../utils/bbcodeToHtml';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
+import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -62,7 +63,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdat
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
-    const [openDetailId, setOpenDetailId] = useState(null);
+    const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
     if (!show) return null;
 
     const handleDelete = async (application) => {
@@ -116,8 +117,21 @@ const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdat
                     )}
                     {!isLoading && applications.map((application) => {
                         const statusInfo = STATUS_LABELS[application.statut] || { text: application.statut, color: '#8b949e' };
-                        const isDetailOpen = openDetailId === application.id;
                         const history = [...(application.historique || [])].sort((a, b) => (b.horodatage || 0) - (a.horodatage || 0));
+                        const historyContent = history.length === 0 ? (
+                            <p style={metaStyle}>Aucun historique enregistré.</p>
+                        ) : (
+                            <ul style={{ paddingLeft: '1.1rem', marginBottom: 0 }}>
+                                {history.map((entry, index) => (
+                                    <li key={`${entry.statut}-${entry.horodatage}-${index}`} style={metaStyle}>
+                                        <span style={{ color: (STATUS_LABELS[entry.statut] || {}).color || '#c9d1d9' }}>
+                                            {(STATUS_LABELS[entry.statut] || {}).text || entry.statut}
+                                        </span>
+                                        {' — '}{formatDate(entry.horodatage)}
+                                    </li>
+                                ))}
+                            </ul>
+                        );
                         return (
                             <div key={application.id} style={cardStyle}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '10px' }}>
@@ -192,39 +206,30 @@ const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdat
                                     <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT} onClick={() => handleDownloadHtml(application)}>
                                         <i className="fas fa-download me-1"></i>Télécharger le HTML<ForumHint kind="html" />
                                     </Button>
-                                    <Button size="sm" variant="outline-secondary" onClick={() => setOpenDetailId(isDetailOpen ? null : application.id)}>
-                                        <i className={`fas fa-chevron-${isDetailOpen ? 'up' : 'down'} me-1`}></i>{isDetailOpen ? 'Masquer le détail' : 'Voir le détail'}
-                                    </Button>
+                                    <ExpandToggle
+                                        open={openRows[application.id] === 'preview'} label="Aperçu"
+                                        onClick={() => toggleRow(application.id, 'preview')}
+                                        title="Prévisualiser la candidature telle qu'elle sera publiée, juste en dessous"
+                                    />
+                                    <ExpandToggle
+                                        open={openRows[application.id] === 'bbcode'} label="Voir le BBCode" icon="fa-code"
+                                        onClick={() => toggleRow(application.id, 'bbcode')}
+                                    />
+                                    <ExpandToggle
+                                        open={openRows[application.id] === 'history'} label="Historique" icon="fa-clock-rotate-left"
+                                        onClick={() => toggleRow(application.id, 'history')}
+                                    />
                                 </div>
 
-                                {isDetailOpen && (
-                                    <div style={{ marginTop: '12px' }}>
-                                        <div style={{ fontWeight: 600, marginBottom: '6px' }}>Historique</div>
-                                        {history.length === 0 ? (
-                                            <p style={metaStyle}>Aucun historique enregistré.</p>
-                                        ) : (
-                                            <ul style={{ paddingLeft: '1.1rem', marginBottom: '12px' }}>
-                                                {history.map((entry, index) => (
-                                                    <li key={`${entry.statut}-${entry.horodatage}-${index}`} style={metaStyle}>
-                                                        <span style={{ color: (STATUS_LABELS[entry.statut] || {}).color || '#c9d1d9' }}>
-                                                            {(STATUS_LABELS[entry.statut] || {}).text || entry.statut}
-                                                        </span>
-                                                        {' — '}{formatDate(entry.horodatage)}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                        <div style={{ fontWeight: 600, marginBottom: '6px' }}>Aperçu de la candidature</div>
-                                        {application.bbcode ? (
-                                            <iframe
-                                                title={`Aperçu - ${application.poste || 'candidature'}`}
-                                                sandbox=""
-                                                srcDoc={bbcodeToHtmlDocument(application.bbcode, { title: applicationTitle(application) })}
-                                                style={{ width: '100%', height: '380px', border: '1px solid #30363d', borderRadius: '4px', backgroundColor: '#fff' }}
-                                            />
-                                        ) : (
-                                            <p style={metaStyle}>Aucun contenu enregistré pour cette candidature.</p>
-                                        )}
+                                {openRows[application.id] && (
+                                    <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #30363d' }}>
+                                        <ReportExpansion
+                                            tab={openRows[application.id]}
+                                            onTabChange={(tab) => setRowTab(application.id, tab)}
+                                            bbCode={application.bbcode}
+                                            title={applicationTitle(application)}
+                                            extraTabs={[{ key: 'history', label: 'Historique', content: historyContent }]}
+                                        />
                                     </div>
                                 )}
                             </div>

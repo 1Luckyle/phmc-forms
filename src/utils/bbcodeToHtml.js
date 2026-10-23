@@ -244,7 +244,22 @@ const tableOpen = (cellpadding, extraStyle = '') =>
 const cellStyle = (align) =>
     `background-color:${BG};color:${FG};border:1px solid ${BORDER};${align ? `text-align:${align};` : ''}`;
 
-const renderText = (value) => escapeHtml(value).replace(/\n/g, '<br>');
+// Une adresse nue qui pointe vers une image (imgBB, Imgur, Discord, ou extension d'image) est affichée comme
+// image, pas comme une URL : c'est ce que fait le forum à la publication.
+const URL_IN_TEXT_RE = /(https?:\/\/[^\s<>"'[\]]+)/gi;
+const IMAGE_EXTENSION_RE = /\.(png|jpe?g|gif|webp|bmp|avif)(\?[^\s]*)?$/i;
+const IMAGE_HOST_RE = /^https?:\/\/(i\.ibb\.co|i\.imgur\.com|(cdn|media)\.discordapp\.(com|net)\/attachments)\//i;
+export const isImageUrl = (url) => IMAGE_EXTENSION_RE.test(url) || IMAGE_HOST_RE.test(url);
+
+const escapeWithBreaks = (value) => escapeHtml(value).replace(/\n/g, '<br>');
+const renderText = (value) => String(value == null ? '' : value).split(URL_IN_TEXT_RE).map((part, index) => {
+    if (index % 2 === 0) return escapeWithBreaks(part);
+    // La ponctuation qui suit une adresse dans une phrase n'en fait pas partie.
+    const [, url, trailing] = part.match(/^(.*?)([.,;:!?)]*)$/);
+    return isImageUrl(url)
+        ? `<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;">${escapeWithBreaks(trailing)}`
+        : escapeWithBreaks(part);
+}).join('');
 
 // Enfants d'un conteneur « bloc » (racine, cellule, bandeau) : on retire les sauts de ligne
 // qui ne font que séparer deux blocs (ex. « [/table]\n[divboxcolor] »).
@@ -431,6 +446,7 @@ export const bbcodeToHtmlDocument = (bbcode, { title = 'Rapport', onWarning } = 
     return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
 <title>${safeTitle}</title></head>
 <body bgcolor="${BG}" style="background-color:${BG}; margin:0; padding:16px; font-family:${FONT_FAMILY}; color:${FG};">
 <table width="100%" cellpadding="0" cellspacing="0" bgcolor="${BG}" style="max-width:900px; margin:0 auto; background-color:${BG}; color:${FG}; border-collapse:collapse; font-family:${FONT_FAMILY}; font-size:14px;">

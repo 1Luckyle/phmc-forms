@@ -13,6 +13,7 @@ import { formatMoney } from '../utils/patientBilling';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 
 const modalStyle = {
     position: 'fixed',
@@ -300,6 +301,7 @@ const SavedReportsModal = ({
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
     // Personne de connecté = aucune liste, même si une sélection (ou des rapports) datait d'une session
     // précédente : on ne peut ni afficher ni copier le titre / le BBCode d'un rapport sans compte.
     const selectedEmployee = currentEmployee ? selectedEmployeeRaw : null;
@@ -816,7 +818,8 @@ const SavedReportsModal = ({
                                 {currentReportsOnPage.map((report) => {
                                     const isSelected = selectedReportKeys.includes(report.key);
                                     return (
-                                        <tr key={report.key} style={isSelected ? { backgroundColor: '#161b22' } : {}}>
+                                        <React.Fragment key={report.key}>
+                                        <tr style={isSelected ? { backgroundColor: '#161b22' } : {}}>
                                             <td style={tdCheckboxStyle}>
                                                 <Form.Check
                                                     type="checkbox"
@@ -852,6 +855,9 @@ const SavedReportsModal = ({
                                                 })()}
                                             </td>
                                             <td style={actionsTdStyle}>
+                                                {(report.bbCode || report.imageUrl) && (
+                                                    <ExpandToggle open={!!openRows[report.key]} onClick={() => toggleRow(report.key)} title="Déplier / replier l'aperçu du rapport" />
+                                                )}
                                                 {isLoadable(report) && !report.sharedByStaff && (loadReport || isAttachMode) && (
                                                     <Button
                                                         variant="primary"
@@ -916,6 +922,20 @@ const SavedReportsModal = ({
                                                 )}
                                             </td>
                                         </tr>
+                                        {openRows[report.key] && (
+                                            <tr>
+                                                <td colSpan={6} style={{ border: '1px solid #30363d', padding: '10px', backgroundColor: '#0d1117' }}>
+                                                    <ReportExpansion
+                                                        tab={openRows[report.key]}
+                                                        onTabChange={(tab) => setRowTab(report.key, tab)}
+                                                        bbCode={report.bbCode}
+                                                        imageUrl={report.imageUrl}
+                                                        title={reportTitleOf(report) || report.originalKey}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </React.Fragment>
                                     );
                                 })}
                             </tbody>

@@ -26,6 +26,7 @@ import PendingJobApplications from '../Admin/PendingJobApplications';
 import ContractsManager from '../Contracts/ContractsManager';
 import useForumNotice from '../../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
+import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -56,6 +57,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
     const [roleToEdit, setRoleToEdit] = useState(null);
     const [roleToRename, setRoleToRename] = useState(null);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     const config = category ? CATEGORY_BY_KEY[category] : null;
 
@@ -186,6 +188,10 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                                     <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                                         <h6 className="mb-0">Postes — {config.label}</h6>
                                         <div className="d-flex gap-2">
+                                            <ExpandToggle
+                                                open={!!openRows.statuses} onClick={() => toggleRow('statuses')} label="Aperçu des statuts"
+                                                title="Déplier / replier l'aperçu du message « Statuts de recrutement » de cette catégorie"
+                                            />
                                             <Button variant="outline-info" size="sm" onClick={handleCopyStatusesBBCode} disabled={isLoading}
                                                 title={`Copie le BBCode « Statuts de recrutement » de cette catégorie. ${COPY_BBCODE_HINT}.`}>
                                                 <i className="fas fa-copy"></i> Copier le BBCode des statuts
@@ -199,6 +205,16 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                                             </Button>
                                         </div>
                                     </div>
+                                    {openRows.statuses && !isLoading && (
+                                        <div style={{ border: '1px solid #30363d', borderRadius: '4px', padding: '10px', marginBottom: '12px', backgroundColor: '#0d1117' }}>
+                                            <ReportExpansion
+                                                tab={openRows.statuses}
+                                                onTabChange={(tab) => setRowTab('statuses', tab)}
+                                                bbCode={buildStatusesBBCode()}
+                                                title={`Statuts de recrutement - ${config.label}`}
+                                            />
+                                        </div>
+                                    )}
                                     {isLoading ? <Spinner animation="border" /> : Object.keys(positions).length > 0 ? (
                                         <div className="list-group mb-3">
                                             {Object.entries(positions).map(([key, position]) => (

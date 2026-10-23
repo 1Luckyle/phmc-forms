@@ -35,6 +35,7 @@ import { formatMoney } from '../utils/patientBilling';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -127,6 +128,7 @@ const PatientDossierModal = ({
     const [invoiceRefresh, setInvoiceRefresh] = useState(0);
     const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     // Liste déroulante : patients avec compte (civils) + patients sans compte, connus
     // uniquement par des rapports du personnel. On peut aussi taper un ID librement.
@@ -418,7 +420,8 @@ const PatientDossierModal = ({
                                         ...(root.ownerDeleted ? { opacity: 0.65 } : {}),
                                     };
                                     return (
-                                        <tr key={root.indexKey} style={rowStyle}>
+                                        <React.Fragment key={root.indexKey}>
+                                        <tr style={rowStyle}>
                                             <td style={{ ...tdStyle, textAlign: 'center' }}>
                                                 <Form.Check
                                                     type="checkbox"
@@ -459,6 +462,9 @@ const PatientDossierModal = ({
                                                 })()}
                                             </td>
                                             <td style={actionsTdStyle}>
+                                                {(root.bbCode || root.imageUrl) && (
+                                                    <ExpandToggle open={!!openRows[root.indexKey]} onClick={() => toggleRow(root.indexKey)} title="Déplier / replier l'aperçu du rapport" />
+                                                )}
                                                 {loadReport && isLoadable(root) && (
                                                     <Button size="sm" variant="primary" className="me-2" onClick={() => handleLoad(root)}>
                                                         Charger
@@ -511,6 +517,20 @@ const PatientDossierModal = ({
                                                 )}
                                             </td>
                                         </tr>
+                                        {openRows[root.indexKey] && (
+                                            <tr>
+                                                <td colSpan={8} style={{ border: '1px solid #30363d', padding: '10px', backgroundColor: '#0d1117' }}>
+                                                    <ReportExpansion
+                                                        tab={openRows[root.indexKey]}
+                                                        onTabChange={(tab) => setRowTab(root.indexKey, tab)}
+                                                        bbCode={root.bbCode}
+                                                        imageUrl={root.imageUrl}
+                                                        title={reportTitleOf(root) || root.originalKey}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </React.Fragment>
                                     );
                                 })}
                             </tbody>

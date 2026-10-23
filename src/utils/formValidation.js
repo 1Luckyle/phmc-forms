@@ -6,7 +6,8 @@
 //   • avertissements : demandent confirmation (« Enregistrer quand même ? »), pour les cas légitimes mais rares.
 //
 // RAPPORTS (validateReport)
-//   - champs de base propres à chaque formulaire (nom du patient, date, défunt…), comme avant ;
+//   - au minimum, tout ce qui sert à fabriquer le TITRE du rapport (voir utils/reportTitle.js) doit être rempli : un
+//     rapport sans titre exploitable ne peut pas être retrouvé dans « Rapports enregistrés » ni dans les dossiers ;
 //   - dossiers médicaux Civils (3, 24, 25, 26) : ID patient, e-mail valide (il sert à envoyer les factures),
 //     et pour la divulgation / la mise à jour au moins un élément choisi (sinon rien à faire ni à facturer) ;
 //   - un Civil ne peut enregistrer un dossier que sous SON ID patient (jamais dans le dossier de quelqu'un d'autre) ;
@@ -16,9 +17,8 @@
 //
 // CANDIDATURES (validateApplication)
 //   - brouillon : il suffit d'avoir choisi un poste (sinon rien ne permet d'identifier la candidature) ;
-//   - envoi : poste choisi ET encore ouvert, tous les champs obligatoires remplis, e-mail / téléphone / date de
-//     naissance de forme valide, lettre de motivation d'une longueur sérieuse, et pas de réenvoi pendant qu'un
-//     entretien est en cours.
+//   - envoi : poste choisi ET encore ouvert, TOUT le formulaire rempli sans exception (aucune longueur minimale),
+//     e-mail / téléphone / date de naissance de forme valide, et pas de réenvoi pendant qu'un entretien est en cours.
 import { canonicalPatientId } from './patientId';
 import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
@@ -26,9 +26,6 @@ import {
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
-
-export const MIN_MOTIVATION_LENGTH = 100;
-export const MIN_PART_TIME_REASON_LENGTH = 40;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const isValidEmail = (value) => EMAIL_REGEX.test(text(value));
@@ -52,7 +49,8 @@ export const CARE_FORM_VERSIONS = [3, 5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 24, 2
 // Dossiers médicaux Civils (facturés).
 export const CIVIL_MEDICAL_VERSIONS = [3, 24, 25, 26];
 
-// Champs obligatoires de base, par formulaire : [champ, libellé].
+// Champs obligatoires par formulaire : [champ, libellé]. Ce sont au minimum ceux du titre du rapport
+// (utils/reportTitle.js), plus quelques champs propres au formulaire.
 const REQUIRED_BY_VERSION = {
     1: [['decedentOOC', 'Nom OOC du défunt'], ['dateTime', 'Date et heure']],
     2: [['coronerEmployee', 'Médecin légiste'], ['requestingOfficer', "Agent à l'origine de la demande"]],
@@ -61,7 +59,7 @@ const REQUIRED_BY_VERSION = {
     5: [['patientName', 'Nom du patient'], ['date', 'Date']],
     6: [['patientName', 'Nom du patient'], ['date', 'Date']],
     7: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    8: [['decedentName', 'Nom du défunt']],
+    8: [['decedentName', 'Nom du défunt'], ['date', 'Date']],
     14: [['patientName', 'Nom du patient'], ['date', 'Date']],
     16: [['patientName', 'Nom du patient'], ['date', 'Date']],
     18: [['department', 'Service'], ['dateTime', 'Date et heure'], ['synopsis', 'Synthèse']],
@@ -76,8 +74,7 @@ const REQUIRED_BY_VERSION = {
     27: [['internalEmailSubject', 'Objet'], ['internalEmailRecipient', 'Destinataire']],
     28: [['patientName', 'Nom du patient'], ['date', 'Date']],
     29: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    35: [['patientName', 'Nom du patient']],
-    37: [['deathReportPostId', 'Numéro du dossier'], ['decedentName', 'Nom du défunt'], ['dateOfDeath', 'Date du décès']],
+    37: [['deathReportPostId', 'Numéro du dossier'], ['decedentName', 'Nom du défunt'], ['decedentOOC', 'Nom OOC du défunt'], ['dateOfDeath', 'Date du décès']],
 };
 
 // → { errors: [message], warnings: [message] }
@@ -92,6 +89,10 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     });
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
+    if (version === 35) {
+        if (!filled(data.patientName)) errors.push('Nom du patient : champ obligatoire.');
+        if (!filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de la visite : champ obligatoire.');
+    }
     if (version === 24 && !filled(data.patientFirstName) && !filled(data.patientLastName)) {
         errors.push('Prénom ou nom du patient : champ obligatoire.');
     }
@@ -155,13 +156,15 @@ const ANY_EDUCATION = ['eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAsso
 const ANY_CITIZENSHIP = ['citizenUS', 'citizenPermanent', 'citizenNone'];
 
 // Variantes par formulaire de candidature (reprennent ce que chaque formulaire marque déjà comme obligatoire).
+// `ems: true` : sections réservées aux paramédics / EMT (emploi, lettre, expérience) ; les autres rôles EMS ont
+// à la place licence, motivation, preuve de licence sur un autre personnage et preuves de DFP.
 const APPLICATION_PROFILES = {
     50: { dob: 'split', location: true, health: true, education: true, employment: true, experience: true, motivation: true },
     51: { dob: 'combined', location: 'orHealth', health: false, education: true, employment: true, experience: true, motivation: true },
     52: { dob: 'combined', health: true, education: true, employment: true, experience: false, motivation: true },
     53: { dob: 'combined', health: true, education: true, employment: true, experience: true, motivation: true },
     54: { dob: 'combined', health: true, education: true, employment: true, experience: true, motivation: true },
-    55: { dob: 'combined', health: false, education: false, employment: false, experience: false, motivation: 'ems' },
+    55: { dob: 'combined', health: true, education: true, employment: 'ems', experience: 'ems', motivation: 'ems', ems: true },
 };
 
 const isParamedic = (positions, key) => matchesPosition(positions, key, { roles: ['Paramedic'], keys: ['Paramedic'] });
@@ -233,27 +236,19 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         need('applicantMajor', 'Domaine / spécialité');
         need('applicantLanguages', 'Langues parlées');
     }
-    if (profile.employment) {
+    // EMS : emploi, lettre et expérience pour paramédics / EMT ; licence, motivation, autre personnage et DFP pour les autres rôles.
+    const emsFull = profile.ems ? (isParamedic(positions, data.recruitmentPosition) || isEmt(positions, data.recruitmentPosition)) : null;
+    if (profile.employment === true || (profile.employment === 'ems' && emsFull)) {
         need('applicantPrevEmployment', 'Emploi précédent');
         need('applicantPrevDuties', 'Responsabilités');
+        need('applicantPrevDismissalReason', 'Motif de départ');
     }
-
-    // Lettre de motivation (EMS : seulement paramédic / EMT ; les autres rôles motivent leur demande à part).
-    if (profile.motivation === 'ems') {
-        if (isParamedic(positions, data.recruitmentPosition) || isEmt(positions, data.recruitmentPosition)) {
-            if (text(data.applicantMotivationLetter).length < MIN_MOTIVATION_LENGTH) {
-                errors.push(`Lettre de motivation : ${MIN_MOTIVATION_LENGTH} caractères minimum (${text(data.applicantMotivationLetter).length} actuellement).`);
-            }
-        } else {
-            need('emsLicenseLink', 'Licence de technicien médical d\'urgence');
-            if (text(data.emsPartTimeReason).length < MIN_PART_TIME_REASON_LENGTH) {
-                errors.push(`Motivation pour le programme à temps partiel : ${MIN_PART_TIME_REASON_LENGTH} caractères minimum.`);
-            }
-        }
-    } else if (profile.motivation) {
-        if (text(data.applicantMotivationLetter).length < MIN_MOTIVATION_LENGTH) {
-            errors.push(`Lettre de motivation : ${MIN_MOTIVATION_LENGTH} caractères minimum (${text(data.applicantMotivationLetter).length} actuellement).`);
-        }
+    if (profile.ems && !emsFull) {
+        need('emsLicenseLink', "Licence de technicien médical d'urgence");
+        need('emsPartTimeReason', 'Motivation pour le programme à temps partiel');
+    }
+    if (profile.motivation === true || (profile.motivation === 'ems' && emsFull)) {
+        need('applicantMotivationLetter', 'Lettre de motivation');
     }
 
     // Informations hors RP
@@ -261,7 +256,15 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     need('oocForumName', 'Nom de compte du forum GTA:W');
     need('oocDiscord', 'Nom Discord');
     need('oocTimezone', 'Fuseau horaire');
-    if (profile.experience) need('oocMedicalExperience', 'Expérience médicale réelle ou RP médical passé');
+    if (profile.experience === true || (profile.experience === 'ems' && emsFull)) {
+        need('oocMedicalExperience', 'Expérience médicale réelle ou RP médical passé');
+    }
+    if (profile.ems && !emsFull) {
+        need('oocOtherCharLicenseProof', 'Licence BLS/ALS sur un autre personnage (ou N/A)');
+        need('dfpSanFireLink', 'Preuve de DFP SAN FIRE (ou N/A)');
+        need('dfpPhmcLink', 'Preuve de DFP PHMC (ou N/A)');
+        need('dfpLegalFactionLink', 'Preuve de DFP Legal Faction Management (ou N/A)');
+    }
 
     // Formes valides
     if (filled(data.applicantEmail) && !isValidEmail(data.applicantEmail)) errors.push('E-mail : format invalide (ex. prenomnom@mail.eyefind.fr).');
