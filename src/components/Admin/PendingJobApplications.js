@@ -5,13 +5,13 @@
 // sendMailBestEffort. Contrairement aux demandes de compte (un seul nœud
 // plat), les candidatures vivent sous candidatures/{candidatUid}/{id} (ancien nœud jobApplications fusionné) —
 // ce composant aplatit l'arbre pour les afficher en une seule liste.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Table } from 'react-bootstrap';
 import { database } from '../../firebase';
 import { ref, get } from 'firebase/database';
 import { useData } from '../../contexts/DataContext';
 import { loadAllApplications, saveApplication, removeApplication } from '../../utils/recruitmentStore';
-import { APPLICATION_STATUS, positionsFromSelectOptions } from '../../constants/recruitment';
+import { APPLICATION_STATUS, positionsFromSelectOptions, positionLabelFor } from '../../constants/recruitment';
 import { useDebug } from '../../contexts/DebugContext';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
@@ -49,6 +49,12 @@ const PendingJobApplications = ({ showNotification }) => {
     const { currentEmployee, isAdmin, staffName, civilianProfile } = useEmployeeAuth();
     const { selectOptions } = useData();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    // Poste sous son libellé français (même pour une ancienne candidature qui n'a gardé que la clé anglaise).
+    const labelledApplications = useMemo(() => applications.map((application) => ({
+        ...application,
+        posteCle: application.posteCle ?? application.poste,
+        poste: positionLabelFor(selectOptions, application.versionBBCode, application.posteCle || application.poste),
+    })), [applications, selectOptions]);
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     // Rôle du personnel relié au poste de la candidature (champ `role` du poste), s'il est défini.
@@ -300,8 +306,8 @@ Pillbox Hill Medical Center`,
     };
 
     const visibleApplications = showAll
-        ? applications
-        : applications.filter((app) => ACTIONABLE_STATUSES.includes(app.statut));
+        ? labelledApplications
+        : labelledApplications.filter((app) => ACTIONABLE_STATUSES.includes(app.statut));
 
     if (isLoading) {
         return <div style={{ padding: '20px', textAlign: 'center' }}>Chargement des candidatures...</div>;

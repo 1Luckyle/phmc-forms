@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
-import { normalizeApplicationStatus } from '../constants/recruitment';
+import { normalizeApplicationStatus, positionLabelFor } from '../constants/recruitment';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
 import { database } from '../firebase'; // Assuming this path
 import { ref, get, set } from 'firebase/database';
@@ -1126,7 +1126,9 @@ export const useReportManagement = (
                 candidatUid: civilianProfile.uid,
                 idPatient: civilianProfile.patientID,
                 nomCandidat: applicantName,
-                poste: formData.recruitmentPosition || definition.name,
+                // Libellé français du poste (la clé, souvent anglaise, est gardée à part).
+                poste: positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || definition.name,
+                posteCle: formData.recruitmentPosition || null,
                 versionBBCode: bbCodeVersion,
                 donnees: filterFormData(formData, bbCodeVersion),
                 bbcode: bbCodeContent,

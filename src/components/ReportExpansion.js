@@ -4,7 +4,7 @@
 // patient, Mes candidatures, Gestion du recrutement) : onglets « Aperçu » (le rapport tel qu'il sera publié, images
 // comprises), « BBCode » (le texte brut) et, au besoin, d'autres onglets (historique, détails).
 // Le bouton qui l'ouvre (ExpandToggle) la déplie ET la replie. Tout est converti dans le navigateur (aucun appel serveur).
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // (useState sert à useExpansions)
 import { Button } from 'react-bootstrap';
 import { bbcodeToHtmlDocument, escapeHtml } from '../utils/bbcodeToHtml';
@@ -60,13 +60,31 @@ const buildPreviewDocument = (bbCode, title) => {
     }
 };
 
+// Cadre d'aperçu : le BBCode converti en HTML, comme il s'affichera sur le forum (images comprises). Mis à jour
+// ~0,4 s après la dernière modification (le formulaire change à chaque frappe).
+export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
+    const [settled, setSettled] = useState(bbCode);
+    useEffect(() => {
+        const timer = setTimeout(() => setSettled(bbCode), 400);
+        return () => clearTimeout(timer);
+    }, [bbCode]);
+    const previewDocument = useMemo(() => (settled ? buildPreviewDocument(settled, title) : ''), [settled, title]);
+    return (
+        <div style={{ resize: 'vertical', overflow: 'auto', height: `${height}px`, minHeight: '200px', border: '1px solid #30363d', borderRadius: '4px', backgroundColor: '#fff' }}>
+            <iframe
+                title={`Aperçu - ${title || 'rapport'}`}
+                sandbox=""
+                referrerPolicy="no-referrer"
+                srcDoc={previewDocument}
+                style={{ width: '100%', height: '100%', border: 0 }}
+            />
+        </div>
+    );
+};
+
 // props : tab (onglet affiché), onTabChange, bbCode, title, imageUrl (formulaires « image » comme l'AMA),
 // extraTabs : [{ key, label, content }].
 const ReportExpansion = ({ tab, onTabChange, bbCode, title, imageUrl, extraTabs = [] }) => {
-    const previewDocument = useMemo(
-        () => (tab === 'preview' && bbCode ? buildPreviewDocument(bbCode, title) : ''),
-        [tab, bbCode, title]
-    );
     const tabs = [
         ...(bbCode || imageUrl ? [{ key: 'preview', label: 'Aperçu' }] : []),
         ...(bbCode ? [{ key: 'bbcode', label: 'BBCode' }] : []),
@@ -86,15 +104,7 @@ const ReportExpansion = ({ tab, onTabChange, bbCode, title, imageUrl, extraTabs 
 
             {tab === 'preview' && (
                 bbCode ? (
-                    <div style={{ resize: 'vertical', overflow: 'auto', height: '460px', minHeight: '200px', border: '1px solid #30363d', borderRadius: '4px', backgroundColor: '#fff' }}>
-                        <iframe
-                            title={`Aperçu - ${title || 'rapport'}`}
-                            sandbox=""
-                            referrerPolicy="no-referrer"
-                            srcDoc={previewDocument}
-                            style={{ width: '100%', height: '100%', border: 0 }}
-                        />
-                    </div>
+                    <ReportPreviewFrame bbCode={bbCode} title={title} />
                 ) : imageUrl ? (
                     <div style={{ textAlign: 'center' }}>
                         <img src={imageUrl} alt={title || 'Image'} style={{ maxWidth: '100%', height: 'auto', border: '1px solid #30363d', borderRadius: '4px' }} referrerPolicy="no-referrer" />

@@ -61,6 +61,7 @@ import { signInWithCustomToken } from 'firebase/auth';
 import { getEmployeeDisplayName } from './utils/employeeName';
 import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 import PatientInvoiceNotifier from './components/PatientInvoiceNotifier';
+import { ReportPreviewFrame } from './components/ReportExpansion';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -278,6 +279,7 @@ function MainApp({
     
     const [fillPhoneChecked, setFillPhoneChecked] = useState(false);
     const [showBBCode, setShowBBCode] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
     const [bbCodeVersion, setBbCodeVersion] = useState(() => {
         const storedVersion = localStorage.getItem('bbCodeVersion');
         return storedVersion ? parseInt(storedVersion, 10) : (formDefinitions[0]?.version || 1);
@@ -2253,6 +2255,15 @@ function MainApp({
                                             <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                             {showBBCode ? 'Cacher BBCode' : 'Montrer BBCode'}
                                         </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={() => setShowPreview(prev => !prev)}
+                                            className="control-button"
+                                            title="Afficher le rapport tel qu'il apparaîtra sur le forum, sous les boutons de copie"
+                                        >
+                                            <i className={`fas ${showPreview ? 'fa-eye-slash' : 'fa-image'}`}></i>
+                                            {showPreview ? "Cacher l'aperçu" : 'Aperçu'}
+                                        </Button>
                                         {!(isCivilian && selectedAgencyGroup === 'PHMC Recruitment') && (
                                             <Button
                                                 type="button"
@@ -2361,6 +2372,12 @@ function MainApp({
                                             </>
                                         )}
                                     </div>
+
+                                    {showPreview && (
+                                        <div style={{ margin: '14px auto 0', maxWidth: '980px' }}>
+                                            <ReportPreviewFrame bbCode={getBBCodeContent()} title={generateTitle()} height={520} />
+                                        </div>
+                                    )}
 
                                     {showBBCode && (
                                         <pre className="bbcode-output">

@@ -5,11 +5,13 @@
 // la recharger dans son formulaire, copier le BBCode (forum PHMC, pas encore disponible), télécharger le HTML
 // (forum GTA World), et déplier sous la carte l'aperçu de la candidature (images comprises), son BBCode et son
 // historique de statuts.
-import React from 'react';
+import React, { useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { Button } from 'react-bootstrap';
 import { removeApplication } from '../utils/recruitmentStore';
 import { useDebug } from '../contexts/DebugContext';
+import { useData } from '../contexts/DataContext';
+import { positionLabelFor } from '../constants/recruitment';
 import { copyToClipboard } from './notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ForumHint from './ForumHint';
@@ -59,11 +61,18 @@ const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleStrin
 
 const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
 
-const MyJobApplicationsModal = ({ show, onHide, applications, isLoading, onUpdateStatus, showNotification, onDeleted, onLoad }) => {
+const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onLoad }) => {
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
+    // Le poste s'affiche sous son libellé français, même pour une ancienne candidature qui n'a gardé que la clé.
+    const { selectOptions } = useData();
+    const applications = useMemo(() => (rawApplications || []).map((application) => ({
+        ...application,
+        posteCle: application.posteCle ?? application.poste,
+        poste: positionLabelFor(selectOptions, application.versionBBCode, application.posteCle || application.poste),
+    })), [rawApplications, selectOptions]);
     if (!show) return null;
 
     const handleDelete = async (application) => {

@@ -155,6 +155,7 @@ export const normalizeApplication = (raw, id = null, uid = null) => {
         idPatient: source.idPatient ?? source.patientID ?? '',
         nomCandidat: source.nomCandidat ?? source.applicantName ?? '',
         poste: source.poste ?? source.position ?? '',
+        posteCle: source.posteCle ?? null,   // clé du poste (le champ `poste` porte son libellé depuis la v. française)
         versionBBCode: source.versionBBCode ?? source.bbCodeVersion ?? null,
         donnees: source.donnees ?? source.data ?? {},
         bbcode: source.bbcode ?? source.bbCode ?? '',
@@ -167,6 +168,22 @@ export const normalizeApplication = (raw, id = null, uid = null) => {
             horodatage: entry.horodatage ?? entry.timestamp ?? null,
         })),
     };
+};
+
+// Libellé affiché d'un poste : `value` peut être la CLÉ du poste (souvent anglaise : « Attending Physician ») ou déjà son
+// nom ; on retrouve le poste dans la catégorie du formulaire (ou, à défaut, dans toutes) et on rend son `nom` français.
+export const positionLabelFor = (selectOptions, versionBBCode, value) => {
+    if (!value) return '';
+    const own = CATEGORY_BY_BBCODE_VERSION[versionBBCode];
+    const categories = own ? [own] : RECRUITMENT_CATEGORIES;
+    for (const category of categories) {
+        const positions = getCategoryPositions(selectOptions, category.key);
+        const direct = positions[value];
+        if (direct?.nom) return direct.nom;
+        const byKey = Object.values(positions).find((position) => position.cle === value || position.nom === value);
+        if (byKey?.nom) return byKey.nom;
+    }
+    return value;
 };
 
 // Candidature à écrire en base (champs français uniquement).
