@@ -35,9 +35,16 @@ const createFrame = (html, width) => new Promise((resolve) => {
     Object.assign(frame.style, {
         position: 'fixed', left: '-10000px', top: '0', width: `${width}px`, height: '1200px', border: '0',
     });
-    frame.onload = () => resolve(frame);
+    let settled = false;
+    const finish = () => { if (!settled) { settled = true; resolve(frame); } };
+    // On n'accepte qu'un chargement qui a réellement un contenu (pas le « about:blank » initial).
+    frame.addEventListener('load', () => {
+        const body = frame.contentDocument && frame.contentDocument.body;
+        if (body && body.childNodes.length > 0) finish();
+    });
+    frame.srcdoc = html;            // avant l'insertion : le premier chargement est celui du rapport
     document.body.appendChild(frame);
-    frame.srcdoc = html;
+    setTimeout(finish, 8000);       // filet de sécurité
 });
 
 // Attend que toutes les images du document soient chargées (ou en erreur), sans bloquer plus de IMAGE_TIMEOUT_MS.
@@ -89,10 +96,26 @@ const downloadBlob = (fileName, content, mimeType) => {
 
 export const buildSvgFileName = (title) => buildHtmlFileName(title).replace(/\.html$/i, '.svg');
 
-// Ouvre la fenêtre d'impression sur le rapport en A4 ; l'utilisateur choisit « Enregistrer au format PDF ».
+// Imprime le rapport (et seulement lui) en A4 ; l'utilisateur choisit « Enregistrer au format PDF ».
+// On ouvre une fenêtre dédiée tout de suite, pendant le clic (sinon le navigateur bloque la fenêtre) : elle contient
+// uniquement le rapport, donc l'impression ne reprend jamais la page du site. Si les fenêtres sont bloquées, repli sur un
+// cadre invisible de la page.
 export async function printReportAsPdf({ bbCode, title }) {
-    const baseName = buildHtmlFileName(title).replace(/\.html$/i, '');
+    const baseName = buildHtmlFileName(title).replace(/.html$/i, '');
     const html = bbcodeToHtmlDocument(bbCode, { title: baseName }).replace('</head>', `${PRINT_CSS}</head>`);
+
+    const popup = window.open('', '_blank', 'width=900,height=800');
+    if (popup && popup.document) {
+        popup.document.open();
+        popup.document.write(html);
+        popup.document.close();
+        await waitForImages(popup.document);
+        popup.focus();
+        popup.addEventListener('afterprint', () => popup.close());
+        popup.print();
+        return;
+    }
+
     const frame = await createFrame(html, A4_WIDTH_PX);
     const cleanup = () => { if (frame.parentNode) frame.parentNode.removeChild(frame); };
     try {
@@ -148,7 +171,7 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
     const safeTitle = title || 'Rapport';
     try {
         if (format === 'pdf') {
-            if (showNotification) showNotification("Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF » (format A4).", 'info-circle', 7000);
+            if (showNotification) showNotification("Une fenêtre s'ouvre avec le rapport seul : dans l'impression, choisissez « Enregistrer au format PDF » (format A4).", 'info-circle', 7000);
             await printReportAsPdf({ bbCode, title: safeTitle });
         } else {
             if (showNotification) showNotification('Génération du SVG…', 'info-circle', 3000);

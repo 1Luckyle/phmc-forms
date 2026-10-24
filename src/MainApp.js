@@ -64,7 +64,7 @@ import PatientInvoiceNotifier from './components/PatientInvoiceNotifier';
 import { ReportPreviewFrame } from './components/ReportExpansion';
 import { useSiteConfig } from './contexts/SiteConfigContext';
 import ImmersiveHeader from './components/ImmersiveHeader';
-import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from './utils/reportDocumentExport';
+import { exportReportDocument } from './utils/reportDocumentExport';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -1914,15 +1914,6 @@ function MainApp({
                         </div>
 
                         <div className="button-group">
-                            <Button
-                                type="button"
-                                variant="phmc"
-                                className="changelog-button"
-                                onClick={() => window.open('https://phmcfr.com/', '_blank')}
-                            >
-                                <i className="fas fa-hospital"></i>
-                                PHMC
-                            </Button>
                             <Button
                                 className="changelog-button"
                                 variant='secondary'
