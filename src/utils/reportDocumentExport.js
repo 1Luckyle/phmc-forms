@@ -1,22 +1,19 @@
 // src/utils/reportDocumentExport.js
 //
-// Export d'un rapport en PDF (format A4) ou en SVG (image vectorielle), à partir du même HTML que l'aperçu et le
-// téléchargement HTML. Tout se fait dans le navigateur : aucun appel serveur, donc aucun coût Firebase.
+// Export d'un rapport en PDF (format A4) ou en grande image (PNG), à partir du même HTML que l'aperçu et le téléchargement
+// HTML. Tout se fait dans le navigateur : aucun appel serveur, donc aucun coût Firebase.
 //
-//   • PDF A4 : le rapport est mis en page A4 dans un cadre invisible puis envoyé à l'impression du navigateur ; il
-//     suffit de choisir « Enregistrer au format PDF ». Le texte reste VECTORIEL (net à tout zoom, sélectionnable), les
-//     couleurs de fond sont conservées, les lignes de tableau ne sont pas coupées en deux.
-//   • IMAGE (PNG) : le rapport entier en UNE grande image (haute définition), que n'importe quelle visionneuse ouvre et que
-//     Discord affiche directement : c'est le format à utiliser pour joindre un rapport à un ticket de patient. Elle peut aussi
-//     être copiée dans le presse-papiers puis collée (Ctrl+V) dans Discord.
-//   • SVG : une image vectorielle autonome (le rapport mis en page est embarqué dans un <foreignObject>), zoomable sans
-//     perte dans un navigateur. Les images (imgBB…) sont intégrées au fichier quand le serveur d'images l'autorise
-//     (sinon elles restent des liens). Les logiciels de dessin comme Inkscape / Illustrator n'affichent pas le
-//     <foreignObject> : pour ça, préférer le PDF.
+//   • PDF A4 : le rapport est mis en page A4 dans une fenêtre dédiée puis envoyé à l'impression du navigateur ; il suffit de
+//     choisir « Enregistrer au format PDF ». Le texte reste VECTORIEL (net à tout zoom, sélectionnable), le fond est blanc, les
+//     lignes de tableau ne sont pas coupées en deux et le navigateur n'ajoute plus ni en-tête ni pied de page.
+//   • IMAGE (PNG) : le rapport en grande image haute définition (1 800 px de large), que n'importe quelle visionneuse ouvre et
+//     que Discord affiche directement : c'est le format à joindre à un ticket de patient. Un rapport trop long est DÉCOUPÉ en
+//     plusieurs images (coupées entre deux blocs, jamais au milieu d'une ligne de tableau quand c'est possible). L'image peut
+//     aussi être copiée dans le presse-papiers (rapport tenant sur une seule image) pour un Ctrl+V dans Discord.
 import { bbcodeToHtmlDocument, buildHtmlFileName } from './bbcodeToHtml';
 
 const A4_WIDTH_PX = 794;      // 210 mm à 96 dpi
-const SVG_WIDTH_PX = 900;     // même largeur que le tableau de l'aperçu
+const IMAGE_WIDTH_PX = 900;   // même largeur que le tableau de l'aperçu
 const IMAGE_TIMEOUT_MS = 12000;
 const MAX_INLINE_IMAGE_BYTES = 6 * 1024 * 1024;
 
@@ -148,14 +145,12 @@ const downloadBlob = (fileName, content, mimeType) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-export const buildSvgFileName = (title) => buildHtmlFileName(title).replace(/\.html$/i, '.svg');
-
 // Imprime le rapport (et seulement lui) en A4 ; l'utilisateur choisit « Enregistrer au format PDF ».
 // On ouvre une fenêtre dédiée tout de suite, pendant le clic (sinon le navigateur bloque la fenêtre) : elle contient
 // uniquement le rapport, donc l'impression ne reprend jamais la page du site. Si les fenêtres sont bloquées, repli sur un
 // cadre invisible de la page.
 export async function printReportAsPdf({ bbCode, title }) {
-    const baseName = buildHtmlFileName(title).replace(/.html$/i, '');
+    const baseName = buildHtmlFileName(title).replace(/\.html$/i, '');
     const html = buildPrintHtml(bbCode, baseName);
 
     const popup = window.open('', '_blank', 'width=900,height=800');
@@ -185,11 +180,17 @@ export async function printReportAsPdf({ bbCode, title }) {
     }
 }
 
-// Construit le SVG autonome du rapport (HTML mis en page dans un <foreignObject>, images intégrées).
-// → { svg, width, height }
+// Hauteur maximale d'une image (px CSS) : à l'échelle 2 elle reste sous la limite d'un canvas de navigateur (16 384 px).
+const MAX_PART_HEIGHT = 7000;
+const TARGET_SCALE = 2;      // 1 800 px de large : texte net, même zoomé dans Discord
+
+// Le rapport est mis en page dans un cadre invisible puis enveloppé dans un SVG (HTML dans un <foreignObject>, images
+// intégrées) que le canvas dessine ensuite. Ce SVG n'est PAS proposé en téléchargement : il ne sert que d'intermédiaire.
+// → { svg, width, height, cuts } ; cuts = ordonnées (px) où l'on peut couper sans abîmer le texte (bas des lignes de
+// tableau, des tableaux, des images…).
 async function buildReportSvg({ bbCode, title }) {
     const html = bbcodeToHtmlDocument(bbCode, { title });
-    const frame = await createFrame(html, SVG_WIDTH_PX);
+    const frame = await createFrame(html, IMAGE_WIDTH_PX);
     try {
         const doc = frame.contentDocument;
         await waitForImages(doc);
@@ -197,77 +198,114 @@ async function buildReportSvg({ bbCode, title }) {
         await waitForImages(doc);
 
         const height = Math.ceil(Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight)) + 2;
+        const scrollY = frame.contentWindow.scrollY || 0;
+        const candidates = new Set();
+        doc.querySelectorAll('tr, table, hr, img').forEach((element) => {
+            const bottom = Math.round(element.getBoundingClientRect().bottom + scrollY);
+            if (bottom > 0 && bottom < height) candidates.add(bottom);
+        });
+        const cuts = Array.from(candidates).sort((a, b) => a - b);
+
         const serializer = new XMLSerializer();
         const inner = Array.from(doc.body.childNodes).map((node) => serializer.serializeToString(node)).join('');
         const bodyStyle = doc.body.getAttribute('style') || '';
         const background = doc.body.getAttribute('bgcolor') || '#FDFDFD';
 
         const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_WIDTH_PX}" height="${height}" viewBox="0 0 ${SVG_WIDTH_PX} ${height}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${IMAGE_WIDTH_PX}" height="${height}" viewBox="0 0 ${IMAGE_WIDTH_PX} ${height}">
 <title>${escapeAttribute(title)}</title>
 <rect width="100%" height="100%" fill="${escapeAttribute(background)}"/>
-<foreignObject x="0" y="0" width="${SVG_WIDTH_PX}" height="${height}">
-<div xmlns="http://www.w3.org/1999/xhtml" style="${escapeAttribute(bodyStyle)};width:${SVG_WIDTH_PX}px;box-sizing:border-box;">${inner}</div>
+<foreignObject x="0" y="0" width="${IMAGE_WIDTH_PX}" height="${height}">
+<div xmlns="http://www.w3.org/1999/xhtml" style="${escapeAttribute(bodyStyle)};width:${IMAGE_WIDTH_PX}px;box-sizing:border-box;">${inner}</div>
 </foreignObject>
 </svg>
 `;
-        return { svg, width: SVG_WIDTH_PX, height };
+        return { svg, width: IMAGE_WIDTH_PX, height, cuts };
     } finally {
         if (frame.parentNode) frame.parentNode.removeChild(frame);
     }
 }
 
-// Génère et télécharge le rapport en SVG.
-export async function downloadReportAsSvg({ bbCode, title }) {
-    const { svg } = await buildReportSvg({ bbCode, title });
-    downloadBlob(buildSvgFileName(title), svg, 'image/svg+xml;charset=utf-8');
-}
+// Découpe la hauteur en parties d'au plus MAX_PART_HEIGHT px, en coupant de préférence sur un bord de bloc (dans la moitié
+// basse de la partie) ; à défaut, coupe franche. → [[début, fin], …]
+export const planImageParts = (height, cuts, maxPartHeight = MAX_PART_HEIGHT) => {
+    const parts = [];
+    let start = 0;
+    while (height - start > maxPartHeight) {
+        const limit = start + maxPartHeight;
+        const earliest = start + maxPartHeight / 2;
+        const cut = cuts.filter((value) => value <= limit && value > earliest).pop() || limit;
+        parts.push([start, cut]);
+        start = cut;
+    }
+    parts.push([start, height]);
+    return parts;
+};
 
-// Limite d'un côté de canvas supportée par les navigateurs (Chrome : 16 384 px).
-const MAX_CANVAS_SIDE = 16000;
-const TARGET_SCALE = 2;      // 1 800 px de large : texte net, même zoomé dans Discord
+export const buildPngFileName = (title, index = 1, total = 1) => {
+    const base = buildHtmlFileName(title).replace(/\.html$/i, '');
+    return total > 1 ? `${base} (${index} sur ${total}).png` : `${base}.png`;
+};
 
-export const buildPngFileName = (title) => buildHtmlFileName(title).replace(/\.html$/i, '.png');
-
-// Dessine le rapport sur un canvas (via le SVG ci-dessus) et retourne un Blob PNG.
-async function renderReportPng({ bbCode, title }) {
-    const { svg, width, height } = await buildReportSvg({ bbCode, title });
-    const scale = Math.min(TARGET_SCALE, MAX_CANVAS_SIDE / height);
+// Dessine le rapport sur des canvas et retourne la liste des Blob PNG (une seule image pour un rapport de taille normale).
+async function renderReportPngParts({ bbCode, title }) {
+    const { svg, width, height, cuts } = await buildReportSvg({ bbCode, title });
     const image = new Image();
     await new Promise((resolve, reject) => {
         image.onload = resolve;
         image.onerror = () => reject(new Error("le navigateur n'a pas pu dessiner le rapport"));
         image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     });
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(width * scale);
-    canvas.height = Math.round(height * scale);
-    const context = canvas.getContext('2d');
-    context.fillStyle = '#FFFFFF';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error("l'image est trop grande pour ce navigateur");
-    return blob;
+    const blobs = [];
+    for (const [start, end] of planImageParts(height, cuts)) {
+        const partHeight = end - start;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * TARGET_SCALE);
+        canvas.height = Math.round(partHeight * TARGET_SCALE);
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, start, width, partHeight, 0, 0, canvas.width, canvas.height);
+        // eslint-disable-next-line no-await-in-loop
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error("l'image est trop grande pour ce navigateur");
+        blobs.push(blob);
+    }
+    return blobs;
 }
 
-// Télécharge le rapport en une grande image PNG.
+const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+// Télécharge le rapport en image(s) PNG. Retourne le nombre d'images créées.
 export async function downloadReportAsPng({ bbCode, title }) {
-    const blob = await renderReportPng({ bbCode, title });
-    downloadBlob(buildPngFileName(title), blob, 'image/png');
+    const blobs = await renderReportPngParts({ bbCode, title });
+    for (let index = 0; index < blobs.length; index += 1) {
+        downloadBlob(buildPngFileName(title, index + 1, blobs.length), blobs[index], 'image/png');
+        // Petite pause : le navigateur accepte ainsi plusieurs téléchargements d'affilée.
+        // eslint-disable-next-line no-await-in-loop
+        if (index < blobs.length - 1) await pause(500);
+    }
+    return blobs.length;
 }
 
-// Copie le rapport en image dans le presse-papiers (à coller avec Ctrl+V dans Discord).
+// Copie le rapport en image dans le presse-papiers (à coller avec Ctrl+V dans Discord). Une seule image peut être copiée :
+// un rapport trop long (plusieurs images) doit être téléchargé.
 export async function copyReportAsPng({ bbCode, title }) {
     if (!navigator.clipboard || typeof window.ClipboardItem === 'undefined') {
         throw new Error("ce navigateur ne permet pas de copier une image : utilisez « Télécharger l'image »");
     }
     // La génération (longue) est passée EN PROMESSE à ClipboardItem : l'écriture dans le presse-papiers est demandée pendant
     // le clic, sinon le navigateur la refuserait une fois l'image prête.
-    await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': renderReportPng({ bbCode, title }) })]);
+    const single = renderReportPngParts({ bbCode, title }).then((blobs) => {
+        if (blobs.length > 1) {
+            throw new Error(`ce rapport est trop long pour une seule image (${blobs.length} images) : utilisez « Télécharger l'image »`);
+        }
+        return blobs[0];
+    });
+    await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': single })]);
 }
 
-// Point d'entrée unique des menus : format 'pdf' | 'svg'. Retourne true si l'export a démarré.
+// Point d'entrée unique des menus : format 'pdf' | 'png' | 'png-copy'. Retourne true si l'export a abouti.
 export async function exportReportDocument(format, { bbCode, title, showNotification }) {
     if (!bbCode || !String(bbCode).trim()) {
         if (showNotification) showNotification('Rien à exporter : ce rapport est vide.', 'warning');
@@ -278,19 +316,19 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
         if (format === 'png' || format === 'png-copy') {
             if (showNotification) showNotification("Génération de l'image…", 'info-circle', 4000);
             if (format === 'png') {
-                await downloadReportAsPng({ bbCode, title: safeTitle });
-                if (showNotification) showNotification('Image PNG téléchargée : vous pouvez la joindre telle quelle sur Discord.', 'check-circle');
+                const count = await downloadReportAsPng({ bbCode, title: safeTitle });
+                if (showNotification) {
+                    showNotification(count > 1
+                        ? `Rapport long : ${count} images PNG téléchargées (${Array.from({ length: count }, (_, i) => `${i + 1}/${count}`).join(', ')}), à joindre dans l'ordre sur Discord.`
+                        : 'Image PNG téléchargée : vous pouvez la joindre telle quelle sur Discord.', 'check-circle', count > 1 ? 9000 : undefined);
+                }
             } else {
                 await copyReportAsPng({ bbCode, title: safeTitle });
                 if (showNotification) showNotification('Image copiée : collez-la dans Discord avec Ctrl+V.', 'check-circle');
             }
-        } else if (format === 'pdf') {
+        } else {
             if (showNotification) showNotification("Une fenêtre s'ouvre avec le rapport seul : dans l'impression, choisissez « Enregistrer au format PDF » (format A4).", 'info-circle', 7000);
             await printReportAsPdf({ bbCode, title: safeTitle });
-        } else {
-            if (showNotification) showNotification('Génération du SVG…', 'info-circle', 3000);
-            await downloadReportAsSvg({ bbCode, title: safeTitle });
-            if (showNotification) showNotification('Fichier SVG téléchargé (image vectorielle, zoomable sans perte).', 'check-circle');
         }
         return true;
     } catch (error) {
@@ -299,11 +337,10 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
             if (showNotification) showNotification("Ce navigateur bloque l'export en image (Safari, notamment) : utilisez Chrome, Edge ou Firefox, ou le PDF.", 'error', 8000);
             return false;
         }
-        if (showNotification) showNotification(`Échec de l'export ${format.toUpperCase()} : ${(error.message || '').substring(0, 120)}`, 'error');
+        if (showNotification) showNotification(`Échec de l'export ${format.toUpperCase()} : ${(error.message || '').substring(0, 160)}`, 'error', 8000);
         return false;
     }
 }
 
 export const PDF_EXPORT_LABEL = 'Télécharger le PDF (A4)';
-export const SVG_EXPORT_LABEL = "Télécharger l'image vectorielle (SVG)";
 export const PNG_EXPORT_LABEL = "Télécharger l'image (PNG, pour Discord)";

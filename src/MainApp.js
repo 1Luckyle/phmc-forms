@@ -2305,136 +2305,124 @@ function MainApp({
                                         </div>
                                     )}
                                     
-                                    <div className="modern-copy-controls">
-                                        <Button
-                                            type="button"
-                                            onClick={handleCopyTitle}
-                                            className="copy-button-modern"
-                                        >
-                                            <i className="fas fa-copy"></i>
-                                            Copier le Titre
-                                        </Button>
+                                    <div className="report-actions">
+                                        <div className="report-actions-group">
+                                            <div className="report-actions-label">Copier</div>
+                                            <div className="report-actions-row">
+                                                <Button type="button" onClick={handleCopyTitle} className="copy-button-modern">
+                                                    <i className="fas fa-copy"></i>
+                                                    Copier le Titre
+                                                </Button>
+                                                {bbcodeEnabled && (
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleCopyAndNotifyWrapper}
+                                                        className="copy-button-modern"
+                                                        disabled={isLockdownActive}
+                                                        title={isLockdownActive ? 'BBCode copying is disabled during site lockdown' : ''}
+                                                    >
+                                                        <i className="fas fa-copy"></i>
+                                                        {getCopyButtonText()}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
 
-                                        {bbcodeEnabled && (
-<Button
-                                            type="button"
-                                            onClick={handleCopyAndNotifyWrapper}
-                                            className="copy-button-modern"
-                                            disabled={isLockdownActive}
-                                            title={isLockdownActive ? 'BBCode copying is disabled during site lockdown' : ''}
-                                        >
-                                            <i className="fas fa-copy"></i>
-                                            {getCopyButtonText()}
-                                        </Button>
-)}
-
-                                {/* Export HTML : à coller en texte enrichi sur le forum GTA World (et PHMC). */}
-                                <Button
-                                    type="button"
-                                    onClick={handleDownloadHtml}
-                                    className="copy-button-modern"
-                                    disabled={isLockdownActive || !getBBCodeContent()}
-                                    title={isLockdownActive ? 'Le téléchargement est désactivé pendant le confinement du site' : 'Télécharge le rapport mis en page, à copier-coller sur le forum'}
-                                >
-                                    <i className="fas fa-file-code"></i>
-                                    Télécharger le HTML
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline-light"
-                                    onClick={() => openForumNotice('html', true)}
-                                    aria-label="Comment publier le HTML sur le forum ?"
-                                    title="Comment publier le HTML sur le forum ?"
-                                >
-                                    <i className="fas fa-circle-question"></i>
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleExportDocument('pdf')}
-                                    className="copy-button-modern"
-                                    disabled={isLockdownActive || !getBBCodeContent()}
-                                    title="Imprime le rapport en A4 : choisissez « Enregistrer au format PDF » (texte vectoriel, net à tout zoom)"
-                                >
-                                    <i className="fas fa-file-pdf"></i>
-                                    PDF (A4)
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleExportDocument('svg')}
-                                    className="copy-button-modern"
-                                    disabled={isLockdownActive || !getBBCodeContent()}
-                                    title="Télécharge le rapport en image vectorielle (SVG), zoomable sans perte dans un navigateur"
-                                >
-                                    <i className="fas fa-bezier-curve"></i>
-                                    SVG
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleExportDocument('png')}
-                                    className="copy-button-modern"
-                                    disabled={isLockdownActive || !getBBCodeContent()}
-                                    title="Télécharge le rapport en une grande image PNG, à joindre directement sur Discord"
-                                >
-                                    <i className="fas fa-image"></i>
-                                    Image (PNG)
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleExportDocument('png-copy')}
-                                    className="copy-button-modern"
-                                    disabled={isLockdownActive || !getBBCodeContent()}
-                                    title="Copie le rapport en image : collez-la ensuite dans Discord avec Ctrl+V"
-                                >
-                                    <i className="fas fa-clipboard"></i>
-                                    Copier l'image
-                                </Button>
-
-                                        {selectedAgencyGroup !== 'PHMC Recruitment' && (
-                                            <Button
-                                                type="button"
-                                                onClick={handleSaveReportWrapper}
-                                                className="copy-button-modern"
-                                                disabled={isLockdownActive}
-                                                title={isLockdownActive ? 'La sauvegarde des rapports est désactivée pendant le confinement du site' : ''}
-                                            >
-                                                <i className="fas fa-save"></i>
-                                                {isCivilian ? 'Sauvegarder le dossier' : 'Sauvegarder le rapport'}
-                                            </Button>
-                                        )}
-
-                                        {/* Pipeline de candidatures (Lot 6) : un Civil sur un formulaire de
-                                            candidature a le choix entre garder un brouillon et candidater
-                                            réellement (accusé de réception + notification admin). */}
-                                        {selectedAgencyGroup === 'PHMC Recruitment' && isCivilian && (
-                                            <>
+                                        <div className="report-actions-group">
+                                            <div className="report-actions-label">
+                                                Exporter
+                                                <button
+                                                    type="button"
+                                                    className="report-actions-help"
+                                                    onClick={() => openForumNotice('html', true)}
+                                                    aria-label="Comment publier le HTML sur le forum ?"
+                                                    title="Comment publier le HTML sur le forum ?"
+                                                >
+                                                    <i className="fas fa-circle-question"></i>
+                                                </button>
+                                            </div>
+                                            <div className="report-actions-row">
+                                                {/* Export HTML : à coller en texte enrichi sur le forum GTA World. */}
                                                 <Button
                                                     type="button"
-                                                    onClick={() => saveJobApplication('save')}
+                                                    onClick={handleDownloadHtml}
                                                     className="copy-button-modern"
-                                                    disabled={isLockdownActive}
+                                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                                    title={isLockdownActive ? 'Le téléchargement est désactivé pendant le confinement du site' : 'Télécharge le rapport mis en page, à copier-coller sur le forum'}
                                                 >
-                                                    <i className="fas fa-save"></i>
-                                                    Enregistrer
+                                                    <i className="fas fa-file-code"></i>
+                                                    Télécharger le HTML
                                                 </Button>
                                                 <Button
                                                     type="button"
-                                                    onClick={() => saveJobApplication('submit')}
+                                                    onClick={() => handleExportDocument('pdf')}
                                                     className="copy-button-modern"
-                                                    disabled={isLockdownActive}
+                                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                                    title="Imprime le rapport en A4 : choisissez « Enregistrer au format PDF » (texte vectoriel, net à tout zoom)"
                                                 >
-                                                    <i className="fas fa-paper-plane"></i>
-                                                    Enregistrer et Candidater
+                                                    <i className="fas fa-file-pdf"></i>
+                                                    PDF (A4)
                                                 </Button>
                                                 <Button
                                                     type="button"
-                                                    onClick={() => { loadMyJobApplications(); setShowMyJobApplications(true); }}
+                                                    onClick={() => handleExportDocument('png')}
                                                     className="copy-button-modern"
+                                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                                    title="Télécharge le rapport en grande image PNG (plusieurs images s'il est très long), à joindre directement sur Discord"
                                                 >
-                                                    <i className="fas fa-list-check"></i>
-                                                    Mes candidatures
+                                                    <i className="fas fa-image"></i>
+                                                    Image (PNG)
                                                 </Button>
-                                            </>
-                                        )}
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => handleExportDocument('png-copy')}
+                                                    className="copy-button-modern"
+                                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                                    title="Copie le rapport en image : collez-la ensuite dans Discord avec Ctrl+V"
+                                                >
+                                                    <i className="fas fa-clipboard"></i>
+                                                    Copier l'image
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className="report-actions-group">
+                                            <div className="report-actions-label">Enregistrer</div>
+                                            <div className="report-actions-row">
+                                                {selectedAgencyGroup !== 'PHMC Recruitment' && (
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleSaveReportWrapper}
+                                                        className="copy-button-modern"
+                                                        disabled={isLockdownActive}
+                                                        title={isLockdownActive ? 'La sauvegarde des rapports est désactivée pendant le confinement du site' : ''}
+                                                    >
+                                                        <i className="fas fa-save"></i>
+                                                        {isCivilian ? 'Sauvegarder le dossier' : 'Sauvegarder le rapport'}
+                                                    </Button>
+                                                )}
+
+                                                {/* Pipeline de candidatures (Lot 6) : un Civil sur un formulaire de
+                                                    candidature a le choix entre garder un brouillon et candidater
+                                                    réellement (accusé de réception + notification admin). */}
+                                                {selectedAgencyGroup === 'PHMC Recruitment' && isCivilian && (
+                                                    <>
+                                                        <Button type="button" onClick={() => saveJobApplication('save')} className="copy-button-modern" disabled={isLockdownActive}>
+                                                            <i className="fas fa-save"></i>
+                                                            Enregistrer
+                                                        </Button>
+                                                        <Button type="button" onClick={() => saveJobApplication('submit')} className="copy-button-modern" disabled={isLockdownActive}>
+                                                            <i className="fas fa-paper-plane"></i>
+                                                            Enregistrer et Candidater
+                                                        </Button>
+                                                        <Button type="button" onClick={() => { loadMyJobApplications(); setShowMyJobApplications(true); }} className="copy-button-modern">
+                                                            <i className="fas fa-list-check"></i>
+                                                            Mes candidatures
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {showPreview && (

@@ -18,7 +18,7 @@ import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -224,9 +224,6 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                     </Button>
                                     <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={PDF_EXPORT_LABEL} onClick={() => handleExportDocument('pdf', application)}>
                                         <i className="fas fa-file-pdf me-1"></i>PDF (A4)
-                                    </Button>
-                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={SVG_EXPORT_LABEL} onClick={() => handleExportDocument('svg', application)}>
-                                        <i className="fas fa-bezier-curve me-1"></i>SVG
                                     </Button>
                                     <Button size="sm" variant="outline-info" disabled={!application.bbcode} title="Grande image PNG, à joindre sur Discord" onClick={() => handleExportDocument('png', application)}>
                                         <i className="fas fa-image me-1"></i>Image (PNG)

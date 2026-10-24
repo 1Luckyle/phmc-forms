@@ -23,7 +23,7 @@ import { copyToClipboard } from '../notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 import { getFormDefinition } from '../../formDefinitions';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
-import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../../utils/reportDocumentExport';
+import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 
 const sendMailBestEffort = (params) => {
     sendEyefindMail(params).then((result) => {
@@ -384,9 +384,6 @@ Pillbox Hill Medical Center`,
                                             </Button>
                                             <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={PDF_EXPORT_LABEL} onClick={() => handleExportDocument('pdf', application)}>
                                                 <i className="fas fa-file-pdf"></i> PDF
-                                            </Button>
-                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={SVG_EXPORT_LABEL} onClick={() => handleExportDocument('svg', application)}>
-                                                <i className="fas fa-bezier-curve"></i> SVG
                                             </Button>
                                             <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title="Grande image PNG, à joindre sur Discord" onClick={() => handleExportDocument('png', application)}>
                                                 <i className="fas fa-image"></i> Image

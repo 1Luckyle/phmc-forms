@@ -15,7 +15,7 @@ import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const modalStyle = {
     position: 'fixed',
@@ -708,7 +708,6 @@ const SavedReportsModal = ({
                             Télécharger le HTML<ForumHint kind="html" />
                         </Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('pdf', report)} disabled={!report.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
-                        <Dropdown.Item onClick={() => handleExportDocument('svg', report)} disabled={!report.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('png', report)} disabled={!report.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('png-copy', report)} disabled={!report.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
@@ -1010,7 +1009,6 @@ const SavedReportsModal = ({
                                     Télécharger le HTML sélectionné<ForumHint kind="html" />
                                 </Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('pdf')}>Télécharger le PDF (A4) sélectionné</Dropdown.Item>
-                                <Dropdown.Item onClick={() => handleExportSelectedDocument('svg')}>Télécharger le SVG sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('png')}>Télécharger l'image (PNG) sélectionnée</Dropdown.Item>
                                 <Dropdown.Item onClick={handleCopySelectedTitles}>Copier les titres sélectionnés</Dropdown.Item>
                             </Dropdown.Menu>

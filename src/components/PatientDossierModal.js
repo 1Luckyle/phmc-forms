@@ -37,7 +37,7 @@ import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -338,7 +338,6 @@ const PatientDossierModal = ({
                             Télécharger le HTML<ForumHint kind="html" />
                         </Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('pdf', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
-                        <Dropdown.Item onClick={() => exportDocument('svg', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('png', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('png-copy', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
@@ -585,7 +584,6 @@ const PatientDossierModal = ({
                                     Télécharger le HTML sélectionné<ForumHint kind="html" />
                                 </Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('pdf')}>Télécharger le PDF (A4) sélectionné</Dropdown.Item>
-                                <Dropdown.Item onClick={() => handleExportSelectedDocument('svg')}>Télécharger le SVG sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('png')}>Télécharger l'image (PNG) sélectionnée</Dropdown.Item>
                                 <Dropdown.Item onClick={() => copyText(
                                     selectedFamilies.map((f) => reportTitleOf(f.root)).filter(Boolean).join('\n'),
