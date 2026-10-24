@@ -229,7 +229,7 @@ const ImmersiveHeader = () => {
 
             <div className="immersive-weather">
                 {zones ? zones.map((entry) => (
-                    <div key={entry.zone.key} className="immersive-zone" title={`${entry.zone.real} (Californie) : prévision à +${GAME_WEATHER_SHIFT_HOURS} h, comme le jeu`}>
+                    <div key={entry.zone.key} className="immersive-zone" title={`${entry.zone.real} (Californie)`}>
                         <div className="immersive-zone-name">{entry.zone.label}</div>
                         {entry.now ? (
                             <>

@@ -16,7 +16,7 @@ const ViewAsBanner = () => {
     // Quitter la simulation ramène directement à la section Debug du panneau admin, pour enchaîner sur un autre rôle.
     const quit = () => {
         setViewAs(null);
-        navigate('/admin', { state: { section: 'debug' } });
+        navigate('/admin', { state: { section: 'debug', debugTab: 'viewas' } });
     };
 
     return (

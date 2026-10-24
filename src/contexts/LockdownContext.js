@@ -63,7 +63,7 @@ export const LockdownProvider = ({ children }) => {
 
             // Show dialog if lockdown is enabled and affects this deployment
             const isAffected = normalizedData.enabled && (
-                normalizedData.affectedDeployments.includes('all') ||
+                normalizedData.affectedDeployments.includes('all') || normalizedData.affectedDeployments.includes('tous') ||
                 normalizedData.affectedDeployments.includes(currentDeployment)
             );
 
@@ -79,7 +79,7 @@ export const LockdownProvider = ({ children }) => {
     };
 
     const isLockdownActive = Boolean(lockdownConfig.enabled) && Array.isArray(lockdownConfig.affectedDeployments) && (
-        lockdownConfig.affectedDeployments.includes('all') ||
+        lockdownConfig.affectedDeployments.includes('all') || lockdownConfig.affectedDeployments.includes('tous') ||
         lockdownConfig.affectedDeployments.includes(currentDeployment)
     );
 

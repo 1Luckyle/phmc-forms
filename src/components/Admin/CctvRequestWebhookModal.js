@@ -50,7 +50,7 @@ const footerStyle = {
 };
 const sectionStyle = { border: '1px solid #30363d', borderRadius: '8px', padding: '14px 16px', marginBottom: '14px', backgroundColor: '#161b22' };
 const sectionTitleStyle = { fontSize: '0.78rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#58a6ff', marginBottom: '10px', fontWeight: 700 };
-const rowStyle = { display: 'flex', gap: '12px', flexWrap: 'wrap' };
+const rowStyle = { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' };
 const fieldStyle = { flex: '1 1 220px', minWidth: '200px' };
 const closeButtonStyle = { background: 'none', border: 'none', color: '#c9d1d9', fontSize: '1.6rem', lineHeight: 1, cursor: 'pointer' };
 
@@ -217,7 +217,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                                         <Form.Control type="text" value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="Matricule, Prénom & Nom" isInvalid={invalid(!officer.trim())} />
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
-                                        <Form.Label>Numéro de téléphone de l'agent{required}</Form.Label>
+                                        <Form.Label>Téléphone de l'agent{required}</Form.Label>
                                         <Form.Control type="text" value={officerPH} onChange={(e) => setOfficerPH(e.target.value)} placeholder="ex. 555-0100" isInvalid={invalid(!officerPH.trim())} />
                                     </Form.Group>
                                 </div>

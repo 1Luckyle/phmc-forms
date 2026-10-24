@@ -1,18 +1,80 @@
-import React, { useState } from 'react';
+// src/components/Admin/AdminDashboard.js
+//
+// Panneau d'administration. Le menu de gauche regroupe les sections par thème (À traiter, Personnes & accès, Site, Outils,
+// Développement) avec une recherche et des pastilles pour ce qui attend une action ; la page « Vue d'ensemble » résume l'état du
+// site. Les clés de section (« debug », « users »…) sont stables : d'autres écrans y renvoient (voir adminNavigation.js).
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './AdminDashboard.css';
+import '../DarkUi.css';
 import DatabaseEditor from './DatabaseEditor';
 import WebhookLogs from './WebhookLogs';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
 import { useDebug } from '../../contexts/DebugContext';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import UsersHub from './users/UsersHub';
 import DebugWhitelist from './DebugWhitelist';
 import DebugSeasonTester from './DebugSeasonTester';
 import DebugViewAs from './DebugViewAs';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 import BbcodeAccessSwitch from './BbcodeAccessSwitch';
+import AdminOverview from './AdminOverview';
+import useAdminCounts from './useAdminCounts';
+import { ADMIN_SECTION_GROUPS, ALL_ADMIN_SECTIONS, findAdminSection, filterAdminSections } from './adminNavigation';
+
+const LAST_SECTION_KEY = 'adminLastSection';
+
+// Déploiements du site qu'un confinement peut viser (« all » = tous). « tous » et « phmc-tools » sont d'anciennes valeurs.
+const LOCKDOWN_DEPLOYMENTS = [
+    { value: 'all', label: 'Tous les déploiements', hint: 'Le site en ligne comme les tests en local' },
+    { value: 'github-pages', label: 'Site en ligne', hint: 'Version publiée (GitHub Pages)' },
+    { value: 'local', label: 'Développement local', hint: 'Les tests sur un ordinateur' },
+];
+
+const DEBUG_TABS = [
+    { key: 'autofill', label: 'Remplissage de test', icon: 'fa-wand-magic-sparkles' },
+    { key: 'applications', label: 'Suppression de candidatures', icon: 'fa-trash-can' },
+    { key: 'season', label: 'Effets de saison', icon: 'fa-snowflake' },
+    { key: 'viewas', label: 'Visualiser en tant que', icon: 'fa-eye' },
+];
+
+const isKnownSection = (key) => ALL_ADMIN_SECTIONS.some((section) => section.key === key);
+
+const readLastSection = () => {
+    try {
+        const stored = sessionStorage.getItem(LAST_SECTION_KEY);
+        return isKnownSection(stored) ? stored : null;
+    } catch (error) { return null; }
+};
+
+// Cadre d'une page de section : icône, titre, description et zone d'actions éventuelle.
+const SectionCard = ({ icon, title, description, actions, children }) => (
+    <div className="adm-card">
+        <div className="adm-card-head">
+            <div>
+                <h4><i className={`fas ${icon}`}></i> {title}</h4>
+                {description && <p>{description}</p>}
+            </div>
+            {actions && <div className="adm-card-actions">{actions}</div>}
+        </div>
+        <div className="adm-card-body">{children}</div>
+    </div>
+);
+
+// Interrupteur avec son texte d'état.
+const SwitchRow = ({ id, checked, disabled, onChange, label, state, stateTone = 'ok', busy }) => (
+    <div className="adm-switch-row">
+        <div className="form-check form-switch">
+            <input className="form-check-input" type="checkbox" role="switch" id={id} checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+            <label className="form-check-label" htmlFor={id}>
+                {label}{busy && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
+            </label>
+        </div>
+        {state && <span className={`adm-chip adm-chip-${stateTone}`}>{state}</span>}
+    </div>
+);
 
 const AdminDashboard = ({
     currentUser,
@@ -70,15 +132,49 @@ const AdminDashboard = ({
     handleSendCustomWebhook,
     logRefreshTrigger
 }) => {
-
-    // La section peut être imposée par la navigation (ex. retour de « Visualiser en tant que » → Debug).
     const location = useLocation();
-    const [selectedSection, setSelectedSection] = useState(location.state?.section || 'serviceStatus');
-    const imgbbQueueCount = useImgbbQueueCount();
-    const [testWebhookData, setTestWebhookData] = useState({ title: '', message: '', selectedWebhook: null });
-    // Gestion du personnel/des civils, déplacée ici depuis la Boîte à Outils
-    // (auparavant sur la page principale) — voir la section 'users' plus bas.
     const navigate = useNavigate();
+
+    // Section ouverte : imposée par la navigation (ex. retour de « Visualiser en tant que »), sinon la dernière visitée, sinon la vue d'ensemble.
+    const [selectedSection, setSelectedSection] = useState(
+        (isKnownSection(location.state?.section) && location.state.section) || readLastSection() || 'overview'
+    );
+    const [debugTab, setDebugTab] = useState(location.state?.debugTab || 'autofill');
+    const [query, setQuery] = useState('');
+    const searchRef = useRef(null);
+    const [testWebhookData, setTestWebhookData] = useState({ title: '', message: '', selectedWebhook: null });
+
+    const imageCount = useImgbbQueueCount();
+    const counts = useAdminCounts();
+    const { bbcodeEnabled } = useSiteConfig();
+    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount };
+
+    const { debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled } = useDebug();
+    const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
+    const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
+
+    const current = findAdminSection(selectedSection);
+    const searchResults = useMemo(() => filterAdminSections(query), [query]);
+
+    const openSection = (key) => {
+        setSelectedSection(key);
+        try { sessionStorage.setItem(LAST_SECTION_KEY, key); } catch (error) { /* stockage indisponible */ }
+        setQuery('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Raccourci clavier : « / » place le curseur dans la recherche du menu.
+    useEffect(() => {
+        const onKeyDown = (event) => {
+            const tag = (event.target && event.target.tagName) || '';
+            if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) {
+                event.preventDefault();
+                if (searchRef.current) searchRef.current.focus();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
 
     const handleTestWebhook = async (webhook) => {
         if (!testWebhookData.title || !testWebhookData.message) {
@@ -114,9 +210,6 @@ const AdminDashboard = ({
         }
     };
 
-    // Mode debug : bouton "Remplir (debug)" sur tous les formulaires (voir DebugContext).
-    const { debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled } = useDebug();
-    const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
     const handleToggleDeleteApplications = async (enabled) => {
         setIsUpdatingDeleteDebug(true);
         try {
@@ -131,7 +224,7 @@ const AdminDashboard = ({
             setIsUpdatingDeleteDebug(false);
         }
     };
-    const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
+
     const handleToggleDebugAutofill = async (enabled) => {
         setIsUpdatingDebug(true);
         try {
@@ -148,627 +241,538 @@ const AdminDashboard = ({
         }
     };
 
-    return (
-        <div className="admin-dashboard-container">
-            <div className="admin-dashboard-layout">
-                <div className="sidebar">
-                    <div className="sidebar-header">
-                        <h5>Admin Panel</h5>
-                        <p>Connecté en tant que : {currentUser.email}</p>
-                    </div>
-                    <div className="nav-pills-flex-column">
-                        <button className={`nav-link ${selectedSection === 'serviceStatus' ? 'active' : ''}`} onClick={() => setSelectedSection('serviceStatus')}><i className="fas fa-server me-2"></i>Statut du service</button>
-                        <button className={`nav-link ${selectedSection === 'lockdown' ? 'active' : ''}`} onClick={() => setSelectedSection('lockdown')}><i className="fas fa-lock me-2"></i>Confinement</button>
-                        <button className={`nav-link ${selectedSection === 'display' ? 'active' : ''}`} onClick={() => setSelectedSection('display')}><i className="fas fa-sliders-h me-2"></i>Affichage</button>
-                        <button className={`nav-link ${selectedSection === 'debug' ? 'active' : ''}`} onClick={() => setSelectedSection('debug')}><i className="fas fa-bug me-2"></i>Debug</button>
-                        <button className={`nav-link ${selectedSection === 'authMethods' ? 'active' : ''}`} onClick={() => setSelectedSection('authMethods')}><i className="fas fa-key me-2"></i>Méthodes de connexion</button>
-                        <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
-                        <button className={`nav-link ${selectedSection === 'pendingModifications' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingModifications')}><i className="fas fa-edit me-2"></i>Demandes de modification</button>
-                        <button className={`nav-link ${selectedSection === 'bingo' ? 'active' : ''}`} onClick={() => setSelectedSection('bingo')}><i className="fas fa-dice me-2"></i>Bingo</button>
-                        <button className={`nav-link ${selectedSection === 'users' ? 'active' : ''}`} onClick={() => setSelectedSection('users')}><i className="fas fa-users-cog me-2"></i>Utilisateurs</button>
-                        <button className={`nav-link ${selectedSection === 'imageCleanup' ? 'active' : ''}`} onClick={() => setSelectedSection('imageCleanup')}><i className="fas fa-images me-2"></i>Images à supprimer{imgbbQueueCount > 0 && <span className="badge bg-warning text-dark ms-2">{imgbbQueueCount}</span>}</button>
-                        <button className={`nav-link ${selectedSection === 'webhooks' ? 'active' : ''}`} onClick={() => setSelectedSection('webhooks')}><i className="fas fa-bullhorn me-2"></i>Webhooks</button>
-                        <button className={`nav-link ${selectedSection === 'dev' ? 'active' : ''}`} onClick={() => setSelectedSection('dev')}><i className="fas fa-code me-2"></i>Développeur</button>
-                        <button className={`nav-link ${selectedSection === 'database' ? 'active' : ''}`} onClick={() => setSelectedSection('database')}><i className="fas fa-database me-2"></i>Base de données</button>
-                    </div>
-                    <div className="sidebar-footer">
-                        {desktopNotificationPermission === 'default' && (
-                            <Button variant="outline-info" size="sm" onClick={handleEnableDesktopNotifications} className="w-100 mb-2" title="Click to allow desktop notifications for status updates">
-                                <i className="fas fa-bell"></i> Activer les notifications
-                            </Button>
-                        )}
-                        <Button variant="warning" onClick={handleLogout} className="w-100">Déconnexion</Button>
-                                    <Button type="button" variant="secondary" className="changelog-button" onClick={() => navigate('/')} title="Aller à l'accueil" > <i className="fas fa-home"></i>Accueil</Button>
-                    </div>
-                </div>
-                <div className="main-content">
-                    {selectedSection === 'serviceStatus' && (
-                        <div className="card">
-                            <div className="card-header">Statut du service</div>
-                            <div className="card-body">
-                                {isLoadingStatus ? (
-                                    <Spinner animation="border" size="sm" />
-                                ) : (
-                                    <>
-                                        <div className="form-group mb-3">
-                                            <label>Statut du générateur de formulaires</label>
-                                            <input
-                                                type="text"
-                                                value={formGeneratorStatus}
-                                                onChange={(e) => setFormGeneratorStatus(e.target.value)}
-                                                placeholder="ex. Entièrement mis à jour"
-                                                className="form-control"
-                                            />
-                                        </div>
-                                        <div className="form-group mb-3">
-                                            <label>Statut alternatif du générateur de formulaires</label>
-                                            <input
-                                                type="text"
-                                                value={alternativeFormGeneratorStatus}
-                                                onChange={(e) => setAlternativeFormGeneratorStatus(e.target.value)}
-                                                placeholder="ex. Mises à jour différées"
-                                                className="form-control"
-                                            />
-                                        </div>
-                                        <div className="form-group mb-3">
-                                            <label>Statut localhost/staging</label>
-                                            <input
-                                                type="text"
-                                                value={localHostStatus}
-                                                onChange={(e) => setLocalHostStatus(e.target.value)}
-                                                placeholder="ex. En développement"
-                                                className="form-control"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-                                <Button variant="primary" onClick={handleUpdateServiceStatus} disabled={isUpdatingDb || isLoadingStatus}>
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mettre à jour le statut du service"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'pendingAccounts' && (
-                        <div className="card">
-                            <div className="card-header">Demandes de compte en attente</div>
-                            <div className="card-body">
-                                <PendingAccountRequests showNotification={showInAppNotification} currentUser={currentUser} />
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'pendingModifications' && (
-                        <div className="card">
-                            <div className="card-header">Demandes de modification en attente</div>
-                            <div className="card-body">
-                                <PendingModificationRequests showNotification={showInAppNotification} currentUser={currentUser} />
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'lockdown' && (
-                        <div className="card">
-                            <div className="card-header">Verrouillage du site</div>
-                            <div className="card-body">
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        role="switch"
-                                        id="lockdownSwitch"
-                                        checked={lockdownConfig.enabled}
-                                        onChange={(e) => setLockdownConfig(prev => ({ ...prev, enabled: e.target.checked }))}
-                                    />
-                                    <label className="form-check-label" htmlFor="lockdownSwitch">
-                                        Activer le verrouillage du site
-                                    </label>
-                                </div>
-                                <div className="form-group mb-3">
-                                    <label>Message de notification</label>
-                                    <input
-                                        type="text"
-                                        value={lockdownConfig.notification}
-                                        onChange={(e) => setLockdownConfig(prev => ({ ...prev, notification: e.target.value }))}
-                                        placeholder="ex. Le site est actuellement en maintenance."
-                                        className="form-control"
-                                    />
-                                </div>
-                                <div className="form-group mb-3">
-                                    <label>Texte de la boîte de dialogue popup</label>
-                                    <textarea
-                                        value={lockdownConfig.dialog}
-                                        onChange={(e) => setLockdownConfig(prev => ({ ...prev, dialog: e.target.value }))}
-                                        placeholder="ex. Le générateur de BBCode est temporairement désactivé."
-                                        className="form-control"
-                                        rows="3"
-                                    ></textarea>
-                                </div>
-                                <div className="form-group mb-3">
-                                    <label>Déploiements affectés</label>
-                                    <div>
-                                        {['tous', 'phmc-tools', 'github-pages', 'local'].map((deployment) => (
-                                            <div className="form-check form-check-inline" key={deployment}>
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    id={`deployment-${deployment}`}
-                                                    value={deployment}
-                                                    checked={lockdownConfig.affectedDeployments.includes(deployment)}
-                                                    onChange={(e) => {
-                                                        const { value, checked } = e.target;
-                                                        setLockdownConfig((prev) => {
-                                                            let newDeployments;
-                                                            if (checked) {
-                                                                newDeployments = [...prev.affectedDeployments, value];
-                                                            } else {
-                                                                newDeployments = prev.affectedDeployments.filter((d) => d !== value);
-                                                            }
-                                                            return { ...prev, affectedDeployments: newDeployments };
-                                                        });
-                                                    }}
-                                                />
-                                                <label className="form-check-label" htmlFor={`deployment-${deployment}`}>
-                                                    {deployment.charAt(0).toUpperCase() + deployment.slice(1)}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <Button variant="primary" onClick={handleUpdateLockdownStatus} disabled={isUpdatingDb}>
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mise à jour sur l'état du confinement"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'display' && (
-                        <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
-                    )}
-                    {selectedSection === 'debug' && (
-                        <div className="card">
-                            <div className="card-header">Mode debug</div>
-                            <div className="card-body">
-                                <p className="text-muted">
-                                    <strong>Remplissage automatique des formulaires.</strong> Quand il est activé, <strong>les personnes de la liste blanche</strong> ci-dessous
-                                    voient un bouton « Remplir (debug) » sur chaque formulaire (rapports, emails, candidatures,
-                                    dossiers civils) et sur les modales (création de compte, demandes, etc.). Il remplit le
-                                    formulaire avec des données de test sans rien envoyer ni sauvegarder. Les autres utilisateurs
-                                    ne voient jamais le bouton : on peut donc l'utiliser directement en production.
-                                </p>
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        role="switch"
-                                        id="debugAutofillSwitch"
-                                        checked={debugAutofillEnabled}
-                                        disabled={isUpdatingDebug}
-                                        onChange={(e) => handleToggleDebugAutofill(e.target.checked)}
-                                    />
-                                    <label className="form-check-label" htmlFor="debugAutofillSwitch">
-                                        Activer le bouton « Remplir (debug) » pour la liste blanche
-                                        {isUpdatingDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
-                                    </label>
-                                </div>
-                                <p className={`mb-3 ${debugAutofillEnabled ? 'text-warning' : 'text-muted'}`}>
-                                    <i className={`fas ${debugAutofillEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
-                                    État actuel : {debugAutofillEnabled ? 'ACTIVÉ (pour la liste blanche uniquement)' : 'désactivé'}
-                                </p>
-                                <DebugWhitelist currentUser={currentUser} showInAppNotification={showInAppNotification} />
-                                <hr />
-                                <p className="text-muted">
-                                    <strong>Suppression des candidatures.</strong> Quand cet interrupteur est activé, un bouton « Supprimer »
-                                    apparaît dans l'historique des candidatures : chaque candidat peut supprimer les siennes (« Mes candidatures »),
-                                    et les admins/recruteurs celles de la liste de gestion. Utile pour nettoyer les candidatures de test ; à
-                                    désactiver ensuite (la suppression est définitive).
-                                </p>
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        role="switch"
-                                        id="debugDeleteApplicationsSwitch"
-                                        checked={debugDeleteApplicationsEnabled}
-                                        disabled={isUpdatingDeleteDebug}
-                                        onChange={(e) => handleToggleDeleteApplications(e.target.checked)}
-                                    />
-                                    <label className="form-check-label" htmlFor="debugDeleteApplicationsSwitch">
-                                        Autoriser la suppression des candidatures
-                                        {isUpdatingDeleteDebug && <Spinner as="span" animation="border" size="sm" className="ms-2" />}
-                                    </label>
-                                </div>
-                                <p className={`mb-0 ${debugDeleteApplicationsEnabled ? 'text-warning' : 'text-muted'}`}>
-                                    <i className={`fas ${debugDeleteApplicationsEnabled ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-1`}></i>
-                                    État actuel : {debugDeleteApplicationsEnabled ? 'ACTIVÉ' : 'désactivé'}
-                                </p>
-                                <hr />
-                                <DebugSeasonTester showInAppNotification={showInAppNotification} />
-                                <hr />
-                                <DebugViewAs showInAppNotification={showInAppNotification} />
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'authMethods' && (
-                        <div className="card">
-                            <div className="card-header">Méthodes de connexion</div>
-                            <div className="card-body">
-                                <p className="text-muted">
-                                    Par défaut, seule la connexion/création de compte via GTA World est proposée aux employés
-                                    (modal de connexion et onboarding). La connexion au panneau admin (/login) garde toujours
-                                    les deux méthodes, quel que soit ce réglage.
-                                </p>
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        role="switch"
-                                        id="authMethodsSwitch"
-                                        checked={!authConfig.gtawOnly}
-                                        onChange={(e) => setAuthConfig(prev => ({ ...prev, gtawOnly: !e.target.checked }))}
-                                    />
-                                    <label className="form-check-label" htmlFor="authMethodsSwitch">
-                                        Autoriser aussi la connexion/création de compte par email et mot de passe
-                                    </label>
-                                </div>
-                                <Button variant="primary" onClick={handleUpdateAuthConfig} disabled={isUpdatingDb}>
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : "Mettre à jour les méthodes de connexion"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'bingo' && (
-                        <div className="card">
-                            <div className="card-header">Gestion du Bingo</div>
-                            <div className="card-body">
-                                <div className="form-group mb-3">
-                                    <label>Sélectionnez le type de Bingo :</label>
-                                    <select
-                                        value={selectedAdminBingoType}
-                                        onChange={(e) => setSelectedAdminBingoType(e.target.value)}
-                                        disabled={isUpdatingDb}
-                                        className="form-select"
-                                    >
-                                        {BINGO_TYPES.map(type => (
-                                            <option key={type.id} value={type.id}>{type.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <p className="text-info small mt-1">
-                                    La réinitialisation quotidienne s'exécute désormais automatiquement sur le serveur à 09:00 UTC.
-                                </p>
-                                <Button
-                                    variant="secondary"
-                                    onClick={handleManualResetAllBingoCards}
-                                    disabled={isUpdatingDb}
-                                    className="mt-2 me-2"
-                                    title="Exécuter manuellement la réinitialisation quotidienne pour toutes les cartes de bingo actives."
-                                >
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-bomb"></i> Réinitialiser toutes les cartes</>}
-                                </Button>
+    // Confinement : les valeurs d'avant (« tous », « phmc-tools ») sont remplacées par « all » ; seul « all », « github-pages » et « local » existent.
+    const lockdownDeployments = (lockdownConfig.affectedDeployments || []).map((value) => (value === 'tous' ? 'all' : value));
+    const toggleDeployment = (value, checked) => {
+        setLockdownConfig((previous) => {
+            const base = (previous.affectedDeployments || []).map((entry) => (entry === 'tous' ? 'all' : entry)).filter((entry) => entry !== 'phmc-tools');
+            const next = checked ? [...new Set([...base, value])] : base.filter((entry) => entry !== value);
+            return { ...previous, affectedDeployments: next };
+        });
+    };
 
-                                <Button
-                                    variant="primary"
-                                    onClick={handleGenerateNewBingoCard}
-                                    disabled={isUpdatingDb}
-                                    className="mt-2 me-2"
-                                >
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-sync-alt"></i> Générer une nouvelle carte</>}
-                                </Button>
-                                <Button
-                                    variant="danger"
-                                    onClick={handleClearBingoActivity}
-                                    disabled={isUpdatingDb}
-                                    className="mt-2 me-2"
-                                >
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-trash-alt"></i> Effacer le journal d'activité</>}
-                                </Button>
-                                <Button
-                                    variant="warning"
-                                    onClick={handleDisableBingoCard}
-                                    disabled={isUpdatingDb}
-                                    className="mt-2 me-2"
-                                    title="Cela supprimera la carte actuelle et le journal, désactivant effectivement le jeu jusqu'à ce qu'une nouvelle carte soit générée."
-                                >
-                                    {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-power-off"></i> Désactiver la carte</>}
-                                </Button>
-                                <Button
-                                    variant="info"
-                                    onClick={() => setShowEditBingoPhrasesModal(true)}
-                                    disabled={isUpdatingDb || !selectedAdminBingoType}
-                                    className="mt-2 me-2"
-                                >
-                                    <i className="fas fa-edit"></i> Modifier les phrases {selectedTypeForEdit?.name || 'Master'}
-                                </Button>
-                                <Button
-                                    variant="warning"
-                                    onClick={() => setShowReviewPhrasesModal(true)}
-                                    disabled={isUpdatingDb}
-                                    className="mt-2"
-                                >
-                                    <i className="fas fa-inbox"></i> Demandes de révision de phrases
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                    {selectedSection === 'users' && (
-                        <UsersHub
-                            currentUser={currentUser}
-                            showNotification={showInAppNotification}
-                            onOpenMigrationTools={() => setShowUserManagementModal(true)}
+    const renderSection = () => {
+        switch (selectedSection) {
+            case 'overview':
+                return (
+                    <AdminOverview
+                        counts={counts}
+                        imageCount={imageCount}
+                        lockdownConfig={lockdownConfig}
+                        bbcodeEnabled={bbcodeEnabled}
+                        authConfig={authConfig}
+                        debugAutofillEnabled={debugAutofillEnabled}
+                        debugDeleteApplicationsEnabled={debugDeleteApplicationsEnabled}
+                        onOpen={openSection}
+                    />
+                );
+
+            case 'pendingAccounts':
+                return <div className="adm-card"><div className="adm-card-body"><PendingAccountRequests showNotification={showInAppNotification} currentUser={currentUser} /></div></div>;
+
+            case 'pendingModifications':
+                return <div className="adm-card"><div className="adm-card-body"><PendingModificationRequests showNotification={showInAppNotification} currentUser={currentUser} /></div></div>;
+
+            case 'imageCleanup':
+                return <div className="adm-card"><div className="adm-card-body"><PendingImageDeletions showNotification={showInAppNotification} /></div></div>;
+
+            case 'users':
+                return (
+                    <UsersHub
+                        currentUser={currentUser}
+                        showNotification={showInAppNotification}
+                        onOpenMigrationTools={() => setShowUserManagementModal(true)}
+                    />
+                );
+
+            case 'authMethods':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        <p className="text-muted">
+                            Par défaut, seule la connexion et la création de compte via GTA World sont proposées au personnel (fenêtre de connexion et
+                            guide de configuration). La connexion au panneau admin garde toujours les deux méthodes, quel que soit ce réglage.
+                        </p>
+                        <SwitchRow
+                            id="authMethodsSwitch"
+                            checked={!authConfig.gtawOnly}
+                            onChange={(checked) => setAuthConfig((previous) => ({ ...previous, gtawOnly: !checked }))}
+                            label="Autoriser aussi la connexion et la création de compte par e-mail et mot de passe"
+                            state={authConfig.gtawOnly ? 'GTA World uniquement' : 'GTA World + e-mail'}
+                            stateTone="neutral"
                         />
-                    )}
+                        <Button variant="primary" onClick={handleUpdateAuthConfig} disabled={isUpdatingDb}>
+                            {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer'}
+                        </Button>
+                    </SectionCard>
+                );
 
-                    {selectedSection === 'imageCleanup' && (
-                        <PendingImageDeletions showNotification={showInAppNotification} />
-                    )}
+            case 'serviceStatus':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        {isLoadingStatus ? (
+                            <Spinner animation="border" size="sm" />
+                        ) : (
+                            <div className="adm-form-grid">
+                                <div className="form-group">
+                                    <label>Générateur de formulaires (site principal)</label>
+                                    <input type="text" value={formGeneratorStatus} onChange={(event) => setFormGeneratorStatus(event.target.value)} placeholder="ex. Entièrement mis à jour" className="form-control" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Générateur de formulaires (adresse alternative)</label>
+                                    <input type="text" value={alternativeFormGeneratorStatus} onChange={(event) => setAlternativeFormGeneratorStatus(event.target.value)} placeholder="ex. Mises à jour différées" className="form-control" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Localhost / staging</label>
+                                    <input type="text" value={localHostStatus} onChange={(event) => setLocalHostStatus(event.target.value)} placeholder="ex. En développement" className="form-control" />
+                                </div>
+                            </div>
+                        )}
+                        <Button variant="primary" onClick={handleUpdateServiceStatus} disabled={isUpdatingDb || isLoadingStatus}>
+                            {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer les statuts'}
+                        </Button>
+                    </SectionCard>
+                );
 
-                    {selectedSection === 'webhooks' && (
-                        <div className="card">
-                            <div className="card-header">Webhook Management</div>
-                            <div className="card-body">
-                                <div className="mb-4">
-                                    <h5>{newWebhook.id ? 'Modifier le webhook' : 'Ajouter un nouveau webhook'}</h5>
-                                    {newWebhook.id && (
-                                        <div className="alert alert-info py-2 mb-3">
-                                            <i className="fas fa-info-circle me-2"></i>
-                                            Modification du webhook : <strong>{newWebhook.name}</strong>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-sm btn-outline-secondary ms-2"
-                                                onClick={() => setNewWebhook({ name: '', url: '', type: 'coronerAlerts' })}
-                                            >
-                                                Annuler la modification
-                                            </button>
-                                        </div>
-                                    )}
-                                    <div className="form-group mb-2">
+            case 'lockdown':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        <SwitchRow
+                            id="lockdownSwitch"
+                            checked={!!lockdownConfig.enabled}
+                            onChange={(checked) => setLockdownConfig((previous) => ({ ...previous, enabled: checked }))}
+                            label="Activer le verrouillage du site"
+                            state={lockdownConfig.enabled ? 'ACTIF' : 'inactif'}
+                            stateTone={lockdownConfig.enabled ? 'alert' : 'ok'}
+                        />
+                        <div className="adm-form-grid">
+                            <div className="form-group">
+                                <label>Bandeau de notification</label>
+                                <input
+                                    type="text"
+                                    value={lockdownConfig.notification}
+                                    onChange={(event) => setLockdownConfig((previous) => ({ ...previous, notification: event.target.value }))}
+                                    placeholder="ex. Le site est actuellement en maintenance."
+                                    className="form-control"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Message de la fenêtre qui s'affiche aux visiteurs</label>
+                                <textarea
+                                    value={lockdownConfig.dialog}
+                                    onChange={(event) => setLockdownConfig((previous) => ({ ...previous, dialog: event.target.value }))}
+                                    placeholder="ex. Les formulaires sont temporairement indisponibles."
+                                    className="form-control"
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div className="adm-fieldset">
+                            <div className="adm-fieldset-title">Déploiements concernés</div>
+                            {LOCKDOWN_DEPLOYMENTS.map((deployment) => (
+                                <div className="form-check" key={deployment.value}>
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id={`deployment-${deployment.value}`}
+                                        checked={lockdownDeployments.includes(deployment.value)}
+                                        onChange={(event) => toggleDeployment(deployment.value, event.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor={`deployment-${deployment.value}`}>
+                                        {deployment.label} <small className="text-muted">— {deployment.hint}</small>
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="primary" onClick={handleUpdateLockdownStatus} disabled={isUpdatingDb}>
+                            {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer le confinement'}
+                        </Button>
+                    </SectionCard>
+                );
+
+            case 'display':
+                return <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />;
+
+            case 'bingo':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        <div className="adm-form-grid">
+                            <div className="form-group">
+                                <label>Type de bingo</label>
+                                <select value={selectedAdminBingoType} onChange={(event) => setSelectedAdminBingoType(event.target.value)} disabled={isUpdatingDb} className="form-select">
+                                    {BINGO_TYPES.map((type) => (
+                                        <option key={type.id} value={type.id}>{type.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <p className="text-muted small">
+                            <i className="fas fa-clock me-1"></i> La réinitialisation quotidienne s'exécute automatiquement sur le serveur à 09:00 UTC.
+                        </p>
+
+                        <div className="adm-actions-grid">
+                            <div className="adm-fieldset">
+                                <div className="adm-fieldset-title">Cartes</div>
+                                <div className="adm-button-stack">
+                                    <Button variant="primary" onClick={handleGenerateNewBingoCard} disabled={isUpdatingDb}>
+                                        <i className="fas fa-sync-alt"></i> Générer une nouvelle carte
+                                    </Button>
+                                    <Button variant="secondary" onClick={handleManualResetAllBingoCards} disabled={isUpdatingDb} title="Exécuter manuellement la réinitialisation quotidienne pour toutes les cartes de bingo actives.">
+                                        <i className="fas fa-rotate-left"></i> Réinitialiser toutes les cartes
+                                    </Button>
+                                    <Button variant="warning" onClick={handleDisableBingoCard} disabled={isUpdatingDb} title="Supprime la carte actuelle et le journal : le jeu est désactivé jusqu'à ce qu'une nouvelle carte soit générée.">
+                                        <i className="fas fa-power-off"></i> Désactiver la carte
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="adm-fieldset">
+                                <div className="adm-fieldset-title">Phrases</div>
+                                <div className="adm-button-stack">
+                                    <Button variant="info" onClick={() => setShowEditBingoPhrasesModal(true)} disabled={isUpdatingDb || !selectedAdminBingoType}>
+                                        <i className="fas fa-pen"></i> Modifier les phrases {selectedTypeForEdit?.name || 'Master'}
+                                    </Button>
+                                    <Button variant="warning" onClick={() => setShowReviewPhrasesModal(true)} disabled={isUpdatingDb}>
+                                        <i className="fas fa-inbox"></i> Demandes de révision de phrases
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="adm-fieldset adm-fieldset-danger">
+                                <div className="adm-fieldset-title">Zone sensible</div>
+                                <div className="adm-button-stack">
+                                    <Button variant="danger" onClick={handleClearBingoActivity} disabled={isUpdatingDb}>
+                                        <i className="fas fa-trash-can"></i> Effacer le journal d'activité
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </SectionCard>
+                );
+
+            case 'webhooks':
+                return (
+                    <>
+                        <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                            <h5 className="adm-subtitle">Webhooks existants</h5>
+                            {webhooks && webhooks.length > 0 ? (
+                                <ul className="adm-list">
+                                    {webhooks.map((hook) => (
+                                        <li key={hook.id}>
+                                            <div className="adm-list-row">
+                                                <div>
+                                                    <strong>{hook.name}</strong> <span className="adm-chip adm-chip-neutral">{hook.type}</span>
+                                                    <div className="adm-list-url">{hook.url}</div>
+                                                </div>
+                                                <div className="adm-list-actions">
+                                                    <Button
+                                                        variant="outline-secondary" size="sm" disabled={isUpdatingWebhooks} title="Modifier la configuration du webhook"
+                                                        onClick={() => {
+                                                            setNewWebhook({ name: hook.name, url: hook.url, type: hook.type, id: hook.id });
+                                                            const form = document.getElementById('adm-webhook-form');
+                                                            if (form) form.scrollIntoView({ behavior: 'smooth' });
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-pen"></i> Modifier
+                                                    </Button>
+                                                    <Button variant="outline-primary" size="sm" disabled={isUpdatingWebhooks} onClick={() => setTestWebhookData((previous) => ({ ...previous, selectedWebhook: hook }))}>
+                                                        <i className="fas fa-vial"></i> Tester
+                                                    </Button>
+                                                    <Button variant="outline-danger" size="sm" disabled={isUpdatingWebhooks} onClick={() => handleDeleteWebhook(hook.id)}>
+                                                        <i className="fas fa-trash-can"></i>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            {testWebhookData.selectedWebhook?.id === hook.id && (
+                                                <div className="adm-panel">
+                                                    <h6>Tester le webhook : {hook.name}</h6>
+                                                    <div className="form-group mb-2">
+                                                        <label>Titre du test</label>
+                                                        <input type="text" className="form-control" placeholder="Titre du message de test" value={testWebhookData.title} onChange={(event) => setTestWebhookData((previous) => ({ ...previous, title: event.target.value }))} />
+                                                    </div>
+                                                    <div className="form-group mb-2">
+                                                        <label>Message de test</label>
+                                                        <textarea className="form-control" rows="3" placeholder="Contenu du message de test" value={testWebhookData.message} onChange={(event) => setTestWebhookData((previous) => ({ ...previous, message: event.target.value }))} />
+                                                    </div>
+                                                    <div className="d-flex gap-2">
+                                                        <Button variant="success" size="sm" onClick={() => handleTestWebhook(hook)}>Envoyer le test</Button>
+                                                        <Button variant="secondary" size="sm" onClick={() => setTestWebhookData((previous) => ({ ...previous, selectedWebhook: null, title: '', message: '' }))}>Annuler</Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-muted">Aucun webhook configuré.</p>
+                            )}
+
+                            <div className="adm-panel" id="adm-webhook-form">
+                                <h5 className="adm-subtitle">{newWebhook.id ? 'Modifier le webhook' : 'Ajouter un webhook'}</h5>
+                                {newWebhook.id && (
+                                    <div className="adm-notice">
+                                        <i className="fas fa-circle-info me-2"></i>Modification de <strong>{newWebhook.name}</strong>
+                                        <button type="button" className="btn btn-sm btn-outline-secondary ms-2" onClick={() => setNewWebhook({ name: '', url: '', type: 'coronerAlerts' })}>Annuler la modification</button>
+                                    </div>
+                                )}
+                                <div className="adm-form-grid">
+                                    <div className="form-group">
                                         <label>Nom du webhook</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            placeholder="ex. Notifications Discord"
-                                            value={newWebhook.name}
-                                            onChange={(e) => setNewWebhook(prev => ({ ...prev, name: e.target.value }))}
-                                        />
+                                        <input type="text" className="form-control" placeholder="ex. Notifications Discord" value={newWebhook.name} onChange={(event) => setNewWebhook((previous) => ({ ...previous, name: event.target.value }))} />
                                     </div>
-                                    <div className="form-group mb-2">
-                                        <label>URL du webhook</label>
-                                        <input
-                                            type="url"
-                                            className="form-control"
-                                            placeholder="https://discord.com/api/webhooks/..."
-                                            value={newWebhook.url}
-                                            onChange={(e) => setNewWebhook(prev => ({ ...prev, url: e.target.value }))}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-3">
+                                    <div className="form-group">
                                         <label>Type d'événement</label>
-                                        <select
-                                            className="form-select"
-                                            value={newWebhook.type}
-                                            onChange={(e) => setNewWebhook(prev => ({ ...prev, type: e.target.value }))}
-                                        >
+                                        <select className="form-select" value={newWebhook.type} onChange={(event) => setNewWebhook((previous) => ({ ...previous, type: event.target.value }))}>
                                             <option value="coronerAlerts">Alertes Coroner</option>
                                             <option value="phmcAlerts">Alertes PHMC</option>
                                             <option value="dev">Développeur local de Discord</option>
                                         </select>
                                     </div>
-                                    <div className="d-flex gap-2">
-                                        <Button variant="primary" onClick={handleAddWebhook} disabled={isUpdatingWebhooks}>
-                                            {isUpdatingWebhooks ? <Spinner as="span" animation="border" size="sm" /> : (newWebhook.id ? "Mettre à jour le webhook" : "Ajouter le webhook")}
-                                        </Button>
-                                        {newWebhook.id && (
-                                            <Button 
-                                                variant="secondary" 
-                                                onClick={() => setNewWebhook({ name: '', url: '', type: 'coronerAlerts' })}
-                                                disabled={isUpdatingWebhooks}
-                                            >
-                                                Annuler
-                                            </Button>
-                                        )}
-                                    </div>
                                 </div>
-
-                                <hr />
-
-                                {/* Custom Webhook Panel */}
-                                <div className="mb-4 p-3 border rounded bg-light">
-                                    <h5>Envoyer un webhook personnalisé</h5>
-                                    <form className="row g-2 align-items-end" onSubmit={handleSendCustomWebhook}>
-                                            <label htmlFor="webhookChannel" className="form-label mb-0">Webhook</label>
-                                            <select
-                                                id="webhookChannel"
-                                                className="form-select"
-                                                value={customWebhookChannel}
-                                                onChange={e => setCustomWebhookChannel(e.target.value)}
-                                                disabled={customWebhookSending}
-                                            >
-                                                <option value="">Sélectionnez un webhook...</option>
-                                                {webhooks && webhooks.map((hook) => (
-                                                    <option key={hook.id} value={hook.id}>
-                                                        {hook.name} ({hook.type})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <label htmlFor="webhookTitle" className="form-label mb-0">Title</label>
-                                            <input
-                                                id="webhookTitle"
-                                                className="form-control"
-                                                type="text"
-                                                value={customWebhookTitle}
-                                                onChange={e => setCustomWebhookTitle(e.target.value)}
-                                                placeholder="Entrez le titre"
-                                                required
-                                                disabled={customWebhookSending}
-                                            />
-                                            <label htmlFor="webhookMessage" className="form-label mb-0">Message</label>
-                                            <textarea
-                                                id="webhookMessage"
-                                                className="form-control"
-                                                rows="4"
-                                                value={customWebhookMessage}
-                                                onChange={e => setCustomWebhookMessage(e.target.value)}
-                                                placeholder="Entrez le message (prend en charge Markdown)"
-                                                required
-                                                disabled={customWebhookSending}
-                                                style={{ resize: 'vertical', minHeight: '38px' }}
-                                            />
-                                            <label htmlFor="webhookUrl" className="form-label mb-0">URL (Optionnel)</label>
-                                            <input
-                                                id="webhookUrl"
-                                                className="form-control"
-                                                type="url"
-                                                value={customWebhookUrl}
-                                                onChange={e => setCustomWebhookUrl(e.target.value)}
-                                                placeholder="https://..."
-                                                disabled={customWebhookSending}
-                                            />
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary"
-                                                disabled={customWebhookSending || !customWebhookChannel || !customWebhookTitle || !customWebhookMessage}
-                                            >
-                                                {customWebhookSending ? 'Envoi en cours...' : 'Envoyer Webhook'}
-                                            </button>
-                                    </form>
-                                    <small className="text-muted mt-2 d-block">
-                                        <i className="fas fa-info-circle me-1"></i>
-                                        Intégrations Discord enrichies avec la marque PHMC, liens vers le générateur de formulaires, informations d'administration et horodatage. Le formatage Markdown est pris en charge..
-                                    </small>
-                                    {customWebhookResult === 'success' && (
-                                        <div className="alert alert-success mt-2 mb-0 py-1">Webhook envoyé avec succès !</div>
-                                    )}
-                                    {customWebhookResult === 'error' && (
-                                        <div className="alert alert-danger mt-2 mb-0 py-1">Échec de l'envoi du webhook. Vérifiez la configuration du canal et réessayez.</div>
-                                    )}
+                                <div className="form-group mb-3">
+                                    <label>URL du webhook</label>
+                                    <input type="url" className="form-control" placeholder="https://discord.com/api/webhooks/..." value={newWebhook.url} onChange={(event) => setNewWebhook((previous) => ({ ...previous, url: event.target.value }))} />
                                 </div>
-
-                                <hr />
-
-                                <div>
-                                    <h5>Webhooks existants</h5>
-                                    {webhooks && webhooks.length > 0 ? (
-                                        <ul className="list-group">
-                                            {webhooks.map((hook) => (
-                                                <li key={hook.id} className="list-group-item">
-                                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                                        <div>
-                                                            <strong>{hook.name}</strong> ({hook.type})
-                                                            <br />
-                                                            <small className="text-muted">{hook.url}</small>
-                                                        </div>
-                                                        <div className="d-flex gap-2">
-                                                            <Button 
-                                                                variant="outline-secondary" 
-                                                                size="sm" 
-                                                                onClick={() => {
-                                                                    setNewWebhook({
-                                                                        name: hook.name,
-                                                                        url: hook.url,
-                                                                        type: hook.type,
-                                                                        id: hook.id
-                                                                    });
-                                                                    // Scroll to the top of the webhook section
-                                                                    document.querySelector('.card-header').scrollIntoView({ behavior: 'smooth' });
-                                                                }}
-                                                                disabled={isUpdatingWebhooks}
-                                                                title="Modifier la configuration du webhook"
-                                                            >
-                                                                <i className="fas fa-edit"></i> Modifier
-                                                            </Button>
-                                                            <Button 
-                                                                variant="outline-primary" 
-                                                                size="sm" 
-                                                                onClick={() => setTestWebhookData(prev => ({ ...prev, selectedWebhook: hook }))}
-                                                                disabled={isUpdatingWebhooks}
-                                                            >
-                                                                Tester
-                                                            </Button>
-                                                            <Button variant="danger" size="sm" onClick={() => handleDeleteWebhook(hook.id)} disabled={isUpdatingWebhooks}>
-                                                                Supprimer
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                    {testWebhookData.selectedWebhook?.id === hook.id && (
-                                                        <div className="mt-3 p-3 bg-light rounded">
-                                                            <h6>Tester le Webhook : {hook.name}</h6>
-                                                            <div className="form-group mb-2">
-                                                                <label>Titre du test</label>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-control"
-                                                                    placeholder="Titre du message de test"
-                                                                    value={testWebhookData.title}
-                                                                    onChange={(e) => setTestWebhookData(prev => ({ ...prev, title: e.target.value }))}
-                                                                />
-                                                            </div>
-                                                            <div className="form-group mb-2">
-                                                                <label>Message de test</label>
-                                                                <textarea
-                                                                    className="form-control"
-                                                                    rows="3"
-                                                                    placeholder="Contenu du message de test"
-                                                                    value={testWebhookData.message}
-                                                                    onChange={(e) => setTestWebhookData(prev => ({ ...prev, message: e.target.value }))}
-                                                                />
-                                                            </div>
-                                                            <div className="d-flex gap-2">
-                                                                <Button variant="success" size="sm" onClick={() => handleTestWebhook(hook)}>
-                                                                    Envoyer le test
-                                                                </Button>
-                                                                <Button 
-                                                                    variant="secondary" 
-                                                                    size="sm" 
-                                                                    onClick={() => setTestWebhookData(prev => ({ ...prev, selectedWebhook: null, title: '', message: '' }))}
-                                                                >
-                                                                    Annuler
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p>Aucun webhook configuré.</p>
+                                <div className="d-flex gap-2">
+                                    <Button variant="primary" onClick={handleAddWebhook} disabled={isUpdatingWebhooks}>
+                                        {isUpdatingWebhooks ? <Spinner as="span" animation="border" size="sm" /> : (newWebhook.id ? 'Mettre à jour le webhook' : 'Ajouter le webhook')}
+                                    </Button>
+                                    {newWebhook.id && (
+                                        <Button variant="secondary" onClick={() => setNewWebhook({ name: '', url: '', type: 'coronerAlerts' })} disabled={isUpdatingWebhooks}>Annuler</Button>
                                     )}
                                 </div>
                             </div>
-                                                        <WebhookLogs refreshTrigger={logRefreshTrigger} />
+
+                            <div className="adm-panel">
+                                <h5 className="adm-subtitle">Envoyer un message personnalisé</h5>
+                                <form onSubmit={handleSendCustomWebhook}>
+                                    <div className="adm-form-grid">
+                                        <div className="form-group">
+                                            <label htmlFor="webhookChannel">Webhook</label>
+                                            <select id="webhookChannel" className="form-select" value={customWebhookChannel} onChange={(event) => setCustomWebhookChannel(event.target.value)} disabled={customWebhookSending}>
+                                                <option value="">Sélectionnez un webhook…</option>
+                                                {webhooks && webhooks.map((hook) => (
+                                                    <option key={hook.id} value={hook.id}>{hook.name} ({hook.type})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label htmlFor="webhookTitle">Titre</label>
+                                            <input id="webhookTitle" className="form-control" type="text" value={customWebhookTitle} onChange={(event) => setCustomWebhookTitle(event.target.value)} placeholder="Entrez le titre" required disabled={customWebhookSending} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group mb-2">
+                                        <label htmlFor="webhookMessage">Message</label>
+                                        <textarea id="webhookMessage" className="form-control" rows="4" value={customWebhookMessage} onChange={(event) => setCustomWebhookMessage(event.target.value)} placeholder="Entrez le message (Markdown pris en charge)" required disabled={customWebhookSending} />
+                                    </div>
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="webhookUrl">Lien (facultatif)</label>
+                                        <input id="webhookUrl" className="form-control" type="url" value={customWebhookUrl} onChange={(event) => setCustomWebhookUrl(event.target.value)} placeholder="https://…" disabled={customWebhookSending} />
+                                    </div>
+                                    <button type="submit" className="btn btn-primary" disabled={customWebhookSending || !customWebhookChannel || !customWebhookTitle || !customWebhookMessage}>
+                                        {customWebhookSending ? 'Envoi en cours…' : 'Envoyer le message'}
+                                    </button>
+                                    <small className="text-muted d-block mt-2">
+                                        <i className="fas fa-circle-info me-1"></i>Le message est mis en forme aux couleurs du PHMC, avec un lien vers le générateur et l'horodatage.
+                                    </small>
+                                    {customWebhookResult === 'success' && <div className="alert alert-success mt-2 mb-0 py-1">Message envoyé !</div>}
+                                    {customWebhookResult === 'error' && <div className="alert alert-danger mt-2 mb-0 py-1">Échec de l'envoi. Vérifiez la configuration du canal et réessayez.</div>}
+                                </form>
+                            </div>
+                        </SectionCard>
+                        <WebhookLogs refreshTrigger={logRefreshTrigger} />
+                    </>
+                );
+
+            case 'database':
+                return <DatabaseEditor showNotification={showInAppNotification} />;
+
+            case 'debug':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        <div className="adm-tabs" role="tablist">
+                            {DEBUG_TABS.map((tab) => (
+                                <button key={tab.key} type="button" role="tab" aria-selected={debugTab === tab.key} className={`adm-tab ${debugTab === tab.key ? 'active' : ''}`} onClick={() => setDebugTab(tab.key)}>
+                                    <i className={`fas ${tab.icon}`}></i> {tab.label}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                    {selectedSection === 'dev' && (
-                        <div className="card">
-                            <div className="card-header">Outils de développement</div>
-                            <div className="card-body">
-                                <div className="mb-3">
-                                    <Button variant="info" onClick={() => setShowUserDataExchangeModal(true)}>
-                                        <i className="fas fa-user-secret me-2"></i>
-                                        Échange de données utilisateur
-                                    </Button>
-                                </div>
-                                <div className="mb-3">
-                                    <Button variant="secondary" onClick={() => setShowCctvWebhookModal(true)} title="Envoyer un webhook de test simulant une demande CCTV.">
-                                        <i className="fas fa-video me-2"></i>
-                                        Test de demande CCTV
-                                    </Button>
-                                </div>
-                                <Button variant="danger" onClick={() => {
-                                    try {
-                                        null.throwError();
-                                    } catch (error) {
-                                        Sentry.captureException(error, { extra: { context: 'Test Erreur Bouton Cliqué' } });
-                                        if (showInAppNotification) showInAppNotification('Erreur de test envoyée à Sentry !', 'check-circle');
-                                        throw error; // Re-throw the error to trigger the global handler
-                                    }
-                                }}>
+
+                        {debugTab === 'autofill' && (
+                            <>
+                                <p className="text-muted">
+                                    Quand il est activé, <strong>les personnes de la liste blanche</strong> voient un bouton « Remplir (debug) » sur chaque formulaire
+                                    (rapports, e-mails, candidatures, dossiers civils) et dans les fenêtres (création de compte, demandes…). Il remplit le formulaire
+                                    avec des données de test sans rien envoyer ni enregistrer. Les autres utilisateurs ne voient jamais le bouton.
+                                </p>
+                                <SwitchRow
+                                    id="debugAutofillSwitch"
+                                    checked={debugAutofillEnabled}
+                                    disabled={isUpdatingDebug}
+                                    onChange={handleToggleDebugAutofill}
+                                    label="Activer le bouton « Remplir (debug) » pour la liste blanche"
+                                    busy={isUpdatingDebug}
+                                    state={debugAutofillEnabled ? 'ACTIVÉ (liste blanche)' : 'désactivé'}
+                                    stateTone={debugAutofillEnabled ? 'warn' : 'ok'}
+                                />
+                                <DebugWhitelist currentUser={currentUser} showInAppNotification={showInAppNotification} />
+                            </>
+                        )}
+
+                        {debugTab === 'applications' && (
+                            <>
+                                <p className="text-muted">
+                                    Quand cet interrupteur est activé, un bouton « Supprimer » apparaît dans l'historique des candidatures : chaque candidat peut
+                                    supprimer les siennes (« Mes candidatures ») et les admins et recruteurs celles de la liste de gestion. Utile pour nettoyer
+                                    les candidatures de test ; à désactiver ensuite, car la suppression est définitive.
+                                </p>
+                                <SwitchRow
+                                    id="debugDeleteApplicationsSwitch"
+                                    checked={debugDeleteApplicationsEnabled}
+                                    disabled={isUpdatingDeleteDebug}
+                                    onChange={handleToggleDeleteApplications}
+                                    label="Autoriser la suppression des candidatures"
+                                    busy={isUpdatingDeleteDebug}
+                                    state={debugDeleteApplicationsEnabled ? 'ACTIVÉE' : 'désactivée'}
+                                    stateTone={debugDeleteApplicationsEnabled ? 'warn' : 'ok'}
+                                />
+                            </>
+                        )}
+
+                        {debugTab === 'season' && <DebugSeasonTester showInAppNotification={showInAppNotification} />}
+                        {debugTab === 'viewas' && <DebugViewAs showInAppNotification={showInAppNotification} />}
+                    </SectionCard>
+                );
+
+            case 'dev':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        <div className="adm-actions-grid">
+                            <div className="adm-fieldset">
+                                <div className="adm-fieldset-title">Données</div>
+                                <p className="text-muted small">Exporter ou importer les données d'un utilisateur (migration, dépannage).</p>
+                                <Button variant="info" onClick={() => setShowUserDataExchangeModal(true)}>
+                                    <i className="fas fa-user-secret"></i> Échange de données utilisateur
+                                </Button>
+                            </div>
+                            <div className="adm-fieldset">
+                                <div className="adm-fieldset-title">Webhooks</div>
+                                <p className="text-muted small">Envoie un message de test qui simule une demande de vidéosurveillance.</p>
+                                <Button variant="secondary" onClick={() => setShowCctvWebhookModal(true)}>
+                                    <i className="fas fa-video"></i> Test de demande CCTV
+                                </Button>
+                            </div>
+                            <div className="adm-fieldset adm-fieldset-danger">
+                                <div className="adm-fieldset-title">Suivi des erreurs</div>
+                                <p className="text-muted small">Provoque une erreur volontaire pour vérifier qu'elle arrive bien dans Sentry.</p>
+                                <Button
+                                    variant="danger"
+                                    onClick={() => {
+                                        if (!window.confirm("Provoquer une erreur de test ? Elle sera envoyée à Sentry et la page peut se réafficher en erreur.")) return;
+                                        try {
+                                            null.throwError();
+                                        } catch (error) {
+                                            Sentry.captureException(error, { extra: { context: 'Test Erreur Bouton Cliqué' } });
+                                            if (showInAppNotification) showInAppNotification('Erreur de test envoyée à Sentry !', 'check-circle');
+                                            throw error; // relancée pour déclencher le gestionnaire global
+                                        }
+                                    }}
+                                >
                                     <i className="fas fa-bug"></i> Test d'erreur Sentry
                                 </Button>
                             </div>
                         </div>
-                    )}
-                    {selectedSection === 'database' && (
-                        <DatabaseEditor showNotification={showInAppNotification} />
-                    )}
+                    </SectionCard>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    const navItem = (item) => {
+        const badge = item.badge ? badgeValues[item.badge] : 0;
+        return (
+            <button
+                key={item.key}
+                type="button"
+                className={`adm-nav-item ${selectedSection === item.key ? 'active' : ''}`}
+                onClick={() => openSection(item.key)}
+                title={item.description}
+            >
+                <i className={`fas ${item.icon}`}></i>
+                <span className="adm-nav-label">{item.label}</span>
+                {badge > 0 && <span className="adm-badge">{badge}</span>}
+            </button>
+        );
+    };
+
+    return (
+        <div className="admin-dashboard-container dark-ui">
+            <aside className="adm-sidebar">
+                <div className="adm-sidebar-head">
+                    <div className="adm-sidebar-title"><i className="fas fa-shield-halved"></i> Administration</div>
+                    <div className="adm-sidebar-user" title={currentUser.email}>{currentUser.email}</div>
+                    <div className="adm-search">
+                        <i className="fas fa-magnifying-glass"></i>
+                        <input
+                            ref={searchRef}
+                            type="search"
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' && searchResults && searchResults.length > 0) openSection(searchResults[0].key);
+                                if (event.key === 'Escape') { setQuery(''); event.target.blur(); }
+                            }}
+                            placeholder="Rechercher… ( / )"
+                            aria-label="Rechercher une section"
+                        />
+                    </div>
                 </div>
-            </div>
+
+                <nav className="adm-nav">
+                    {searchResults ? (
+                        searchResults.length > 0 ? (
+                            <div className="adm-nav-group">
+                                <div className="adm-nav-group-label">{searchResults.length} résultat{searchResults.length > 1 ? 's' : ''}</div>
+                                {searchResults.map(navItem)}
+                            </div>
+                        ) : (
+                            <p className="adm-nav-empty">Aucune section ne correspond à « {query} ».</p>
+                        )
+                    ) : (
+                        ADMIN_SECTION_GROUPS.map((group) => (
+                            <div className="adm-nav-group" key={group.key}>
+                                {group.key !== 'home' && <div className="adm-nav-group-label">{group.label}</div>}
+                                {group.items.map(navItem)}
+                            </div>
+                        ))
+                    )}
+                </nav>
+
+                <div className="adm-sidebar-foot">
+                    {desktopNotificationPermission === 'default' && (
+                        <Button variant="outline-info" size="sm" onClick={handleEnableDesktopNotifications} className="w-100" title="Autoriser les notifications de bureau pour les statuts">
+                            <i className="fas fa-bell"></i> Activer les notifications
+                        </Button>
+                    )}
+                    <Button type="button" variant="secondary" size="sm" className="w-100" onClick={() => navigate('/')} title="Retourner aux formulaires">
+                        <i className="fas fa-house"></i> Retour au site
+                    </Button>
+                    <Button variant="outline-warning" size="sm" onClick={handleLogout} className="w-100">
+                        <i className="fas fa-right-from-bracket"></i> Déconnexion
+                    </Button>
+                </div>
+            </aside>
+
+            <main className="adm-main">
+                <header className="adm-main-head">
+                    <div className="adm-breadcrumb">
+                        <span>Administration</span>
+                        {current.key !== 'overview' && <><i className="fas fa-chevron-right"></i><span>{current.group}</span></>}
+                    </div>
+                    <h2><i className={`fas ${current.icon}`}></i> {current.label}</h2>
+                    <p>{current.description}</p>
+                </header>
+                <div className="adm-content">{renderSection()}</div>
+            </main>
         </div>
     );
 };

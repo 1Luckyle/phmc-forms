@@ -296,11 +296,14 @@ const FeatureRequestModal = ({
                                 placeholder={isFormRequest
                                     ? "Fournissez ici tout contexte ou explication supplémentaire pour votre demande de formulaire."
                                     : isFeature
-                                        ? "Décrivez la fonctionnalité souhaitée avec le plus de précision possible : à quoi elle servirait, où vous l'imagineriez dans l'outil."
-                                        : "Décrivez le bug : ce que vous faisiez, ce qui s'est passé, ce que vous attendiez. Plus il y a d'informations, mieux c'est (les images sont également très utiles !)."
+                                        ? "Décrivez la fonctionnalité souhaitée avec le plus de précision possible : à quoi elle servirait, où vous l'imagineriez dans l'outil. Pour illustrer, collez le lien (URL) d'une image."
+                                        : "Décrivez le bug : ce que vous faisiez, ce qui s'est passé, ce que vous attendiez. Plus il y a d'informations, mieux c'est. Pour joindre une image, collez son lien (URL), par exemple depuis imgBB."
                                 }
                             />
                         </Form.Group>
+                        <Form.Text className="text-muted d-block mb-3" style={{ marginTop: '-0.5rem' }}>
+                            <i className="fas fa-image me-1"></i>Les images se joignent <strong>par lien (URL)</strong> : collez l'adresse de l'image dans votre message (hébergée par exemple sur imgBB). Les fichiers ne peuvent pas être envoyés ici.
+                        </Form.Text>
                         <Form.Group className="mb-3">
                             <Form.Label>Votre nom / ID Discord</Form.Label>
                             <Form.Control
