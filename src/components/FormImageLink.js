@@ -1,6 +1,6 @@
 // src/components/FormImageLink.js
 import React from 'react';
-import phmcLogo from '../assets/phmc.png';
+import phmcLogo from '../assets/Hxjt4M2.png';
 
 const FormImageLink = ({
     bbCodeVersion,
