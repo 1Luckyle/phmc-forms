@@ -151,8 +151,18 @@
 
 /* Les boutons flottants (Bingo, Panneau Admin) sont fixés en haut à droite de la fenêtre : l'en-tête immersif leur laisse
    la place sur grand écran, et passe sous eux sur petit écran, pour ne jamais les faire chevaucher la météo. */
+/* Grand écran : même marge des deux côtés (le bloc reste centré dans la page). Écran moyen : on ne garde que la place
+   nécessaire — boutons de saison / infobulle à gauche, Bingo / Panneau Admin à droite. */
 .header-info-wrapper.header-with-season-controls.has-immersive-header {
+    padding-left: 290px;
     padding-right: 290px;
+}
+
+@media (max-width: 1500px) {
+    .header-info-wrapper.header-with-season-controls.has-immersive-header {
+        padding-left: 124px;
+        padding-right: 290px;
+    }
 }
 
 @media (max-width: 1100px) {
