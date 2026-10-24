@@ -68,7 +68,7 @@ ${sectionBanner(`Antécédents médicaux`, { size: 115 })}
 [/table] 
 
 ${sectionBanner(`Paiement`, { size: 115 })}
-[table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.[/td][td]
+[table][tr][td] ${formData.filledByStaff ? 'Paiement à régler par le patient :' : 'Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.'}[/td][td]
     ${paymentSection}
 [/table]
 

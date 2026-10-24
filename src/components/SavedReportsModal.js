@@ -709,6 +709,8 @@ const SavedReportsModal = ({
                         </Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('pdf', report)} disabled={!report.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('svg', report)} disabled={!report.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleExportDocument('png', report)} disabled={!report.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleExportDocument('png-copy', report)} disabled={!report.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
                     </>
                 )}
@@ -1009,6 +1011,7 @@ const SavedReportsModal = ({
                                 </Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('pdf')}>Télécharger le PDF (A4) sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('svg')}>Télécharger le SVG sélectionné</Dropdown.Item>
+                                <Dropdown.Item onClick={() => handleExportSelectedDocument('png')}>Télécharger l'image (PNG) sélectionnée</Dropdown.Item>
                                 <Dropdown.Item onClick={handleCopySelectedTitles}>Copier les titres sélectionnés</Dropdown.Item>
                             </Dropdown.Menu>
                         </Dropdown>

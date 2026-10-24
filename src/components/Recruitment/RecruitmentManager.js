@@ -216,6 +216,9 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                                             <Button variant="outline-info" size="sm" onClick={() => handleExportStatuses('svg')} disabled={isLoading} title={SVG_EXPORT_LABEL}>
                                                 <i className="fas fa-bezier-curve"></i> SVG
                                             </Button>
+                                            <Button variant="outline-info" size="sm" onClick={() => handleExportStatuses('png')} disabled={isLoading} title="Grande image PNG, à joindre sur Discord">
+                                                <i className="fas fa-image"></i> Image
+                                            </Button>
                                             <Button variant="success" size="sm" onClick={() => { setRoleToEdit(null); setShowRoleModal(true); }}>
                                                 <i className="fas fa-plus-circle"></i> Ajouter un rôle
                                             </Button>

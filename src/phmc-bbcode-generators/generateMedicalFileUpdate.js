@@ -203,7 +203,7 @@ Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partag
 
 Je soussigné(e), ${patientName}, conserve le droit de révoquer ce consentement à tout moment en avisant le Pillbox Hill Medical Center par écrit. Cependant, je comprends également que la révocation du consentement peut limiter la capacité des professionnels de la santé à me fournir des soins optimaux et coordonnés.[/list][/divbox]
 ${sectionBanner(`Paiement`, { size: 115 })}
-[table][tr][td] Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.[/td][td]
+[table][tr][td] ${formData.filledByStaff ? 'Paiement à régler par le patient :' : 'Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.'}[/td][td]
     ${paymentProofPhotos ? `[url=${paymentProofPhotos}]Preuve de paiement[/url]` : 'Aucune preuve de paiement fournie'}
 [/table]`;
 

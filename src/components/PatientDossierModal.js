@@ -339,6 +339,8 @@ const PatientDossierModal = ({
                         </Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('pdf', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('svg', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
+                        <Dropdown.Item onClick={() => exportDocument('png', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                        <Dropdown.Item onClick={() => exportDocument('png-copy', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
                     </>
                 )}
@@ -584,6 +586,7 @@ const PatientDossierModal = ({
                                 </Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('pdf')}>Télécharger le PDF (A4) sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={() => handleExportSelectedDocument('svg')}>Télécharger le SVG sélectionné</Dropdown.Item>
+                                <Dropdown.Item onClick={() => handleExportSelectedDocument('png')}>Télécharger l'image (PNG) sélectionnée</Dropdown.Item>
                                 <Dropdown.Item onClick={() => copyText(
                                     selectedFamilies.map((f) => reportTitleOf(f.root)).filter(Boolean).join('\n'),
                                     'Titres copiés !', 'Aucun titre trouvé dans la sélection.'

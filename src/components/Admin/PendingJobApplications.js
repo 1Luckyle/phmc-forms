@@ -388,6 +388,9 @@ Pillbox Hill Medical Center`,
                                             <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={SVG_EXPORT_LABEL} onClick={() => handleExportDocument('svg', application)}>
                                                 <i className="fas fa-bezier-curve"></i> SVG
                                             </Button>
+                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title="Grande image PNG, à joindre sur Discord" onClick={() => handleExportDocument('png', application)}>
+                                                <i className="fas fa-image"></i> Image
+                                            </Button>
                                             {application.statut === 'soumise' && (
                                                 <Button size="sm" variant="primary" onClick={() => handleScheduleInterview(application)}>
                                                     Planifier un entretien

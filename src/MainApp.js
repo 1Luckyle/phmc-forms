@@ -2368,6 +2368,26 @@ function MainApp({
                                     <i className="fas fa-bezier-curve"></i>
                                     SVG
                                 </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => handleExportDocument('png')}
+                                    className="copy-button-modern"
+                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                    title="Télécharge le rapport en une grande image PNG, à joindre directement sur Discord"
+                                >
+                                    <i className="fas fa-image"></i>
+                                    Image (PNG)
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => handleExportDocument('png-copy')}
+                                    className="copy-button-modern"
+                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                    title="Copie le rapport en image : collez-la ensuite dans Discord avec Ctrl+V"
+                                >
+                                    <i className="fas fa-clipboard"></i>
+                                    Copier l'image
+                                </Button>
 
                                         {selectedAgencyGroup !== 'PHMC Recruitment' && (
                                             <Button

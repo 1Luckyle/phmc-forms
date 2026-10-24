@@ -156,6 +156,8 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                                                             </Dropdown.Item>
                                                             <Dropdown.Item onClick={() => exportDocument('pdf', entry)} disabled={!entry.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => exportDocument('svg', entry)} disabled={!entry.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => exportDocument('png', entry)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => exportDocument('png-copy', entry)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>
                                                         </>
                                                     )}

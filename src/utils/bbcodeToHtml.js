@@ -344,7 +344,9 @@ const renderNode = (node, ctx) => {
             return `<div style="text-align:${node.name};">${renderChildren(node.children, ctx)}</div>`;
         case 'list': {
             const kind = String(node.param || '').trim().toLowerCase();
-            if (kind === 'none') return renderChildren(node.children, ctx);   // contenu conservé, sans puce
+            // Sans puce, mais c'est un BLOC (comme sur le forum) : retour à la ligne avant et après, par ex. les coordonnées
+            // du mandataire sous « …en mon nom: » dans les directives anticipées.
+            if (kind === 'none') return `<div>${renderChildren(node.children, ctx)}</div>`;
             const items = [];
             let current = null;
             node.children.forEach((child) => {

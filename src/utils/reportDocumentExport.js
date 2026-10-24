@@ -6,6 +6,9 @@
 //   • PDF A4 : le rapport est mis en page A4 dans un cadre invisible puis envoyé à l'impression du navigateur ; il
 //     suffit de choisir « Enregistrer au format PDF ». Le texte reste VECTORIEL (net à tout zoom, sélectionnable), les
 //     couleurs de fond sont conservées, les lignes de tableau ne sont pas coupées en deux.
+//   • IMAGE (PNG) : le rapport entier en UNE grande image (haute définition), que n'importe quelle visionneuse ouvre et que
+//     Discord affiche directement : c'est le format à utiliser pour joindre un rapport à un ticket de patient. Elle peut aussi
+//     être copiée dans le presse-papiers puis collée (Ctrl+V) dans Discord.
 //   • SVG : une image vectorielle autonome (le rapport mis en page est embarqué dans un <foreignObject>), zoomable sans
 //     perte dans un navigateur. Les images (imgBB…) sont intégrées au fichier quand le serveur d'images l'autorise
 //     (sinon elles restent des liens). Les logiciels de dessin comme Inkscape / Illustrator n'affichent pas le
@@ -17,13 +20,64 @@ const SVG_WIDTH_PX = 900;     // même largeur que le tableau de l'aperçu
 const IMAGE_TIMEOUT_MS = 12000;
 const MAX_INLINE_IMAGE_BYTES = 6 * 1024 * 1024;
 
-const PRINT_CSS = `<style>
-@page { size: A4 portrait; margin: 12mm; }
-html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { padding: 0 !important; }
-tr, img { break-inside: avoid; page-break-inside: avoid; }
+// Marge d'impression NULLE : le navigateur n'ajoute alors plus son en-tête (date, titre) ni son pied de page (adresse de la
+// page, « about:blank »). Les marges sont recréées par nos soins : 12 mm sur les côtés et, en haut et en bas de CHAQUE page,
+// un espace répété grâce à l'en-tête / au pied du tableau qui enveloppe le rapport.
+const PAGE_MARGIN_MM = 12;
+const PRINT_CSS_TEXT = `
+@page { size: A4 portrait; margin: 0; }
+html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #FFFFFF !important; }
+body { margin: 0 !important; padding: 0 ${PAGE_MARGIN_MM}mm !important; }
+.print-wrap { width: 100%; border-collapse: collapse; border: 0; }
+.print-wrap > thead > tr > td, .print-wrap > tfoot > tr > td { height: ${PAGE_MARGIN_MM}mm; padding: 0; border: 0; }
+.print-wrap > tbody > tr > td { padding: 0; border: 0; background: transparent; }
+.print-wrap table tr, img { break-inside: avoid; page-break-inside: avoid; }
 img { max-width: 100%; height: auto; }
-</style>`;
+/* Logos d'en-tête : ils occupaient près de la moitié de la première page. */
+img[src*="0pgw9hHm"] { max-height: 42mm; width: auto; }
+img[src*="phmc-curve"] { max-height: 32mm; width: auto; }
+img[src*="LkRKav2"] { max-height: 26mm; width: auto; }
+/* Un titre de section reste avec ce qui le suit (pas de titre seul en bas de page). */
+table[bgcolor="#141414"] { break-after: avoid; page-break-after: avoid; }
+`;
+
+// Document HTML prêt à imprimer en A4 : fond blanc pur (inutile de le grisonner ici, c'est réservé au collage sur le forum),
+// contenu enveloppé dans un tableau dont l'en-tête et le pied créent les marges haute et basse de chaque page.
+const buildPrintHtml = (bbCode, title) => {
+    const raw = bbcodeToHtmlDocument(bbCode, { title }).replace(/#FDFDFD/gi, '#FFFFFF');
+    const doc = new DOMParser().parseFromString(raw, 'text/html');
+
+    const makeSpacerSection = (tag) => {
+        const section = doc.createElement(tag);
+        const row = doc.createElement('tr');
+        const cell = doc.createElement('td');
+        row.appendChild(cell);
+        section.appendChild(row);
+        return section;
+    };
+
+    const wrap = doc.createElement('table');
+    wrap.className = 'print-wrap';
+    wrap.setAttribute('width', '100%');
+    wrap.setAttribute('cellpadding', '0');
+    wrap.setAttribute('cellspacing', '0');
+    wrap.setAttribute('border', '0');
+    const body = doc.createElement('tbody');
+    const row = doc.createElement('tr');
+    const cell = doc.createElement('td');
+    Array.from(doc.body.childNodes).forEach((node) => cell.appendChild(node));
+    row.appendChild(cell);
+    body.appendChild(row);
+    wrap.appendChild(makeSpacerSection('thead'));
+    wrap.appendChild(body);
+    wrap.appendChild(makeSpacerSection('tfoot'));
+    doc.body.appendChild(wrap);
+
+    const style = doc.createElement('style');
+    style.textContent = PRINT_CSS_TEXT;
+    doc.head.appendChild(style);
+    return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+};
 
 const escapeAttribute = (value) => String(value == null ? '' : value)
     .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -102,7 +156,7 @@ export const buildSvgFileName = (title) => buildHtmlFileName(title).replace(/\.h
 // cadre invisible de la page.
 export async function printReportAsPdf({ bbCode, title }) {
     const baseName = buildHtmlFileName(title).replace(/.html$/i, '');
-    const html = bbcodeToHtmlDocument(bbCode, { title: baseName }).replace('</head>', `${PRINT_CSS}</head>`);
+    const html = buildPrintHtml(bbCode, baseName);
 
     const popup = window.open('', '_blank', 'width=900,height=800');
     if (popup && popup.document) {
@@ -131,8 +185,9 @@ export async function printReportAsPdf({ bbCode, title }) {
     }
 }
 
-// Génère et télécharge le rapport en SVG.
-export async function downloadReportAsSvg({ bbCode, title }) {
+// Construit le SVG autonome du rapport (HTML mis en page dans un <foreignObject>, images intégrées).
+// → { svg, width, height }
+async function buildReportSvg({ bbCode, title }) {
     const html = bbcodeToHtmlDocument(bbCode, { title });
     const frame = await createFrame(html, SVG_WIDTH_PX);
     try {
@@ -156,10 +211,60 @@ export async function downloadReportAsSvg({ bbCode, title }) {
 </foreignObject>
 </svg>
 `;
-        downloadBlob(buildSvgFileName(title), svg, 'image/svg+xml;charset=utf-8');
+        return { svg, width: SVG_WIDTH_PX, height };
     } finally {
         if (frame.parentNode) frame.parentNode.removeChild(frame);
     }
+}
+
+// Génère et télécharge le rapport en SVG.
+export async function downloadReportAsSvg({ bbCode, title }) {
+    const { svg } = await buildReportSvg({ bbCode, title });
+    downloadBlob(buildSvgFileName(title), svg, 'image/svg+xml;charset=utf-8');
+}
+
+// Limite d'un côté de canvas supportée par les navigateurs (Chrome : 16 384 px).
+const MAX_CANVAS_SIDE = 16000;
+const TARGET_SCALE = 2;      // 1 800 px de large : texte net, même zoomé dans Discord
+
+export const buildPngFileName = (title) => buildHtmlFileName(title).replace(/\.html$/i, '.png');
+
+// Dessine le rapport sur un canvas (via le SVG ci-dessus) et retourne un Blob PNG.
+async function renderReportPng({ bbCode, title }) {
+    const { svg, width, height } = await buildReportSvg({ bbCode, title });
+    const scale = Math.min(TARGET_SCALE, MAX_CANVAS_SIDE / height);
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error("le navigateur n'a pas pu dessiner le rapport"));
+        image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#FFFFFF';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error("l'image est trop grande pour ce navigateur");
+    return blob;
+}
+
+// Télécharge le rapport en une grande image PNG.
+export async function downloadReportAsPng({ bbCode, title }) {
+    const blob = await renderReportPng({ bbCode, title });
+    downloadBlob(buildPngFileName(title), blob, 'image/png');
+}
+
+// Copie le rapport en image dans le presse-papiers (à coller avec Ctrl+V dans Discord).
+export async function copyReportAsPng({ bbCode, title }) {
+    if (!navigator.clipboard || typeof window.ClipboardItem === 'undefined') {
+        throw new Error("ce navigateur ne permet pas de copier une image : utilisez « Télécharger l'image »");
+    }
+    // La génération (longue) est passée EN PROMESSE à ClipboardItem : l'écriture dans le presse-papiers est demandée pendant
+    // le clic, sinon le navigateur la refuserait une fois l'image prête.
+    await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': renderReportPng({ bbCode, title }) })]);
 }
 
 // Point d'entrée unique des menus : format 'pdf' | 'svg'. Retourne true si l'export a démarré.
@@ -170,7 +275,16 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
     }
     const safeTitle = title || 'Rapport';
     try {
-        if (format === 'pdf') {
+        if (format === 'png' || format === 'png-copy') {
+            if (showNotification) showNotification("Génération de l'image…", 'info-circle', 4000);
+            if (format === 'png') {
+                await downloadReportAsPng({ bbCode, title: safeTitle });
+                if (showNotification) showNotification('Image PNG téléchargée : vous pouvez la joindre telle quelle sur Discord.', 'check-circle');
+            } else {
+                await copyReportAsPng({ bbCode, title: safeTitle });
+                if (showNotification) showNotification('Image copiée : collez-la dans Discord avec Ctrl+V.', 'check-circle');
+            }
+        } else if (format === 'pdf') {
             if (showNotification) showNotification("Une fenêtre s'ouvre avec le rapport seul : dans l'impression, choisissez « Enregistrer au format PDF » (format A4).", 'info-circle', 7000);
             await printReportAsPdf({ bbCode, title: safeTitle });
         } else {
@@ -181,6 +295,10 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
         return true;
     } catch (error) {
         console.error(`Export ${format} impossible :`, error);
+        if (/png/.test(format) && error && /taint|insecure|security/i.test(String(error.name) + String(error.message))) {
+            if (showNotification) showNotification("Ce navigateur bloque l'export en image (Safari, notamment) : utilisez Chrome, Edge ou Firefox, ou le PDF.", 'error', 8000);
+            return false;
+        }
         if (showNotification) showNotification(`Échec de l'export ${format.toUpperCase()} : ${(error.message || '').substring(0, 120)}`, 'error');
         return false;
     }
@@ -188,3 +306,4 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
 
 export const PDF_EXPORT_LABEL = 'Télécharger le PDF (A4)';
 export const SVG_EXPORT_LABEL = "Télécharger l'image vectorielle (SVG)";
+export const PNG_EXPORT_LABEL = "Télécharger l'image (PNG, pour Discord)";

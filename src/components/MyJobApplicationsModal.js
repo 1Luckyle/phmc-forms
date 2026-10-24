@@ -228,6 +228,9 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                     <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={SVG_EXPORT_LABEL} onClick={() => handleExportDocument('svg', application)}>
                                         <i className="fas fa-bezier-curve me-1"></i>SVG
                                     </Button>
+                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title="Grande image PNG, à joindre sur Discord" onClick={() => handleExportDocument('png', application)}>
+                                        <i className="fas fa-image me-1"></i>Image (PNG)
+                                    </Button>
                                     <ExpandToggle
                                         open={openRows[application.id] === 'preview'} label="Aperçu"
                                         onClick={() => toggleRow(application.id, 'preview')}
