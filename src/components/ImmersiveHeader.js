@@ -5,11 +5,15 @@
 //   • horloge du serveur en temps réel : heure du serveur (UTC) | heure locale de l'appareil, par exemple
 //     « Serveur : 2026-10-24 16:03:33 UTC | Local : 18:03:33 » ;
 //   • météo du serveur, découpée en trois zones qui reprennent la météo réelle de leur équivalent californien :
-//     Los Santos → Los Angeles, Sandy Shores → Desert Shores, Paleto Bay → Morro Bay, avec les prévisions des
-//     prochaines heures.
+//     Los Santos → Los Angeles, Sandy Shores → Desert Shores, Paleto Bay → Morro Bay. Elle est présentée comme
+//     l'application météo du téléphone du jeu : température du moment, conditions, maximum / minimum du jour,
+//     prévisions horaires puis sur 3 jours.
 // La météo vient d'Open-Meteo (gratuit, sans clé, appelé depuis le navigateur : aucun coût Firebase) et est gardée
 // 20 minutes dans le navigateur pour ne pas multiplier les appels.
-import React, { useCallback, useEffect, useState } from 'react';
+//
+// « Maintenant » : le téléphone du jeu affiche la température de la tranche horaire PRÉCÉDENTE (à 19 h 14 il montre
+// celle de 18 h : constaté sur les trois zones). On fait pareil, pour que les chiffres collent à ceux du jeu.
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import phmcLogo from '../assets/phmc.png';
 import './ImmersiveHeader.css';
 
@@ -22,9 +26,9 @@ export const WEATHER_ZONES = [
     { key: 'paleto-bay', label: 'Paleto Bay', real: 'Morro Bay', latitude: 35.3658, longitude: -120.8499 },
 ];
 
-// Codes météo WMO (Open-Meteo) → libellé français et pictogramme.
+// Codes météo WMO (Open-Meteo) → libellé français et pictogramme (jour, nuit).
 const WEATHER_CODES = {
-    0: ['Ciel dégagé', '☀️', '🌙'], 1: ['Plutôt dégagé', '🌤️', '🌙'], 2: ['Partiellement nuageux', '⛅', '☁️'], 3: ['Couvert', '☁️'],
+    0: ['Ensoleillé', '☀️', '🌙'], 1: ['Plutôt dégagé', '🌤️', '🌙'], 2: ['Partiellement nuageux', '⛅', '☁️'], 3: ['Couvert', '☁️'],
     45: ['Brouillard', '🌫️'], 48: ['Brouillard givrant', '🌫️'],
     51: ['Bruine légère', '🌦️'], 53: ['Bruine', '🌦️'], 55: ['Bruine dense', '🌧️'], 56: ['Bruine verglaçante', '🌧️'], 57: ['Bruine verglaçante', '🌧️'],
     61: ['Pluie légère', '🌦️'], 63: ['Pluie', '🌧️'], 65: ['Forte pluie', '🌧️'], 66: ['Pluie verglaçante', '🌧️'], 67: ['Pluie verglaçante', '🌧️'],
@@ -37,14 +41,14 @@ const describeWeather = (code, isDay = 1) => {
     return { label: entry[0], icon: isDay === 0 && entry[2] ? entry[2] : entry[1] };
 };
 
-const CACHE_KEY = 'immersiveHeaderWeather_v1';
+const CACHE_KEY = 'immersiveHeaderWeather_v2';
 const CACHE_TTL_MS = 20 * 60 * 1000;
-const FORECAST_OFFSETS_HOURS = [3, 6, 9, 12];
+const HOURS_AFTER_NOW = 5;
 
 const readCache = () => {
     try {
         const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-        return cached && Array.isArray(cached.zones) ? cached : null;
+        return cached && cached.payload ? cached : null;
     } catch (error) { return null; }
 };
 
@@ -53,34 +57,59 @@ const buildUrl = () => {
     const longitudes = WEATHER_ZONES.map((zone) => zone.longitude).join(',');
     return 'https://api.open-meteo.com/v1/forecast'
         + `?latitude=${latitudes}&longitude=${longitudes}`
-        + '&current=temperature_2m,weather_code,wind_speed_10m,is_day'
-        + '&hourly=temperature_2m,weather_code,precipitation_probability'
-        + '&forecast_days=2&timezone=UTC&wind_speed_unit=kmh';
+        + '&hourly=temperature_2m,weather_code,wind_speed_10m,is_day'
+        + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+        + '&forecast_days=3&timezone=UTC&wind_speed_unit=kmh';
 };
 
-// → [{ zone, current: { temperature, label, icon, wind }, forecast: [{ at, temperature, label, icon, rain }] }]
-const parseZones = (payload) => {
+const pad = (value) => String(value).padStart(2, '0');
+const dayLabel = (isoDate, index) => {
+    if (index === 0) return "Aujourd'hui";
+    const date = new Date(`${isoDate}T00:00:00Z`);
+    return date.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' });
+};
+
+// Charge brute Open-Meteo → un objet par zone, calculé à l'heure `now` (les heures « maintenant / +1 h… » avancent
+// toutes seules sans nouvel appel réseau).
+//   → [{ zone, now: { temperature, label, icon, wind }, max, min, hourly: [{ label, temperature, icon }],
+//        days: [{ label, icon, min, max }] } | { zone, now: null }]
+export const parseZones = (payload, now = Date.now()) => {
     const list = Array.isArray(payload) ? payload : [payload];
-    const now = Date.now();
     return WEATHER_ZONES.map((zone, index) => {
         const data = list[index];
-        if (!data || !data.current) return { zone, current: null, forecast: [] };
-        const times = (data.hourly?.time || []).map((value) => Date.parse(`${value}Z`));
-        const currentHour = times.findIndex((time) => time >= now - 30 * 60 * 1000);
-        const forecast = FORECAST_OFFSETS_HOURS.map((offset) => {
-            const i = currentHour < 0 ? -1 : currentHour + offset;
-            if (i < 0 || i >= times.length) return null;
-            const weather = describeWeather(data.hourly.weather_code[i], 1);
-            return {
-                at: times[i], temperature: Math.round(data.hourly.temperature_2m[i]),
-                label: weather.label, icon: weather.icon, rain: data.hourly.precipitation_probability?.[i] ?? null,
-            };
-        }).filter(Boolean);
-        const weather = describeWeather(data.current.weather_code, data.current.is_day);
+        if (!data || !data.hourly || !data.daily) return { zone, now: null, hourly: [], days: [] };
+        const times = data.hourly.time.map((value) => Date.parse(`${value}Z`));
+        // Tranche horaire en cours : la dernière dont l'heure pleine est passée.
+        let current = -1;
+        times.forEach((time, i) => { if (time <= now) current = i; });
+        if (current < 0) return { zone, now: null, hourly: [], days: [] };
+        const at = (i) => {
+            const isDay = data.hourly.is_day?.[i] ?? 1;
+            const weather = describeWeather(data.hourly.weather_code[i], isDay);
+            return { time: times[i], temperature: Math.round(data.hourly.temperature_2m[i]), label: weather.label, icon: weather.icon, wind: Math.round(data.hourly.wind_speed_10m?.[i] ?? 0) };
+        };
+
+        // Comme le téléphone du jeu : « maintenant » = la tranche horaire précédente.
+        const shown = at(Math.max(0, current - 1));
+        const today = data.daily.time[0];
+        const hourly = [{ label: 'Maint.', temperature: shown.temperature, icon: shown.icon }];
+        for (let k = 1; k <= HOURS_AFTER_NOW; k += 1) {
+            const i = current + k;
+            if (i >= times.length) break;
+            const entry = at(i);
+            hourly.push({ label: `${pad(new Date(entry.time).getUTCHours())}`, temperature: entry.temperature, icon: entry.icon });
+        }
+        const days = data.daily.time.map((isoDate, i) => ({
+            label: dayLabel(isoDate, i),
+            icon: describeWeather(data.daily.weather_code[i], 1).icon,
+            min: Math.round(data.daily.temperature_2m_min[i]),
+            max: Math.round(data.daily.temperature_2m_max[i]),
+        }));
         return {
             zone,
-            current: { temperature: Math.round(data.current.temperature_2m), label: weather.label, icon: weather.icon, wind: Math.round(data.current.wind_speed_10m) },
-            forecast,
+            now: { temperature: shown.temperature, label: shown.label, icon: shown.icon, wind: shown.wind },
+            max: days[0]?.max, min: days[0]?.min, today,
+            hourly, days,
         };
     });
 };
@@ -88,8 +117,10 @@ const parseZones = (payload) => {
 const useZoneWeather = () => {
     const [state, setState] = useState(() => {
         const cached = readCache();
-        return { zones: cached ? cached.zones : null, fetchedAt: cached ? cached.fetchedAt : 0, error: false };
+        return { payload: cached ? cached.payload : null, fetchedAt: cached ? cached.fetchedAt : 0, error: false };
     });
+    // Recalcule « maintenant / +1 h… » chaque minute à partir des données déjà reçues.
+    const [tick, setTick] = useState(0);
 
     const refresh = useCallback(async (force = false) => {
         const cached = readCache();
@@ -97,10 +128,10 @@ const useZoneWeather = () => {
         try {
             const response = await fetch(buildUrl());
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const zones = parseZones(await response.json());
+            const payload = await response.json();
             const fetchedAt = Date.now();
-            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ fetchedAt, zones })); } catch (error) { /* stockage indisponible */ }
-            setState({ zones, fetchedAt, error: false });
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ fetchedAt, payload })); } catch (error) { /* stockage indisponible */ }
+            setState({ payload, fetchedAt, error: false });
         } catch (error) {
             console.warn('Météo indisponible :', error);
             setState((previous) => ({ ...previous, error: true }));
@@ -110,16 +141,17 @@ const useZoneWeather = () => {
     useEffect(() => {
         refresh();
         const timer = setInterval(() => refresh(), CACHE_TTL_MS);
-        return () => clearInterval(timer);
+        const minuteTimer = setInterval(() => setTick((value) => value + 1), 60 * 1000);
+        return () => { clearInterval(timer); clearInterval(minuteTimer); };
     }, [refresh]);
 
-    return { ...state, refresh };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const zones = useMemo(() => (state.payload ? parseZones(state.payload, Date.now()) : null), [state.payload, tick]);
+    return { zones, fetchedAt: state.fetchedAt, error: state.error, refresh };
 };
 
-const pad = (value) => String(value).padStart(2, '0');
 const formatUtcDateTime = (date) => `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
 const formatLocalTime = (date) => `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-const formatUtcHour = (timestamp) => `${pad(new Date(timestamp).getUTCHours())}h`;
 
 // L'horloge a son propre composant : elle se met à jour chaque seconde sans refaire le reste de l'en-tête.
 const ServerClock = () => {
@@ -156,25 +188,41 @@ const ImmersiveHeader = () => {
             </div>
 
             <div className="immersive-weather">
-                {zones ? zones.map(({ zone, current, forecast }) => (
-                    <div key={zone.key} className="immersive-zone" title={`Météo réelle de ${zone.real} (Californie)`}>
-                        <div className="immersive-zone-name">{zone.label}</div>
-                        {current ? (
+                {zones ? zones.map((entry) => (
+                    <div key={entry.zone.key} className="immersive-zone" title={`Météo réelle de ${entry.zone.real} (Californie)`}>
+                        <div className="immersive-zone-name">{entry.zone.label}</div>
+                        {entry.now ? (
                             <>
                                 <div className="immersive-zone-now">
-                                    <span className="immersive-zone-icon">{current.icon}</span>
-                                    <span className="immersive-zone-temp">{current.temperature}°C</span>
+                                    <span className="immersive-zone-icon">{entry.now.icon}</span>
+                                    <span className="immersive-zone-temp">{entry.now.temperature}°</span>
+                                    <span className="immersive-zone-label">{entry.now.label}</span>
                                 </div>
-                                <div className="immersive-zone-label">{current.label} · {current.wind} km/h</div>
+                                <div className="immersive-zone-label">Max. {entry.max}° · Min. {entry.min}° · {entry.now.wind} km/h</div>
                                 {showForecast && (
-                                    <ul className="immersive-forecast">
-                                        {forecast.map((entry) => (
-                                            <li key={entry.at} title={entry.label}>
-                                                <span>{formatUtcHour(entry.at)}</span> <span>{entry.icon}</span> <span>{entry.temperature}°</span>
-                                                {entry.rain != null && entry.rain >= 20 && <span className="immersive-rain">{entry.rain}%</span>}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <>
+                                        <div className="immersive-section-title"><i className="fas fa-clock"></i> Prévisions horaires <span>(heures serveur)</span></div>
+                                        <ul className="immersive-hourly">
+                                            {entry.hourly.map((hour, index) => (
+                                                <li key={`${hour.label}-${index}`}>
+                                                    <span className="immersive-hour-label">{hour.label}</span>
+                                                    <span>{hour.icon}</span>
+                                                    <span className="immersive-hour-temp">{hour.temperature}°</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="immersive-section-title"><i className="fas fa-calendar-days"></i> Prévisions sur 3 jours</div>
+                                        <ul className="immersive-days">
+                                            {entry.days.map((day) => (
+                                                <li key={day.label}>
+                                                    <span className="immersive-day-label">{day.label}</span>
+                                                    <span>{day.icon}</span>
+                                                    <span className="immersive-day-min">{day.min}°</span>
+                                                    <span className="immersive-day-max">{day.max}°</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </>
                                 )}
                             </>
                         ) : <div className="immersive-zone-label">Indisponible</div>}
@@ -186,7 +234,7 @@ const ImmersiveHeader = () => {
 
             <div className="immersive-footer">
                 <button type="button" className="immersive-link" onClick={() => setShowForecast((previous) => !previous)}>
-                    <i className={`fas fa-chevron-${showForecast ? 'up' : 'down'}`}></i> {showForecast ? 'Masquer les prévisions' : 'Voir les prévisions (heures serveur)'}
+                    <i className={`fas fa-chevron-${showForecast ? 'up' : 'down'}`}></i> {showForecast ? 'Masquer les prévisions' : 'Voir les prévisions'}
                 </button>
                 <button type="button" className="immersive-link" onClick={() => refresh(true)} title={fetchedAt ? `Dernière mise à jour : ${new Date(fetchedAt).toLocaleTimeString('fr-FR')}` : ''}>
                     <i className="fas fa-rotate"></i> Actualiser
