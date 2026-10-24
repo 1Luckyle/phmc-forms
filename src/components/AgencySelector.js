@@ -260,8 +260,7 @@ const AgencySelector = ({
                             <div style={positionStatusListStyle}>
                                 <strong style={openStatusStyle}>Ouvert :</strong>
                                 <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
-                                    {formSpecificButtonProps.openPositions.slice(0, 3).map(pos => <li key={`open-${form.version}-${pos}`}>{pos}</li>)}
-                                    {formSpecificButtonProps.openPositions.length > 3 && <li>... et plus</li>}
+                                    {formSpecificButtonProps.openPositions.map(pos => <li key={`open-${form.version}-${pos}`}>{pos}</li>)}
                                 </ul>
                             </div>
                         )}
@@ -269,8 +268,7 @@ const AgencySelector = ({
                             <div style={positionStatusListStyle}>
                                 <strong style={closedStatusStyle}>Fermé :</strong>
                                 <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
-                                    {formSpecificButtonProps.closedPositions.slice(0, 3).map(pos => <li key={`closed-${form.version}-${pos}`}>{pos}</li>)}
-                                    {formSpecificButtonProps.closedPositions.length > 3 && <li>... et plus</li>}
+                                    {formSpecificButtonProps.closedPositions.map(pos => <li key={`closed-${form.version}-${pos}`}>{pos}</li>)}
                                 </ul>
                             </div>
                         )}
@@ -326,14 +324,18 @@ const AgencySelector = ({
                             </Button>
                         )}
                         <Button
-                            variant="outline-secondary"
+                            variant="info"
                             size="sm"
                             onClick={() => setHideAgencySelector(true)}
+                            title="Replier ce sélecteur : vous le retrouvez via « Changer de Formulaire » dans la Boîte à Outils"
                             style={{
-                                fontSize: '0.75rem',
-                                padding: '0.25rem 0.5rem'
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                padding: '0.35rem 0.8rem',
+                                boxShadow: '0 0 0 2px rgba(13, 202, 240, 0.35)'
                             }}
                         >
+                            <i className="fas fa-eye-slash" style={{ marginRight: '6px' }}></i>
                             Masquer le sélecteur
                         </Button>
                         <button

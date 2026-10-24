@@ -12,6 +12,7 @@ import DebugWhitelist from './DebugWhitelist';
 import DebugSeasonTester from './DebugSeasonTester';
 import DebugViewAs from './DebugViewAs';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
+import BbcodeAccessSwitch from './BbcodeAccessSwitch';
 
 const AdminDashboard = ({
     currentUser,
@@ -158,6 +159,7 @@ const AdminDashboard = ({
                     <div className="nav-pills-flex-column">
                         <button className={`nav-link ${selectedSection === 'serviceStatus' ? 'active' : ''}`} onClick={() => setSelectedSection('serviceStatus')}><i className="fas fa-server me-2"></i>Statut du service</button>
                         <button className={`nav-link ${selectedSection === 'lockdown' ? 'active' : ''}`} onClick={() => setSelectedSection('lockdown')}><i className="fas fa-lock me-2"></i>Confinement</button>
+                        <button className={`nav-link ${selectedSection === 'display' ? 'active' : ''}`} onClick={() => setSelectedSection('display')}><i className="fas fa-sliders-h me-2"></i>Affichage</button>
                         <button className={`nav-link ${selectedSection === 'debug' ? 'active' : ''}`} onClick={() => setSelectedSection('debug')}><i className="fas fa-bug me-2"></i>Debug</button>
                         <button className={`nav-link ${selectedSection === 'authMethods' ? 'active' : ''}`} onClick={() => setSelectedSection('authMethods')}><i className="fas fa-key me-2"></i>Méthodes de connexion</button>
                         <button className={`nav-link ${selectedSection === 'pendingAccounts' ? 'active' : ''}`} onClick={() => setSelectedSection('pendingAccounts')}><i className="fas fa-user-clock me-2"></i>Demandes de compte</button>
@@ -315,6 +317,9 @@ const AdminDashboard = ({
                                 </Button>
                             </div>
                         </div>
+                    )}
+                    {selectedSection === 'display' && (
+                        <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
                     )}
                     {selectedSection === 'debug' && (
                         <div className="card">

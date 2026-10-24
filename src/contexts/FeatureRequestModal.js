@@ -5,9 +5,16 @@ import * as Sentry from "@sentry/react";
 import { useNotification } from './NotificationContext';
 import DebugFillButton from '../components/DebugFillButton';
 
+// Deux versions du même formulaire :
+//   • mode « bug »     : rapport de bug (ouvert à tous, connectés ou non) ;
+//   • mode « feature » : demande de fonctionnalité (comptes connectés), avec en plus la possibilité de proposer un
+//     NOUVEAU FORMULAIRE en collant son BBCode ou son HTML (toujours accepté, que l'accès au BBCode soit activé ou non).
+const looksLikeHtml = (text) => /<\/?[a-z][\s\S]*>/i.test(text || '');
+
 const FeatureRequestModal = ({
     show,
     onClose,
+    mode = 'bug',
     featureRequest,
     setFeatureRequest,
     discordName,
@@ -23,6 +30,10 @@ const FeatureRequestModal = ({
     setShowFeatureRequestModal
 }) => {
     const { showNotification } = useNotification();
+    const isFeature = mode === 'feature';
+    // Proposer un nouveau formulaire n'existe que dans la demande de fonctionnalité.
+    const isFormRequest = isFeature && isBbcodeRequest;
+    const kindLabel = isFeature ? (isFormRequest ? 'Nouveau formulaire' : 'Fonctionnalité') : 'Bug';
 
     const handleFeatureRequestSubmit = async () => {
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
@@ -30,26 +41,28 @@ const FeatureRequestModal = ({
         if (!webhookURL) {
             console.error('Discord webhook URL not configured for feature requests.');
             Sentry.captureMessage('Discord webhook URL is missing for feature request submission.', 'error');
-            showNotification('Erreur de configuration : Impossible d’envoyer la requête. Veuillez contacter l’administrateur.', 'exclamation-triangle');
+            showNotification('Erreur de configuration : Impossible d’envoyer la requête. Veuillez contacter l’administrateur.', 'exclamation-triangle');
             return;
         }
 
         // Validations
-        if (!featureRequest.trim() && (!isBbcodeRequest || !bbcodeRequestText.trim())) {
-            showNotification('Veuillez saisir votre rapport de bug/demande de fonctionnalité ou les détails du BBCode.', 'warning');
+        if (!featureRequest.trim() && (!isFormRequest || !bbcodeRequestText.trim())) {
+            showNotification(isFeature
+                ? 'Veuillez décrire la fonctionnalité souhaitée (ou fournir le BBCode / HTML du formulaire).'
+                : 'Veuillez décrire le bug rencontré.', 'warning');
             return;
         }
         if (!discordName.trim()) {
             showNotification('Veuillez saisir votre nom Discord.', 'warning');
             return;
         }
-        if (isBbcodeRequest && !bbcodeTitleRequest.trim()) {
-            showNotification('Veuillez saisir un titre pour votre demande de format BBCode.', 'warning');
+        if (isFormRequest && !bbcodeTitleRequest.trim()) {
+            showNotification('Veuillez saisir un titre pour le nouveau formulaire.', 'warning');
             return;
         }
-        // If it's a BBCode request, the BBCode text itself is now also required for file attachment
-        if (isBbcodeRequest && !bbcodeRequestText.trim()) {
-            showNotification('Veuillez saisir le BBCode pour votre nouvelle demande de format.', 'warning');
+        // Un nouveau formulaire : son contenu (BBCode ou HTML) est joint à la demande en fichier.
+        if (isFormRequest && !bbcodeRequestText.trim()) {
+            showNotification('Veuillez saisir le BBCode ou le HTML du nouveau formulaire.', 'warning');
             return;
         }
 
@@ -61,7 +74,7 @@ const FeatureRequestModal = ({
         const MAX_FIELD_LENGTH = 1000;
         const requestChunks = [];
         let currentChunk = "";
-        const mainRequestDetails = featureRequest || (isBbcodeRequest ? "Voir le fichier BBCode pour les détails." : "Aucun détail fourni.");
+        const mainRequestDetails = featureRequest || (isFormRequest ? "Voir le fichier joint pour les détails." : "Aucun détail fourni.");
 
         mainRequestDetails.split('\n').forEach(line => {
             if (currentChunk.length + line.length + 1 > MAX_FIELD_LENGTH) {
@@ -75,36 +88,39 @@ const FeatureRequestModal = ({
             requestChunks.push(currentChunk);
         }
 
+        const embedTitle = isFeature ? '💡 Demande de fonctionnalité' : '🐞 Rapport de bug';
+        const contentLabel = isFeature ? 'Demande de fonctionnalité' : 'Rapport de bug';
+
         // Base fields for the embed
         const baseEmbedFields = [
             { name: "Soumis par", value: discordName || "N/A", inline: true },
-            { name: "Type de demande", value: isBbcodeRequest ? "Nouveau format BBCode" : "Bug/Fonctionnalité", inline: true },
+            { name: "Type de demande", value: kindLabel, inline: true },
         ];
 
-        if (isBbcodeRequest) {
-            baseEmbedFields.push({ name: "Titre proposé pour le BBCode", value: bbcodeTitleRequest || "N/A", inline: false });
+        if (isFormRequest) {
+            baseEmbedFields.push({ name: "Titre proposé pour le formulaire", value: bbcodeTitleRequest || "N/A", inline: false });
         }
 
         let firstMessageBody;
         let firstMessageHeaders = { 'Content-Type': 'application/json' }; // Default for JSON payload
 
-        // --- MODIFICATION START ---
         const requestDetailsFieldName = `Détails de la demande${requestChunks.length > 1 ? ` (Partie 1 sur ${requestChunks.length})` : ''}`;
-        // --- MODIFICATION END ---
 
-        if (isBbcodeRequest && bbcodeRequestText.trim()) {
-            const bbcodeFile = new File([new Blob([bbcodeRequestText], { type: 'text/plain;charset=utf-8' })], 'requested_bbcode.txt');
+        if (isFormRequest && bbcodeRequestText.trim()) {
+            const isHtml = looksLikeHtml(bbcodeRequestText);
+            const fileName = isHtml ? 'formulaire_demande.html' : 'formulaire_demande.txt';
+            const formFile = new File([new Blob([bbcodeRequestText], { type: isHtml ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8' })], fileName);
             const formDataForFile = new FormData();
 
             const fieldsForFileEmbed = [
                 ...baseEmbedFields,
-                { name: "BBCode demandé", value: "Voir le fichier joint 'requested_bbcode.txt'", inline: false },
+                { name: isHtml ? 'HTML demandé' : 'BBCode demandé', value: `Voir le fichier joint '${fileName}'`, inline: false },
                 { name: requestDetailsFieldName, value: requestChunks[0] || "Aucun détail fourni.", inline: false },
                 { name: "Informations de débogage", value: `\n${JSON.stringify(debugInfo, null, 2)}\n`, inline: false }
             ];
 
             const embedPayloadForFile = {
-                title: "📝 Rapport de bug / Demande de fonctionnalité",
+                title: embedTitle,
                 color: 0x3498DB,
                 fields: fieldsForFileEmbed,
                 timestamp: new Date().toISOString(),
@@ -112,15 +128,15 @@ const FeatureRequestModal = ({
             };
 
             formDataForFile.append('payload_json', JSON.stringify({
-                content: `Retour d'information / Rapport de bug (Partie 1${requestChunks.length > 1 ? ` sur ${requestChunks.length}` : ''})`,
+                content: `${contentLabel} (Partie 1${requestChunks.length > 1 ? ` sur ${requestChunks.length}` : ''})`,
                 embeds: [embedPayloadForFile]
             }));
-            formDataForFile.append('file1', bbcodeFile); // 'file1' is a common key for Discord attachments
+            formDataForFile.append('file1', formFile); // 'file1' is a common key for Discord attachments
 
             firstMessageBody = formDataForFile;
             firstMessageHeaders = {}; // Browser sets Content-Type for FormData, so remove explicit header
         } else {
-            // Standard JSON payload (not a BBCode request, or BBCode text is empty)
+            // Standard JSON payload
             const fieldsForJsonEmbed = [
                 ...baseEmbedFields,
                 { name: requestDetailsFieldName, value: requestChunks[0] || "Aucun détail fourni.", inline: false },
@@ -128,14 +144,14 @@ const FeatureRequestModal = ({
             ];
 
             const firstEmbedData = {
-                title: "📝 Rapport de bug / Demande de fonctionnalité",
+                title: embedTitle,
                 color: 0x3498DB,
                 fields: fieldsForJsonEmbed,
                 timestamp: new Date().toISOString(),
                 footer: { text: `Soumis via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}` }
             };
             firstMessageBody = JSON.stringify({
-                content: `Retour d'information / Rapport de bug (Partie 1${requestChunks.length > 1 ? ` sur ${requestChunks.length}` : ''})`,
+                content: `${contentLabel} (Partie 1${requestChunks.length > 1 ? ` sur ${requestChunks.length}` : ''})`,
                 embeds: [firstEmbedData]
             });
         }
@@ -166,7 +182,7 @@ const FeatureRequestModal = ({
                     await new Promise(resolve => setTimeout(resolve, 1200)); // Delay
 
                     const subsequentEmbedData = {
-                        title: `📝 Détails de la demande de bug/fonctionnalité (Partie ${i + 1} sur ${requestChunks.length})`,
+                        title: `${embedTitle} — détails (Partie ${i + 1} sur ${requestChunks.length})`,
                         description: requestChunks[i],
                         color: 0x3498DB,
                         timestamp: new Date().toISOString(),
@@ -178,7 +194,7 @@ const FeatureRequestModal = ({
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }, // Subsequent parts are always JSON
                         body: JSON.stringify({
-                            content: `Retour d'information / Rapport de bug (Partie ${i + 1} sur ${requestChunks.length})`,
+                            content: `${contentLabel} (Partie ${i + 1} sur ${requestChunks.length})`,
                             embeds: [subsequentEmbedData]
                         }),
                     });
@@ -223,55 +239,65 @@ const FeatureRequestModal = ({
         <div className="modal-overlay feature-request-modal" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h5 className="modal-title">Rapport de bug / Demande de fonctionnalité / BBCode</h5>
+                    <h5 className="modal-title">
+                        <i className={`fas ${isFeature ? 'fa-lightbulb' : 'fa-bug'}`} style={{ marginRight: '8px' }}></i>
+                        {isFeature ? 'Demande de fonctionnalité' : 'Rapport de bug'}
+                    </h5>
                     <button type="button" className="close" onClick={onClose}>
                         <span>&times;</span>
                     </button>
                 </div>
                 <div className="modal-body">
                     <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Check
-                                type="checkbox"
-                                id="isBbcodeRequestCheckbox"
-                                label="Demandez-vous qu'un nouveau format BBCode soit ajouté ?"
-                                checked={isBbcodeRequest}
-                                onChange={(e) => setIsBbcodeRequest(e.target.checked)}
-                            />
-                        </Form.Group>
-                        {isBbcodeRequest && (
+                        {isFeature && (
                             <>
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Titre proposé pour le format BBCode</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        value={bbcodeTitleRequest}
-                                        onChange={(e) => setBbcodeTitleRequest(e.target.value)}
-                                        placeholder="Entrez un titre pour le nouveau format BBCode"
+                                    <Form.Check
+                                        type="checkbox"
+                                        id="isBbcodeRequestCheckbox"
+                                        label="Demandez-vous qu'un nouveau formulaire soit ajouté ?"
+                                        checked={isBbcodeRequest}
+                                        onChange={(e) => setIsBbcodeRequest(e.target.checked)}
                                     />
                                 </Form.Group>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>BBCode</Form.Label>
-                                    <Form.Control
-                                        as="textarea"
-                                        rows={6}
-                                        value={bbcodeRequestText}
-                                        onChange={(e) => setBbcodeRequestText(e.target.value)}
-                                        placeholder="Collez ou tapez le BBCode pour le nouveau format ici..."
-                                    />
-                                </Form.Group>
+                                {isBbcodeRequest && (
+                                    <>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Titre proposé pour le formulaire</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                value={bbcodeTitleRequest}
+                                                onChange={(e) => setBbcodeTitleRequest(e.target.value)}
+                                                placeholder="Entrez un titre pour le nouveau formulaire"
+                                            />
+                                        </Form.Group>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>BBCode ou HTML du formulaire</Form.Label>
+                                            <Form.Control
+                                                as="textarea"
+                                                rows={6}
+                                                value={bbcodeRequestText}
+                                                onChange={(e) => setBbcodeRequestText(e.target.value)}
+                                                placeholder="Collez ou tapez ici le BBCode ou le HTML du nouveau formulaire…"
+                                            />
+                                            <Form.Text className="text-muted">Les deux formats sont acceptés.</Form.Text>
+                                        </Form.Group>
+                                    </>
+                                )}
                             </>
                         )}
                         <Form.Group className="mb-3">
-                            <Form.Label>Détails de la demande</Form.Label>
+                            <Form.Label>{isFeature ? 'Détails de la demande' : 'Détails du bug'}</Form.Label>
                             <Form.Control
                                 as="textarea"
-                                rows={isBbcodeRequest ? 3 : 8}
+                                rows={isFormRequest ? 3 : 8}
                                 value={featureRequest}
                                 onChange={(e) => setFeatureRequest(e.target.value)}
-                                placeholder={isBbcodeRequest
-                                    ? "Fournissez ici tout contexte ou explication supplémentaire pour votre demande de BBCode."
-                                    : "Si vous avez trouvé un bug, veuillez fournir autant d'informations que possible (les images sont également très utiles !). Si vous demandez une fonctionnalité, veuillez fournir une description détaillée de la fonctionnalité que vous souhaitez voir."
+                                placeholder={isFormRequest
+                                    ? "Fournissez ici tout contexte ou explication supplémentaire pour votre demande de formulaire."
+                                    : isFeature
+                                        ? "Décrivez la fonctionnalité souhaitée avec le plus de précision possible : à quoi elle servirait, où vous l'imagineriez dans l'outil."
+                                        : "Décrivez le bug : ce que vous faisiez, ce qui s'est passé, ce que vous attendiez. Plus il y a d'informations, mieux c'est (les images sont également très utiles !)."
                                 }
                             />
                         </Form.Group>
@@ -291,10 +317,10 @@ const FeatureRequestModal = ({
                     <DebugFillButton
                         style={{ marginRight: 'auto' }}
                         onFill={() => {
-                            setIsBbcodeRequest(true);
-                            setBbcodeTitleRequest('[TEST] Nouveau format de test');
+                            setIsBbcodeRequest(isFeature);
+                            setBbcodeTitleRequest('[TEST] Nouveau formulaire de test');
                             setBbcodeRequestText('[b]Titre de test[/b]\n[list]\n[*] Élément de test\n[/list]');
-                            setFeatureRequest('[TEST] Demande générée par le mode debug.');
+                            setFeatureRequest(isFeature ? '[TEST] Demande générée par le mode debug.' : '[TEST] Bug généré par le mode debug.');
                             setDiscordName('testeur.debug');
                         }}
                     />

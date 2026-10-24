@@ -62,6 +62,9 @@ import { getEmployeeDisplayName } from './utils/employeeName';
 import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 import PatientInvoiceNotifier from './components/PatientInvoiceNotifier';
 import { ReportPreviewFrame } from './components/ReportExpansion';
+import { useSiteConfig } from './contexts/SiteConfigContext';
+import ImmersiveHeader from './components/ImmersiveHeader';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from './utils/reportDocumentExport';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -280,6 +283,8 @@ function MainApp({
     const [fillPhoneChecked, setFillPhoneChecked] = useState(false);
     const [showBBCode, setShowBBCode] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    // BBCode désactivé par les admins : il ne reste que l'aperçu et le téléchargement HTML.
+    const { bbcodeEnabled } = useSiteConfig();
     const [bbCodeVersion, setBbCodeVersion] = useState(() => {
         const storedVersion = localStorage.getItem('bbCodeVersion');
         return storedVersion ? parseInt(storedVersion, 10) : (formDefinitions[0]?.version || 1);
@@ -354,7 +359,9 @@ function MainApp({
     const [bbcodeRequestText, setBbcodeRequestText] = useState('');
     const [currentUtcTime, setCurrentUtcTime] = useState('');
 
-    const { seasonalEffectsEnabled, toggleSeasonalEffects } = useSettings();
+    const { seasonalEffectsEnabled, toggleSeasonalEffects, immersiveHeaderEnabled, toggleImmersiveHeader } = useSettings();
+    // Deux versions du formulaire de retour : rapport de bug (tout le monde) et demande de fonctionnalité (comptes connectés).
+    const [featureModalMode, setFeatureModalMode] = useState('bug');
     const { lockdownConfig, showDialog, hideDialog, isLockdownActive } = useLockdown();
     const parseBBCode = (bbCode) => {
         const deathReportDefinition = getFormDefinition(1); // Assuming '1' is the ID for Death Report
@@ -530,6 +537,11 @@ function MainApp({
             Sentry.captureException(error, { extra: { context: 'Export HTML', bbCodeVersion } });
             showNotification(`Échec de la génération du HTML : ${(error.message || '').substring(0, 120)}`, 'error');
         }
+    };
+
+    // Export PDF (A4) ou SVG (image vectorielle) du rapport affiché, converti depuis le BBCode courant au clic.
+    const handleExportDocument = (format) => {
+        exportReportDocument(format, { bbCode: getBBCodeContent(), title: generateTitle(), showNotification });
     };
 
     const handleCopyTitle = () => {
@@ -1494,6 +1506,8 @@ function MainApp({
                     onHide={handleHideCctvRequestModal}
                     onSubmit={handleCctvWebhookSubmit}
                     showNotification={showNotification}
+                    onLogin={handleOpenLogin}
+                    onSignup={handleOpenSignup}
                 />
 
                 <EasterEggModal
@@ -1554,7 +1568,7 @@ function MainApp({
                 {/* Accès rapide (haut gauche) : effets de saison + infobulle du calendrier de la santé en cours. */}
                 <div className="header-info-wrapper header-with-season-controls">
                     <SeasonControls onOpenCalendar={() => setShowAwarenessCalendar(true)} />
-                    <HeaderInfo commitInfo={commitInfo} /> 
+                    {immersiveHeaderEnabled ? <ImmersiveHeader /> : <HeaderInfo commitInfo={commitInfo} />}
                 </div>
 
                 {/* Message d'information si restriction employé active */}
@@ -1757,7 +1771,10 @@ function MainApp({
                                                     key: 'app', label: 'Application', items: [
                                                         { key: 'season', icon: `fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`, label: `${seasonalEffectsEnabled ? 'Désactiver' : 'Activer'} Effet de Saison`, onClick: closeAnd(toggleSeasonalEffects) },
                                                         { key: 'guide', icon: 'fas fa-play-circle', label: 'Guide de Configuration', onClick: closeAnd(restartOnboarding) },
-                                                        { key: 'bug', icon: 'fas fa-bug', label: 'Rapport de Bug/Ajout', onClick: closeAnd(() => setShowFeatureRequestModal(true)) },
+                                                        { key: 'header', icon: immersiveHeaderEnabled ? 'fas fa-heart' : 'fas fa-city', label: immersiveHeaderEnabled ? 'Header des remerciements' : 'Header immersif (heure & météo)', onClick: closeAnd(toggleImmersiveHeader) },
+                                                        { key: 'bug', icon: 'fas fa-bug', label: 'Rapport de Bug', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
+                                                        // La demande de fonctionnalité est réservée aux comptes connectés (tous rôles).
+                                                        currentEmployee && { key: 'feature', icon: 'fas fa-lightbulb', label: 'Demande de Fonctionnalité', onClick: closeAnd(() => { setFeatureModalMode('feature'); setShowFeatureRequestModal(true); }) },
                                                         {
                                                             key: 'agency', icon: 'fas fa-users', label: 'Changer de Formulaire', onClick: closeAnd(() => {
                                                                 localStorage.removeItem('selectedAgencyGroup');
@@ -1796,6 +1813,7 @@ function MainApp({
                             </div>
 
                             <FeatureRequestModal
+                                mode={currentEmployee ? featureModalMode : 'bug'}
                                 show={showFeatureRequestModal}
                                 onClose={() => setShowFeatureRequestModal(false)}
                                 featureRequest={featureRequest}
@@ -1826,7 +1844,8 @@ function MainApp({
                                 </Button>
                             )}
 
-                            <Button
+                            {bbcodeEnabled && (
+<Button
                                 variant="secondary"
                                 type="button"
                                 className="changelog-button"
@@ -1836,6 +1855,7 @@ function MainApp({
                                 <i className="fab fa-discord" style={{ color: '#5865F2' }}></i>
                                 BBcode → Discord
                             </Button>
+)}
 
                             {(() => {
                                 if (selectedAgencyGroup === 'PHMC Recruitment' && formData.recruitmentPosition) {
@@ -2068,7 +2088,12 @@ function MainApp({
                                             <Button variant="success" size="lg" onClick={handleOpenSignup}>
                                                 <i className="fas fa-user-plus"></i> Créer un compte (Guide de Configuration)
                                             </Button>
-                                            <Button variant="outline-light" size="lg" onClick={handleOpenLogin}>
+                                            <Button
+                                                variant="primary"
+                                                size="lg"
+                                                onClick={handleOpenLogin}
+                                                style={{ border: '2px solid #58a6ff', boxShadow: '0 0 0 3px rgba(88, 166, 255, 0.35), 0 0 14px rgba(88, 166, 255, 0.45)', fontWeight: 600 }}
+                                            >
                                                 <i className="fas fa-sign-in-alt"></i> Se connecter
                                             </Button>
                                         </div>
@@ -2077,16 +2102,18 @@ function MainApp({
                                     <p>Veuillez sélectionner une agence, puis un type de formulaire.</p>
                                 )}
                             </Suspense>
-                            <div className="button-group">
-                                <Button
-                                    type="button"
-                                    onClick={clearForm}
-                                    className="remove-report-button"
-                                >
-                                    <i className="fas fa-trash-alt"></i>
-                                    Vider le Formulaire
-                                </Button>
-                            </div>
+                            {currentEmployee && (
+                                <div className="button-group">
+                                    <Button
+                                        type="button"
+                                        onClick={clearForm}
+                                        className="remove-report-button"
+                                    >
+                                        <i className="fas fa-trash-alt"></i>
+                                        Vider le Formulaire
+                                    </Button>
+                                </div>
+                            )}
                         </form>
                     </div>
                     
@@ -2242,12 +2269,15 @@ function MainApp({
                             {!currentEmployee ? (
                                 <p style={{ textAlign: 'center', opacity: 0.75, padding: '30px 10px' }}>
                                     <i className="fas fa-lock" style={{ marginRight: '8px' }}></i>
-                                    Connectez-vous pour afficher et copier le titre et le BBCode.
+                                    {bbcodeEnabled
+                                        ? 'Connectez-vous pour afficher et copier le titre et le BBCode.'
+                                        : "Connectez-vous pour remplir un formulaire, voir l'aperçu et télécharger le HTML."}
                                 </p>
                             ) : (
                                 <>
                                     <div className="modern-output-controls">
-                                        <Button
+                                        {bbcodeEnabled && (
+<Button
                                             type="button"
                                             onClick={() => setShowBBCode(prev => !prev)}
                                             className="control-button"
@@ -2255,6 +2285,7 @@ function MainApp({
                                             <i className={`fas ${showBBCode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                             {showBBCode ? 'Cacher BBCode' : 'Montrer BBCode'}
                                         </Button>
+)}
                                         <Button
                                             type="button"
                                             onClick={() => setShowPreview(prev => !prev)}
@@ -2293,7 +2324,8 @@ function MainApp({
                                             Copier le Titre
                                         </Button>
 
-                                        <Button
+                                        {bbcodeEnabled && (
+<Button
                                             type="button"
                                             onClick={handleCopyAndNotifyWrapper}
                                             className="copy-button-modern"
@@ -2303,6 +2335,7 @@ function MainApp({
                                             <i className="fas fa-copy"></i>
                                             {getCopyButtonText()}
                                         </Button>
+)}
 
                                 {/* Export HTML : à coller en texte enrichi sur le forum GTA World (et PHMC). */}
                                 <Button
@@ -2323,6 +2356,26 @@ function MainApp({
                                     title="Comment publier le HTML sur le forum ?"
                                 >
                                     <i className="fas fa-circle-question"></i>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => handleExportDocument('pdf')}
+                                    className="copy-button-modern"
+                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                    title="Imprime le rapport en A4 : choisissez « Enregistrer au format PDF » (texte vectoriel, net à tout zoom)"
+                                >
+                                    <i className="fas fa-file-pdf"></i>
+                                    PDF (A4)
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => handleExportDocument('svg')}
+                                    className="copy-button-modern"
+                                    disabled={isLockdownActive || !getBBCodeContent()}
+                                    title="Télécharge le rapport en image vectorielle (SVG), zoomable sans perte dans un navigateur"
+                                >
+                                    <i className="fas fa-bezier-curve"></i>
+                                    SVG
                                 </Button>
 
                                         {selectedAgencyGroup !== 'PHMC Recruitment' && (
@@ -2379,7 +2432,7 @@ function MainApp({
                                         </div>
                                     )}
 
-                                    {showBBCode && (
+                                    {bbcodeEnabled && showBBCode && (
                                         <pre className="bbcode-output">
                                             {getBBCodeContent()}
                                         </pre>

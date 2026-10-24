@@ -426,8 +426,7 @@ const SwitchableFormsModal = ({
                                                     <div style={{...positionStatusListStyle, alignSelf: 'stretch'}}>
                                                         <strong style={openStatusStyle}>Ouvert :</strong>
                                                         <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
-                                                            {buttonDisplayProps.openPositions.slice(0, 9).map(pos => <li key={`open-${form.version}-${pos}`}>{pos}</li>)}
-                                                            {buttonDisplayProps.openPositions.length > 9 && <li>... et plus</li>}
+                                                            {buttonDisplayProps.openPositions.map(pos => <li key={`open-${form.version}-${pos}`}>{pos}</li>)}
                                                         </ul>
                                                     </div>
                                                 )}
@@ -435,8 +434,7 @@ const SwitchableFormsModal = ({
                                                     <div style={{...positionStatusListStyle, alignSelf: 'stretch'}}>
                                                         <strong style={closedStatusStyle}>Fermé :</strong>
                                                         <ul style={{ paddingLeft: '15px', marginBlockStart: '0.2em', marginBlockEnd: '0.2em' }}>
-                                                            {buttonDisplayProps.closedPositions.slice(0, 3).map(pos => <li key={`closed-${form.version}-${pos}`}>{pos}</li>)}
-                                                            {buttonDisplayProps.closedPositions.length > 3 && <li>... et plus</li>}
+                                                            {buttonDisplayProps.closedPositions.map(pos => <li key={`closed-${form.version}-${pos}`}>{pos}</li>)}
                                                         </ul>
                                                     </div>
                                                 )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 
 // Fenêtres d'aide affichées après une copie du BBCode ou un téléchargement du HTML :
 //   • BBCode copié  → destiné au forum PHMC (pas encore disponible actuellement), PAS au forum GTA World (Invision Community) ;
@@ -37,6 +38,8 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
     };
 
     const isHtml = kind === 'html';
+    // BBCode désactivé par les admins : plus aucune mention du BBCode ni du forum PHMC.
+    const { bbcodeEnabled } = useSiteConfig();
 
     return (
         <Modal show={show} onHide={close} centered>
@@ -55,12 +58,14 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
                                 Le HTML est destiné au <strong>forum GTA World</strong> : le copier-coller de ce fichier y fonctionne.
                             </span>
                         </div>
-                        <div style={rowStyle}>
+                        {bbcodeEnabled && (
+<div style={rowStyle}>
                             <i className="fas fa-circle-info" style={{ color: '#58a6ff', fontSize: '1.3rem', marginTop: '2px' }}></i>
                             <span>
                                 Le <strong>forum PHMC</strong> n'est <strong>pas encore disponible</strong> actuellement : c'est lui qui utilisera le BBCode.
                             </span>
                         </div>
+)}
                         <ol style={{ paddingLeft: '1.2rem', marginBottom: '14px' }}>
                             <li className="mb-2">Ouvrez le fichier téléchargé dans votre navigateur, de préférence sur <strong>PC</strong>.</li>
                             <li className="mb-2"><strong>Ctrl+A</strong> pour tout sélectionner, puis <strong>Ctrl+C</strong>.</li>

@@ -1,5 +1,6 @@
 // src/components/FormImageLink.js
 import React from 'react';
+import phmcLogo from '../assets/phmc.png';
 
 const FormImageLink = ({
     bbCodeVersion,
@@ -105,15 +106,17 @@ const FormImageLink = ({
         return null;
     }
 
+    // Les images saisonnières « Filled Out? Click Me » renvoyaient vers l'ancien forum : on n'affiche plus que le logo du
+    // PHMC, sans lien (les formulaires se remplissent et s'enregistrent directement dans l'outil).
     return (
         <div className="image-container">
-            <a href={linkHref} target="_blank" rel="noopener noreferrer" className={linkClass} title={linkTitle}>
-                <img
-                    src={imgSrc}
-                    alt={imgAlt}
-                    {...commonImgProps}
-                />
-            </a>
+            <img
+                src={phmcLogo}
+                alt="Pillbox Hill Medical Center"
+                width={300}
+                className={commonImgProps.className}
+                style={{ maxWidth: '100%', height: 'auto' }}
+            />
         </div>
     );
 };

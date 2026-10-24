@@ -16,6 +16,7 @@ import * as Sentry from "@sentry/react";
 import { analytics } from './firebase';
 import { logEvent } from "firebase/analytics";
 import ErrorBoundary from './components/ErrorBoundary';
+import { SiteConfigProvider } from './contexts/SiteConfigContext';
 
 // --- START: Fallback Error Reporting ---
 const discordErrorWebhookQueue = [];
@@ -218,11 +219,13 @@ root.render(
             <ModalProvider>
               <SettingsProvider>
                 <LockdownProvider>
-                  <DebugProvider>
-                    <EmployeeAuthProvider>
-                      <Root />
-                    </EmployeeAuthProvider>
-                  </DebugProvider>
+                  <SiteConfigProvider>
+                    <DebugProvider>
+                      <EmployeeAuthProvider>
+                        <Root />
+                      </EmployeeAuthProvider>
+                    </DebugProvider>
+                  </SiteConfigProvider>
                 </LockdownProvider>
               </SettingsProvider>
             </ModalProvider>

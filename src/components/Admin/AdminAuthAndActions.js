@@ -144,6 +144,8 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    // Vrai entre le clic sur « Connexion » de cette page et la réponse de Firebase.
+    const adminLoginAttemptRef = useRef(false);
     const [permissionChecked, setPermissionChecked] = useState(false);
 
     const [selectedRecruitmentCategory, setSelectedRecruitmentCategory] = useState('');
@@ -486,6 +488,16 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
                             : Object.values(adminList).some(admin => admin === user.email || admin === user.uid);
                     }
 
+                    // Source de vérité des règles Firebase : adminUIDs/{uid}. Un compte qui y figure est aussi administrateur.
+                    if (!userIsAdmin) {
+                        try {
+                            const uidSnap = await get(ref(database, `adminUIDs/${user.uid}`));
+                            userIsAdmin = uidSnap.val() === true;
+                        } catch (uidError) {
+                            console.warn('adminUIDs illisible :', uidError);
+                        }
+                    }
+
                     setIsAdmin(userIsAdmin);
                     setPermissionChecked(true);
 
@@ -501,8 +513,22 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
                             setCurrentUser(user);
                             setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email }));
                         }
+                    } else if (adminLoginAttemptRef.current) {
+                        // Connexion tentée depuis cette page avec un compte NON administrateur : elle est annulée tout de suite
+                        // (cette page ne sert pas à se connecter au site : utilisez « Se connecter » sur la page d'accueil).
+                        adminLoginAttemptRef.current = false;
+                        await signOut(auth);
+                        setCurrentUser(null);
+                        setIsAdmin(false);
+                        setPermissionChecked(false);
+                        setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null }));
+                        setError("Ce compte n'est pas administrateur : cette page est réservée à la connexion admin. Pour vous connecter au site, utilisez le bouton « Se connecter » de la page d'accueil.");
+                        sendAdminActionWebhook(user.email, "Connexion Admin refusée", "Un compte non administrateur a tenté de se connecter au panneau d'administration.", null, userAgent, timeZone);
+                        prevUserUidRef.current = null;
+                        setIsLoadingAuth(false);
+                        return;
                     } else {
-                        // User is authenticated but not an admin
+                        // Déjà connecté au site (autre page) mais pas administrateur : l'accès au panneau est refusé.
                         setCurrentUser(user);
                         setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null }));
                         if (!wasLoggedIn) {
@@ -555,11 +581,13 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
     const handleLoginAttempt = async () => {
         setError('');
         setIsLoadingAuth(true);
+        adminLoginAttemptRef.current = true;
         const { userAgent, timeZone } = getUserContext(); // Capture user context
         try {
             await signInWithEmailAndPassword(auth, email, password);
             // onAuthStateChanged will handle the success case
         } catch (err) {
+            adminLoginAttemptRef.current = false;
             setError(err.message || "Échec de la connexion.");
             setIsLoadingAuth(false);
 
@@ -1299,7 +1327,12 @@ Clé : ${savedRoleData.cle}`,
                     <div className="col-md-6 col-lg-4">
                         <div className="card">
                             <div className="card-body">
-                                <h3 className="card-title text-center mb-4">Connexion Admin</h3>
+                                <h3 className="card-title text-center mb-3">Connexion Admin</h3>
+                                <div className="alert alert-warning py-2 small" role="note">
+                                    <i className="fas fa-shield-halved me-1"></i>
+                                    Cette page sert <strong>uniquement à la connexion administrateur</strong>. Ne l'utilisez pas pour vous connecter simplement au site :
+                                    avec un compte non administrateur, la connexion sera refusée. Pour vous connecter au site, utilisez le bouton « Se connecter » de la page d'accueil.
+                                </div>
                                 <BootstrapForm.Group className="mb-3" controlId="adminAuthEmail">
                                     <BootstrapForm.Label>Adresse e-mail</BootstrapForm.Label>
                                     <BootstrapForm.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Entrez l'adresse e-mail" />
@@ -1310,8 +1343,8 @@ Clé : ${savedRoleData.cle}`,
                                 </BootstrapForm.Group>
                                 {error && <p className="text-danger text-center">{error}</p>}
                                 <div className="d-grid">
-                                    <Button variant="primary" type="button" onClick={handleLoginAttempt}>
-                                        Connexion
+                                    <Button variant="primary" type="button" size="lg" onClick={handleLoginAttempt} style={{ width: '100%', fontWeight: 600 }}>
+                                        <i className="fas fa-sign-in-alt me-2"></i>Se connecter
                                     </Button>
                                 </div>
                             </div>

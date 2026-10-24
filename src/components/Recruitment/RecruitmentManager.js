@@ -27,6 +27,8 @@ import ContractsManager from '../Contracts/ContractsManager';
 import useForumNotice from '../../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -57,6 +59,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
     const [roleToEdit, setRoleToEdit] = useState(null);
     const [roleToRename, setRoleToRename] = useState(null);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     const config = category ? CATEGORY_BY_KEY[category] : null;
@@ -128,6 +131,11 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
         await copyToClipboard(buildStatusesBBCode(), showNotification, 'BBCode des statuts de recrutement copié !');
     };
 
+    const handleExportStatuses = (format) => {
+        if (!config) return;
+        exportReportDocument(format, { bbCode: buildStatusesBBCode(), title: `Statuts de recrutement - ${config.label}`, showNotification });
+    };
+
     const handleDownloadStatusesHtml = () => {
         if (!config) return;
         if (downloadBbCodeAsHtml({ bbCode: buildStatusesBBCode(), title: `Statuts de recrutement - ${config.label}`, showNotification })) {
@@ -192,13 +200,21 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                                                 open={!!openRows.statuses} onClick={() => toggleRow('statuses')} label="Aperçu des statuts"
                                                 title="Déplier / replier l'aperçu du message « Statuts de recrutement » de cette catégorie"
                                             />
-                                            <Button variant="outline-info" size="sm" onClick={handleCopyStatusesBBCode} disabled={isLoading}
+                                            {bbcodeEnabled && (
+<Button variant="outline-info" size="sm" onClick={handleCopyStatusesBBCode} disabled={isLoading}
                                                 title={`Copie le BBCode « Statuts de recrutement » de cette catégorie. ${COPY_BBCODE_HINT}.`}>
                                                 <i className="fas fa-copy"></i> Copier le BBCode des statuts
                                             </Button>
+)}
                                             <Button variant="outline-info" size="sm" onClick={handleDownloadStatusesHtml} disabled={isLoading}
                                                 title={`Télécharge les « Statuts de recrutement » de cette catégorie en HTML. ${DOWNLOAD_HTML_HINT}.`}>
                                                 <i className="fas fa-download"></i> Télécharger le HTML des statuts
+                                            </Button>
+                                            <Button variant="outline-info" size="sm" onClick={() => handleExportStatuses('pdf')} disabled={isLoading} title={PDF_EXPORT_LABEL}>
+                                                <i className="fas fa-file-pdf"></i> PDF
+                                            </Button>
+                                            <Button variant="outline-info" size="sm" onClick={() => handleExportStatuses('svg')} disabled={isLoading} title={SVG_EXPORT_LABEL}>
+                                                <i className="fas fa-bezier-curve"></i> SVG
                                             </Button>
                                             <Button variant="success" size="sm" onClick={() => { setRoleToEdit(null); setShowRoleModal(true); }}>
                                                 <i className="fas fa-plus-circle"></i> Ajouter un rôle

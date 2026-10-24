@@ -14,6 +14,8 @@ import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const modalStyle = {
     position: 'fixed',
@@ -301,6 +303,7 @@ const SavedReportsModal = ({
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
     // Personne de connecté = aucune liste, même si une sélection (ou des rapports) datait d'une session
     // précédente : on ne peut ni afficher ni copier le titre / le BBCode d'un rapport sans compte.
@@ -617,6 +620,23 @@ const SavedReportsModal = ({
         if (downloadBbCodeAsHtml({ bbCode: combineBbCodes(reportsToExport), title, showNotification })) openForumNotice('html');
     };
 
+    // PDF (A4) / SVG : un rapport, ou la sélection en un seul document.
+    const handleExportDocument = (format, report) => {
+        exportReportDocument(format, { bbCode: report?.bbCode, title: reportTitleOf(report) || report?.originalKey, showNotification });
+    };
+
+    const handleExportSelectedDocument = (format) => {
+        if (selectedReportKeys.length === 0) {
+            showNotification('Aucun rapport sélectionné à exporter.', 'warning');
+            return;
+        }
+        const reportsToExport = sortedReports.filter((r) => selectedReportKeys.includes(r.key));
+        const title = reportsToExport.length === 1
+            ? (reportTitleOf(reportsToExport[0]) || reportsToExport[0].originalKey)
+            : `${reportsToExport.length} rapports`;
+        exportReportDocument(format, { bbCode: combineBbCodes(reportsToExport), title, showNotification });
+    };
+
     // Rapport rechargeable dans un formulaire ? (un formulaire AMA, par exemple, n'en a pas)
     const isLoadable = (report) => report.kind !== 'ama' && !!getFormDefinition(report.bbCodeVersion)?.FieldComponent;
 
@@ -666,7 +686,7 @@ const SavedReportsModal = ({
     // Menu « Copier ▾ » d'une ligne : BBCode + titre (ou titre + lien de l'image pour un AMA).
     const renderCopyMenu = (report) => (
         <Dropdown className="d-inline-block me-2">
-            <Dropdown.Toggle size="sm" style={{ backgroundColor: '#2f81f7', border: 'none' }} title="Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…">
+            <Dropdown.Toggle size="sm" style={{ backgroundColor: '#2f81f7', border: 'none' }} title={bbcodeEnabled ? 'Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…' : 'Télécharger le HTML, copier le titre…'}>
                 Copier
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
@@ -679,12 +699,16 @@ const SavedReportsModal = ({
                     </>
                 ) : (
                     <>
-                        <Dropdown.Item onClick={() => handleCopyBBCode(report.key)} title={COPY_BBCODE_HINT}>
+                        {bbcodeEnabled && (
+<Dropdown.Item onClick={() => handleCopyBBCode(report.key)} title={COPY_BBCODE_HINT}>
                             Copier le BBCode<ForumHint kind="bbcode" />
                         </Dropdown.Item>
+)}
                         <Dropdown.Item onClick={() => handleDownloadHtml(report)} disabled={!report.bbCode} title={DOWNLOAD_HTML_HINT}>
                             Télécharger le HTML<ForumHint kind="html" />
                         </Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleExportDocument('pdf', report)} disabled={!report.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                        <Dropdown.Item onClick={() => handleExportDocument('svg', report)} disabled={!report.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
                     </>
                 )}
@@ -975,12 +999,16 @@ const SavedReportsModal = ({
                                 Copier la sélection ({selectedReportKeys.length})
                             </Dropdown.Toggle>
                             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                                <Dropdown.Item onClick={handleCopySelectedBBCode} title={COPY_BBCODE_HINT}>
+                                {bbcodeEnabled && (
+<Dropdown.Item onClick={handleCopySelectedBBCode} title={COPY_BBCODE_HINT}>
                                     Copier le BBCode sélectionné<ForumHint kind="bbcode" />
                                 </Dropdown.Item>
+)}
                                 <Dropdown.Item onClick={handleDownloadSelectedHtml} title={DOWNLOAD_HTML_HINT}>
                                     Télécharger le HTML sélectionné<ForumHint kind="html" />
                                 </Dropdown.Item>
+                                <Dropdown.Item onClick={() => handleExportSelectedDocument('pdf')}>Télécharger le PDF (A4) sélectionné</Dropdown.Item>
+                                <Dropdown.Item onClick={() => handleExportSelectedDocument('svg')}>Télécharger le SVG sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={handleCopySelectedTitles}>Copier les titres sélectionnés</Dropdown.Item>
                             </Dropdown.Menu>
                         </Dropdown>

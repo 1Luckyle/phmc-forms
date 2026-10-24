@@ -17,6 +17,8 @@ import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../u
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -65,6 +67,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
     // Le poste s'affiche sous son libellé français, même pour une ancienne candidature qui n'a gardé que la clé.
     const { selectOptions } = useData();
@@ -107,6 +110,8 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
             openForumNotice('html');
         }
     };
+
+    const handleExportDocument = (format, application) => exportReportDocument(format, { bbCode: application.bbcode, title: applicationTitle(application), showNotification });
 
     const canReload = (application) => !!application.versionBBCode && !!application.donnees && Object.keys(application.donnees).length > 0;
 
@@ -209,21 +214,31 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             <i className="fas fa-upload me-1"></i>Recharger dans le formulaire
                                         </Button>
                                     )}
-                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
+                                    {bbcodeEnabled && (
+<Button size="sm" variant="outline-info" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
                                         <i className="fas fa-copy me-1"></i>Copier le BBCode<ForumHint kind="bbcode" />
                                     </Button>
+)}
                                     <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT} onClick={() => handleDownloadHtml(application)}>
                                         <i className="fas fa-download me-1"></i>Télécharger le HTML<ForumHint kind="html" />
+                                    </Button>
+                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={PDF_EXPORT_LABEL} onClick={() => handleExportDocument('pdf', application)}>
+                                        <i className="fas fa-file-pdf me-1"></i>PDF (A4)
+                                    </Button>
+                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={SVG_EXPORT_LABEL} onClick={() => handleExportDocument('svg', application)}>
+                                        <i className="fas fa-bezier-curve me-1"></i>SVG
                                     </Button>
                                     <ExpandToggle
                                         open={openRows[application.id] === 'preview'} label="Aperçu"
                                         onClick={() => toggleRow(application.id, 'preview')}
                                         title="Prévisualiser la candidature telle qu'elle sera publiée, juste en dessous"
                                     />
-                                    <ExpandToggle
+                                    {bbcodeEnabled && (
+<ExpandToggle
                                         open={openRows[application.id] === 'bbcode'} label="Voir le BBCode" icon="fa-code"
                                         onClick={() => toggleRow(application.id, 'bbcode')}
                                     />
+)}
                                     <ExpandToggle
                                         open={openRows[application.id] === 'history'} label="Historique" icon="fa-clock-rotate-left"
                                         onClick={() => toggleRow(application.id, 'history')}

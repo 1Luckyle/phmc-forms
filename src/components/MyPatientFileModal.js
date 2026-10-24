@@ -19,6 +19,8 @@ import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -42,6 +44,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     const load = useCallback(async () => {
@@ -68,6 +71,8 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
     const copy = (text, message) => (text
         ? copyToClipboard(text, showNotification, message)
         : showNotification('Rien à copier.', 'warning'));
+
+    const exportDocument = (format, entry) => exportReportDocument(format, { bbCode: entry.bbCode, title: reportTitleOf(entry) || entry.originalKey, showNotification });
 
     const downloadHtml = (entry) => {
         if (downloadBbCodeAsHtml({ bbCode: entry.bbCode, title: reportTitleOf(entry) || entry.originalKey, showNotification })) openForumNotice('html');
@@ -141,12 +146,16 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <Dropdown.Item onClick={() => copy(entry.bbCode, 'BBCode copié !')} title={COPY_BBCODE_HINT}>
+                                                            {bbcodeEnabled && (
+<Dropdown.Item onClick={() => copy(entry.bbCode, 'BBCode copié !')} title={COPY_BBCODE_HINT}>
                                                                 Copier le BBCode<ForumHint kind="bbcode" />
                                                             </Dropdown.Item>
+)}
                                                             <Dropdown.Item onClick={() => downloadHtml(entry)} disabled={!entry.bbCode} title={DOWNLOAD_HTML_HINT}>
                                                                 Télécharger le HTML<ForumHint kind="html" />
                                                             </Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => exportDocument('pdf', entry)} disabled={!entry.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => exportDocument('svg', entry)} disabled={!entry.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>
                                                         </>
                                                     )}

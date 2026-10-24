@@ -16,7 +16,7 @@
   background-color: #2d2d2d;
   padding: 30px;
   border-radius: 8px;
-  max-width: 600px;
+  max-width: 760px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
@@ -48,4 +48,13 @@
 
 .privacy-policy-modal .modal-content button:hover {
     background-color: #c44040;
+}
+.privacy-policy-modal .modal-content h3 {
+    color: #eeeeee;
+    font-size: 1.1rem;
+    margin-top: 22px;
+}
+
+.privacy-policy-modal .modal-content a {
+    color: #58a6ff;
 }

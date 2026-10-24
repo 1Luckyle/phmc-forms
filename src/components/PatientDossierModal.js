@@ -36,6 +36,8 @@ import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../utils/reportDocumentExport';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -128,6 +130,7 @@ const PatientDossierModal = ({
     const [invoiceRefresh, setInvoiceRefresh] = useState(0);
     const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     // Liste déroulante : patients avec compte (civils) + patients sans compte, connus
@@ -298,6 +301,15 @@ const PatientDossierModal = ({
         if (downloadBbCodeAsHtml({ bbCode, title, showNotification })) openForumNotice('html');
     };
 
+    // PDF (A4) / SVG : un rapport, ou la sélection en un seul document.
+    const exportDocument = (format, bbCode, title) => exportReportDocument(format, { bbCode, title, showNotification });
+
+    const handleExportSelectedDocument = (format) => {
+        const roots = selectedFamilies.map((f) => f.root);
+        const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
+        exportDocument(format, combineBbCodes(roots), title);
+    };
+
     const handleDownloadSelectedHtml = () => {
         const roots = selectedFamilies.map((f) => f.root);
         const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
@@ -317,12 +329,16 @@ const PatientDossierModal = ({
                     </>
                 ) : (
                     <>
-                        <Dropdown.Item onClick={() => copyText(entry.bbCode, 'BBCode copié !', 'Aucun BBCode trouvé pour ce rapport.')} title={COPY_BBCODE_HINT}>
+                        {bbcodeEnabled && (
+<Dropdown.Item onClick={() => copyText(entry.bbCode, 'BBCode copié !', 'Aucun BBCode trouvé pour ce rapport.')} title={COPY_BBCODE_HINT}>
                             Copier le BBCode<ForumHint kind="bbcode" />
                         </Dropdown.Item>
+)}
                         <Dropdown.Item onClick={() => downloadHtml(entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode} title={DOWNLOAD_HTML_HINT}>
                             Télécharger le HTML<ForumHint kind="html" />
                         </Dropdown.Item>
+                        <Dropdown.Item onClick={() => exportDocument('pdf', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                        <Dropdown.Item onClick={() => exportDocument('svg', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>{SVG_EXPORT_LABEL}</Dropdown.Item>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
                     </>
                 )}
@@ -557,13 +573,17 @@ const PatientDossierModal = ({
                                 Copier la sélection ({selectedFamilies.length})
                             </Dropdown.Toggle>
                             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                                <Dropdown.Item onClick={() => copyText(
+                                {bbcodeEnabled && (
+<Dropdown.Item onClick={() => copyText(
                                     selectedFamilies.map((f) => f.root.bbCode).filter(Boolean).join('\n\n'),
                                     'BBCode copié !', 'Aucun BBCode trouvé dans la sélection.'
                                 )} title={COPY_BBCODE_HINT}>Copier le BBCode sélectionné<ForumHint kind="bbcode" /></Dropdown.Item>
+)}
                                 <Dropdown.Item onClick={handleDownloadSelectedHtml} title={DOWNLOAD_HTML_HINT}>
                                     Télécharger le HTML sélectionné<ForumHint kind="html" />
                                 </Dropdown.Item>
+                                <Dropdown.Item onClick={() => handleExportSelectedDocument('pdf')}>Télécharger le PDF (A4) sélectionné</Dropdown.Item>
+                                <Dropdown.Item onClick={() => handleExportSelectedDocument('svg')}>Télécharger le SVG sélectionné</Dropdown.Item>
                                 <Dropdown.Item onClick={() => copyText(
                                     selectedFamilies.map((f) => reportTitleOf(f.root)).filter(Boolean).join('\n'),
                                     'Titres copiés !', 'Aucun titre trouvé dans la sélection.'

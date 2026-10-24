@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // (useState sert à useExpansions)
 import { Button } from 'react-bootstrap';
 import { bbcodeToHtmlDocument, escapeHtml } from '../utils/bbcodeToHtml';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 
 // État « quel onglet est ouvert pour quelle ligne » : { [clé]: 'preview' | 'bbcode' | … }.
 export const useExpansions = () => {
@@ -137,9 +138,10 @@ export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
 // props : tab (onglet affiché), onTabChange, bbCode, title, imageUrl (formulaires « image » comme l'AMA),
 // extraTabs : [{ key, label, content }].
 const ReportExpansion = ({ tab, onTabChange, bbCode, title, imageUrl, extraTabs = [] }) => {
+    const { bbcodeEnabled } = useSiteConfig();
     const tabs = [
         ...(bbCode || imageUrl ? [{ key: 'preview', label: 'Aperçu' }] : []),
-        ...(bbCode ? [{ key: 'bbcode', label: 'BBCode' }] : []),
+        ...(bbCode && bbcodeEnabled ? [{ key: 'bbcode', label: 'BBCode' }] : []),
         ...extraTabs.map(({ key, label }) => ({ key, label })),
     ];
     const current = extraTabs.find((entry) => entry.key === tab);
@@ -166,7 +168,7 @@ const ReportExpansion = ({ tab, onTabChange, bbCode, title, imageUrl, extraTabs 
                 )
             )}
 
-            {tab === 'bbcode' && (
+            {tab === 'bbcode' && bbcodeEnabled && (
                 <textarea
                     readOnly
                     value={bbCode || ''}

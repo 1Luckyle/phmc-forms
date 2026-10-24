@@ -22,6 +22,8 @@ import useForumNotice from '../../hooks/useForumNotice';
 import { copyToClipboard } from '../notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 import { getFormDefinition } from '../../formDefinitions';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL, SVG_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 
 const sendMailBestEffort = (params) => {
     sendEyefindMail(params).then((result) => {
@@ -49,6 +51,7 @@ const PendingJobApplications = ({ showNotification }) => {
     const { currentEmployee, isAdmin, staffName, civilianProfile } = useEmployeeAuth();
     const { selectOptions } = useData();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { bbcodeEnabled } = useSiteConfig();
     // Poste sous son libellé français (même pour une ancienne candidature qui n'a gardé que la clé anglaise).
     const labelledApplications = useMemo(() => applications.map((application) => ({
         ...application,
@@ -265,6 +268,8 @@ Pillbox Hill Medical Center`,
         if (downloadBbCodeAsHtml({ bbCode: application.bbcode, title: applicationTitle(application), showNotification })) openForumNotice('html');
     };
 
+    const handleExportDocument = (format, application) => exportReportDocument(format, { bbCode: application.bbcode, title: applicationTitle(application), showNotification });
+
     const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString('fr-FR') : '—');
 
     // Onglet « Détails » : tout ce qu'on sait de la candidature et de son parcours.
@@ -369,11 +374,19 @@ Pillbox Hill Medical Center`,
                                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                                             <ExpandToggle open={!!openRows[inputKey]} onClick={() => toggleRow(inputKey, 'preview')} label="Aperçu" title="Déplier / replier l'aperçu de la candidature" />
                                             <ExpandToggle open={openRows[inputKey] === 'details'} onClick={() => toggleRow(inputKey, 'details')} label="Détails" icon="fa-circle-info" title="Informations et historique de la candidature" />
-                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
+                                            {bbcodeEnabled && (
+<Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
                                                 <i className="fas fa-copy"></i> BBCode
                                             </Button>
+)}
                                             <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT} onClick={() => handleDownloadHtml(application)}>
                                                 <i className="fas fa-download"></i> HTML
+                                            </Button>
+                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={PDF_EXPORT_LABEL} onClick={() => handleExportDocument('pdf', application)}>
+                                                <i className="fas fa-file-pdf"></i> PDF
+                                            </Button>
+                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={SVG_EXPORT_LABEL} onClick={() => handleExportDocument('svg', application)}>
+                                                <i className="fas fa-bezier-curve"></i> SVG
                                             </Button>
                                             {application.statut === 'soumise' && (
                                                 <Button size="sm" variant="primary" onClick={() => handleScheduleInterview(application)}>
