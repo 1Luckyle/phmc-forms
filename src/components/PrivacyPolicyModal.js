@@ -44,7 +44,7 @@ const PrivacyPolicyModal = ({ isOpen, onClose }) => {
                 <h3>Messages envoyés automatiquement</h3>
                 <ul>
                     <li><strong>Eyefind Mail (messagerie du serveur) :</strong> accusé de réception de candidature, convocation à un entretien, réponse à une candidature, contrat à signer, reçus de paiement, changement de grade ou d'adresse, code de vérification, et, pour les factures impayées, un récapitulatif groupé quelques minutes après l'enregistrement puis un rappel quotidien tant que des factures restent à payer.</li>
-                    <li><strong>Discord (webhooks de l'équipe) :</strong> actions d'administration, candidatures, demandes de vidéosurveillance, rapports de bug et demandes de fonctionnalité (avec le nom Discord que vous indiquez et des informations techniques sur votre appareil).</li>
+                    <li><strong>Journal d'activité et demandes du site :</strong> pour la sécurité et le suivi, le site conserve une trace des actions notables (connexion, rapport enregistré, candidature, paiement, action d'administration, erreur) avec votre nom, votre rôle et l'heure, ainsi que les demandes de vidéosurveillance, rapports de bug et demandes de fonctionnalité que vous envoyez (avec le nom Discord indiqué et des informations techniques sur votre appareil). Le contenu médical de vos rapports n'y figure pas. Seuls les administrateurs y ont accès.</li>
                 </ul>
 
                 <h3>Prestataires tiers</h3>
@@ -55,7 +55,7 @@ const PrivacyPolicyModal = ({ isOpen, onClose }) => {
                     <li><a href="https://imgbb.com/privacy" target="_blank" rel="noopener noreferrer">ImgBB</a> : hébergement des images téléversées.</li>
                     <li><strong>Fleeca (GTA World)</strong> : paiement des factures ; <strong>Eyefind Mail (GTA World)</strong> : messagerie ; <strong>GTA World</strong> : connexion avec votre compte.</li>
                     <li><a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener noreferrer">Open-Meteo</a> : météo de l'en-tête immersif (uniquement si vous l'activez). Votre navigateur interroge directement ce service, qui voit donc votre adresse IP ; aucune donnée personnelle ne lui est envoyée.</li>
-                    <li><a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discord</a> : réception des notifications de l'équipe.</li>
+                    <li><a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discord</a> : éventuelles notifications de l'équipe, uniquement si elles sont activées.</li>
                 </ul>
 
                 <h3>Qui peut voir quoi</h3>

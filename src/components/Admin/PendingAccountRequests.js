@@ -9,6 +9,7 @@ import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../constants/ranks';
 import { sendEyefindMail } from '../../utils/eyefindMail';
+import { logAdminAction } from '../../utils/activityLog';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
 // débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
@@ -184,6 +185,8 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 html: `<p>Bonjour ${request.name},</p><p>Votre demande de compte auprès du <b>Pillbox Hill Medical Center</b> a été approuvée. Votre badge est <b>${request.badge || 'en cours d\'attribution'}</b>.</p><p>Vous pouvez dès à présent vous connecter sur l'outil PHMC-FR.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
             });
 
+            logAdminAction({ email: currentUser?.email, action: 'Compte du personnel approuvé', details: `Membre : ${request.name}
+Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });
             showNotification(`✅ Compte créé avec succès pour ${request.name} !`, 'success');
             loadPendingRequests();
         } catch (error) {
@@ -207,6 +210,8 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 html: `<p>Bonjour ${request.name},</p><p>Votre demande de compte auprès du <b>Pillbox Hill Medical Center</b> n'a pas été retenue. Pour plus d'informations, contactez la direction du PHMC.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
             });
 
+            logAdminAction({ email: currentUser?.email, action: 'Demande de compte refusée', details: `Membre : ${request.name}
+Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });
             showNotification(`Demande rejetée pour ${request.email}`, 'info');
             loadPendingRequests();
         } catch (error) {

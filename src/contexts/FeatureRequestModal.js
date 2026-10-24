@@ -4,6 +4,7 @@ import './FeatureRequestModal.css';
 import * as Sentry from "@sentry/react";
 import { useNotification } from './NotificationContext';
 import DebugFillButton from '../components/DebugFillButton';
+import { submitSiteRequest } from '../utils/siteRequests';
 
 // Deux versions du même formulaire :
 //   • mode « bug »     : rapport de bug (ouvert à tous, connectés ou non) ;
@@ -36,15 +37,6 @@ const FeatureRequestModal = ({
     const kindLabel = isFeature ? (isFormRequest ? 'Nouveau formulaire' : 'Fonctionnalité') : 'Bug';
 
     const handleFeatureRequestSubmit = async () => {
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
-
-        if (!webhookURL) {
-            console.error('Discord webhook URL not configured for feature requests.');
-            Sentry.captureMessage('Discord webhook URL is missing for feature request submission.', 'error');
-            showNotification('Erreur de configuration : Impossible d’envoyer la requête. Veuillez contacter l’administrateur.', 'exclamation-triangle');
-            return;
-        }
-
         // Validations
         if (!featureRequest.trim() && (!isFormRequest || !bbcodeRequestText.trim())) {
             showNotification(isFeature
@@ -66,169 +58,42 @@ const FeatureRequestModal = ({
             return;
         }
 
-        const debugInfo = {
-            bbCodeVersion: bbCodeVersion,
-            userAgent: navigator.userAgent,
-        };
-
-        const MAX_FIELD_LENGTH = 1000;
-        const requestChunks = [];
-        let currentChunk = "";
-        const mainRequestDetails = featureRequest || (isFormRequest ? "Voir le fichier joint pour les détails." : "Aucun détail fourni.");
-
-        mainRequestDetails.split('\n').forEach(line => {
-            if (currentChunk.length + line.length + 1 > MAX_FIELD_LENGTH) {
-                requestChunks.push(currentChunk);
-                currentChunk = line;
-            } else {
-                currentChunk += (currentChunk ? '\n' : '') + line;
-            }
+        // La demande est enregistrée dans le site (siteRequests) : l'équipe la retrouve dans le panneau admin →
+        // « Demandes du site », avec un statut de suivi. Plus de dépendance à Discord.
+        const type = isFormRequest ? 'form' : isFeature ? 'feature' : 'bug';
+        const summary = (featureRequest || bbcodeTitleRequest || '').split(/\r?\n/)[0].trim();
+        const result = await submitSiteRequest({
+            type,
+            title: isFormRequest ? bbcodeTitleRequest : (summary || kindLabel),
+            by: { name: discordName, discord: discordName },
+            fields: [
+                { label: 'Soumis par (Discord)', value: discordName },
+                { label: 'Type de demande', value: kindLabel },
+                ...(isFormRequest ? [{ label: 'Titre proposé pour le formulaire', value: bbcodeTitleRequest }] : []),
+                { label: isFeature ? 'Détails de la demande' : 'Détails du bug', value: featureRequest },
+                ...(isFormRequest ? [{ label: looksLikeHtml(bbcodeRequestText) ? 'HTML demandé' : 'BBCode demandé', value: bbcodeRequestText }] : []),
+                { label: 'Version du formulaire ouvert', value: String(bbCodeVersion ?? '') },
+                { label: 'Page', value: `${window.location.pathname}${window.location.hash || ''}` },
+                { label: 'Version du site', value: commitInfo?.sha },
+                { label: 'Navigateur', value: navigator.userAgent },
+            ],
         });
-        if (currentChunk) {
-            requestChunks.push(currentChunk);
+
+        if (!result.ok) {
+            Sentry.captureMessage('Feature/bug request could not be saved', { level: 'error', extra: { reason: result.reason, error: result.error?.message } });
+            showNotification(result.reason === 'not-signed-in'
+                ? "Connectez-vous à votre compte pour envoyer votre retour : il est enregistré à votre nom pour que l'équipe puisse vous répondre."
+                : "L'envoi a échoué. Réessayez dans un instant.", result.reason === 'not-signed-in' ? 'warning' : 'exclamation-triangle');
+            return;
         }
 
-        const embedTitle = isFeature ? '💡 Demande de fonctionnalité' : '🐞 Rapport de bug';
-        const contentLabel = isFeature ? 'Demande de fonctionnalité' : 'Rapport de bug';
-
-        // Base fields for the embed
-        const baseEmbedFields = [
-            { name: "Soumis par", value: discordName || "N/A", inline: true },
-            { name: "Type de demande", value: kindLabel, inline: true },
-        ];
-
-        if (isFormRequest) {
-            baseEmbedFields.push({ name: "Titre proposé pour le formulaire", value: bbcodeTitleRequest || "N/A", inline: false });
-        }
-
-        let firstMessageBody;
-        let firstMessageHeaders = { 'Content-Type': 'application/json' }; // Default for JSON payload
-
-        const requestDetailsFieldName = `Détails de la demande${requestChunks.length > 1 ? ` (Partie 1 sur ${requestChunks.length})` : ''}`;
-
-        if (isFormRequest && bbcodeRequestText.trim()) {
-            const isHtml = looksLikeHtml(bbcodeRequestText);
-            const fileName = isHtml ? 'formulaire_demande.html' : 'formulaire_demande.txt';
-            const formFile = new File([new Blob([bbcodeRequestText], { type: isHtml ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8' })], fileName);
-            const formDataForFile = new FormData();
-
-            const fieldsForFileEmbed = [
-                ...baseEmbedFields,
-                { name: isHtml ? 'HTML demandé' : 'BBCode demandé', value: `Voir le fichier joint '${fileName}'`, inline: false },
-                { name: requestDetailsFieldName, value: requestChunks[0] || "Aucun détail fourni.", inline: false },
-                { name: "Informations de débogage", value: `\n${JSON.stringify(debugInfo, null, 2)}\n`, inline: false }
-            ];
-
-            const embedPayloadForFile = {
-                title: embedTitle,
-                color: 0x3498DB,
-                fields: fieldsForFileEmbed,
-                timestamp: new Date().toISOString(),
-                footer: { text: `Soumis via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}` }
-            };
-
-            formDataForFile.append('payload_json', JSON.stringify({
-                content: `${contentLabel} (Partie 1${requestChunks.length > 1 ? ` sur ${requestChunks.length}` : ''})`,
-                embeds: [embedPayloadForFile]
-            }));
-            formDataForFile.append('file1', formFile); // 'file1' is a common key for Discord attachments
-
-            firstMessageBody = formDataForFile;
-            firstMessageHeaders = {}; // Browser sets Content-Type for FormData, so remove explicit header
-        } else {
-            // Standard JSON payload
-            const fieldsForJsonEmbed = [
-                ...baseEmbedFields,
-                { name: requestDetailsFieldName, value: requestChunks[0] || "Aucun détail fourni.", inline: false },
-                { name: "Informations de débogage", value: `\n${JSON.stringify(debugInfo, null, 2)}\n`, inline: false }
-            ];
-
-            const firstEmbedData = {
-                title: embedTitle,
-                color: 0x3498DB,
-                fields: fieldsForJsonEmbed,
-                timestamp: new Date().toISOString(),
-                footer: { text: `Soumis via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}` }
-            };
-            firstMessageBody = JSON.stringify({
-                content: `${contentLabel} (Partie 1${requestChunks.length > 1 ? ` sur ${requestChunks.length}` : ''})`,
-                embeds: [firstEmbedData]
-            });
-        }
-
-        let allWebhooksSentSuccessfully = true;
-
-        try {
-            // Send the first message (either FormData with file or JSON)
-            const firstResponse = await fetch(webhookURL, {
-                method: 'POST',
-                headers: firstMessageHeaders,
-                body: firstMessageBody,
-            });
-
-            if (!firstResponse.ok) {
-                allWebhooksSentSuccessfully = false;
-                const errorText = await firstResponse.text();
-                console.error(`Failed to send message (Part 1) to Discord webhook. Status: ${firstResponse.status} ${firstResponse.statusText}`, errorText);
-                Sentry.captureMessage(`Discord webhook failed for feature request (Part 1): ${firstResponse.status}`, {
-                    level: 'error',
-                    extra: { statusText: firstResponse.statusText, responseBody: errorText }
-                });
-            }
-
-            // Send subsequent chunks for long "Request Details" (always JSON)
-            if (allWebhooksSentSuccessfully && requestChunks.length > 1) {
-                for (let i = 1; i < requestChunks.length; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 1200)); // Delay
-
-                    const subsequentEmbedData = {
-                        title: `${embedTitle} — détails (Partie ${i + 1} sur ${requestChunks.length})`,
-                        description: requestChunks[i],
-                        color: 0x3498DB,
-                        timestamp: new Date().toISOString(),
-                        footer: {
-                            text: `Soumis par : ${discordName || "N/A"} | l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`
-                        }
-                    };
-                    const subsequentResponse = await fetch(webhookURL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }, // Subsequent parts are always JSON
-                        body: JSON.stringify({
-                            content: `${contentLabel} (Partie ${i + 1} sur ${requestChunks.length})`,
-                            embeds: [subsequentEmbedData]
-                        }),
-                    });
-
-                    if (!subsequentResponse.ok) {
-                        allWebhooksSentSuccessfully = false;
-                        const errorText = await subsequentResponse.text();
-                        console.error(`Failed to send message (Part ${i + 1}) to Discord webhook. Status: ${subsequentResponse.status} ${subsequentResponse.statusText}`, errorText);
-                        Sentry.captureMessage(`Discord webhook failed for feature request (Part ${i + 1}): ${subsequentResponse.status}`, {
-                            level: 'error',
-                            extra: { statusText: subsequentResponse.statusText, responseBody: errorText }
-                        });
-                        break;
-                    }
-                }
-            }
-
-            if (allWebhooksSentSuccessfully) {
-                showNotification("Merci pour votre retour ! Je vais m'en occuper bientôt.", 'check-circle');
-                setShowFeatureRequestModal(false);
-                setFeatureRequest('');
-                setDiscordName('');
-                setIsBbcodeRequest(false);
-                setBbcodeTitleRequest('');
-                setBbcodeRequestText('');
-            } else {
-                showNotification(`Partiellement soumis ou échec. Veuillez vérifier la console ou réessayer.`, 'exclamation-triangle');
-            }
-
-        } catch (error) {
-            console.error('Error submitting feature request:', error);
-            Sentry.captureException(error, { extra: { context: 'Feature Request Submission Fetch' } });
-            showNotification("Une erreur réseau s'est produite. Veuillez réessayer.", 'exclamation-triangle');
-        }
+        showNotification("Merci pour votre retour ! Il est bien enregistré, l'équipe va s'en occuper.", 'check-circle');
+        setShowFeatureRequestModal(false);
+        setFeatureRequest('');
+        setDiscordName('');
+        setIsBbcodeRequest(false);
+        setBbcodeTitleRequest('');
+        setBbcodeRequestText('');
     };
 
     if (!show) {

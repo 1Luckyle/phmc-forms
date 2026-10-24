@@ -29,6 +29,16 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'fiche profil changement',
             },
             {
+                key: 'cctv', icon: 'fa-video', label: 'Vidéosurveillance', badge: 'cctv',
+                description: "Demandes d'images de caméras : lire, répondre et suivre. Accessible aussi à l'administration du PHMC depuis le site.",
+                keywords: 'cctv caméra images demande police réponse',
+            },
+            {
+                key: 'siteRequests', icon: 'fa-inbox', label: 'Demandes du site', badge: 'requests',
+                description: 'Bugs, idées de fonctionnalités et propositions de nouveaux formulaires envoyés par les utilisateurs.',
+                keywords: 'bug fonctionnalité suggestion ticket formulaire idée',
+            },
+            {
                 key: 'imageCleanup', icon: 'fa-images', label: 'Images à supprimer', badge: 'images',
                 description: 'Images imgBB à retirer à la main (cartes de visite et signatures remplacées).',
                 keywords: 'imgbb nettoyage carte signature',
@@ -48,6 +58,22 @@ export const ADMIN_SECTION_GROUPS = [
                 key: 'authMethods', icon: 'fa-key', label: 'Méthodes de connexion',
                 description: 'Connexion par GTA World seulement, ou aussi par e-mail et mot de passe.',
                 keywords: 'login gta world email mot de passe',
+            },
+        ],
+    },
+    {
+        key: 'tracking',
+        label: 'Suivi',
+        items: [
+            {
+                key: 'errors', icon: 'fa-triangle-exclamation', label: 'Erreurs du site',
+                description: "Erreurs rencontrées par les utilisateurs connectés (page, navigateur, pile d'appels), sur les 30 derniers jours.",
+                keywords: 'erreur bug crash sentry exception plantage',
+            },
+            {
+                key: 'activity', icon: 'fa-clock-rotate-left', label: "Journal d'activité",
+                description: 'Qui a fait quoi, et quand : connexions, rapports, candidatures, paiements, actions admin, erreurs.',
+                keywords: 'logs historique audit traçabilité événements actions erreurs journal',
             },
         ],
     },
@@ -82,11 +108,6 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'jeu cartes phrases',
             },
             {
-                key: 'webhooks', icon: 'fa-bullhorn', label: 'Webhooks Discord',
-                description: "Canaux Discord de notification, envoi de messages et journal des envois.",
-                keywords: 'discord notification canal message journal',
-            },
-            {
                 key: 'database', icon: 'fa-database', label: 'Base de données',
                 description: 'Explorateur et éditeur de la base Firebase (à manier avec précaution).',
                 keywords: 'firebase realtime edition données',
@@ -103,9 +124,14 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'test simulation saison autofill whitelist rôle',
             },
             {
+                key: 'webhooks', icon: 'fa-bullhorn', label: 'Webhooks Discord (hérité)',
+                description: "Canaux Discord optionnels. Le suivi des actions se fait désormais dans le journal d'activité.",
+                keywords: 'discord notification canal message',
+            },
+            {
                 key: 'dev', icon: 'fa-code', label: 'Outils développeur',
-                description: "Échange de données utilisateur, test CCTV, test d'erreur Sentry.",
-                keywords: 'sentry cctv échange',
+                description: "Échange de données utilisateur, test d'erreur Sentry.",
+                keywords: 'sentry échange',
             },
         ],
     },

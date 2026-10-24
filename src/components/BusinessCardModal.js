@@ -7,6 +7,7 @@ import DebugFillButton from './DebugFillButton';
 import SignatureCreator from './SignatureCreator';
 import { MyCreationPanel } from './MyCreationPanel';
 import { CREATION_KINDS, loadUserCreations, saveUserCreation, removeUserCreation } from '../utils/userCreations';
+import { logActivity } from '../utils/activityLog';
 import './MyCreations.css';
 
 const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload, uploadImageDetailed, uid, defaultName }) => {
@@ -121,6 +122,15 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     }, []);
 
     const sendDiscordWebhook = useCallback(async (cardName, cardRank, cardPhoneNumber, generatedImageUrl, errorMessage = null, cardEmail = '') => {
+        // Journal d'activité (sans téléphone ni e-mail) ; l'envoi Discord ci-dessous est facultatif.
+        logActivity({
+            category: 'rapports',
+            action: errorMessage ? 'business_card_failed' : 'business_card_created',
+            summary: errorMessage ? `Échec de la création d'une carte de visite : ${cardName || 'sans nom'}` : `Carte de visite créée : ${cardName || 'sans nom'}`,
+            details: errorMessage ? String(errorMessage).slice(0, 1000) : (cardRank ? `Grade : ${cardRank}` : undefined),
+            severity: errorMessage ? 'error' : 'success',
+            target: cardName || undefined,
+        });
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
         if (!webhookURL) {
             console.warn('Discord webhook URL is not set in environment variables.');

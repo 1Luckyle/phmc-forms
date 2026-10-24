@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react";
+import { logAdminAction } from '../../utils/activityLog';
 
 export const sendDiscordNotification = async (webhookURL, payload, context, notifyFunc) => {
     if (!webhookURL) {
@@ -38,9 +39,10 @@ export const sendDiscordNotification = async (webhookURL, payload, context, noti
 // Journal des actions d'administration/recrutement sur Discord (même format que celui du
 // panneau admin). `actorLabel` : « Admin » ou « Recruteur » selon qui agit.
 export const sendAdminActionWebhook = async (actorEmail, action, details, categoryName = null, actorLabel = 'Admin') => {
+    // Le journal d'activité du site est la trace officielle ; Discord n'est plus qu'un doublon facultatif.
+    logAdminAction({ email: actorEmail, action, details, categoryName, actorLabel });
     const webhookURL = process.env.REACT_APP_ADMIN_ACTION_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
     if (!webhookURL) {
-        console.warn('Admin action webhook URL not configured. Skipping log.');
         return;
     }
     let timeZone = 'N/A';

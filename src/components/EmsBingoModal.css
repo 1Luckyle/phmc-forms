@@ -103,7 +103,7 @@
     padding: 5px;
     font-size: 0.7rem;
     font-weight: bold;
-    color: #acb1cad3;
+    color: #ffffff;
     aspect-ratio: 1 / 1;
     overflow-wrap: break-word;
     word-break: break-word;
@@ -178,7 +178,7 @@
 }
 
 .bingo-sidebar h5 {
-    color: #acb1cad3;
+    color: #ffffff;
     margin-bottom: 15px;
     border-bottom: 1px solid #30363d;
     padding-bottom: 10px;
@@ -196,7 +196,7 @@
     padding: 8px 10px;
     margin-bottom: 8px;
     font-size: 0.9em;
-    color: #acb1cad3;
+    color: #ffffff;
     word-wrap: break-word;
 }
 
@@ -207,7 +207,7 @@
 .activity-item .timestamp {
     display: block;
     font-size: 0.75em;
-    color: #8b949e;
+    color: #d0d7de;
     margin-top: 4px;
 }
 
@@ -221,22 +221,22 @@
 .react-select-container .react-select__control {
     background-color: #16202c !important;
     border-color: #30363d !important;
-    color: #eeeeeeb0 !important;
+    color: #ffffff !important;
 }
 .react-select-container .react-select__control:hover {
     border-color: #6c757d !important;
 }
 .react-select-container .react-select__single-value {
-    color: #eeeeeeb0 !important;
+    color: #ffffff !important;
 }
 .react-select-container .react-select__placeholder {
-    color: #eeeeeeb0 !important;
+    color: #ffffff !important;
 }
 .react-select-container .react-select__indicator-separator {
     background-color: #30363d !important;
 }
 .react-select-container .react-select__dropdown-indicator {
-    color: #eeeeeeb0 !important;
+    color: #ffffff !important;
 }
 .react-select-container .react-select__menu {
     background-color: #16202c !important;
@@ -244,7 +244,7 @@
 }
 .react-select-container .react-select__option {
     background-color: #16202c !important;
-    color: #eeeeeeb0 !important;
+    color: #ffffff !important;
 }
 .react-select-container .react-select__option--is-focused {
     background-color: #30363d !important;
@@ -425,4 +425,36 @@
         border-color: #58a6ff; /* A subtle highlight on focus */
         box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25); /* Bootstrap-like focus ring */
     }
+}
+
+
+/* Lisibilité : textes clairs sur le fond sombre du bingo (modale principale et fenêtre de suggestion de phrase). */
+.bingo-modal-dialog .modal-title,
+.bingo-modal-dialog .modal-body,
+.bingo-modal-dialog .form-label,
+.bingo-modal-dialog .form-text,
+.bingo-modal-dialog .text-muted,
+.bingo-modal-dialog label {
+    color: #ffffff !important;
+}
+
+.bingo-modal-dialog .bingo-title {
+    color: #e5564a !important;
+}
+
+.bingo-modal-dialog .form-text,
+.bingo-modal-dialog .text-muted {
+    color: #d0d7de !important;
+}
+
+.bingo-loading {
+    color: #ffffff;
+    font-weight: 600;
+    padding: 12px;
+}
+
+.bingo-sidebar,
+.bingo-sidebar p,
+.bingo-sidebar .form-text {
+    color: #ffffff;
 }

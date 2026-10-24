@@ -17,6 +17,7 @@ import { analytics } from './firebase';
 import { logEvent } from "firebase/analytics";
 import ErrorBoundary from './components/ErrorBoundary';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
+import { logClientError } from './utils/activityLog';
 
 // --- START: Fallback Error Reporting ---
 const discordErrorWebhookQueue = [];
@@ -63,6 +64,8 @@ const processDiscordErrorQueue = async () => {
  * @param {object} errorDetails - Details about the caught error.
  */
 export const sendDiscordErrorWebhook = (errorDetails) => {
+    // Journal d'activité (panneau admin) : la trace principale des erreurs vues par les utilisateurs connectés.
+    logClientError(errorDetails);
     const now = Date.now();
     lastDiscordErrorMessage = errorDetails.message;
     lastDiscordErrorTimestamp = now;

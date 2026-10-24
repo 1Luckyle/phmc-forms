@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { database } from '../../firebase';
 import { ref, get, set, update, remove } from 'firebase/database';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank } from '../../constants/ranks';
+import { logAdminAction } from '../../utils/activityLog';
 
 const PendingModificationRequests = ({ showNotification, currentUser }) => {
     const [pendingRequests, setPendingRequests] = useState([]);
@@ -71,6 +72,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
             // Supprimer la demande de la liste des demandes en attente
             await removeRequest(request.requestId);
 
+            logAdminAction({ email: currentUser?.email, action: 'Modification de fiche approuvée', details: `Membre : ${request.originalName}` });
             showNotification(`Modifications approuvées pour ${request.originalName}`, 'success');
             loadPendingRequests();
         } catch (error) {
@@ -86,6 +88,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
         }
         try {
             await removeRequest(request.requestId);
+            logAdminAction({ email: currentUser?.email, action: 'Modification de fiche refusée', details: `Membre : ${request.originalName}` });
             showNotification(`Demande de modification rejetée pour ${request.originalName}`, 'info');
             loadPendingRequests();
         } catch (error) {

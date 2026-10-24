@@ -234,6 +234,66 @@
       }
     },
 
+    // ─── Journal d'activité du site ───────────────────────────────────────────
+    // Une ligne par action notable (voir src/utils/activityLog.js). Lu et purgé par les admins ; chaque personne
+    // connectée ne peut qu'AJOUTER des lignes à son propre nom (by/uid = son uid), jamais modifier ni supprimer.
+    // Les fonctions serveur écrivent via le SDK admin (qui ignore ces règles).
+    "activityLogs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".indexOn": ["ts", "cat"],
+      "$logId": {
+        ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['ts', 'cat', 'act', 'msg', 'sev', 'by']) && newData.child('ts').isNumber() && newData.child('ts').val() <= now + 3600000 && newData.child('ts').val() >= now - 86400000 && newData.child('cat').isString() && newData.child('cat').val().length <= 40 && newData.child('act').isString() && newData.child('act').val().length <= 80 && newData.child('msg').isString() && newData.child('msg').val().length <= 400 && (!newData.child('det').exists() || (newData.child('det').isString() && newData.child('det').val().length <= 3000)) && (newData.child('sev').val() === 'info' || newData.child('sev').val() === 'success' || newData.child('sev').val() === 'warning' || newData.child('sev').val() === 'error')"
+      }
+    },
+
+    // ─── Demandes de vidéosurveillance (CCTV) ─────────────────────────────────
+    // cctvRequests/{id} : demande + fil de réponses (reponses). N'importe quel compte connecté crée SA demande
+    // (statut « nouvelle ») et lit les siennes (via l'index cctvParDemandeur) ; l'administration du PHMC
+    // (drapeau cctvGestionnaires, posé par la fonction syncCctvAccess d'après le rôle) et les admins lisent tout,
+    // répondent et changent le statut. Le demandeur peut répondre dans le fil de SA demande.
+    "cctvGestionnaires": {
+      ".read":  "auth != null",
+      ".write": false
+    },
+    "cctvParDemandeur": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true))",
+        "$requestId": {
+          ".write": "auth != null && auth.uid === $uid && newData.val() === true"
+        }
+      }
+    },
+    "cctvRequests": {
+      ".read":  "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".indexOn": ["ts", "statut"],
+      "$requestId": {
+        ".read":  "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || data.child('by/uid').val() === auth.uid)",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('statut').val() === 'nouvelle' && !newData.child('reponses').exists()))",
+        ".validate": "newData.hasChildren(['ts', 'statut', 'titre', 'by', 'champs']) && newData.child('titre').isString() && newData.child('titre').val().length <= 200 && (newData.child('statut').val() === 'nouvelle' || newData.child('statut').val() === 'en_cours' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'refusee' || newData.child('statut').val() === 'cloturee')",
+        "statut": { ".write": "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)" },
+        "traitePar": { ".write": "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)" },
+        "maj": { ".write": "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || auth.uid === data.parent().child('by/uid').val())" },
+        "reponses": {
+          "$replyId": {
+            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
+          }
+        }
+      }
+    },
+
+    // ─── Demandes du site (CCTV, bugs, idées, nouveaux formulaires) ───────────
+    // Créées par les connectés (statut « nouveau », à leur nom) ; lues et traitées par les admins.
+    "siteRequests": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".indexOn": ["ts", "status", "type"],
+      "$requestId": {
+        ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('status').val() === 'nouveau')",
+        ".validate": "newData.hasChildren(['type', 'status', 'ts', 'title', 'by']) && (newData.child('type').val() === 'bug' || newData.child('type').val() === 'feature' || newData.child('type').val() === 'form') && (newData.child('status').val() === 'nouveau' || newData.child('status').val() === 'en_cours' || newData.child('status').val() === 'traite' || newData.child('status').val() === 'refuse') && newData.child('title').isString() && newData.child('title').val().length <= 200"
+      }
+    },
+
     // ─── Logs webhook ─────────────────────────────────────────────────────────
     "webhook_logs": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",

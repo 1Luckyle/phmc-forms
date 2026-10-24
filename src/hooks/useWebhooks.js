@@ -4,6 +4,8 @@ import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
 import { database } from '../firebase';
 import { ref, set, push } from 'firebase/database';
+import { submitCctvRequest } from '../utils/cctvRequests';
+import { logActivity } from '../utils/activityLog';
 
 export const useWebhooks = (formData, commitInfo, showNotification) => {
     const logWebhookToFirebase = async (type, payload) => {
@@ -18,12 +20,6 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
     };
 
     const sendEasterEggNotification = async (type = 'normal') => {
-        const webhookUrl = process.env.REACT_APP_DEV_WEBHOOK;
-        if (!webhookUrl) {
-            console.error("Discord webhook URL is not configured.");
-            return;
-        }
-
         const userIdentifier = formData.coronerEmployee || formData.phmcEmployee || formData.patientName || formData.decedentName || 'Quelqu\'un';
 
         let embedTitle = "🎉 Easter Egg trouvé! 🎉";
@@ -43,6 +39,17 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
             embedDescription = `Debug: **${userIdentifier}** viens de déclencher manuellement l'easter egg rare! 🥚🎉`;
             triggerSource = "Déclenché via le bouton de débogage";
         }
+
+        logActivity({
+            category: 'divers',
+            action: type === 'rare' ? 'easter_egg_rare' : 'easter_egg',
+            summary: embedDescription.split('**').join(''),
+            severity: 'success',
+        });
+
+        // Doublon Discord facultatif : sans URL configurée, la ligne du journal suffit.
+        const webhookUrl = process.env.REACT_APP_DEV_WEBHOOK;
+        if (!webhookUrl) return;
 
         const embed = {
             title: embedTitle,
@@ -99,86 +106,35 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
             environment: process.env.NODE_ENV
         });
 
-        const phmcWebhookURL = process.env.REACT_APP_PHMC_DISCORD;
-        const devWebhookURL = process.env.REACT_APP_DEV_WEBHOOK;
-        const leoWebhookURL = process.env.REACT_APP_LEO_WEBHOOK_URL;
-
-        if (!devWebhookURL) {
-            showNotification('Aucune URL de webhook CCTV n\'est configurée.', 'error');
-            Sentry.captureMessage('Neither DEV nor LEO webhook URLs are configured for CCTV.', 'error');
-            return false;
-        }
-
-        const embed = {
-            title: "📹 Demande d'images de vidéosurveillance",
-            color: 0x007bff,
+        // La demande est enregistrée dans le site (cctvRequests) : l'administration du PHMC la traite depuis le menu
+        // « Vidéosurveillance » et le demandeur suit les réponses dans « Mes demandes ».
+        const result = await submitCctvRequest({
+            title: `${cctvData.location ? cctvData.location.split('\n')[0] : 'Lieu non précisé'} — ${cctvData.department || 'Service non précisé'}`,
+            discord: cctvData.discordUsername,
+            summary: { agent: cctvData.officer, departement: cctvData.department, lieu: cctvData.location },
             fields: [
-                { name: "Grade de l'officier requérant", value: cctvData.rank || "N/A", inline: true },
-                { name: "Officier requérant", value: cctvData.officer || "N/A", inline: true },
-                { name: "Numéro de téléphone de l'officier", value: cctvData.officerPH || "N/A", inline: true },
-                { name: "Département requérant", value: cctvData.department || "N/A", inline: true },
-                ...(cctvData.discordUsername ? [{ name: "Nom d'utilisateur Discord", value: cctvData.discordUsername, inline: true }] : []),
-                { name: "Date/heure de l'incident", value: cctvData.incidentDateTime || "N/A", inline: true },
-                { name: "Raison de la demande", value: cctvData.requestReason || "N/A", inline: false },
-                { name: "Emplacement de la vidéosurveillance", value: cctvData.location || "N/A", inline: false },
-                { name: "Description des événements", value: `\`\`\`${cctvData.description || "N/A"}\`\`\``, inline: false },
-                ...(cctvData.oocNotes ? [{ name: "Notes hors jeu", value: `\`\`\`${cctvData.oocNotes}\`\`\``, inline: false }] : []),
+                { label: "Grade de l'officier requérant", value: cctvData.rank },
+                { label: 'Officier requérant', value: cctvData.officer },
+                { label: "Numéro de téléphone de l'officier", value: cctvData.officerPH },
+                { label: 'Département requérant', value: cctvData.department },
+                { label: "Nom d'utilisateur Discord", value: cctvData.discordUsername },
+                { label: "Date/heure de l'incident", value: cctvData.incidentDateTime },
+                { label: 'Raison de la demande', value: cctvData.requestReason },
+                { label: 'Emplacement de la vidéosurveillance', value: cctvData.location },
+                { label: 'Description des événements', value: cctvData.description },
+                { label: 'Notes hors jeu', value: cctvData.oocNotes },
             ],
-            timestamp: new Date().toISOString(),
-            footer: { text: `PHMC-FR Tools - v${commitInfo.sha || 'N/A'}` }
-        };
-
-        const payload = JSON.stringify({
-            username: "CCTV Bot",
-            content: "Nouvelle demande de vidéosurveillance ! Alerte Directrice : <@&1422251503350972517> | Alerte Administration : <@&1422251789146787920>",
-            embeds: [embed]
-        });
-        const webhookTargets = [];
-        if (phmcWebhookURL) webhookTargets.push({ name: 'PHMC', url: phmcWebhookURL });
-        if (devWebhookURL) webhookTargets.push({ name: 'Dev', url: devWebhookURL });
-        if (leoWebhookURL) webhookTargets.push({ name: 'LEO', url: leoWebhookURL });
-
-        const sendPromises = webhookTargets.map(target =>
-            fetch(target.url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: payload
-            }).then(async response => {
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Requête de ${target.name} échouée avec le statut ${response.status} : ${errorText}`);
-                }
-                return { name: target.name, status: 'fulfilled' };
-            })
-        );
-
-        const results = await Promise.allSettled(sendPromises);
-        let successfulSends = 0;
-
-        results.forEach((result, index) => {
-            const targetName = webhookTargets[index].name;
-            if (result.status === 'fulfilled') {
-                console.log(`Successfully sent CCTV webhook to ${targetName}.`);
-                successfulSends++;
-            } else {
-                console.error(`Failed to send CCTV webhook to ${targetName}:`, result.reason.message);
-                Sentry.captureMessage(`CCTV Webhook to ${targetName} failed`, {
-                    level: 'error',
-                    extra: { reason: result.reason.message }
-                });
-            }
         });
 
-        if (successfulSends === webhookTargets.length) {
-            showNotification('Requête de vidéosurveillance envoyée avec succès!', "check-circle");
+        if (result.ok) {
+            showNotification("Requête de vidéosurveillance enregistrée. Vous verrez la réponse de l'administration dans « Mes demandes ».", 'check-circle');
             return true;
-        } else if (successfulSends > 0) {
-            showNotification('Requête de vidéosurveillance envoyée, mais certaines destinations ont échoué.', "warning");
-            return true;
-        } else {
-            showNotification('Échec de l\'envoi de la requête de vidéosurveillance à toutes les destinations.', "error");
-            return false;
         }
+        Sentry.captureMessage('CCTV request could not be saved', { level: 'error', extra: { reason: result.reason, error: result.error?.message } });
+        showNotification(result.reason === 'not-signed-in'
+            ? 'Connectez-vous à votre compte pour envoyer une demande de vidéosurveillance.'
+            : "Échec de l'enregistrement de la requête de vidéosurveillance. Réessayez dans un instant.", result.reason === 'not-signed-in' ? 'warning' : 'error');
+        return false;
     };
 
     const sendWebhookPayload = async (webhookURL, payload, successMessage, context, notifyFunc) => {

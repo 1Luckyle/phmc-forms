@@ -65,6 +65,9 @@ import { ReportPreviewFrame } from './components/ReportExpansion';
 import { useSiteConfig } from './contexts/SiteConfigContext';
 import ImmersiveHeader from './components/ImmersiveHeader';
 import { exportReportDocument } from './utils/reportDocumentExport';
+import { getRoleInfo, sortKeyOfRank, extraRanksOf } from './constants/ranks';
+import { logActivity } from './utils/activityLog';
+import CctvHubModal from './components/Cctv/CctvHubModal';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -93,6 +96,8 @@ const FormImageLink = lazy(() => import('./components/FormImageLink'));
 const PositionInfoModal = lazy(() => import('./components/PositionInfoModal'));
 const EmsBingoModal = lazy(() => import('./components/EmsBingoModal'));
 const BbcodeToMarkdownModal = lazy(() => import('./components/BbcodeToMarkdownModal'));
+// Clé de tri d'un groupe d'employés (libellé = rôle) : voir constants/ranks.js. Les libellés inconnus passent en dernier.
+const groupSortKey = (label, service) => (getRoleInfo(label) ? sortKeyOfRank(label, service) : 99999);
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
 
 /** --------------------------------------------------------------------
@@ -151,6 +156,8 @@ function MainApp({
     // Ce que la personne (ou le profil simulé par un admin) voit dans la Boîte à outils : une seule définition, voir utils/viewAs.js.
     const toolAccess = getToolAccess({ currentEmployee, employeeProfile, staffProfile, isAdmin, isRecruiter, isContractCandidate, isCivilian, staffName, canUseAma, canManageRecruitment });
     const [showLoginModal, setShowLoginModal] = useState(false);
+    // Vidéosurveillance : le menu (envoyer / suivre / traiter) et, depuis lui, le formulaire de nouvelle demande.
+    const [showCctvHub, setShowCctvHub] = useState(false);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
     // Civil ouvre le Guide de Configuration directement sur la connexion/
@@ -814,7 +821,7 @@ function MainApp({
 
     const handleShowCctvRequestModal = () => {
         setShowAgencyGroupSelectorModal(false);
-        setShowCctvRequestModal(true);
+        setShowCctvHub(true);
     };
     
     // « Se connecter » : une seule fenêtre pour Personnel ET Civil (connexion GTA World ou e-mail).
@@ -1095,6 +1102,13 @@ function MainApp({
     );
 
     const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updatedStaff, adminUserEmail) => {
+        const actionLabels = { addEmployee: 'Membre du personnel ajouté', editUser: 'Fiche du personnel modifiée', removeStaff: 'Membre(s) du personnel supprimé(s)', updateRank: 'Rôle modifié' };
+        logActivity({
+            category: 'comptes',
+            action: actionType,
+            summary: `${actionLabels[actionType] || 'Gestion du personnel'} (${employeeType === 'coroner' ? 'DMEC' : 'PHMC'}) : ${actionType === 'removeStaff' ? (staffToRemove || []).join(', ') : (selectedEmployeeName || missingEmployeeData?.coronerName || 'n/a')}`,
+            details: [newRank ? `Nouveau rôle : ${newRank}` : '', authorizedBy ? `Autorisé par : ${authorizedBy}` : ''].filter(Boolean).join(' · ') || undefined,
+        });
         await sendMissingEmployeeNotification(
             actionType,
             employeeType,
@@ -1149,6 +1163,15 @@ function MainApp({
         window.history.replaceState({}, document.title, url.href);
     }, []);
 
+    const handleHideCctvHub = useCallback(() => {
+        setShowCctvHub(false);
+        const url = new URL(window.location.href);
+        if (url.pathname.endsWith('/cctv')) {
+            url.pathname = url.pathname.replace(/cctv$/, '') || '/';
+            window.history.replaceState({}, document.title, url.href);
+        }
+    }, []);
+
     const handleHideCctvRequestModal = useCallback(() => {
         setShowCctvRequestModal(false);
         const url = new URL(window.location.href);
@@ -1192,7 +1215,8 @@ function MainApp({
                     label: employee.name,
                     category: employee.category,
                     rank: employee.category || employee.rank || '',
-                    lastName: employee.lastName
+                    lastName: employee.lastName,
+                    roles: [employee.category || employee.rank, ...extraRanksOf(employee)].filter(Boolean)
                 });
                 return groups;
             }, {})
@@ -1200,8 +1224,7 @@ function MainApp({
             label: category,
             options: options.sort((a, b) => a.label.localeCompare(b.label))
         })).sort((a, b) => {
-            const order = ['Leadership', 'Hospital Supervisor', 'Chief Resident', 'Physician', 'Resident Physician', 'Physician Assistant', 'Psychiatrist', 'Psychologist', 'Dentist', 'Nursing', 'Emergency Medical Services', 'Attending Physician', 'Uncategorized'];
-            return order.indexOf(a.label) - order.indexOf(b.label);
+            return groupSortKey(a.label, 'phmc') - groupSortKey(b.label, 'phmc') || a.label.localeCompare(b.label);
         });
     }, [filteredPhmcList]);
 
@@ -1228,8 +1251,7 @@ function MainApp({
             label: category,
             options: options.sort((a, b) => a.label.localeCompare(b.label))
         })).sort((a, b) => {
-            const order = ['Chief Boss', 'Deputy Chief Medical Examiner-Coroner,', 'Supervisor', 'Senior Medical Examiner', 'Medical Examiner', 'Senior Coroner Investigator', 'Coroner Investigator', 'Forensic Attendant', 'Trainee Forensic-Attendant', 'Developer Testing', 'Missing_Category', 'Uncategorized'];
-            return order.indexOf(a.label) - order.indexOf(b.label);
+            return groupSortKey(a.label, 'coroner') - groupSortKey(b.label, 'coroner') || a.label.localeCompare(b.label);
         });
     }, [filteredCoronerList]);
 
@@ -1255,8 +1277,7 @@ function MainApp({
             label: category,
             options: options.sort((a, b) => a.label.localeCompare(b.label))
         })).sort((a, b) => {
-            const order = ['Leadership', 'Hospital Supervisor', 'Chief Resident', 'Physician', 'Resident Physician', 'Physician Assistant', 'Psychiatrist', 'Psychologist', 'Dentist', 'Nursing', 'Emergency Medical Services', 'Attending Physician', 'Uncategorized'];
-            return order.indexOf(a.label) - order.indexOf(b.label);
+            return groupSortKey(a.label, 'phmc') - groupSortKey(b.label, 'phmc') || a.label.localeCompare(b.label);
         });
     }, [unrestrictedPhmcList]);
 
@@ -1283,8 +1304,7 @@ function MainApp({
             label: category,
             options: options.sort((a, b) => a.label.localeCompare(b.label))
         })).sort((a, b) => {
-            const order = ['Chief Boss', 'Deputy Chief Medical Examiner-Coroner,', 'Supervisor', 'Senior Medical Examiner', 'Medical Examiner', 'Senior Coroner Investigator', 'Coroner Investigator', 'Forensic Attendant', 'Trainee Forensic-Attendant', 'Developer Testing', 'Missing_Category', 'Uncategorized'];
-            return order.indexOf(a.label) - order.indexOf(b.label);
+            return groupSortKey(a.label, 'coroner') - groupSortKey(b.label, 'coroner') || a.label.localeCompare(b.label);
         });
     }, [unrestrictedCoronerList]);
 
@@ -1501,10 +1521,21 @@ function MainApp({
                     userPreferences={userOnboardingPreferences}
                 />
 
+                <CctvHubModal
+                    show={showCctvHub}
+                    onHide={handleHideCctvHub}
+                    onNewRequest={() => setShowCctvRequestModal(true)}
+                    onLogin={handleOpenLogin}
+                />
+
                 <CctvRequestWebhookModal
                     show={showCctvRequestModal}
                     onHide={handleHideCctvRequestModal}
-                    onSubmit={handleCctvWebhookSubmit}
+                    onSubmit={async (cctvData) => {
+                        const saved = await handleCctvWebhookSubmit(cctvData);
+                        if (saved) setShowCctvHub(true); // retour sur « Mes demandes » pour voir la demande envoyée
+                        return saved;
+                    }}
                     showNotification={showNotification}
                     onLogin={handleOpenLogin}
                     onSignup={handleOpenSignup}
@@ -2157,12 +2188,17 @@ function MainApp({
                             showNotification={showNotification}
                             setShowEmployeeModal={setShowEmployeeModal}
                             isAdmin={formData.isAdminAuthenticated}
-                            sendBingoWebhook={({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci }) => 
-                                sendBingoNotification({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci || commitInfo })
-                            }
-                            sendPhraseRequestWebhook={({ requester, phrase, bingoType }) => 
-                                sendPhraseRequestNotification({ requester, phrase, bingoType, commitInfo })
-                            }
+                            sendBingoWebhook={({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci }) => {
+                                // Journal d'activité : seuls les BINGO comptent (les marqueurs posés seraient du bruit).
+                                if (!marked) {
+                                    logActivity({ category: 'bingo', action: 'bingo', summary: `BINGO de ${scorer || 'un joueur'} (${bingoType || 'bingo'})`, details: lineName ? `Ligne : ${lineName}` : undefined, severity: 'success', target: scorer });
+                                }
+                                return sendBingoNotification({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci || commitInfo });
+                            }}
+                            sendPhraseRequestWebhook={({ requester, phrase, bingoType }) => {
+                                logActivity({ category: 'bingo', action: 'phrase_requested', summary: `Phrase de bingo proposée (${bingoType || 'bingo'}) par ${requester || 'un joueur'}`, details: phrase, target: requester });
+                                return sendPhraseRequestNotification({ requester, phrase, bingoType, commitInfo });
+                            }}
                         />
                         )}
 

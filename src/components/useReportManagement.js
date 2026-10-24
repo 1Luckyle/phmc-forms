@@ -13,6 +13,7 @@ import { buildReportTitle } from '../utils/reportTitle';
 import { recordInvoiceForReport } from '../utils/patientInvoices';
 import { validateReport, validateApplication, formatIssues } from '../utils/formValidation';
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
+import { logActivity } from '../utils/activityLog';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
@@ -310,12 +311,16 @@ export const useReportManagement = (
                 }
             }
 
-            // Log the webhook
-            await logWebhook(`report_saved by ${currentAuthor}`, {
-                author: currentAuthor,
-                reportKey: sanitizedKey,
-                originalKey: key,
-                bbCodeVersion: bbCodeVersion
+            // Journal d'activité (le contenu médical n'y figure pas : seulement le type de formulaire et l'auteur).
+            logActivity({
+                category: 'rapports',
+                action: 'report_saved',
+                summary: `Rapport enregistré : ${getFormDefinition(bbCodeVersion)?.name || `formulaire ${bbCodeVersion}`}`,
+                details: `Auteur : ${currentAuthor}
+Version du formulaire : ${bbCodeVersion}
+Clé : ${sanitizedKey}`,
+                target: currentAuthor,
+                severity: 'success',
             });
 
             return { success: true }; // Indicate success
@@ -1013,6 +1018,11 @@ export const useReportManagement = (
             }
 
             showNotification(`Copie enregistrée dans les rapports de ${copyAuthorName}.`, 'save');
+            logActivity({
+                category: 'rapports', action: 'report_copied', summary: `Rapport copié vers les rapports de ${copyAuthorName}`,
+                details: `Chemin source : ${sourcePath}
+Copie : ${copyPath}`, target: copyAuthorName,
+            });
 
             // La liste affichée est déjà chargée : sans rechargement, la copie
             // n'apparaît pas avant la prochaine ouverture de la modale.
@@ -1140,6 +1150,15 @@ export const useReportManagement = (
             });
 
             await saveApplication(civilianProfile.uid, applicationId, payload);
+            logActivity({
+                category: 'recrutement',
+                action: submitAction === 'submit' ? 'application_submitted' : 'application_draft_saved',
+                summary: `${submitAction === 'submit' ? 'Candidature envoyée' : 'Brouillon de candidature enregistré'} : ${applicantName} — ${payload.poste}`,
+                details: `Formulaire : ${definition.name}
+Candidature : ${applicationId}`,
+                target: applicantName,
+                severity: submitAction === 'submit' ? 'success' : 'info',
+            });
 
             if (submitAction === 'submit') {
                 // Best-effort : un mail/webhook raté ne doit jamais faire échouer

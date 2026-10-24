@@ -7,6 +7,7 @@ import { database } from '../firebase';
 import { ref, set, onValue, off, serverTimestamp, get, remove, push } from 'firebase/database';
 import PhraseRequestModal from './PhraseRequestModal';
 import emsBingoBackground from '../assets/EMMafia_Pride.png';
+import { getRoleInfo } from '../constants/ranks';
 
 // Function to shuffle an array (used by admin to generate new card)
 const getShuffledPhrases = (phrases) => {
@@ -30,27 +31,35 @@ const EMPLOYEE_COLORS = [
     '#6a737d', // Grey
 ];
 
+// Qui peut jouer à quel bingo : les choix de noms suivent les RÔLES (français, cumulables) du personnel.
+//   • Urgences : tout le personnel PHMC ;
+//   • EMS : les rôles de la filière Paramédical (paramédic, EMT, étudiants paramédicaux), y compris en rôle cumulé ;
+//   • Médecine légale : tout le DMEC.
+const isParamedicOption = (option) => (option.roles && option.roles.length ? option.roles : [option.rank, option.category])
+    .filter(Boolean)
+    .some((role) => getRoleInfo(role)?.filiere === 'Paramédical' || role === 'Emergency Medical Services');
+
 const BINGO_TYPES = [
     {
         id: 'er',
         name: 'Emergency Room',
         path: 'ER', // Firebase path segment
         employeeGroup: 'PHMC',
-        employeeFilter: ['Leadership', 'Hospital Supervisor', 'Chief Resident', 'Physician', 'Resident Physician', 'Physician Assistant', 'Psychiatrist', 'Psychologist', 'Dentist', 'Nursing', 'Emergency Medical Services', 'Attending Physician', 'Uncategorized'] // All PHMC
+        optionFilter: null // tout le personnel PHMC
     },
     {
         id: 'ems',
         name: 'EMS',
         path: 'EMS',
         employeeGroup: 'PHMC',
-        employeeFilter: ['Emergency Medical Services'] // Only EMS staff
+        optionFilter: isParamedicOption // seulement les paramédicaux
     },
     {
         id: 'coroner',
         name: 'Coroner',
         path: 'Coroner',
         employeeGroup: 'Coroner',
-        employeeFilter: [] // No specific filter needed, use all coronerGroupedOptions
+        optionFilter: null // tout le DMEC
     }
 ];
 
@@ -611,8 +620,11 @@ setCompletedBingoLines(prevCompletedLines => {
         }
 
         if (selectedBingoType.employeeGroup === 'PHMC') {
-            if (selectedBingoType.employeeFilter.length > 0) {
-                return phmcGroupedOptions.filter(group => selectedBingoType.employeeFilter.includes(group.label));
+            if (selectedBingoType.optionFilter) {
+                // On garde les personnes concernées ; un groupe qui n'en a plus disparaît.
+                return phmcGroupedOptions
+                    .map(group => ({ ...group, options: group.options.filter(selectedBingoType.optionFilter) }))
+                    .filter(group => group.options.length > 0);
             }
             return phmcGroupedOptions;
         } else if (selectedBingoType.employeeGroup === 'Coroner') {
@@ -686,18 +698,18 @@ setCompletedBingoLines(prevCompletedLines => {
                                         className="react-select-container"
                                         classNamePrefix="react-select"
                                         styles={{
-                                            control: (base) => ({ ...base, backgroundColor: '#16202c', color: '#eeeeeeb0', borderColor: '#30363d', '&:hover': { borderColor: '#30363d' } }),
+                                            control: (base) => ({ ...base, backgroundColor: '#16202c', color: '#ffffff', borderColor: '#30363d', '&:hover': { borderColor: '#30363d' } }),
                                             menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                                            option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                                            singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                                            input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                                            placeholder: (base) => ({ ...base, color: '#eeeeeeb0' })
+                                            option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#ffffff' }),
+                                            singleValue: (base) => ({ ...base, color: '#ffffff' }),
+                                            input: (base) => ({ ...base, color: '#ffffff' }),
+                                            placeholder: (base) => ({ ...base, color: '#ffffff' })
                                         }}
                                     />
                                     <small className="form-text text-muted mt-1">
                                         <span
                                             onClick={handleOpenEmployeeModal}
-                                            style={{ cursor: 'pointer', textDecoration: 'underline', color: '#eeeeeeb0' }}
+                                            style={{ cursor: 'pointer', textDecoration: 'underline', color: '#ffffff' }}
                                         >
                                             Nom Manquant?
                                         </span>
@@ -733,7 +745,7 @@ setCompletedBingoLines(prevCompletedLines => {
                                         </div>
                                     ))
                                 ) : (
-                                    <p style={{ color: '#eeeeeeb0' }}>Aucune activité pour le moment. Soyez le premier à marquer une case !</p>
+                                    <p style={{ color: '#ffffff' }}>Aucune activité pour le moment. Soyez le premier à marquer une case !</p>
                                 )}
                             </div>
                             {showNewMessagesIndicator && (

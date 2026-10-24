@@ -1,0 +1,161 @@
+// src/utils/cctvRequests.js
+//
+// Demandes de vidéosurveillance (CCTV) : enregistrées dans RTDB (cctvRequests), traitées par l'administration du
+// PHMC (Directeur(trice), Assistant(e) de Direction, Personnel Administratif) et les admins, consultables par leur
+// auteur. Chaque demande porte un fil de réponses. Voir database.rules.json et la fonction syncCctvAccess.
+import { useEffect, useState } from 'react';
+import { ref, push, update, onValue, query, orderByChild, limitToLast } from 'firebase/database';
+import { database, auth } from '../firebase';
+import { logActivity, getActivityActorName } from './activityLog';
+
+const SYNC_ACCESS_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/syncCctvAccess';
+
+export const CCTV_STATUSES = {
+    nouvelle:  { label: 'Nouvelle',        color: '#58a6ff', hint: 'Reçue, pas encore lue par la direction.' },
+    en_cours:  { label: 'En cours',        color: '#e3b341', hint: "En cours d'examen." },
+    acceptee:  { label: 'Acceptée',        color: '#3fb950', hint: 'Les images seront transmises.' },
+    refusee:   { label: 'Refusée',         color: '#ff7b72', hint: 'La demande ne peut pas aboutir.' },
+    cloturee:  { label: 'Clôturée',        color: '#8b949e', hint: 'Dossier terminé.' },
+};
+export const CCTV_OPEN_STATUSES = ['nouvelle', 'en_cours'];
+
+const clean = (value, max) => String(value ?? '').trim().slice(0, max);
+
+// Demande d'accès au traitement : ajuste le drapeau serveur d'après le rôle (sans effet si la personne n'a pas le rôle).
+let lastSync = 0;
+export const syncCctvAccess = async () => {
+    const user = auth.currentUser;
+    if (!user || Date.now() - lastSync < 60000) return;
+    lastSync = Date.now();
+    try {
+        const token = await user.getIdToken();
+        await fetch(SYNC_ACCESS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: '{}' });
+    } catch (error) {
+        console.warn('Vérification des droits CCTV impossible :', error?.message || error);
+    }
+};
+
+// true si la personne connectée peut traiter les demandes (administration du PHMC ou admin).
+export const useCctvManager = (isAdmin) => {
+    const [flag, setFlag] = useState(false);
+    useEffect(() => {
+        const user = auth.currentUser;
+        if (!user) { setFlag(false); return undefined; }
+        syncCctvAccess();
+        return onValue(ref(database, `cctvGestionnaires/${user.uid}`), (snapshot) => setFlag(snapshot.val() === true), () => setFlag(false));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auth.currentUser?.uid]);
+    return !!isAdmin || flag;
+};
+
+// fields : [{ label, value }] dans l'ordre d'affichage. summary : { agent, departement, lieu } pour les listes.
+export const submitCctvRequest = async ({ title, fields, discord, summary = {} }) => {
+    const user = auth.currentUser;
+    if (!user) return { ok: false, reason: 'not-signed-in' };
+    const requestRef = push(ref(database, 'cctvRequests'));
+    const id = requestRef.key;
+    const now = Date.now();
+    const entry = {
+        ts: now,
+        maj: now,
+        statut: 'nouvelle',
+        titre: clean(title, 200) || 'Demande de vidéosurveillance',
+        by: { uid: user.uid, name: clean(getActivityActorName() || user.email || 'Inconnu', 120) },
+        champs: (fields || []).map(({ label, value }) => ({ l: clean(label, 120), v: clean(value, 5000) })).filter((field) => field.l && field.v),
+        resume: {
+            agent: clean(summary.agent, 120),
+            departement: clean(summary.departement, 120),
+            lieu: clean(summary.lieu, 200),
+        },
+    };
+    if (user.email) entry.by.email = clean(user.email, 120);
+    if (discord) entry.by.discord = clean(discord, 80);
+    try {
+        await update(ref(database), {
+            [`cctvRequests/${id}`]: entry,
+            [`cctvParDemandeur/${user.uid}/${id}`]: true,
+        });
+        logActivity({ category: 'demandes', action: 'request_cctv', summary: `Demande de vidéosurveillance : ${entry.titre}`, target: id });
+        return { ok: true, id };
+    } catch (error) {
+        console.error('Envoi de la demande CCTV impossible :', error);
+        return { ok: false, reason: 'write-failed', error };
+    }
+};
+
+// Une réponse dans le fil. `staff` : message de l'administration (affiché comme tel). `status` : nouveau statut (optionnel, gestionnaires).
+export const addCctvReply = async ({ request, text, staff, status, authorName, authorRole }) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Connexion requise.');
+    const replyId = push(ref(database, `cctvRequests/${request.id}/reponses`)).key;
+    const now = Date.now();
+    const reply = {
+        ts: now,
+        par: { uid: user.uid, name: clean(authorName || getActivityActorName() || user.email || 'Inconnu', 120), role: clean(authorRole || (staff ? 'Administration' : 'Demandeur'), 80), staff: !!staff },
+        texte: clean(text, 4000),
+    };
+    if (status && staff) reply.statut = status;
+    const updates = { [`cctvRequests/${request.id}/reponses/${replyId}`]: reply, [`cctvRequests/${request.id}/maj`]: now };
+    if (staff && status && status !== request.statut) {
+        updates[`cctvRequests/${request.id}/statut`] = status;
+        updates[`cctvRequests/${request.id}/traitePar`] = { uid: user.uid, name: reply.par.name, ts: now };
+    }
+    await update(ref(database), updates);
+    if (staff) {
+        logActivity({
+            category: 'demandes', action: 'cctv_reply',
+            summary: `Réponse à la demande CCTV « ${request.titre} »${status && status !== request.statut ? ` — ${CCTV_STATUSES[status]?.label || status}` : ''}`,
+            target: request.id,
+        });
+    }
+};
+
+export const setCctvStatus = async (request, status, authorName) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Connexion requise.');
+    const now = Date.now();
+    await update(ref(database), {
+        [`cctvRequests/${request.id}/statut`]: status,
+        [`cctvRequests/${request.id}/maj`]: now,
+        [`cctvRequests/${request.id}/traitePar`]: { uid: user.uid, name: clean(authorName || getActivityActorName() || user.email, 120), ts: now },
+    });
+    logActivity({ category: 'demandes', action: 'cctv_status', summary: `Demande CCTV « ${request.titre} » : ${CCTV_STATUSES[status]?.label || status}`, target: request.id });
+};
+
+// Réponses d'une demande, en liste triée par date.
+export const repliesOf = (request) => Object.entries(request.reponses || {})
+    .map(([id, reply]) => ({ id, ...reply }))
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+// Toutes les demandes (gestionnaires), temps réel.
+export const subscribeToAllCctvRequests = (callback, onError) => onValue(
+    query(ref(database, 'cctvRequests'), orderByChild('ts'), limitToLast(500)),
+    (snapshot) => {
+        const list = [];
+        snapshot.forEach((child) => { list.push({ id: child.key, ...child.val() }); });
+        callback(list.reverse());
+    },
+    onError,
+);
+
+// Les demandes de la personne connectée : index cctvParDemandeur puis lecture individuelle (temps réel).
+export const subscribeToMyCctvRequests = (callback, onError) => {
+    const user = auth.currentUser;
+    if (!user) { callback([]); return () => {}; }
+    const requests = {};
+    const itemUnsubscribers = {};
+    const emit = () => callback(Object.values(requests).sort((a, b) => (b.ts || 0) - (a.ts || 0)));
+    const indexUnsubscribe = onValue(ref(database, `cctvParDemandeur/${user.uid}`), (snapshot) => {
+        const ids = Object.keys(snapshot.val() || {});
+        Object.keys(itemUnsubscribers).filter((id) => !ids.includes(id)).forEach((id) => { itemUnsubscribers[id](); delete itemUnsubscribers[id]; delete requests[id]; });
+        ids.filter((id) => !itemUnsubscribers[id]).forEach((id) => {
+            itemUnsubscribers[id] = onValue(ref(database, `cctvRequests/${id}`), (itemSnapshot) => {
+                if (itemSnapshot.exists()) requests[id] = { id, ...itemSnapshot.val() }; else delete requests[id];
+                emit();
+            }, onError);
+        });
+        emit();
+    }, onError);
+    return () => { indexUnsubscribe(); Object.values(itemUnsubscribers).forEach((unsubscribe) => unsubscribe()); };
+};
+

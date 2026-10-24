@@ -23,6 +23,11 @@ import BbcodeAccessSwitch from './BbcodeAccessSwitch';
 import AdminOverview from './AdminOverview';
 import useAdminCounts from './useAdminCounts';
 import { ADMIN_SECTION_GROUPS, ALL_ADMIN_SECTIONS, findAdminSection, filterAdminSections } from './adminNavigation';
+import { seedDefaultBingoPhrases } from '../../utils/bingoDefaults';
+import ActivityLog from './ActivityLog';
+import SiteRequests from './SiteRequests';
+import { logAdminAction } from '../../utils/activityLog';
+import CctvRequestsPanel from '../Cctv/CctvRequestsPanel';
 
 const LAST_SECTION_KEY = 'adminLastSection';
 
@@ -101,7 +106,6 @@ const AdminDashboard = ({
     setShowReviewPhrasesModal,
     setShowUserManagementModal,
 
-    setShowCctvWebhookModal,
     setShowMarkdownModal,
     handleLogout,
     Sentry,
@@ -147,13 +151,30 @@ const AdminDashboard = ({
     const imageCount = useImgbbQueueCount();
     const counts = useAdminCounts();
     const { bbcodeEnabled } = useSiteConfig();
-    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount };
+    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests, cctv: counts.cctv };
 
     const { debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled } = useDebug();
     const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
     const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
+    const [isSeedingPhrases, setIsSeedingPhrases] = useState(false);
 
     const current = findAdminSection(selectedSection);
+
+    // Phrases par défaut du bingo : n'ajoute que celles qui manquent (voir utils/bingoDefaults.js).
+    const addDefaultPhrases = async (types) => {
+        if (!types.length || isSeedingPhrases) return;
+        setIsSeedingPhrases(true);
+        try {
+            const results = await seedDefaultBingoPhrases(types);
+            const summary = results.map((r) => `${r.name} : +${r.added} (total ${r.total})`).join(' · ');
+            showInAppNotification(`Phrases par défaut ajoutées — ${summary}`, 'success');
+        } catch (error) {
+            console.error('Ajout des phrases par défaut impossible :', error);
+            showInAppNotification(`Impossible d'ajouter les phrases par défaut : ${error.message}`, 'error');
+        } finally {
+            setIsSeedingPhrases(false);
+        }
+    };
     const searchResults = useMemo(() => filterAdminSections(query), [query]);
 
     const openSection = (key) => {
@@ -392,6 +413,49 @@ const AdminDashboard = ({
             case 'display':
                 return <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />;
 
+            case 'activity':
+                return (
+                    <ActivityLog
+                        showNotification={showInAppNotification}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                    />
+                );
+
+            case 'cctv':
+                return (
+                    <div className="adm-card">
+                        <div className="adm-card-head">
+                            <div>
+                                <h4><i className="fas fa-video"></i> Vidéosurveillance</h4>
+                                <p>Demandes d'images de caméras. L'administration du PHMC (Directeur(trice), Assistant(e) de Direction, Personnel Administratif) peut aussi les traiter depuis le site.</p>
+                            </div>
+                        </div>
+                        <div className="adm-card-body"><CctvRequestsPanel scope="all" /></div>
+                    </div>
+                );
+
+            case 'errors':
+                return (
+                    <ActivityLog
+                        title="Erreurs du site"
+                        icon="fa-triangle-exclamation"
+                        subtitle="Erreurs rencontrées par les utilisateurs connectés : page, navigateur et pile d'appels. Les doublons sont regroupés par minute."
+                        initialCategories={['erreurs']}
+                        initialPeriod="30d"
+                        showNotification={showInAppNotification}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                    />
+                );
+
+            case 'siteRequests':
+                return (
+                    <SiteRequests
+                        currentUser={currentUser}
+                        showNotification={showInAppNotification}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                    />
+                );
+
             case 'bingo':
                 return (
                     <SectionCard icon={current.icon} title={current.label} description={current.description}>
@@ -432,6 +496,12 @@ const AdminDashboard = ({
                                     </Button>
                                     <Button variant="warning" onClick={() => setShowReviewPhrasesModal(true)} disabled={isUpdatingDb}>
                                         <i className="fas fa-inbox"></i> Demandes de révision de phrases
+                                    </Button>
+                                    <Button variant="success" onClick={() => addDefaultPhrases(selectedTypeForEdit ? [selectedTypeForEdit] : [])} disabled={isUpdatingDb || isSeedingPhrases || !selectedTypeForEdit} title="Ajoute les 24 phrases par défaut à la liste du bingo sélectionné. Les phrases déjà présentes sont conservées.">
+                                        <i className="fas fa-wand-magic-sparkles"></i> Ajouter les 24 phrases par défaut ({selectedTypeForEdit?.name})
+                                    </Button>
+                                    <Button variant="outline-success" onClick={() => addDefaultPhrases(BINGO_TYPES)} disabled={isUpdatingDb || isSeedingPhrases} title="Ajoute les phrases par défaut aux trois cartes (Urgences, EMS, Coroner), sans toucher à l'existant.">
+                                        <i className="fas fa-layer-group"></i> Phrases par défaut pour toutes les cartes
                                     </Button>
                                 </div>
                             </div>
@@ -650,13 +720,6 @@ const AdminDashboard = ({
                                 <p className="text-muted small">Exporter ou importer les données d'un utilisateur (migration, dépannage).</p>
                                 <Button variant="info" onClick={() => setShowUserDataExchangeModal(true)}>
                                     <i className="fas fa-user-secret"></i> Échange de données utilisateur
-                                </Button>
-                            </div>
-                            <div className="adm-fieldset">
-                                <div className="adm-fieldset-title">Webhooks</div>
-                                <p className="text-muted small">Envoie un message de test qui simule une demande de vidéosurveillance.</p>
-                                <Button variant="secondary" onClick={() => setShowCctvWebhookModal(true)}>
-                                    <i className="fas fa-video"></i> Test de demande CCTV
                                 </Button>
                             </div>
                             <div className="adm-fieldset adm-fieldset-danger">

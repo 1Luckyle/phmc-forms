@@ -68,6 +68,28 @@ const sendWebhook = async (payload) => {
     }
 };
 
+// Journal d'activité (RTDB activityLogs, lu dans le panneau admin → « Journal d'activité »). Écriture via le SDK
+// admin : les règles ne s'appliquent pas. Ne lève jamais : un échec de journal ne doit pas casser la fonction.
+const logServerActivity = async ({ category = 'systeme', action, summary, details, severity = 'info', target, actorName = 'Serveur' }) => {
+    try {
+        const entry = {
+            ts: Date.now(),
+            cat: category,
+            act: String(action || summary).slice(0, 80),
+            msg: String(summary).slice(0, 400),
+            sev: severity,
+            by: { uid: 'server', name: actorName, role: 'Cloud Function', admin: false },
+            src: 'server',
+            env: 'cloud-functions',
+        };
+        if (details) entry.det = String(details).slice(0, 3000);
+        if (target) entry.tgt = String(target).slice(0, 160);
+        await db.ref('activityLogs').push(entry);
+    } catch (error) {
+        console.warn('Journal d\'activité : écriture serveur impossible.', error && error.message);
+    }
+};
+
 const scheduleDeletion = async (request) => {
     const requestId = request.id;
     const processedAt = new Date(request.processedAt);
@@ -222,6 +244,11 @@ export const dailyTaskHandler = onSchedule({
     };
 
     await sendWebhook({ embeds: [embed] });
+    await logServerActivity({
+        category: 'systeme', action: 'daily_tasks', summary: 'Tâches quotidiennes exécutées (réinitialisation du bingo, nettoyage des demandes de phrases)',
+        details: `Bingo :\n${bingoDetails.trim() || 'aucune action'}\n\nDemandes de phrases :\n${deletionDetails.trim() || 'aucune action'}`,
+        severity: /❌/.test(`${bingoDetails}${deletionDetails}`) ? 'warning' : 'info',
+    });
 
     console.log('Gestionnaire de tâches quotidiennes terminé avec succès.');
 
@@ -1770,6 +1797,19 @@ const settleInvoicesOfPayment = async (paymentId, payment) => {
         updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
     });
     if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    if (Object.keys(covered).length > 0) {
+        const loggedRef = db.ref(`fleecaPayments/${paymentId}/paiementJournalise`);
+        const alreadyLogged = (await loggedRef.once('value')).val();
+        if (!alreadyLogged) {
+            await loggedRef.set(true);
+            const patients = [...new Set(Object.values(covered))];
+            await logServerActivity({
+                category: 'facturation', action: 'invoices_paid', severity: 'success',
+                summary: `Paiement reçu : ${Object.keys(covered).length} facture(s) réglée(s) (${patients.join(', ')})`,
+                details: `Paiement Fleeca : ${paymentId}${payment.amount ? `\nMontant : ${payment.amount} $` : ''}`, target: patients[0],
+            });
+        }
+    }
     return Object.keys(covered).length;
 };
 
@@ -1903,6 +1943,11 @@ export const createInvoicePayment = onRequest({ secrets: FLEECA_SECRETS }, async
             updatedAt: admin.database.ServerValue.TIMESTAMP,
         };
         await db.ref().update(updates);
+        await logServerActivity({
+            category: 'facturation', action: 'invoice_payment_link',
+            summary: `Lien de paiement créé pour le patient ${patientNode} (${Object.keys(covered).length} facture(s), ${total} $)`,
+            details: `Paiement : ${fleecaData.payment_id}`, target: patientNode, actorName: caller.name || caller.email || 'Patient',
+        });
 
         res.status(201).json({ payment_id: fleecaData.payment_id, payment_link: fleecaData.payment_link, amount: total });
     } catch (error) {
@@ -1999,7 +2044,9 @@ export const invoiceMailBatcher = onSchedule({
             // Le mail liste TOUTES les factures dues du patient (pas seulement les nouvelles) : un seul récapitulatif.
             await sendInvoiceMail({ apiKey, to, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: false });
             unsent.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/mailEnvoyeLe`] = now; });
+            await logServerActivity({ category: 'facturation', action: 'invoice_mail', summary: `Mail de facturation envoyé (patient ${patientNode}, ${items.length} facture(s))`, target: patientNode });
         } catch (error) {
+            await logServerActivity({ category: 'facturation', action: 'invoice_mail_failed', severity: 'warning', summary: `Échec du mail de facturation (patient ${patientNode})`, details: String(error && (error.body || error.message) || error), target: patientNode });
             console.warn(`invoiceMailBatcher: échec d'envoi pour ${patientNode}:`, error && error.body ? error.body : error);
             unsent.forEach(({ id, invoice }) => {
                 const failures = Number(invoice.mailEchecs || 0) + 1;
@@ -2038,8 +2085,61 @@ export const invoiceDailyReminder = onSchedule({
             const updates = {};
             items.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/dernierRappelLe`] = now; });
             await db.ref().update(updates);
+            await logServerActivity({ category: 'facturation', action: 'invoice_reminder', summary: `Rappel de paiement envoyé (patient ${patientNode}, ${items.length} facture(s))`, target: patientNode });
         } catch (error) {
             console.warn(`invoiceDailyReminder: échec d'envoi pour ${patientNode}:`, error && error.body ? error.body : error);
         }
+    }
+});
+
+// ─── Vidéosurveillance (CCTV) : droit de gestion ───────────────────────────────────────────────────────────
+// Les demandes CCTV (cctvRequests) sont lues et traitées par l'ADMINISTRATION du PHMC (Directeur(trice),
+// Assistant(e) de Direction, Personnel Administratif — rôle principal OU supplémentaire) et par les admins ;
+// chacun lit ses propres demandes. Les règles Firebase ne peuvent pas lire le rôle d'une fiche à partir de
+// l'uid : cette fonction le fait côté serveur et tient à jour le drapeau cctvGestionnaires/{uid}, que les
+// règles testent. Le navigateur l'appelle à la connexion et à l'ouverture du menu (le drapeau se corrige seul
+// si le rôle change).
+const CCTV_MANAGER_ROLES = new Set([
+    'directeur(trice)', 'directrice', 'directeur', 'director',
+    'assistant(e) de direction', 'assistante de direction', 'assistant de direction',
+    'personnel administratif',
+]);
+
+const hasCctvManagerRole = (member) => {
+    const extra = member && member.extraRanks
+        ? (Array.isArray(member.extraRanks) ? member.extraRanks : Object.values(member.extraRanks))
+        : [];
+    return [member && member.rank, member && member.category, ...extra]
+        .some((role) => CCTV_MANAGER_ROLES.has(String(role || '').trim().toLowerCase()));
+};
+
+export const syncCctvAccess = onRequest({}, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+
+    try {
+        const adminSnap = await db.ref(`adminUIDs/${caller.uid}`).once('value');
+        let manager = adminSnap.val() === true;
+        if (!manager) {
+            // Seul le personnel PHMC (staff/phmc) compte : le DMEC n'a pas ce rôle d'administration… sauf rôle cumulé.
+            for (const list of ['phmc', 'coroner']) {
+                const snap = await db.ref(`staff/${list}`).once('value');
+                const members = Object.values(snap.val() || {});
+                if (members.some((member) => member && member.uid === caller.uid && hasCctvManagerRole(member))) { manager = true; break; }
+            }
+        }
+        const flagRef = db.ref(`cctvGestionnaires/${caller.uid}`);
+        const current = (await flagRef.once('value')).val() === true;
+        if (manager && !current) await flagRef.set(true);
+        if (!manager && current) await flagRef.remove();
+        res.status(200).json({ manager });
+    } catch (error) {
+        console.error('Error syncing CCTV access:', error);
+        res.status(500).json({ error: 'internal', message: 'Impossible de vérifier vos droits.' });
     }
 });

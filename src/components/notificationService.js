@@ -199,14 +199,7 @@ export const sendMissingEmployeeNotification = async (
     try {
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
 
-        if (!webhookURL) {
-            console.error('Discord webhook URL not configured for employee management.');
-            showNotification(
-                'Erreur de configuration : Impossible de soumettre la demande. Veuillez contacter l\'administrateur.',
-                'exclamation-triangle'
-            );
-            return;
-        }
+        if (!webhookURL) return; // Journalisé par MainApp (journal d'activité) ; Discord est facultatif.
 
         let embedData = {};
         let submissionValid = false;
@@ -648,7 +641,6 @@ export const handlePhmcRecruitmentCopyAndNotify = async ({
             });
         } else {
             console.warn(`Discord webhook URL for ${formName} not set, skipping notification.`);
-            showNotification("BBCode copié, mais notification Discord pour le recrutement non configurée.", 'warning');
         }
     }
     return !!copied;
@@ -1003,7 +995,6 @@ export const handleSaveReportAndNotify = async ({
     } catch (error) {
         console.error('Error during webhook notification in service: ', error);
         Sentry.captureException(error, { extra: { context: 'handleSaveReportAndNotify Webhook Error', errorName: error.name, errorMessage: error.message } });
-        showNotification('Rapport enregistré, mais échec de l\'envoi de la notification Discord.', 'warning');
     }
 };
 export const sendErrorToDiscord = async (errorDetails) => {

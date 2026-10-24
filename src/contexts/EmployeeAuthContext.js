@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithC
 import { ref, get, set, onValue } from 'firebase/database';
 import { canonicalPatientId } from '../utils/patientId';
 import { getViewAs, saveViewAs, buildSimulatedIdentity, deriveIdentity } from '../utils/viewAs';
+import { setActivityActor, logActivity } from '../utils/activityLog';
 
 const CREATE_GTAW_CIVILIAN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawCivilianAccount';
 
@@ -420,6 +421,26 @@ export const EmployeeAuthProvider = ({ children }) => {
         || (staffProfile?.gtawCharacterId != null ? `PHMC-${staffProfile.gtawCharacterId}` : '')
         || (staffBadgeDigits ? `PHMC-${staffBadgeDigits}` : '')
     );
+
+    // Journal d'activité : identité RÉELLE de la personne connectée (jamais le profil simulé par « visualiser en tant
+    // que »), et une ligne « connexion » par session de navigateur.
+    const realStaff = employeeProfile || adminStaffProfile;
+    const realName = realStaff
+        ? (realStaff.name || (realStaff.firstName && realStaff.lastName ? `${realStaff.firstName} ${realStaff.lastName}` : ''))
+        : (civilianProfile?.name || civilianProfile?.fullName
+            || (civilianProfile?.firstName && civilianProfile?.lastName ? `${civilianProfile.firstName} ${civilianProfile.lastName}` : ''));
+    const realRole = isAdmin ? 'Admin' : realStaff ? (realStaff.category || realStaff.rank || 'Personnel') : civilianProfile ? 'Civil' : '';
+    useEffect(() => {
+        if (isLoading || !auth.currentUser) return;
+        const user = auth.currentUser;
+        setActivityActor({ name: realName || user.email || '', role: realRole, admin: isAdmin, email: user.email || undefined });
+        try {
+            const sessionKey = `activityLogin:${user.uid}`;
+            if (sessionStorage.getItem(sessionKey)) return;
+            sessionStorage.setItem(sessionKey, '1');
+            logActivity({ category: 'auth', action: 'login', summary: `Connexion de ${realName || user.email || 'un utilisateur'}`, details: realRole ? `Rôle : ${realRole}` : undefined });
+        } catch (e) { /* stockage indisponible : on ne journalise simplement pas la connexion */ }
+    }, [isLoading, realName, realRole, isAdmin]);
 
     const value = {
         isRecruiter: effective.isRecruiter,

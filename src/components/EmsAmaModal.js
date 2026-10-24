@@ -9,6 +9,7 @@ import { database } from '../firebase';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildReportTitle } from '../utils/reportTitle';
 import { normalizePatientId, writeIndexEntry, comprehensiveSanitize } from '../utils/patientRecords';
+import { logActivity } from '../utils/activityLog';
 
 import './EmsAmaModal.css';
 
@@ -110,6 +111,14 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
     }, []);
 
     const sendDiscordWebhook = useCallback(async (patientSig, formDate, guardianSig, paramedicSig, generatedImageUrl, errorMessage = null) => {
+        // Journal d'activité ; l'envoi Discord ci-dessous est facultatif.
+        logActivity({
+            category: 'rapports',
+            action: errorMessage ? 'ama_failed' : 'ama_created',
+            summary: errorMessage ? 'Échec de la création d\'un formulaire AMA' : 'Formulaire AMA (refus de soins) généré',
+            details: errorMessage ? String(errorMessage).slice(0, 1000) : (formDate ? `Date du formulaire : ${formDate}` : undefined),
+            severity: errorMessage ? 'error' : 'success',
+        });
         const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
         if (!webhookURL) {
             console.warn('Discord webhook URL is not set for AMA.');

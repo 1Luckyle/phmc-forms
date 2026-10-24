@@ -25,7 +25,7 @@ const AdminOverview = ({
     counts, imageCount, lockdownConfig, bbcodeEnabled, authConfig, debugAutofillEnabled, debugDeleteApplicationsEnabled, onOpen,
 }) => {
     const todo = (count) => (count > 0 ? 'alert' : 'ok');
-    const total = (counts.accounts || 0) + (counts.modifications || 0) + (imageCount || 0);
+    const total = (counts.accounts || 0) + (counts.modifications || 0) + (counts.requests || 0) + (counts.cctv || 0) + (imageCount || 0);
 
     return (
         <div className="adm-overview">
@@ -36,6 +36,8 @@ const AdminOverview = ({
                 <div className="adm-tiles">
                     <Tile icon="fa-user-clock" label="Demandes de compte" value={counts.accounts || 0} hint="Créations de compte du personnel" tone={todo(counts.accounts)} onClick={() => onOpen('pendingAccounts')} />
                     <Tile icon="fa-pen-to-square" label="Demandes de modification" value={counts.modifications || 0} hint="Fiches à mettre à jour" tone={todo(counts.modifications)} onClick={() => onOpen('pendingModifications')} />
+                    <Tile icon="fa-video" label="Vidéosurveillance" value={counts.cctv || 0} hint="Demandes d'images à traiter" tone={todo(counts.cctv)} onClick={() => onOpen('cctv')} />
+                    <Tile icon="fa-inbox" label="Demandes du site" value={counts.requests || 0} hint="Bugs, idées, formulaires" tone={todo(counts.requests)} onClick={() => onOpen('siteRequests')} />
                     <Tile icon="fa-images" label="Images à supprimer" value={imageCount || 0} hint="Liens imgBB à ouvrir" tone={todo(imageCount)} onClick={() => onOpen('imageCleanup')} />
                 </div>
             </section>
@@ -70,7 +72,7 @@ const AdminOverview = ({
                 <h3 className="adm-block-title">Raccourcis</h3>
                 <div className="adm-tiles adm-tiles-small">
                     <Tile icon="fa-users-gear" label="Utilisateurs" value="" tone="neutral" onClick={() => onOpen('users')} />
-                    <Tile icon="fa-bullhorn" label="Webhooks Discord" value="" tone="neutral" onClick={() => onOpen('webhooks')} />
+                    <Tile icon="fa-clock-rotate-left" label="Journal d'activité" value="" tone="neutral" onClick={() => onOpen('activity')} />
                     <Tile icon="fa-dice" label="Bingo" value="" tone="neutral" onClick={() => onOpen('bingo')} />
                     <Tile icon="fa-database" label="Base de données" value="" tone="neutral" onClick={() => onOpen('database')} />
                     <Tile icon="fa-bug" label="Debug & simulation" value="" tone="neutral" onClick={() => onOpen('debug')} />
