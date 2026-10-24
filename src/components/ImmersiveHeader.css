@@ -148,3 +148,15 @@
 .immersive-credit a {
     color: #8b949e;
 }
+
+/* Les boutons flottants (Bingo, Panneau Admin) sont fixés en haut à droite de la fenêtre : l'en-tête immersif leur laisse
+   la place sur grand écran, et passe sous eux sur petit écran, pour ne jamais les faire chevaucher la météo. */
+.header-info-wrapper.header-with-season-controls.has-immersive-header {
+    padding-right: 290px;
+}
+
+@media (max-width: 1100px) {
+    .header-info-wrapper.header-with-season-controls.has-immersive-header {
+        padding: 56px 8px 0;
+    }
+}

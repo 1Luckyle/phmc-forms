@@ -1566,7 +1566,7 @@ function MainApp({
                 <ViewAsBanner />
 
                 {/* Accès rapide (haut gauche) : effets de saison + infobulle du calendrier de la santé en cours. */}
-                <div className="header-info-wrapper header-with-season-controls">
+                <div className={`header-info-wrapper header-with-season-controls${immersiveHeaderEnabled ? ' has-immersive-header' : ''}`}>
                     <SeasonControls onOpenCalendar={() => setShowAwarenessCalendar(true)} />
                     {immersiveHeaderEnabled ? <ImmersiveHeader /> : <HeaderInfo commitInfo={commitInfo} />}
                 </div>
