@@ -7,7 +7,7 @@
 // historique de statuts.
 import React, { useMemo } from 'react';
 import ReactDOM from 'react-dom';
-import { Button } from 'react-bootstrap';
+import { Button, Dropdown } from 'react-bootstrap';
 import { removeApplication } from '../utils/recruitmentStore';
 import { useDebug } from '../contexts/DebugContext';
 import { useData } from '../contexts/DataContext';
@@ -120,7 +120,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 {forumNoticeModal}
-                <h5 style={{ marginBottom: '15px' }}>Mes candidatures</h5>
+                <h5 style={{ marginBottom: '15px' }}>Mon dossier candidat</h5>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                     {isLoading && <p style={{ textAlign: 'center' }}>Chargement...</p>}
@@ -214,20 +214,23 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             <i className="fas fa-upload me-1"></i>Recharger dans le formulaire
                                         </Button>
                                     )}
-                                    {bbcodeEnabled && (
-<Button size="sm" variant="outline-info" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
-                                        <i className="fas fa-copy me-1"></i>Copier le BBCode<ForumHint kind="bbcode" />
-                                    </Button>
-)}
-                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT} onClick={() => handleDownloadHtml(application)}>
-                                        <i className="fas fa-download me-1"></i>Télécharger le HTML<ForumHint kind="html" />
-                                    </Button>
-                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title={PDF_EXPORT_LABEL} onClick={() => handleExportDocument('pdf', application)}>
-                                        <i className="fas fa-file-pdf me-1"></i>PDF (A4)
-                                    </Button>
-                                    <Button size="sm" variant="outline-info" disabled={!application.bbcode} title="Grande image PNG, à joindre sur Discord" onClick={() => handleExportDocument('png', application)}>
-                                        <i className="fas fa-image me-1"></i>Image (PNG)
-                                    </Button>
+                                    <Dropdown className="d-inline-block">
+                                        <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
+                                        <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                                            {bbcodeEnabled && (
+                                                <Dropdown.Item onClick={() => handleCopyBbCode(application)} disabled={!application.bbcode} title={COPY_BBCODE_HINT}>
+                                                    Copier le BBCode<ForumHint kind="bbcode" />
+                                                </Dropdown.Item>
+                                            )}
+                                            <Dropdown.Item onClick={() => handleDownloadHtml(application)} disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT}>
+                                                Télécharger le HTML<ForumHint kind="html" />
+                                            </Dropdown.Item>
+                                            <Dropdown.Item onClick={() => handleExportDocument('pdf', application)} disabled={!application.bbcode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                                            <Dropdown.Item onClick={() => handleExportDocument('png', application)} disabled={!application.bbcode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                                            <Dropdown.Item onClick={() => handleExportDocument('png-copy', application)} disabled={!application.bbcode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
+                                            <Dropdown.Item onClick={() => copyToClipboard(applicationTitle(application), showNotification, 'Titre copié !')}>Copier le titre</Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown>
                                     <ExpandToggle
                                         open={openRows[application.id] === 'preview'} label="Aperçu"
                                         onClick={() => toggleRow(application.id, 'preview')}

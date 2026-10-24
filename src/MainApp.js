@@ -1783,6 +1783,10 @@ function MainApp({
                                                     key: 'account', label: 'Mon espace', items: [
                                                         toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
                                                         toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
+                                                        // Dossier candidat : toute personne qui peut candidater (compte Civil, ou employé avec le statut de recrutement interne).
+                                                        (isCivilian || hasInternalRecruitment) && { key: 'candidate', icon: 'fas fa-file-signature', label: 'Mon dossier candidat', onClick: closeAnd(() => { loadMyJobApplications(); setShowMyJobApplications(true); }) },
+                                                        // Vidéosurveillance : tout compte connecté envoie et suit ses demandes ; l'administration y traite aussi celles reçues.
+                                                        currentEmployee && { key: 'cctvMine', icon: 'fas fa-video', label: 'Mes demandes de vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('mine'); setShowCctvHub(true); }) },
                                                         toolAccess.myPatientFile && { key: 'myfile', icon: 'fas fa-user-injured', label: 'Mon dossier patient', onClick: closeAnd(() => setShowMyPatientFile(true)) },
                                                     ],
                                                 },

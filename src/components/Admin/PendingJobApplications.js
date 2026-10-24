@@ -6,7 +6,7 @@
 // plat), les candidatures vivent sous candidatures/{candidatUid}/{id} (ancien nœud jobApplications fusionné) —
 // ce composant aplatit l'arbre pour les afficher en une seule liste.
 import React, { useState, useEffect, useMemo } from 'react';
-import { Button, Table } from 'react-bootstrap';
+import { Button, Dropdown, Table } from 'react-bootstrap';
 import { database } from '../../firebase';
 import { ref, get } from 'firebase/database';
 import { useData } from '../../contexts/DataContext';
@@ -18,6 +18,7 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { loadContractCandidates, setContractCandidate, clearContractCandidate } from '../../utils/contractCandidates';
 import { sendAdminActionWebhook } from './adminUtils';
 import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
+import ForumHint from '../ForumHint';
 import useForumNotice from '../../hooks/useForumNotice';
 import { copyToClipboard } from '../notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
@@ -382,20 +383,23 @@ Pillbox Hill Medical Center`,
                                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                                             <ExpandToggle open={!!openRows[inputKey]} onClick={() => toggleRow(inputKey, 'preview')} label="Aperçu" title="Déplier / replier l'aperçu de la candidature" />
                                             <ExpandToggle open={openRows[inputKey] === 'details'} onClick={() => toggleRow(inputKey, 'details')} label="Détails" icon="fa-circle-info" title="Informations et historique de la candidature" />
-                                            {bbcodeEnabled && (
-<Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={COPY_BBCODE_HINT} onClick={() => handleCopyBbCode(application)}>
-                                                <i className="fas fa-copy"></i> BBCode
-                                            </Button>
-)}
-                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT} onClick={() => handleDownloadHtml(application)}>
-                                                <i className="fas fa-download"></i> HTML
-                                            </Button>
-                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title={PDF_EXPORT_LABEL} onClick={() => handleExportDocument('pdf', application)}>
-                                                <i className="fas fa-file-pdf"></i> PDF
-                                            </Button>
-                                            <Button size="sm" variant="outline-secondary" disabled={!application.bbcode} title="Grande image PNG, à joindre sur Discord" onClick={() => handleExportDocument('png', application)}>
-                                                <i className="fas fa-image"></i> Image
-                                            </Button>
+                                            <Dropdown className="d-inline-block">
+                                                <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
+                                                <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                                                    {bbcodeEnabled && (
+                                                        <Dropdown.Item onClick={() => handleCopyBbCode(application)} disabled={!application.bbcode} title={COPY_BBCODE_HINT}>
+                                                            Copier le BBCode<ForumHint kind="bbcode" />
+                                                        </Dropdown.Item>
+                                                    )}
+                                                    <Dropdown.Item onClick={() => handleDownloadHtml(application)} disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT}>
+                                                        Télécharger le HTML<ForumHint kind="html" />
+                                                    </Dropdown.Item>
+                                                    <Dropdown.Item onClick={() => handleExportDocument('pdf', application)} disabled={!application.bbcode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                                                    <Dropdown.Item onClick={() => handleExportDocument('png', application)} disabled={!application.bbcode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                                                    <Dropdown.Item onClick={() => handleExportDocument('png-copy', application)} disabled={!application.bbcode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
+                                                    <Dropdown.Item onClick={() => copyToClipboard(applicationTitle(application), showNotification, 'Titre copié !')}>Copier le titre</Dropdown.Item>
+                                                </Dropdown.Menu>
+                                            </Dropdown>
                                             {application.statut === 'soumise' && (
                                                 <Button size="sm" variant="primary" onClick={() => handleScheduleInterview(application)}>
                                                     Planifier un entretien
