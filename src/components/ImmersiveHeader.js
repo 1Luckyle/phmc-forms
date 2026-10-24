@@ -11,10 +11,10 @@
 // La météo vient d'Open-Meteo (gratuit, sans clé, appelé depuis le navigateur : aucun coût Firebase) et est gardée
 // 10 minutes dans le navigateur pour ne pas multiplier les appels.
 //
-// DÉCALAGE HORAIRE : l'horloge du serveur est en UTC (par ex. 20 h 36) alors qu'à Los Angeles il est 13 h 36 (UTC−7 en heure
-// d'été, UTC−8 en hiver : le décalage suit les règles de Los Angeles). Pour que la météo suive le jeu, on prend la prévision de
-// Los Angeles pour l'heure où LEUR horloge affichera la même heure que celle du serveur : à 20 h 36 serveur, la météo prévue à
-// Los Angeles à 20 h 36 (soit 7 h plus tard). Les températures sont interpolées entre deux heures de prévision.
+// DÉCALAGE HORAIRE : les développeurs du serveur indiquent appliquer un décalage fixe de 6 h entre l'heure du jeu et la météo
+// en direct de Los Angeles. On prend donc la météo de Los Angeles prévue 6 h après l'instant présent (les relevés faits dans le jeu
+// collaient mieux à +5/+6 h qu'à +7 h, l'écart réel avec Los Angeles). Le décalage est FIXE (il ne suit pas le changement d'heure
+// de Los Angeles) ; pour le modifier, changer GAME_WEATHER_SHIFT_HOURS. Les températures sont interpolées entre deux heures de prévision.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import phmcLogo from '../assets/phmc.png';
 import './ImmersiveHeader.css';
@@ -43,7 +43,7 @@ const describeWeather = (code, isDay = 1) => {
     return { label: entry[0], icon: isDay === 0 && entry[2] ? entry[2] : entry[1] };
 };
 
-const CACHE_KEY = 'immersiveHeaderWeather_v3';
+const CACHE_KEY = 'immersiveHeaderWeather_v4';
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const HOURS_AFTER_NOW = 5;
 
@@ -68,15 +68,9 @@ const buildUrl = () => {
 const pad = (value) => String(value).padStart(2, '0');
 const LA_TIME_ZONE = 'America/Los_Angeles';
 
-// Décalage (ms) entre l'heure UTC du serveur et l'horloge de Los Angeles à l'instant donné : 7 h en heure d'été, 8 h en hiver.
-export const laShiftMs = (instant) => {
-    const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: LA_TIME_ZONE, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
-    }).formatToParts(new Date(instant));
-    const get = (type) => Number(parts.find((part) => part.type === type).value);
-    const wallClockAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
-    return Math.floor(instant / 1000) * 1000 - wallClockAsUtc;
-};
+// Décalage fixe appliqué par le jeu entre son horloge et la météo de Los Angeles (voir l'en-tête du fichier).
+export const GAME_WEATHER_SHIFT_HOURS = 6;
+const GAME_WEATHER_SHIFT_MS = GAME_WEATHER_SHIFT_HOURS * 60 * 60 * 1000;
 
 const laDateKey = (instant) => new Intl.DateTimeFormat('en-CA', { timeZone: LA_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instant));
 const laHour = (instant) => Number(new Intl.DateTimeFormat('en-US', { timeZone: LA_TIME_ZONE, hourCycle: 'h23', hour: '2-digit' }).format(new Date(instant)));
@@ -108,8 +102,8 @@ const hourIndexAt = (times, instant) => {
 //        days: [{ label, icon, min, max }] } | { zone, now: null }]
 export const parseZones = (payload, now = Date.now()) => {
     const list = Array.isArray(payload) ? payload : [payload];
-    // Instant dont l'heure d'horloge, à Los Angeles, est celle du serveur maintenant (ex. 20 h 36 serveur → 20 h 36 à LA).
-    const target = now + laShiftMs(now);
+    // Instant de Los Angeles dont on affiche la météo : maintenant + le décalage du jeu.
+    const target = now + GAME_WEATHER_SHIFT_MS;
     return WEATHER_ZONES.map((zone, index) => {
         const data = list[index];
         if (!data || !data.hourly) return { zone, now: null, hourly: [], days: [] };
@@ -235,7 +229,7 @@ const ImmersiveHeader = () => {
 
             <div className="immersive-weather">
                 {zones ? zones.map((entry) => (
-                    <div key={entry.zone.key} className="immersive-zone" title={`${entry.zone.real} (Californie) : prévision pour la même heure d'horloge que celle du serveur`}>
+                    <div key={entry.zone.key} className="immersive-zone" title={`${entry.zone.real} (Californie) : prévision à +${GAME_WEATHER_SHIFT_HOURS} h, comme le jeu`}>
                         <div className="immersive-zone-name">{entry.zone.label}</div>
                         {entry.now ? (
                             <>
