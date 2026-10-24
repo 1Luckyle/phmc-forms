@@ -69,6 +69,7 @@ import { getRoleInfo, sortKeyOfRank, extraRanksOf } from './constants/ranks';
 import { logActivity } from './utils/activityLog';
 import CctvHubModal from './components/Cctv/CctvHubModal';
 import InternalRecruitmentRequest from './components/Recruitment/InternalRecruitmentRequest';
+import { useCctvManager } from './utils/cctvRequests';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -159,6 +160,9 @@ function MainApp({
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Vidéosurveillance : le menu (envoyer / suivre / traiter) et, depuis lui, le formulaire de nouvelle demande.
     const [showCctvHub, setShowCctvHub] = useState(false);
+    const [cctvHubTab, setCctvHubTab] = useState('mine');
+    // Traitement des demandes : l'administration du PHMC (Directeur(trice), Assistant(e) de Direction, Personnel Administratif) et les admins.
+    const canManageCctv = useCctvManager(isAdmin);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
     // Civil ouvre le Guide de Configuration directement sur la connexion/
@@ -822,6 +826,7 @@ function MainApp({
 
     const handleShowCctvRequestModal = () => {
         setShowAgencyGroupSelectorModal(false);
+        setCctvHubTab('mine');
         setShowCctvHub(true);
     };
     
@@ -1527,6 +1532,7 @@ function MainApp({
                     onHide={handleHideCctvHub}
                     onNewRequest={() => setShowCctvRequestModal(true)}
                     onLogin={handleOpenLogin}
+                    initialTab={cctvHubTab}
                 />
 
                 <CctvRequestWebhookModal
@@ -1791,6 +1797,8 @@ function MainApp({
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
                                                         toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
+                                                        // Demandes de vidéosurveillance : réponse et suivi par l'administration du PHMC (et les admins).
+                                                        canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
                                                         toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
                                                 },

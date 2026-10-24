@@ -27,7 +27,6 @@ import { seedDefaultBingoPhrases } from '../../utils/bingoDefaults';
 import ActivityLog from './ActivityLog';
 import SiteRequests from './SiteRequests';
 import { logAdminAction } from '../../utils/activityLog';
-import CctvRequestsPanel from '../Cctv/CctvRequestsPanel';
 
 const LAST_SECTION_KEY = 'adminLastSection';
 
@@ -152,7 +151,7 @@ const AdminDashboard = ({
     const imageCount = useImgbbQueueCount();
     const counts = useAdminCounts();
     const { bbcodeEnabled } = useSiteConfig();
-    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests, cctv: counts.cctv };
+    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests };
 
     const {
         debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
@@ -438,19 +437,6 @@ const AdminDashboard = ({
                         showNotification={showInAppNotification}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
                     />
-                );
-
-            case 'cctv':
-                return (
-                    <div className="adm-card">
-                        <div className="adm-card-head">
-                            <div>
-                                <h4><i className="fas fa-video"></i> Vidéosurveillance</h4>
-                                <p>Demandes d'images de caméras. L'administration du PHMC (Directeur(trice), Assistant(e) de Direction, Personnel Administratif) peut aussi les traiter depuis le site.</p>
-                            </div>
-                        </div>
-                        <div className="adm-card-body"><CctvRequestsPanel scope="all" /></div>
-                    </div>
                 );
 
             case 'errors':

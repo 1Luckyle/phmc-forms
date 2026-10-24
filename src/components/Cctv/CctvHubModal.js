@@ -2,7 +2,7 @@
 //
 // Point d'entrée de la vidéosurveillance (CCTV) sur le site : envoyer une demande, suivre les siennes et — pour
 // l'administration du PHMC (Directeur(trice), Assistant(e) de Direction, Personnel Administratif) et les admins —
-// traiter toutes les demandes reçues.
+// traiter toutes les demandes reçues (entrée « Gestion de la vidéosurveillance » de la boîte à outils).
 import React, { useEffect, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';

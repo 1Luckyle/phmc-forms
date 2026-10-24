@@ -29,11 +29,6 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'fiche profil changement',
             },
             {
-                key: 'cctv', icon: 'fa-video', label: 'Vidéosurveillance', badge: 'cctv',
-                description: "Demandes d'images de caméras : lire, répondre et suivre. Accessible aussi à l'administration du PHMC depuis le site.",
-                keywords: 'cctv caméra images demande police réponse',
-            },
-            {
                 key: 'siteRequests', icon: 'fa-inbox', label: 'Demandes du site', badge: 'requests',
                 description: 'Bugs, idées de fonctionnalités et propositions de nouveaux formulaires envoyés par les utilisateurs.',
                 keywords: 'bug fonctionnalité suggestion ticket formulaire idée',
