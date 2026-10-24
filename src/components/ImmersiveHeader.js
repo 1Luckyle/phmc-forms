@@ -9,10 +9,11 @@
 //     l'application météo du téléphone du jeu : température du moment, conditions, maximum / minimum du jour,
 //     prévisions horaires puis sur 3 jours.
 // La météo vient d'Open-Meteo (gratuit, sans clé, appelé depuis le navigateur : aucun coût Firebase) et est gardée
-// 20 minutes dans le navigateur pour ne pas multiplier les appels.
+// 10 minutes dans le navigateur pour ne pas multiplier les appels.
 //
-// « Maintenant » : le téléphone du jeu affiche la température de la tranche horaire PRÉCÉDENTE (à 19 h 14 il montre
-// celle de 18 h : constaté sur les trois zones). On fait pareil, pour que les chiffres collent à ceux du jeu.
+// Les valeurs sont celles de la VIE RÉELLE (mesure du moment, maximum / minimum du jour, prévisions réelles). Le téléphone
+// du jeu affiche des chiffres un peu différents (en retard d'environ une heure, prévisions non réelles) : tant que les
+// développeurs n'ont pas indiqué leur source météo, on ne cherche pas à les imiter.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import phmcLogo from '../assets/phmc.png';
 import './ImmersiveHeader.css';
@@ -42,7 +43,7 @@ const describeWeather = (code, isDay = 1) => {
 };
 
 const CACHE_KEY = 'immersiveHeaderWeather_v2';
-const CACHE_TTL_MS = 20 * 60 * 1000;
+const CACHE_TTL_MS = 10 * 60 * 1000;
 const HOURS_AFTER_NOW = 5;
 
 const readCache = () => {
@@ -57,6 +58,7 @@ const buildUrl = () => {
     const longitudes = WEATHER_ZONES.map((zone) => zone.longitude).join(',');
     return 'https://api.open-meteo.com/v1/forecast'
         + `?latitude=${latitudes}&longitude=${longitudes}`
+        + '&current=temperature_2m,weather_code,wind_speed_10m,is_day'
         + '&hourly=temperature_2m,weather_code,wind_speed_10m,is_day'
         + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
         + '&forecast_days=3&timezone=UTC&wind_speed_unit=kmh';
@@ -69,7 +71,7 @@ const dayLabel = (isoDate, index) => {
     return date.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' });
 };
 
-// Charge brute Open-Meteo → un objet par zone, calculé à l'heure `now` (les heures « maintenant / +1 h… » avancent
+// Charge brute Open-Meteo → un objet par zone, calculé à l'heure `now` (les heures « +1 h, +2 h… » avancent
 // toutes seules sans nouvel appel réseau).
 //   → [{ zone, now: { temperature, label, icon, wind }, max, min, hourly: [{ label, temperature, icon }],
 //        days: [{ label, icon, min, max }] } | { zone, now: null }]
@@ -89,8 +91,12 @@ export const parseZones = (payload, now = Date.now()) => {
             return { time: times[i], temperature: Math.round(data.hourly.temperature_2m[i]), label: weather.label, icon: weather.icon, wind: Math.round(data.hourly.wind_speed_10m?.[i] ?? 0) };
         };
 
-        // Comme le téléphone du jeu : « maintenant » = la tranche horaire précédente.
-        const shown = at(Math.max(0, current - 1));
+        // « Maintenant » = la mesure en cours (Open-Meteo « current ») ; à défaut, la tranche horaire en cours.
+        let shown = at(current);
+        if (data.current) {
+            const weather = describeWeather(data.current.weather_code, data.current.is_day);
+            shown = { ...shown, temperature: Math.round(data.current.temperature_2m), label: weather.label, icon: weather.icon, wind: Math.round(data.current.wind_speed_10m ?? shown.wind) };
+        }
         const today = data.daily.time[0];
         const hourly = [{ label: 'Maint.', temperature: shown.temperature, icon: shown.icon }];
         for (let k = 1; k <= HOURS_AFTER_NOW; k += 1) {
