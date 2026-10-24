@@ -965,7 +965,7 @@ input[type="checkbox"]:checked::after {
 .copy-button-modern:disabled {
     background-color: #1b1f23;
     border-color: #30363d;
-    color: #6e7681;
+    color: #9aa7b4;
     cursor: not-allowed;
 }
 
@@ -1086,4 +1086,23 @@ input[type="checkbox"]:checked::after {
     .report-actions-group {
         grid-template-columns: 1fr;
     }
+}
+
+/* ==========================================================================
+   Textes d'aide lisibles sur le fond sombre du site
+   Le gris Bootstrap des textes d'aide (#6c757d) est quasi illisible sur le fond du site (#010409) et dans ses
+   fenêtres sombres. On l'éclaircit PARTOUT, puis on le rétablit dans les conteneurs clairs (fenêtres Bootstrap
+   blanches, cartes, alertes, menus déroulants). Les fenêtres sombres du site ont leurs propres règles, plus
+   spécifiques (classe « dark-ui » de DarkUi.css, bingo, vidéosurveillance…), qui l'emportent sur ces deux-ci.
+   ========================================================================== */
+.text-muted,
+.form-text,
+.text-secondary,
+.text-black-50,
+.text-body-secondary {
+    color: #9aa7b4 !important;
+}
+
+:where(.modal-content, .card, .alert, .bg-light, .bg-white, .dropdown-menu, .popover, .toast, .list-group-item, .table-light, .accordion-body) :is(.text-muted, .form-text, .text-secondary, .text-black-50, .text-body-secondary) {
+    color: #6c757d !important;
 }

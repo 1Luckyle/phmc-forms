@@ -80,9 +80,9 @@ const reactSelectStyles = {
   }),
   singleValue: (base) => ({ ...base, color: '#c9d1d9' }),
   input: (base) => ({ ...base, color: '#c9d1d9' }),
-  placeholder: (base) => ({ ...base, color: '#6c757d' }),
+  placeholder: (base) => ({ ...base, color: '#9aa7b4' }),
   group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-  groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
+  groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
 };
 // --- End Styles ---
 
@@ -1016,7 +1016,7 @@ const EmployeeModal = ({
                 <Form.Label style={formLabelStyle}>Autorisé par :</Form.Label>
                 <Form.Control type="text" name="authorizedBy" value={authorizedBy}
                   onChange={handleAuthorizedByChange} placeholder="Votre nom (Autorisation de retrait)" required style={formControlStyle} />
-                <span className="helper-text" style={{ color: '#6c757d', display: 'block', marginTop: '5px' }}>
+                <span className="helper-text" style={{ color: '#9aa7b4', display: 'block', marginTop: '5px' }}>
                   (Seul le personnel autorisé doit soumettre les demandes de retrait.)
                 </span>
               </>

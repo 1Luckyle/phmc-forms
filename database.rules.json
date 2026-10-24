@@ -247,6 +247,29 @@
       }
     },
 
+    // ─── Recrutement interne (évolution interne du personnel) ─────────────────
+    // Un employé ne peut pas candidater. Il demande un statut spécial (demandesMobilite/{uid}) ; un recruteur ou
+    // un admin l'accepte (statutsMobilite/{uid} est alors posé) ou le refuse. Le statut rouvre les candidatures ;
+    // il est retiré quand une candidature est acceptée ET le contrat signé (l'employé peut retirer SON statut
+    // et passer sa demande à « terminee », voir src/utils/internalRecruitment.js).
+    "statutsMobilite": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $uid && !newData.exists()))"
+      }
+    },
+    "demandesMobilite": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $uid && newData.child('statut').val() === 'en_attente' && (!data.exists() || data.child('statut').val() !== 'en_attente')))",
+        ".validate": "newData.hasChildren(['statut', 'creeLe']) && (newData.child('statut').val() === 'en_attente' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'refusee' || newData.child('statut').val() === 'terminee')",
+        "statut": { ".write": "auth != null && auth.uid === $uid && newData.val() === 'terminee' && data.val() === 'acceptee'" },
+        "traiteLe": { ".write": "auth != null && auth.uid === $uid" }
+      }
+    },
+
     // ─── Demandes de vidéosurveillance (CCTV) ─────────────────────────────────
     // cctvRequests/{id} : demande + fil de réponses (reponses). N'importe quel compte connecté crée SA demande
     // (statut « nouvelle ») et lit les siennes (via l'index cctvParDemandeur) ; l'administration du PHMC

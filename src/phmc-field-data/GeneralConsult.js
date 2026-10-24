@@ -412,7 +412,7 @@ onChange={(selectedOption) => {
                                         }),
                                         multiValueRemove: (base) => ({
                                             ...base,
-                                            color: '#6c757d',
+                                            color: '#9aa7b4',
                                             '&:hover': {
                                                 backgroundColor: '#dc3545',
                                                 color: '#fff'
@@ -424,7 +424,7 @@ onChange={(selectedOption) => {
                                         }),
                                         placeholder: (base) => ({
                                             ...base,
-                                            color: '#6c757d'
+                                            color: '#9aa7b4'
                                         })
                                     }}
                                 /><Form.Label></Form.Label>

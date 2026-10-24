@@ -419,7 +419,7 @@ const Autopsy = ({
                     input: (base) => ({ ...base, color: '#eeeeeeb0' }),
                     placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
                     group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
+                    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
                 }}
             />
             <Form.Label></Form.Label>
@@ -466,7 +466,7 @@ const Autopsy = ({
                     input: (base) => ({ ...base, color: '#eeeeeeb0' }),
                     placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
                     group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
+                    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
                 }}
             />
             <Form.Label></Form.Label>

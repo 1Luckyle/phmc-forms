@@ -174,7 +174,7 @@ const styles = {
     openSpan: { color: '#28a745' },
     closedStrong: { color: '#dc3545' },
     noDataText: {
-        color: '#6c757d',
+        color: '#9aa7b4',
         fontSize: '0.9em',
         marginLeft: '20px',
     },

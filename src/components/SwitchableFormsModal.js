@@ -376,7 +376,7 @@ const SwitchableFormsModal = ({
                                         justifyContent: 'flex-start',
                                         paddingTop: '0.75rem',
                                         paddingBottom: '0.75rem',
-                                        color: '#6c757d',
+                                        color: '#9aa7b4',
                                         borderColor: '#6c757d',
                                         backgroundColor: 'transparent',
                                     };
@@ -439,14 +439,14 @@ const SwitchableFormsModal = ({
                                                     </div>
                                                 )}
                                                 {buttonDisplayProps.openPositions.length === 0 && buttonDisplayProps.closedPositions.length === 0 && (
-                                                     <div style={{...positionStatusListStyle, textAlign: 'center', color: '#6c757d', alignSelf: 'stretch'}}>
+                                                     <div style={{...positionStatusListStyle, textAlign: 'center', color: '#9aa7b4', alignSelf: 'stretch'}}>
                                                         Aucune position répertoriée.
                                                     </div>
                                                 )}
                                             </>
                                         )}
                                          {buttonDisplayProps.isRecruitmentForm && !buttonDisplayProps.statusKnown && (
-                                             <div style={{...positionStatusListStyle, textAlign: 'center', color: '#6c757d', alignSelf: 'stretch'}}>
+                                             <div style={{...positionStatusListStyle, textAlign: 'center', color: '#9aa7b4', alignSelf: 'stretch'}}>
                                                 {/* Text is already "Status Unknown" from getRecruitmentButtonProps, so this div might just be for spacing or additional info if needed */}
                                             </div>
                                          )}

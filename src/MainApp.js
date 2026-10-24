@@ -68,6 +68,7 @@ import { exportReportDocument } from './utils/reportDocumentExport';
 import { getRoleInfo, sortKeyOfRank, extraRanksOf } from './constants/ranks';
 import { logActivity } from './utils/activityLog';
 import CctvHubModal from './components/Cctv/CctvHubModal';
+import InternalRecruitmentRequest from './components/Recruitment/InternalRecruitmentRequest';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -152,7 +153,7 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, staffProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, staffProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, hasInternalRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     // Ce que la personne (ou le profil simulé par un admin) voit dans la Boîte à outils : une seule définition, voir utils/viewAs.js.
     const toolAccess = getToolAccess({ currentEmployee, employeeProfile, staffProfile, isAdmin, isRecruiter, isContractCandidate, isCivilian, staffName, canUseAma, canManageRecruitment });
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -1803,7 +1804,8 @@ function MainApp({
                                                         { key: 'season', icon: `fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`, label: `${seasonalEffectsEnabled ? 'Désactiver' : 'Activer'} Effet de Saison`, onClick: closeAnd(toggleSeasonalEffects) },
                                                         { key: 'guide', icon: 'fas fa-play-circle', label: 'Guide de Configuration', onClick: closeAnd(restartOnboarding) },
                                                         { key: 'header', icon: immersiveHeaderEnabled ? 'fas fa-heart' : 'fas fa-city', label: immersiveHeaderEnabled ? 'Header des remerciements' : 'Header immersif (heure & météo)', onClick: closeAnd(toggleImmersiveHeader) },
-                                                        { key: 'bug', icon: 'fas fa-bug', label: 'Rapport de Bug', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
+                                                        // Bugs et demandes de fonctionnalité sont réservés aux comptes connectés (tous rôles) : la demande est enregistrée à leur nom.
+                                                        currentEmployee && { key: 'bug', icon: 'fas fa-bug', label: 'Rapport de Bug', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
                                                         // La demande de fonctionnalité est réservée aux comptes connectés (tous rôles).
                                                         currentEmployee && { key: 'feature', icon: 'fas fa-lightbulb', label: 'Demande de Fonctionnalité', onClick: closeAnd(() => { setFeatureModalMode('feature'); setShowFeatureRequestModal(true); }) },
                                                         {
@@ -2441,7 +2443,12 @@ function MainApp({
                                                 {/* Pipeline de candidatures (Lot 6) : un Civil sur un formulaire de
                                                     candidature a le choix entre garder un brouillon et candidater
                                                     réellement (accusé de réception + notification admin). */}
-                                                {selectedAgencyGroup === 'PHMC Recruitment' && isCivilian && (
+                                                {/* Un EMPLOYÉ ne candidate pas : il demande d'abord le statut de recrutement interne (évolution
+                                                    interne), que le recrutement accepte ou refuse. Une fois accordé, il candidate comme un Civil. */}
+                                                {selectedAgencyGroup === 'PHMC Recruitment' && !isCivilian && staffProfile && !hasInternalRecruitment && (
+                                                    <InternalRecruitmentRequest showNotification={showNotification} disabled={isLockdownActive} />
+                                                )}
+                                                {selectedAgencyGroup === 'PHMC Recruitment' && (isCivilian || (hasInternalRecruitment && staffProfile)) && (
                                                     <>
                                                         <Button type="button" onClick={() => saveJobApplication('save')} className="copy-button-modern" disabled={isLockdownActive}>
                                                             <i className="fas fa-save"></i>

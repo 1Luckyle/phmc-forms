@@ -8,6 +8,8 @@ import { ref, set, onValue, off, serverTimestamp, get, remove, push } from 'fire
 import PhraseRequestModal from './PhraseRequestModal';
 import emsBingoBackground from '../assets/EMMafia_Pride.png';
 import { getRoleInfo } from '../constants/ranks';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { useDebug } from '../contexts/DebugContext';
 
 // Function to shuffle an array (used by admin to generate new card)
 const getShuffledPhrases = (phrases) => {
@@ -63,6 +65,17 @@ const BINGO_TYPES = [
     }
 ];
 
+// Groupes de joueurs d'un type de bingo (PHMC ou DMEC), filtrés selon les rôles ; un groupe vide disparaît.
+const eligibleGroups = (type, phmcGroups, coronerGroups) => {
+    if (!type) return [];
+    if (type.employeeGroup === 'Coroner') return coronerGroups || [];
+    const groups = phmcGroups || [];
+    if (!type.optionFilter) return groups;
+    return groups
+        .map((group) => ({ ...group, options: group.options.filter(type.optionFilter) }))
+        .filter((group) => group.options.length > 0);
+};
+
 const BINGO_LINES = [
     [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24], // Rows
     [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24], // Columns
@@ -82,6 +95,11 @@ const EmsBingoModal = ({ show, onHide, phmcGroupedOptions, coronerGroupedOptions
     const [isLoadingPhrases, setIsLoadingPhrases] = useState(true);
     const [markedSquaresLocal, setMarkedSquaresLocal] = useState(new Map());
     const [selectedEmployee, setSelectedEmployee] = useState(null);
+    // Chacun joue avec SON compte. Seuls les admins, et seulement si le mode debug « choix du joueur » est activé dans
+    // le panneau admin, peuvent choisir quelqu'un d'autre.
+    const { staffName, realIsAdmin } = useEmployeeAuth();
+    const { debugBingoPickerEnabled } = useDebug();
+    const canPickPlayer = debugBingoPickerEnabled && (realIsAdmin || !!isAdmin);
     const [bingoActivityLog, setBingoActivityLog] = useState([]);
 
     const activityLogRef = useRef(null);
@@ -214,6 +232,17 @@ useEffect(() => {
             }
 
 
+            if (!canPickPlayer) {
+                // Joueur = le compte connecté, s'il fait partie des joueurs de ce bingo.
+                const ownOption = staffName
+                    ? eligibleGroups(selectedBingoType, phmcGroupedOptions, coronerGroupedOptions)
+                        .flatMap((group) => group.options)
+                        .find((option) => option.value === staffName)
+                    : null;
+                setSelectedEmployee(ownOption || null);
+                return;
+            }
+
             if (storedEmployee && phmcGroupedOptions && selectedBingoType.employeeGroup === 'PHMC') {
                 const employeeOption = phmcGroupedOptions.flatMap(group => group.options)
                     .find(option => option.value === storedEmployee);
@@ -238,7 +267,7 @@ useEffect(() => {
             setCompletedBingoLines(new Set());
             setSelectedBingoType(null);
         }
-    }, [show, selectedBingoType, phmcGroupedOptions, coronerGroupedOptions]);
+    }, [show, selectedBingoType, phmcGroupedOptions, coronerGroupedOptions, canPickPlayer, staffName]);
 
     // Effect to listen for Firebase activity log updates and sync marked squares
 useEffect(() => {
@@ -423,7 +452,9 @@ setCompletedBingoLines(prevCompletedLines => {
 
     const handleSquareClick = useCallback(async (index, phrase) => {
         if (!selectedEmployee) {
-            showNotification('Veuillez sélectionner votre nom dans le menu déroulant avant de marquer un carré !', 'warning');
+            showNotification(canPickPlayer
+                ? 'Veuillez sélectionner un joueur dans le menu déroulant avant de marquer un carré !'
+                : 'Connectez-vous avec votre compte du personnel pour marquer des carrés.', 'warning');
             return;
         }
         if (!selectedBingoType) {
@@ -498,7 +529,7 @@ setCompletedBingoLines(prevCompletedLines => {
                 });
             }
         }
-    }, [selectedEmployee, markedSquaresLocal, bingoActivityLog, getEmployeeColor, selectedBingoType, showNotification]);
+    }, [selectedEmployee, markedSquaresLocal, bingoActivityLog, getEmployeeColor, selectedBingoType, showNotification, canPickPlayer]);
 
     // NEW: Admin function to generate a new card
     const handleGenerateNewCard = async () => {
@@ -607,31 +638,11 @@ setCompletedBingoLines(prevCompletedLines => {
     const handleEmployeeSelect = (option) => {
         setSelectedEmployee(option);
     };
-    const [formData, setFormData] = useState({});
 
-    const filteredEmployeeOptions = useMemo(() => {
-        if (!selectedBingoType) return [];
-
-        let employeeValue = null;
-        if (selectedBingoType.employeeGroup === 'PHMC') {
-            employeeValue = formData.phmcEmployee;
-        } else if (selectedBingoType.employeeGroup === 'Coroner') {
-            employeeValue = formData.coronerEmployee;
-        }
-
-        if (selectedBingoType.employeeGroup === 'PHMC') {
-            if (selectedBingoType.optionFilter) {
-                // On garde les personnes concernées ; un groupe qui n'en a plus disparaît.
-                return phmcGroupedOptions
-                    .map(group => ({ ...group, options: group.options.filter(selectedBingoType.optionFilter) }))
-                    .filter(group => group.options.length > 0);
-            }
-            return phmcGroupedOptions;
-        } else if (selectedBingoType.employeeGroup === 'Coroner') {
-            return coronerGroupedOptions;
-        }
-        return [];
-    }, [selectedBingoType, phmcGroupedOptions, coronerGroupedOptions, formData.phmcEmployee, formData.coronerEmployee]);
+    const filteredEmployeeOptions = useMemo(
+        () => eligibleGroups(selectedBingoType, phmcGroupedOptions, coronerGroupedOptions),
+        [selectedBingoType, phmcGroupedOptions, coronerGroupedOptions]
+    );
 
     const handleSelectBingoType = (type) => {
         setSelectedBingoType(type);
@@ -649,11 +660,6 @@ setCompletedBingoLines(prevCompletedLines => {
         announcingBingoLinesRef.current.clear();
         employeeColorMapRef.current.clear();
         colorIndexRef.current = 0;
-    };
-
-    const handleOpenEmployeeModal = () => {
-        setShowEmployeeModal(true);
-        onHide();
     };
 
     return (
@@ -685,16 +691,23 @@ setCompletedBingoLines(prevCompletedLines => {
                             {selectedEmployee && (
                                 <h5 className="welcome-message">Bienvenue {selectedEmployee.value}!</h5>
                             )}
-                            {!selectedEmployee && (
+                            {!selectedEmployee && !canPickPlayer && (
+                                <div className="bingo-loading">
+                                    {staffName
+                                        ? `Votre compte (${staffName}) ne fait pas partie des joueurs du bingo ${selectedBingoType.name}.`
+                                        : 'Connectez-vous avec votre compte du personnel pour jouer : vous êtes inscrit automatiquement sous votre nom.'}
+                                </div>
+                            )}
+                            {canPickPlayer && (
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Sélectionner votre nom :</Form.Label>
+                                    <Form.Label>Mode debug (admin) — jouer en tant que :</Form.Label>
                                     <Select
                                         name="phmcEmployeeBingo"
                                         value={selectedEmployee}
                                         onChange={handleEmployeeSelect}
                                         options={filteredEmployeeOptions}
                                         isClearable
-                                        placeholder="Sélectionner votre nom..."
+                                        placeholder="Choisir le joueur…"
                                         className="react-select-container"
                                         classNamePrefix="react-select"
                                         styles={{
@@ -706,14 +719,6 @@ setCompletedBingoLines(prevCompletedLines => {
                                             placeholder: (base) => ({ ...base, color: '#ffffff' })
                                         }}
                                     />
-                                    <small className="form-text text-muted mt-1">
-                                        <span
-                                            onClick={handleOpenEmployeeModal}
-                                            style={{ cursor: 'pointer', textDecoration: 'underline', color: '#ffffff' }}
-                                        >
-                                            Nom Manquant?
-                                        </span>
-                                    </small>
                                 </Form.Group>
                             )}
                             <h5>Activité Récente</h5>

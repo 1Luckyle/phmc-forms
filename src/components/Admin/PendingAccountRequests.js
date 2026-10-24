@@ -321,7 +321,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                     option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#0d1117', color: '#c9d1d9' }),
                                     singleValue: (base) => ({ ...base, color: '#c9d1d9' }),
                                     input: (base) => ({ ...base, color: '#c9d1d9' }),
-                                    placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                    placeholder: (base) => ({ ...base, color: '#9aa7b4' })
                                 }}
                             />
                         </Form.Group>
@@ -422,7 +422,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                         GTA World
                                     </span>
                                 ) : (
-                                    <span style={{ color: '#6c757d' }}>
+                                    <span style={{ color: '#9aa7b4' }}>
                                         <i className="fas fa-keyboard" style={{ marginRight: '5px' }}></i>
                                         Manuel
                                     </span>

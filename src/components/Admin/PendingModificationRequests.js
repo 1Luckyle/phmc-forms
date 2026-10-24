@@ -199,7 +199,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
             }
         });
         
-        return changes.length > 0 ? changes : <span style={{ color: '#6c757d' }}>Aucune modification</span>;
+        return changes.length > 0 ? changes : <span style={{ color: '#9aa7b4' }}>Aucune modification</span>;
     };
 
     if (isLoading) {
@@ -290,7 +290,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                             option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#0d1117', color: '#c9d1d9' }),
                                             singleValue: (base) => ({ ...base, color: '#c9d1d9' }),
                                             input: (base) => ({ ...base, color: '#c9d1d9' }),
-                                            placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                            placeholder: (base) => ({ ...base, color: '#9aa7b4' })
                                         }}
                                     />
                                 </Form.Group>
@@ -373,7 +373,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                             option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#0d1117', color: '#c9d1d9' }),
                                             singleValue: (base) => ({ ...base, color: '#c9d1d9' }),
                                             input: (base) => ({ ...base, color: '#c9d1d9' }),
-                                            placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                            placeholder: (base) => ({ ...base, color: '#9aa7b4' })
                                         }}
                                     />
                                 </Form.Group>

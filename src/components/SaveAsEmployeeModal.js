@@ -24,8 +24,8 @@ const reactSelectStyles = {
     }),
     singleValue: (base) => ({ ...base, color: '#fff' }),
     input: (base) => ({ ...base, color: '#fff' }),
-    placeholder: (base) => ({ ...base, color: '#6c757d' }),
-    groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }),
+    placeholder: (base) => ({ ...base, color: '#9aa7b4' }),
+    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }),
 };
 
 const SaveAsEmployeeModal = ({ show, onHide, employeeOptions, onConfirm }) => {

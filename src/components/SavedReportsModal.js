@@ -242,7 +242,7 @@ const reactSelectStyles = {
     }),
     placeholder: (base) => ({
         ...base,
-        color: '#6c757d',
+        color: '#9aa7b4',
     }),
     group: (base) => ({
         ...base,
@@ -251,7 +251,7 @@ const reactSelectStyles = {
     }),
     groupHeading: (base) => ({
         ...base,
-        color: '#6c757d',
+        color: '#9aa7b4',
         fontWeight: 600,
         textTransform: 'uppercase',
         fontSize: '0.75rem',
@@ -868,7 +868,7 @@ const SavedReportsModal = ({
                                             <td style={tdStyle}>
                                                 {(() => {
                                                     const invoice = invoiceOf(report);
-                                                    if (!invoice) return <span style={{ color: '#6e7681' }}>—</span>;
+                                                    if (!invoice) return <span style={{ color: '#9aa7b4' }}>—</span>;
                                                     return (
                                                         <>
                                                             <InvoiceStatusBadge status={invoice.statutEffectif} />

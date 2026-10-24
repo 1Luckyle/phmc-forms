@@ -385,6 +385,12 @@ export const EmployeeAuthProvider = ({ children }) => {
     // recruteur sur le compte Civil d'un candidat accepté. En direct (onValue) : le candidat voit
     // « Mes contrats » apparaître sans avoir à se reconnecter.
     const [isContractCandidate, setIsContractCandidate] = useState(false);
+    // Statut de recrutement interne (évolution interne) : accordé par le recrutement, il rouvre les candidatures à un employé.
+    const [hasInternalRecruitment, setHasInternalRecruitment] = useState(false);
+    useEffect(() => {
+        if (!uid) { setHasInternalRecruitment(false); return undefined; }
+        return onValue(ref(database, `statutsMobilite/${uid}`), (snapshot) => setHasInternalRecruitment(snapshot.exists()), () => setHasInternalRecruitment(false));
+    }, [uid]);
     useEffect(() => {
         if (!uid) {
             setIsContractCandidate(false);
@@ -445,6 +451,7 @@ export const EmployeeAuthProvider = ({ children }) => {
     const value = {
         isRecruiter: effective.isRecruiter,
         isContractCandidate: effective.isContractCandidate,
+        hasInternalRecruitment,
         canManageRecruitment: derived.canManageRecruitment,
         myPatientID,
         currentEmployee: effective.currentEmployee,

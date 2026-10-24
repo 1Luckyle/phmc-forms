@@ -18,6 +18,7 @@
 import { ref, get, set, update, remove, push } from 'firebase/database';
 import { database } from '../firebase';
 import { normalizeRank } from '../constants/ranks';
+import { releaseInternalStatusAfterContract } from './internalRecruitment';
 
 export const CONTRACT_STATUS = {
     brouillon: { label: 'Brouillon', variant: 'secondary', legacy: 'draft' },
@@ -333,5 +334,7 @@ export async function signContract(contract, { uid, name, signature }) {
         [`contrats/${contract.id}/signeLe`]: now,
         [`contrats/${contract.id}/statut`]: 'signe',
     });
+    // Candidature acceptée + contrat signé : le statut de recrutement interne prend fin (best-effort).
+    await releaseInternalStatusAfterContract(uid);
     return { ...contract, statut: 'signe', signeLe: now, signature: signatureRecord };
 }

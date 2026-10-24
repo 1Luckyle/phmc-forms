@@ -1,8 +1,17 @@
 /* Vidéosurveillance (CCTV) : fenêtre, liste de demandes et fil de réponses. Thème sombre autonome (modale du site
    ET section du panneau admin). */
-.cctv-modal-content { background: #161b22; color: #e6edf3; border: 1px solid #30363d; }
-.cctv-modal-content .modal-header { border-bottom-color: #30363d; }
+.modal-content.cctv-modal-content {
+    --bs-modal-bg: #161b22;
+    --bs-modal-color: #e6edf3;
+    --bs-modal-header-border-color: #30363d;
+    --bs-modal-border-color: #30363d;
+    background-color: #161b22;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+}
+.cctv-modal-content .modal-header { border-bottom: 1px solid #30363d; }
 .cctv-modal-content .modal-title { color: #f0f6fc; }
+.cctv-modal-content .modal-body { color: #e6edf3; }
 
 .cctv-panel { color: #e6edf3; }
 

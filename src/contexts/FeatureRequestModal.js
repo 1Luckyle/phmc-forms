@@ -1,13 +1,14 @@
 import React from 'react';
 import { Form, Button } from 'react-bootstrap';
 import './FeatureRequestModal.css';
+import '../components/DarkUi.css';
 import * as Sentry from "@sentry/react";
 import { useNotification } from './NotificationContext';
 import DebugFillButton from '../components/DebugFillButton';
 import { submitSiteRequest } from '../utils/siteRequests';
 
 // Deux versions du même formulaire :
-//   • mode « bug »     : rapport de bug (ouvert à tous, connectés ou non) ;
+//   • mode « bug »     : rapport de bug (comptes connectés) ;
 //   • mode « feature » : demande de fonctionnalité (comptes connectés), avec en plus la possibilité de proposer un
 //     NOUVEAU FORMULAIRE en collant son BBCode ou son HTML (toujours accepté, que l'accès au BBCode soit activé ou non).
 const looksLikeHtml = (text) => /<\/?[a-z][\s\S]*>/i.test(text || '');
@@ -101,7 +102,7 @@ const FeatureRequestModal = ({
     }
 
     return (
-        <div className="modal-overlay feature-request-modal" onClick={onClose}>
+        <div className="modal-overlay feature-request-modal dark-ui" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h5 className="modal-title">

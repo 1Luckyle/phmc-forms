@@ -179,7 +179,7 @@ const AgencyGroupSelectorModal = ({
     };
     const summaryPositionItemOpenStyle = { color: '#28a745' };
     const summaryPositionItemClosedStyle = { color: '#dc3545' };
-    const summaryPositionItemOtherStyle = { color: '#6c757d' };
+    const summaryPositionItemOtherStyle = { color: '#9aa7b4' };
 
 
     return (
@@ -265,7 +265,7 @@ const AgencyGroupSelectorModal = ({
                                 </div>
                             )}
                             {!recruitmentData.hasData && (
-                                 <span style={{ fontSize: '0.7rem', color: '#6c757d', marginTop: '0.5rem', display: 'block', width: '100%', textAlign: 'center' }}>
+                                 <span style={{ fontSize: '0.7rem', color: '#9aa7b4', marginTop: '0.5rem', display: 'block', width: '100%', textAlign: 'center' }}>
                                     (Detailed status loading or unavailable)
                                 </span>
                             )}

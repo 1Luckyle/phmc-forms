@@ -173,7 +173,15 @@ Pillbox Hill Medical Center`,
     const getApplicantEmail = async (application) => {
         try {
             const civilSnap = await get(ref(database, `civilians/${application.candidatUid}`));
-            return civilSnap.exists() ? civilSnap.val().email : null;
+            if (civilSnap.exists()) return civilSnap.val().email;
+            // Candidature interne : l'adresse est celle de la fiche du personnel.
+            for (const list of ['phmc', 'coroner']) {
+                // eslint-disable-next-line no-await-in-loop
+                const staffSnap = await get(ref(database, `staff/${list}`));
+                const member = Object.values(staffSnap.val() || {}).find((entry) => entry && entry.uid === application.candidatUid);
+                if (member?.email) return member.email;
+            }
+            return null;
         } catch (error) {
             console.warn('Could not fetch applicant email:', error);
             return null;
@@ -353,7 +361,7 @@ Pillbox Hill Medical Center`,
                             return (
                                 <React.Fragment key={inputKey}>
                                 <tr>
-                                    <td>{application.nomCandidat || 'N/A'} {application.idPatient ? `(${application.idPatient})` : ''}</td>
+                                    <td>{application.nomCandidat || 'N/A'} {application.idPatient ? `(${application.idPatient})` : ''}{application.interne && <span className="badge bg-info text-dark ms-2" title="Candidature d'un employé (statut de recrutement interne)">Interne</span>}</td>
                                     <td>{application.poste || 'N/A'}</td>
                                     <td>{STATUS_LABELS[application.statut] || application.statut}</td>
                                     <td>
@@ -403,7 +411,12 @@ Pillbox Hill Medical Center`,
                                                     Accepter
                                                 </Button>
                                             )}
-                                            {application.statut === 'acceptee' && (
+                                            {application.statut === 'acceptee' && application.interne && (
+                                                <span style={{ color: '#b1bac4', fontSize: '0.85rem' }}>
+                                                    Candidature interne : envoyez directement son contrat depuis l'onglet « Contrats ».
+                                                </span>
+                                            )}
+                                            {application.statut === 'acceptee' && !application.interne && (
                                                 <Button size="sm" variant={contractCandidates[application.candidatUid] ? 'outline-warning' : 'info'}
                                                     onClick={() => handleToggleContractRole(application)}
                                                     title="Rôle facultatif : donne au candidat accès à son contrat et à la création de sa signature">

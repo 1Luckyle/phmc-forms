@@ -155,6 +155,7 @@ export const normalizeApplication = (raw, id = null, uid = null) => {
         idPatient: source.idPatient ?? source.patientID ?? '',
         nomCandidat: source.nomCandidat ?? source.applicantName ?? '',
         poste: source.poste ?? source.position ?? '',
+        interne: source.interne === true,     // candidature d'un employé (statut de recrutement interne)
         posteCle: source.posteCle ?? null,   // clé du poste (le champ `poste` porte son libellé depuis la v. française)
         versionBBCode: source.versionBBCode ?? source.bbCodeVersion ?? null,
         donnees: source.donnees ?? source.data ?? {},

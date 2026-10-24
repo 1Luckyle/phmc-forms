@@ -72,7 +72,7 @@ const BaseModal = ({
         >
             <div
                 ref={modalRef}
-                className={`modal-container ${className} modal-size-${modalSize}`}
+                className={`modal-container dark-ui ${className} modal-size-${modalSize}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="modal-title"

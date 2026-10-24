@@ -1017,7 +1017,7 @@ const OnboardingModal = ({
                                 cursor: 'pointer', textAlign: 'left'
                             }}
                         >
-                            <i className="fas fa-keyboard" style={{ fontSize: '1.4rem', color: '#6c757d' }}></i>
+                            <i className="fas fa-keyboard" style={{ fontSize: '1.4rem', color: '#9aa7b4' }}></i>
                             <span>
                                 <strong style={{ display: 'block' }}>Saisir mes informations manuellement</strong>
                                 <span style={{ fontSize: '0.85em', color: '#ccc' }}>
@@ -1166,7 +1166,7 @@ const OnboardingModal = ({
                                         option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#2a2a2a', color: '#fff' }),
                                         singleValue: (base) => ({ ...base, color: '#fff' }),
                                         input: (base) => ({ ...base, color: '#fff' }),
-                                        placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                        placeholder: (base) => ({ ...base, color: '#9aa7b4' })
                                     }}
                                 />
                             </div>
@@ -1546,7 +1546,7 @@ const OnboardingModal = ({
                                         option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f2937' : '#2a2a2a', color: '#fff' }),
                                         singleValue: (base) => ({ ...base, color: '#fff' }),
                                         input: (base) => ({ ...base, color: '#fff' }),
-                                        placeholder: (base) => ({ ...base, color: '#6c757d' })
+                                        placeholder: (base) => ({ ...base, color: '#9aa7b4' })
                                     }}
                                 />
                             </div>
@@ -2435,7 +2435,7 @@ const accountActionsStyle = {
 
 const skipAccountButtonStyle = {
     borderColor: '#6c757d',
-    color: '#6c757d'
+    color: '#9aa7b4'
 };
 
 const createAccountButtonStyle = {

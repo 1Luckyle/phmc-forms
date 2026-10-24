@@ -65,7 +65,7 @@ const selectStyles = (invalid) => ({
     multiValue: (base) => ({ ...base, backgroundColor: '#1f3a5f' }),
     multiValueLabel: (base) => ({ ...base, color: '#e6edf3' }),
     multiValueRemove: (base) => ({ ...base, color: '#e6edf3', '&:hover': { backgroundColor: '#f85149', color: '#fff' } }),
-    placeholder: (base) => ({ ...base, color: '#6e7681' }),
+    placeholder: (base) => ({ ...base, color: '#9aa7b4' }),
     input: (base) => ({ ...base, color: '#c9d1d9' }),
 });
 

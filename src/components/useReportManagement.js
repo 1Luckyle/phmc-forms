@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
 import { normalizeApplicationStatus, positionLabelFor } from '../constants/recruitment';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
@@ -89,7 +89,27 @@ export const useReportManagement = (
     selectedAgencyGroup,
     initialFormData
 ) => {
-    const { isCivilian, civilianProfile, isAdmin, staffName } = useEmployeeAuth();
+    const { isCivilian, civilianProfile, isAdmin, staffName, staffProfile, hasInternalRecruitment, currentEmployee, myPatientID } = useEmployeeAuth();
+
+    // Qui candidate : un compte Civil, ou un EMPLOYÉ qui a obtenu le statut de recrutement interne (évolution interne).
+    // Même forme dans les deux cas : { uid, patientID, email, firstName, lastName, internal }.
+    const applicant = useMemo(() => {
+        if (isCivilian && civilianProfile?.uid) {
+            return { uid: civilianProfile.uid, patientID: civilianProfile.patientID, email: civilianProfile.email, firstName: civilianProfile.firstName, lastName: civilianProfile.lastName, internal: false };
+        }
+        if (hasInternalRecruitment && staffProfile && currentEmployee?.uid) {
+            const [first, ...rest] = String(staffProfile.name || staffName || '').trim().split(/\s+/);
+            return {
+                uid: currentEmployee.uid,
+                patientID: myPatientID,
+                email: staffProfile.email || currentEmployee.email || '',
+                firstName: staffProfile.firstName || first || '',
+                lastName: staffProfile.lastName || rest.join(' '),
+                internal: true,
+            };
+        }
+        return null;
+    }, [isCivilian, civilianProfile, hasInternalRecruitment, staffProfile, currentEmployee, myPatientID, staffName]);
     const [savedReports, setSavedReports] = useState([]);
     const [showSavedReports, setShowSavedReports] = useState(false);
     const [isLoadingUserReports, setIsLoadingUserReports] = useState(false);
@@ -1088,8 +1108,10 @@ Copie : ${copyPath}`, target: copyAuthorName,
     // nouvelle à chaque clic. submitAction : 'save' (brouillon) | 'submit'
     // (candidater — envoie accusé de réception + notification Discord admin).
     const saveJobApplication = useCallback(async (submitAction) => {
-        if (!isCivilian || !civilianProfile?.uid) {
-            showNotification('Vous devez être connecté en tant que Civil pour gérer une candidature.', 'error');
+        if (!applicant) {
+            showNotification(staffProfile
+                ? 'Les employés doivent d\'abord obtenir le statut de recrutement interne : utilisez « Demander le statut de recrutement interne ».'
+                : 'Vous devez être connecté en tant que Civil pour gérer une candidature.', 'error');
             return { success: false };
         }
         const definition = getFormDefinition(bbCodeVersion);
@@ -1102,12 +1124,12 @@ Copie : ${copyPath}`, target: copyAuthorName,
         const applicationId = `form_${bbCodeVersion}`;
         const bbCodeContent = getBBCodeContent();
         const applicantName = formData.applicantTitleAndFullName
-            || `${civilianProfile.firstName || ''} ${civilianProfile.lastName || ''}`.trim();
+            || `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim();
         const newStatus = submitAction === 'submit' ? 'soumise' : 'brouillon';
 
         try {
             // Candidature existante (nouveau nœud « candidatures » ou ancien « jobApplications »).
-            const existing = await loadApplication(civilianProfile.uid, applicationId);
+            const existing = await loadApplication(applicant.uid, applicationId);
 
             // Une décision admin (acceptée/refusée) est définitive : on ne laisse
             // pas un nouvel envoi depuis le formulaire l'écraser silencieusement.
@@ -1133,8 +1155,9 @@ Copie : ${copyPath}`, target: copyAuthorName,
             historique.push({ statut: newStatus, horodatage: Date.now() });
 
             const payload = sanitizeForFirebase({
-                candidatUid: civilianProfile.uid,
-                idPatient: civilianProfile.patientID,
+                candidatUid: applicant.uid,
+                interne: applicant.internal || undefined,
+                idPatient: applicant.patientID,
                 nomCandidat: applicantName,
                 // Libellé français du poste (la clé, souvent anglaise, est gardée à part).
                 poste: positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || definition.name,
@@ -1149,7 +1172,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 historique,
             });
 
-            await saveApplication(civilianProfile.uid, applicationId, payload);
+            await saveApplication(applicant.uid, applicationId, payload);
             logActivity({
                 category: 'recrutement',
                 action: submitAction === 'submit' ? 'application_submitted' : 'application_draft_saved',
@@ -1163,12 +1186,12 @@ Candidature : ${applicationId}`,
             if (submitAction === 'submit') {
                 // Best-effort : un mail/webhook raté ne doit jamais faire échouer
                 // la candidature elle-même (déjà persistée à ce stade).
-                if (civilianProfile.email) {
+                if (applicant.email) {
                     sendEyefindMail({
-                        to: civilianProfile.email,
+                        to: applicant.email,
                         subject: 'Candidature reçue - PHMC',
-                        body: `Bonjour ${applicantName},\n\nNous avons bien reçu votre candidature pour le poste "${definition.name}". Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.\n\nCordialement,\nLe Pillbox Hill Medical Center`,
-                        html: `<p>Bonjour ${applicantName},</p><p>Nous avons bien reçu votre candidature pour le poste « <b>${definition.name}</b> ». Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.</p><p>Cordialement,<br>Le Pillbox Hill Medical Center</p>`,
+                        body: `Bonjour ${applicantName},\n\nNous avons bien reçu votre candidature pour le poste "${payload.poste || definition.name}". Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.\n\nCordialement,\nLe Pillbox Hill Medical Center`,
+                        html: `<p>Bonjour ${applicantName},</p><p>Nous avons bien reçu votre candidature pour le poste « <b>${payload.poste || definition.name}</b> ». Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.</p><p>Cordialement,<br>Le Pillbox Hill Medical Center</p>`,
                     }).catch((err) => console.warn('Eyefind Mail (accusé de réception candidature) échoué:', err));
                 }
 
@@ -1196,17 +1219,17 @@ Candidature : ${applicationId}`,
             showNotification('Erreur lors de l\'enregistrement de la candidature.', 'error');
             return { success: false };
         }
-    }, [isCivilian, civilianProfile, bbCodeVersion, formData, getBBCodeContent, filterFormData, selectOptions, showNotification]);
+    }, [applicant, staffProfile, bbCodeVersion, formData, getBBCodeContent, filterFormData, selectOptions, showNotification]);
 
     // Charge les candidatures du civil connecté ("Mes candidatures").
     const loadMyJobApplications = useCallback(async () => {
-        if (!civilianProfile?.uid) {
+        if (!applicant?.uid) {
             setMyJobApplications([]);
             return;
         }
         setIsLoadingJobApplications(true);
         try {
-            const apps = await loadApplicationsOf(civilianProfile.uid);
+            const apps = await loadApplicationsOf(applicant.uid);
             setMyJobApplications(apps);
         } catch (error) {
             console.error('Error loading job applications:', error);
@@ -1214,7 +1237,7 @@ Candidature : ${applicationId}`,
         } finally {
             setIsLoadingJobApplications(false);
         }
-    }, [civilianProfile]);
+    }, [applicant]);
 
     // « Recharger » une candidature de « Mes candidatures » : même mécanisme que le chargement d'un rapport
     // (bascule sur le bon formulaire de candidature puis le remplit avec ses réponses enregistrées).

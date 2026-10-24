@@ -20,6 +20,8 @@ const DEBUG_PATH = 'adminSettings/debugAutofill';
 // Second interrupteur : permet de SUPPRIMER une candidature dans l'historique (nettoyage des
 // candidatures de test). Les règles Firebase ne l'autorisent que tant qu'il est activé.
 const DEBUG_DELETE_APPLICATIONS_PATH = 'adminSettings/debugDeleteApplications';
+// Troisième interrupteur : au bingo, on joue avec SON compte ; activé, il laisse les ADMINS choisir n'importe quel joueur.
+const DEBUG_BINGO_PICKER_PATH = 'adminSettings/debugBingoPicker';
 
 const DebugContext = createContext({
     debugAutofillEnabled: false,
@@ -30,6 +32,8 @@ const DebugContext = createContext({
     removeDebugAutofillUser: async () => {},
     debugDeleteApplicationsEnabled: false,
     setDebugDeleteApplicationsEnabled: async () => {},
+    debugBingoPickerEnabled: false,
+    setDebugBingoPickerEnabled: async () => {},
 });
 
 export const useDebug = () => useContext(DebugContext);
@@ -39,6 +43,7 @@ export const DebugProvider = ({ children }) => {
     const [debugAutofillAllowed, setAllowed] = useState({});
     const [uid, setUid] = useState(null);
     const [debugDeleteApplicationsEnabled, setDeleteEnabled] = useState(false);
+    const [debugBingoPickerEnabled, setBingoPickerEnabled] = useState(false);
 
     // Compte connecté (toutes méthodes de connexion confondues) : sert à tester l'appartenance à la WL.
     useEffect(() => onAuthStateChanged(auth, (user) => setUid(user ? user.uid : null)), []);
@@ -64,6 +69,23 @@ export const DebugProvider = ({ children }) => {
             () => setDeleteEnabled(false)
         );
         return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = onValue(
+            ref(database, DEBUG_BINGO_PICKER_PATH),
+            (snapshot) => setBingoPickerEnabled(snapshot.val()?.enabled === true),
+            () => setBingoPickerEnabled(false)
+        );
+        return () => unsubscribe();
+    }, []);
+
+    const setDebugBingoPickerEnabled = useCallback(async (enabled, updatedBy = null) => {
+        await set(ref(database, DEBUG_BINGO_PICKER_PATH), {
+            enabled: Boolean(enabled),
+            updatedBy: updatedBy || null,
+            updatedAt: Date.now(),
+        });
     }, []);
 
     const setDebugDeleteApplicationsEnabled = useCallback(async (enabled, updatedBy = null) => {
@@ -109,6 +131,7 @@ export const DebugProvider = ({ children }) => {
             debugAutofillEnabled, setDebugAutofillEnabled,
             debugAutofillAllowed, canUseDebugFill, addDebugAutofillUser, removeDebugAutofillUser,
             debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
+            debugBingoPickerEnabled, setDebugBingoPickerEnabled,
         }}>
             {children}
         </DebugContext.Provider>

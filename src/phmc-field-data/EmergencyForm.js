@@ -64,7 +64,7 @@ const customSelectStyles = {
     }),
     multiValueRemove: (base) => ({
         ...base,
-        color: '#6c757d',
+        color: '#9aa7b4',
         '&:hover': {
             backgroundColor: '#dc3545',
             color: '#fff'
@@ -76,7 +76,7 @@ const customSelectStyles = {
     }),
     placeholder: (base) => ({
         ...base,
-        color: '#6c757d'
+        color: '#9aa7b4'
     }),
     singleValue: (base) => ({
         ...base,
@@ -89,7 +89,7 @@ const customSelectStyles = {
     }),
     groupHeading: (base) => ({
         ...base,
-        color: '#6c757d',
+        color: '#9aa7b4',
         fontWeight: 600,
         textTransform: 'uppercase',
         fontSize: '0.75rem',

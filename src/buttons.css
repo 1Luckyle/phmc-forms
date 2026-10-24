@@ -576,7 +576,7 @@ input[type="radio"] {
     margin-right: 10px; /* Space between icon and text */
     width: 16px; /* Give icon a fixed width for alignment */
     text-align: center; /* Center the icon */
-    color: #6c757d; /* Slightly muted icon color */
+    color: #9aa7b4; /* Slightly muted icon color */
   }
   
   .floating-buttons-dropdown .dropdown-item:hover i,

@@ -5,6 +5,7 @@ import { database } from '../firebase';
 import { ref, push, serverTimestamp } from 'firebase/database';
 import * as Sentry from "@sentry/react";
 import DebugFillButton from './DebugFillButton';
+import './EmsBingoModal.css';
 
 const PhraseRequestModal = ({ show, onHide, showNotification, selectedEmployee, selectedBingoType, sendPhraseRequestWebhook }) => {
     const [phraseText, setPhraseText] = useState('');

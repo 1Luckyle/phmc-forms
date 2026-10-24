@@ -375,7 +375,7 @@ const MedicalRelease = ({
                         }),
                         multiValueRemove: (base) => ({
                             ...base,
-                            color: '#6c757d',
+                            color: '#9aa7b4',
                             '&:hover': {
                                 backgroundColor: '#dc3545',
                                 color: '#fff'
@@ -387,7 +387,7 @@ const MedicalRelease = ({
                         }),
                         placeholder: (base) => ({
                             ...base,
-                            color: '#6c757d'
+                            color: '#9aa7b4'
                         })
                     }}
             />
@@ -516,7 +516,7 @@ const MedicalRelease = ({
                 }),
                 groupHeading: (base) => ({
                     ...base,
-                    color: '#6c757d',
+                    color: '#9aa7b4',
                     fontWeight: 600,
                     textTransform: 'uppercase',
                     fontSize: '0.75rem',

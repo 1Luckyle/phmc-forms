@@ -680,7 +680,7 @@ const BbcodeToMarkdownModal = ({ show, onHide, showNotification }) => {
               placeholder="Collez votre BBcode ici…"
               spellCheck={false}
             />
-            <div style={{ fontSize: '11px', color: '#6c757d', textAlign: 'right' }}>
+            <div style={{ fontSize: '11px', color: '#9aa7b4', textAlign: 'right' }}>
               {bbcode.length.toLocaleString()} caractères
             </div>
           </div>
@@ -697,13 +697,13 @@ const BbcodeToMarkdownModal = ({ show, onHide, showNotification }) => {
                   </span>
                 )}
               </span>
-              <span style={{ fontSize: '11px', color: '#6c757d' }}>
+              <span style={{ fontSize: '11px', color: '#9aa7b4' }}>
                 Limite : {limit.toLocaleString()} car. / message
               </span>
             </div>
 
             {/* Lien md2file */}
-            <div style={{ fontSize: '11px', color: '#6c757d', marginBottom: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#9aa7b4', marginBottom: '4px' }}>
               <i className="fas fa-file-pdf" style={{ marginRight: '5px', color: '#e05252' }}></i>
               Convertir en PDF :{' '}
               <a
@@ -721,7 +721,7 @@ const BbcodeToMarkdownModal = ({ show, onHide, showNotification }) => {
             {!markdown && (
               <div style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#6c757d', fontSize: '13px', fontStyle: 'italic',
+                color: '#9aa7b4', fontSize: '13px', fontStyle: 'italic',
               }}>
                 Le markdown apparaîtra ici…
               </div>

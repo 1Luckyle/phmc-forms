@@ -1241,7 +1241,21 @@ const EYEFIND_SECRETS = ['EYEFIND_API_KEY'];
 // Mail. Styles en ligne (pas de <style>/classe) car la plupart des clients
 // mail ignorent ou suppriment les feuilles de style externes/internes.
 const PHMC_LOGO_URL = 'https://i.imgur.com/oB47nCI.png';
-const wrapEmailHtml = (html) => `
+const PHMC_SITE_URL = 'https://1luckyle.github.io/phmc-forms/';
+
+// Les liens du contenu reçoivent la couleur du thème (le bleu par défaut des clients mail est illisible sur fond sombre).
+const styleEmailLinks = (html) => String(html).replace(/<a\s+(?![^>]*\bstyle=)/gi, '<a style="color:#58a6ff;text-decoration:underline;" ');
+
+// Mail sans corps HTML : on en fabrique un à partir du texte (paragraphes + retours à la ligne), pour que TOUS les mails
+// aient la même présentation.
+const textToEmailHtml = (text) => String(text || '')
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph.trim()).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+
+const wrapEmailHtml = (rawHtml) => {
+    const html = styleEmailLinks(rawHtml);
+    return `
 <div style="background-color:#0d1117;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background-color:#161b22;border-radius:10px;overflow:hidden;border:1px solid #30363d;">
     <tr>
@@ -1257,11 +1271,13 @@ const wrapEmailHtml = (html) => `
     <tr>
       <td style="background-color:#010409;padding:16px 32px;text-align:center;color:#6e7681;font-size:12px;border-top:1px solid #30363d;">
         Pillbox Hill Medical Center — 76 Strawberry Ave, Los Santos<br />
-        Cet email est envoyé automatiquement par l'outil PHMC-FR, merci de ne pas y répondre directement.
+        Cet email est envoyé automatiquement par l'outil PHMC-FR, merci de ne pas y répondre directement.<br />
+        <a href="${PHMC_SITE_URL}" style="display:inline-block;margin-top:8px;color:#58a6ff;text-decoration:underline;font-weight:bold;">Ouvrir l'outil PHMC-FR</a>
       </td>
     </tr>
   </table>
 </div>`;
+};
 
 // Adresse Eyefind Mail d'un joueur : convention prenomnom@mail.eyefind.fr
 // (prénom et nom concaténés, sans séparateur — ex: rosecallahan@mail.eyefind.fr).
@@ -1309,7 +1325,7 @@ const sendEyefindMailInternal = async ({ apiKey, to, subject, body, html }) => {
         // wrapEmailHtml habille automatiquement tout corps HTML fourni (logo +
         // carte stylée + pied de page) — les appelants n'ont qu'à fournir leur
         // contenu propre (quelques <p> / <b>), jamais le template complet.
-        body: JSON.stringify({ to, subject, body, ...(html ? { html: wrapEmailHtml(html) } : {}) }),
+        body: JSON.stringify({ to, subject, body, html: wrapEmailHtml(html || textToEmailHtml(body)) }),
     });
 
     const eyefindText = await eyefindResponse.text();
@@ -1773,7 +1789,7 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
 // n'est écrit que d'ici (webhook Fleeca / contrôle de statut), jamais par le navigateur.
 // facturesEnAttente/{ID patient}/{clé} : file des factures à payer, parcourue par les deux fonctions
 // planifiées (mails groupés + rappel quotidien) pour ne pas lire tout l'historique.
-const INVOICE_SITE_URL = 'https://1Luckyle.github.io/phmc-forms';
+const INVOICE_SITE_URL = PHMC_SITE_URL;
 const INVOICE_MAIL_BATCH_DELAY_MS = 5 * 60 * 1000;        // regroupement : on attend 5 min après la dernière facture
 const INVOICE_REMINDER_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000; // un rappel au plus par jour
 const INVOICE_MAIL_MAX_FAILURES = 5;

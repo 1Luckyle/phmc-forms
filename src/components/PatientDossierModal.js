@@ -71,8 +71,8 @@ const reactSelectStyles = {
     }),
     singleValue: (base) => ({ ...base, color: '#c9d1d9' }),
     input: (base) => ({ ...base, color: '#c9d1d9' }),
-    placeholder: (base) => ({ ...base, color: '#6c757d' }),
-    groupHeading: (base) => ({ ...base, color: '#6c757d', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }),
+    placeholder: (base) => ({ ...base, color: '#9aa7b4' }),
+    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }),
 };
 
 const tableStyle = { width: '100%', borderCollapse: 'collapse' };
@@ -454,7 +454,7 @@ const PatientDossierModal = ({
                                             <td style={tdStyle}>{reportCreatorOf(root) || 'N/A'}</td>
                                             <td style={tdStyle}>
                                                 {copiers.length === 0 ? (
-                                                    <span style={{ color: '#6e7681' }}>—</span>
+                                                    <span style={{ color: '#9aa7b4' }}>—</span>
                                                 ) : copiers.map((copier) => (
                                                     <span key={copier.nodeKey} style={chipStyle(copier.nodeKey === myNodeKey)}
                                                         title={copier.nodeKey === myNodeKey ? 'Vous avez une copie de ce rapport' : `${copier.name} a une copie de ce rapport`}>
@@ -467,7 +467,7 @@ const PatientDossierModal = ({
                                             <td style={tdStyle}>
                                                 {(() => {
                                                     const invoice = invoiceOf(root);
-                                                    if (!invoice) return <span style={{ color: '#6e7681' }}>—</span>;
+                                                    if (!invoice) return <span style={{ color: '#9aa7b4' }}>—</span>;
                                                     return (
                                                         <>
                                                             <InvoiceStatusBadge status={invoice.statutEffectif} />

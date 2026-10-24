@@ -188,7 +188,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
     }),
     multiValueRemove: (base) => ({
         ...base,
-        color: '#6c757d',
+        color: '#9aa7b4',
         '&:hover': {
             backgroundColor: '#dc3545',
             color: '#fff'
@@ -200,7 +200,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
     }),
     placeholder: (base) => ({
         ...base,
-        color: '#6c757d'
+        color: '#9aa7b4'
     })
 }}
 />                                

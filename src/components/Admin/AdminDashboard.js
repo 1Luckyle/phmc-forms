@@ -41,6 +41,7 @@ const LOCKDOWN_DEPLOYMENTS = [
 const DEBUG_TABS = [
     { key: 'autofill', label: 'Remplissage de test', icon: 'fa-wand-magic-sparkles' },
     { key: 'applications', label: 'Suppression de candidatures', icon: 'fa-trash-can' },
+    { key: 'bingo', label: 'Bingo : choix du joueur', icon: 'fa-dice' },
     { key: 'season', label: 'Effets de saison', icon: 'fa-snowflake' },
     { key: 'viewas', label: 'Visualiser en tant que', icon: 'fa-eye' },
 ];
@@ -153,7 +154,11 @@ const AdminDashboard = ({
     const { bbcodeEnabled } = useSiteConfig();
     const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests, cctv: counts.cctv };
 
-    const { debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled } = useDebug();
+    const {
+        debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
+        debugBingoPickerEnabled, setDebugBingoPickerEnabled,
+    } = useDebug();
+    const [isUpdatingBingoPicker, setIsUpdatingBingoPicker] = useState(false);
     const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
     const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
     const [isSeedingPhrases, setIsSeedingPhrases] = useState(false);
@@ -228,6 +233,19 @@ const AdminDashboard = ({
         } catch (error) {
             console.error('Error sending test webhook:', error);
             alert('Erreur lors de l\'envoi du webhook de test');
+        }
+    };
+
+    const handleToggleBingoPicker = async (enabled) => {
+        setIsUpdatingBingoPicker(true);
+        try {
+            await setDebugBingoPickerEnabled(enabled, currentUser?.email);
+            if (showInAppNotification) showInAppNotification(`Choix du joueur au bingo ${enabled ? 'activé (admins)' : 'désactivé'}.`, enabled ? 'check-circle' : 'info-circle');
+        } catch (error) {
+            console.error('Error updating bingo picker setting:', error);
+            alert('Impossible de modifier ce réglage : ' + (error?.message || error));
+        } finally {
+            setIsUpdatingBingoPicker(false);
         }
     };
 
@@ -416,6 +434,7 @@ const AdminDashboard = ({
             case 'activity':
                 return (
                     <ActivityLog
+                        key="activity"
                         showNotification={showInAppNotification}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
                     />
@@ -437,6 +456,7 @@ const AdminDashboard = ({
             case 'errors':
                 return (
                     <ActivityLog
+                        key="errors"
                         title="Erreurs du site"
                         icon="fa-triangle-exclamation"
                         subtitle="Erreurs rencontrées par les utilisateurs connectés : page, navigateur et pile d'appels. Les doublons sont regroupés par minute."
@@ -702,6 +722,26 @@ const AdminDashboard = ({
                                     busy={isUpdatingDeleteDebug}
                                     state={debugDeleteApplicationsEnabled ? 'ACTIVÉE' : 'désactivée'}
                                     stateTone={debugDeleteApplicationsEnabled ? 'warn' : 'ok'}
+                                />
+                            </>
+                        )}
+
+                        {debugTab === 'bingo' && (
+                            <>
+                                <p className="text-muted">
+                                    Au bingo, chacun joue avec <strong>son propre compte</strong> : son nom est sélectionné automatiquement. Quand cet interrupteur
+                                    est activé, les <strong>administrateurs</strong> (et eux seuls) retrouvent le menu pour jouer à la place de n'importe qui, par
+                                    exemple pour tester une carte. Les autres joueurs ne voient aucun changement.
+                                </p>
+                                <SwitchRow
+                                    id="debugBingoPickerSwitch"
+                                    checked={debugBingoPickerEnabled}
+                                    disabled={isUpdatingBingoPicker}
+                                    onChange={handleToggleBingoPicker}
+                                    label="Autoriser les admins à choisir le joueur"
+                                    busy={isUpdatingBingoPicker}
+                                    state={debugBingoPickerEnabled ? 'ACTIVÉ' : 'désactivé'}
+                                    stateTone={debugBingoPickerEnabled ? 'warn' : 'ok'}
                                 />
                             </>
                         )}

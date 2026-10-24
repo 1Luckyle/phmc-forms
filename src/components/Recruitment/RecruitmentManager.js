@@ -29,6 +29,7 @@ import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../.
 import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
+import InternalRecruitmentManager from './InternalRecruitmentManager';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -51,6 +52,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
     const actorEmail = currentEmployee?.email || 'Inconnu';
 
     const [tab, setTab] = useState('positions');
+    const [pendingInternal, setPendingInternal] = useState(0);
     const [category, setCategory] = useState('');
     const [positions, setPositions] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -176,6 +178,12 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                     <Nav.Item><Nav.Link eventKey="positions"><i className="fas fa-briefcase me-2"></i>Postes</Nav.Link></Nav.Item>
                     <Nav.Item><Nav.Link eventKey="applications"><i className="fas fa-file-signature me-2"></i>Candidatures</Nav.Link></Nav.Item>
                     <Nav.Item><Nav.Link eventKey="contracts"><i className="fas fa-file-contract me-2"></i>Contrats</Nav.Link></Nav.Item>
+                    <Nav.Item>
+                        <Nav.Link eventKey="internal">
+                            <i className="fas fa-user-clock me-2"></i>Évolutions internes
+                            {pendingInternal > 0 && <span className="badge bg-warning text-dark ms-2">{pendingInternal}</span>}
+                        </Nav.Link>
+                    </Nav.Item>
                 </Nav>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
@@ -273,6 +281,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
 
                     {tab === 'applications' && <PendingJobApplications showNotification={showNotification} />}
                     {tab === 'contracts' && <ContractsManager showNotification={showNotification} />}
+                    {tab === 'internal' && <InternalRecruitmentManager showNotification={showNotification} onCountChange={setPendingInternal} />}
                 </div>
 
                 {config && (

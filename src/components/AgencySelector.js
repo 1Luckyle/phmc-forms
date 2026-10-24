@@ -273,14 +273,14 @@ const AgencySelector = ({
                             </div>
                         )}
                         {formSpecificButtonProps.openPositions.length === 0 && formSpecificButtonProps.closedPositions.length === 0 && (
-                            <div style={{...positionStatusListStyle, textAlign: 'center', color: '#6c757d'}}>
+                            <div style={{...positionStatusListStyle, textAlign: 'center', color: '#9aa7b4'}}>
                                 Aucun poste listé.
                             </div>
                         )}
                     </>
                 )}
                 {formSpecificButtonProps.isRecruitmentForm && !formSpecificButtonProps.statusKnown && (
-                    <div style={{...positionStatusListStyle, textAlign: 'center', color: '#6c757d'}}>
+                    <div style={{...positionStatusListStyle, textAlign: 'center', color: '#9aa7b4'}}>
                         {/* Status is unknown, text already updated by helper */}
                     </div>
                 )}

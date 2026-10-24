@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, ListGroup, Spinner } from 'react-bootstrap';
 import { database } from '../../firebase';
+import '../EmsBingoModal.css';
 import { ref, get, update, set, remove } from 'firebase/database'; // Import remove
 import * as Sentry from "@sentry/react";
 

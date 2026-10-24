@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { database } from '../../firebase';
 import { ref, get, set } from 'firebase/database';
+import '../EmsBingoModal.css';
 import * as Sentry from "@sentry/react";
 
 const EditBingoPhrasesModal = ({ show, onHide, showNotification, commitInfo, sendAdminActionWebhook, adminUserEmail, bingoType }) => {

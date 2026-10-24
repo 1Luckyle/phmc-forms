@@ -130,7 +130,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
         <>
             <div className="image-preview-container" style={{ marginTop: '10px' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85em', color: '#6c757d', marginRight: '8px' }}>
+                    <span style={{ fontSize: '0.85em', color: '#9aa7b4', marginRight: '8px' }}>
                         Aperçu de l'image{previewUrls.length > 1 ? `s (${previewUrls.length})` : ''}:
                     </span>
                     {previewUrls.slice(0, 3).map((url, index) => (
@@ -181,7 +181,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                                 onClick={() => handleImageClick(url)}
                                 onError={(e) => {
                                     e.target.style.display = 'none';
-                                    e.target.parentNode.innerHTML = '<i class="fas fa-image" style="color: #6c757d;"></i>';
+                                    e.target.parentNode.innerHTML = '<i class="fas fa-image" style="color: #9aa7b4;"></i>';
                                 }}
                             />
                             {onImageRemove && (
@@ -223,7 +223,7 @@ const ImagePreview = ({ imageUrls, showPreviews = true, onImageRemove = null }) 
                         <div 
                             style={{
                                 fontSize: '0.8em',
-                                color: '#6c757d',
+                                color: '#9aa7b4',
                                 padding: '4px 8px',
                                 backgroundColor: '#21262d',
                                 borderRadius: '4px',
