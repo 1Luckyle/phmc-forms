@@ -732,39 +732,40 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
             db.ref('civilians').once('value'),
         ]);
 
+        // Personnages du compte GTA World authentifié (renvoyés par l'UCP pour ce code d'autorisation).
+        const ownedIds = new Set((userData?.user?.character || []).map((c) => String(c.id)));
+
+        // Une fiche appartient à ce compte GTA World : par personnage précis si le client le fournit, sinon par gtawUserId
+        // ou par l'un des personnages réellement renvoyés par l'UCP.
         const matchesIdentity = (e) => {
-            if (!e) return false;
+            if (!e || !e.uid) return false;
             if (gtawCharacterId != null) {
                 return e.gtawCharacterId != null && String(e.gtawCharacterId) === String(gtawCharacterId);
             }
-            return e.gtawUserId != null && String(e.gtawUserId) === String(gtawUserId);
-        };
-
-        const phmcMatch = toArray(phmcSnap.val()).find(matchesIdentity);
-        const coronerMatch = !phmcMatch ? toArray(coronerSnap.val()).find(matchesIdentity) : null;
-        const match = phmcMatch || coronerMatch;
-
-        // Comptes Civils (recruteurs compris) de ce compte GTAW : par personnage précis si le client le
-        // fournit, sinon par gtawUserId ou par l'un des personnages réellement renvoyés par l'UCP.
-        const ownedIds = new Set((userData?.user?.character || []).map((c) => String(c.id)));
-        const civilMatches = toArray(civiliansSnap.val()).filter((e) => {
-            if (!e || !e.uid) return false;
-            if (gtawCharacterId != null) return e.gtawCharacterId != null && String(e.gtawCharacterId) === String(gtawCharacterId);
             return (e.gtawUserId != null && String(e.gtawUserId) === String(gtawUserId))
                 || (e.gtawCharacterId != null && ownedIds.has(String(e.gtawCharacterId)));
-        });
+        };
+
+        // TOUTES les fiches du personnel (PHMC et DMEC) de ce compte : un joueur peut avoir plusieurs personnages employés
+        // (par exemple deux médecins) ; il choisit ensuite lequel utiliser.
+        const phmcMatches = toArray(phmcSnap.val()).filter(matchesIdentity);
+        const coronerMatches = toArray(coronerSnap.val()).filter(matchesIdentity);
+        const phmcMatch = phmcMatches[0] || null;
+        const match = phmcMatch || coronerMatches[0] || null;
+
+        // Comptes Civils (recruteurs compris) de ce compte GTAW.
+        const civilMatches = toArray(civiliansSnap.val()).filter(matchesIdentity);
 
         // Candidats dédoublonnés par uid (un Civil converti en Personnel garde le même uid).
         const candidates = [];
-        const pushCandidate = (uid, accountType, label) => {
-            if (uid && !candidates.some((c) => c.uid === uid)) candidates.push({ uid, accountType, label });
+        const pushCandidate = (uid, accountType, label, detail) => {
+            if (uid && !candidates.some((c) => c.uid === uid)) candidates.push({ uid, accountType, label, detail });
         };
-        if (match) {
-            pushCandidate(match.uid, phmcMatch ? 'phmc' : 'coroner',
-                match.name || [match.firstName, match.lastName].filter(Boolean).join(' '));
-        }
+        const staffLabel = (member) => member.name || [member.firstName, member.lastName].filter(Boolean).join(' ');
+        phmcMatches.forEach((member) => pushCandidate(member.uid, 'phmc', staffLabel(member), member.rank || member.category || ''));
+        coronerMatches.forEach((member) => pushCandidate(member.uid, 'coroner', staffLabel(member), member.rank || member.category || ''));
         for (const civil of civilMatches) {
-            pushCandidate(civil.uid, 'civilian', [civil.firstName, civil.lastName].filter(Boolean).join(' ') || civil.email || '');
+            pushCandidate(civil.uid, 'civilian', [civil.firstName, civil.lastName].filter(Boolean).join(' ') || civil.email || '', '');
         }
 
         if (candidates.length > 1) {
@@ -774,7 +775,7 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
             const choices = [];
             for (const candidate of candidates) {
                 const token = await admin.auth().createCustomToken(candidate.uid, { gtawLogin: true });
-                choices.push({ customToken: token, accountType: candidate.accountType, label: candidate.label });
+                choices.push({ customToken: token, accountType: candidate.accountType, label: candidate.label, detail: candidate.detail || '' });
             }
             res.status(200).json({ choices });
             return;

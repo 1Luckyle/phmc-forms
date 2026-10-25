@@ -5,7 +5,7 @@ import Select from 'react-select';
 import { formDefinitions } from '../formDefinitions';
 import { useWebhooks } from '../hooks/useWebhooks';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS, getRoleInfo } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import * as Sentry from "@sentry/react";
 import { sendPasswordResetEmail, signInWithCustomToken } from 'firebase/auth';
@@ -87,6 +87,17 @@ const isPhmcStaffType = (type) => type === USER_TYPES.PHMC_STAFF || type === USE
 // Utility function to ensure a value is an array
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
 
+// Formulaire ouvert par défaut d'après le grade du compte (consultation générale si le grade est inconnu).
+const defaultFormForRank = (rank) => {
+    const info = getRoleInfo(rank);
+    if (!info) return 20;
+    if (info.value === 'Psychiatre' || info.value === 'Psychologue') return 14;  // consultation psychiatrique
+    if (info.filiere === 'Paramédical') return 19;                                // protocole d'urgence
+    if (info.filiere === 'Infirmier') return 6;                                   // évaluation physique
+    if (info.filiere === 'Médecine') return 5;                                    // opération chirurgicale
+    return 20;                                                                     // consultation générale
+};
+
 // Grades du PHMC proposés selon le type de personnel (le DMEC a sa propre liste).
 const phmcRanksFor = (type) => (type === USER_TYPES.ADMIN_STAFF
     ? PHMC_RANKS.filter((rank) => rank.pole !== 'soignant')
@@ -147,6 +158,8 @@ const OnboardingModal = ({
     const [gtawResolutions, setGtawResolutions] = useState({});
     const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
     const [gtawUserId, setGtawUserId] = useState(null);
+    // Compte GTA World lié à plusieurs comptes (ex. deux médecins, ou un médecin et un civil) : liste à choisir après la connexion.
+    const [loginChoices, setLoginChoices] = useState(null);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -157,6 +170,42 @@ const OnboardingModal = ({
             // rouvre directement sur la sélection du personnage plutôt que de tout
             // réinitialiser à l'écran de bienvenue.
             let resumedFromGtaw = false;
+            try {
+                const loginRaw = sessionStorage.getItem('gtaw-onboarding-login');
+                if (loginRaw) {
+                    sessionStorage.removeItem('gtaw-onboarding-login');
+                    const pendingLogin = JSON.parse(loginRaw);
+                    const resultRaw = sessionStorage.getItem('gtaw-login-result');
+                    sessionStorage.removeItem('gtaw-login-result');
+                    const result = resultRaw ? JSON.parse(resultRaw) : null;
+                    resumedFromGtaw = true;
+                    setSelectedUserType(pendingLogin.userType || null);
+                    setSelectedRole(null);
+                    setShowAccountCreation(false);
+                    setAccountCreationMethod(null);
+                    setLoginChoices(null);
+                    if (result?.choices) {
+                        setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
+                        setShowLogin(true);
+                        setLoginChoices(result.choices);
+                    } else if (result?.notLinked) {
+                        setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
+                        setShowAccountCreation(true);
+                        showNotification('Aucun compte n\'est lié à ce personnage GTA World : créez-le ici.', 'info-circle', 9000);
+                    } else if (result?.error) {
+                        setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
+                        setShowLogin(true);
+                        showNotification(`Échec de la connexion avec GTA World : ${result.error}`, 'error');
+                    } else {
+                        // Connexion réussie (GtaCallback a déjà ouvert la session) : on continue le guide.
+                        setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+                        setLoggedIn(true);
+                        showNotification('Connecté avec succès !', 'success');
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to resume GTA World login state:', err);
+            }
             try {
                 const pendingRaw = sessionStorage.getItem('gtaw-onboarding-pending');
                 const resultRaw = sessionStorage.getItem('gtaw-onboarding-result');
@@ -352,11 +401,7 @@ const OnboardingModal = ({
         } else if (selectedUserType === USER_TYPES.ADMIN_STAFF) {
             defaultForm = 27; // PHMC Email Interne
         } else if (selectedUserType === USER_TYPES.PHMC_STAFF) {
-            defaultForm = selectedRole === 'physician' ? 5 : // Surgical Ops for physicians
-                         selectedRole === 'nurse' ? 6 : // Physical Evaluation for nurses
-                         selectedRole === 'ems' ? 19 : // ER Protocol for EMS
-                         selectedRole === 'psych' ? 14 : // Mental Health for psych
-                         20; // General Consultation for others
+            defaultForm = defaultFormForRank(loggedInUser?.rank || loggedInUser?.category);
         } else if (selectedUserType === USER_TYPES.CORONER) {
             defaultForm = 1; // Forensic Services
         } else if (selectedUserType === USER_TYPES.RECRUITMENT) {
@@ -804,6 +849,8 @@ const OnboardingModal = ({
 
     const handleGtawEmployeeLogin = () => {
         try {
+            // Sans cette marque, le retour de GTA World rouvrait le guide au début, sans montrer que la connexion avait réussi.
+            sessionStorage.setItem('gtaw-onboarding-login', JSON.stringify({ userType: selectedUserType }));
             window.location.href = buildGtawAuthUrl({ type: 'employee-login' });
         } catch (err) {
             console.error('Failed to start GTA World login:', err);
@@ -1113,7 +1160,58 @@ const OnboardingModal = ({
         </div>
     );
 
+    const handleChooseLoginAccount = async (choice) => {
+        try {
+            await signInWithCustomToken(auth, choice.customToken);
+            setLoginChoices(null);
+            setLoggedIn(true);
+            showNotification('Connecté avec succès !', 'success');
+            setTimeout(() => setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW), 1200);
+        } catch (error) {
+            console.error('Connexion au compte choisi impossible :', error);
+            setLoginChoices(null);
+            showNotification('Connexion impossible : le lien a expiré, recommencez avec GTA World.', 'error');
+        }
+    };
+
+    const renderLoginChoices = () => (
+        <div style={stepContentStyle}>
+            <h2 style={stepTitleStyle}>Quel compte utiliser ?</h2>
+            <p style={stepDescriptionStyle}>
+                Plusieurs comptes sont liés à votre compte GTA World. Choisissez celui avec lequel vous connecter :
+            </p>
+            <div style={accountFormStyle}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {loginChoices.map((choice, index) => (
+                        <button
+                            type="button"
+                            key={index}
+                            onClick={() => handleChooseLoginAccount(choice)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#2a2a2a',
+                                border: `1px solid ${choice.accountType === 'civilian' ? '#2e7d32' : '#007bff'}`,
+                                borderRadius: '8px', padding: '14px', color: '#fff', cursor: 'pointer', textAlign: 'left'
+                            }}
+                        >
+                            <i className={`fas ${choice.accountType === 'civilian' ? 'fa-id-card' : 'fa-user-md'}`} style={{ fontSize: '1.3rem' }}></i>
+                            <span>
+                                <strong style={{ display: 'block' }}>{choice.label || 'Compte'}</strong>
+                                <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                    {choice.accountType === 'civilian' ? 'Civil' : (choice.accountType === 'coroner' ? 'Personnel DMEC' : 'Personnel PHMC')}{choice.detail ? ` · ${choice.detail}` : ''}
+                                </span>
+                            </span>
+                        </button>
+                    ))}
+                </div>
+                <div style={accountActionsStyle}>
+                    <Button variant="outline-secondary" onClick={() => setLoginChoices(null)} style={skipAccountButtonStyle}>Retour</Button>
+                </div>
+            </div>
+        </div>
+    );
+
     const renderRoleSpecificStep = () => {
+        if (loginChoices) return renderLoginChoices();
         if (isPhmcStaffType(selectedUserType)) {
             if (showAccountCreation && !accountCreationMethod) {
                 return renderAccountCreationChoice(false);
@@ -1415,26 +1513,20 @@ const OnboardingModal = ({
 
             return (
                 <div style={stepContentStyle}>
-                    <h2 style={stepTitleStyle}>Quel est votre rôle principal au sein de PHMC ?</h2>
+                    <h2 style={stepTitleStyle}>
+                        {selectedUserType === USER_TYPES.ADMIN_STAFF ? 'Le personnel administratif et les employés du PHMC' : 'Le personnel soignant du PHMC'}
+                    </h2>
                     <p style={stepDescriptionStyle}>
-                        Cela nous aide à vous montrer les formulaires les plus pertinents pour votre département :
+                        Votre grade est celui de votre compte : vous le renseignez à la création, ou il est repris de votre compte existant.
+                        Voici ce que couvre cette catégorie :
                     </p>
                     <div style={roleGridStyle}>
                         {(selectedUserType === USER_TYPES.ADMIN_STAFF ? ADMIN_ROLE_CHOICES : CARE_ROLE_CHOICES).map(role => (
-                            <button
-                                key={role.id}
-                                style={{
-                                    ...roleButtonStyle,
-                                    ...(selectedRole === role.id ? selectedButtonStyle : {}),
-                                    backgroundColor: selectedRole === role.id ? '#1a3a5c' : '#2a2a2a',
-                                    borderColor: selectedRole === role.id ? '#007bff' : '#444'
-                                }}
-                                onClick={() => setSelectedRole(role.id)}
-                            >
+                            <div key={role.id} style={roleInfoCardStyle}>
                                 <i className={role.icon} style={roleIconStyle}></i>
                                 <h5 style={roleButtonTitleStyle}>{role.title}</h5>
                                 <p style={roleButtonDescStyle}>{role.desc}</p>
-                            </button>
+                            </div>
                         ))}
                     </div>
                     <div style={accountPromptStyle}>
@@ -2280,19 +2372,15 @@ const roleGridStyle = {
     margin: '0 auto'
 };
 
-const roleButtonStyle = {
+// Carte d'information (non cliquable) d'une famille de rôles.
+const roleInfoCardStyle = {
     background: '#2a2a2a',
-    border: '2px solid #444',
+    border: '1px solid #3a3a3a',
     borderRadius: '8px',
     padding: '15px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
     textAlign: 'center',
     color: '#fff',
-    '&:hover': {
-        borderColor: '#666',
-        backgroundColor: '#333'
-    }
+    cursor: 'default'
 };
 
 const roleIconStyle = {

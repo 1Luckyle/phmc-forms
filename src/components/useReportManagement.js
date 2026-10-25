@@ -16,6 +16,7 @@ import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import { logActivity } from '../utils/activityLog';
 import { isCareStaff } from '../hooks/useBillingRole';
 import { isBillableVersion } from '../utils/patientBilling';
+import { getFormAccess } from '../utils/formAccess';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
@@ -169,6 +170,13 @@ export const useReportManagement = (
         // Le personnel n'enregistre pas de candidature : seul un compte Civil le peut (garde isCivilian plus haut).
         if (getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !isCivilian) {
             return { success: false, error: 'PHMC Recruitment forms cannot be saved to Firebase.' };
+        }
+        // Un membre du DMEC n'enregistre pas de rapport médical de soins, ni un soignant de rapport de médecine légale :
+        // les formulaires sont filtrés à l'écran, et l'enregistrement le revérifie.
+        if (!getFormAccess({ isAdmin, isCivilian, staffProfile }).canAccess(bbCodeVersion)) {
+            const message = 'Votre rôle ne donne pas accès à ce formulaire : il ne peut pas être enregistré.';
+            showNotification(message, 'exclamation-circle', 7000);
+            return { success: false, error: message };
         }
         if (isBillableVersion(bbCodeVersion) && staffProfile && !isAdmin && !isCivilian && !isCareStaff(staffProfile)
             && normalizePatientId(formData.patientID) !== normalizePatientId(myPatientID)) {

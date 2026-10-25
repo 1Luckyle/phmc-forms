@@ -202,7 +202,7 @@ function MainApp({
         // Présent si l'utilisateur vient de lancer une connexion GTA World depuis la
         // création de compte (OnboardingModal) et revient d'une redirection OAuth :
         // il faut rouvrir l'onboarding même si elle avait déjà été complétée avant.
-        const gtawOnboardingPending = sessionStorage.getItem('gtaw-onboarding-pending');
+        const gtawOnboardingPending = sessionStorage.getItem('gtaw-onboarding-pending') || sessionStorage.getItem('gtaw-onboarding-login');
 
         if (userPreferences) {
             try {
@@ -230,7 +230,8 @@ function MainApp({
     // dès que employeeProfile se charge.
     useEffect(() => {
         try {
-            const resultRaw = sessionStorage.getItem('gtaw-login-result');
+            // Connexion lancée depuis le guide de configuration : son résultat est lu par le guide (OnboardingModal).
+            const resultRaw = sessionStorage.getItem('gtaw-onboarding-login') ? null : sessionStorage.getItem('gtaw-login-result');
             if (resultRaw) {
                 sessionStorage.removeItem('gtaw-login-result');
                 const result = JSON.parse(resultRaw);
@@ -2256,7 +2257,7 @@ function MainApp({
                                             <span>
                                                 <strong style={{ display: 'block' }}>{choice.label || 'Compte'}</strong>
                                                 <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                                                    {choice.accountType === 'civilian' ? 'Civil' : (choice.accountType === 'coroner' ? 'Personnel DMEC' : 'Personnel PHMC')}
+                                                    {choice.accountType === 'civilian' ? 'Civil' : (choice.accountType === 'coroner' ? 'Personnel DMEC' : 'Personnel PHMC')}{choice.detail ? ` · ${choice.detail}` : ''}
                                                 </span>
                                             </span>
                                         </button>
