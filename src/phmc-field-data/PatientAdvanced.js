@@ -6,6 +6,8 @@ import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
 import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
+import { getPrice, usePrices } from '../utils/pricing';
+import useBillingRole from '../hooks/useBillingRole';
 // Helper component for collapsible section headers - Copied from Nursing.js
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     <Button
@@ -53,6 +55,7 @@ const PatientAdvanced = ({
     financialStatus,
     selectOptions
 }) => {
+    usePrices(); // se redessine si un admin change les tarifs
     const [isGeneralInfoOpen, setIsGeneralInfoOpen] = useState(true);
     const [isContactInfoOpen, setIsContactInfoOpen] = useState(true);
     const [isMentalHealthOpen, setIsMentalHealthOpen] = useState(true);
@@ -69,7 +72,7 @@ const [activeSection, setActiveSection] = useState('general-info');
         // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
         // pas avoir lieu.
         const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
-        const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
+        const { filledByStaff } = useBillingRole(formData, setFormData);
         // Répercuté dans formData car le générateur BBCode (fonction pure, sans
         // accès au contexte React) en a besoin pour afficher le bon texte.
         useEffect(() => {
@@ -96,10 +99,7 @@ const [activeSection, setActiveSection] = useState('general-info');
         const isExempt = formData.isExempt === true || formData.isExempt === 'true';
         const calculateCost = () => {
             if (isExempt) return 0;
-            if (formData.UpdateMedicalFile && formData.UpdateMedicalFile.length > 0) {
-                return 2000;
-            }
-            return 2000;
+            return getPrice('dossierAvance');
         };
         const approximateCost = calculateCost();
 

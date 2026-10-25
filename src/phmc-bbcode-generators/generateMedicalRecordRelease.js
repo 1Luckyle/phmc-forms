@@ -1,4 +1,5 @@
 import { staffPaymentLine } from '../utils/patientBilling';
+import { getPrice } from '../utils/pricing';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs
@@ -34,7 +35,7 @@ const generateMedicalRecordRelease = (formData) => {
         if (selectedCount === 0) {
             return 0;
         }
-        const costPerItem = 5000;
+        const costPerItem = getPrice('divulgationParElement');
         return selectedCount * costPerItem;
     };
     const approximateCost = calculateCost();

@@ -5,6 +5,8 @@ import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
 import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
+import { getPrice, usePrices } from '../utils/pricing';
+import useBillingRole from '../hooks/useBillingRole';
 
 const MedicalRelease = ({
     formData,
@@ -18,13 +20,14 @@ const MedicalRelease = ({
     phmcGroupedOptions,
 
 }) => {
+    usePrices(); // se redessine si un admin change les tarifs
 
     const calculateCost = () => {
         const selectedCount = formData.MedicalRecordsRelease?.length || 0;
         if (selectedCount === 0) {
             return 0;
         }
-        const costPerItem = 5000;
+        const costPerItem = getPrice('divulgationParElement');
         return selectedCount * costPerItem;
     };
     const approximateCost = calculateCost();
@@ -34,7 +37,7 @@ const MedicalRelease = ({
     // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
     // pas avoir lieu.
     const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
-    const filledByStaff = isAdmin || !!(currentEmployee && employeeProfile);
+    const { filledByStaff } = useBillingRole(formData, setFormData);
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {

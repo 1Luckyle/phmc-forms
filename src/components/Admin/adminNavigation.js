@@ -87,6 +87,11 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'maintenance verrouillage blocage',
             },
             {
+                key: 'pricing', icon: 'fa-coins', label: 'Tarifs des formulaires',
+                description: "Les montants demandés aux patients et aux demandeurs (dossiers médicaux, divulgation, frais d'autopsie…).",
+                keywords: 'prix tarif coût montant argent paiement fleeca facture dossier médical autopsie dollars',
+            },
+            {
                 key: 'display', icon: 'fa-sliders', label: 'Affichage & BBCode',
                 description: "Réglages d'affichage communs à tous : accès au BBCode ou HTML et aperçu seulement.",
                 keywords: 'bbcode html aperçu copie convertisseur',

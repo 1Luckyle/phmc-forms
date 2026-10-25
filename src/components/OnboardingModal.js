@@ -15,6 +15,7 @@ import { useAuthMethodsConfig } from '../hooks/useAuthMethodsConfig';
 import GtawCharacterPicker from './Auth/GtawCharacterPicker';
 import CivilianAuthPanel from './Auth/CivilianAuthPanel';
 import DebugFillButton from './DebugFillButton';
+import PrivacyPolicyContent from './PrivacyPolicyContent';
 
 // Step definitions for the onboarding flow
 export const ONBOARDING_STEPS = {
@@ -33,32 +34,63 @@ export const ONBOARDING_STEPS = {
 // User type categories
 export const USER_TYPES = {
     CIVILIAN: 'civilian',
-    PHMC_STAFF: 'phmcStaff',
+    PHMC_STAFF: 'phmcStaff',      // Personnel SOIGNANT du PHMC
+    ADMIN_STAFF: 'adminStaff',    // Personnel administratif / employé du PHMC (direction, administration, polyvalent)
     CORONER: 'coroner',
     RECRUITMENT: 'recruitment',
-    OTHER: 'other'
+    OTHER: 'other' // ancien type « Autre/Multiple » : plus proposé, mais les préférences déjà enregistrées le gardent
 };
 
 // Form categories for each user type
 const FORM_CATEGORIES = {
     [USER_TYPES.CIVILIAN]: ['PHMC'],
     [USER_TYPES.PHMC_STAFF]: ['PHMC'],
+    [USER_TYPES.ADMIN_STAFF]: ['PHMC'],
     [USER_TYPES.CORONER]: ['PHMC'],
-    [USER_TYPES.RECRUITMENT]: ['PHMC Recruitment'],
+    // Un candidat crée un compte Civil : il a aussi les dossiers médicaux civils (groupe « PHMC »).
+    [USER_TYPES.RECRUITMENT]: ['PHMC', 'PHMC Recruitment'],
     [USER_TYPES.OTHER]: ['PHMC', 'PHMC Recruitment']
 };
 
 // Recommended forms for each user type
+const CIVIL_MEDICAL_FORMS = [24, 25, 3, 26]; // Libération médicale, dossier basique, dossier avancé, mise à jour du dossier
 const RECOMMENDED_FORMS = {
-    [USER_TYPES.CIVILIAN]: [24, 25, 3, 26], // Medical Release, Basic Patient File, Advanced Patient File
-    [USER_TYPES.PHMC_STAFF]: [ 5, 6, 14, 19, 20, 22, 27], // Forensic Services, Surgical Ops, Physical Eval, ER Protocol, General Consultation
-    [USER_TYPES.CORONER]: [1, 2, 4, 8, 11, 37, 27], // Forensic Services, Coroner Email, Autopsy, Certificate, Mass Fatality
-    [USER_TYPES.RECRUITMENT]: [50, 51, 52, 53, 54, 55], // All recruitment forms
+    [USER_TYPES.CIVILIAN]: CIVIL_MEDICAL_FORMS,
+    // Soignant : consultations et rapports (dont certificat de maladie et évaluation psychologique) + dossiers civils.
+    [USER_TYPES.PHMC_STAFF]: [5, 6, 14, 19, 20, 28, 35, 22, 27, ...CIVIL_MEDICAL_FORMS],
+    // Administratif / employé : note de service, e-mail interne + ses propres dossiers médicaux.
+    [USER_TYPES.ADMIN_STAFF]: [22, 27, ...CIVIL_MEDICAL_FORMS],
+    // DMEC : médecine légale + e-mail interne + ses propres dossiers médicaux.
+    [USER_TYPES.CORONER]: [1, 2, 4, 8, 11, 37, 27, ...CIVIL_MEDICAL_FORMS],
+    // Candidat : toutes les candidatures + les dossiers civils (son compte Civil les ouvre).
+    [USER_TYPES.RECRUITMENT]: [50, 51, 52, 53, 54, 55, ...CIVIL_MEDICAL_FORMS],
     [USER_TYPES.OTHER]: 'ALL_FORMS' // Show all available forms
 };
 
+// Rôles proposés à l'étape « rôle principal » selon le type de personnel.
+const CARE_ROLE_CHOICES = [
+    { id: 'physician', icon: 'fas fa-stethoscope', title: 'Médecin', desc: 'Chirurgien, médecin, docteur junior, interne' },
+    { id: 'nurse', icon: 'fas fa-user-nurse', title: 'Infirmier', desc: 'Infirmier(ère), pratique avancée, aide-soignant(e)' },
+    { id: 'ems', icon: 'fas fa-ambulance', title: 'Paramédical (EMS)', desc: 'Paramedic, technicien ambulancier' },
+    { id: 'psych', icon: 'fas fa-brain', title: 'Santé mentale', desc: 'Psychiatre, psychologue' },
+    { id: 'other', icon: 'fas fa-ellipsis-h', title: 'Autre soignant', desc: 'Pharmacien, kinésithérapeute, dentiste…' },
+];
+const ADMIN_ROLE_CHOICES = [
+    { id: 'direction', icon: 'fas fa-user-tie', title: 'Direction', desc: 'Directeur(trice), assistant(e) de direction' },
+    { id: 'admin', icon: 'fas fa-clipboard-list', title: 'Administration', desc: 'Personnel administratif, recrutement' },
+    { id: 'polyvalent', icon: 'fas fa-people-carry-box', title: 'Personnel polyvalent', desc: 'Agent de maîtrise, personnel non soignant' },
+];
+
+// Personnel du PHMC (soignant ou administratif) : même parcours de compte, rôles et formulaires différents.
+const isPhmcStaffType = (type) => type === USER_TYPES.PHMC_STAFF || type === USER_TYPES.ADMIN_STAFF;
+
 // Utility function to ensure a value is an array
 const ensureArray = (v) => (Array.isArray(v) ? v : v ? Object.values(v) : []);
+
+// Grades du PHMC proposés selon le type de personnel (le DMEC a sa propre liste).
+const phmcRanksFor = (type) => (type === USER_TYPES.ADMIN_STAFF
+    ? PHMC_RANKS.filter((rank) => rank.pole !== 'soignant')
+    : PHMC_RANKS.filter((rank) => rank.pole === 'soignant'));
 
 const OnboardingModal = ({
     show,
@@ -78,7 +110,7 @@ const OnboardingModal = ({
 }) => {
     // Initialize webhook functions
     const { logWebhookToFirebase } = useWebhooks({}, { sha: 'onboarding' }, showNotification);
-    const { requestEmployeeAccount, loginEmployee, employeeProfile } = useEmployeeAuth();
+    const { requestEmployeeAccount, loginEmployee, employeeProfile, currentEmployee } = useEmployeeAuth();
     const { gtawOnly } = useAuthMethodsConfig();
     const [currentStep, setCurrentStep] = useState(ONBOARDING_STEPS.WELCOME);
     const [selectedUserType, setSelectedUserType] = useState(null);
@@ -250,7 +282,7 @@ const OnboardingModal = ({
                 setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
                 break;
             case ONBOARDING_STEPS.USER_TYPE:
-                if (selectedUserType === USER_TYPES.PHMC_STAFF || selectedUserType === USER_TYPES.CORONER) {
+                if (isPhmcStaffType(selectedUserType) || selectedUserType === USER_TYPES.CORONER) {
                     setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
                 } else if (selectedUserType === USER_TYPES.CIVILIAN || selectedUserType === USER_TYPES.RECRUITMENT) {
                     setCurrentStep(ONBOARDING_STEPS.CIVIL_AUTH);
@@ -290,7 +322,7 @@ const OnboardingModal = ({
                 setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
                 break;
             case ONBOARDING_STEPS.FORM_PREVIEW:
-                if (selectedUserType === USER_TYPES.PHMC_STAFF || selectedUserType === USER_TYPES.CORONER) {
+                if (isPhmcStaffType(selectedUserType) || selectedUserType === USER_TYPES.CORONER) {
                     setCurrentStep(ONBOARDING_STEPS.ROLE_SPECIFIC);
                 } else if (selectedUserType === USER_TYPES.CIVILIAN || selectedUserType === USER_TYPES.RECRUITMENT) {
                     setCurrentStep(ONBOARDING_STEPS.CIVIL_AUTH);
@@ -317,6 +349,8 @@ const OnboardingModal = ({
         let defaultForm = 1; // Default fallback
         if (selectedUserType === USER_TYPES.CIVILIAN) {
             defaultForm = 24; // Medical Release Form
+        } else if (selectedUserType === USER_TYPES.ADMIN_STAFF) {
+            defaultForm = 27; // PHMC Email Interne
         } else if (selectedUserType === USER_TYPES.PHMC_STAFF) {
             defaultForm = selectedRole === 'physician' ? 5 : // Surgical Ops for physicians
                          selectedRole === 'nurse' ? 6 : // Physical Evaluation for nurses
@@ -425,7 +459,7 @@ const OnboardingModal = ({
     const handleDebugFillAccount = () => {
         const isCoroner = selectedUserType === USER_TYPES.CORONER;
         const isGtawAccount = accountCreationMethod === 'gtaw' && !!selectedGtawCharacter;
-        const rank = (isCoroner ? CORONER_RANKS : PHMC_RANKS)[0].value;
+        const rank = (isCoroner ? CORONER_RANKS : phmcRanksFor(selectedUserType))[0].value;
         setAccountData(prev => ({
             ...prev,
             firstName: isGtawAccount ? prev.firstName : 'Testeur',
@@ -562,7 +596,7 @@ const OnboardingModal = ({
             }
 
             // Construire le badge complet avec préfixe
-            const rankList = isCoroner ? CORONER_RANKS : PHMC_RANKS;
+            const rankList = isCoroner ? CORONER_RANKS : phmcRanksFor(selectedUserType);
             const selectedRankData = rankList.find(r => r.value === accountData.rank);
             const badgePrefix = selectedRankData?.badgePrefix || (isCoroner ? 'CO' : 'MD');
             const fullBadge = `${badgePrefix}-${accountData.badge}`;
@@ -821,7 +855,7 @@ const OnboardingModal = ({
         // traverse jamais les deux — donc on normalise l'un vers l'autre avant
         // de chercher l'index plutôt que de dupliquer le tableau des étapes.
         const hasExtraStep = [
-            USER_TYPES.PHMC_STAFF, USER_TYPES.CORONER, USER_TYPES.CIVILIAN, USER_TYPES.RECRUITMENT
+            USER_TYPES.PHMC_STAFF, USER_TYPES.ADMIN_STAFF, USER_TYPES.CORONER, USER_TYPES.CIVILIAN, USER_TYPES.RECRUITMENT
         ].includes(selectedUserType);
         const steps = [ONBOARDING_STEPS.WELCOME, ONBOARDING_STEPS.USER_TYPE, ONBOARDING_STEPS.ROLE_SPECIFIC, ONBOARDING_STEPS.FORM_PREVIEW, ONBOARDING_STEPS.PRIVACY_POLICY, ONBOARDING_STEPS.COMPLETE];
         const totalSteps = hasExtraStep ? 6 : 5;
@@ -915,9 +949,25 @@ const OnboardingModal = ({
                     onClick={() => setSelectedUserType(USER_TYPES.PHMC_STAFF)}
                 >
                     <i className="fas fa-user-md" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Personnel PHMC</h4>
+                    <h4 style={userTypeButtonTitleStyle}>Personnel soignant</h4>
                     <p style={userTypeButtonDescStyle}>
-                        Je travaille au PHMC et je crée des rapports médicaux, des consultations et de la documentation patient
+                        Je soigne au PHMC (médecin, infirmier, paramédic, psychologue…) : consultations, rapports médicaux et dossiers pour les patients ou pour moi-même
+                    </p>
+                </button>
+
+                <button
+                    style={{
+                        ...userTypeButtonStyle,
+                        ...(selectedUserType === USER_TYPES.ADMIN_STAFF ? selectedButtonStyle : {}),
+                        backgroundColor: selectedUserType === USER_TYPES.ADMIN_STAFF ? '#1a3a5c' : '#2a2a2a',
+                        borderColor: selectedUserType === USER_TYPES.ADMIN_STAFF ? '#007bff' : '#444'
+                    }}
+                    onClick={() => setSelectedUserType(USER_TYPES.ADMIN_STAFF)}
+                >
+                    <i className="fas fa-briefcase" style={userTypeIconStyle}></i>
+                    <h4 style={userTypeButtonTitleStyle}>Personnel administratif / employé</h4>
+                    <p style={userTypeButtonDescStyle}>
+                        Je travaille au PHMC sans soigner (direction, administration, polyvalent) : notes de service, e-mails internes et mes propres dossiers médicaux
                     </p>
                 </button>
 
@@ -950,22 +1000,6 @@ const OnboardingModal = ({
                     <h4 style={userTypeButtonTitleStyle}>Candidat</h4>
                     <p style={userTypeButtonDescStyle}>
                         Je postule pour un poste au PHMC (médecin, infirmier, administratif, etc.)
-                    </p>
-                </button>
-
-                <button
-                    style={{
-                        ...userTypeButtonStyle,
-                        ...(selectedUserType === USER_TYPES.OTHER ? selectedButtonStyle : {}),
-                        backgroundColor: selectedUserType === USER_TYPES.OTHER ? '#1a3a5c' : '#2a2a2a',
-                        borderColor: selectedUserType === USER_TYPES.OTHER ? '#007bff' : '#444'
-                    }}
-                    onClick={() => setSelectedUserType(USER_TYPES.OTHER)}
-                >
-                    <i className="fas fa-question-circle" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Autre/Multiple</h4>
-                    <p style={userTypeButtonDescStyle}>
-                        J'utilise les formulaires à plusieurs fins ou je ne corresponds pas aux catégories ci-dessus
                     </p>
                 </button>
             </div>
@@ -1029,11 +1063,11 @@ const OnboardingModal = ({
                 </div>
                 <div style={accountActionsStyle}>
                     <Button
-                        variant="outline-secondary"
-                        onClick={() => setShowAccountCreation(false)}
+                        variant="outline-success"
+                        onClick={() => { setShowAccountCreation(false); setShowLogin(true); }}
                         style={skipAccountButtonStyle}
                     >
-                        Passer la création de compte
+                        Déjà un compte ? Se connecter
                     </Button>
                 </div>
             </div>
@@ -1080,7 +1114,7 @@ const OnboardingModal = ({
     );
 
     const renderRoleSpecificStep = () => {
-        if (selectedUserType === USER_TYPES.PHMC_STAFF) {
+        if (isPhmcStaffType(selectedUserType)) {
             if (showAccountCreation && !accountCreationMethod) {
                 return renderAccountCreationChoice(false);
             }
@@ -1156,7 +1190,7 @@ const OnboardingModal = ({
                             <div style={{ marginBottom: '15px' }}>
                                 <Select
                                     name="rank"
-                                    options={PHMC_RANKS}
+                                    options={phmcRanksFor(selectedUserType)}
                                     value={PHMC_RANKS.find(r => r.value === accountData.rank)}
                                     onChange={(selectedOption) => setAccountData({ ...accountData, rank: selectedOption ? selectedOption.value : '' })}
                                     placeholder="Fonction *"
@@ -1261,11 +1295,11 @@ const OnboardingModal = ({
                             </div>
                             <div style={accountActionsStyle}>
                                 <Button
-                                    variant="outline-secondary"
-                                    onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setSelectedGtawCharacter(null); setGtawCharacters(null); }}
+                                    variant="outline-success"
+                                    onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setSelectedGtawCharacter(null); setGtawCharacters(null); setShowLogin(true); }}
                                     style={skipAccountButtonStyle}
                                 >
-                                    Passer la création du compte
+                                    Déjà un compte ? Se connecter
                                 </Button>
                                 <Button 
                                     variant="primary" 
@@ -1386,14 +1420,7 @@ const OnboardingModal = ({
                         Cela nous aide à vous montrer les formulaires les plus pertinents pour votre département :
                     </p>
                     <div style={roleGridStyle}>
-                        {[
-                            { id: 'physician', icon: 'fas fa-stethoscope', title: 'Médecin', desc: 'Chirurgien, Médecin urgentiste, Spécialiste' },
-                            { id: 'nurse', icon: 'fas fa-user-nurse', title: 'Infirmier', desc: 'Infirmier autorisé, Infirmier auxiliaire, Infirmier praticien' },
-                            { id: 'ems', icon: 'fas fa-ambulance', title: 'EMS', desc: 'Paramédic, Technicien ambulancier' },
-                            { id: 'admin', icon: 'fas fa-clipboard-list', title: 'Administration', desc: 'Gestion, Clerical, Support' },
-                            { id: 'psych', icon: 'fas fa-brain', title: 'Santé mentale', desc: 'Psychiatre, Psychologue' },
-                            { id: 'other', icon: 'fas fa-ellipsis-h', title: 'Autre', desc: 'Rôles multiples ou autre spécialité' }
-                        ].map(role => (
+                        {(selectedUserType === USER_TYPES.ADMIN_STAFF ? ADMIN_ROLE_CHOICES : CARE_ROLE_CHOICES).map(role => (
                             <button
                                 key={role.id}
                                 style={{
@@ -1641,11 +1668,11 @@ const OnboardingModal = ({
                             </div>
                             <div style={accountActionsStyle}>
                                 <Button
-                                    variant="outline-secondary"
-                                    onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setSelectedGtawCharacter(null); setGtawCharacters(null); }}
+                                    variant="outline-success"
+                                    onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setSelectedGtawCharacter(null); setGtawCharacters(null); setShowLogin(true); }}
                                     style={skipAccountButtonStyle}
                                 >
-                                    Passer la création de compte
+                                    Déjà un compte ? Se connecter
                                 </Button>
                                 <Button 
                                     variant="primary" 
@@ -1871,13 +1898,12 @@ const OnboardingModal = ({
                 En fonction de votre sélection, ces formulaires seront prioritaires dans votre interface :
             </p>
             <div style={formPreviewGridStyle}>
-                {recommendedForms.slice(0, 6).map(form => (
+                {recommendedForms.slice(0, 14).map(form => (
                     <div key={form.version} style={formPreviewCardStyle}>
                         <div style={formPreviewIconStyle}>
                             <img src={form.icon} alt={form.name} style={formIconImageStyle} />
                         </div>
                         <h5 style={formPreviewTitleStyle}>{form.name}</h5>
-                        <p style={formPreviewDescStyle}>Version {form.version}</p>
                     </div>
                 ))}
             </div>
@@ -1903,24 +1929,7 @@ const OnboardingModal = ({
                 Veuillez consulter notre politique de confidentialité avant de terminer votre configuration.
             </p>
             <div style={privacyContentStyle}>
-                <div style={privacyPolicyBoxStyle}>
-                    <p>Cette politique couvre l'utilisation des outils PHMC-FR et est conforme à la <a href="https://gta.world/terms/" target="_blank" rel="noopener noreferrer" style={linkStyle}>Politique de confidentialité de GTA World</a>.</p>
-                    <p>Ce site traite des informations <strong>IN CHARACTER</strong> pour l'utilisation du Pillbox Hill Medical Center (une faction de GTA World)</p>
-                    <p>Nous sommes en pleine conformité avec les <a href="https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/" target="_blank" rel="noopener noreferrer" style={linkStyle}>Règlements de GTA World</a> en hébergeant ce site Web sur un nom de domaine autorisé par GTA World.</p>
-                    <p>
-                        Nous utilisons des services tiers pour collecter et stocker certaines données, notamment : 
-                        <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer" style={linkStyle}> Sentry</a> (Error Tracking) et 
-                        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}> Google Firebase</a> (Sauvegarde des rapports).
-                    </p>
-                    <p><strong>Nous collectons les données suivantes :</strong></p>
-                    <ul style={privacyListStyle}>
-                        <li>Firebase ne stocke que les rapports sauvegardés, les champs déroulants et les noms des employés</li>
-                        <li>Journaux d'erreurs Informations sur l'appareil (Mobile / Bureau / Tablette), fichier d'erreur lié et bouton pressé.</li>
-                        <li>Seul moi-même peut voir les journaux d'erreurs et la base de données Firebase.</li>
-                    </ul>
-                    <p>Nous ne partageons pas vos données avec des tiers, à l'exception des fournisseurs tiers mentionnés ci-dessus.</p>
-                    <p><strong>Questions :</strong> Posez-les sur le serveur Discord de PHMC.</p>
-                </div>
+                <PrivacyPolicyContent />
             </div>
         </div>
     );
@@ -1953,7 +1962,8 @@ const OnboardingModal = ({
     const getUserTypeLabel = (userType) => {
         const labels = {
             [USER_TYPES.CIVILIAN]: 'Civil',
-            [USER_TYPES.PHMC_STAFF]: 'Personnel PHMC',
+            [USER_TYPES.PHMC_STAFF]: 'Personnel soignant',
+            [USER_TYPES.ADMIN_STAFF]: 'Personnel administratif / employé',
             [USER_TYPES.CORONER]: 'DMEC',
             [USER_TYPES.RECRUITMENT]: 'Candidat',
             [USER_TYPES.OTHER]: 'Plusieurs rôles'
@@ -1983,19 +1993,14 @@ const OnboardingModal = ({
             case ONBOARDING_STEPS.USER_TYPE:
                 return selectedUserType !== null;
             case ONBOARDING_STEPS.ROLE_SPECIFIC:
-                if (selectedUserType === USER_TYPES.PHMC_STAFF) {
-                    return selectedRole !== null || showAccountCreation || showLogin || accountCreated || loggedIn;
-                }
-                if (selectedUserType === USER_TYPES.CORONER) {
-                    return true || showAccountCreation || showLogin || accountCreated || loggedIn;
-                }
-                return selectedRole !== null;
+                // Personnel / DMEC : « Continuer » reste grisé tant que le compte n'est pas créé (demande envoyée) ou la session
+                // ouverte. Le rôle choisi ne suffit plus : il faut « Créer un compte » ou « Connexion ».
+                return !!currentEmployee || accountCreated || loggedIn;
             case ONBOARDING_STEPS.CIVIL_AUTH:
-                // La connexion/création Civil n'est pas bloquante au niveau de
-                // l'assistant : la restriction stricte d'accès aux formulaires
-                // civils/candidature pour les non-connectés est gérée ailleurs
-                // (AgencySelector). On laisse toujours avancer.
-                return true;
+                // « Continuer » reste grisé tant que la personne n'est pas connectée : il faut choisir son personnage
+                // (connexion à un compte existant) ou terminer la création de son compte. Une fois connecté, l'étape
+                // suivante s'ouvre aussi toute seule (voir onAuthenticated plus haut).
+                return !!currentEmployee;
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 return true;
             case ONBOARDING_STEPS.PRIVACY_POLICY:
@@ -2067,6 +2072,13 @@ const OnboardingModal = ({
                     )}
                     
                     <div style={footerRightStyle}>
+                        {(currentStep === ONBOARDING_STEPS.CIVIL_AUTH || currentStep === ONBOARDING_STEPS.ROLE_SPECIFIC) && !canProceed() && (
+                            <span style={{ color: '#aab6c3', fontSize: '0.85rem', marginRight: '12px', textAlign: 'right' }}>
+                                {currentStep === ONBOARDING_STEPS.ROLE_SPECIFIC
+                                    ? 'Choisissez « Créer un compte » ou « Connexion » pour continuer.'
+                                    : 'Choisissez votre personnage et connectez-vous, ou terminez la création de votre compte, pour continuer.'}
+                            </span>
+                        )}
                         <Button 
                             variant="primary" 
                             onClick={handleNext}
@@ -2514,26 +2526,6 @@ const privacyContentStyle = {
     borderRadius: '8px',
     padding: '20px',
     marginBottom: '20px'
-};
-
-const privacyPolicyBoxStyle = {
-    backgroundColor: '#2c3e50',
-    border: '1px solid #495057',
-    borderRadius: '4px',
-    padding: '15px',
-    margin: '10px 0',
-    color: '#f8f9fa'
-};
-
-const linkStyle = {
-    color: '#17a2b8',
-    textDecoration: 'none'
-};
-
-const privacyListStyle = {
-    color: '#e9ecef',
-    paddingLeft: '20px',
-    marginBottom: '15px'
 };
 
 export default OnboardingModal;

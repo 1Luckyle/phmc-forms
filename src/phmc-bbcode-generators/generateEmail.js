@@ -1,3 +1,5 @@
+import { getPrice } from '../utils/pricing';
+import { formatMoney } from '../utils/patientBilling';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -17,8 +19,9 @@ const generateEmail = (formData) => {
         autopsyPaymentLink,
     } = formData;
 
+    const requestFee = formatMoney(getPrice('fraisDemandeAutopsie')); // tarif modifiable dans le panneau admin
     const paymentInstructions = autopsyPaymentLink
-        ? `Cliquez sur le lien suivant pour régler les frais de 2 000 $ via Fleeca : [url=${autopsyPaymentLink}]Payer 2 000 $ via Fleeca[/url]`
+        ? `Cliquez sur le lien suivant pour régler les frais de ${requestFee} via Fleeca : [url=${autopsyPaymentLink}]Payer ${requestFee} via Fleeca[/url]`
         : `Veuillez contacter le Département de Pathologie et de Médecine Légale du PHMC pour obtenir un lien de paiement Fleeca.`;
 
     const getDepartmentFullName = (shortCode) => {
@@ -49,10 +52,10 @@ Les autopsies et les certificats de décès peuvent être utiles dans diverses s
 
 
 2) Y a-t-il des frais associés au processus de demande?
-Oui, il y a des frais de 2 000 $ associés à la demande. Ces frais couvrent les coûts administratifs liés au traitement et au maintien sécurisé de votre rapport/certificat demandé dans nos systèmes. Ils garantissent l'amélioration continue de nos services, en maintenant les normes les plus élevées en matière de gestion des données de santé.
+Oui, il y a des frais de ${requestFee} associés à la demande. Ces frais couvrent les coûts administratifs liés au traitement et au maintien sécurisé de votre rapport/certificat demandé dans nos systèmes. Ils garantissent l'amélioration continue de nos services, en maintenant les normes les plus élevées en matière de gestion des données de santé.
 
 
-3) Comment payer les frais de demande de 2 000 $?
+3) Comment payer les frais de demande de ${requestFee}?
 ${paymentInstructions}
 
 (( Les autopsies pour les Player Kills (PK) et Character Kills (CK) ne seront acceptées que si elles sont jugées strictement nécessaires et pertinentes pour un cas ou une enquête importante. Avant de faire une demande pour une telle autopsie, un membre des médecins légistes doit être notifié et consulté. De plus, il est obligatoire de fournir des informations sur /cdamages et /cexamine. Dans le cas où ces informations ne seraient pas disponibles, n'hésitez pas à contacter un administrateur en jeu, qui pourra les fournir. Si ces étapes ne sont pas suivies, un refus automatique entraînera l'archivage de votre demande.

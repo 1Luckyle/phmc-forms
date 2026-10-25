@@ -34,7 +34,7 @@ const frDate = (value) => {
 
 // Nom lisible du formulaire (sans le préfixe "[Civil]" du sélecteur).
 export const cleanFormName = (name, fallbackVersion) =>
-    (name || `Formulaire v${fallbackVersion}`).replace(/^\[Civil\]\s*/i, '').trim();
+    (name || 'Formulaire').replace(/^\[Civil\]\s*/i, '').trim();
 
 export function buildReportTitle(version, formData = {}, formName = '') {
     const name = cleanFormName(formName, version);

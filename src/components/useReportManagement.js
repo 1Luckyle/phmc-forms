@@ -14,6 +14,8 @@ import { recordInvoiceForReport } from '../utils/patientInvoices';
 import { validateReport, validateApplication, formatIssues } from '../utils/formValidation';
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import { logActivity } from '../utils/activityLog';
+import { isCareStaff } from '../hooks/useBillingRole';
+import { isBillableVersion } from '../utils/patientBilling';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
@@ -168,6 +170,12 @@ export const useReportManagement = (
         if (getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !isCivilian) {
             return { success: false, error: 'PHMC Recruitment forms cannot be saved to Firebase.' };
         }
+        if (isBillableVersion(bbCodeVersion) && staffProfile && !isAdmin && !isCivilian && !isCareStaff(staffProfile)
+            && normalizePatientId(formData.patientID) !== normalizePatientId(myPatientID)) {
+            const message = 'Ces dossiers médicaux ne peuvent être remplis que pour vous-même : utilisez votre propre ID patient (les frais sont à votre charge).';
+            showNotification(message, 'exclamation-circle', 9000);
+            return { success: false, error: message };
+        }
         const validation = validateReport(bbCodeVersion, formData, { isCivilian, civilianPatientId: civilianProfile?.patientID });
         if (validation.errors.length > 0) {
             const message = formatIssues(validation.errors, { title: 'Enregistrement impossible :' });
@@ -293,8 +301,9 @@ export const useReportManagement = (
             // sauvegarde du rapport lui-même.
             if (formData.patientID) {
                 try {
-                    const isOwnedByThisCivilian = isCivilian
-                        && normalizePatientId(civilianProfile?.patientID) === normalizePatientId(formData.patientID);
+                    const ownPatientId = isCivilian ? civilianProfile?.patientID : myPatientID;
+                    const isOwnedByThisCivilian = !!ownPatientId
+                        && normalizePatientId(ownPatientId) === normalizePatientId(formData.patientID);
                     await writeIndexEntry({
                         patientID: formData.patientID,
                         indexKey: sanitizedKey,
@@ -337,7 +346,6 @@ export const useReportManagement = (
                 action: 'report_saved',
                 summary: `Rapport enregistré : ${getFormDefinition(bbCodeVersion)?.name || `formulaire ${bbCodeVersion}`}`,
                 details: `Auteur : ${currentAuthor}
-Version du formulaire : ${bbCodeVersion}
 Clé : ${sanitizedKey}`,
                 target: currentAuthor,
                 severity: 'success',

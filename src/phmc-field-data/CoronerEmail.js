@@ -4,6 +4,8 @@ import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { getFormDefinition } from '../formDefinitions'; // Import getFormDefinition
 import { createFleecaPayment } from '../utils/fleecaPayment';
+import { getPrice, usePrices } from '../utils/pricing';
+import { formatMoney } from '../utils/patientBilling';
 
 const customSelectStyles = {
     control: (base, state) => ({
@@ -92,6 +94,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
     handleReportChange,
     toggleSavedReports 
 }) => {
+    usePrices(); // se redessine si un admin change les tarifs
 
     // Get agencyDataStore from context
     const { agencyDataStore, isLoadingData } = useData();
@@ -104,7 +107,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         }));
     }, [setFormData]);
 
-    // Génère un vrai lien de paiement Fleeca (2 000$, frais fixes de la demande
+    // Génère un vrai lien de paiement Fleeca (frais fixes de la demande, tarif « fraisDemandeAutopsie »
     // d'autopsie/certificat) à inclure dans l'email, à la place de l'ancien RIB
     // et des instructions de virement manuel (voir generateEmail.js).
     const [isCreatingPaymentLink, setIsCreatingPaymentLink] = useState(false);
@@ -115,7 +118,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         setPaymentLinkError('');
         try {
             const { payment_link } = await createFleecaPayment({
-                amount: 2000,
+                amount: getPrice('fraisDemandeAutopsie'),
                 description: `Frais de demande d'autopsie/certificat - ${formData.decedentName || 'Défunt'}`,
             });
             setFormData(prev => ({ ...prev, autopsyPaymentLink: payment_link }));
@@ -206,7 +209,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
     />
 </Form.Group>
 <Form.Group className="mb-3">
-    <Form.Label>Lien de paiement Fleeca (frais de demande, 2 000$)</Form.Label>
+    <Form.Label>Lien de paiement Fleeca (frais de demande, {formatMoney(getPrice('fraisDemandeAutopsie'))})</Form.Label>
     <div>
         <Button
             variant="success"

@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/react";
 import { useNotification } from './NotificationContext';
 import DebugFillButton from '../components/DebugFillButton';
 import { submitSiteRequest } from '../utils/siteRequests';
+import { getFormDefinition } from '../formDefinitions';
 
 // Deux versions du même formulaire :
 //   • mode « bug »     : rapport de bug (comptes connectés) ;
@@ -73,7 +74,7 @@ const FeatureRequestModal = ({
                 ...(isFormRequest ? [{ label: 'Titre proposé pour le formulaire', value: bbcodeTitleRequest }] : []),
                 { label: isFeature ? 'Détails de la demande' : 'Détails du bug', value: featureRequest },
                 ...(isFormRequest ? [{ label: looksLikeHtml(bbcodeRequestText) ? 'HTML demandé' : 'BBCode demandé', value: bbcodeRequestText }] : []),
-                { label: 'Version du formulaire ouvert', value: String(bbCodeVersion ?? '') },
+                { label: 'Formulaire ouvert', value: getFormDefinition(bbCodeVersion)?.name || '' },
                 { label: 'Page', value: `${window.location.pathname}${window.location.hash || ''}` },
                 { label: 'Version du site', value: commitInfo?.sha },
                 { label: 'Navigateur', value: navigator.userAgent },

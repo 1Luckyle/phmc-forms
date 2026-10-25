@@ -18,6 +18,7 @@ import { logEvent } from "firebase/analytics";
 import ErrorBoundary from './components/ErrorBoundary';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { logClientError } from './utils/activityLog';
+import { startPriceSync } from './utils/pricing';
 
 // --- START: Fallback Error Reporting ---
 const discordErrorWebhookQueue = [];
@@ -213,6 +214,7 @@ const Root = () => {
     return <App />;
 };
 
+startPriceSync(); // tarifs des formulaires (panneau admin → Tarifs)
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(

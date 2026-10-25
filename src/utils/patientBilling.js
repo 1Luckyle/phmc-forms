@@ -1,11 +1,12 @@
+import { getPrice } from './pricing';
 // src/utils/patientBilling.js
 //
 // Facturation des formulaires médicaux civils (module pur, sans Firebase) : montant dû, état d'une
 // facture et libellés. Utilisé par les formulaires (affichage du montant au personnel), par la
 // sauvegarde des rapports (création de la facture) et par les écrans patient / médecin.
 //
-//   Formulaires facturés : Dossier patient avancé (3) 2000 $, Dossier patient de base (25) 2000 $,
-//   Divulgation de dossier médical (24) 5000 $ par élément demandé, Mise à jour du dossier (26) 1000 $.
+//   Formulaires facturés : Dossier patient avancé (3), Dossier patient de base (25), Divulgation de dossier médical (24,
+//   par élément demandé), Mise à jour du dossier (26). Les montants se règlent dans le panneau admin → Tarifs (utils/pricing.js).
 //
 //   Une facture vit sous facturesPatients/{ID patient}/{clé du rapport} avec un statut stocké :
 //     'a_payer' | 'paye' | 'sans_paiement'
@@ -42,10 +43,10 @@ export const isBillableVersion = (bbCodeVersion) => BILLABLE_VERSIONS.includes(N
 // Montant « plein » (hors exemption) du formulaire.
 const baseAmountOf = (bbCodeVersion, formData) => {
     switch (Number(bbCodeVersion)) {
-        case 3: return 2000;
-        case 25: return 2000;
-        case 24: return (formData?.MedicalRecordsRelease?.length || 0) * 5000;
-        case 26: return formData?.UpdateMedicalFile?.length > 0 ? 1000 : 0;
+        case 3: return getPrice('dossierAvance');
+        case 25: return getPrice('dossierBase');
+        case 24: return (formData?.MedicalRecordsRelease?.length || 0) * getPrice('divulgationParElement');
+        case 26: return formData?.UpdateMedicalFile?.length > 0 ? getPrice('miseAJourDossier') : 0;
         default: return 0;
     }
 };

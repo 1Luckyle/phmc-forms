@@ -27,6 +27,7 @@ import { seedDefaultBingoPhrases } from '../../utils/bingoDefaults';
 import ActivityLog from './ActivityLog';
 import SiteRequests from './SiteRequests';
 import { logAdminAction } from '../../utils/activityLog';
+import PricingManager from './PricingManager';
 
 const LAST_SECTION_KEY = 'adminLastSection';
 
@@ -436,6 +437,14 @@ const AdminDashboard = ({
                         key="activity"
                         showNotification={showInAppNotification}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                    />
+                );
+
+            case 'pricing':
+                return (
+                    <PricingManager
+                        showNotification={showInAppNotification}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Tarifs' })}
                     />
                 );
 
