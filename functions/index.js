@@ -2159,3 +2159,85 @@ export const syncCctvAccess = onRequest({}, async (req, res) => {
         res.status(500).json({ error: 'internal', message: 'Impossible de vérifier vos droits.' });
     }
 });
+
+// ─── Téléversement d'images (imgBB) ────────────────────────────────────────────────────────────────────────
+// La clé API imgBB reste ICI (Secret Manager : IMGBB_API_KEY) au lieu d'être embarquée dans le site, où n'importe
+// qui pouvait la lire et téléverser sur le compte. Le navigateur envoie l'image à cette fonction, qui vérifie
+// la session, le type et la taille du fichier, limite le nombre d'envois par personne, puis la transmet à imgBB.
+// Réponse : { url, deleteUrl } (même forme qu'avant : voir src/hooks/useImageUpload.js).
+const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+const IMAGE_MAX_BYTES = 8 * 1024 * 1024;          // image décodée
+const IMAGE_UPLOADS_PER_HOUR = 40;                // par compte
+
+// Reconnaît PNG, JPEG, GIF et WebP d'après les premiers octets (le navigateur ne peut pas mentir sur le contenu).
+const detectImageType = (buffer) => {
+    if (buffer.length < 12) return null;
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return 'png';
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpeg';
+    if (buffer.slice(0, 3).toString('ascii') === 'GIF') return 'gif';
+    if (buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP') return 'webp';
+    return null;
+};
+
+// Compteur par compte sur une heure glissante simple (fenêtre fixe) : renvoie false si la limite est atteinte.
+const takeImageUploadSlot = async (uid) => {
+    const now = Date.now();
+    const result = await db.ref(`rateLimits/imageUpload/${uid}`).transaction((current) => {
+        if (!current || now - Number(current.windowStart || 0) > 3600000) return { windowStart: now, count: 1 };
+        if (Number(current.count || 0) >= IMAGE_UPLOADS_PER_HOUR) return undefined; // abandon : limite atteinte
+        return { windowStart: current.windowStart, count: Number(current.count || 0) + 1 };
+    });
+    return result.committed;
+};
+
+export const uploadImage = onRequest({ secrets: ['IMGBB_API_KEY'], maxInstances: 5, memory: '512MiB', timeoutSeconds: 60 }, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const apiKey = process.env.IMGBB_API_KEY;
+    if (!apiKey) {
+        res.status(500).json({ error: 'internal', message: 'La clé API imgBB n\'est pas configurée sur le serveur.' });
+        return;
+    }
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+
+    const data = req.body.data || req.body;
+    const raw = String(data?.image || '');
+    const base64 = raw.includes(',') ? raw.split(',')[1] : raw;
+    if (!base64 || !/^[A-Za-z0-9+/=\s]+$/.test(base64)) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Image invalide.' });
+        return;
+    }
+    const buffer = Buffer.from(base64, 'base64');
+    if (buffer.length > IMAGE_MAX_BYTES) {
+        res.status(413).json({ error: 'too-large', message: 'Image trop lourde (8 Mo maximum).' });
+        return;
+    }
+    if (!detectImageType(buffer)) {
+        res.status(400).json({ error: 'invalid-type', message: 'Seules les images PNG, JPEG, GIF et WebP sont acceptées.' });
+        return;
+    }
+
+    try {
+        if (!(await takeImageUploadSlot(caller.uid))) {
+            res.status(429).json({ error: 'rate-limited', message: `Limite atteinte : ${IMAGE_UPLOADS_PER_HOUR} images par heure. Réessayez plus tard.` });
+            return;
+        }
+        const body = new URLSearchParams();
+        body.append('image', buffer.toString('base64'));
+        const imgbbResponse = await fetch(`${IMGBB_UPLOAD_URL}?key=${encodeURIComponent(apiKey)}`, { method: 'POST', body });
+        const imgbbData = await imgbbResponse.json().catch(() => null);
+        if (!imgbbResponse.ok || !imgbbData || !imgbbData.success) {
+            console.warn('imgBB a refusé l\'image :', imgbbData && imgbbData.error ? imgbbData.error.message : imgbbResponse.status);
+            res.status(502).json({ error: 'imgbb-failed', message: `imgBB a refusé l'image (${imgbbData?.error?.message || imgbbResponse.status}).` });
+            return;
+        }
+        res.status(200).json({ url: imgbbData.data.url, deleteUrl: imgbbData.data.delete_url || '' });
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        res.status(500).json({ error: 'internal', message: 'Échec du téléversement de l\'image.' });
+    }
+});
