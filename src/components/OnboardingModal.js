@@ -2073,10 +2073,11 @@ const OnboardingModal = ({
                     
                     <div style={footerRightStyle}>
                         {(currentStep === ONBOARDING_STEPS.CIVIL_AUTH || currentStep === ONBOARDING_STEPS.ROLE_SPECIFIC) && !canProceed() && (
-                            <span style={{ color: '#aab6c3', fontSize: '0.85rem', marginRight: '12px', textAlign: 'right' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#aab6c3', fontSize: '0.85rem', lineHeight: 1.3 }}>
+                                <i className="fas fa-lock" style={{ color: '#e3b341' }}></i>
                                 {currentStep === ONBOARDING_STEPS.ROLE_SPECIFIC
-                                    ? 'Choisissez « Créer un compte » ou « Connexion » pour continuer.'
-                                    : 'Choisissez votre personnage et connectez-vous, ou terminez la création de votre compte, pour continuer.'}
+                                    ? 'Créez un compte ou connectez-vous pour continuer.'
+                                    : 'Connectez-vous ou créez votre compte pour continuer.'}
                             </span>
                         )}
                         <Button 
@@ -2405,7 +2406,10 @@ const footerStyle = {
 };
 
 const footerRightStyle = {
-    marginLeft: 'auto'
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
 };
 
 const backButtonStyle = {
