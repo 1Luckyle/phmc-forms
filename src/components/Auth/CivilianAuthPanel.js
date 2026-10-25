@@ -403,6 +403,7 @@ const CivilianAuthPanel = ({
 
             {gtawCharacters && (
                 <GtawCharacterPicker
+                    alwaysList
                     characters={gtawCharacters}
                     gtawResolutions={gtawResolutions}
                     onLogin={(customToken) => handleGtawLogin(customToken)}

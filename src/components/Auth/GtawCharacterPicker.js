@@ -22,6 +22,9 @@ const GtawCharacterPicker = ({
     onCreate,
     onPending = () => {},
     onNoCharacters = () => {},
+    // true : la liste s'affiche TOUJOURS, même avec un seul personnage (jamais de connexion ou de création automatique) —
+    // pour que la personne voie son personnage et choisisse elle-même (connexion, création ou retour).
+    alwaysList = false,
 }) => {
     const hasAutoResolvedRef = useRef(false);
 
@@ -34,6 +37,8 @@ const GtawCharacterPicker = ({
             onNoCharacters();
             return;
         }
+
+        if (alwaysList) return;
 
         if (characters.length === 1) {
             hasAutoResolvedRef.current = true;
@@ -52,7 +57,7 @@ const GtawCharacterPicker = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [characters]);
 
-    if (!characters || characters.length <= 1) {
+    if (!characters || characters.length === 0 || (!alwaysList && characters.length <= 1)) {
         // Rien à afficher : soit la résolution automatique ci-dessus est en
         // cours, soit elle a déjà redirigé vers onLogin/onCreate/onPending/onNoCharacters.
         return null;

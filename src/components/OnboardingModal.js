@@ -1141,7 +1141,8 @@ const OnboardingModal = ({
         <div style={stepContentStyle}>
             <h2 style={stepTitleStyle}>Choisissez votre personnage</h2>
             <p style={stepDescriptionStyle}>
-                Voici les personnages liés à votre compte GTA World.
+                Voici les personnages de votre compte GTA World qui sont membres de la faction PHMC. Choisissez-en un pour vous connecter
+                ou, s'il n'a pas encore de compte, pour le créer.
             </p>
             <div style={accountFormStyle}>
                 {(!gtawCharacters || gtawCharacters.length === 0) ? (
@@ -1151,6 +1152,7 @@ const OnboardingModal = ({
                     </div>
                 ) : (
                     <GtawCharacterPicker
+                        alwaysList
                         characters={gtawCharacters}
                         gtawResolutions={gtawResolutions}
                         onLogin={(customToken) => handleGtawEmployeeCharacterLogin(customToken)}
@@ -1162,7 +1164,7 @@ const OnboardingModal = ({
                 <div style={accountActionsStyle}>
                     <Button
                         variant="outline-secondary"
-                        onClick={() => { setAccountCreationMethod(null); setGtawCharacters(null); setGtawUnavailableCharacterIds([]); setGtawResolutions({}); }}
+                        onClick={() => { setShowAccountCreation(false); setAccountCreationMethod(null); setGtawCharacters(null); setGtawUnavailableCharacterIds([]); setGtawResolutions({}); }}
                         style={skipAccountButtonStyle}
                     >
                         Retour
