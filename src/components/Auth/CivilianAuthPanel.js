@@ -22,6 +22,7 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { sendEmailVerificationCode, verifyEmailCode, EYEFIND_MAIL_SIGNUP_URL } from '../../utils/eyefindMail';
 import GtawCharacterPicker from './GtawCharacterPicker';
 import DebugFillButton from '../DebugFillButton';
+import AuthEntryBlock from './AuthEntryBlock';
 
 const emptyAccountData = {
     firstName: '',
@@ -48,16 +49,22 @@ const CivilianAuthPanel = ({
     gtawUserId,
     onStartGtaw,
     showNotification = () => {},
-    onAuthenticated = () => {}
+    onAuthenticated = () => {},
+    // Création directe pour un personnage déjà identifié (compte Civil de courtoisie pendant qu'une demande de compte
+    // du personnel est en attente) : le formulaire s'ouvre prérempli, e-mail compris (à vérifier par code).
+    initialCharacter = null,
+    initialEmail = ''
 }) => {
     const { createCivilianAccountFromGtaw } = useEmployeeAuth();
 
     // 'choice' = écran initial (uniquement GTA World)
     // 'create' = formulaire d'identité + vérification email, pré-rempli via le
     //            personnage GTAW choisi (nom/prénom en lecture seule)
-    const [mode, setMode] = useState('choice');
-    const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(null);
-    const [accountData, setAccountData] = useState(emptyAccountData);
+    const [mode, setMode] = useState(initialCharacter ? 'create' : 'choice');
+    const [selectedGtawCharacter, setSelectedGtawCharacter] = useState(initialCharacter);
+    const [accountData, setAccountData] = useState(initialCharacter
+        ? { ...emptyAccountData, firstName: initialCharacter.firstname || '', lastName: initialCharacter.lastname || '', email: initialEmail || '' }
+        : emptyAccountData);
     const [isSubmitting, setIsSubmitting] = useState(false);
     // ID patient attribué à la création — affiché en lecture seule une fois le
     // compte créé (impossible de le montrer avant : il est généré par
@@ -389,32 +396,10 @@ const CivilianAuthPanel = ({
 
     return (
         <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px' }}>
-                <button
-                    type="button"
-                    onClick={onStartGtaw}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '12px',
-                        backgroundColor: '#2a2a2a', border: '1px solid #ff8c00',
-                        borderRadius: '8px', padding: '15px', color: '#fff',
-                        cursor: 'pointer', textAlign: 'left'
-                    }}
-                >
-                    <i className="fas fa-gamepad" style={{ fontSize: '1.4rem', color: '#ff8c00' }}></i>
-                    <span>
-                        <strong style={{ display: 'block' }}>Continuer avec GTA World</strong>
-                        <span style={{ fontSize: '0.85em', color: '#ccc' }}>
-                            Connexion ou création de compte selon votre personnage. Seule méthode disponible pour un compte Civil.
-                        </span>
-                    </span>
-                </button>
-                <div style={{ fontSize: '0.85em', color: '#ccc', textAlign: 'center' }}>
-                    Pas encore d'adresse Eyefind Mail ?{' '}
-                    <a href={EYEFIND_MAIL_SIGNUP_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
-                        Créez-en une ici
-                    </a>.
-                </div>
-            </div>
+            <AuthEntryBlock
+                onStartGtaw={onStartGtaw}
+                gtawDescription="Connexion ou création de compte selon votre personnage. Seule méthode disponible pour un compte Civil."
+            />
 
             {gtawCharacters && (
                 <GtawCharacterPicker

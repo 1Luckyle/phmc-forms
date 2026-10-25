@@ -10,6 +10,7 @@ import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../constants/ranks';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { logAdminAction } from '../../utils/activityLog';
+import { convertCivilianToStaff, badgeDigits } from '../../utils/staffAdmin';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
 // débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
@@ -135,6 +136,28 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
 
             if (!confirmApprove) {
                 return;
+            }
+
+            // Le même personnage a déjà un compte Civil (créé en attendant cette validation) : on le CONVERTIT en compte du
+            // personnel (même identifiant de connexion, profil et rapports conservés) au lieu d'en créer un second.
+            if (request.gtawCharacterId != null) {
+                const civiliansSnap = await get(ref(database, 'civilians'));
+                const civil = Object.values(civiliansSnap.val() || {}).find((entry) => entry && entry.uid && entry.gtawCharacterId != null
+                    && String(entry.gtawCharacterId) === String(request.gtawCharacterId));
+                if (civil) {
+                    await convertCivilianToStaff(civil, {
+                        service: request.isCoroner ? 'coroner' : 'phmc',
+                        rank: normalizeRank(request.rank),
+                        badgeDigitsValue: badgeDigits(request.badge),
+                        discord: request.discord || '',
+                        phNumber: request.phNumber || '',
+                    });
+                    await removeRequest(request.email);
+                    logAdminAction({ email: currentUser?.email, action: 'Compte du personnel approuvé (compte Civil converti)', details: `Membre : ${request.name}\nCompte : ${civil.email || request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });
+                    showNotification(`✅ Le compte Civil de ${request.name} a été converti en compte du personnel (dossiers conservés).`, 'success');
+                    loadPendingRequests();
+                    return;
+                }
             }
 
             // Compte lié à GTA World (pas de mot de passe défini) : création côté

@@ -16,6 +16,7 @@ import GtawCharacterPicker from './Auth/GtawCharacterPicker';
 import CivilianAuthPanel from './Auth/CivilianAuthPanel';
 import DebugFillButton from './DebugFillButton';
 import PrivacyPolicyContent from './PrivacyPolicyContent';
+import AuthEntryBlock from './Auth/AuthEntryBlock';
 
 // Step definitions for the onboarding flow
 export const ONBOARDING_STEPS = {
@@ -160,6 +161,9 @@ const OnboardingModal = ({
     const [gtawUserId, setGtawUserId] = useState(null);
     // Compte GTA World lié à plusieurs comptes (ex. deux médecins, ou un médecin et un civil) : liste à choisir après la connexion.
     const [loginChoices, setLoginChoices] = useState(null);
+    // Demande de compte du personnel envoyée via GTA World : en attendant sa validation, on propose de créer le compte
+    // Civil du même personnage ({ character, email }) ; il deviendra le compte du personnel à la validation.
+    const [companionCivil, setCompanionCivil] = useState(null);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -290,6 +294,7 @@ const OnboardingModal = ({
                 setSelectedGtawCharacter(null);
                 setGtawUserId(null);
                 setShowLogin(false);
+                setCompanionCivil(null);
                 setLoginData({ email: '', password: '' });
                 setLoggedIn(false);
                 setResetEmailSent(false);
@@ -691,12 +696,19 @@ const OnboardingModal = ({
             sendPendingAccountRequestWebhook(newStaffMember, accountData.email, isCoroner);
 
             setAccountCreated(true);
-            showNotification(`Demande de compte envoyée ! Un administrateur doit approuver votre compte avant que vous puissiez vous connecter.`, 'info');
-            
-            // Auto-progress to next step after successful request
-            setTimeout(() => {
-                setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
-            }, 2500);
+            if (isGtawAccount) {
+                // Identité vérifiée par GTA World : en attendant la validation, la personne a les accès d'un Civil. On enchaîne sur la
+                // création de ce compte Civil (même personnage) ; à la validation, il est converti en compte du personnel.
+                showNotification('Demande de compte envoyée ! Un administrateur doit la valider. En attendant, créez votre compte Civil : vous aurez déjà accès à vos dossiers.', 'info', 9000);
+                setCompanionCivil({ character: selectedGtawCharacter, email: accountData.email });
+                setTimeout(() => setCurrentStep(ONBOARDING_STEPS.CIVIL_AUTH), 2200);
+            } else {
+                showNotification(`Demande de compte envoyée ! Un administrateur doit approuver votre compte avant que vous puissiez vous connecter.`, 'info');
+                // Auto-progress to next step after successful request
+                setTimeout(() => {
+                    setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+                }, 2500);
+            }
         } catch (error) {
             console.error('Error creating account:', error);
             let errorMessage = 'Erreur lors de la création du compte.';
@@ -1143,7 +1155,7 @@ const OnboardingModal = ({
                         gtawResolutions={gtawResolutions}
                         onLogin={(customToken) => handleGtawEmployeeCharacterLogin(customToken)}
                         onCreate={(character) => handleSelectGtawCharacter(character)}
-                        onPending={() => showNotification('Une demande de compte est déjà en attente d\'approbation pour ce personnage.', 'warning')}
+                        onPending={() => showNotification('Une demande de compte du personnel est déjà en attente de validation pour ce personnage. En attendant, connectez-vous avec votre compte Civil (choisissez « Civil » au début du guide).', 'warning', 9000)}
                         onNoCharacters={() => {}}
                     />
                 )}
@@ -1207,6 +1219,28 @@ const OnboardingModal = ({
                     <Button variant="outline-secondary" onClick={() => setLoginChoices(null)} style={skipAccountButtonStyle}>Retour</Button>
                 </div>
             </div>
+        </div>
+    );
+
+    // Même écran d'entrée que l'étape Civil / Candidat : un seul bouton GTA World (connexion OU création selon le personnage),
+    // plus, si l'admin autorise aussi l'e-mail / mot de passe, deux options secondaires.
+    const renderAuthEntry = () => (
+        <div style={accountFormStyle}>
+            <AuthEntryBlock
+                onStartGtaw={startGtawOnboardingLogin}
+                gtawDescription="Connexion ou création de compte selon votre personnage. Votre prénom et votre nom sont vérifiés automatiquement."
+            >
+                {!gtawOnly && (
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <Button variant="outline-secondary" size="sm" onClick={() => setShowLogin(true)}>
+                            Me connecter avec e-mail et mot de passe
+                        </Button>
+                        <Button variant="outline-secondary" size="sm" onClick={() => { setShowAccountCreation(true); setAccountCreationMethod('manual'); }}>
+                            Créer un compte manuellement
+                        </Button>
+                    </div>
+                )}
+            </AuthEntryBlock>
         </div>
     );
 
@@ -1514,7 +1548,7 @@ const OnboardingModal = ({
             return (
                 <div style={stepContentStyle}>
                     <h2 style={stepTitleStyle}>
-                        {selectedUserType === USER_TYPES.ADMIN_STAFF ? 'Le personnel administratif et les employés du PHMC' : 'Le personnel soignant du PHMC'}
+                        Connexion ou création de compte {selectedUserType === USER_TYPES.ADMIN_STAFF ? 'Personnel administratif' : 'Personnel soignant'}
                     </h2>
                     <p style={stepDescriptionStyle}>
                         Votre grade est celui de votre compte : vous le renseignez à la création, ou il est repris de votre compte existant.
@@ -1529,52 +1563,7 @@ const OnboardingModal = ({
                             </div>
                         ))}
                     </div>
-                    <div style={accountPromptStyle}>
-                        <p style={accountPromptTextStyle}>
-                            <i className="fas fa-user-plus" style={promptIconStyle}></i>
-                            Souhaitez-vous créer un compte personnel ou vous connecter avec un compte existant ?
-                        </p>
-                        <div style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
-                            <Button 
-                                variant="outline-primary" 
-                                onClick={() => setShowAccountCreation(true)}
-                                style={{
-                                    borderColor: '#007bff',
-                                    color: '#007bff',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = '#007bff';
-                                    e.target.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent';
-                                    e.target.style.color = '#007bff';
-                                }}
-                            >
-                                Créer un compte personnel
-                            </Button>
-                            <Button 
-                                variant="outline-success" 
-                                onClick={() => setShowLogin(true)}
-                                style={{
-                                    borderColor: '#28a745',
-                                    color: '#28a745',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = '#28a745';
-                                    e.target.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent';
-                                    e.target.style.color = '#28a745';
-                                }}
-                            >
-                                Connexion
-                            </Button>
-                        </div>
-                    </div>
+                    {renderAuthEntry()}
                 </div>
             );
         }
@@ -1880,9 +1869,9 @@ const OnboardingModal = ({
 
             return (
                 <div style={stepContentStyle}>
-                    <h2 style={stepTitleStyle}>Bienvenue, Membre du DMEC !</h2>
+                    <h2 style={stepTitleStyle}>Connexion ou création de compte DMEC</h2>
                     <p style={stepDescriptionStyle}>
-                        Configurons votre accès aux formulaires et service du DMEC :
+                        Votre compte donne accès aux formulaires et aux services du DMEC :
                     </p>
                     <div style={coronerWelcomeStyle}>
                         <div style={coronerInfoCardStyle}>
@@ -1896,52 +1885,7 @@ const OnboardingModal = ({
                             <p style={coronerInfoDescStyle}>Rapports d'autopsie, certificats de décès et gestion des dossiers</p>
                         </div>
                     </div>
-                    <div style={accountPromptStyle}>
-                        <p style={accountPromptTextStyle}>
-                            <i className="fas fa-user-plus" style={promptIconStyle}></i>
-                            Souhaitez-vous créer un compte de membre du DMEC ou vous connecter avec un compte existant ?
-                        </p>
-                        <div style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
-                            <Button 
-                                variant="outline-primary" 
-                                onClick={() => setShowAccountCreation(true)}
-                                style={{
-                                    borderColor: '#007bff',
-                                    color: '#007bff',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = '#007bff';
-                                    e.target.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent';
-                                    e.target.style.color = '#007bff';
-                                }}
-                            >
-                                Créer un compte de membre du DMEC
-                            </Button>
-                            <Button 
-                                variant="outline-success" 
-                                onClick={() => setShowLogin(true)}
-                                style={{
-                                    borderColor: '#28a745',
-                                    color: '#28a745',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = '#28a745';
-                                    e.target.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent';
-                                    e.target.style.color = '#28a745';
-                                }}
-                            >
-                                Connexion
-                            </Button>
-                        </div>
-                    </div>
+                    {renderAuthEntry()}
                 </div>
             );
         }
@@ -1959,15 +1903,23 @@ const OnboardingModal = ({
     const renderCivilAuthStep = () => (
         <div style={stepContentStyle}>
             <h2 style={stepTitleStyle}>
-                {selectedUserType === USER_TYPES.RECRUITMENT ? 'Connexion ou création de compte Candidat' : 'Connexion ou création de compte Civil'}
+                {companionCivil
+                    ? 'Créez votre compte Civil en attendant la validation'
+                    : (selectedUserType === USER_TYPES.RECRUITMENT ? 'Connexion ou création de compte Candidat' : 'Connexion ou création de compte Civil')}
             </h2>
             <p style={stepDescriptionStyle}>
-                Un compte Civil vous permet de retrouver vos dossiers médicaux
-                {selectedUserType === USER_TYPES.RECRUITMENT ? ' et de suivre vos candidatures' : ''}, où que vous soyez.
-                Aucune information de santé ne vous sera jamais demandée ici.
+                {companionCivil
+                    ? "Votre demande de compte du personnel doit encore être validée. D'ici là, un compte Civil vous donne déjà accès à vos dossiers médicaux ; il deviendra automatiquement votre compte du personnel (avec vos dossiers) dès la validation. Vous pouvez aussi le créer plus tard."
+                    : <>
+                        Un compte Civil vous permet de retrouver vos dossiers médicaux
+                        {selectedUserType === USER_TYPES.RECRUITMENT ? ' et de suivre vos candidatures' : ''}, où que vous soyez.
+                        Aucune information de santé ne vous sera jamais demandée ici.
+                    </>}
             </p>
             <div style={accountFormStyle}>
                 <CivilianAuthPanel
+                    initialCharacter={companionCivil?.character || null}
+                    initialEmail={companionCivil?.email || ''}
                     gtawCharacters={gtawCharacters}
                     gtawResolutions={gtawResolutions}
                     gtawUserId={gtawUserId}
@@ -2092,7 +2044,7 @@ const OnboardingModal = ({
                 // « Continuer » reste grisé tant que la personne n'est pas connectée : il faut choisir son personnage
                 // (connexion à un compte existant) ou terminer la création de son compte. Une fois connecté, l'étape
                 // suivante s'ouvre aussi toute seule (voir onAuthenticated plus haut).
-                return !!currentEmployee;
+                return !!currentEmployee || (!!companionCivil && accountCreated);
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 return true;
             case ONBOARDING_STEPS.PRIVACY_POLICY:
@@ -2153,7 +2105,7 @@ const OnboardingModal = ({
                 </div>
 
                 <div style={footerStyle}>
-                    {currentStep !== ONBOARDING_STEPS.WELCOME && (
+                    {currentStep !== ONBOARDING_STEPS.WELCOME && !(currentStep === ONBOARDING_STEPS.CIVIL_AUTH && companionCivil) && (
                         <Button 
                             variant="outline-secondary" 
                             onClick={handleBack}
