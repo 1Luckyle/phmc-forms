@@ -116,7 +116,16 @@ export async function loadPatientDossier(inputId) {
     const seen = new Set();
 
     for (const node of nodes) {
-        const indexSnap = await get(ref(database, `patientRecords/${node}`));
+        // Un civil ne peut lire que SON propre nœud (règle patientRecords/$patientId). findPatientNodes
+        // essaie aussi des variantes de clé héritées : si l'une est refusée, on l'ignore au lieu de faire
+        // échouer tout le dossier (le vrai nœud, canonique, reste lisible par son propriétaire).
+        let indexSnap;
+        try {
+            indexSnap = await get(ref(database, `patientRecords/${node}`));
+        } catch (err) {
+            console.warn('Nœud de dossier ignoré (lecture refusée/indisponible) :', node, err?.message || err);
+            continue;
+        }
         if (!indexSnap.exists()) continue;
         const rawEntries = Object.entries(indexSnap.val() || {});
         const resolved = await Promise.all(rawEntries.map(async ([indexKey, entry]) => {
