@@ -2488,9 +2488,9 @@ function MainApp({
                                                                 </Popover>
                                                             )}
                                                         >
-                                                            <button type="button" className="btn btn-link p-0 align-self-center" aria-label="Une seule candidature en cours par catégorie" title="Une seule candidature en cours par catégorie">
+                                                            <Button type="button" className="copy-button-modern" aria-label="Une seule candidature en cours par catégorie" title="Une seule candidature en cours par catégorie">
                                                                 <i className="fas fa-info-circle"></i>
-                                                            </button>
+                                                            </Button>
                                                         </OverlayTrigger>
                                                     </>
                                                 )}
