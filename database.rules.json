@@ -214,13 +214,21 @@
     // nouvelle écriture anonyme n'y est permise.
     "savedReports": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      // Ancien compartiment anonyme : plus lu ni écrit par l'app → fermé (avant, .read: true l'exposait publiquement).
       "CIVILIAN": {
-        ".read":  true,
-        ".write": "auth != null"
+        ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+        ".write": false
       },
       "$userKey": {
+        // Lecture : tout connecté (modèle collaboratif de dossier patient — inchangé ; resserrer la lecture
+        // civile exigerait de charger les dossiers civils via patientRecords, à faire séparément).
         ".read":  "auth != null",
-        ".write": "auth != null"
+        // Écriture : personnel/admins sur tout rapport. Un CIVIL ne peut que CRÉER un rapport, ou modifier/
+        // supprimer un rapport déjà à SON ID patient — il ne peut plus écraser/supprimer le rapport d'un autre.
+        ".write": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+        "$reportKey": {
+          ".write": "auth != null && (!data.exists() || data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val())"
+        }
       }
     },
 
