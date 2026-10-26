@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, Fragment } from 'react';
 import { formDefinitions, getFormDefinition } from './formDefinitions'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { Button, Dropdown, Modal } from 'react-bootstrap';
+import { Button, Dropdown, Modal, OverlayTrigger, Popover } from 'react-bootstrap';
 import getRelevantFields from './components/RevelantFields';
 import { buildReportTitle } from './utils/reportTitle';
 import { canonicalPatientId } from './utils/patientId';
@@ -2477,10 +2477,21 @@ function MainApp({
                                                             <i className="fas fa-list-check"></i>
                                                             Mes candidatures
                                                         </Button>
-                                                        <p className="text-muted w-100 mb-0" style={{ fontSize: '0.85em' }}>
-                                                            <i className="fas fa-info-circle me-1"></i>
-                                                            Une seule candidature en cours par catégorie : si vous enregistrez un autre poste de cette catégorie, il remplace votre candidature précédente, tant qu'elle n'est ni acceptée ni refusée.
-                                                        </p>
+                                                        <OverlayTrigger
+                                                            trigger="click" rootClose placement="top"
+                                                            overlay={(
+                                                                <Popover id="application-one-per-category">
+                                                                    <Popover.Header as="h3">Une candidature par catégorie</Popover.Header>
+                                                                    <Popover.Body>
+                                                                        Si vous enregistrez un autre poste de cette catégorie, il remplace votre candidature précédente, tant qu'elle n'est ni acceptée ni refusée.
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            )}
+                                                        >
+                                                            <button type="button" className="btn btn-link p-0 align-self-center" aria-label="Une seule candidature en cours par catégorie" title="Une seule candidature en cours par catégorie">
+                                                                <i className="fas fa-info-circle"></i>
+                                                            </button>
+                                                        </OverlayTrigger>
                                                     </>
                                                 )}
                                             </div>
