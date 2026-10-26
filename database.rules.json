@@ -246,10 +246,13 @@
         ".read":  "auth != null",
         ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
       },
-      // Logs d'activité — lu & écrit par les employés connectés (cocher les cases)
+      // Logs d'activité — lu & écrit par les employés connectés (cocher les cases), sauf quand la carte du type est mise
+      // en pause par un admin (bingo/cards/{type}/paused) : seuls les admins peuvent alors y écrire.
       "logs": {
         ".read":  "auth != null",
-        ".write": "auth != null"
+        "$type": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('bingo').child('cards').child($type).child('paused').val() !== true)"
+        }
       },
       // Demandes de phrases — soumises par les connectés, lues par admin
       "phraseRequests": {

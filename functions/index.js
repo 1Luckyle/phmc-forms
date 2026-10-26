@@ -147,7 +147,7 @@ export const dailyTaskHandler = onSchedule({
         { id: 'coroner', name: 'Coroner', path: 'Coroner' }
     ];
 
-    const bingoResults = { success: [], noCard: [], notEnoughPhrases: [], errors: [] };
+    const bingoResults = { success: [], noCard: [], paused: [], waiting: [], notEnoughPhrases: [], errors: [] };
 
     await db.ref('bingo/meta').update({ lastAutoRegenTimestamp: admin.database.ServerValue.TIMESTAMP });
 
@@ -161,6 +161,33 @@ export const dailyTaskHandler = onSchedule({
             if (!cardSnapshot.exists()) {
                 bingoResults.noCard.push(bingoType.name);
                 return;
+            }
+
+            const cardSettings = (await db.ref(`bingo/cards/${bingoType.path}`).once('value')).val() || {};
+            // Carte mise en pause par un admin : on la laisse telle quelle (cases et journal conservés).
+            if (cardSettings.paused === true) {
+                bingoResults.paused.push(bingoType.name);
+                return;
+            }
+            // Fréquence réglée par un admin : tous les N jours (1 par défaut), ou 0 = jamais (carte infinie).
+            const everyDays = cardSettings.resetEveryDays === undefined || cardSettings.resetEveryDays === null ? 1 : Number(cardSettings.resetEveryDays);
+            if (everyDays === 0) {
+                bingoResults.waiting.push(`${bingoType.name} (carte infinie)`);
+                return;
+            }
+            if (everyDays > 1) {
+                const lastReset = Number(cardSettings.lastResetAt || 0);
+                if (!lastReset) {
+                    // Aucune date connue : le décompte commence aujourd'hui.
+                    await db.ref(`bingo/cards/${bingoType.path}/lastResetAt`).set(Date.now());
+                    bingoResults.waiting.push(`${bingoType.name} (tous les ${everyDays} jours, décompte démarré)`);
+                    return;
+                }
+                // Marge de 6 h : le contrôle de 09:00 UTC ne tombe jamais à la seconde près sur l'échéance.
+                if (Date.now() - lastReset < everyDays * 24 * 60 * 60 * 1000 - 6 * 60 * 60 * 1000) {
+                    bingoResults.waiting.push(`${bingoType.name} (tous les ${everyDays} jours)`);
+                    return;
+                }
             }
 
             const masterSnapshot = await masterPhrasesRef.once('value');
@@ -184,6 +211,7 @@ export const dailyTaskHandler = onSchedule({
 
             const shuffledPhrases = getShuffledPhrases(masterPhrases).slice(0, 24);
             await cardPhrasesRef.set(shuffledPhrases);
+            await db.ref(`bingo/cards/${bingoType.path}/lastResetAt`).set(Date.now());
             await activityLogRef.remove();
             bingoResults.success.push(bingoType.name);
 
@@ -196,6 +224,8 @@ export const dailyTaskHandler = onSchedule({
     let bingoDetails = '';
     if (bingoResults.success.length > 0) bingoDetails += `✅ Régénéré : ${bingoResults.success.join(', ')}\n`;
     if (bingoResults.noCard.length > 0) bingoDetails += `➖ Ignoré (Désactivé) : ${bingoResults.noCard.join(', ')}\n`;
+    if (bingoResults.waiting.length > 0) bingoDetails += `⏳ Conservé (pas encore l'échéance) : ${bingoResults.waiting.join(', ')}\n`;
+    if (bingoResults.paused.length > 0) bingoDetails += `⏸️ Ignoré (En pause) : ${bingoResults.paused.join(', ')}\n`;
     if (bingoResults.notEnoughPhrases.length > 0) bingoDetails += `⚠️ Ignoré (Pas assez de phrases) : ${bingoResults.notEnoughPhrases.join(', ')}\n`;
     if (bingoResults.errors.length > 0) bingoDetails += `❌ Erreurs : ${bingoResults.errors.join(', ')}\n`;
 

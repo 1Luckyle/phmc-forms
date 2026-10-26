@@ -83,10 +83,14 @@ const controlsContainerStyle = {
     paddingRight: '50px',
 };
 
+// Zone qui défile (verticalement et horizontalement) entre les contrôles du haut et les boutons du bas.
+const bodyScrollStyle = {
+    flex: '1 1 auto',
+    minHeight: 0,
+    overflow: 'auto',
+};
+
 const tableContainerStyle = {
-    flexGrow: 1,
-    overflowY: 'auto',
-    overflowX: 'auto',
     marginTop: '10px',
 };
 
@@ -103,7 +107,8 @@ const thStyle = {
     fontWeight: '600',
     position: 'sticky',
     top: 0,
-    zIndex: 1,
+    zIndex: 2,
+    boxShadow: '0 1px 0 #30363d, 0 -1px 0 #161b22', // la bordure ne suit pas un en-tête collé (tableau en bordures fusionnées)
 };
 
 const thCheckboxStyle = {
@@ -790,6 +795,9 @@ const SavedReportsModal = ({
                     )}
                 </div>
 
+                {/* Tout ce qui est sous les contrôles défile ENSEMBLE (factures, titre, tableau) : sans ça, les factures
+                    prenaient la place et le tableau n'avait plus qu'une fenêtre minuscule. L'en-tête du tableau reste collé en haut. */}
+                <div style={bodyScrollStyle}>
                 {isCertificateAttach && (
                     <div style={{ backgroundColor: '#161b22', border: '1px solid #1f6feb', borderRadius: '5px', padding: '8px 12px', marginBottom: '10px', fontSize: '0.85em' }}>
                         <strong>Pièce jointe d'un certificat médical.</strong> Seuls ces rapports sont proposés :{' '}
@@ -985,6 +993,7 @@ const SavedReportsModal = ({
                                 : 'Impossible de retrouver votre fiche employé associée à ce compte. Contactez un administrateur.'}
                         </p>
                     )}
+                </div>
                 </div>
 
                 {!isLoadingReports && selectedEmployee && searchedAndFilteredReports.length > 0 && (

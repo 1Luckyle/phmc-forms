@@ -8,7 +8,8 @@ import { Button, Spinner } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './AdminDashboard.css';
 import '../DarkUi.css';
-import DatabaseEditor from './DatabaseEditor';
+import BingoPauseButton from './BingoPauseButton';
+import BingoResetSetting from './BingoResetSetting';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
 import { useDebug } from '../../contexts/DebugContext';
@@ -466,9 +467,11 @@ const AdminDashboard = ({
                                 </select>
                             </div>
                         </div>
-                        <p className="text-muted small">
-                            <i className="fas fa-clock me-1"></i> La réinitialisation quotidienne s'exécute automatiquement sur le serveur à 09:00 UTC.
-                        </p>
+                        <BingoResetSetting
+                            bingoType={BINGO_TYPES.find((type) => type.id === selectedAdminBingoType)}
+                            disabled={isUpdatingDb} showNotification={showInAppNotification}
+                            onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                        />
 
                         <div className="adm-actions-grid">
                             <div className="adm-fieldset">
@@ -480,7 +483,12 @@ const AdminDashboard = ({
                                     <Button variant="secondary" onClick={handleManualResetAllBingoCards} disabled={isUpdatingDb} title="Exécuter manuellement la réinitialisation quotidienne pour toutes les cartes de bingo actives.">
                                         <i className="fas fa-rotate-left"></i> Réinitialiser toutes les cartes
                                     </Button>
-                                    <Button variant="warning" onClick={handleDisableBingoCard} disabled={isUpdatingDb} title="Supprime la carte actuelle et le journal : le jeu est désactivé jusqu'à ce qu'une nouvelle carte soit générée.">
+                                    <BingoPauseButton
+                                        bingoType={BINGO_TYPES.find((type) => type.id === selectedAdminBingoType)}
+                                        disabled={isUpdatingDb} showNotification={showInAppNotification}
+                                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                                    />
+                                    <Button variant="warning" onClick={handleDisableBingoCard} disabled={isUpdatingDb} title="Supprime la carte actuelle et le journal : le jeu est désactivé jusqu'à ce qu'une nouvelle carte soit générée. Pour simplement arrêter la partie, utilisez « Mettre la carte en pause ».">
                                         <i className="fas fa-power-off"></i> Désactiver la carte
                                     </Button>
                                 </div>
@@ -514,8 +522,6 @@ const AdminDashboard = ({
                     </SectionCard>
                 );
 
-            case 'database':
-                return <DatabaseEditor showNotification={showInAppNotification} />;
 
             case 'debug':
                 return (

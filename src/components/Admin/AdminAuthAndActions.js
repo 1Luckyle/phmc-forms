@@ -958,6 +958,7 @@ Clé : ${savedRoleData.cle}`,
             // 2. Shuffle and save new card
             const shuffledPhrases = getShuffledPhrases(masterPhrases).slice(0, 24);
             await set(currentCardRef, shuffledPhrases);
+            await set(ref(database, `bingo/cards/${selectedType.path}/lastResetAt`), Date.now());
 
             // 3. Clear activity log for a fresh game
             await remove(activityLogRef);
@@ -1084,6 +1085,7 @@ Clé : ${savedRoleData.cle}`,
                 const activityLogRef = ref(database, `bingo/logs/${bingoType.path}/activityLog`);
                 
                 await set(cardPhrasesRef, shuffledPhrases);
+                await set(ref(database, `bingo/cards/${bingoType.path}/lastResetAt`), Date.now());
                 await remove(activityLogRef);
                 
                 results.success.push(bingoType.name);

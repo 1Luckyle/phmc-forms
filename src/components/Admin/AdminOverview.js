@@ -73,7 +73,6 @@ const AdminOverview = ({
                     <Tile icon="fa-users-gear" label="Utilisateurs" value="" tone="neutral" onClick={() => onOpen('users')} />
                     <Tile icon="fa-clock-rotate-left" label="Journal d'activité" value="" tone="neutral" onClick={() => onOpen('activity')} />
                     <Tile icon="fa-dice" label="Bingo" value="" tone="neutral" onClick={() => onOpen('bingo')} />
-                    <Tile icon="fa-database" label="Base de données" value="" tone="neutral" onClick={() => onOpen('database')} />
                     <Tile icon="fa-bug" label="Debug & simulation" value="" tone="neutral" onClick={() => onOpen('debug')} />
                 </div>
             </section>

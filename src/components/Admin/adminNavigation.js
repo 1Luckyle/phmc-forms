@@ -107,11 +107,6 @@ export const ADMIN_SECTION_GROUPS = [
                 description: 'Cartes de bingo du personnel, journal, phrases et demandes de révision.',
                 keywords: 'jeu cartes phrases',
             },
-            {
-                key: 'database', icon: 'fa-database', label: 'Base de données',
-                description: 'Explorateur et éditeur de la base Firebase (à manier avec précaution).',
-                keywords: 'firebase realtime edition données',
-            },
         ],
     },
     {
