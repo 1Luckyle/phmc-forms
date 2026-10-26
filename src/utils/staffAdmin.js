@@ -10,7 +10,7 @@
 //     les rapports (contrairement à « Supprimer »).
 // Les listes staff/phmc et staff/coroner peuvent être des tableaux OU des objets à clés
 // poussées : tout passe par des clés lues au moment de l'écriture.
-import { ref, get, set, update, push, remove } from 'firebase/database';
+import { ref, get, set, update, push, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, familiesOfMember, extraRanksOf, cleanExtraRanks, sortKeyOfRank } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';
@@ -288,13 +288,45 @@ export async function addStaffMember(service, { firstName, lastName, discord, ph
 // factures, candidatures, contrats — ne sont JAMAIS supprimées : elles dépendent d'autres personnes (patients, recrutement).
 const PERSONAL_DATA_PATHS = [
     'civilians', 'recruteurs', 'recruiterUIDs', 'candidatsContrat', 'contractCandidates',
-    'statutsMobilite', 'demandesMobilite', 'userCreations',
+    'statutsMobilite', 'userCreations',
 ];
+
+// Demandes envoyées depuis le site : on garde le contenu (historique de l'équipe), on retire ce qui identifie la personne.
+//   • bugs / idées / nouveaux formulaires (siteRequests) : nom, e-mail et Discord anonymisés ;
+//   • vidéosurveillance (cctvRequests) : e-mail retiré, nom conservé (pièce de dossier) ;
+//   • recrutement interne (demandesMobilite) : la demande est CONSERVÉE comme historique, seul le statut actif est retiré (ci-dessus).
+async function archivePersonalRequests(uid) {
+    try {
+        const siteSnap = await get(query(ref(database, 'siteRequests'), orderByChild('by/uid'), equalTo(uid)));
+        const updates = {};
+        siteSnap.forEach((child) => {
+            const request = child.val() || {};
+            updates[`siteRequests/${child.key}/by/name`] = 'Compte supprimé';
+            updates[`siteRequests/${child.key}/by/email`] = null;
+            updates[`siteRequests/${child.key}/by/discord`] = null;
+            if (Array.isArray(request.fields)) {
+                updates[`siteRequests/${child.key}/fields`] = request.fields.map((field) => (/^Soumis par/i.test(field.l || '') ? { ...field, v: 'Compte supprimé' } : field));
+            }
+        });
+        const cctvSnap = await get(query(ref(database, 'cctvRequests'), orderByChild('by/uid'), equalTo(uid)));
+        cctvSnap.forEach((child) => { updates[`cctvRequests/${child.key}/by/email`] = null; });
+        // Recrutement interne : la demande accordée passe à « terminée » (le statut actif est retiré avec les droits).
+        const mobilitySnap = await get(ref(database, `demandesMobilite/${uid}`));
+        if (mobilitySnap.exists() && mobilitySnap.val().statut === 'acceptee') {
+            updates[`demandesMobilite/${uid}/statut`] = 'terminee';
+            updates[`demandesMobilite/${uid}/traiteLe`] = Date.now();
+        }
+        if (Object.keys(updates).length > 0) await update(ref(database), updates);
+    } catch (error) {
+        console.warn('Anonymisation des demandes impossible :', error?.message || error);
+    }
+}
 async function removePersonalData(uid) {
     if (!uid) return;
     for (const path of PERSONAL_DATA_PATHS) {
         try { await set(ref(database, `${path}/${uid}`), null); } catch (error) { /* absent ou non modifiable */ }
     }
+    await archivePersonalRequests(uid);
 }
 
 async function deleteLoginAccount(uid, email) {

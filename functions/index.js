@@ -2340,15 +2340,31 @@ export const adoptArchivedRecords = onRequest({}, async (req, res) => {
             adoptedContracts += 1;
         }
 
+        // Demandes de vidéosurveillance : rattachées d'après l'ID patient du demandeur (enregistré dans les demandes récentes).
+        let adoptedCctv = 0;
+        const cctvSnap = await db.ref('cctvRequests').once('value');
+        for (const [requestId, request] of Object.entries(cctvSnap.val() || {})) {
+            const requesterUid = request && request.by && request.by.uid;
+            if (!requesterUid || requesterUid === caller.uid) continue;
+            const pid = archivePatientId((request.by && request.by.patientID) || '');
+            if (!pid || !patientIds.has(pid)) continue;
+            if (!(await isOrphan(requesterUid))) continue;
+            updates[`cctvRequests/${requestId}/by/uid`] = caller.uid;
+            updates[`cctvRequests/${requestId}/by/ancienUid`] = requesterUid;
+            updates[`cctvParDemandeur/${requesterUid}/${requestId}`] = null;
+            updates[`cctvParDemandeur/${caller.uid}/${requestId}`] = true;
+            adoptedCctv += 1;
+        }
+
         if (Object.keys(updates).length > 0) {
             await db.ref().update(updates);
             await logServerActivity({
                 category: 'comptes', action: 'archives_adopted', severity: 'success',
-                summary: `Archives rattachées à un compte recréé : ${adoptedApplications} candidature(s), ${adoptedContracts} contrat(s)`,
+                summary: `Archives rattachées à un compte recréé : ${adoptedApplications} candidature(s), ${adoptedContracts} contrat(s), ${adoptedCctv} demande(s) de vidéosurveillance`,
                 target: [...patientIds][0], actorName: caller.name || caller.email || 'Compte recréé',
             });
         }
-        res.status(200).json({ candidatures: adoptedApplications, contrats: adoptedContracts });
+        res.status(200).json({ candidatures: adoptedApplications, contrats: adoptedContracts, cctv: adoptedCctv });
     } catch (error) {
         console.error('Error adopting archived records:', error);
         res.status(500).json({ error: 'internal', message: 'Impossible de rattacher les archives.' });

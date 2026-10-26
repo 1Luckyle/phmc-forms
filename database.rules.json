@@ -300,7 +300,7 @@
     },
     "cctvRequests": {
       ".read":  "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
-      ".indexOn": ["ts", "statut"],
+      ".indexOn": ["ts", "statut", "by/uid"],
       "$requestId": {
         ".read":  "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || data.child('by/uid').val() === auth.uid)",
         ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('statut').val() === 'nouvelle' && !newData.child('reponses').exists()))",
@@ -321,7 +321,7 @@
     // Créées par les connectés (statut « nouveau », à leur nom) ; lues et traitées par les admins.
     "siteRequests": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
-      ".indexOn": ["ts", "status", "type"],
+      ".indexOn": ["ts", "status", "type", "by/uid"],
       "$requestId": {
         ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('status').val() === 'nouveau')",
         ".validate": "newData.hasChildren(['type', 'status', 'ts', 'title', 'by']) && (newData.child('type').val() === 'bug' || newData.child('type').val() === 'feature' || newData.child('type').val() === 'form') && (newData.child('status').val() === 'nouveau' || newData.child('status').val() === 'en_cours' || newData.child('status').val() === 'traite' || newData.child('status').val() === 'refuse') && newData.child('title').isString() && newData.child('title').val().length <= 200"

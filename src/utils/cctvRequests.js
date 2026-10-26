@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { ref, push, update, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity, getActivityActorName } from './activityLog';
+import { canonicalPatientId } from './patientId';
 
 const SYNC_ACCESS_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/syncCctvAccess';
 
@@ -49,7 +50,7 @@ export const useCctvManager = (isAdmin) => {
 };
 
 // fields : [{ label, value }] dans l'ordre d'affichage. summary : { agent, departement, lieu } pour les listes.
-export const submitCctvRequest = async ({ title, fields, discord, summary = {} }) => {
+export const submitCctvRequest = async ({ title, fields, discord, patientID, summary = {} }) => {
     const user = auth.currentUser;
     if (!user) return { ok: false, reason: 'not-signed-in' };
     const requestRef = push(ref(database, 'cctvRequests'));
@@ -70,6 +71,8 @@ export const submitCctvRequest = async ({ title, fields, discord, summary = {} }
     };
     if (user.email) entry.by.email = clean(user.email, 120);
     if (discord) entry.by.discord = clean(discord, 80);
+    // ID patient du demandeur : si son compte est supprimé puis recréé, la demande lui est rattachée (adoptArchivedRecords).
+    if (patientID) entry.by.patientID = clean(canonicalPatientId(patientID), 40);
     try {
         await update(ref(database), {
             [`cctvRequests/${id}`]: entry,

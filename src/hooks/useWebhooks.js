@@ -6,8 +6,10 @@ import { database } from '../firebase';
 import { ref, set, push } from 'firebase/database';
 import { submitCctvRequest } from '../utils/cctvRequests';
 import { logActivity } from '../utils/activityLog';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 
 export const useWebhooks = (formData, commitInfo, showNotification) => {
+    const { myPatientID } = useEmployeeAuth();
     const logWebhookToFirebase = async (type, payload) => {
         const db = database;
         const logsRef = ref(db, 'webhook_logs');
@@ -111,6 +113,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
         const result = await submitCctvRequest({
             title: `${cctvData.location ? cctvData.location.split('\n')[0] : 'Lieu non précisé'} — ${cctvData.department || 'Service non précisé'}`,
             discord: cctvData.discordUsername,
+            patientID: myPatientID,
             summary: { agent: cctvData.officer, departement: cctvData.department, lieu: cctvData.location },
             fields: [
                 { label: "Grade de l'officier requérant", value: cctvData.rank },
