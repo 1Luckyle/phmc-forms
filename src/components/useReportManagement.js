@@ -1178,8 +1178,6 @@ Copie : ${copyPath}`, target: copyAuthorName,
             return { success: false };
         }
 
-        // Identifiant conservé tel quel (« form_{version} ») : le changer dupliquerait les candidatures déjà déposées.
-        const applicationId = `form_${bbCodeVersion}`;
         const bbCodeContent = getBBCodeContent();
         const applicantName = formData.applicantTitleAndFullName
             || `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim();
@@ -1187,14 +1185,15 @@ Copie : ${copyPath}`, target: copyAuthorName,
 
         try {
             // Candidature existante (nouveau nœud « candidatures » ou ancien « jobApplications »).
-            const existing = await loadApplication(applicant.uid, applicationId);
-
-            // Une décision admin (acceptée/refusée) est définitive : on ne laisse
-            // pas un nouvel envoi depuis le formulaire l'écraser silencieusement.
-            if (existing && ['acceptee', 'refusee'].includes(existing.statut)) {
-                showNotification('Cette candidature a déjà été traitée par l\'administration et ne peut plus être modifiée.', 'warning');
-                return { success: false };
-            }
+            // Une candidature par domaine tant qu'elle est en cours (brouillon, envoyée, en pause, retirée…) : « Enregistrer »
+            // met à jour la même. Une décision de l'administration (acceptée/refusée) est définitive et reste dans le dossier :
+            // une nouvelle candidature dans ce domaine est alors une nouvelle entrée. Le premier identifiant « form_{version} »
+            // est conservé tel quel pour ne pas dupliquer les candidatures déjà déposées.
+            const sameForm = (await loadApplicationsOf(applicant.uid)).filter((a) => Number(a.versionBBCode) === Number(bbCodeVersion));
+            const existing = sameForm
+                .filter((a) => !['acceptee', 'refusee'].includes(a.statut))
+                .sort((a, b) => (b.modifieLe || 0) - (a.modifieLe || 0))[0] || null;
+            const applicationId = existing?.id || (sameForm.length > 0 ? `form_${bbCodeVersion}_${Date.now()}` : `form_${bbCodeVersion}`);
 
             // Conditions d'enregistrement : un brouillon exige au moins un poste ; l'envoi exige une candidature
             // complète pour un poste ouvert (voir utils/formValidation.js).
@@ -1329,7 +1328,11 @@ Candidature : ${applicationId}`,
             const statut = normalizeApplicationStatus(newStatus);
             // Candidater / reprendre un brouillon ou une candidature en pause : mêmes conditions qu'un envoi depuis le formulaire.
             if (statut === 'soumise' && ['brouillon', 'en_pause'].includes(existing.statut)) {
-                const check = validateApplication(existing.versionBBCode, existing.donnees, { mode: 'submit', existing, selectOptions });
+                if (!existing.donnees || Object.keys(existing.donnees).length === 0) {
+                    showNotification('Cette candidature a été enregistrée sans ses réponses : rouvrez le formulaire, remplissez-le puis candidatez depuis le formulaire.', 'exclamation-circle', 10000);
+                    return { success: false };
+                }
+                const check = validateApplication(existing.versionBBCode, { ...existing.donnees, recruitmentPosition: existing.donnees.recruitmentPosition || existing.posteCle }, { mode: 'submit', existing, selectOptions });
                 if (check.errors.length > 0) {
                     showNotification(formatIssues(check.errors, { title: 'Candidature incomplète :' }), 'exclamation-circle', 10000);
                     return { success: false };

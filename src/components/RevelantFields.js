@@ -399,6 +399,22 @@ const getRelevantFields = (bbCodeVersion) => {
                 'illnessCondition', 'confirmationPurpose', 'attachedReportSummary',
                 'phmcEmployee', 'lastName', 'phmcRank', 'phmcEmployeeSignatureImage', 'SubmitDate',
             ];
+        case 50: // Candidatures (médecin, administration, soins infirmiers, médecine légale, paramédical, psychologie) :
+        case 51: // une seule liste, les champs d'un autre formulaire n'existant pas simplement ignorés.
+        case 52:
+        case 53:
+        case 54:
+        case 55:
+            return [
+                'recruitmentPosition', 'applicantTitleAndFullName', 'genderMale', 'genderFemale', 'genderOther', 'applicantGenderOtherText',
+                'applicantDOB', 'applicantBirthPlace', 'applicantDOBAndPlace', 'applicantAddress', 'applicantPhone', 'applicantEmail',
+                'locationPHMC', 'locationPBC', 'applicantMedicalConditions', 'citizenUS', 'citizenPermanent', 'citizenNone',
+                'eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAssociate', 'eduBachelor', 'eduMaster', 'eduDoctorate',
+                'applicantSchoolName', 'applicantEnrollmentTerm', 'applicantMajor', 'applicantLanguages',
+                'applicantPrevEmployment', 'applicantPrevDuties', 'applicantPrevDismissalReason', 'applicantMotivationLetter',
+                'emsLicenseLink', 'emsPartTimeReason', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink',
+                'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone', 'oocMedicalExperience', 'oocOtherCharLicenseProof', 'oocOtherFactionDfpLfm',
+            ];
         case 37: // Rapport public de décès
             return [
                 'deathRecordType', 'deathReportPostId', 'caseNumber', 'decedentName', 'decedentOOC', 'patientID',
