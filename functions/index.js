@@ -257,16 +257,28 @@ export const dailyTaskHandler = onSchedule({
 
 // --- OAuth Token Exchange Function ---
 
+const ALLOWED_CORS_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:3000/phmc-forms',
+    'https://1luckyle.github.io',
+    'https://1luckyle.github.io/phmc-forms',
+];
+const DEFAULT_CORS_ORIGIN = 'https://1luckyle.github.io';
+
 const corsHandler = cors({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:3000/phmc-forms',
-        'https://1luckyle.github.io',
-        'https://1luckyle.github.io/phmc-forms',
-    ],
+    origin: ALLOWED_CORS_ORIGINS,
     methods: ['POST', 'OPTIONS'],
     credentials: true
 });
+
+// Valeur d'Access-Control-Allow-Origin : l'origine de la requête UNIQUEMENT si elle figure dans la liste
+// blanche. Auparavant chaque fonction renvoyait telle quelle n'importe quelle origine (`|| '*'`), ce qui
+// annulait la liste ci-dessus : un site tiers pouvait appeler nos fonctions depuis le navigateur d'un visiteur.
+// Une origine inconnue reçoit l'origine par défaut, que le navigateur rejette car elle ne correspond pas.
+const allowedCorsOrigin = (req) => {
+    const origin = req.get('origin');
+    return ALLOWED_CORS_ORIGINS.includes(origin) ? origin : DEFAULT_CORS_ORIGIN;
+};
 
 // Secrets Google Secret Manager requis par exchangeGtawAuthCode (client OAuth
 // GTA World). Firebase Functions v2 exige que CHAQUE fonction qui lit un secret
@@ -285,7 +297,7 @@ const GTAW_OAUTH_SECRETS = ['GTAWORLD_CLIENT_ID', 'GTAWORLD_CLIENT_SECRET'];
 export const deleteUserAccount = onRequest(async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -492,7 +504,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: GTAW_OAUTH_SECRETS 
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
     // Set CORS headers explicitly for all responses
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -674,7 +686,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: GTAW_OAUTH_SECRETS 
 export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -823,7 +835,7 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
 export const createGtawEmployeeAccount = onRequest({}, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -873,7 +885,7 @@ export const createGtawEmployeeAccount = onRequest({}, async (req, res) => {
 export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -968,7 +980,7 @@ const FLEECA_SECRETS = ['FLEECA_API_KEY'];
 export const createFleecaPayment = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -1150,7 +1162,7 @@ export const fleecaWebhook = onRequest({ secrets: [...FLEECA_SECRETS, 'EYEFIND_A
 export const getFleecaPaymentStatus = onRequest({ secrets: FLEECA_SECRETS }, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -1347,14 +1359,86 @@ const sendEyefindMailInternal = async ({ apiKey, to, subject, body, html }) => {
     return eyefindData;
 };
 
+// --- Anti-abus des endpoints qui envoient des mails ---
+// rateLimits/{seau}/{clé} : { windowStart, count }, fenêtre fixe tenue par transaction (atomique : des
+// requêtes parallèles ne peuvent pas dépasser la limite). Écrit uniquement ici (SDK Admin).
+const consumeRateLimit = async (bucket, key, { max, windowMs }) => {
+    const safeKey = String(key || 'unknown').replace(/[.#$[\]/]/g, '_');
+    const now = Date.now();
+    const { committed } = await db.ref(`rateLimits/${bucket}/${safeKey}`).transaction((current) => {
+        if (!current || typeof current.windowStart !== 'number' || now - current.windowStart >= windowMs) {
+            return { windowStart: now, count: 1 };
+        }
+        if (current.count >= max) return undefined; // limite atteinte : on annule la transaction
+        return { windowStart: current.windowStart, count: current.count + 1 };
+    });
+    return committed;
+};
+
+// IP de l'appelant, en complément (jamais à la place) des limites par adresse : l'en-tête
+// X-Forwarded-For peut être falsifié par l'appelant, donc cette limite est « au mieux ».
+const getClientIp = (req) => {
+    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',').map((part) => part.trim()).filter(Boolean);
+    return forwarded[0] || req.ip || 'unknown';
+};
+
+const MAIL_LIMIT_STAFF = { max: 60, windowMs: 10 * 60 * 1000 };          // mails envoyés par un membre du personnel
+const MAIL_LIMIT_SELF = { max: 10, windowMs: 60 * 60 * 1000 };           // mails qu'un compte Civil s'envoie à lui-même
+const MAIL_LIMIT_RECIPIENT = { max: 15, windowMs: 10 * 60 * 1000 };      // mails reçus par une même adresse
+const VERIFICATION_SEND_IP_LIMIT = { max: 20, windowMs: 60 * 60 * 1000 };
+const VERIFICATION_SEND_MIN_INTERVAL = { max: 1, windowMs: 60 * 1000 };  // un code par minute et par adresse
+const VERIFICATION_SEND_EMAIL_LIMIT = { max: 6, windowMs: 60 * 60 * 1000 };
+const VERIFICATION_ATTEMPTS_LIMIT = { max: 5, windowMs: 15 * 60 * 1000 }; // essais par code émis
+const VERIFICATION_VERIFY_IP_LIMIT = { max: 60, windowMs: 60 * 60 * 1000 };
+
+// Le « personnel » autorisé à écrire à n'importe quel joueur : admins, recruteurs et membres des
+// listes staff/phmc ou staff/coroner (même source de vérité que database.rules.json). Un compte Civil
+// n'en fait pas partie, même si son profil civilians/{uid} existe.
+const isStaffLikeCaller = async (uid) => {
+    const [adminSnap, recruteurSnap, recruiterSnap] = await Promise.all([
+        db.ref(`adminUIDs/${uid}`).once('value'),
+        db.ref(`recruteurs/${uid}`).once('value'),
+        db.ref(`recruiterUIDs/${uid}`).once('value'),
+    ]);
+    if (adminSnap.val() === true || recruteurSnap.val() === true || recruiterSnap.val() === true) return true;
+    const staff = await findStaffEntryByUid(uid);
+    return Boolean(staff) && staff.path.startsWith('staff/');
+};
+
+// Le HTML reçu du client est de la mise en forme simple (<p>, <b>, <br>, <a>...). On ne garde que cette
+// liste blanche de balises, sans aucun attribut sauf href en https sur <a> : plus de script, de style, de
+// gestionnaire d'événement, d'image distante ni de lien javascript:. Tout « < » isolé est échappé pour
+// qu'un fragment de balise ne puisse pas se refermer avec le gabarit qui entoure le contenu.
+const MAIL_HTML_ALLOWED_TAGS = new Set(['p', 'b', 'strong', 'i', 'em', 'u', 'br', 'hr', 'ul', 'ol', 'li', 'a', 'span', 'div', 'small', 'h2', 'h3', 'h4']);
+const sanitizeMailHtml = (rawHtml) => String(rawHtml || '')
+    .replace(/<(script|style|iframe|object|embed|svg|math|form|head|title|meta|link|base)\b[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^<>]*)>|</g, (match, slash, rawTag, rawAttrs) => {
+        if (match === '<') return '&lt;';
+        const tag = rawTag.toLowerCase();
+        if (!MAIL_HTML_ALLOWED_TAGS.has(tag)) return '';
+        if (slash) return `</${tag}>`;
+        if (tag === 'a') {
+            const hrefMatch = rawAttrs.match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+            const href = hrefMatch ? (hrefMatch[1] ?? hrefMatch[2] ?? '').trim() : '';
+            return /^https:\/\//i.test(href) ? `<a href="${href.replace(/"/g, '&quot;')}">` : '<a>';
+        }
+        return `<${tag}>`;
+    });
+
 // Point d'entrée appelé par le client pour tous les mails Eyefind (compte
 // approuvé, promotion, retrait, rapport enregistré par un admin...). Le
 // contenu (sujet/corps) est composé côté client (voir src/utils/eyefindMail.js)
-// puis simplement transmis ici avec la clé API.
+// puis transmis ici avec la clé API, APRÈS contrôle de l'appelant :
+//   • jeton Firebase obligatoire ;
+//   • le personnel peut écrire à n'importe quelle adresse Eyefind, un compte Civil seulement à la sienne
+//     (accusé de réception de candidature) ;
+//   • limites de débit par appelant et par destinataire ;
+//   • HTML filtré (liste blanche de balises), tailles plafonnées.
 export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -1374,6 +1458,11 @@ export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (re
         return;
     }
 
+    // Sans jeton valide, n'importe qui (curl, script) pourrait faire envoyer des mails à l'identité
+    // officielle du PHMC : le CORS ne protège que contre les navigateurs, pas contre ça.
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+
     const data = req.body.data || req.body;
     const { to, subject, body, html } = data || {};
 
@@ -1381,9 +1470,35 @@ export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (re
         res.status(400).json({ error: 'invalid-argument', message: 'Les champs « to », « subject » et « body » sont obligatoires.' });
         return;
     }
+    const recipient = String(to).trim();
+    if (!EYEFIND_ADDRESS_REGEX.test(recipient)) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Le destinataire doit être une adresse Eyefind Mail (prenomnom@mail.eyefind.fr).' });
+        return;
+    }
+    const cleanSubject = String(subject).replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
+    const cleanBody = String(body).slice(0, 5000);
+    if (!cleanSubject || !cleanBody.trim()) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Le sujet et le corps du mail ne peuvent pas être vides.' });
+        return;
+    }
+    const cleanHtml = html ? sanitizeMailHtml(String(html).slice(0, 20000)) : undefined;
 
     try {
-        const result = await sendEyefindMailInternal({ apiKey, to, subject, body, html });
+        const isStaffCaller = await isStaffLikeCaller(caller.uid);
+        // Les civils se connectent par jeton personnalisé : on relit l'adresse dans le compte Auth si le jeton n'en porte pas.
+        if (!isStaffCaller && String(caller.email || (await admin.auth().getUser(caller.uid)).email || '').toLowerCase() !== recipient.toLowerCase()) {
+            res.status(403).json({ error: 'forbidden', message: 'Vous ne pouvez envoyer un mail qu\'à votre propre adresse.' });
+            return;
+        }
+
+        const withinLimits = (await consumeRateLimit('sendMailCaller', caller.uid, isStaffCaller ? MAIL_LIMIT_STAFF : MAIL_LIMIT_SELF))
+            && (await consumeRateLimit('sendMailRecipient', sanitizeEmailKey(recipient), MAIL_LIMIT_RECIPIENT));
+        if (!withinLimits) {
+            res.status(429).json({ error: 'too-many-requests', message: 'Trop de mails envoyés en peu de temps. Réessayez dans quelques minutes.' });
+            return;
+        }
+
+        const result = await sendEyefindMailInternal({ apiKey, to: recipient, subject: cleanSubject, body: cleanBody, html: cleanHtml });
         res.status(200).json({ message_id: result.message_id, warnings: result.warnings || [] });
     } catch (error) {
         if (error && error.status && error.body) {
@@ -1409,7 +1524,7 @@ const EYEFIND_ADDRESS_REGEX = /^[^\s@]+@mail\.eyefind\.fr$/i;
 export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS }, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -1436,10 +1551,30 @@ export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS },
         return;
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
     const emailKey = sanitizeEmailKey(email);
 
     try {
+        // Endpoint public (appelé avant la création du compte, donc sans jeton Firebase) : on limite les
+        // envois pour qu'il ne serve ni à spammer une adresse de codes, ni à saboter l'inscription de
+        // quelqu'un en réinitialisant sa vérification en boucle.
+        const withinLimits = (await consumeRateLimit('verifCodeIp', getClientIp(req), VERIFICATION_SEND_IP_LIMIT))
+            && (await consumeRateLimit('verifCodeEmailMin', emailKey, VERIFICATION_SEND_MIN_INTERVAL))
+            && (await consumeRateLimit('verifCodeEmail', emailKey, VERIFICATION_SEND_EMAIL_LIMIT));
+        if (!withinLimits) {
+            res.status(429).json({ error: 'too-many-requests', message: 'Un code vient d\'être envoyé ou trop de demandes ont été faites. Patientez une minute avant d\'en redemander un.' });
+            return;
+        }
+
+        // Une adresse tout juste vérifiée n'est pas réinitialisable : la personne est en train de finir son inscription.
+        const previous = (await db.ref(`emailVerifications/${emailKey}`).once('value')).val();
+        if (previous && previous.verified && Date.now() - (previous.verifiedAt || 0) < EMAIL_VERIFICATION_TTL_MS) {
+            res.status(409).json({ error: 'already-verified', message: 'Cette adresse vient d\'être vérifiée : poursuivez votre inscription, ou patientez quelques minutes avant de redemander un code.' });
+            return;
+        }
+
+        const code = String(crypto.randomInt(100000, 1000000));
+        // Nouveau code = compteur d'essais remis à zéro.
+        await db.ref(`rateLimits/verifyAttempts/${emailKey}`).remove();
         await db.ref(`emailVerifications/${emailKey}`).set({
             email,
             code,
@@ -1470,7 +1605,7 @@ export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS },
 export const verifyEmailCode = onRequest({}, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -1494,6 +1629,10 @@ export const verifyEmailCode = onRequest({}, async (req, res) => {
 
     const emailKey = sanitizeEmailKey(email);
     try {
+        if (!(await consumeRateLimit('verifyIp', getClientIp(req), VERIFICATION_VERIFY_IP_LIMIT))) {
+            res.status(429).json({ error: 'too-many-requests', message: 'Trop de tentatives. Réessayez plus tard.' });
+            return;
+        }
         const snap = await db.ref(`emailVerifications/${emailKey}`).once('value');
         if (!snap.exists()) {
             res.status(404).json({ error: 'not-found', message: 'Aucune demande de vérification pour cet email. Redemandez un code.' });
@@ -1502,6 +1641,14 @@ export const verifyEmailCode = onRequest({}, async (req, res) => {
         const record = snap.val();
         if (Date.now() > record.expiresAt) {
             res.status(410).json({ error: 'expired', message: 'Ce code a expiré. Redemandez-en un nouveau.' });
+            return;
+        }
+        // 6 chiffres = 1 million de possibilités : sans limite d'essais, un script les parcourt en quelques
+        // minutes et « vérifie » une adresse qu'il ne contrôle pas. Le compteur est une transaction, donc des
+        // requêtes parallèles ne le contournent pas ; le code est invalidé dès la limite atteinte.
+        if (!(await consumeRateLimit('verifyAttempts', emailKey, VERIFICATION_ATTEMPTS_LIMIT))) {
+            await db.ref(`emailVerifications/${emailKey}`).remove();
+            res.status(429).json({ error: 'too-many-attempts', message: 'Trop d\'essais incorrects. Redemandez un nouveau code.' });
             return;
         }
         if (String(record.code) !== code) {
@@ -1535,7 +1682,7 @@ const EMAIL_CHANGE_MAX_ATTEMPTS = 5;
 const EMAIL_CHANGE_MIN_INTERVAL_MS = 60 * 1000;
 
 const setJsonCors = (req, res) => {
-    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');

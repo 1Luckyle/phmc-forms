@@ -502,6 +502,15 @@
       ".write": false
     },
 
+    // ─── Limites de débit (anti-abus des mails / codes de vérification) ───────
+    // rateLimits/{seau}/{clé} : { windowStart, count }. Compteurs tenus exclusivement côté serveur
+    // (consumeRateLimit dans functions/index.js, SDK Admin qui contourne ces règles) : lecture et
+    // écriture client bloquées pour que personne ne puisse remettre son compteur à zéro.
+    "rateLimits": {
+      ".read":  false,
+      ".write": false
+    },
+
     // ─── Contrats de travail (FRANÇAIS) ───────────────────────────────────────
     // contrats/{id} : contrat rattaché à un membre du personnel, un recruteur ou un candidat accepté
     // (employeUid), statut brouillon -> envoye -> signe (voir src/utils/contracts.js).

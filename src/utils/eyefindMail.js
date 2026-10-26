@@ -52,9 +52,15 @@ export const sendEyefindMail = async ({ to, subject, body, html }) => {
     }
 
     try {
+        // La fonction exige le jeton Firebase de la personne connectée : sans lui, n'importe qui pourrait
+        // faire envoyer des mails au nom du PHMC.
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) {
+            return { ok: false, error: 'unauthorized', message: 'Vous devez être connecté pour envoyer un mail.' };
+        }
         const response = await fetch(SEND_MAIL_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
             body: JSON.stringify({ to, subject, body, html }),
         });
 
