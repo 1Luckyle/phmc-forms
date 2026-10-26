@@ -6,6 +6,8 @@ import { ref, get, set, onValue } from 'firebase/database';
 import { canonicalPatientId } from '../utils/patientId';
 import { getViewAs, saveViewAs, buildSimulatedIdentity, deriveIdentity } from '../utils/viewAs';
 import { setActivityActor, logActivity } from '../utils/activityLog';
+import { clearDeletedMark } from '../utils/deletedAccounts';
+import { adoptArchivedRecords } from '../utils/adoptArchives';
 
 const CREATE_GTAW_CIVILIAN_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawCivilianAccount';
 
@@ -313,6 +315,7 @@ export const EmployeeAuthProvider = ({ children }) => {
             };
 
             await set(ref(database, `civilians/${user.uid}`), civilianWithID);
+            clearDeletedMark(civilianWithID.patientID);
 
             setCivilianProfile(civilianWithID);
             setEmployeeProfile(null);
@@ -444,6 +447,7 @@ export const EmployeeAuthProvider = ({ children }) => {
             const sessionKey = `activityLogin:${user.uid}`;
             if (sessionStorage.getItem(sessionKey)) return;
             sessionStorage.setItem(sessionKey, '1');
+            adoptArchivedRecords();
             logActivity({ category: 'auth', action: 'login', summary: `Connexion de ${realName || user.email || 'un utilisateur'}`, details: realRole ? `Rôle : ${realRole}` : undefined });
         } catch (e) { /* stockage indisponible : on ne journalise simplement pas la connexion */ }
     }, [isLoading, realName, realRole, isAdmin]);

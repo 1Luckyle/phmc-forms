@@ -17,6 +17,7 @@ import { getEmployeeDisplayName } from './employeeName';
 import { sendEyefindMail } from './eyefindMail';
 import { canonicalPatientId } from './patientId';
 import { findPatientNodes } from './patientRecords';
+import { markAccountDeleted, clearDeletedMark, staffPatientIdOf } from './deletedAccounts';
 
 export const STAFF_SERVICES = {
     phmc: { key: 'phmc', label: 'PHMC (hospitalier)', path: 'staff/phmc', ranks: PHMC_RANKS, defaultPrefix: 'MD' },
@@ -279,54 +280,63 @@ export async function addStaffMember(service, { firstName, lastName, discord, ph
     if (extras.length > 0) payload.extraRanks = extras;
     if ([rank, ...extras].some((value) => getRoleInfo(value)?.needsServiceDirige) && serviceDirige) payload.serviceDirige = String(serviceDirige).trim();
     await set(push(ref(database, cfg.path)), payload);
+    await clearDeletedMark(staffPatientIdOf(payload));
     return payload;
 }
 
-// SUPPRESSION définitive d'un membre (reprend executeRemoveStaff) : ses rapports sont transférés
-// vers `transferTo` (ou supprimés), la fiche est retirée, le compte de connexion supprimé, un
-// mail de fin de fonctions envoyé. Pour garder la personne dans l'application, utiliser plutôt
-// convertStaffToCivilian.
-export async function removeStaffMember(member, { transferTo = null } = {}) {
-    // 1) Rapports
-    const reportsSnap = await get(ref(database, 'savedReports'));
-    if (reportsSnap.exists()) {
-        const all = reportsSnap.val();
-        const node = sanitizeNode(member.name);
-        if (all[node]) {
-            const updates = {};
-            if (transferTo) {
-                const targetNode = sanitizeNode(transferTo);
-                const destination = all[targetNode] || {};
-                Object.keys(all[node]).forEach((id) => { if (!destination[id]) destination[id] = all[node][id]; });
-                updates[`savedReports/${targetNode}`] = destination;
-            }
-            updates[`savedReports/${node}`] = null;
-            await update(ref(database), updates);
-        }
+// Informations PERSONNELLES d'un compte (profil Civil, droits, rôles, créations). Les archives — rapports rédigés, dossier patient,
+// factures, candidatures, contrats — ne sont JAMAIS supprimées : elles dépendent d'autres personnes (patients, recrutement).
+const PERSONAL_DATA_PATHS = [
+    'civilians', 'recruteurs', 'recruiterUIDs', 'candidatsContrat', 'contractCandidates',
+    'statutsMobilite', 'demandesMobilite', 'userCreations',
+];
+async function removePersonalData(uid) {
+    if (!uid) return;
+    for (const path of PERSONAL_DATA_PATHS) {
+        try { await set(ref(database, `${path}/${uid}`), null); } catch (error) { /* absent ou non modifiable */ }
     }
-    // 2) Fiche staff
-    await removeStaffEntry(member);
-    // 3) Compte de connexion
-    if (member.uid || member.email) {
+}
+
+async function deleteLoginAccount(uid, email) {
+    if (!uid && !email) return;
+    try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (idToken) {
+            const functionUrl = `https://europe-west1-${process.env.REACT_APP_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteUserAccount`;
+            await fetch(functionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({ uid, email }),
+            });
+        }
+    } catch (authError) {
+        console.warn('Could not delete Auth account:', authError);
+    }
+}
+
+// SUPPRESSION d'un membre du personnel : la fiche, le profil Civil éventuel, le compte de connexion, ses droits et ses créations
+// (carte de visite, signature) sont supprimés. Ses RAPPORTS, son dossier patient, ses candidatures et ses contrats sont CONSERVÉS
+// (archives). Un marqueur « comptesSupprimes » signale au personnel soignant qu'il n'est plus employé ; s'il recrée un compte, il
+// retrouve ses archives. Pour garder la personne dans l'application, utiliser plutôt convertStaffToCivilian.
+export async function removeStaffMember(member) {
+    let civilPatientId = '';
+    if (member.uid) {
         try {
-            const idToken = await auth.currentUser?.getIdToken();
-            if (idToken) {
-                const functionUrl = `https://europe-west1-${process.env.REACT_APP_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteUserAccount`;
-                await fetch(functionUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-                    body: JSON.stringify({ uid: member.uid, email: member.email }),
-                });
-            }
-        } catch (authError) {
-            console.warn(`Could not delete Auth account for ${member.name}:`, authError);
-        }
+            const civilSnap = await get(ref(database, `civilians/${member.uid}`));
+            if (civilSnap.exists()) civilPatientId = civilSnap.val().patientID || '';
+        } catch (error) { /* profil Civil illisible : on retombe sur l'ID dérivé de la fiche */ }
     }
+    await markAccountDeleted(staffPatientIdOf(member, civilPatientId), {
+        type: 'personnel', nom: member.displayName || member.name, role: rankLabel(member.service, member.rank),
+    });
+    await removeStaffEntry(member);
+    await removePersonalData(member.uid);
+    await deleteLoginAccount(member.uid, member.email);
     sendMailBestEffort({
         to: member.email,
         subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
-        body: `Bonjour ${member.displayName},\n\nVotre compte et vos fonctions au sein du Pillbox Hill Medical Center ont été résiliés.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${member.displayName},</p><p>Votre compte et vos fonctions au sein du <b>Pillbox Hill Medical Center</b> ont été résiliés.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+        body: `Bonjour ${member.displayName},\n\nVotre compte et vos fonctions au sein du Pillbox Hill Medical Center ont été résiliés. Vos informations personnelles sont supprimées ; vos rapports et dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\nCordialement,\nPillbox Hill Medical Center`,
+        html: `<p>Bonjour ${member.displayName},</p><p>Votre compte et vos fonctions au sein du <b>Pillbox Hill Medical Center</b> ont été résiliés. Vos informations personnelles sont supprimées ; vos rapports et dossiers restent archivés et vous les retrouverez si vous recréez un compte.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
     });
 }
 
@@ -390,6 +400,7 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
         ...(civilian.gtawUserId != null && { gtawUserId: civilian.gtawUserId }),
     };
     await set(push(ref(database, cfg.path)), entry);
+    await clearDeletedMark(staffPatientIdOf(entry, civilian.patientID));
     sendMailBestEffort({
         to: civilian.email,
         subject: 'Votre compte est désormais un compte du personnel - Pillbox Hill Medical Center',
@@ -484,29 +495,15 @@ export async function saveCivilianProfile(profile, previousProfile = null) {
 
 export async function deleteCivilianAccount(civilian) {
     const displayName = `${civilian.firstName || ''} ${civilian.lastName || ''}`.trim() || civilian.email;
-    await remove(ref(database, `civilians/${civilian.uid}`));
-    try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (idToken) {
-            const functionUrl = `https://europe-west1-${process.env.REACT_APP_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteUserAccount`;
-            await fetch(functionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-                body: JSON.stringify({ uid: civilian.uid, email: civilian.email }),
-            });
-        }
-    } catch (authError) {
-        console.warn(`Could not delete Auth account for civilian ${civilian.uid}:`, authError);
-    }
-    // Un recruteur supprimé ne doit pas laisser un drapeau orphelin.
-    for (const path of ['recruteurs', 'recruiterUIDs', 'candidatsContrat', 'contractCandidates']) {
-        try { await set(ref(database, `${path}/${civilian.uid}`), null); } catch (e) { /* ignoré */ }
-    }
+    // Archives conservées (dossier patient, rapports, factures, candidatures, contrats) ; marqueur « compte supprimé ».
+    await markAccountDeleted(civilian.patientID, { type: 'civil', nom: displayName });
+    await removePersonalData(civilian.uid);
+    await deleteLoginAccount(civilian.uid, civilian.email);
     sendMailBestEffort({
         to: civilian.email,
         subject: 'Votre compte Civil a été supprimé - Pillbox Hill Medical Center',
-        body: `Bonjour ${displayName},\n\nVotre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${displayName},</p><p>Votre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+        body: `Bonjour ${displayName},\n\nVotre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur. Vos informations personnelles sont supprimées ; vos dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\nCordialement,\nPillbox Hill Medical Center`,
+        html: `<p>Bonjour ${displayName},</p><p>Votre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur. Vos informations personnelles sont supprimées ; vos dossiers restent archivés et vous les retrouverez si vous recréez un compte.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
     });
 }
 

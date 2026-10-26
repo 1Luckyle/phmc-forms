@@ -201,11 +201,10 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
 
 // ─────────────── Suppression définitive ───────────────
 export const RemoveStaffDialog = ({ show, onHide, member, allStaff, adminEmail, showNotification, onDone }) => {
-    const [transferTo, setTransferTo] = useState('');
     const [typed, setTyped] = useState('');
     const { busy, error, setError, run } = useBusy();
 
-    useEffect(() => { if (show) { setTransferTo(''); setTyped(''); setError(''); } }, [show, setError]);
+    useEffect(() => { if (show) { setTyped(''); setError(''); } }, [show, setError]);
     if (!member) return null;
     const confirmed = typed.trim().toLowerCase() === member.displayName.toLowerCase();
 
@@ -215,23 +214,19 @@ export const RemoveStaffDialog = ({ show, onHide, member, allStaff, adminEmail, 
             <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
                 <Alert variant="danger">
-                    <strong>Suppression définitive.</strong> La fiche du personnel, <strong>le compte de connexion</strong> et
-                    (sauf transfert) <strong>tous les rapports</strong> de cette personne seront supprimés, et un mail de fin de
-                    fonctions lui sera envoyé.
+                    <strong>Suppression du compte.</strong> La fiche du personnel, <strong>le compte de connexion</strong>, le profil
+                    Civil éventuel, les droits et les créations (carte de visite, signature) de cette personne seront supprimés, et un
+                    mail de fin de fonctions lui sera envoyé.
+                </Alert>
+                <Alert variant="info">
+                    <strong>Les archives sont conservées</strong> : rapports rédigés, dossier patient, factures, candidatures et contrats.
+                    Le personnel soignant les verra avec la mention « ancien membre du personnel », et si la personne recrée un compte,
+                    elle les retrouvera.
                 </Alert>
                 <p className="small">
                     Pour que la personne garde son compte (par exemple pour devenir patiente ou candidate), utilisez
                     plutôt <strong>« Passer en Civil »</strong> : rien n'est supprimé.
                 </p>
-                <Form.Group className="mb-3">
-                    <Form.Label>Rapports de {member.displayName}</Form.Label>
-                    <Form.Select value={transferTo} onChange={(e) => setTransferTo(e.target.value)}>
-                        <option value="">— Supprimer les rapports (aucun transfert) —</option>
-                        {allStaff.filter((m) => m.name !== member.name).map((m) => (
-                            <option key={`${m.service}-${m.name}`} value={m.name}>Transférer vers {m.displayName}</option>
-                        ))}
-                    </Form.Select>
-                </Form.Group>
                 <Form.Group>
                     <Form.Label>Pour confirmer, tapez « {member.displayName} »</Form.Label>
                     <Form.Control value={typed} onChange={(e) => setTyped(e.target.value)} />
@@ -240,8 +235,8 @@ export const RemoveStaffDialog = ({ show, onHide, member, allStaff, adminEmail, 
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
                 <Button variant="danger" disabled={!confirmed || busy} onClick={() => run(async () => {
-                    await removeStaffMember(member, { transferTo: transferTo || null });
-                    sendAdminActionWebhook(adminEmail, 'Membre du personnel supprimé', `Membre : ${member.displayName}\nRapports : ${transferTo ? `transférés vers ${transferTo}` : 'supprimés'}`, null, 'Admin');
+                    await removeStaffMember(member);
+                    sendAdminActionWebhook(adminEmail, 'Membre du personnel supprimé', `Membre : ${member.displayName}\nArchives (rapports, dossier patient, candidatures, contrats) : conservées`, null, 'Admin');
                     showNotification(`${member.displayName} supprimé(e) du personnel.`, 'success');
                     onDone();
                     onHide();

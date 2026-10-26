@@ -247,6 +247,17 @@
       }
     },
 
+    // ─── Comptes supprimés (indicateur) ───────────────────────────────────────
+    // comptesSupprimes/{ID patient} : { type: personnel | civil, nom, role, supprimeLe }. Posé par un admin à la suppression d'un
+    // compte (les archives — rapports, dossier patient, candidatures, contrats — sont conservées) ; lu par le personnel
+    // (« ancien membre du personnel, plus lié à un compte »). Effacé à la recréation du compte (par la personne elle-même ou un admin).
+    "comptesSupprimes": {
+      "$patientId": {
+        ".read":  "auth != null && !root.child('civilians').child(auth.uid).exists()",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || !newData.exists())"
+      }
+    },
+
     // ─── Recrutement interne (évolution interne du personnel) ─────────────────
     // Un employé ne peut pas candidater. Il demande un statut spécial (demandesMobilite/{uid}) ; un recruteur ou
     // un admin l'accepte (statutsMobilite/{uid} est alors posé) ou le refuse. Le statut rouvre les candidatures ;

@@ -11,6 +11,7 @@ import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../co
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { logAdminAction } from '../../utils/activityLog';
 import { convertCivilianToStaff, badgeDigits } from '../../utils/staffAdmin';
+import { clearDeletedMark, staffPatientIdOf } from '../../utils/deletedAccounts';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
 // débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
@@ -197,6 +198,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 ? [...currentStaff, employeeWithUID]
                 : [...Object.values(currentStaff), employeeWithUID];
             await set(listRef, newStaffArray);
+            await clearDeletedMark(staffPatientIdOf(employeeWithUID));
 
             // Supprimer la demande de la liste des demandes en attente
             await removeRequest(request.email);

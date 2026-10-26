@@ -2242,3 +2242,115 @@ export const uploadImage = onRequest({ secrets: ['IMGBB_API_KEY'], maxInstances:
         res.status(500).json({ error: 'internal', message: 'Échec du téléversement de l\'image.' });
     }
 });
+
+// ─── Archives : rattachement à la recréation d'un compte ───────────────────────────────────────────────────────
+// Supprimer un compte retire les informations personnelles mais CONSERVE les archives (rapports, dossier patient, factures,
+// candidatures, contrats). Rapports et dossier patient sont liés à l'ID patient / au nom, donc retrouvés tout seuls. Les
+// CANDIDATURES et CONTRATS, eux, sont rangés sous l'identifiant de connexion (uid) de l'ancien compte, qui n'existe plus :
+// à la connexion d'un compte recréé, cette fonction rattache à son uid ceux de la MÊME personne (même ID patient).
+// Garde-fou : on ne touche qu'aux enregistrements dont l'ancien uid n'a plus de compte de connexion.
+const archivePatientId = (input) => {
+    const compact = String(input || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!compact) return '';
+    if (/^\d+$/.test(compact)) return `PHMC-${compact}`;
+    const prefixed = compact.match(/^PHMC[-_]?(\d+)$/);
+    return prefixed ? `PHMC-${prefixed[1]}` : '';
+};
+
+const archivePatientIdsOfUid = async (uid) => {
+    const ids = new Set();
+    const civil = (await db.ref(`civilians/${uid}`).once('value')).val();
+    if (civil && civil.patientID) ids.add(archivePatientId(civil.patientID));
+    for (const list of ['phmc', 'coroner']) {
+        const members = Object.values((await db.ref(`staff/${list}`).once('value')).val() || {});
+        const member = members.find((entry) => entry && entry.uid === uid);
+        if (member) {
+            if (member.gtawCharacterId != null) ids.add(archivePatientId(`PHMC-${member.gtawCharacterId}`));
+            const badge = String(member.badge || '');
+            ids.add(archivePatientId(badge.includes('-') ? badge.split('-').slice(1).join('') : badge));
+        }
+    }
+    ids.delete('');
+    return ids;
+};
+
+const loginAccountExists = async (uid) => {
+    try {
+        await admin.auth().getUser(uid);
+        return true;
+    } catch (error) {
+        return error.code !== 'auth/user-not-found';
+    }
+};
+
+export const adoptArchivedRecords = onRequest({}, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+
+    try {
+        const patientIds = await archivePatientIdsOfUid(caller.uid);
+        if (patientIds.size === 0) { res.status(200).json({ candidatures: 0, contrats: 0 }); return; }
+
+        const updates = {};
+        const accountState = new Map(); // ancien uid -> le compte de connexion existe-t-il encore ?
+        const isOrphan = async (oldUid) => {
+            if (!accountState.has(oldUid)) accountState.set(oldUid, await loginAccountExists(oldUid));
+            return !accountState.get(oldUid);
+        };
+        let adoptedApplications = 0;
+        let adoptedContracts = 0;
+
+        // Candidatures (nouveau nœud et ancien nœud « jobApplications »), déplacées sous le nouvel uid.
+        for (const node of ['candidatures', 'jobApplications']) {
+            const snapshot = await db.ref(node).once('value');
+            for (const [oldUid, applications] of Object.entries(snapshot.val() || {})) {
+                if (oldUid === caller.uid) continue;
+                for (const [applicationId, application] of Object.entries(applications || {})) {
+                    const pid = archivePatientId((application && (application.idPatient || application.patientID)) || '');
+                    if (!pid || !patientIds.has(pid)) continue;
+                    if (!(await isOrphan(oldUid))) break; // l'ancien compte existe encore : on n'y touche pas
+                    const taken = (await db.ref(`candidatures/${caller.uid}/${applicationId}`).once('value')).exists()
+                        || updates[`candidatures/${caller.uid}/${applicationId}`] !== undefined;
+                    const targetId = taken ? `${applicationId}_ancienne` : applicationId;
+                    updates[`candidatures/${caller.uid}/${targetId}`] = { ...application, candidatUid: caller.uid, ancienCandidatUid: oldUid };
+                    updates[`${node}/${oldUid}/${applicationId}`] = null;
+                    adoptedApplications += 1;
+                }
+            }
+        }
+
+        // Contrats : reconnus par le badge (« MD-2752 » → PHMC-2752), rattachés au nouvel uid.
+        const contractsSnap = await db.ref('contrats').once('value');
+        for (const [contractId, contract] of Object.entries(contractsSnap.val() || {})) {
+            if (!contract || !contract.employeUid || contract.employeUid === caller.uid) continue;
+            const badge = String(contract.employeBadge || '');
+            const pid = archivePatientId(badge.includes('-') ? badge.split('-').slice(1).join('') : badge);
+            if (!pid || !patientIds.has(pid)) continue;
+            if (!(await isOrphan(contract.employeUid))) continue;
+            const wasIndexed = (await db.ref(`contratsParEmploye/${contract.employeUid}/${contractId}`).once('value')).exists();
+            updates[`contrats/${contractId}/employeUid`] = caller.uid;
+            updates[`contrats/${contractId}/ancienEmployeUid`] = contract.employeUid;
+            updates[`contratsParEmploye/${contract.employeUid}/${contractId}`] = null;
+            if (wasIndexed) updates[`contratsParEmploye/${caller.uid}/${contractId}`] = true;
+            adoptedContracts += 1;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await db.ref().update(updates);
+            await logServerActivity({
+                category: 'comptes', action: 'archives_adopted', severity: 'success',
+                summary: `Archives rattachées à un compte recréé : ${adoptedApplications} candidature(s), ${adoptedContracts} contrat(s)`,
+                target: [...patientIds][0], actorName: caller.name || caller.email || 'Compte recréé',
+            });
+        }
+        res.status(200).json({ candidatures: adoptedApplications, contrats: adoptedContracts });
+    } catch (error) {
+        console.error('Error adopting archived records:', error);
+        res.status(500).json({ error: 'internal', message: 'Impossible de rattacher les archives.' });
+    }
+});

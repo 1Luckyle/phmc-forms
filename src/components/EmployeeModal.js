@@ -9,6 +9,7 @@ import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS } from '../constants/ranks';
 import DebugFillButton from './DebugFillButton';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import { sendEyefindMail } from '../utils/eyefindMail';
+import { markAccountDeleted, staffPatientIdOf } from '../utils/deletedAccounts';
 import { getEmployeeDisplayName } from '../utils/employeeName';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
@@ -769,6 +770,8 @@ const EmployeeModal = ({
 
       // 3) Suppression des comptes Firebase Auth
       for (const emp of removedEmployees) {
+        // Archives conservées (rapports, dossier patient, candidatures, contrats) ; on signale seulement que la personne n'est plus employée.
+        markAccountDeleted(staffPatientIdOf(emp), { type: 'personnel', nom: emp.name, role: emp.rank || emp.category || '' }).catch(() => {});
         if (emp.uid || emp.email) {
           try {
             const idToken = await currentAdminUser.getIdToken();

@@ -38,6 +38,7 @@ import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_H
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import { loadDeletedMark } from '../utils/deletedAccounts';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -123,6 +124,8 @@ const PatientDossierModal = ({
     const [patientOptions, setPatientOptions] = useState([]);
     const [isLoadingPatients, setIsLoadingPatients] = useState(false);
     const [searchedPatientId, setSearchedPatientId] = useState(null);
+    // Marqueur « compte supprimé » du patient affiché (ancien membre du personnel ou compte Civil supprimé).
+    const [deletedMark, setDeletedMark] = useState(null);
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState([]);
@@ -198,6 +201,8 @@ const PatientDossierModal = ({
         const canonical = canonicalPatientId(patientId);
         setIsLoading(true);
         setSearchedPatientId(canonical);
+        setDeletedMark(null);
+        loadDeletedMark(canonical).then(setDeletedMark);
         setSelectedKeys([]);
         setInvoiceRefresh((n) => n + 1);
         try {
@@ -407,6 +412,14 @@ const PatientDossierModal = ({
                 </div>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                    {searchedPatientId && deletedMark && (
+                        <div style={{ margin: '0 0 10px', padding: '8px 12px', color: '#f0f6fc', background: 'rgba(210, 153, 34, 0.15)', border: '1px solid rgba(210, 153, 34, 0.6)', borderRadius: '6px', fontSize: '0.9rem' }}>
+                            <i className="fas fa-user-slash" style={{ marginRight: '8px', color: '#d29922' }}></i>
+                            {deletedMark.type === 'personnel' ? 'Ancien membre du personnel' : 'Compte supprimé'}
+                            {deletedMark.nom ? ` : ${deletedMark.nom}` : ''}{deletedMark.role ? ` (${deletedMark.role})` : ''}
+                            {' — '}n'est plus lié à un compte actif depuis le {new Date(deletedMark.supprimeLe).toLocaleDateString('fr-FR')}. Ses rapports et son dossier restent archivés.
+                        </div>
+                    )}
                     {searchedPatientId && !isLoading && families.length > 0 && (
                         <table style={tableStyle}>
                             <thead>
