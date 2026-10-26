@@ -1208,6 +1208,16 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 return { success: false };
             }
 
+            // Un seul poste à la fois par catégorie : choisir un autre poste remplace la candidature en cours.
+            const replacedPoste = existing?.posteCle && formData.recruitmentPosition && existing.posteCle !== formData.recruitmentPosition
+                ? (existing.poste || existing.posteCle) : null;
+            if (replacedPoste) {
+                const newPoste = positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || formData.recruitmentPosition;
+                if (!window.confirm(`Vous avez déjà une candidature en cours pour « ${replacedPoste} » dans cette catégorie.\n\nL'enregistrer pour « ${newPoste} » la remplacera (on ne peut candidater qu'à un poste par catégorie à la fois). Continuer ?`)) {
+                    return { success: false };
+                }
+            }
+
             const historique = existing?.historique ? [...existing.historique] : [];
             historique.push({ statut: newStatus, horodatage: Date.now() });
 
@@ -1266,7 +1276,7 @@ Candidature : ${applicationId}`,
             }
 
             showNotification(
-                submitAction === 'submit' ? 'Candidature envoyée !' : 'Candidature enregistrée (brouillon).',
+                `${submitAction === 'submit' ? 'Candidature envoyée !' : 'Candidature enregistrée (brouillon).'}${replacedPoste ? ` Elle remplace votre candidature pour « ${replacedPoste} ».` : ''}`,
                 'save'
             );
             return { success: true };

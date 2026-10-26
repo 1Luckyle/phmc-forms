@@ -2477,6 +2477,10 @@ function MainApp({
                                                             <i className="fas fa-list-check"></i>
                                                             Mes candidatures
                                                         </Button>
+                                                        <p className="text-muted w-100 mb-0" style={{ fontSize: '0.85em' }}>
+                                                            <i className="fas fa-info-circle me-1"></i>
+                                                            Une seule candidature en cours par catégorie : si vous enregistrez un autre poste de cette catégorie, il remplace votre candidature précédente, tant qu'elle n'est ni acceptée ni refusée.
+                                                        </p>
                                                     </>
                                                 )}
                                             </div>
