@@ -1963,20 +1963,59 @@ const escapeHtml = (value) => String(value ?? '')
 
 const formatInvoiceMoney = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} $`;
 
+// Remplace, dans le BBCode d'un rapport sauvegardé AVANT le paiement, les mentions « aucune preuve » par le lien
+// de paiement. Retourne le BBCode inchangé s'il n'y a rien à remplacer (donc idempotent).
+// Les textes cherchés viennent des générateurs du formulaire (src/phmc-bbcode-generators).
+const addPaymentProofToBbCode = (bbCode, link) => String(bbCode)
+    .replace('[i]Aucune preuve de paiement fournie[/i]', `[url=${link}]Image jointe[/url]`)
+    .replace('Aucune preuve de paiement fournie', `[url=${link}]Preuve de paiement[/url]`)
+    .replace(/montant à régler par le patient : ([^\n]*?) \(paiement via Fleeca, depuis son dossier patient\)\./, `montant réglé par le patient : $1 ([url=${link}]preuve de paiement[/url]).`)
+    .replace('Paiement à régler par le patient :', 'Paiement réglé par le patient :');
+
+// Une facture réglée APRÈS la sauvegarde du rapport : le rapport (et les copies des médecins) affichait « Aucune
+// preuve de paiement fournie ». On y met le lien de paiement Fleeca. Best-effort : ne bloque jamais le règlement.
+const attachPaymentProofToReport = async (patientNode, invoiceId, invoice, payment) => {
+    try {
+        const link = payment?.paymentLink || invoice?.lienPaiement;
+        if (!link || !/^https:\/\//.test(link) || /[\s\]]/.test(link)) return;
+        if (!/^savedReports\/[^/]+\/[^/]+$/.test(invoice?.reportPath || '')) return;
+        const paths = [invoice.reportPath];
+        const copies = (await db.ref(`patientRecords/${patientNode}/${invoiceId}/copiedBy`).once('value')).val() || {};
+        Object.entries(copies).forEach(([nodeKey, copyKey]) => paths.push(`savedReports/${nodeKey}/${copyKey}`));
+        for (const path of paths) {
+            const report = (await db.ref(path).once('value')).val();
+            if (!report || typeof report.bbCode !== 'string') continue;
+            const updates = {};
+            const bbCode = addPaymentProofToBbCode(report.bbCode, link);
+            if (bbCode !== report.bbCode) updates.bbCode = bbCode;
+            if (report.data && !report.data.paymentProofPhotos) updates['data/paymentProofPhotos'] = link;
+            if (Object.keys(updates).length > 0) await db.ref(path).update(updates);
+        }
+    } catch (error) {
+        console.warn(`Could not attach the payment proof to the report of invoice ${invoiceId}:`, error);
+    }
+};
+
 // Règle les factures couvertes par un paiement Fleeca confirmé (celles listées dans
 // fleecaPayments/{id}/factures, créées par createInvoicePayment).
 const settleInvoicesOfPayment = async (paymentId, payment) => {
     if (!payment || payment.status !== 'payment_successful') return 0;
     const covered = payment.factures || {};
     const updates = {};
+    const settled = [];
     const paidAt = payment.paidAt ? new Date(payment.paidAt).getTime() || Date.now() : Date.now();
-    Object.entries(covered).forEach(([invoiceId, patientNode]) => {
+    for (const [invoiceId, patientNode] of Object.entries(covered)) {
+        const invoice = (await db.ref(`facturesPatients/${patientNode}/${invoiceId}`).once('value')).val();
+        updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
+        // Facture supprimée entre-temps (rapport effacé par le patient avant de payer) : rien à régler.
+        if (!invoice) continue;
         updates[`facturesPatients/${patientNode}/${invoiceId}/statut`] = 'paye';
         updates[`facturesPatients/${patientNode}/${invoiceId}/payeLe`] = paidAt;
         updates[`facturesPatients/${patientNode}/${invoiceId}/paiementId`] = paymentId;
-        updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
-    });
+        settled.push({ patientNode, invoiceId, invoice });
+    }
     if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    for (const { patientNode, invoiceId, invoice } of settled) await attachPaymentProofToReport(patientNode, invoiceId, invoice, payment);
     if (Object.keys(covered).length > 0) {
         const loggedRef = db.ref(`fleecaPayments/${paymentId}/paiementJournalise`);
         const alreadyLogged = (await loggedRef.once('value')).val();
@@ -2048,6 +2087,7 @@ export const createInvoicePayment = onRequest({ secrets: FLEECA_SECRETS }, async
                         [`facturesPatients/${patientNode}/${invoiceId}/payeLe`]: Date.now(),
                         [`facturesEnAttente/${patientNode}/${invoiceId}`]: null,
                     });
+                    await attachPaymentProofToReport(patientNode, invoiceId, invoice, payment);
                     continue;
                 }
             }
@@ -2171,6 +2211,7 @@ const collectPendingInvoices = async () => {
     const queue = queueSnap.val() || {};
     const groups = [];
     const cleanup = {};
+    const paidNow = [];
     for (const [patientNode, ids] of Object.entries(queue)) {
         const items = [];
         for (const invoiceId of Object.keys(ids || {})) {
@@ -2184,6 +2225,7 @@ const collectPendingInvoices = async () => {
                     cleanup[`facturesPatients/${patientNode}/${invoiceId}/statut`] = 'paye';
                     cleanup[`facturesPatients/${patientNode}/${invoiceId}/payeLe`] = Date.now();
                     cleanup[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
+                    paidNow.push({ patientNode, invoiceId, invoice, payment });
                     continue;
                 }
             }
@@ -2192,6 +2234,7 @@ const collectPendingInvoices = async () => {
         if (items.length > 0) groups.push({ patientNode, items });
     }
     if (Object.keys(cleanup).length > 0) await db.ref().update(cleanup);
+    for (const { patientNode, invoiceId, invoice, payment } of paidNow) await attachPaymentProofToReport(patientNode, invoiceId, invoice, payment);
     return groups;
 };
 

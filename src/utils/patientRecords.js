@@ -307,16 +307,16 @@ export async function deleteReportWithRules(report, viewer) {
     const isCopy = !!indexEntry?.copiedFrom || !!report.isCopy;
 
     const hardDelete = async () => {
+        // Facture impayée d'un rapport supprimé (erreur de saisie : le patient peut le recréer) : retirée aussi, AVANT
+        // l'index (les règles autorisent un patient à retirer sa facture tant que l'index prouve que le rapport est le sien).
+        // Une facture déjà payée reste.
+        if (indexRef) await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
         if (reportPath) await remove(ref(database, reportPath));
         if (indexRef) await removeIndexEntry(indexRef);
-        // Facture impayée d'un rapport supprimé par le personnel (erreur de saisie) : retirée aussi.
-        // Un patient ne peut pas effacer sa propre facture (règles) ; une facture déjà payée reste.
-        if (viewer.role !== 'civil' && indexRef) {
-            await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
-        }
     };
     // « Retiré » : le rapport reste en base pour les médecins qui en ont une copie.
     const hide = async () => {
+        if (indexRef && viewer.role === 'civil') await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
         if (reportPath) await update(ref(database, reportPath), { ownerDeleted: true });
         if (indexRef) await update(indexRef, { ownerDeleted: true });
     };

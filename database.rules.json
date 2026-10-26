@@ -493,7 +493,8 @@
     // facturé (voir src/utils/patientInvoices.js). Lecture : le dossier d'un ID précis par tout connecté
     // (le civil ne lit que le sien côté client), le nœud entier par le personnel et les admins.
     // Écriture : n'importe quel connecté peut CRÉER une facture (jamais directement « paye ») ; seuls le
-    // personnel et les admins peuvent ensuite la modifier ou la supprimer, et personne côté client ne peut
+    // personnel et les admins peuvent ensuite la modifier ou la supprimer (un patient ne peut retirer que sa
+    // facture IMPAYÉE d'un rapport qu'il a créé lui-même, quand il supprime ce rapport), et personne côté client ne peut
     // passer une facture à « paye » ni la ramener en arrière : le règlement est fait par le serveur
     // (webhook Fleeca / getFleecaPaymentStatus), qui contourne ces règles.
     "facturesPatients": {
@@ -503,7 +504,7 @@
         // (ID patient de son profil). Empêche de lire les factures d'autrui par ID deviné.
         ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$factureId": {
-          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()))",
+          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists() || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))",
           ".validate": "newData.hasChildren(['montant', 'statut', 'creeLe']) && newData.child('montant').isNumber() && (newData.child('statut').val() === 'a_payer' || newData.child('statut').val() === 'paye' || newData.child('statut').val() === 'sans_paiement')"
         }
       }

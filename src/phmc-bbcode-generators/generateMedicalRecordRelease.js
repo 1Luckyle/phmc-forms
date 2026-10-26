@@ -128,7 +128,7 @@ En tapant mon nom ci-dessous, je soussigné(e), ${patientFullName}, certifie que
 [i]${SubmitDate}[/i]
 ${formData.filledByStaff && approximateCost > 0 ? `
     ${staffPaymentLine(24, formData)}` : (payNow === true || payNow === 'true') && approximateCost > 0 ? `
-    Je soussigné(e), ${patientFullName || 'le soussigné'}, joins ce paiement de ${approximateCost.toLocaleString()}$ pour les frais de divulgation des dossiers médicaux. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Image jointe[/url]` : '[i][/i]'}` : ''}
+    Je soussigné(e), ${patientFullName || 'le soussigné'}, joins ce paiement de ${approximateCost.toLocaleString()}$ pour les frais de divulgation des dossiers médicaux. ${firstPaymentProofUrl ? `[url=${firstPaymentProofUrl}]Image jointe[/url]` : '[i]Aucune preuve de paiement fournie[/i]'}` : ''}
 [/list]
     [/divbox]`; // <-- Moved the closing divbox tag here
     return bbCode;
