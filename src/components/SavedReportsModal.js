@@ -283,6 +283,7 @@ const SavedReportsModal = ({
     bbCodeVersion,
     attachMode,
     loadSharedReportsForPatient,
+    loadCivilianDossier,
     shareReportWithPatient,
     copyReportToOwnAccount,
 }) => {
@@ -351,11 +352,11 @@ const SavedReportsModal = ({
                     // Attend la fin du chargement des rapports "propriétaire" (qui
                     // REMPLACE tout le tableau savedReports) avant d'y AJOUTER les
                     // rapports partagés, pour éviter que l'un écrase l'autre.
-                    Promise.resolve(onEmployeeSelect(civilAuthorValue)).then(() => {
-                        if (civilianProfile.patientID && loadSharedReportsForPatient) {
-                            loadSharedReportsForPatient(civilianProfile.patientID);
-                        }
-                    });
+                    // Charge le dossier du civil par son ID patient (patientRecords), plus par le nœud
+                    // savedReports/{nom} — ce qui permet de fermer la lecture de savedReports aux civils.
+                    if (civilianProfile.patientID && loadCivilianDossier) {
+                        loadCivilianDossier(civilianProfile.patientID);
+                    }
                 }
                 return;
             }
@@ -408,7 +409,7 @@ const SavedReportsModal = ({
             lastLoadedEmployeeRef.current = null;
             isManualSelectionRef.current = false;
         }
-    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile, staffName, isCivilian, civilianProfile, loadSharedReportsForPatient]);
+    }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile, staffName, isCivilian, civilianProfile, loadSharedReportsForPatient, loadCivilianDossier]);
 
     const handleEmployeeSelect = (selectedOption) => {
         isManualSelectionRef.current = true;

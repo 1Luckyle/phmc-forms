@@ -895,6 +895,47 @@ Clé : ${sanitizedKey}`,
         }
     }, []);
 
+    // Dossier d'un CIVIL chargé via son index patientRecords (par ID patient), et NON par savedReports/{nom}
+    // (nœud dont les règles ne peuvent pas vérifier qu'il appartient au compte). Résilient à la suppression/
+    // recréation de compte : l'ID patient est stable. Le civil voit SES rapports (owner) et ceux que le
+    // personnel lui a partagés (shared) ; jamais les "staff-only" non partagés. REMPLACE la liste affichée.
+    const loadCivilianDossier = useCallback(async (patientID) => {
+        if (!patientID) { setSavedReports([]); return; }
+        setIsLoadingUserReports(true);
+        setSelectedUserForSavedReports(null);
+        try {
+            const dossier = await loadPatientDossier(patientID);
+            const entries = dossier
+                .filter((e) => (e.visibility === 'owner' || e.visibility === 'shared') && !e.ownerDeleted)
+                .map((e) => ({
+                    key: e.indexKey,
+                    originalKey: e.originalKey,
+                    title: e.title,
+                    creatorName: e.creatorName,
+                    isCopy: !!e.copiedFrom,
+                    copiedFrom: e.copiedFrom || null,
+                    kind: e.kind,
+                    imageUrl: e.imageUrl,
+                    bbCodeVersion: e.bbCodeVersion,
+                    timestamp: e.timestamp,
+                    authorName: e.authorName,
+                    bbCode: e.bbCode,
+                    patientID: e.patientID || patientID,
+                    patientNode: e.patientNode,
+                    reportPath: e.reportPath,
+                    sharedByStaff: e.visibility === 'shared',
+                }));
+            entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            setSavedReports(entries);
+        } catch (error) {
+            console.error('Error loading civilian dossier:', error);
+            Sentry.captureException(error, { extra: { context: 'loadCivilianDossier', patientID } });
+            setSavedReports([]);
+        } finally {
+            setIsLoadingUserReports(false);
+        }
+    }, []);
+
     // Action personnel : rend un rapport visible au patient concerné dans sa
     // propre vue "Dossiers/Candidatures sauvegardées" (patientRecords passe de
     // staff-only à shared — le rapport lui-même n'est ni déplacé ni dupliqué).
@@ -1109,13 +1150,14 @@ Copie : ${copyPath}`, target: copyAuthorName,
 
         // Recharge la liste affichée (et, pour un civil, les rapports partagés).
         if (userId && !options.skipReload) {
-            await loadUserSavedReports(userId);
             if (isCivilian && civilianProfile?.patientID) {
-                await loadSharedReportsForPatient(civilianProfile.patientID);
+                await loadCivilianDossier(civilianProfile.patientID);
+            } else {
+                await loadUserSavedReports(userId);
             }
         }
         return result;
-    }, [isCivilian, isAdmin, staffName, civilianProfile, loadUserSavedReports, loadSharedReportsForPatient, showNotification]);
+    }, [isCivilian, isAdmin, staffName, civilianProfile, loadUserSavedReports, loadCivilianDossier, showNotification]);
 
     // --- Pipeline de candidatures (Lot 6) ---
 
@@ -1385,6 +1427,7 @@ Candidature : ${applicationId}`,
         onAttachReportSummaryRequest,
         deleteReportsForUser,
         loadSharedReportsForPatient,
+        loadCivilianDossier,
         shareReportWithPatient,
         copyReportToOwnAccount,
         saveJobApplication,

@@ -220,13 +220,15 @@
         ".write": false
       },
       "$userKey": {
-        // Lecture : tout connecté (modèle collaboratif de dossier patient — inchangé ; resserrer la lecture
-        // civile exigerait de charger les dossiers civils via patientRecords, à faire séparément).
-        ".read":  "auth != null",
+        // Lecture du nœud d'auteur : personnel et admins (modèle collaboratif). Un CIVIL ne lit plus par nom —
+        // il charge son dossier via patientRecords (par ID patient) et ne peut lire qu'un rapport portant SON
+        // ID patient ($reportKey ci-dessous). L'ID patient étant stable, ça survit à la recréation de compte.
+        ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
         // Écriture : personnel/admins sur tout rapport. Un CIVIL ne peut que CRÉER un rapport, ou modifier/
         // supprimer un rapport déjà à SON ID patient — il ne peut plus écraser/supprimer le rapport d'un autre.
         ".write": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$reportKey": {
+          ".read":  "auth != null && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()",
           ".write": "auth != null && (!data.exists() || data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val())"
         }
       }

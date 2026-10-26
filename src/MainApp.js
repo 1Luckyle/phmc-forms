@@ -745,6 +745,7 @@ function MainApp({
         onAttachReportSummaryRequest,
         deleteReportsForUser,
         loadSharedReportsForPatient,
+        loadCivilianDossier,
         shareReportWithPatient,
         copyReportToOwnAccount,
         saveJobApplication,
@@ -2565,6 +2566,7 @@ function MainApp({
                             loadReport={loadReportForUser}
                             deleteReportsForUser={deleteReportsForUser}
                             loadSharedReportsForPatient={loadSharedReportsForPatient}
+                            loadCivilianDossier={loadCivilianDossier}
                             shareReportWithPatient={shareReportWithPatient}
                             copyReportToOwnAccount={copyReportToOwnAccount}
                             author={getCurrentReportAuthor(formData)}
