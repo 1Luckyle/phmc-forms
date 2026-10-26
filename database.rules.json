@@ -420,13 +420,16 @@
     // admin — une règle .read placée uniquement sous $applicantUid n'aurait
     // pas autorisé cette lecture globale (voir la même correction sur civilians).
     "jobApplications": {
-      ".read": "auth != null",
+      // Lecture du nœud ENTIER : admins, recruteurs (qui restent des comptes Civil) et personnel
+      // (revue des candidatures). Un civil ne lit QUE ses propres candidatures ($applicantUid ci-dessous).
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists())",
       "$applicantUid": {
+        ".read": "auth != null && auth.uid === $applicantUid",
         "$applicationId": {
           // Suppression : admins ; recruteurs et candidats (pour LEURS candidatures)
           // uniquement tant que l'interrupteur Debug « suppression des candidatures » est
           // activé dans le panneau admin (adminSettings/debugDeleteApplications).
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true))"
+          ".write": "auth != null && (newData.exists() ? (auth.uid === $applicantUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))"
         }
       }
     },
@@ -438,10 +441,13 @@
     // sont en français (statut : brouillon, soumise, entretien_programme, entretien_effectue, acceptee,
     // refusee, retiree, en_pause). L'ancien nœud jobApplications reste lu jusqu'à sa migration.
     "candidatures": {
-      ".read": "auth != null",
+      // Lecture du nœud ENTIER : admins, recruteurs (qui restent des comptes Civil) et personnel
+      // (revue des candidatures). Un civil ne lit QUE ses propres candidatures ($candidatUid ci-dessous).
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists())",
       "$candidatUid": {
+        ".read": "auth != null && auth.uid === $candidatUid",
         "$candidatureId": {
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true))"
+          ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))"
         }
       }
     },

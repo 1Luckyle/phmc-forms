@@ -24,8 +24,6 @@ import { startPriceSync } from './utils/pricing';
 const discordErrorWebhookQueue = [];
 let isProcessingDiscordQueue = false;
 let isSentryBlocked = false; // Flag to track if Sentry connectivity failed
-let lastDiscordErrorMessage = '';
-let lastDiscordErrorTimestamp = 0;
 
 /**
  * Processes the queue of Discord error messages one by one with a delay.
@@ -67,9 +65,6 @@ const processDiscordErrorQueue = async () => {
 export const sendDiscordErrorWebhook = (errorDetails) => {
     // Journal d'activité (panneau admin) : la trace principale des erreurs vues par les utilisateurs connectés.
     logClientError(errorDetails);
-    const now = Date.now();
-    lastDiscordErrorMessage = errorDetails.message;
-    lastDiscordErrorTimestamp = now;
 
     // Try to get the Sentry event ID if available
     let sentryEventId = null;
