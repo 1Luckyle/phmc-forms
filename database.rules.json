@@ -485,7 +485,9 @@
       // la Cloud Function getFleecaPaymentStatus (par payment_id). Avant, ".read": true exposait TOUS les
       // paiements (montants, nœuds patient, IDs) à n'importe qui sans compte.
       ".read":  "auth != null",
-      ".write": false
+      ".write": false,
+      // Nettoyage nocturne des demandes jamais réglées (fleecaGhostPaymentCleanup).
+      ".indexOn": ["status"]
     },
 
     // ─── Factures patient (rapports médicaux civils payants) ──────────────────

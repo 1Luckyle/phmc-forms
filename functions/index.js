@@ -2022,9 +2022,15 @@ const settleInvoicesOfPayment = async (paymentId, payment) => {
         if (!alreadyLogged) {
             await loggedRef.set(true);
             const patients = [...new Set(Object.values(covered))];
-            await logServerActivity({
+            await logServerActivity(settled.length > 0 ? {
                 category: 'facturation', action: 'invoices_paid', severity: 'success',
-                summary: `Paiement reçu : ${Object.keys(covered).length} facture(s) réglée(s) (${patients.join(', ')})`,
+                summary: `Paiement reçu : ${settled.length} facture(s) réglée(s) (${patients.join(', ')})`,
+                details: `Paiement Fleeca : ${paymentId}${payment.amount ? `\nMontant : ${payment.amount} $` : ''}`, target: patients[0],
+            } : {
+                // Le patient a payé un lien dont les factures avaient été supprimées (rapport effacé) : l'argent est
+                // arrivé sans facture à régler, à rembourser ou à régulariser à la main.
+                category: 'facturation', action: 'payment_without_invoice', severity: 'warning',
+                summary: `Paiement reçu SANS facture correspondante (patient ${patients.join(', ')}) : factures supprimées avant le paiement`,
                 details: `Paiement Fleeca : ${paymentId}${payment.amount ? `\nMontant : ${payment.amount} $` : ''}`, target: patients[0],
             });
         }
@@ -2204,6 +2210,17 @@ const sendInvoiceMail = async ({ apiKey, to, patientName, invoices, reminder }) 
     });
 };
 
+// Dernière vérification juste avant d'écrire à un patient : on relit chaque facture, car elle a pu être supprimée
+// (rapport effacé) ou réglée depuis la lecture de la file. Ne garde que celles qui existent et sont encore à payer :
+// plus aucun mail pour une facture disparue.
+const stillDueInvoices = async (patientNode, items) => {
+    const checked = await Promise.all(items.map(async ({ id }) => {
+        const invoice = (await db.ref(`facturesPatients/${patientNode}/${id}`).once('value')).val();
+        return invoice && invoice.statut === 'a_payer' ? { id, invoice } : null;
+    }));
+    return checked.filter(Boolean);
+};
+
 // Lit la file des factures à payer et regroupe par patient : [{ patientNode, items: [{ id, invoice }] }].
 // Nettoie au passage les entrées orphelines ou déjà réglées (paiement Fleeca confirmé).
 const collectPendingInvoices = async () => {
@@ -2250,7 +2267,9 @@ export const invoiceMailBatcher = onSchedule({
     if (!apiKey) { console.error('invoiceMailBatcher: EYEFIND_API_KEY manquante.'); return; }
     const now = Date.now();
     const groups = await collectPendingInvoices();
-    for (const { patientNode, items } of groups) {
+    for (const { patientNode, items: collected } of groups) {
+        const items = await stillDueInvoices(patientNode, collected);
+        if (items.length === 0) continue;
         const unsent = items.filter(({ invoice }) => !invoice.mailEnvoyeLe);
         if (unsent.length === 0) continue;
         if (unsent.some(({ invoice }) => now - Number(invoice.creeLe || 0) < INVOICE_MAIL_BATCH_DELAY_MS)) continue; // regroupement en cours
@@ -2295,7 +2314,9 @@ export const invoiceDailyReminder = onSchedule({
     if (!apiKey) { console.error('invoiceDailyReminder: EYEFIND_API_KEY manquante.'); return; }
     const now = Date.now();
     const groups = await collectPendingInvoices();
-    for (const { patientNode, items } of groups) {
+    for (const { patientNode, items: collected } of groups) {
+        const items = await stillDueInvoices(patientNode, collected);
+        if (items.length === 0) continue;
         const notified = items.filter(({ invoice }) => invoice.mailEnvoyeLe && !invoice.mailErreur);
         if (notified.length === 0) continue;
         const lastContact = Math.max(...notified.map(({ invoice }) => Number(invoice.dernierRappelLe || invoice.mailEnvoyeLe || 0)));
@@ -2315,7 +2336,55 @@ export const invoiceDailyReminder = onSchedule({
     }
 });
 
-// ─── Vidéosurveillance (CCTV) : droit de gestion ───────────────────────────────────────────────────────────
+// Paiements fantômes : un patient clique sur « Payer » (un lien Fleeca « awaiting_payment » est créé) puis quitte, ou
+// supprime son rapport. Chaque nuit on retire de NOTRE base ces demandes jamais réglées :
+//   • lien de factures (fleecaPayments/{id}/factures) : plus aucune des factures couvertes n'est à payer (supprimées ou
+//     déjà réglées autrement) et le lien a plus d'un jour ;
+//   • lien créé depuis un formulaire : plus aucune facture ne le référence et il a plus de 14 jours.
+// On ne supprime JAMAIS un lien dont une facture reste à payer : s'il était payé ensuite, le règlement ne retrouverait
+// plus la facture. La demande reste visible côté Fleeca (aucune annulation n'est utilisée) mais ne coûte rien.
+const GHOST_INVOICE_LINK_MS = 24 * 60 * 60 * 1000;
+const GHOST_FORM_LINK_MS = 14 * 24 * 60 * 60 * 1000;
+
+export const fleecaGhostPaymentCleanup = onSchedule({
+    schedule: 'every day 04:00',
+    timeZone: 'Europe/Paris',
+}, async () => {
+    const now = Date.now();
+    const awaiting = (await db.ref('fleecaPayments').orderByChild('status').equalTo('awaiting_payment').once('value')).val() || {};
+    const ids = Object.keys(awaiting);
+    if (ids.length === 0) return;
+
+    const invoices = (await db.ref('facturesPatients').once('value')).val() || {};
+    const invoiceOf = (patientNode, invoiceId) => invoices[patientNode]?.[invoiceId] || null;
+    const referenced = new Set();
+    Object.values(invoices).forEach((byId) => Object.values(byId || {}).forEach((invoice) => {
+        if (invoice && invoice.statut === 'a_payer' && invoice.paiementId) referenced.add(invoice.paiementId);
+    }));
+
+    const updates = {};
+    let removed = 0;
+    ids.forEach((paymentId) => {
+        const payment = awaiting[paymentId] || {};
+        const age = now - Number(payment.createdAt || 0);
+        const covered = Object.entries(payment.factures || {});
+        const ghost = covered.length > 0
+            ? age > GHOST_INVOICE_LINK_MS && covered.every(([invoiceId, patientNode]) => invoiceOf(patientNode, invoiceId)?.statut !== 'a_payer')
+            : age > GHOST_FORM_LINK_MS && !referenced.has(paymentId);
+        if (!ghost) return;
+        updates[`fleecaPayments/${paymentId}`] = null;
+        removed += 1;
+    });
+    if (removed === 0) return;
+    await db.ref().update(updates);
+    await logServerActivity({
+        category: 'facturation', action: 'ghost_payments_removed',
+        summary: `${removed} demande(s) de paiement jamais réglée(s) retirée(s) de la base`,
+        details: 'Demandes « en attente » sans facture à payer. Elles restent visibles côté Fleeca.',
+    });
+});
+
+// ─── Vidéosurveillance (CCTV) : droit de gestion───────────────────────────────────────────────────────────
 // Les demandes CCTV (cctvRequests) sont lues et traitées par l'ADMINISTRATION du PHMC (Directeur(trice),
 // Assistant(e) de Direction, Personnel Administratif — rôle principal OU supplémentaire) et par les admins ;
 // chacun lit ses propres demandes. Les règles Firebase ne peuvent pas lire le rôle d'une fiche à partir de
