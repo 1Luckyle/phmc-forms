@@ -119,10 +119,8 @@ const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUp
             details: errorMessage ? String(errorMessage).slice(0, 1000) : (formDate ? `Date du formulaire : ${formDate}` : undefined),
             severity: errorMessage ? 'error' : 'success',
         });
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null;
         if (!webhookURL) {
-            console.warn('Discord webhook URL is not set for AMA.');
-            Sentry.captureMessage("Discord Webhook URL not set (AMA)", { level: "warning" });
             return;
         }
 

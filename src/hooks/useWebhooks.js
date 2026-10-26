@@ -50,7 +50,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
         });
 
         // Doublon Discord facultatif : sans URL configurée, la ligne du journal suffit.
-        const webhookUrl = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookUrl = null;
         if (!webhookUrl) return;
 
         const embed = {
@@ -142,9 +142,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
 
     const sendWebhookPayload = async (webhookURL, payload, successMessage, context, notifyFunc) => {
         if (!webhookURL) {
-            console.error(`Discord webhook URL not configured for ${context}.`);
-            Sentry.captureMessage(`Discord webhook URL is missing for ${context} submission.`, 'error');
-            notifyFunc('Erreur de configuration : Impossible d\'envoyer le message.', 'exclamation-triangle');
+            // Envois Discord par webhook retirés (sécurité) : plus d'URL embarquée, pas de message d'erreur.
             return false;
         }
 
@@ -178,13 +176,13 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
 
     const handlePhmcWebhookSubmit = async (payload) => {
         if (!payload) return;
-        const webhookURL = process.env.REACT_APP_PHMC_DISCORD;
+        const webhookURL = null;
         await sendWebhookPayload(webhookURL, payload, 'Intégration webhook PHMC envoyée avec succès !', 'PHMC', showNotification);
     };
 
     const handleWebhookSubmit = async (payload) => {
         if (!payload) return;
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null;
         await sendWebhookPayload(webhookURL, payload, 'Intégration webhook Dev envoyée avec succès !', 'Dev', showNotification);
     };
 

@@ -131,10 +131,8 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             severity: errorMessage ? 'error' : 'success',
             target: cardName || undefined,
         });
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null;
         if (!webhookURL) {
-            console.warn('Discord webhook URL is not set in environment variables.');
-            Sentry.captureMessage("Discord Webhook URL not set (Business Card)", { level: "warning" });
             return;
         }
 

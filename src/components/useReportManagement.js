@@ -1211,7 +1211,7 @@ Candidature : ${applicationId}`,
                     }).catch((err) => console.warn('Eyefind Mail (accusé de réception candidature) échoué:', err));
                 }
 
-                const discordWebhookUrl = process.env.REACT_APP_PHMC_RECRUITMENT_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+                const discordWebhookUrl = null || null;
                 if (discordWebhookUrl) {
                     sendPhmcRecruitmentWebhook({
                         webhookUrl: discordWebhookUrl,

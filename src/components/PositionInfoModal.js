@@ -66,10 +66,22 @@ const closeButtonStyle = {
 };
 // --- End Styles ---
 
+// Échappe le HTML : le contenu affiché ici est saisi côté application (fiches de poste,
+// textes d'astuces) et ne doit JAMAIS être interprété comme du HTML (prévention XSS).
+// On échappe AVANT d'ajouter nos propres balises de mise en forme (gras, liens, sauts de ligne).
+const escapeHtml = (value) => String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 const parseBoldMarkdown = (text) => {
     if (!text) return { __html: '' };
 
-    let htmlText = text;
+    // Entrée échappée : un éventuel <img onerror=...> saisi dans une fiche de poste s'affiche en
+    // texte, il ne s'exécute pas. Le href ci-dessous est sûr car les " sont déjà transformés en &quot;.
+    let htmlText = escapeHtml(text);
 
     // Handle [url]...[/url] tags
     // This regex captures the content between [url] and [/url]

@@ -93,7 +93,7 @@ const sendAdminActionWebhook = async (adminEmail, action, details, categoryName 
         details: [details, userTimezone && userTimezone !== 'N/A' ? `Fuseau : ${userTimezone}` : ''].filter(Boolean).join(' | '),
         categoryName,
     });
-    const webhookURL = process.env.REACT_APP_ADMIN_ACTION_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+    const webhookURL = null || null;
     if (!webhookURL) return;
 
     // Simplified description for a cleaner look
@@ -817,7 +817,7 @@ Clé : ${savedRoleData.cle}`,
 
     const handleAdminCustomWebhookSubmit = async (payloadFromModal) => {
         const webhookURLIdentifier = "REACT_APP_PHMC_DISCORD or REACT_APP_DEV_WEBHOOK";
-        const webhookURL = process.env.REACT_APP_PHMC_DISCORD || process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null || null;
         const { userAgent, timeZone } = getUserContext(); // Capture user context
 
         if (!webhookURL) {
@@ -1133,7 +1133,7 @@ Clé : ${savedRoleData.cle}`,
 
     const handleDevWebhookSubmit = async (payloadFromModal) => {
         const webhookURLIdentifier = "REACT_APP_DEV_WEBHOOK";
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null;
         const { userAgent, timeZone } = getUserContext();
 
         if (!webhookURL) {
@@ -1185,7 +1185,7 @@ Clé : ${savedRoleData.cle}`,
 
     const handleCoronerWebhookSubmit = async (payloadFromModal) => {
         const webhookURLIdentifier = "REACT_APP_CORONER_DISCORD_UPDATES";
-         const webhookURL = process.env.REACT_APP_CORONER_DISCORD_UPDATES;
+         const webhookURL = null;
          const { userAgent, timeZone } = getUserContext(); // Capture user context
 
         if (!webhookURL) {

@@ -93,8 +93,8 @@ const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? 
 // Envoie une notification webhook Discord lors d'une demande en attente (modification ou autre)
 const sendPendingRequestWebhook = async (isCoroner, type, data) => {
   const webhookURL = isCoroner
-    ? process.env.REACT_APP_CORONER_DISCORD_UPDATES
-    : process.env.REACT_APP_PHMC_DISCORD;
+    ? null
+    : null;
   if (!webhookURL) return;
   try {
     let embed;

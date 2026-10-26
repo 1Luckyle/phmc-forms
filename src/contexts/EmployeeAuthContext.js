@@ -252,24 +252,9 @@ export const EmployeeAuthProvider = ({ children }) => {
      * createCivilianAccountFromGtaw), pas généré aléatoirement : même
      * convention que le badge d'un employé créé via GTAW.
      */
-    const generatePatientID = async () => {
-        const civiliansRef = ref(database, 'civilians');
-        const snapshot = await get(civiliansRef);
-        const existingIds = new Set();
-        if (snapshot.exists()) {
-            Object.values(snapshot.val()).forEach((civilian) => {
-                if (civilian && civilian.patientID) existingIds.add(civilian.patientID);
-            });
-        }
-
-        let patientID;
-        do {
-            const digits = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
-            patientID = `PHMC-${digits}`;
-        } while (existingIds.has(patientID));
-
-        return patientID;
-    };
+    // La génération d'ID patient (et la détection de collision) est désormais faite CÔTÉ SERVEUR par
+    // createGtawCivilianAccount, qui renvoie le patientID : le client n'a plus besoin de lire tout le
+    // nœud civilians, ce qui permet de fermer sa lecture globale (voir database.rules.json).
 
     /**
      * Créer un compte Civil à partir d'une identité GTA World déjà vérifiée
@@ -288,7 +273,7 @@ export const EmployeeAuthProvider = ({ children }) => {
             const response = await fetch(CREATE_GTAW_CIVILIAN_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, gtawCharacterId }),
             });
             const data = await response.json();
 
@@ -303,7 +288,8 @@ export const EmployeeAuthProvider = ({ children }) => {
             // (même principe que le badge d'un employé créé via GTAW — voir
             // OnboardingModal.js), pour que ce soit un identifiant stable que
             // le civil connaît déjà, plutôt qu'un code arbitraire à retenir.
-            const patientID = gtawCharacterId != null ? `PHMC-${gtawCharacterId}` : await generatePatientID();
+            const patientID = data.patientID || (gtawCharacterId != null ? `PHMC-${gtawCharacterId}` : null);
+            if (!patientID) throw new Error('Impossible de générer un identifiant patient. Réessayez.');
             const civilianWithID = {
                 ...civilianData,
                 uid: user.uid,

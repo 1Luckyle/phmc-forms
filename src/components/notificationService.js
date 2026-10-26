@@ -81,8 +81,7 @@ export const copyToClipboard = async (text, showNotification, successMessage) =>
 
 export const sendDiscordWebhookInternal = async (webhookUrl, embedData, commitInfo = {}, contextMessage = "") => { // Added export
     if (!webhookUrl) {
-        console.error("Discord webhook URL not provided to sendDiscordWebhookInternal.");
-        Sentry.captureMessage("Discord webhook URL missing in sendDiscordWebhookInternal.", "error");
+        // Envois Discord par webhook retirés (sécurité) : plus aucune URL embarquée dans le site.
         return false;
     }
 
@@ -146,7 +145,7 @@ export const sendDiscordWebhookInternal = async (webhookUrl, embedData, commitIn
 };
 
 export const sendBingoNotification = async ({ scorer, bingoType, phrase, lineName, commitInfo, marked }) => {
-    const webhookUrl = process.env.REACT_APP_BINGO_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+    const webhookUrl = null || null;
     if (!webhookUrl) {
         console.warn("Bingo webhook URL not configured. Skipping notification.");
         return;
@@ -197,7 +196,7 @@ export const sendMissingEmployeeNotification = async (
     adminUserEmail
 ) => {
     try {
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null;
 
         if (!webhookURL) return; // Journalisé par MainApp (journal d'activité) ; Discord est facultatif.
 
@@ -507,7 +506,7 @@ ${JSON.stringify(debugData, null, 2)}
 
 // NEW: Webhook for when a player requests a new phrase
 export const sendPhraseRequestNotification = async ({ requester, phrase, bingoType, commitInfo }) => {
-    const webhookUrl = process.env.REACT_APP_BINGO_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+    const webhookUrl = null || null;
     if (!webhookUrl) {
         console.warn("Bingo webhook URL not configured. Skipping notification.");
         return;
@@ -628,7 +627,7 @@ export const handlePhmcRecruitmentCopyAndNotify = async ({
     const copied = await copyToClipboard(bbCodeToCopy, showNotification, `${formName} BBCode copié dans le presse-papiers !`);
 
     if (copied) {
-        const discordWebhookUrl = process.env.REACT_APP_PHMC_RECRUITMENT_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+        const discordWebhookUrl = null || null;
 
         if (discordWebhookUrl) {
             await sendPhmcRecruitmentWebhook({
@@ -901,7 +900,7 @@ export const handleSaveReportAndNotify = async ({
 
     // --- Step 3: Send Discord Webhook Notification ---
     try {
-        let discordWebhookUrl = process.env.REACT_APP_DEV_WEBHOOK;
+        let discordWebhookUrl = null;
 
         if (discordWebhookUrl) {
             let currentIdentifier;
@@ -999,7 +998,7 @@ export const handleSaveReportAndNotify = async ({
 };
 export const sendErrorToDiscord = async (errorDetails) => {
     // A dedicated webhook for errors, or a fallback.
-    const webhookUrl = process.env.REACT_APP_ERROR_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+    const webhookUrl = null || null;
 
     if (!webhookUrl) {
         console.error("Error reporting webhook URL not configured. Cannot send error report.");

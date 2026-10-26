@@ -180,7 +180,14 @@
     // Lecture : admins uniquement.
     "pendingAccountRequests": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
-      ".write": true
+      // Création PUBLIQUE encadrée (onboarding avant la création du compte Firebase) : chacun peut
+      // déposer SA demande sous sa clé e-mail, mais ne peut NI écraser NI supprimer une demande
+      // existante (avant, ".write": true laissait n'importe qui vider tout le nœud ou remplacer la
+      // demande d'un autre). Édition et suppression : admins uniquement.
+      "$emailKey": {
+        ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.exists())",
+        ".validate": "newData.hasChildren(['email', 'status']) && newData.child('email').isString() && newData.child('email').val().length <= 254 && newData.child('status').isString() && newData.child('status').val().length <= 40"
+      }
     },
 
     // ─── Demandes de modification en attente ──────────────────────────────────
@@ -356,16 +363,13 @@
     // modifier/supprimer un compte Civil comme admin échouait avec
     // PERMISSION_DENIED tant que seul auth.uid === $uid était autorisé).
     "civilians": {
-      // .read au niveau du parent (pas seulement $uid) : generatePatientID()
-      // dans EmployeeAuthContext.js lit tout le nœud civilians pour vérifier
-      // l'absence de collision d'ID patient (get(ref(database, 'civilians'))).
-      // Une règle .read définie uniquement sous $uid n'autorise PAS la lecture
-      // du nœud parent — Firebase exige la permission au niveau exact du chemin
-      // lu, elle ne "descend" pas automatiquement depuis les enfants. Sans ce
-      // niveau, generatePatientID() échoue avec PERMISSION_DENIED et bloque
-      // toute création de compte Civil après l'étape de vérification d'email.
-      ".read": "auth != null",
+      // Lecture du nœud ENTIER : personnel et admins uniquement (comme patientRecords). La détection
+      // de collision d'ID patient a été déplacée côté serveur (createGtawCivilianAccount), donc un civil
+      // n'a plus besoin de lire tout le nœud : il ne lit que SON propre profil ($uid ci-dessous). Ferme
+      // l'énumération des coordonnées (nom, e-mail, téléphone, Discord, gtawUserId) de tous les civils.
+      ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
       }
     },

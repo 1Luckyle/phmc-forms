@@ -448,7 +448,7 @@ const OnboardingModal = ({
 
     const sendOnboardingCompletionWebhook = async (preferences) => {
         try {
-            const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+            const webhookURL = null;
             if (!webhookURL) {
                 console.warn('Dev webhook URL not configured for onboarding notifications.');
                 return;
@@ -733,8 +733,8 @@ const OnboardingModal = ({
         try {
             // Utilise le webhook du canal correspondant (PHMC ou DMEC)
             const webhookURL = isCoroner
-                ? process.env.REACT_APP_CORONER_DISCORD_UPDATES
-                : process.env.REACT_APP_PHMC_DISCORD;
+                ? null
+                : null;
             if (!webhookURL) {
                 console.warn('Webhook URL non configurée pour la demande de création de compte.');
                 return;
@@ -774,7 +774,7 @@ const OnboardingModal = ({
 
     const sendAccountCreationWebhook = async (staffMember, isCoroner) => {
         try {
-            const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+            const webhookURL = null;
             if (!webhookURL) {
                 console.warn('Dev webhook URL not configured for account creation notifications.');
                 return;

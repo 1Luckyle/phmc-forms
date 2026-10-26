@@ -172,7 +172,7 @@ const WebhookManager = () => {
                     type="button"
                     className="webhook-button webhook-button-warning"
                     onClick={() => sendWebhook('primary')}
-                    title={`Uses: ${process.env.REACT_APP_DEV_WEBHOOK}`}
+                    title="Webhook de développement (désactivé)"
                 >
                     <i className="fas fa-vial"></i> Envoyer au webhook de développement
                 </button>
@@ -180,7 +180,7 @@ const WebhookManager = () => {
                     type="button"
                     className="webhook-button webhook-button-primary"
                     onClick={() => sendWebhook('secondary')}
-                    title={`Uses: ${process.env.REACT_APP_PHMC_DISCORD}`}
+                    title="Webhook PHMC (désactivé)"
                 >
                     <i className="fas fa-paper-plane"></i> Envoyer au webhook PHMC
                 </button>

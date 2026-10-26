@@ -394,29 +394,19 @@ const exchangeGtawAuthCode = async ({ code, redirectUri, tokenUrl }) => {
 
     console.log('OAuth credentials loaded:', { clientId: clientId ? '✓ loaded' : '✗ missing', clientSecret: clientSecret ? '✓ loaded' : '✗ missing' });
 
-    // Determine the base URL from tokenUrl or environment
-    let baseUrl;
-    if (tokenUrl) {
-        try {
-            // Extract the origin from the provided tokenUrl
-            baseUrl = new URL(tokenUrl).origin;
-        } catch (e) {
-            console.warn('Invalid tokenUrl provided, ignoring:', tokenUrl);
-        }
-    }
-    /*
-     * Determine the base domain for the OAuth and API calls.  If the client
-     * provides a tokenUrl, extract its origin.  Otherwise use the
-     * `GTAWORLD_OAUTH_BASE_URL` secret when defined, or fall back to the
-     * French UCP domain.  The French domain (`ucp-fr.gta.world`) is the one
-     * documented for OAuth flows in the PHMC-FR context.
-     */
-    baseUrl = baseUrl || process.env.GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
-    // Construct the endpoints using the resolved baseUrl. tokenUrl, if provided,
-    // overrides only the token endpoint.  Note: the user endpoint does not
-    // include a version segment on UCP-FR.
-    const tokenEndpoint = tokenUrl || `${baseUrl}/oauth/token`;
+    // Serveur OAuth GTA World : TOUJOURS celui configuré ici, jamais une adresse envoyée par le navigateur.
+    // Avant ce correctif, le tokenUrl reçu du client était utilisé tel quel (et son origine servait aussi pour
+    // /api/user et /api/factions) : en le faisant pointer vers son propre serveur, n'importe qui recevait notre
+    // client_secret et pouvait renvoyer un faux profil GTAW (l'identifiant d'un admin, par exemple) pour obtenir
+    // un jeton de connexion sur ce compte. Le site envoie encore ce paramètre : il est ignoré, et signalé dans les
+    // journaux s'il désigne un autre serveur (tentative d'exploitation ou configuration client divergente).
+    // Note : l'endpoint utilisateur n'a pas de segment de version sur UCP-FR.
+    const baseUrl = process.env.GTAWORLD_OAUTH_BASE_URL || 'https://ucp-fr.gta.world';
+    const tokenEndpoint = `${baseUrl}/oauth/token`;
     const userEndpoint = `${baseUrl}/api/user`;
+    if (tokenUrl && tokenUrl !== tokenEndpoint) {
+        console.warn('tokenUrl envoyé par le client ignoré (différent du serveur OAuth configuré) :', String(tokenUrl).slice(0, 200));
+    }
 
     // Exchange auth code for access token
     const requestBody = new URLSearchParams({
@@ -430,7 +420,7 @@ const exchangeGtawAuthCode = async ({ code, redirectUri, tokenUrl }) => {
     console.log('Sending token request to GTAW with:', {
         grant_type: 'authorization_code',
         client_id: clientId ? clientId.substring(0, 5) + '...' : 'missing',
-        client_secret: clientSecret ? clientSecret.substring(0, 5) + '...' : 'missing',
+        client_secret: clientSecret ? '✓ loaded' : 'missing', // jamais de fragment du secret dans les journaux
         redirect_uri: redirectUri,
         code: code.substring(0, 10) + '...',
         tokenEndpoint
@@ -882,6 +872,27 @@ export const createGtawEmployeeAccount = onRequest({}, async (req, res) => {
 // Renvoie directement un customToken pour que le client puisse se connecter
 // et écrire son profil dans civilians/{uid} (autorisé par database.rules.json,
 // qui exige auth.uid === $uid) sans repasser par une deuxième redirection OAuth.
+// Génère un ID patient unique CÔTÉ SERVEUR (Admin SDK → le client n'a plus besoin de lire tout le
+// nœud civilians pour vérifier les collisions). Déterministe depuis le personnage GTAW quand il existe
+// (PHMC-<id>, unique par construction et stable si le compte est recréé), sinon tirage aléatoire libre.
+const generateUniquePatientId = async (gtawCharacterId) => {
+    const civiliansSnap = await db.ref('civilians').once('value');
+    const existing = new Set();
+    civiliansSnap.forEach((child) => {
+        const pid = child.child('patientID').val();
+        if (pid) existing.add(String(pid));
+    });
+    if (gtawCharacterId != null) {
+        const derived = `PHMC-${gtawCharacterId}`;
+        if (!existing.has(derived)) return derived;
+    }
+    let candidate;
+    do {
+        candidate = `PHMC-${String(crypto.randomInt(0, 100000)).padStart(5, '0')}`;
+    } while (existing.has(candidate));
+    return candidate;
+};
+
 export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
 
@@ -947,9 +958,11 @@ export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
         }
 
         const customToken = await admin.auth().createCustomToken(userRecord.uid, { gtawLogin: true });
+        // ID patient généré ici (Admin SDK) : évite d'ouvrir la lecture du nœud civilians au client.
+        const patientID = await generateUniquePatientId(data.gtawCharacterId);
         // Le code de vérification a rempli son rôle, inutile de le conserver.
         await db.ref(`emailVerifications/${emailKey}`).remove();
-        res.status(200).json({ uid: userRecord.uid, customToken });
+        res.status(200).json({ uid: userRecord.uid, customToken, patientID });
     } catch (error) {
         if (error.code === 'auth/email-already-exists') {
             res.status(409).json({ error: 'email-already-exists', message: 'Cet email est déjà utilisé.' });

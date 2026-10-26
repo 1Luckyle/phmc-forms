@@ -41,7 +41,7 @@ export const sendDiscordNotification = async (webhookURL, payload, context, noti
 export const sendAdminActionWebhook = async (actorEmail, action, details, categoryName = null, actorLabel = 'Admin') => {
     // Le journal d'activité du site est la trace officielle ; Discord n'est plus qu'un doublon facultatif.
     logAdminAction({ email: actorEmail, action, details, categoryName, actorLabel });
-    const webhookURL = process.env.REACT_APP_ADMIN_ACTION_DISCORD_WEBHOOK_URL || process.env.REACT_APP_DEV_WEBHOOK;
+    const webhookURL = null || null;
     if (!webhookURL) {
         return;
     }

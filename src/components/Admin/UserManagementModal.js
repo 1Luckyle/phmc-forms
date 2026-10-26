@@ -45,7 +45,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
     };
 
     const sendMigrationNotification = async (source, destination, count) => {
-        const webhookURL = process.env.REACT_APP_DEV_WEBHOOK;
+        const webhookURL = null;
         const payload = {
             embeds: [{
                 title: "Migration des données utilisateur",
