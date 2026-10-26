@@ -38,6 +38,9 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
     const [error, setError] = useState('');
     const replies = repliesOf(request);
     const closed = request.statut === 'cloturee'; // ancien statut : ces dossiers restent en lecture seule
+    // Décision rendue (acceptée / refusée) : le demandeur ne peut plus écrire sur cette demande ; l'administration, si.
+    const decided = closed || ['acceptee', 'refusee'].includes(request.statut);
+    const canWrite = !closed && (manage || !decided);
     const lastReply = replies[replies.length - 1];
     const awaitingYou = manage ? (request.statut === 'nouvelle' || (lastReply && !lastReply.par?.staff && CCTV_OPEN_STATUSES.includes(request.statut))) : (lastReply?.par?.staff);
 
@@ -119,7 +122,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                         </div>
                     )}
 
-                    {!closed ? (
+                    {canWrite ? (
                         <form className="cctv-reply" onSubmit={send}>
                             <textarea
                                 rows={3} value={text} onChange={(e) => setText(e.target.value)} disabled={busy}
@@ -139,7 +142,12 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                                 </Button>
                             </div>
                         </form>
-                    ) : <p className="cctv-muted"><i className="fas fa-lock me-1"></i>Dossier clôturé.</p>}
+                    ) : (
+                        <p className="cctv-muted">
+                            <i className="fas fa-lock me-1"></i>
+                            {closed ? 'Dossier clôturé.' : `Demande ${request.statut === 'acceptee' ? 'acceptée' : 'refusée'} : vous ne pouvez plus y envoyer de message. Pour une autre demande, utilisez « Nouvelle demande ».`}
+                        </p>
+                    )}
 
                     {manage && (
                         <div className="cctv-status-row">

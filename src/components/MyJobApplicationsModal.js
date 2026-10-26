@@ -1,24 +1,28 @@
 // src/components/MyJobApplicationsModal.js
 //
-// Vue Civil "Mes candidatures" (Lot 6 du plan Civil) : suivi de statut + actions (Mettre en pause / Retirer /
-// Candidater) sur candidatures/{uid} (ancien nœud jobApplications lu aussi), et sur chaque candidature :
-// la recharger dans son formulaire, copier le BBCode (forum PHMC, pas encore disponible), télécharger le HTML
-// (forum GTA World), et déplier sous la carte l'aperçu de la candidature (images comprises), son BBCode et son
-// historique de statuts.
-import React, { useMemo } from 'react';
+// « Mon dossier candidat » : le suivi du candidat sur candidatures/{uid} (ancien nœud jobApplications lu aussi). Même
+// présentation que le suivi du recrutement et que les demandes CCTV : une carte par candidature (statut en couleur,
+// pastille « Nouvelle réponse »), et dans la carte : le déroulé, le motif d'un éventuel refus, les actions (Candidater /
+// Mettre en pause / Retirer), les échanges avec le recrutement dès que la candidature est « en cours d'examen », puis le
+// rechargement dans le formulaire, l'export (BBCode, HTML, PDF, image) et l'aperçu / BBCode / historique.
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Dropdown } from 'react-bootstrap';
 import { removeApplication } from '../utils/recruitmentStore';
 import { useDebug } from '../contexts/DebugContext';
 import { useData } from '../contexts/DataContext';
-import { positionLabelFor } from '../constants/recruitment';
+import { APPLICATION_STATUS, APPLICATION_STATUS_COLORS, THREAD_OPEN_STATUSES, positionLabelFor } from '../constants/recruitment';
+import { subscribeMyThreadMeta } from '../utils/applicationThreads';
 import { copyToClipboard } from './notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
+import ApplicationThread from './Recruitment/ApplicationThread';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import './Cctv/CctvRequests.css';
+import './Recruitment/Applications.css';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -28,8 +32,8 @@ const modalStyle = {
 
 const modalContentStyle = {
     backgroundColor: '#0d1117', color: '#c9d1d9', padding: '20px',
-    borderRadius: '5px', width: '95%', maxWidth: '900px', height: '80vh',
-    maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+    borderRadius: '5px', width: '95%', maxWidth: '900px', height: '85vh',
+    maxHeight: '85vh', display: 'flex', flexDirection: 'column',
     overflowY: 'hidden', position: 'relative', border: '1px solid #30363d',
 };
 
@@ -39,27 +43,25 @@ const closeButtonStyle = {
     lineHeight: '1', padding: '0.25rem 0.5rem', cursor: 'pointer', zIndex: 10,
 };
 
-const cardStyle = {
-    backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '6px',
-    padding: '15px', marginBottom: '12px',
+const STATUS_LABELS = Object.fromEntries(Object.entries(APPLICATION_STATUS).map(([key, value]) => [key, value.label]));
+const STATUS_HELP = {
+    brouillon: "Brouillon : le recrutement ne le voit pas. Cliquez sur « Candidater » (ou rouvrez le formulaire) pour l'envoyer.",
+    soumise: "Votre candidature est envoyée. Le recrutement va la prendre en charge ; vous pourrez alors échanger avec lui ici.",
+    en_examen: "Votre candidature est en cours d'examen : vous pouvez échanger avec le recrutement ci-dessous.",
+    entretien_programme: "Un entretien est programmé. Vous pouvez encore écrire au recrutement ci-dessous.",
+    entretien_effectue: "Votre entretien est effectué : le recrutement rend sa décision.",
+    en_pause: "Candidature en pause : reprenez-la quand vous le souhaitez.",
+    retiree: "Vous avez retiré cette candidature.",
 };
 
-const metaStyle = { margin: '4px 0', fontSize: '0.88em', color: '#8b949e' };
+const ACTIVE_STATUSES = ['soumise', 'en_examen', 'entretien_programme', 'entretien_effectue'];
 
-const STATUS_LABELS = {
-    brouillon: { text: 'Brouillon enregistré', color: '#8b949e' },
-    soumise: { text: 'Candidature envoyée', color: '#58a6ff' },
-    entretien_programme: { text: 'Entretien programmé', color: '#d29922' },
-    entretien_effectue: { text: 'Entretien effectué', color: '#d29922' },
-    acceptee: { text: 'Acceptée', color: '#3fb950' },
-    refusee: { text: 'Refusée', color: '#f85149' },
-    retiree: { text: 'Retirée', color: '#8b949e' },
-    en_pause: { text: 'En pause', color: '#8b949e' },
+const pad = (n) => String(n).padStart(2, '0');
+const formatDate = (timestamp) => {
+    if (!timestamp) return '—';
+    const d = new Date(timestamp);
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-
-const ACTIVE_STATUSES = ['soumise', 'entretien_programme', 'entretien_effectue'];
-
-const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString('fr-FR') : 'N/A');
 
 const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
 
@@ -69,6 +71,8 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
     const { openForumNotice, forumNoticeModal } = useForumNotice();
     const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
+    const [openId, setOpenId] = useState(null);
+    const [meta, setMeta] = useState({});
     // Le poste s'affiche sous son libellé français, même pour une ancienne candidature qui n'a gardé que la clé.
     const { selectOptions } = useData();
     const applications = useMemo(() => (rawApplications || []).map((application) => ({
@@ -76,6 +80,14 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
         posteCle: application.posteCle ?? application.poste,
         poste: positionLabelFor(selectOptions, application.versionBBCode, application.posteCle || application.poste),
     })), [rawApplications, selectOptions]);
+
+    const candidatUid = applications[0]?.candidatUid || null;
+    useEffect(() => {
+        if (!show || !candidatUid) return undefined;
+        const unsubscribe = subscribeMyThreadMeta(candidatUid, setMeta, () => setMeta({}));
+        return () => unsubscribe();
+    }, [show, candidatUid]);
+
     if (!show) return null;
 
     const handleDelete = async (application) => {
@@ -93,10 +105,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
     const handleAction = async (application, newStatus) => {
         const result = await onUpdateStatus(application.candidatUid, application.id, newStatus);
         if (result?.success) {
-            showNotification(
-                newStatus === 'soumise' ? 'Candidature (re)soumise.' : 'Statut mis à jour.',
-                'check-circle'
-            );
+            showNotification(newStatus === 'soumise' ? 'Candidature (re)soumise.' : 'Statut mis à jour.', 'check-circle');
         }
     };
 
@@ -115,153 +124,164 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
 
     const canReload = (application) => !!application.versionBBCode && !!application.donnees && Object.keys(application.donnees).length > 0;
 
+    const renderHistory = (application) => {
+        const history = [...(application.historique || [])].sort((a, b) => (b.horodatage || 0) - (a.horodatage || 0));
+        if (history.length === 0) return <span className="cctv-muted">Aucun historique enregistré.</span>;
+        return (
+            <ul style={{ paddingLeft: '1.1rem', marginBottom: 0 }}>
+                {history.map((entry, index) => (
+                    <li key={`${entry.statut}-${entry.horodatage}-${index}`}>
+                        <span style={{ color: APPLICATION_STATUS_COLORS[entry.statut] || '#c9d1d9' }}>{STATUS_LABELS[entry.statut] || entry.statut}</span>
+                        {' — '}{formatDate(entry.horodatage)}
+                    </li>
+                ))}
+            </ul>
+        );
+    };
+
     return ReactDOM.createPortal(
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 {forumNoticeModal}
-                <h5 style={{ marginBottom: '15px' }}>Mon dossier candidat</h5>
+                <h5 style={{ marginBottom: '4px' }}><i className="fas fa-folder-open me-2"></i>Mon dossier candidat</h5>
+                <p className="cctv-muted" style={{ marginBottom: '12px' }}>Suivez vos candidatures et échangez avec le recrutement dès qu'une candidature est en cours d'examen.</p>
 
-                <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-                    {isLoading && <p style={{ textAlign: 'center' }}>Chargement...</p>}
+                <div className="cctv-panel" style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                    {isLoading && <p className="cctv-muted">Chargement...</p>}
                     {!isLoading && applications.length === 0 && (
-                        <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                            Aucune candidature enregistrée pour l'instant.
-                        </p>
+                        <p className="cctv-empty">Aucune candidature enregistrée pour l'instant.</p>
                     )}
-                    {!isLoading && applications.map((application) => {
-                        const statusInfo = STATUS_LABELS[application.statut] || { text: application.statut, color: '#8b949e' };
-                        const history = [...(application.historique || [])].sort((a, b) => (b.horodatage || 0) - (a.horodatage || 0));
-                        const historyContent = history.length === 0 ? (
-                            <p style={metaStyle}>Aucun historique enregistré.</p>
-                        ) : (
-                            <ul style={{ paddingLeft: '1.1rem', marginBottom: 0 }}>
-                                {history.map((entry, index) => (
-                                    <li key={`${entry.statut}-${entry.horodatage}-${index}`} style={metaStyle}>
-                                        <span style={{ color: (STATUS_LABELS[entry.statut] || {}).color || '#c9d1d9' }}>
-                                            {(STATUS_LABELS[entry.statut] || {}).text || entry.statut}
+                    <div className="cctv-list">
+                        {!isLoading && applications.map((application) => {
+                            const color = APPLICATION_STATUS_COLORS[application.statut] || '#8b949e';
+                            const isOpen = openId === application.id || applications.length === 1;
+                            const info = meta[application.id];
+                            const newReply = !!info && info.staff && THREAD_OPEN_STATUSES.includes(application.statut);
+                            const showThread = THREAD_OPEN_STATUSES.includes(application.statut) || application.statut === 'refusee' || info;
+                            return (
+                                <div key={application.id} className={`cctv-card ${isOpen ? 'open' : ''}`} style={{ '--c': color }}>
+                                    <button type="button" className="cctv-card-head" onClick={() => setOpenId(isOpen && applications.length > 1 ? null : application.id)}>
+                                        <span className="cctv-card-main">
+                                            <strong>{application.poste || 'Poste inconnu'}</strong>
+                                            <small>Candidat : {application.nomCandidat || '—'} · Déposée le {formatDate(application.creeLe)} · mise à jour {formatDate(application.modifieLe)}</small>
                                         </span>
-                                        {' — '}{formatDate(entry.horodatage)}
-                                    </li>
-                                ))}
-                            </ul>
-                        );
-                        return (
-                            <div key={application.id} style={cardStyle}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '10px' }}>
-                                    <strong>{application.poste || 'Poste inconnu'}</strong>
-                                    <span style={{ color: statusInfo.color, fontWeight: 'bold', whiteSpace: 'nowrap' }}>{statusInfo.text}</span>
-                                </div>
-                                {application.nomCandidat && (
-                                    <p style={metaStyle}><i className="fas fa-user" style={{ marginRight: '6px' }}></i>Candidat : {application.nomCandidat}</p>
-                                )}
-                                {application.dateEntretien && (
-                                    <p style={metaStyle}>
-                                        <i className="fas fa-calendar-alt" style={{ marginRight: '6px' }}></i>
-                                        Entretien : {formatDate(application.dateEntretien)}
-                                    </p>
-                                )}
-                                <p style={metaStyle}>
-                                    Déposée le {formatDate(application.creeLe)} · Dernière mise à jour : {formatDate(application.modifieLe)}
-                                </p>
+                                        {newReply && <span className="cctv-flag">Nouvelle réponse</span>}
+                                        <span className="cctv-chip" style={{ '--c': color }}><span className="cctv-dot"></span>{STATUS_LABELS[application.statut] || application.statut}</span>
+                                        <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} cctv-caret`}></i>
+                                    </button>
 
-                                <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                    {application.statut === 'brouillon' && (
-                                        <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>
-                                            Candidater
-                                        </Button>
-                                    )}
-                                    {application.statut === 'en_pause' && (
-                                        <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>
-                                            Reprendre ma candidature
-                                        </Button>
-                                    )}
-                                    {ACTIVE_STATUSES.includes(application.statut) && (
-                                        <Button size="sm" variant="secondary" onClick={() => handleAction(application, 'en_pause')}>
-                                            Mettre en pause
-                                        </Button>
-                                    )}
-                                    {(ACTIVE_STATUSES.includes(application.statut) || application.statut === 'brouillon' || application.statut === 'en_pause') && (
-                                        <Button
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={() => {
-                                                if (window.confirm('Retirer cette candidature ?')) {
-                                                    handleAction(application, 'retiree');
-                                                }
-                                            }}
-                                        >
-                                            Retirer
-                                        </Button>
-                                    )}
-                                    {debugDeleteApplicationsEnabled && (
-                                        <Button size="sm" variant="outline-danger" onClick={() => handleDelete(application)}
-                                            title="Debug : supprime définitivement cette candidature">
-                                            <i className="fas fa-trash"></i> Supprimer
-                                        </Button>
-                                    )}
-                                </div>
+                                    {isOpen && (
+                                        <div className="cctv-card-body">
+                                            {application.statut === 'refusee' ? (
+                                                <div className="rec-banner refused">
+                                                    <strong>Candidature refusée.</strong>{' '}
+                                                    {application.refus?.motif ? <>Motif : {application.refus.motif}{application.refus.detail ? ` — ${application.refus.detail}` : ''}.</> : 'Aucun motif n’a été enregistré.'}
+                                                    {' '}Vous pouvez candidater à nouveau ultérieurement.
+                                                </div>
+                                            ) : application.statut === 'acceptee' ? (
+                                                <div className="rec-banner accepted">
+                                                    <strong>Félicitations, votre candidature est acceptée.</strong> Le recrutement vous contactera pour la suite ; vous pouvez échanger avec lui ci-dessous jusqu'à la signature de votre contrat.
+                                                </div>
+                                            ) : STATUS_HELP[application.statut] ? (
+                                                <div className="rec-banner info">{STATUS_HELP[application.statut]}</div>
+                                            ) : null}
 
-                                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #30363d', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                    {onLoad && (
-                                        <Button
-                                            size="sm" variant="outline-primary" disabled={!canReload(application)}
-                                            title={canReload(application)
-                                                ? 'Rouvre cette candidature dans son formulaire, avec ses réponses'
-                                                : 'Aucune réponse enregistrée : impossible de la recharger'}
-                                            onClick={() => onLoad(application)}
-                                        >
-                                            <i className="fas fa-upload me-1"></i>Recharger dans le formulaire
-                                        </Button>
-                                    )}
-                                    <Dropdown className="d-inline-block">
-                                        <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
-                                        <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                                            {bbcodeEnabled && (
-                                                <Dropdown.Item onClick={() => handleCopyBbCode(application)} disabled={!application.bbcode} title={COPY_BBCODE_HINT}>
-                                                    Copier le BBCode<ForumHint kind="bbcode" />
-                                                </Dropdown.Item>
+                                            {application.dateEntretien && (
+                                                <dl className="cctv-fields">
+                                                    <dt>Entretien</dt><dd>{formatDate(application.dateEntretien)}</dd>
+                                                </dl>
                                             )}
-                                            <Dropdown.Item onClick={() => handleDownloadHtml(application)} disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT}>
-                                                Télécharger le HTML<ForumHint kind="html" />
-                                            </Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleExportDocument('pdf', application)} disabled={!application.bbcode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleExportDocument('png', application)} disabled={!application.bbcode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleExportDocument('png-copy', application)} disabled={!application.bbcode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => copyToClipboard(applicationTitle(application), showNotification, 'Titre copié !')}>Copier le titre</Dropdown.Item>
-                                        </Dropdown.Menu>
-                                    </Dropdown>
-                                    <ExpandToggle
-                                        open={openRows[application.id] === 'preview'} label="Aperçu"
-                                        onClick={() => toggleRow(application.id, 'preview')}
-                                        title="Prévisualiser la candidature telle qu'elle sera publiée, juste en dessous"
-                                    />
-                                    {bbcodeEnabled && (
-<ExpandToggle
-                                        open={openRows[application.id] === 'bbcode'} label="Voir le BBCode" icon="fa-code"
-                                        onClick={() => toggleRow(application.id, 'bbcode')}
-                                    />
-)}
-                                    <ExpandToggle
-                                        open={openRows[application.id] === 'history'} label="Historique" icon="fa-clock-rotate-left"
-                                        onClick={() => toggleRow(application.id, 'history')}
-                                    />
-                                </div>
 
-                                {openRows[application.id] && (
-                                    <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #30363d' }}>
-                                        <ReportExpansion
-                                            tab={openRows[application.id]}
-                                            onTabChange={(tab) => setRowTab(application.id, tab)}
-                                            bbCode={application.bbcode}
-                                            title={applicationTitle(application)}
-                                            extraTabs={[{ key: 'history', label: 'Historique', content: historyContent }]}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                                            <div className="rec-actions">
+                                                {application.statut === 'brouillon' && (
+                                                    <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>Candidater</Button>
+                                                )}
+                                                {application.statut === 'en_pause' && (
+                                                    <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>Reprendre ma candidature</Button>
+                                                )}
+                                                {ACTIVE_STATUSES.includes(application.statut) && (
+                                                    <Button size="sm" variant="secondary" onClick={() => handleAction(application, 'en_pause')}>Mettre en pause</Button>
+                                                )}
+                                                {(ACTIVE_STATUSES.includes(application.statut) || application.statut === 'brouillon' || application.statut === 'en_pause') && (
+                                                    <Button size="sm" variant="outline-danger" onClick={() => { if (window.confirm('Retirer cette candidature ?')) handleAction(application, 'retiree'); }}>
+                                                        Retirer
+                                                    </Button>
+                                                )}
+                                                {debugDeleteApplicationsEnabled && (
+                                                    <Button size="sm" variant="outline-danger" onClick={() => handleDelete(application)} title="Debug : supprime définitivement cette candidature">
+                                                        <i className="fas fa-trash"></i> Supprimer
+                                                    </Button>
+                                                )}
+                                            </div>
+
+                                            {showThread && (
+                                                <ApplicationThread application={application} staff={false} authorName={application.nomCandidat} authorRole="Candidat" />
+                                            )}
+
+                                            <div className="rec-tools">
+                                                {onLoad && (
+                                                    <Button
+                                                        size="sm" variant="outline-primary" disabled={!canReload(application)}
+                                                        title={canReload(application)
+                                                            ? 'Rouvre cette candidature dans son formulaire, avec ses réponses'
+                                                            : 'Aucune réponse enregistrée : impossible de la recharger'}
+                                                        onClick={() => onLoad(application)}
+                                                    >
+                                                        <i className="fas fa-upload me-1"></i>Recharger dans le formulaire
+                                                    </Button>
+                                                )}
+                                                <Dropdown className="d-inline-block">
+                                                    <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
+                                                    <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                                                        {bbcodeEnabled && (
+                                                            <Dropdown.Item onClick={() => handleCopyBbCode(application)} disabled={!application.bbcode} title={COPY_BBCODE_HINT}>
+                                                                Copier le BBCode<ForumHint kind="bbcode" />
+                                                            </Dropdown.Item>
+                                                        )}
+                                                        <Dropdown.Item onClick={() => handleDownloadHtml(application)} disabled={!application.bbcode} title={DOWNLOAD_HTML_HINT}>
+                                                            Télécharger le HTML<ForumHint kind="html" />
+                                                        </Dropdown.Item>
+                                                        <Dropdown.Item onClick={() => handleExportDocument('pdf', application)} disabled={!application.bbcode}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                                                        <Dropdown.Item onClick={() => handleExportDocument('png', application)} disabled={!application.bbcode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                                                        <Dropdown.Item onClick={() => handleExportDocument('png-copy', application)} disabled={!application.bbcode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
+                                                        <Dropdown.Item onClick={() => copyToClipboard(applicationTitle(application), showNotification, 'Titre copié !')}>Copier le titre</Dropdown.Item>
+                                                    </Dropdown.Menu>
+                                                </Dropdown>
+                                                <ExpandToggle
+                                                    open={openRows[application.id] === 'preview'} label="Aperçu"
+                                                    onClick={() => toggleRow(application.id, 'preview')}
+                                                    title="Prévisualiser la candidature telle qu'elle sera publiée, juste en dessous"
+                                                />
+                                                {bbcodeEnabled && (
+                                                    <ExpandToggle
+                                                        open={openRows[application.id] === 'bbcode'} label="Voir le BBCode" icon="fa-code"
+                                                        onClick={() => toggleRow(application.id, 'bbcode')}
+                                                    />
+                                                )}
+                                                <ExpandToggle
+                                                    open={openRows[application.id] === 'history'} label="Historique" icon="fa-clock-rotate-left"
+                                                    onClick={() => toggleRow(application.id, 'history')}
+                                                />
+                                            </div>
+
+                                            {openRows[application.id] && (
+                                                <div className="rec-expansion">
+                                                    <ReportExpansion
+                                                        tab={openRows[application.id]}
+                                                        onTabChange={(tab) => setRowTab(application.id, tab)}
+                                                        bbCode={application.bbcode}
+                                                        title={applicationTitle(application)}
+                                                        extraTabs={[{ key: 'history', label: 'Historique', content: renderHistory(application) }]}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>,

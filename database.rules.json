@@ -337,7 +337,7 @@
         "maj": { ".write": "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || auth.uid === data.parent().child('by/uid').val())" },
         "reponses": {
           "$replyId": {
-            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid)",
+            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && root.child('cctvRequests').child($requestId).child('statut').val() !== 'acceptee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'refusee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'cloturee'))",
             ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
           }
         }
@@ -470,7 +470,43 @@
       "$candidatUid": {
         ".read": "auth != null && auth.uid === $candidatUid",
         "$candidatureId": {
-          ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))"
+          ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))",
+          // Un candidat ne peut poser que SES statuts (brouillon, soumise, retirée, en pause) ou garder celui qui est déjà là :
+          // examen, entretien, acceptation et refus sont réservés aux recruteurs et aux admins.
+          ".validate": "(root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'soumise' || newData.child('statut').val() === 'retiree' || newData.child('statut').val() === 'en_pause' || (data.exists() && data.child('statut').val() === newData.child('statut').val())"
+        }
+      }
+    },
+
+    // ─── Échanges candidat ↔ recruteur ────────────────────────────────────────
+    // echangesCandidature/{candidatUid}/{candidatureId}/messages/{id} : un message (ajout seul). Possible tant que la
+    // candidature est « en cours d'examen », en entretien ou acceptée, et que le fil n'est pas fermé (ferme : refus de la
+    // candidature, ou signature du contrat). Le candidat n'écrit que sur SES candidatures ; les recruteurs et admins sur toutes.
+    // echangesMeta/{candidatUid}/{candidatureId} : dernier message (ts, staff, par), pour les pastilles « à répondre » sans lire les fils.
+    "echangesCandidature": {
+      "$candidatUid": {
+        ".read": "auth != null && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+        "$candidatureId": {
+          "messages": {
+            "$messageId": {
+              ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)) && !root.child('echangesCandidature').child($candidatUid).child($candidatureId).child('ferme').exists() && (root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'en_examen' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_programme' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_effectue' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'acceptee')",
+              ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
+            }
+          },
+          // Fermeture du fil : par un recruteur/admin, ou par le candidat lui-même (à la signature de son contrat) ; seuls eux la lèvent.
+          "ferme": {
+            ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $candidatUid && !data.exists()))"
+          }
+        }
+      }
+    },
+    "echangesMeta": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$candidatUid": {
+        ".read": "auth != null && auth.uid === $candidatUid",
+        "$candidatureId": {
+          ".write": "auth != null && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+          ".validate": "newData.hasChildren(['ts', 'staff'])"
         }
       }
     },

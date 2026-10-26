@@ -738,6 +738,8 @@ Clé : ${sanitizedKey}`,
 
             // --- MODIFICATION START: Generalized Field Population ---
             setFormData(prev => {
+                // Email DMEC : le formulaire vérifie le rapport joint, l'ajoute et reprend les noms du défunt (voir CoronerEmail.js).
+                if (bbCodeVersion === 2) return prev;
                 if (bbCodeVersion === 2 && loadedVersion === 11) { // Attaching Mass Fatality to Coroner Email
                     const decedents = loadedFormData.decedents;
                     if (decedents && decedents.length > 0) {
@@ -1185,6 +1187,18 @@ Copie : ${copyPath}`, target: copyAuthorName,
 
         try {
             // Candidature existante (nouveau nœud « candidatures » ou ancien « jobApplications »).
+            // Candidature déjà prise en charge (examen, entretien) : le formulaire ne peut plus la modifier ni la renvoyer.
+            // Elle repasserait sinon à « brouillon » / « soumise » et ferait perdre sa place au candidat.
+            const sameFormEarly = (await loadApplicationsOf(applicant.uid)).filter((a) => Number(a.versionBBCode) === Number(bbCodeVersion));
+            const inProgress = sameFormEarly.find((a) => ['en_examen', 'entretien_programme', 'entretien_effectue'].includes(a.statut));
+            if (inProgress) {
+                showNotification(
+                    `Votre candidature pour « ${inProgress.poste || 'ce poste'} » est en cours de traitement par le recrutement : elle ne peut plus être modifiée ici. Écrivez au recrutement depuis « Mon dossier candidat », ou retirez-la pour en déposer une autre dans cette catégorie.`,
+                    'warning', 10000
+                );
+                return { success: false };
+            }
+
             // Une candidature par domaine tant qu'elle est en cours (brouillon, envoyée, en pause, retirée…) : « Enregistrer »
             // met à jour la même. Une décision de l'administration (acceptée/refusée) est définitive et reste dans le dossier :
             // une nouvelle candidature dans ce domaine est alors une nouvelle entrée. Le premier identifiant « form_{version} »

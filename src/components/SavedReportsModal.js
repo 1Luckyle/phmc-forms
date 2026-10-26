@@ -7,9 +7,10 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
 import { ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
 import { getFormDefinition } from '../formDefinitions';
-import PatientInvoicesPanel, { InvoiceStatusBadge } from './PatientInvoicesPanel';
+import PatientInvoicesPanel from './PatientInvoicesPanel';
 import useReportInvoices from '../hooks/useReportInvoices';
-import { formatMoney } from '../utils/patientBilling';
+import { INVOICE_STATUS_COLORS } from '../utils/patientBilling';
+import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar, Pager } from './Reports/ReportParts';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -41,21 +42,9 @@ const modalContentStyle = {
     maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',
-    overflowY: 'hidden',
+    overflow: 'hidden',
     position: 'relative',
     border: '1px solid #30363d',
-};
-
-const modalHeaderStyle = {
-    fontSize: '1.3em',
-    fontWeight: 'bold',
-    marginBottom: '15px',
-    textAlign: 'center',
-    paddingBottom: '10px',
-    flexShrink: 0,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
 };
 
 const closeButtonStyle = {
@@ -71,147 +60,6 @@ const closeButtonStyle = {
     padding: '0.25rem 0.5rem',
     cursor: 'pointer',
     zIndex: 10,
-};
-
-const controlsContainerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px',
-    flexShrink: 0,
-    gap: '10px',
-    paddingRight: '50px',
-};
-
-// Zone qui défile (verticalement et horizontalement) entre les contrôles du haut et les boutons du bas.
-const bodyScrollStyle = {
-    flex: '1 1 auto',
-    minHeight: 0,
-    overflow: 'auto',
-};
-
-const tableContainerStyle = {
-    marginTop: '10px',
-};
-
-const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-};
-
-const thStyle = {
-    backgroundColor: '#161b22',
-    border: '1px solid #30363d',
-    padding: '10px',
-    textAlign: 'left',
-    fontWeight: '600',
-    position: 'sticky',
-    top: 0,
-    zIndex: 2,
-    boxShadow: '0 1px 0 #30363d, 0 -1px 0 #161b22', // la bordure ne suit pas un en-tête collé (tableau en bordures fusionnées)
-};
-
-const thCheckboxStyle = {
-    ...thStyle,
-    width: '40px',
-    textAlign: 'center',
-};
-
-const tdStyle = {
-    border: '1px solid #30363d',
-    padding: '8px 10px',
-    verticalAlign: 'middle',
-    maxWidth: '250px',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-};
-
-// Titre et créateur : tout le texte reste visible (retour à la ligne) au lieu d'être tronqué par « … ».
-const wrapCellStyle = {
-    ...tdStyle,
-    maxWidth: 'none',
-    overflow: 'visible',
-    textOverflow: 'clip',
-    whiteSpace: 'normal',
-    overflowWrap: 'anywhere',
-};
-
-const tdCheckboxStyle = {
-    ...tdStyle,
-    textAlign: 'center',
-};
-
-// La colonne d'actions ne doit JAMAIS être tronquée (les boutons finissaient en « … »).
-const actionsTdStyle = {
-    ...tdStyle,
-    maxWidth: 'none',
-    overflow: 'visible',
-    textOverflow: 'clip',
-    whiteSpace: 'nowrap',
-};
-
-const actionButtonStyle = {
-    backgroundColor: '#238636',
-    color: 'white',
-    border: 'none',
-    padding: '5px 10px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    marginRight: '5px',
-    fontSize: '0.9em',
-    whiteSpace: 'nowrap',
-};
-
-const deleteButtonStyle = {
-    ...actionButtonStyle,
-    backgroundColor: '#da3633',
-};
-
-const copyButtonStyle = {
-    ...actionButtonStyle,
-    backgroundColor: '#2f81f7',
-};
-
-const bulkActionsContainerStyle = {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '15px',
-    paddingTop: '10px',
-    borderTop: '1px solid #30363d',
-    flexShrink: 0,
-};
-
-const paginationStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: '20px',
-    paddingTop: '10px',
-    borderTop: '1px solid #30363d',
-    flexShrink: 0,
-};
-
-const searchInputStyle = {
-    padding: '8px 10px',
-    borderRadius: '5px',
-    border: '1px solid #30363d',
-    backgroundColor: '#0d1117',
-    color: '#c9d1d9',
-    flexGrow: 1,
-    maxWidth: '450px',
-};
-
-const switchButtonStyle = {
-    ...actionButtonStyle,
-    backgroundColor: '#1f6feb',
-    marginRight: '10px',
-    flexShrink: 0,
-};
-
-const hrStyle = {
-    borderColor: '#30363d',
-    margin: '15px 0',
 };
 
 const reactSelectStyles = {
@@ -264,7 +112,7 @@ const reactSelectStyles = {
     }),
 };
 
-const itemsPerPage = 7;
+const itemsPerPage = 10;
 const LOAD_DELAY_MS = 1000;
 
 const SavedReportsModal = ({
@@ -292,15 +140,20 @@ const SavedReportsModal = ({
     shareReportWithPatient,
     copyReportToOwnAccount,
 }) => {
-    // Mode « joindre » : l'Email DMEC attache des rapports de décès ; le certificat médical joint un
-    // rapport clinique accepté (un seul, voir filterByBbCodeVersions) sous forme de résumé simplifié.
-    const isAttachMode = !!attachMode || bbCodeVersion === 2;
-    const isCertificateAttach = !!attachMode && bbCodeVersion !== 2;
+    // Mode « joindre » : UNIQUEMENT quand la fenêtre est ouverte par le bouton « Joindre un rapport » d'un formulaire
+    // (attachMode). Ouverte depuis la boîte à outils, c'est la liste habituelle (bouton « Charger »), même sur l'Email DMEC.
+    // L'Email DMEC joint un rapport de décès ou de catastrophe mortelle ; le certificat médical joint un rapport clinique
+    // accepté sous forme de résumé simplifié (voir filterByBbCodeVersions). Un seul rapport à la fois dans les deux cas.
+    const isAttachMode = !!attachMode;
+    const isCertificateAttach = isAttachMode && bbCodeVersion !== 2;
+    const isCoronerAttach = isAttachMode && bbCodeVersion === 2;
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedReportKeys, setSelectedReportKeys] = useState([]);
     const [isLoadingMultiple, setIsLoadingMultiple] = useState(false);
     const [selectedEmployeeRaw, setSelectedEmployee] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('all'); // all | unpaid | paid | copies | shared
+    const [typeFilter, setTypeFilter] = useState('');        // libellé du type de rapport, '' = tous
 
     const lastLoadedEmployeeRef = useRef(null);
     const isManualSelectionRef = useRef(false);
@@ -410,6 +263,8 @@ const SavedReportsModal = ({
             setSelectedEmployee(null);
             setSearchQuery('');
             setCurrentPage(1);
+            setStatusFilter('all');
+            setTypeFilter('');
             setSelectedReportKeys([]);
             lastLoadedEmployeeRef.current = null;
             isManualSelectionRef.current = false;
@@ -469,7 +324,13 @@ const SavedReportsModal = ({
         return [...(reportsForSelectedUser || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     }, [reportsForSelectedUser, currentEmployee]);
 
-    const searchedAndFilteredReports = useMemo(() => {
+    // Libellé du type de rapport (formulaire).
+    const typeLabelOf = (report) => (report.kind === 'ama'
+        ? 'Formulaire AMA'
+        : (getFormDefinition(report.bbCodeVersion)?.name || `Formulaire ${report.bbCodeVersion}`));
+
+    // Recherche par titre (et rapports joignables seulement en mode « joindre »).
+    const baseReports = useMemo(() => {
         let reports = sortedReports;
         if (filterByBbCodeVersions && filterByBbCodeVersions.length > 0) {
             reports = reports.filter((report) => filterByBbCodeVersions.includes(report.bbCodeVersion));
@@ -481,6 +342,37 @@ const SavedReportsModal = ({
         }
         return reports;
     }, [sortedReports, filterByBbCodeVersions, searchQuery]);
+
+    const matchesStatus = (report, key) => {
+        if (key === 'unpaid') return invoiceOf(report)?.statutEffectif === 'a_payer';
+        if (key === 'paid') return invoiceOf(report)?.statutEffectif === 'paye';
+        if (key === 'copies') return !!report.isCopy;
+        if (key === 'shared') return !!report.sharedByStaff;
+        return true;
+    };
+
+    const typeOptions = useMemo(() => {
+        const counts = new Map();
+        baseReports.forEach((report) => counts.set(typeLabelOf(report), (counts.get(typeLabelOf(report)) || 0) + 1));
+        return [...counts.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => a.label.localeCompare(b.label));
+    }, [baseReports]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const searchedAndFilteredReports = useMemo(() => baseReports.filter(
+        (report) => (!typeFilter || typeLabelOf(report) === typeFilter) && matchesStatus(report, statusFilter)
+    ), [baseReports, typeFilter, statusFilter, invoiceOf]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Compteurs des pastilles (dans le type choisi).
+    const statusChips = useMemo(() => {
+        const inType = baseReports.filter((report) => !typeFilter || typeLabelOf(report) === typeFilter);
+        const count = (key) => inType.filter((report) => matchesStatus(report, key)).length;
+        return [
+            { key: 'all', label: 'Tous', count: inType.length },
+            { key: 'unpaid', label: 'À payer', count: count('unpaid'), color: '#d29922' },
+            { key: 'paid', label: 'Payés', count: count('paid'), color: '#3fb950' },
+            { key: 'copies', label: 'Copies', count: count('copies'), color: '#a371f7' },
+            { key: 'shared', label: 'Partagés par le personnel', count: count('shared'), color: '#58a6ff' },
+        ];
+    }, [baseReports, typeFilter, invoiceOf]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         setCurrentPage(1);
@@ -520,8 +412,8 @@ const SavedReportsModal = ({
         // copier leur BBCode, mais on ne CHARGE qu'un rapport à la fois (chaque rapport
         // remplace le formulaire correspondant). Seul l'attachement à l'Email DMEC en accepte
         // plusieurs.
-        if (isCertificateAttach && selectedReportKeys.length > 1) {
-            showNotification("Un certificat ne peut recevoir qu'un seul rapport joint : sélectionnez-en un seul.", 'warning', 6000);
+        if (isAttachMode && selectedReportKeys.length > 1) {
+            showNotification("On ne peut joindre qu'un seul rapport à la fois : sélectionnez-en un seul.", 'warning', 6000);
             return;
         }
         if (!isAttachMode) {
@@ -691,8 +583,8 @@ const SavedReportsModal = ({
 
     // Menu « Copier ▾ » d'une ligne : BBCode + titre (ou titre + lien de l'image pour un AMA).
     const renderCopyMenu = (report) => (
-        <Dropdown className="d-inline-block me-2">
-            <Dropdown.Toggle size="sm" style={{ backgroundColor: '#2f81f7', border: 'none' }} title={bbcodeEnabled ? 'Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…' : 'Télécharger le HTML, copier le titre…'}>
+        <Dropdown className="d-inline-block">
+            <Dropdown.Toggle size="sm" variant="secondary" title={bbcodeEnabled ? 'Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…' : 'Télécharger le HTML, copier le titre…'}>
                 Copier
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
@@ -737,31 +629,120 @@ const SavedReportsModal = ({
 
     if (!show) return null;
 
+    // Une carte par rapport : titre, méta, pastilles (paiement, copie, partage), actions toujours visibles, aperçu déplié dessous.
+    const renderReportCard = (report) => {
+        const isSelected = selectedReportKeys.includes(report.key);
+        const invoice = invoiceOf(report);
+        const color = invoice
+            ? (INVOICE_STATUS_COLORS[invoice.statutEffectif] || '#8b949e')
+            : (report.isCopy ? '#a371f7' : (report.sharedByStaff ? '#58a6ff' : '#3fb950'));
+        const title = reportTitleOf(report) || report.originalKey;
+        return (
+            <ReportCard
+                key={report.key}
+                color={color}
+                selected={isSelected}
+                selectId={`select-${report.key}`}
+                onSelect={(checked) => handleCheckboxChange(report.key, checked)}
+                title={report.originalKey}
+                titleHint={title}
+                meta={`${reportCreatorOf(report) || 'N/A'} · ${new Date(report.timestamp).toLocaleString()} · ${typeLabelOf(report)}`}
+                chips={(
+                    <>
+                        <PaymentPill invoice={invoice} />
+                        {report.isCopy && <Pill color="#a371f7" title="Copie d'un rapport créé par un autre médecin">Copie</Pill>}
+                        {report.sharedByStaff && <Pill color="#58a6ff" title="Rapport partagé avec vous par le personnel">Partagé par le personnel</Pill>}
+                    </>
+                )}
+                actions={(
+                    <>
+                        {isLoadable(report) && !report.sharedByStaff && (loadReport || isAttachMode) && (
+                            <Button
+                                variant="primary" size="sm"
+                                onClick={() => {
+                                    if (isAttachMode) {
+                                        handleReportSelectedForAttachment(report.key, selectedEmployee.value);
+                                    } else if (loadReport) {
+                                        loadReport(report.key, selectedEmployee.value);
+                                    }
+                                    onHide(); // Close modal after action
+                                }}
+                                disabled={isLoadingReports || !selectedEmployee}
+                            >
+                                <i className={`fas ${isAttachMode ? 'fa-paperclip' : 'fa-upload'} me-1`}></i>{isAttachMode ? 'Joindre' : 'Charger'}
+                            </Button>
+                        )}
+                        {renderCopyMenu(report)}
+                        {(report.bbCode || report.imageUrl) && (
+                            <ExpandToggle open={!!openRows[report.key]} onClick={() => toggleRow(report.key)} title="Déplier / replier l'aperçu du rapport" />
+                        )}
+                        {isStaffViewer && report.patientID && !report.sharedByStaff && !report.isCopy && (
+                            <Button
+                                size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }}
+                                title="Rendre ce rapport visible au patient dans son propre compte"
+                                onClick={() => shareReportWithPatient && shareReportWithPatient(report.patientID, report.key)}
+                            >
+                                <i className="fas fa-share-nodes me-1"></i>Partager avec le patient
+                            </Button>
+                        )}
+                        {isStaffViewer && report.patientID && !report.sharedByStaff && report.authorName !== staffAuthorNameForCopy && (
+                            <Button
+                                size="sm" style={{ backgroundColor: '#316dca', border: 'none' }}
+                                title={staffAuthorNameForCopy
+                                    ? `Enregistrer une copie de ce rapport dans les rapports de ${staffAuthorNameForCopy}`
+                                    : 'Impossible de déterminer à quel médecin rattacher la copie'}
+                                onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy, { patientID: report.patientID })}
+                                disabled={!staffAuthorNameForCopy}
+                            >
+                                <i className="fas fa-copy me-1"></i>Récupérer une copie
+                            </Button>
+                        )}
+                        <Button
+                            variant="outline-danger" size="sm" className="ms-auto"
+                            onClick={async () => {
+                                if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
+                                    await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
+                                }
+                            }}
+                            disabled={isLoadingReports || !selectedEmployee}
+                        >
+                            <i className="fas fa-trash me-1"></i>Supprimer
+                        </Button>
+                    </>
+                )}
+                expansion={openRows[report.key] ? (
+                    <ReportExpansion
+                        tab={openRows[report.key]}
+                        onTabChange={(tab) => setRowTab(report.key, tab)}
+                        bbCode={report.bbCode}
+                        imageUrl={report.imageUrl}
+                        title={title}
+                    />
+                ) : null}
+            />
+        );
+    };
+
+    const hasReports = !isLoadingReports && !!selectedEmployee && sortedReports.length > 0;
+
     return ReactDOM.createPortal(
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 {forumNoticeModal}
-                <div style={modalHeaderStyle}>
-                    <h5 style={{ margin: 0 }}>Rapports enregistrés</h5>
-                    <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">
-                        &times;
-                    </button>
+                <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
+                <div className="rpt-modal-head">
+                    <h5><i className="fas fa-folder-open me-2"></i>Rapports enregistrés</h5>
+                    <span className="rpt-sub">
+                        {selectedEmployee
+                            ? `${selectedEmployee.label} · ${sortedReports.length} rapport${sortedReports.length > 1 ? 's' : ''}`
+                            : (!currentEmployee ? 'Non connecté' : 'Aucun employé sélectionné')}
+                    </span>
                 </div>
 
-                <div style={controlsContainerStyle}>
-                    {currentEmployee && (
-                        <input
-                            type="text"
-                            placeholder="Rechercher des rapports par nom/identifiant..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            style={searchInputStyle}
-                            disabled={!selectedEmployee || isLoadingReports}
-                        />
-                    )}
-                    {isAdmin && (
-                        <Form.Group controlId="employeeSelect" className="mb-3">
-                            <Form.Label>Sélectionnez un employé pour voir les rapports :</Form.Label>
+                {isAdmin && (
+                    <div className="d-flex flex-wrap align-items-end gap-2 mb-2" style={{ flexShrink: 0 }}>
+                        <Form.Group controlId="employeeSelect" style={{ flex: '1 1 320px', maxWidth: '520px' }}>
+                            <Form.Label className="mb-1">Employé dont on affiche les rapports</Form.Label>
                             <Select
                                 name="employeeSelect"
                                 options={filteredEmployeeOptions}
@@ -772,220 +753,86 @@ const SavedReportsModal = ({
                                 styles={reactSelectStyles}
                             />
                         </Form.Group>
-                    )}
-                    {isAdmin && canSwitchEmployee && !preselectedEmployeeType && (
-                        <Button
-                            onClick={() => {
-                                const newEmployeeValue =
-                                    selectedEmployee?.value === currentCoronerEmployee ? currentPhmcEmployee : currentCoronerEmployee;
-                                const newEmployeeOption = employeeOptions
-                                    ?.flatMap((g) => g.options)
-                                    .find((o) => o.value === newEmployeeValue);
-                                if (newEmployeeOption) {
-                                    handleEmployeeSelect(newEmployeeOption);
-                                    showNotification(`Passé aux rapports pour ${newEmployeeOption.label}`, 'exchange-alt');
-                                }
-                            }}
-                            style={switchButtonStyle}
-                            title={`Passer aux rapports pour ${otherEmployeeName}`}
-                        >
-                            <i className="fas fa-exchange-alt" style={{ marginRight: '5px' }}></i>
-                            Passer aux rapports pour {otherEmployeeName}
-                        </Button>
-                    )}
-                </div>
-
-                {/* Tout ce qui est sous les contrôles défile ENSEMBLE (factures, titre, tableau) : sans ça, les factures
-                    prenaient la place et le tableau n'avait plus qu'une fenêtre minuscule. L'en-tête du tableau reste collé en haut. */}
-                <div style={bodyScrollStyle}>
-                {isCertificateAttach && (
-                    <div style={{ backgroundColor: '#161b22', border: '1px solid #1f6feb', borderRadius: '5px', padding: '8px 12px', marginBottom: '10px', fontSize: '0.85em' }}>
-                        <strong>Pièce jointe d'un certificat médical.</strong> Seuls ces rapports sont proposés :{' '}
-                        {ACCEPTED_REPORT_LABELS.join(' · ')}. Le rapport n'est jamais joint en entier : il est remplacé par un
-                        <strong> résumé simplifié</strong> (type de prise en charge, établissement, date, et pour les urgences/consultations
-                        générales l'hospitalisation et le suivi) — le diagnostic, les traitements et les détails médicaux ne sont pas transmis.
+                        {canSwitchEmployee && !preselectedEmployeeType && (
+                            <Button
+                                variant="primary" size="sm"
+                                onClick={() => {
+                                    const newEmployeeValue =
+                                        selectedEmployee?.value === currentCoronerEmployee ? currentPhmcEmployee : currentCoronerEmployee;
+                                    const newEmployeeOption = employeeOptions
+                                        ?.flatMap((g) => g.options)
+                                        .find((o) => o.value === newEmployeeValue);
+                                    if (newEmployeeOption) {
+                                        handleEmployeeSelect(newEmployeeOption);
+                                        showNotification(`Passé aux rapports pour ${newEmployeeOption.label}`, 'exchange-alt');
+                                    }
+                                }}
+                                title={`Passer aux rapports pour ${otherEmployeeName}`}
+                            >
+                                <i className="fas fa-exchange-alt me-1"></i>Passer à {otherEmployeeName}
+                            </Button>
+                        )}
                     </div>
                 )}
 
-                {isCivilian && civilianProfile?.patientID && (
-                    <div style={{ marginBottom: '10px' }}>
-                        <h6 style={{ marginBottom: '8px' }}>Mes factures</h6>
-                        <PatientInvoicesPanel patientID={civilianProfile.patientID} showNotification={showNotification} />
-                    </div>
-                )}
+                <div className="rpt-body">
+                    {isCoronerAttach && (
+                        <div className="rpt-banner">
+                            <strong>Pièce jointe d'un Email DMEC.</strong> Seuls les rapports de décès et de catastrophe mortelle (tuerie / accident de masse) sont
+                            proposés. Le rapport est vérifié puis ajouté à l'e-mail avec le nom du défunt (IC et HRP) ; choisissez-en un seul à la fois.
+                        </div>
+                    )}
+                    {isCertificateAttach && (
+                        <div className="rpt-banner">
+                            <strong>Pièce jointe d'un certificat médical.</strong> Seuls ces rapports sont proposés :{' '}
+                            {ACCEPTED_REPORT_LABELS.join(' · ')}. Le rapport n'est jamais joint en entier : il est remplacé par un
+                            <strong> résumé simplifié</strong> (type de prise en charge, établissement, date, et pour les urgences/consultations
+                            générales l'hospitalisation et le suivi) — le diagnostic, les traitements et les détails médicaux ne sont pas transmis.
+                        </div>
+                    )}
 
-                <hr style={hrStyle} />
+                    {isCivilian && civilianProfile?.patientID && (
+                        <section className="rpt-section">
+                            <h6><i className="fas fa-file-invoice-dollar me-2"></i>Mes factures</h6>
+                            <PatientInvoicesPanel patientID={civilianProfile.patientID} showNotification={showNotification} />
+                        </section>
+                    )}
 
-                <div style={modalHeaderStyle} key={selectedEmployee ? selectedEmployee.value : 'noEmployee'}>
-                    <h5 style={{ margin: 0 }}>
-                        Rapports enregistrés {selectedEmployee ? `pour ${selectedEmployee.label}` : (!currentEmployee ? '(Non connecté)' : '(Aucun employé sélectionné)')}
-                        {selectedEmployee && ` (${searchedAndFilteredReports.length} total)`}
-                    </h5>
-                </div>
+                    {hasReports && (
+                        <div className="rpt-toolbar">
+                            <div className="rpt-toolbar-row">
+                                <input
+                                    type="search" className="rpt-search" placeholder="Rechercher par titre ou identifiant…"
+                                    value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} disabled={isLoadingReports}
+                                />
+                                {typeOptions.length > 1 && (
+                                    <select className="rpt-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Type de rapport">
+                                        <option value="">Tous les types ({baseReports.length})</option>
+                                        {typeOptions.map((option) => <option key={option.label} value={option.label}>{option.label} ({option.count})</option>)}
+                                    </select>
+                                )}
+                            </div>
+                            <FilterChips items={statusChips} value={statusFilter} onChange={setStatusFilter} label="Filtrer les rapports" />
+                        </div>
+                    )}
 
-                {isLoadingReports && selectedEmployee && (
-                    <p style={{ textAlign: 'center', flexShrink: 0 }}>Chargement des rapports pour {selectedEmployee.label}...</p>
-                )}
+                    {isLoadingReports && selectedEmployee && (
+                        <p className="rpt-muted">Chargement des rapports pour {selectedEmployee.label}…</p>
+                    )}
 
-                <div style={tableContainerStyle}>
-                    {!isLoadingReports && selectedEmployee && searchedAndFilteredReports.length > 0 ? (
-                        <table style={tableStyle}>
-                            <thead>
-                                <tr>
-                                    <th style={thCheckboxStyle}>
-                                        <Form.Check
-                                            type="checkbox"
-                                            id="selectAllCheckbox"
-                                            checked={isAllCurrentPageSelected}
-                                            onChange={(e) => handleSelectAllChange(e.target.checked)}
-                                            title="Sélectionner/Désélectionner tout sur cette page"
-                                        />
-                                    </th>
-                                    <th style={thStyle}>Titre du rapport</th>
-                                    <th style={thStyle}>Créé par</th>
-                                    <th style={thStyle}>Date et heure d'enregistrement</th>
-                                    <th style={thStyle}>Paiement</th>
-                                    <th style={thStyle}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {currentReportsOnPage.map((report) => {
-                                    const isSelected = selectedReportKeys.includes(report.key);
-                                    return (
-                                        <React.Fragment key={report.key}>
-                                        <tr style={isSelected ? { backgroundColor: '#161b22' } : {}}>
-                                            <td style={tdCheckboxStyle}>
-                                                <Form.Check
-                                                    type="checkbox"
-                                                    id={`select-${report.key}`}
-                                                    checked={isSelected}
-                                                    onChange={(e) => handleCheckboxChange(report.key, e.target.checked)}
-                                                />
-                                            </td>
-                                            <td style={{ ...wrapCellStyle, minWidth: '220px' }} title={reportTitleOf(report) || report.originalKey}>
-                                                {report.originalKey}
-                                            </td>
-                                            <td style={{ ...wrapCellStyle, minWidth: '200px' }} title="Créateur d'origine du rapport">
-                                                {reportCreatorOf(report) || 'N/A'}
-                                                {report.isCopy && (
-                                                    <span style={{ marginLeft: '6px', fontSize: '0.75em', padding: '1px 6px', borderRadius: '8px', backgroundColor: '#1f6feb', color: '#fff' }}>
-                                                        Copie
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td style={tdStyle}>{new Date(report.timestamp).toLocaleString()}</td>
-                                            <td style={tdStyle}>
-                                                {(() => {
-                                                    const invoice = invoiceOf(report);
-                                                    if (!invoice) return <span style={{ color: '#9aa7b4' }}>—</span>;
-                                                    return (
-                                                        <>
-                                                            <InvoiceStatusBadge status={invoice.statutEffectif} />
-                                                            {invoice.statutEffectif !== 'sans_paiement' && (
-                                                                <span style={{ marginLeft: '6px', fontSize: '0.8em', color: '#8b949e' }}>{formatMoney(invoice.montant)}</span>
-                                                            )}
-                                                        </>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td style={actionsTdStyle}>
-                                                {(report.bbCode || report.imageUrl) && (
-                                                    <ExpandToggle open={!!openRows[report.key]} onClick={() => toggleRow(report.key)} title="Déplier / replier l'aperçu du rapport" />
-                                                )}
-                                                {isLoadable(report) && !report.sharedByStaff && (loadReport || isAttachMode) && (
-                                                    <Button
-                                                        variant="primary"
-                                                        size="sm"
-                                                        className="me-2"
-                                                        onClick={() => {
-                                                            if (isAttachMode) {
-                                                                handleReportSelectedForAttachment(report.key, selectedEmployee.value);
-                                                            } else if (loadReport) {
-                                                                loadReport(report.key, selectedEmployee.value);
-                                                            }
-                                                            onHide(); // Close modal after action
-                                                        }}
-                                                        disabled={isLoadingReports || !selectedEmployee}
-                                                    >
-                                                        {isAttachMode ? (isCertificateAttach ? 'Joindre' : 'Attacher') : 'Charger'}
-                                                    </Button>
-                                                )}
-                                                {renderCopyMenu(report)}
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    className="me-2"
-                                                    onClick={async () => {
-                                                        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
-                                                            await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
-                                                        }
-                                                    }}
-                                                    disabled={isLoadingReports || !selectedEmployee}
-                                                >
-                                                    Supprimer
-                                                </Button>
-                                                {report.sharedByStaff && (
-                                                    <span style={{ marginLeft: '5px', fontSize: '0.8em', color: '#8b949e' }}>
-                                                        <i className="fas fa-share-alt" style={{ marginRight: '4px' }}></i>
-                                                        Partagé par le personnel
-                                                    </span>
-                                                )}
-                                                {isStaffViewer && report.patientID && !report.sharedByStaff && !report.isCopy && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="me-2"
-                                                        style={{ backgroundColor: '#8957e5', border: 'none' }}
-                                                        title="Rendre ce rapport visible au patient dans son propre compte"
-                                                        onClick={() => shareReportWithPatient && shareReportWithPatient(report.patientID, report.key)}
-                                                    >
-                                                        Partager avec le patient
-                                                    </Button>
-                                                )}
-                                                {isStaffViewer && report.patientID && !report.sharedByStaff && report.authorName !== staffAuthorNameForCopy && (
-                                                    <Button
-                                                        size="sm"
-                                                        style={{ backgroundColor: '#316dca', border: 'none' }}
-                                                        title={staffAuthorNameForCopy
-                                                            ? `Enregistrer une copie de ce rapport dans les rapports de ${staffAuthorNameForCopy}`
-                                                            : 'Impossible de déterminer à quel médecin rattacher la copie'}
-                                                        onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy, { patientID: report.patientID })}
-                                                        disabled={!staffAuthorNameForCopy}
-                                                    >
-                                                        Récupérer une copie
-                                                    </Button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                        {openRows[report.key] && (
-                                            <tr>
-                                                <td colSpan={6} style={{ border: '1px solid #30363d', padding: '10px', backgroundColor: '#0d1117' }}>
-                                                    <ReportExpansion
-                                                        tab={openRows[report.key]}
-                                                        onTabChange={(tab) => setRowTab(report.key, tab)}
-                                                        bbCode={report.bbCode}
-                                                        imageUrl={report.imageUrl}
-                                                        title={reportTitleOf(report) || report.originalKey}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        )}
-                                        </React.Fragment>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    ) : (
-                        !isLoadingReports &&
-                        selectedEmployee && (
-                            <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                                {searchQuery
-                                    ? `Aucun rapport ne correspond à votre recherche pour ${selectedEmployee.label}.`
+                    {!isLoadingReports && selectedEmployee && (
+                        searchedAndFilteredReports.length > 0 ? (
+                            <div className="rpt-list">{currentReportsOnPage.map(renderReportCard)}</div>
+                        ) : (
+                            <p className="rpt-empty">
+                                {sortedReports.length > 0 || searchQuery
+                                    ? `Aucun rapport ne correspond à ces filtres pour ${selectedEmployee.label}.`
                                     : `Aucun rapport enregistré pour ${selectedEmployee.label}.`}
                             </p>
                         )
                     )}
                     {!isLoadingReports && !selectedEmployee && (
-                        <p style={{ textAlign: 'center', marginTop: '20px' }}>
+                        <p className="rpt-empty">
                             {!currentEmployee
                                 ? 'Vous devez être connecté pour consulter les rapports enregistrés.'
                                 : isAdmin
@@ -993,28 +840,30 @@ const SavedReportsModal = ({
                                 : 'Impossible de retrouver votre fiche employé associée à ce compte. Contactez un administrateur.'}
                         </p>
                     )}
-                </div>
+
+                    {!isLoadingReports && selectedEmployee && (
+                        <Pager page={currentPage} pages={totalPages} onPrev={goToPreviousPage} onNext={goToNextPage} />
+                    )}
                 </div>
 
                 {!isLoadingReports && selectedEmployee && searchedAndFilteredReports.length > 0 && (
-                    <div style={bulkActionsContainerStyle}>
-                        <Button
-                            onClick={handleDeleteSelected}
-                            style={deleteButtonStyle}
-                            disabled={selectedReportKeys.length === 0}
-                        >
-                            Supprimer la sélection ({selectedReportKeys.length})
+                    <BulkBar count={selectedReportKeys.length} onClear={() => setSelectedReportKeys([])}>
+                        <Form.Check
+                            type="checkbox" id="selectAllCheckbox" label="Toute la page" className="align-self-center mb-0 me-1"
+                            checked={isAllCurrentPageSelected} onChange={(e) => handleSelectAllChange(e.target.checked)}
+                            title="Sélectionner/Désélectionner tout sur cette page"
+                        />
+                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0}>
+                            <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>
                         <Dropdown drop="up">
-                            <Dropdown.Toggle style={copyButtonStyle} disabled={selectedReportKeys.length === 0}>
-                                Copier la sélection ({selectedReportKeys.length})
-                            </Dropdown.Toggle>
+                            <Dropdown.Toggle variant="secondary" size="sm" disabled={selectedReportKeys.length === 0}>Copier / exporter</Dropdown.Toggle>
                             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
                                 {bbcodeEnabled && (
-<Dropdown.Item onClick={handleCopySelectedBBCode} title={COPY_BBCODE_HINT}>
-                                    Copier le BBCode sélectionné<ForumHint kind="bbcode" />
-                                </Dropdown.Item>
-)}
+                                    <Dropdown.Item onClick={handleCopySelectedBBCode} title={COPY_BBCODE_HINT}>
+                                        Copier le BBCode sélectionné<ForumHint kind="bbcode" />
+                                    </Dropdown.Item>
+                                )}
                                 <Dropdown.Item onClick={handleDownloadSelectedHtml} title={DOWNLOAD_HTML_HINT}>
                                     Télécharger le HTML sélectionné<ForumHint kind="html" />
                                 </Dropdown.Item>
@@ -1024,37 +873,20 @@ const SavedReportsModal = ({
                             </Dropdown.Menu>
                         </Dropdown>
                         {(loadReport || isAttachMode) && (
-                        <Button
-                            style={actionButtonStyle}
-                            disabled={selectedReportKeys.length === 0 || isLoadingMultiple || ((!isAttachMode || isCertificateAttach) && selectedReportKeys.length > 1)}
-                            title={(!isAttachMode || isCertificateAttach) && selectedReportKeys.length > 1 ? 'Un seul rapport peut être sélectionné à la fois' : ''}
-                            onClick={handleLoadSelected}
-                        >
-                            {isLoadingMultiple ? (
-                                <>
-                                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '5px' }}></i>
-                                    Chargement...
-                                </>
-                            ) : (
-                                `${isAttachMode ? (isCertificateAttach ? 'Joindre le rapport sélectionné' : 'Attacher la sélection') : 'Charger le rapport sélectionné'} (${selectedReportKeys.length})`
-                            )}
-                        </Button>
+                            <Button
+                                variant="success" size="sm"
+                                disabled={selectedReportKeys.length === 0 || isLoadingMultiple || selectedReportKeys.length > 1}
+                                title={selectedReportKeys.length > 1 ? 'Un seul rapport peut être sélectionné à la fois' : ''}
+                                onClick={handleLoadSelected}
+                            >
+                                {isLoadingMultiple ? (
+                                    <><i className="fas fa-spinner fa-spin me-1"></i>Chargement…</>
+                                ) : (
+                                    <><i className={`fas ${isAttachMode ? 'fa-paperclip' : 'fa-upload'} me-1`}></i>{isAttachMode ? 'Joindre le rapport sélectionné' : 'Charger le rapport sélectionné'}</>
+                                )}
+                            </Button>
                         )}
-                    </div>
-                )}
-
-                {totalPages > 1 && !isLoadingReports && selectedEmployee && (
-                    <div style={paginationStyle}>
-                        <Button onClick={goToPreviousPage} disabled={currentPage === 1} style={actionButtonStyle}>
-                            Précédent
-                        </Button>
-                        <span>
-                            Page {currentPage} sur {totalPages}
-                        </span>
-                        <Button onClick={goToNextPage} disabled={currentPage === totalPages} style={actionButtonStyle}>
-                            Suivant
-                        </Button>
-                    </div>
+                    </BulkBar>
                 )}
             </div>
         </div>,

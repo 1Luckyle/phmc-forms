@@ -95,6 +95,7 @@ export const submitCctvRequest = async ({ title, fields, discord, patientID, sum
 export const addCctvReply = async ({ request, text, staff, status, authorName, authorRole }) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
+    if (!staff && ['acceptee', 'refusee', 'cloturee'].includes(request.statut)) throw new Error('Cette demande est traitée : vous ne pouvez plus y envoyer de message.');
     const replyId = push(ref(database, `cctvRequests/${request.id}/reponses`)).key;
     const now = Date.now();
     const reply = {

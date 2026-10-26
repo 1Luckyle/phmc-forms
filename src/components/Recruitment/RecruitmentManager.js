@@ -12,7 +12,7 @@
 // Les actions sont journalisées sur Discord comme avant (sendAdminActionWebhook).
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import { Button, Spinner, Nav } from 'react-bootstrap';
+import { Button, Spinner } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
 import { RECRUITMENT_CATEGORIES, CATEGORY_BY_KEY, STATUT_OUVERT, isPositionOpen } from '../../constants/recruitment';
 import { loadPositions as loadCategoryPositions, setPositionOpen } from '../../utils/recruitmentStore';
@@ -30,6 +30,7 @@ import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 import InternalRecruitmentManager from './InternalRecruitmentManager';
+import '../Cctv/CctvRequests.css';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -174,17 +175,15 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                     {isRecruiter && !isAdmin ? ' (compte Civil + gestion du recrutement)' : ''}.
                 </p>
 
-                <Nav variant="tabs" activeKey={tab} onSelect={(key) => setTab(key)} style={{ marginBottom: '12px' }}>
-                    <Nav.Item><Nav.Link eventKey="positions"><i className="fas fa-briefcase me-2"></i>Postes</Nav.Link></Nav.Item>
-                    <Nav.Item><Nav.Link eventKey="applications"><i className="fas fa-file-signature me-2"></i>Candidatures</Nav.Link></Nav.Item>
-                    <Nav.Item><Nav.Link eventKey="contracts"><i className="fas fa-file-contract me-2"></i>Contrats</Nav.Link></Nav.Item>
-                    <Nav.Item>
-                        <Nav.Link eventKey="internal">
-                            <i className="fas fa-user-clock me-2"></i>Évolutions internes
-                            {pendingInternal > 0 && <span className="badge bg-warning text-dark ms-2">{pendingInternal}</span>}
-                        </Nav.Link>
-                    </Nav.Item>
-                </Nav>
+                <div className="cctv-tabs" role="tablist">
+                    <button type="button" role="tab" className={tab === 'positions' ? 'on' : ''} onClick={() => setTab('positions')}><i className="fas fa-briefcase me-2"></i>Postes</button>
+                    <button type="button" role="tab" className={tab === 'applications' ? 'on' : ''} onClick={() => setTab('applications')}><i className="fas fa-file-signature me-2"></i>Candidatures</button>
+                    <button type="button" role="tab" className={tab === 'contracts' ? 'on' : ''} onClick={() => setTab('contracts')}><i className="fas fa-file-contract me-2"></i>Contrats</button>
+                    <button type="button" role="tab" className={tab === 'internal' ? 'on' : ''} onClick={() => setTab('internal')}>
+                        <i className="fas fa-user-clock me-2"></i>Évolutions internes
+                        {pendingInternal > 0 && <span className="badge bg-warning text-dark ms-2">{pendingInternal}</span>}
+                    </button>
+                </div>
 
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                     {tab === 'positions' && (

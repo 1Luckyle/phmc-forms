@@ -133,6 +133,7 @@ export const makePositionKey = (name) => String(name || '').trim().replace(/[.#$
 export const APPLICATION_STATUS = {
     brouillon: { label: 'Brouillon (non soumise)', legacy: 'saved' },
     soumise: { label: 'Candidature soumise', legacy: 'submitted' },
+    en_examen: { label: "En cours d'examen", legacy: 'under_review' },
     entretien_programme: { label: 'Entretien programmé', legacy: 'interview_scheduled' },
     entretien_effectue: { label: 'Entretien effectué', legacy: 'interview_completed' },
     acceptee: { label: 'Acceptée', legacy: 'accepted' },
@@ -140,6 +141,26 @@ export const APPLICATION_STATUS = {
     retiree: { label: 'Retirée par le candidat', legacy: 'withdrawn' },
     en_pause: { label: 'En pause', legacy: 'paused' },
 };
+// Couleur de la pastille de chaque statut (interfaces de suivi, côté recrutement et côté candidat).
+export const APPLICATION_STATUS_COLORS = {
+    brouillon: '#8b949e', soumise: '#58a6ff', en_examen: '#a371f7', entretien_programme: '#d29922', entretien_effectue: '#db6d28',
+    acceptee: '#3fb950', refusee: '#f85149', retiree: '#6e7681', en_pause: '#8b949e',
+};
+// Tant que la candidature est dans l'un de ces statuts, candidat et recruteur peuvent échanger (voir utils/applicationThreads.js).
+// Le fil se ferme au refus, ou à la signature du contrat d'une candidature acceptée.
+export const THREAD_OPEN_STATUSES = ['en_examen', 'entretien_programme', 'entretien_effectue', 'acceptee'];
+
+// Motifs de refus proposés au recruteur (il peut aussi écrire le sien) : le candidat reçoit toujours une justification.
+export const REFUSAL_REASONS = [
+    'Dossier incomplet ou informations manquantes',
+    'Profil ne correspondant pas au poste',
+    'Expérience insuffisante pour ce poste',
+    'Lettre de motivation insuffisante',
+    "Entretien non concluant",
+    "Poste déjà pourvu",
+    "Candidature non conforme au règlement (RP/HRP)",
+];
+
 const LEGACY_APPLICATION_STATUS = Object.fromEntries(Object.entries(APPLICATION_STATUS).map(([key, value]) => [value.legacy, key]));
 export const normalizeApplicationStatus = (value) => (APPLICATION_STATUS[value] ? value : (LEGACY_APPLICATION_STATUS[value] || value));
 export const applicationStatusLabel = (value) => APPLICATION_STATUS[normalizeApplicationStatus(value)]?.label || value;
@@ -161,6 +182,8 @@ export const normalizeApplication = (raw, id = null, uid = null) => {
         donnees: source.donnees ?? source.data ?? {},
         bbcode: source.bbcode ?? source.bbCode ?? '',
         statut: normalizeApplicationStatus(source.statut ?? source.status),
+        refus: source.refus ?? null,                         // { motif, detail, parNom, le } : justification d'un refus
+        priseEnChargePar: source.priseEnChargePar ?? null,   // { uid, nom, le } : recruteur qui examine la candidature
         dateEntretien: source.dateEntretien ?? source.interviewDateTime ?? null,
         creeLe: source.creeLe ?? source.createdAt ?? null,
         modifieLe: source.modifieLe ?? source.updatedAt ?? null,

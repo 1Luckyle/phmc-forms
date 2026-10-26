@@ -11,9 +11,8 @@ import { checkFleecaPaymentStatus } from '../utils/fleecaPayment';
 import {
     INVOICE_STATUS, INVOICE_STATUS_COLORS, invoiceStatusLabel, formatMoney, totalDue,
 } from '../utils/patientBilling';
+import './Reports/Reports.css';
 
-const thStyle = { backgroundColor: '#161b22', border: '1px solid #30363d', padding: '8px 10px', textAlign: 'left' };
-const tdStyle = { border: '1px solid #30363d', padding: '8px 10px', verticalAlign: 'middle' };
 
 export const InvoiceStatusBadge = ({ status }) => (
     <span
@@ -83,39 +82,26 @@ const PatientInvoicesPanel = ({ patientID, showNotification, onInvoices, showPai
 
     return (
         <div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                    <tr>
-                        <th style={thStyle}>Rapport</th>
-                        <th style={thStyle}>Date</th>
-                        <th style={thStyle}>Montant</th>
-                        <th style={thStyle}>État</th>
-                        <th style={thStyle}></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {shown.map((invoice) => (
-                        <tr key={`${invoice.patientNode}-${invoice.id}`}>
-                            <td style={{ ...tdStyle, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={invoice.titre}>
-                                {invoice.titre || invoice.id}
-                            </td>
-                            <td style={tdStyle}>{invoice.creeLe ? new Date(invoice.creeLe).toLocaleDateString('fr-FR') : '—'}</td>
-                            <td style={tdStyle}>{invoice.statutEffectif === INVOICE_STATUS.SANS_PAIEMENT ? '—' : formatMoney(invoice.montant)}</td>
-                            <td style={tdStyle}><InvoiceStatusBadge status={invoice.statutEffectif} /></td>
-                            <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                                {invoice.statutEffectif === INVOICE_STATUS.A_PAYER && (
-                                    <Button size="sm" variant="success" disabled={!!busy} onClick={() => pay([invoice.id], invoice.id)}>
-                                        {busy === invoice.id ? 'Création…' : 'Payer'}
-                                    </Button>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <div className="inv-list">
+                {shown.map((invoice) => (
+                    <div key={`${invoice.patientNode}-${invoice.id}`} className="inv-row" style={{ '--c': INVOICE_STATUS_COLORS[invoice.statutEffectif] || '#8b949e' }}>
+                        <span className="inv-title" title={invoice.titre}>
+                            {invoice.titre || invoice.id}
+                            <small>{invoice.creeLe ? new Date(invoice.creeLe).toLocaleDateString('fr-FR') : '—'}</small>
+                        </span>
+                        <span className="inv-amount">{invoice.statutEffectif === INVOICE_STATUS.SANS_PAIEMENT ? '—' : formatMoney(invoice.montant)}</span>
+                        <InvoiceStatusBadge status={invoice.statutEffectif} />
+                        {invoice.statutEffectif === INVOICE_STATUS.A_PAYER && (
+                            <Button size="sm" variant="success" disabled={!!busy} onClick={() => pay([invoice.id], invoice.id)}>
+                                {busy === invoice.id ? 'Création…' : 'Payer'}
+                            </Button>
+                        )}
+                    </div>
+                ))}
+            </div>
 
             {due.length > 0 && (
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+                <div className="inv-total">
                     <strong>Total à payer : {formatMoney(totalDue(invoices))}</strong>
                     {due.length > 1 && (
                         <Button variant="success" disabled={!!busy} onClick={() => pay(due.map((invoice) => invoice.id), 'all')}>
