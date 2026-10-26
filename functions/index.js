@@ -1243,7 +1243,10 @@ export const getFleecaPaymentStatus = onRequest({ secrets: FLEECA_SECRETS }, asy
             console.warn(`Failed to settle invoices for payment ${paymentId}:`, invoiceError);
         }
 
-        res.status(200).json({ status: payment.status, payerName: payment.payer_name || null, paidAt: payment.paid_at || null });
+        // Montant lu depuis NOTRE enregistrement (en dollars, posé à la création) : la page de statut peut
+        // l'afficher sans lire directement le nœud fleecaPayments (désormais fermé au public).
+        const storedAmount = (await db.ref(`fleecaPayments/${paymentId}/amount`).once('value')).val();
+        res.status(200).json({ status: payment.status, payerName: payment.payer_name || null, paidAt: payment.paid_at || null, amount: storedAmount ?? null });
     } catch (error) {
         console.error('Error fetching Fleeca payment status:', error);
         res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue.' });

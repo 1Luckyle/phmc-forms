@@ -226,6 +226,13 @@ export const DataProvider = ({ children }) => {
         updateCacheSegment(CACHE_SEGMENTS.STAFF, staffData);
         console.log('🔄 Staff data updated from Firebase');
       }
+    }, (error) => {
+      // staff lisible seulement connecté : déconnecté, le refus est attendu (pas d'erreur affichée).
+      // onValue se réabonne automatiquement à la connexion (Firebase réévalue les permissions).
+      const code = error?.code || '';
+      if (code !== 'PERMISSION_DENIED' && code !== 'permission_denied') {
+        console.warn('Staff listener error:', error?.message || error);
+      }
     });
 
     // agencies
@@ -313,14 +320,18 @@ export const DataProvider = ({ children }) => {
 
       // Lire chaque segment individuellement (la racine "/" n'est pas accessible par règle)
       const segmentPaths = Object.values(CACHE_SEGMENTS);
-      const segmentSnapshots = await Promise.all(
+      // allSettled (et non all) : le nœud staff n'est lisible qu'une fois connecté (PII). Un visiteur
+      // déconnecté se verra refuser ce segment — on l'ignore au lieu de faire échouer tout le chargement
+      // (les autres segments publics se chargent ; la liste du personnel arrive à la connexion via onValue).
+      const segmentResults = await Promise.allSettled(
         segmentPaths.map(path => get(ref(database, path)))
       );
 
       const allData = {};
       segmentPaths.forEach((path, i) => {
-        if (segmentSnapshots[i].exists()) {
-          allData[path] = segmentSnapshots[i].val();
+        const result = segmentResults[i];
+        if (result.status === 'fulfilled' && result.value.exists()) {
+          allData[path] = result.value.val();
         }
       });
 

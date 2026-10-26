@@ -8,36 +8,51 @@
 // onglet et revenir au formulaire.
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ref, onValue } from 'firebase/database';
-import { database } from '../firebase';
 import { checkFleecaPaymentStatus } from '../utils/fleecaPayment';
 
 const FleecaPaymentSuccess = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [paymentId, setPaymentId] = useState(null);
     const [payment, setPayment] = useState(null);
     const [error, setError] = useState('');
 
+    // Le statut est lu via la Cloud Function getFleecaPaymentStatus (par payment_id), plus par une lecture
+    // directe de fleecaPayments (nœud fermé au public) : cette page fonctionne donc même si le payeur n'est
+    // pas connecté (lien ouvert depuis l'e-mail, autre appareil). On interroge jusqu'à un statut final, avec
+    // un plafond de tentatives.
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const id = params.get('payment_id');
         if (!id) {
             setError('Aucun identifiant de paiement reçu.');
-            return;
+            return undefined;
         }
-        setPaymentId(id);
-        // Réconciliation immédiate : ne pas attendre le webhook pour afficher un
-        // statut à jour (les callbacks peuvent échouer, voir doc Fleeca).
-        checkFleecaPaymentStatus(id).catch((err) => console.warn('Fleeca status reconciliation failed:', err));
-    }, [location.search]);
 
-    useEffect(() => {
-        if (!paymentId) return;
-        const paymentRef = ref(database, `fleecaPayments/${paymentId}`);
-        const unsubscribe = onValue(paymentRef, (snapshot) => setPayment(snapshot.val()));
-        return () => unsubscribe();
-    }, [paymentId]);
+        let cancelled = false;
+        let timer;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 40; // ~2 min à 3 s d'intervalle
+        const isFinal = (status) => status === 'payment_successful' || status === 'payment_failed';
+
+        const poll = async () => {
+            attempts += 1;
+            try {
+                const result = await checkFleecaPaymentStatus(id);
+                if (cancelled) return;
+                setPayment(result);
+                if (!isFinal(result?.status) && attempts < MAX_ATTEMPTS) {
+                    timer = setTimeout(poll, 3000);
+                }
+            } catch (err) {
+                if (cancelled) return;
+                console.warn('Fleeca status check failed:', err);
+                if (attempts < MAX_ATTEMPTS) timer = setTimeout(poll, 5000);
+            }
+        };
+        poll();
+
+        return () => { cancelled = true; if (timer) clearTimeout(timer); };
+    }, [location.search]);
 
     const containerStyle = {
         minHeight: '100vh',
@@ -81,8 +96,8 @@ const FleecaPaymentSuccess = () => {
                 <i className="fas fa-check-circle" style={{ fontSize: '2.5rem', color: '#28a745', marginBottom: '15px' }}></i>
                 <h4>Paiement confirmé !</h4>
                 <p style={{ color: '#8b949e' }}>
-                    {payment.payerName && <>Payé par <strong style={{ color: '#c9d1d9' }}>{payment.payerName}</strong> — </>}
-                    ${Number(payment.amount).toLocaleString()}
+                    {payment.payerName && <>Payé par <strong style={{ color: '#c9d1d9' }}>{payment.payerName}</strong>{payment.amount != null ? ' — ' : ''}</>}
+                    {payment.amount != null && <>${Number(payment.amount).toLocaleString()}</>}
                 </p>
                 <p style={{ color: '#8b949e', fontSize: '0.9em' }}>
                     Vous pouvez fermer cet onglet et retourner à votre formulaire.

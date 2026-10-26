@@ -42,7 +42,9 @@
     // réservés aux admins ; l'e-mail ne change que via les Cloud Functions requestStaffEmailChange /
     // confirmStaffEmailChange (code envoyé à la nouvelle adresse), qui contournent ces règles.
     "staff": {
-      ".read":  true,
+      // Lecture réservée aux comptes connectés : le nœud contient des coordonnées (téléphone, Discord,
+      // gtawUserId, e-mail). Avant, ".read": true exposait ces PII à tout visiteur NON connecté.
+      ".read":  "auth != null",
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
       "phmc": {
         "$key": {
@@ -194,7 +196,12 @@
     // Soumises par les employés authentifiés, lues uniquement par les admins.
     "pendingModificationRequests": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
-      ".write": "auth != null"
+      // Écriture par clé : un employé CRÉE sa demande (il ne peut ni écraser ni supprimer celle d'un autre) ;
+      // admins : édition/suppression. Avant, ".write": auth != null laissait écraser/vider tout le nœud.
+      "$requestId": {
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.exists()))",
+        ".validate": "newData.hasChildren(['status', 'requestedBy']) && newData.child('status').isString() && newData.child('status').val().length <= 40 && newData.child('requestedBy').isString() && newData.child('requestedBy').val().length <= 120"
+      }
     },
 
     // ─── Rapports sauvegardés ─────────────────────────────────────────────────
@@ -338,7 +345,10 @@
     // ─── Logs webhook ─────────────────────────────────────────────────────────
     "webhook_logs": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
-      ".write": "auth != null"
+      "$logId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['type', 'timestamp']) && newData.child('type').isString() && newData.child('type').val().length <= 100 && newData.child('timestamp').isNumber()"
+      }
     },
 
     // ─── Configurations webhook ───────────────────────────────────────────────
@@ -461,7 +471,10 @@
     // Lecture publique : les formulaires concernés (civils compris) doivent
     // pouvoir suivre en direct le statut de leur paiement sans être connectés.
     "fleecaPayments": {
-      ".read":  true,
+      // Lecture réservée aux connectés ; le statut d'un paiement précis reste disponible HORS connexion via
+      // la Cloud Function getFleecaPaymentStatus (par payment_id). Avant, ".read": true exposait TOUS les
+      // paiements (montants, nœuds patient, IDs) à n'importe qui sans compte.
+      ".read":  "auth != null",
       ".write": false
     },
 
@@ -491,7 +504,8 @@
       ".read":  false,
       "$patientId": {
         "$factureId": {
-          ".write": "auth != null"
+          ".write": "auth != null",
+          ".validate": "newData.isNumber()"
         }
       }
     },
