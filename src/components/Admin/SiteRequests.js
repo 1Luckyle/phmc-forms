@@ -129,6 +129,13 @@ const SiteRequests = ({ currentUser, showNotification, onLogAction }) => {
         return result;
     }, [requests]);
 
+    const statusCounts = useMemo(() => {
+        const ofType = requests.filter((request) => typeFilter === 'all' || request.type === typeFilter);
+        const result = { all: ofType.length, active: ofType.filter((request) => ['nouveau', 'en_cours'].includes(request.status)).length };
+        Object.keys(REQUEST_STATUSES).forEach((key) => { result[key] = ofType.filter((request) => request.status === key).length; });
+        return result;
+    }, [requests, typeFilter]);
+
     const shown = useMemo(() => {
         const needle = normalize(search).trim();
         return requests.filter((request) => {
@@ -160,11 +167,11 @@ const SiteRequests = ({ currentUser, showNotification, onLogAction }) => {
                 </div>
                 <div className="adm-log-toolbar">
                     <div className="adm-log-periods" role="group" aria-label="Statut">
-                        <button type="button" className={`adm-log-chip ${statusFilter === 'active' ? 'on' : ''}`} onClick={() => setStatusFilter('active')}>À traiter</button>
+                        <button type="button" className={`adm-log-chip ${statusFilter === 'active' ? 'on' : ''}`} onClick={() => setStatusFilter('active')}>À traiter <span className="adm-log-count">{statusCounts.active}</span></button>
                         {Object.entries(REQUEST_STATUSES).map(([key, info]) => (
-                            <button key={key} type="button" className={`adm-log-chip ${statusFilter === key ? 'on' : ''}`} onClick={() => setStatusFilter(key)}>{info.label}</button>
+                            <button key={key} type="button" className={`adm-log-chip ${statusFilter === key ? 'on' : ''}`} onClick={() => setStatusFilter(key)}>{info.label} <span className="adm-log-count">{statusCounts[key] || 0}</span></button>
                         ))}
-                        <button type="button" className={`adm-log-chip ${statusFilter === 'all' ? 'on' : ''}`} onClick={() => setStatusFilter('all')}>Toutes</button>
+                        <button type="button" className={`adm-log-chip ${statusFilter === 'all' ? 'on' : ''}`} onClick={() => setStatusFilter('all')}>Toutes <span className="adm-log-count">{statusCounts.all}</span></button>
                     </div>
                     <div className="adm-search adm-log-search">
                         <i className="fas fa-magnifying-glass"></i>

@@ -211,12 +211,15 @@ export async function listIndexedPatientIds() {
         if (!canonical) return;
         const list = Object.values(entries || {}).filter((e) => e && !e.deleted);
         const named = list.find((e) => e && e.patientName);
-        const current = byCanonical.get(canonical) || { patientNode: canonical, reportCount: 0, patientName: '' };
-        current.reportCount += list.length;
+        const current = byCanonical.get(canonical) || { patientNode: canonical, reportCount: 0, patientName: '', entries: [] };
+        current.entries.push(...list);
         current.patientName = current.patientName || named?.patientName || '';
         byCanonical.set(canonical, current);
     });
-    return [...byCanonical.values()].filter((p) => p.reportCount > 0);
+    // Nombre de RAPPORTS : un rapport et les copies qu'en font des médecins ne comptent que pour un (comme dans le dossier).
+    return [...byCanonical.values()]
+        .map(({ entries, ...patient }) => ({ ...patient, reportCount: groupDossierEntries(entries).length }))
+        .filter((p) => p.reportCount > 0);
 }
 
 // ───────────────────────────── Suppression avec règles ─────────────────────────────

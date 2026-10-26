@@ -10,7 +10,7 @@
 //     les rapports (contrairement à « Supprimer »).
 // Les listes staff/phmc et staff/coroner peuvent être des tableaux OU des objets à clés
 // poussées : tout passe par des clés lues au moment de l'écriture.
-import { ref, get, set, update, push, remove, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, get, set, update, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, familiesOfMember, extraRanksOf, cleanExtraRanks, sortKeyOfRank } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';

@@ -303,6 +303,7 @@ function MainApp({
         return storedVersion ? parseInt(storedVersion, 10) : (formDefinitions[0]?.version || 1);
     });
     const [selectedAgencyGroup, setSelectedAgencyGroup] = useState(null);
+    const isRecruitmentForm = getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment';
     const [hideAgencyGroupSelectorPreference, setHideAgencyGroupSelectorPreference] = useState(false);
     
     // Get data from DataContext
@@ -652,7 +653,7 @@ function MainApp({
     }, [formData]);
 
     const getCopyButtonText = () => {
-        if (selectedAgencyGroup === 'PHMC Recruitment') {
+        if (isRecruitmentForm) {
             return 'Copier BBCode de Recrutement';
         }
         return 'Copier BBCode';
@@ -899,7 +900,7 @@ function MainApp({
     // désormais déclenchée séparément par handleSaveReportWrapper.
     const handleCopyAndNotifyWrapper = useCallback(async () => {
         let copied = false;
-        if (selectedAgencyGroup === 'PHMC Recruitment') {
+        if (isRecruitmentForm) {
             copied = await handlePhmcRecruitmentCopyAndNotify({
                 formData,
                 getBBCodeContent,
@@ -1423,7 +1424,7 @@ function MainApp({
         setHideAgencyGroupSelectorPreference(hidePreference);
 
         if (userOnboardingPreferences?.allowedCategories?.length === 1) {
-            const preferredGroup = userOnboardingPreferences.allowedCategories[0];
+            const preferredGroup = getFormDefinition(bbCodeVersion)?.group || userOnboardingPreferences.allowedCategories[0];
             setSelectedAgencyGroup(preferredGroup);
             setShowAgencyGroupSelectorModal(false);
             return;
@@ -1905,7 +1906,7 @@ function MainApp({
 )}
 
                             {(() => {
-                                if (selectedAgencyGroup === 'PHMC Recruitment' && formData.recruitmentPosition) {
+                                if (isRecruitmentForm && formData.recruitmentPosition) {
 
                                     let currentRecruitmentDetailsSource = null;
                                     let positionDisplayNameForTitle = formData.recruitmentPosition || 'selected position';
@@ -2338,7 +2339,7 @@ function MainApp({
                                             <i className={`fas ${showPreview ? 'fa-eye-slash' : 'fa-image'}`}></i>
                                             {showPreview ? "Cacher l'aperçu" : 'Aperçu'}
                                         </Button>
-                                        {!(isCivilian && selectedAgencyGroup === 'PHMC Recruitment') && (
+                                        {!(isCivilian && isRecruitmentForm) && (
                                             <Button
                                                 type="button"
                                                 onClick={toggleSavedReports}
@@ -2441,7 +2442,7 @@ function MainApp({
                                         <div className="report-actions-group">
                                             <div className="report-actions-label">Enregistrer</div>
                                             <div className="report-actions-row">
-                                                {selectedAgencyGroup !== 'PHMC Recruitment' && (
+                                                {!isRecruitmentForm && (
                                                     <Button
                                                         type="button"
                                                         onClick={handleSaveReportWrapper}
@@ -2459,10 +2460,10 @@ function MainApp({
                                                     réellement (accusé de réception + notification admin). */}
                                                 {/* Un EMPLOYÉ ne candidate pas : il demande d'abord le statut de recrutement interne (évolution
                                                     interne), que le recrutement accepte ou refuse. Une fois accordé, il candidate comme un Civil. */}
-                                                {selectedAgencyGroup === 'PHMC Recruitment' && !isCivilian && staffProfile && !hasInternalRecruitment && (
+                                                {isRecruitmentForm && !isCivilian && staffProfile && !hasInternalRecruitment && (
                                                     <InternalRecruitmentRequest showNotification={showNotification} disabled={isLockdownActive} />
                                                 )}
-                                                {selectedAgencyGroup === 'PHMC Recruitment' && (isCivilian || (hasInternalRecruitment && staffProfile)) && (
+                                                {isRecruitmentForm && (isCivilian || (hasInternalRecruitment && staffProfile)) && (
                                                     <>
                                                         <Button type="button" onClick={() => saveJobApplication('save')} className="copy-button-modern" disabled={isLockdownActive}>
                                                             <i className="fas fa-save"></i>

@@ -17,6 +17,10 @@ export const COPY_BBCODE_HINT = `Le BBCode est destiné au ${BBCODE_FORUM_HINT}`
 export const DOWNLOAD_HTML_HINT = `Le HTML est destiné au ${HTML_FORUM_HINT}`;
 
 // Assemble les BBCode de plusieurs rapports (même séparation que « Copier le BBCode sélectionné »).
+// Même assemblage pour les EXPORTS (HTML, PDF, images) : un séparateur invisible entre les rapports permet à l'export en images de
+// couper entre deux rapports. Ne pas l'utiliser pour copier du BBCode vers un forum.
+export const combineBbCodesForExport = (reports) => (reports || []).map((report) => report?.bbCode).filter(Boolean).join('\n\n[pagebreak]\n\n');
+
 export const combineBbCodes = (reports) => (reports || []).map((report) => report?.bbCode).filter(Boolean).join('\n\n');
 
 // Télécharge `bbCode` converti en HTML. Retourne true si le fichier a été généré.

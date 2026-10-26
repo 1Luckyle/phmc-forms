@@ -58,10 +58,11 @@ const AdminReportsTools = ({ showNotification }) => {
         ].map((group) => ({ ...group, options: group.options.sort((a, b) => a.label.localeCompare(b.label)) }));
         const known = new Set(staff.flatMap((g) => g.options).map((o) => o.value.trim().replace(/[.#$[\]/ ]+/g, '_')));
         const others = accountNodes
-            .filter((node) => !known.has(node))
+            // Les dossiers d'un Civil (« Prénom_Nom_PHMC-1234 ») se consultent dans « Dossiers patients », pas ici.
+            .filter((node) => !known.has(node) && !/_PHMC-\d+$/i.test(node))
             .map((node) => ({ value: node, label: `${node.replace(/_/g, ' ')}${node.includes('@') ? ' (adresse e-mail : à migrer)' : ''}` }))
             .sort((a, b) => a.label.localeCompare(b.label));
-        return [...staff, ...(others.length ? [{ label: 'Autres comptes (civils, e-mails…)', options: others }] : [])]
+        return [...staff, ...(others.length ? [{ label: 'Autres comptes (anciens membres, e-mails…)', options: others }] : [])]
             .filter((group) => group.options.length > 0);
     }, [phmcListData, coronerListData, accountNodes]);
 

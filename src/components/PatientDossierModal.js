@@ -34,7 +34,7 @@ import useReportInvoices from '../hooks/useReportInvoices';
 import { formatMoney } from '../utils/patientBilling';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
-import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
@@ -312,13 +312,13 @@ const PatientDossierModal = ({
     const handleExportSelectedDocument = (format) => {
         const roots = selectedFamilies.map((f) => f.root);
         const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
-        exportDocument(format, combineBbCodes(roots), title);
+        exportDocument(format, combineBbCodesForExport(roots), title);
     };
 
     const handleDownloadSelectedHtml = () => {
         const roots = selectedFamilies.map((f) => f.root);
         const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
-        downloadHtml(combineBbCodes(roots), title);
+        downloadHtml(combineBbCodesForExport(roots), title);
     };
 
     const renderCopyMenu = (entry) => (

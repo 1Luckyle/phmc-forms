@@ -156,7 +156,6 @@ const generateEMS = (formData) => {
 Centre de carrière [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]
-[divboxcolor=black][url=${dynamicJobPostingUrl}][color=#FF0000]>[/color] [color=#FFFFFF]Retour à l'offre d'emploi[/color][/url][/divboxcolor]
 [br][/br]
 [divbox=na][list=none][b][size=110][color=#FF0000]1[/color].  Informations Personnelles[/size][/b][/list]
 [hr][/hr]

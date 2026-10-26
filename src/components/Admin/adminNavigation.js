@@ -124,11 +124,6 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'test simulation saison autofill whitelist rôle',
             },
             {
-                key: 'webhooks', icon: 'fa-bullhorn', label: 'Webhooks Discord (hérité)',
-                description: "Canaux Discord optionnels. Le suivi des actions se fait désormais dans le journal d'activité.",
-                keywords: 'discord notification canal message',
-            },
-            {
                 key: 'dev', icon: 'fa-code', label: 'Outils développeur',
                 description: "Échange de données utilisateur, test d'erreur Sentry.",
                 keywords: 'sentry échange',

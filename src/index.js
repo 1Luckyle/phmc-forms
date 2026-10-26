@@ -19,6 +19,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { logClientError } from './utils/activityLog';
 import { startPriceSync } from './utils/pricing';
+import ExportProgressModal from './components/ExportProgressModal';
 
 // --- START: Fallback Error Reporting ---
 const discordErrorWebhookQueue = [];
@@ -206,7 +207,12 @@ const Root = () => {
         checkSentryConnectivity();
     }, []);
 
-    return <App />;
+    return (
+        <>
+            <App />
+            <ExportProgressModal />
+        </>
+    );
 };
 
 startPriceSync(); // tarifs des formulaires (panneau admin → Tarifs)

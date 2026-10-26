@@ -32,10 +32,10 @@ const EMPTY_BOX = '☐';     // ☐
 const KNOWN_TAGS = new Set([
     'b', 'u', 'i', 's', 'color', 'size', 'img', 'br', 'cb', 'cbc',
     'center', 'left', 'right', 'justify', 'list', '*', 'hr', 'url', 'quote', 'altspoiler',
-    'imageleft', 'code', 'divbox', 'divboxcolor', 'table', 'tr', 'td',
+    'imageleft', 'code', 'divbox', 'divboxcolor', 'table', 'tr', 'td', 'pagebreak',
 ]);
 // Balises sans contenu : leur éventuelle balise fermante ([/br], [/hr]) est ignorée.
-const LEAF_TAGS = new Set(['br', 'cb', 'cbc', 'hr', '*']);
+const LEAF_TAGS = new Set(['br', 'cb', 'cbc', 'hr', '*', 'pagebreak']);
 // Balises dont le contenu est du texte brut (jusqu'à la balise fermante).
 const RAW_TAGS = new Set(['img', 'code']);
 // Éléments qu'une balise fermante « en ligne » ([/b], [/center]…) ne doit jamais traverser.
@@ -234,7 +234,7 @@ const flatten = (node) => {
 
 // ─── 3. Rendu HTML ────────────────────────────────────────────────────────────
 
-const BLOCK_NAMES = new Set(['table', 'divboxcolor', 'hr', 'quote', 'altspoiler', 'center', 'left', 'right', 'justify', 'list']);
+const BLOCK_NAMES = new Set(['table', 'divboxcolor', 'hr', 'pagebreak', 'quote', 'altspoiler', 'center', 'left', 'right', 'justify', 'list']);
 const isBlock = (node) => !!node && BLOCK_NAMES.has(node.name);
 const isBlankText = (node) => node.name === '#text' && !node.text.trim();
 
@@ -303,6 +303,10 @@ const renderNode = (node, ctx) => {
             return CHECKED_BOX;
         case '*':
             return '<br>•&nbsp;';
+        // Séparateur entre deux rapports exportés ensemble : un simple espace, que l'export en images utilise pour couper
+        // entre deux rapports plutôt qu'au milieu de l'un d'eux.
+        case 'pagebreak':
+            return '<div data-report-break="1" style="height:18px;margin:0;padding:0;overflow:hidden;"></div>';
         case 'hr':
             return `<hr style="border:0;border-top:1px solid ${BORDER};height:0;margin:8px 0;">`;
         case 'b': case 'u': case 'i': case 's':

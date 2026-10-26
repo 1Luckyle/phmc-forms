@@ -12,7 +12,7 @@ import useReportInvoices from '../hooks/useReportInvoices';
 import { formatMoney } from '../utils/patientBilling';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
-import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
@@ -618,7 +618,7 @@ const SavedReportsModal = ({
         const title = reportsToExport.length === 1
             ? (reportTitleOf(reportsToExport[0]) || reportsToExport[0].originalKey)
             : `${reportsToExport.length} rapports`;
-        if (downloadBbCodeAsHtml({ bbCode: combineBbCodes(reportsToExport), title, showNotification })) openForumNotice('html');
+        if (downloadBbCodeAsHtml({ bbCode: combineBbCodesForExport(reportsToExport), title, showNotification })) openForumNotice('html');
     };
 
     // PDF (A4) / SVG : un rapport, ou la sélection en un seul document.
@@ -635,7 +635,7 @@ const SavedReportsModal = ({
         const title = reportsToExport.length === 1
             ? (reportTitleOf(reportsToExport[0]) || reportsToExport[0].originalKey)
             : `${reportsToExport.length} rapports`;
-        exportReportDocument(format, { bbCode: combineBbCodes(reportsToExport), title, showNotification });
+        exportReportDocument(format, { bbCode: combineBbCodesForExport(reportsToExport), title, showNotification });
     };
 
     // Rapport rechargeable dans un formulaire ? (un formulaire AMA, par exemple, n'en a pas)
