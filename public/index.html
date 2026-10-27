@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <!-- Page en français : empêche la traduction automatique du navigateur, qui casse react-select
+         (NotFoundError removeChild). Retirer cette balise si on veut autoriser la traduction auto. -->
+    <meta name="google" content="notranslate" />
     <meta
       name="description"
       content="PHMC-FR Tools"

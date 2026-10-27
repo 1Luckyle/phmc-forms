@@ -68,7 +68,7 @@ const PrivacyPolicyContent = () => (
 
             <h3>Partage, conservation et suppression</h3>
             <p>Nous ne partageons pas vos données avec des tiers, sauf les prestataires mentionnés ci-dessus et dans la mesure de leur fonction. Les données sont conservées tant que le compte existe ; un administrateur peut supprimer un compte ou des rapports, et vous pouvez demander la suppression ou la correction de vos données sur le Discord du PHMC.</p>
-            <p>Questions : posez-les sur le serveur Discord de PHMC.</p>
+            <p>Questions : posez-les sur le <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">serveur Discord du PHMC</a>.</p>
     </div>
 );
 

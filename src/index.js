@@ -32,10 +32,11 @@ let isSentryBlocked = false; // Flag to track if Sentry connectivity failed
 const processDiscordErrorQueue = async () => {
     if (isProcessingDiscordQueue || discordErrorWebhookQueue.length === 0) return;
 
-    const webhookURL = null || null;
+    const webhookURL = null;
     if (!webhookURL) {
-        console.error("Discord Error Webhook: URL is not configured. Cannot process queue.");
-        discordErrorWebhookQueue.length = 0; // Clear queue if no URL
+        // Webhooks Discord retirés : on vide silencieusement la file (plus de bruit console). La trace des
+        // erreurs passe par le journal d'activité (logClientError) et par Sentry.
+        discordErrorWebhookQueue.length = 0;
         return;
     }
 

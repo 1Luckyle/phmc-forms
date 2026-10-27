@@ -270,7 +270,13 @@ const initialFormData = {
 };
     return (
         <Sentry.ErrorBoundary
-            fallback={<p>Une erreur fatale inattendue s'est produite. Veuillez en informer le développeur sur le serveur Discord de PHMC.</p>}
+            fallback={(
+                <p style={{ padding: "16px", textAlign: "center", lineHeight: 1.6 }}>
+                    Une erreur fatale inattendue s'est produite. Veuillez en informer le développeur sur le{" "}
+                    <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">serveur Discord du PHMC</a>
+                    {" "}en pensant à mentionner (ping) <strong>Luckyle</strong>.
+                </p>
+            )}
             onError={(error, componentStack) => {
                 sendDiscordErrorWebhook({
                     message: error.message,
