@@ -8,8 +8,8 @@ import { Button, Spinner } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './AdminDashboard.css';
 import '../DarkUi.css';
-import DatabaseEditor from './DatabaseEditor';
-import WebhookLogs from './WebhookLogs';
+import BingoPauseButton from './BingoPauseButton';
+import BingoResetSetting from './BingoResetSetting';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
 import { useDebug } from '../../contexts/DebugContext';
@@ -28,6 +28,7 @@ import ActivityLog from './ActivityLog';
 import SiteRequests from './SiteRequests';
 import { logAdminAction } from '../../utils/activityLog';
 import PricingManager from './PricingManager';
+import { runRecruitmentMigrationOnce } from '../../utils/recruitmentMigration';
 
 const LAST_SECTION_KEY = 'adminLastSection';
 
@@ -165,6 +166,22 @@ const AdminDashboard = ({
 
     const current = findAdminSection(selectedSection);
 
+    // Recrutement : passage automatique, une seule fois, de l'ancien schéma (anglais) au schéma français.
+    useEffect(() => {
+        if (!currentUser) return;
+        runRecruitmentMigrationOnce(currentUser.email).then((result) => {
+            if (!result) return;
+            logAdminAction({
+                email: currentUser.email, action: 'Recrutement migré vers le schéma français',
+                details: `${result.copied} écriture(s), ${result.removed} ancien(s) nœud(s) supprimé(s)\nSauvegarde : migrationBackups/${result.backupId}`,
+            });
+            if (showInAppNotification) {
+                showInAppNotification(`Recrutement passé en français (${result.copied} élément(s) copiés ; sauvegarde des anciens nœuds : ${result.backupId}).${result.textsToReview ? ` ${result.textsToReview} poste(s) gardent leurs textes d'origine : à relire dans la gestion du recrutement.` : ''}`, 'success', 12000);
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.uid]);
+
     // Phrases par défaut du bingo : n'ajoute que celles qui manquent (voir utils/bingoDefaults.js).
     const addDefaultPhrases = async (types) => {
         if (!types.length || isSeedingPhrases) return;
@@ -201,40 +218,6 @@ const AdminDashboard = ({
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
     }, []);
-
-    const handleTestWebhook = async (webhook) => {
-        if (!testWebhookData.title || !testWebhookData.message) {
-            alert('Veuillez remplir les champs titre et message.');
-            return;
-        }
-
-        try {
-            const payload = {
-                embeds: [{
-                    title: testWebhookData.title,
-                    description: testWebhookData.message,
-                    color: 3447003,
-                    timestamp: new Date().toISOString()
-                }]
-            };
-
-            const response = await fetch(webhook.url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                alert('Webhook de test envoyé avec succès !');
-                setTestWebhookData({ title: '', message: '', selectedWebhook: null });
-            } else {
-                alert(`Échec de l'envoi du webhook : ${response.status}`);
-            }
-        } catch (error) {
-            console.error('Error sending test webhook:', error);
-            alert('Erreur lors de l\'envoi du webhook de test');
-        }
-    };
 
     const handleToggleBingoPicker = async (enabled) => {
         setIsUpdatingBingoPicker(true);
@@ -484,9 +467,11 @@ const AdminDashboard = ({
                                 </select>
                             </div>
                         </div>
-                        <p className="text-muted small">
-                            <i className="fas fa-clock me-1"></i> La réinitialisation quotidienne s'exécute automatiquement sur le serveur à 09:00 UTC.
-                        </p>
+                        <BingoResetSetting
+                            bingoType={BINGO_TYPES.find((type) => type.id === selectedAdminBingoType)}
+                            disabled={isUpdatingDb} showNotification={showInAppNotification}
+                            onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                        />
 
                         <div className="adm-actions-grid">
                             <div className="adm-fieldset">
@@ -498,7 +483,12 @@ const AdminDashboard = ({
                                     <Button variant="secondary" onClick={handleManualResetAllBingoCards} disabled={isUpdatingDb} title="Exécuter manuellement la réinitialisation quotidienne pour toutes les cartes de bingo actives.">
                                         <i className="fas fa-rotate-left"></i> Réinitialiser toutes les cartes
                                     </Button>
-                                    <Button variant="warning" onClick={handleDisableBingoCard} disabled={isUpdatingDb} title="Supprime la carte actuelle et le journal : le jeu est désactivé jusqu'à ce qu'une nouvelle carte soit générée.">
+                                    <BingoPauseButton
+                                        bingoType={BINGO_TYPES.find((type) => type.id === selectedAdminBingoType)}
+                                        disabled={isUpdatingDb} showNotification={showInAppNotification}
+                                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details })}
+                                    />
+                                    <Button variant="warning" onClick={handleDisableBingoCard} disabled={isUpdatingDb} title="Supprime la carte actuelle et le journal : le jeu est désactivé jusqu'à ce qu'une nouvelle carte soit générée. Pour simplement arrêter la partie, utilisez « Mettre la carte en pause ».">
                                         <i className="fas fa-power-off"></i> Désactiver la carte
                                     </Button>
                                 </div>
@@ -532,142 +522,6 @@ const AdminDashboard = ({
                     </SectionCard>
                 );
 
-            case 'webhooks':
-                return (
-                    <>
-                        <SectionCard icon={current.icon} title={current.label} description={current.description}>
-                            <h5 className="adm-subtitle">Webhooks existants</h5>
-                            {webhooks && webhooks.length > 0 ? (
-                                <ul className="adm-list">
-                                    {webhooks.map((hook) => (
-                                        <li key={hook.id}>
-                                            <div className="adm-list-row">
-                                                <div>
-                                                    <strong>{hook.name}</strong> <span className="adm-chip adm-chip-neutral">{hook.type}</span>
-                                                    <div className="adm-list-url">{hook.url}</div>
-                                                </div>
-                                                <div className="adm-list-actions">
-                                                    <Button
-                                                        variant="outline-secondary" size="sm" disabled={isUpdatingWebhooks} title="Modifier la configuration du webhook"
-                                                        onClick={() => {
-                                                            setNewWebhook({ name: hook.name, url: hook.url, type: hook.type, id: hook.id });
-                                                            const form = document.getElementById('adm-webhook-form');
-                                                            if (form) form.scrollIntoView({ behavior: 'smooth' });
-                                                        }}
-                                                    >
-                                                        <i className="fas fa-pen"></i> Modifier
-                                                    </Button>
-                                                    <Button variant="outline-primary" size="sm" disabled={isUpdatingWebhooks} onClick={() => setTestWebhookData((previous) => ({ ...previous, selectedWebhook: hook }))}>
-                                                        <i className="fas fa-vial"></i> Tester
-                                                    </Button>
-                                                    <Button variant="outline-danger" size="sm" disabled={isUpdatingWebhooks} onClick={() => handleDeleteWebhook(hook.id)}>
-                                                        <i className="fas fa-trash-can"></i>
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            {testWebhookData.selectedWebhook?.id === hook.id && (
-                                                <div className="adm-panel">
-                                                    <h6>Tester le webhook : {hook.name}</h6>
-                                                    <div className="form-group mb-2">
-                                                        <label>Titre du test</label>
-                                                        <input type="text" className="form-control" placeholder="Titre du message de test" value={testWebhookData.title} onChange={(event) => setTestWebhookData((previous) => ({ ...previous, title: event.target.value }))} />
-                                                    </div>
-                                                    <div className="form-group mb-2">
-                                                        <label>Message de test</label>
-                                                        <textarea className="form-control" rows="3" placeholder="Contenu du message de test" value={testWebhookData.message} onChange={(event) => setTestWebhookData((previous) => ({ ...previous, message: event.target.value }))} />
-                                                    </div>
-                                                    <div className="d-flex gap-2">
-                                                        <Button variant="success" size="sm" onClick={() => handleTestWebhook(hook)}>Envoyer le test</Button>
-                                                        <Button variant="secondary" size="sm" onClick={() => setTestWebhookData((previous) => ({ ...previous, selectedWebhook: null, title: '', message: '' }))}>Annuler</Button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-muted">Aucun webhook configuré.</p>
-                            )}
-
-                            <div className="adm-panel" id="adm-webhook-form">
-                                <h5 className="adm-subtitle">{newWebhook.id ? 'Modifier le webhook' : 'Ajouter un webhook'}</h5>
-                                {newWebhook.id && (
-                                    <div className="adm-notice">
-                                        <i className="fas fa-circle-info me-2"></i>Modification de <strong>{newWebhook.name}</strong>
-                                        <button type="button" className="btn btn-sm btn-outline-secondary ms-2" onClick={() => setNewWebhook({ name: '', url: '', type: 'coronerAlerts' })}>Annuler la modification</button>
-                                    </div>
-                                )}
-                                <div className="adm-form-grid">
-                                    <div className="form-group">
-                                        <label>Nom du webhook</label>
-                                        <input type="text" className="form-control" placeholder="ex. Notifications Discord" value={newWebhook.name} onChange={(event) => setNewWebhook((previous) => ({ ...previous, name: event.target.value }))} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Type d'événement</label>
-                                        <select className="form-select" value={newWebhook.type} onChange={(event) => setNewWebhook((previous) => ({ ...previous, type: event.target.value }))}>
-                                            <option value="coronerAlerts">Alertes Coroner</option>
-                                            <option value="phmcAlerts">Alertes PHMC</option>
-                                            <option value="dev">Développeur local de Discord</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="form-group mb-3">
-                                    <label>URL du webhook</label>
-                                    <input type="url" className="form-control" placeholder="https://discord.com/api/webhooks/..." value={newWebhook.url} onChange={(event) => setNewWebhook((previous) => ({ ...previous, url: event.target.value }))} />
-                                </div>
-                                <div className="d-flex gap-2">
-                                    <Button variant="primary" onClick={handleAddWebhook} disabled={isUpdatingWebhooks}>
-                                        {isUpdatingWebhooks ? <Spinner as="span" animation="border" size="sm" /> : (newWebhook.id ? 'Mettre à jour le webhook' : 'Ajouter le webhook')}
-                                    </Button>
-                                    {newWebhook.id && (
-                                        <Button variant="secondary" onClick={() => setNewWebhook({ name: '', url: '', type: 'coronerAlerts' })} disabled={isUpdatingWebhooks}>Annuler</Button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="adm-panel">
-                                <h5 className="adm-subtitle">Envoyer un message personnalisé</h5>
-                                <form onSubmit={handleSendCustomWebhook}>
-                                    <div className="adm-form-grid">
-                                        <div className="form-group">
-                                            <label htmlFor="webhookChannel">Webhook</label>
-                                            <select id="webhookChannel" className="form-select" value={customWebhookChannel} onChange={(event) => setCustomWebhookChannel(event.target.value)} disabled={customWebhookSending}>
-                                                <option value="">Sélectionnez un webhook…</option>
-                                                {webhooks && webhooks.map((hook) => (
-                                                    <option key={hook.id} value={hook.id}>{hook.name} ({hook.type})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="webhookTitle">Titre</label>
-                                            <input id="webhookTitle" className="form-control" type="text" value={customWebhookTitle} onChange={(event) => setCustomWebhookTitle(event.target.value)} placeholder="Entrez le titre" required disabled={customWebhookSending} />
-                                        </div>
-                                    </div>
-                                    <div className="form-group mb-2">
-                                        <label htmlFor="webhookMessage">Message</label>
-                                        <textarea id="webhookMessage" className="form-control" rows="4" value={customWebhookMessage} onChange={(event) => setCustomWebhookMessage(event.target.value)} placeholder="Entrez le message (Markdown pris en charge)" required disabled={customWebhookSending} />
-                                    </div>
-                                    <div className="form-group mb-3">
-                                        <label htmlFor="webhookUrl">Lien (facultatif)</label>
-                                        <input id="webhookUrl" className="form-control" type="url" value={customWebhookUrl} onChange={(event) => setCustomWebhookUrl(event.target.value)} placeholder="https://…" disabled={customWebhookSending} />
-                                    </div>
-                                    <button type="submit" className="btn btn-primary" disabled={customWebhookSending || !customWebhookChannel || !customWebhookTitle || !customWebhookMessage}>
-                                        {customWebhookSending ? 'Envoi en cours…' : 'Envoyer le message'}
-                                    </button>
-                                    <small className="text-muted d-block mt-2">
-                                        <i className="fas fa-circle-info me-1"></i>Le message est mis en forme aux couleurs du PHMC, avec un lien vers le générateur et l'horodatage.
-                                    </small>
-                                    {customWebhookResult === 'success' && <div className="alert alert-success mt-2 mb-0 py-1">Message envoyé !</div>}
-                                    {customWebhookResult === 'error' && <div className="alert alert-danger mt-2 mb-0 py-1">Échec de l'envoi. Vérifiez la configuration du canal et réessayez.</div>}
-                                </form>
-                            </div>
-                        </SectionCard>
-                        <WebhookLogs refreshTrigger={logRefreshTrigger} />
-                    </>
-                );
-
-            case 'database':
-                return <DatabaseEditor showNotification={showInAppNotification} />;
 
             case 'debug':
                 return (

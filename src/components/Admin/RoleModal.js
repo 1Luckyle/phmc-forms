@@ -1,7 +1,7 @@
 // src/components/Admin/RoleModal.js
 //
 // Fenêtre d'ajout / de modification d'un POSTE de recrutement, en français : les champs suivent le schéma
-// de constants/recruitment.js (nom, statut OUVERT/FERMÉ, contact, codeCourt, lien, presentation,
+// de constants/recruitment.js (nom, statut OUVERT/FERMÉ, contact, codeCourt, presentation,
 // competence1-3, diplome). Chaque poste est relié à un RÔLE du personnel (référentiel constants/ranks.js) :
 // c'est le rôle que la personne recevra à l'embauche (conversion en personnel, contrat).
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -21,7 +21,6 @@ const getInitialRoleState = (category) => ({
     role: '',
     contact: '',
     codeCourt: '',
-    lien: '',
     presentation: '',
     competence1: '',
     competence2: '',
@@ -77,7 +76,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
     }, [show, roleToEdit, initialRoleState]);
 
     const requiredFields = useMemo(() => [
-        'nom', 'codeCourt', 'contact', 'lien', 'presentation', 'competence1', 'competence2', 'competence3', 'diplome',
+        'nom', 'codeCourt', 'contact', 'presentation', 'competence1', 'competence2', 'competence3', 'diplome',
     ], []);
     const isFormValid = requiredFields.every((field) => String(roleData[field] ?? '').trim() !== '');
 
@@ -103,7 +102,6 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
             statut: STATUT_OUVERT,
             contact: 'Testeur Debug (testeur.debug)',
             codeCourt: 'TEST-DBG',
-            lien: 'https://phmc.gta.world/viewtopic.php?t=10291',
             presentation: "[TEST] Poste généré par le mode debug pour vérifier l'affichage.",
             competence1: 'Compétence de test numéro 1',
             competence2: 'Compétence de test numéro 2',
@@ -233,11 +231,6 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                         <BootstrapForm.Group className="mb-3">
                             <BootstrapForm.Label>Code court *</BootstrapForm.Label>
                             <BootstrapForm.Control type="text" name="codeCourt" value={roleData.codeCourt || ''} onChange={handleChange} required placeholder="ex. PARAMEDIC" />
-                        </BootstrapForm.Group>
-
-                        <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Lien de l'annonce *</BootstrapForm.Label>
-                            <BootstrapForm.Control type="url" name="lien" value={roleData.lien || ''} onChange={handleChange} required placeholder="https://forum.example.com/lien" />
                         </BootstrapForm.Group>
 
                         <BootstrapForm.Group className="mb-3">

@@ -11,6 +11,7 @@
 //     plusieurs images (coupées entre deux blocs, jamais au milieu d'une ligne de tableau quand c'est possible). L'image peut
 //     aussi être copiée dans le presse-papiers (rapport tenant sur une seule image) pour un Ctrl+V dans Discord.
 import { bbcodeToHtmlDocument, buildHtmlFileName } from './bbcodeToHtml';
+import { exportProgress } from './exportProgress';
 
 const A4_WIDTH_PX = 794;      // 210 mm à 96 dpi
 const IMAGE_WIDTH_PX = 900;   // même largeur que le tableau de l'aperçu
@@ -199,12 +200,36 @@ async function buildReportSvg({ bbCode, title }) {
 
         const height = Math.ceil(Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight)) + 2;
         const scrollY = frame.contentWindow.scrollY || 0;
-        const candidates = new Set();
-        doc.querySelectorAll('tr, table, hr, img').forEach((element) => {
-            const bottom = Math.round(element.getBoundingClientRect().bottom + scrollY);
-            if (bottom > 0 && bottom < height) candidates.add(bottom);
+        // Points de coupe, du moins au plus souhaitable :
+        //   niveau 1 : sous une ligne de tableau, un tableau, un trait ou une image (jamais au milieu d'une ligne) ;
+        //   niveau 2 : entre deux SECTIONS (sous un tableau de premier niveau ; avant une barre de titre noire, pour ne pas la
+        //              laisser seule en bas d'une image) ;
+        //   niveau 3 : entre deux RAPPORTS assemblés (séparateur [pagebreak]).
+        const candidates = new Map();
+        const addCut = (y, level) => {
+            const rounded = Math.round(y);
+            if (rounded > 0 && rounded < height) candidates.set(rounded, Math.max(candidates.get(rounded) || 0, level));
+        };
+        const isTitleBar = (table) => {
+            const rows = table.querySelectorAll(':scope > tbody > tr, :scope > tr');
+            if (rows.length !== 1) return false;
+            const cell = rows[0].querySelector('td, th');
+            const channels = cell ? (frame.contentWindow.getComputedStyle(cell).backgroundColor || '').match(/\d+/g) : null;
+            if (!channels || channels.length < 3) return false;
+            const [red, green, blue] = channels.map(Number);
+            return (0.299 * red + 0.587 * green + 0.114 * blue) < 70;
+        };
+        doc.querySelectorAll('tr, table, hr, img').forEach((element) => addCut(element.getBoundingClientRect().bottom + scrollY, 1));
+        doc.querySelectorAll('table').forEach((table) => {
+            if (table.parentElement && table.parentElement.closest('table')) return; // tableau imbriqué : pas une section
+            const rect = table.getBoundingClientRect();
+            addCut(isTitleBar(table) ? rect.top + scrollY : rect.bottom + scrollY, 2);
         });
-        const cuts = Array.from(candidates).sort((a, b) => a - b);
+        doc.querySelectorAll('[data-report-break]').forEach((element) => {
+            const rect = element.getBoundingClientRect();
+            addCut(rect.top + scrollY + rect.height / 2, 3);
+        });
+        const cuts = Array.from(candidates, ([y, level]) => ({ y, level })).sort((a, b) => a.y - b.y);
 
         const serializer = new XMLSerializer();
         const inner = Array.from(doc.body.childNodes).map((node) => serializer.serializeToString(node)).join('');
@@ -226,17 +251,24 @@ async function buildReportSvg({ bbCode, title }) {
     }
 }
 
-// Découpe la hauteur en parties d'au plus MAX_PART_HEIGHT px, en coupant de préférence sur un bord de bloc (dans la moitié
-// basse de la partie) ; à défaut, coupe franche. → [[début, fin], …]
+// Découpe la hauteur en parties d'au plus MAX_PART_HEIGHT px. Pour chaque partie on choisit le meilleur point de coupe de la fenêtre :
+//   1) entre deux RAPPORTS (dès que la partie est remplie à 15 %), pour ne jamais couper un rapport quand il tient dans l'image suivante ;
+//   2) sinon entre deux SECTIONS (à partir de 30 %) ;
+//   3) sinon sous une ligne de tableau (à partir de 50 %) ; à défaut, coupe franche.
+// `cuts` : [{ y, level }] (ou de simples nombres = niveau 1). → [[début, fin], …]
 export const planImageParts = (height, cuts, maxPartHeight = MAX_PART_HEIGHT) => {
+    const list = (cuts || []).map((cut) => (typeof cut === 'number' ? { y: cut, level: 1 } : cut));
     const parts = [];
     let start = 0;
     while (height - start > maxPartHeight) {
         const limit = start + maxPartHeight;
-        const earliest = start + maxPartHeight / 2;
-        const cut = cuts.filter((value) => value <= limit && value > earliest).pop() || limit;
-        parts.push([start, cut]);
-        start = cut;
+        const best = (minY, minLevel) => list
+            .filter((cut) => cut.level >= minLevel && cut.y > minY && cut.y <= limit)
+            .reduce((chosen, cut) => (!chosen || cut.level > chosen.level || (cut.level === chosen.level && cut.y > chosen.y) ? cut : chosen), null);
+        const chosen = best(start + maxPartHeight * 0.15, 3) || best(start + maxPartHeight * 0.3, 2) || best(start + maxPartHeight * 0.5, 1);
+        const end = chosen ? chosen.y : limit;
+        parts.push([start, end]);
+        start = end;
     }
     parts.push([start, height]);
     return parts;
@@ -248,7 +280,7 @@ export const buildPngFileName = (title, index = 1, total = 1) => {
 };
 
 // Dessine le rapport sur des canvas et retourne la liste des Blob PNG (une seule image pour un rapport de taille normale).
-async function renderReportPngParts({ bbCode, title }) {
+async function renderReportPngParts({ bbCode, title }, { onPlan, onPart } = {}) {
     const { svg, width, height, cuts } = await buildReportSvg({ bbCode, title });
     const image = new Image();
     await new Promise((resolve, reject) => {
@@ -257,7 +289,9 @@ async function renderReportPngParts({ bbCode, title }) {
         image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     });
     const blobs = [];
-    for (const [start, end] of planImageParts(height, cuts)) {
+    const plan = planImageParts(height, cuts);
+    if (onPlan) onPlan(plan.length);
+    for (const [start, end] of plan) {
         const partHeight = end - start;
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(width * TARGET_SCALE);
@@ -270,21 +304,44 @@ async function renderReportPngParts({ bbCode, title }) {
         const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
         if (!blob) throw new Error("l'image est trop grande pour ce navigateur");
         blobs.push(blob);
+        if (onPart) onPart(blobs.length, plan.length);
     }
     return blobs;
 }
 
-const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+// Télécharge un fichier à partir d'un contenu en mémoire.
+export const downloadPartBlob = (fileName, blob) => downloadBlob(fileName, blob, 'image/png');
 
-// Télécharge le rapport en image(s) PNG. Retourne le nombre d'images créées.
+// Bouton « Télécharger » de la fenêtre de progression : télécharge l'image n° `index` et la marque comme téléchargée.
+export const downloadExportPart = (index) => {
+    const state = exportProgress.get();
+    const part = state && state.parts && state.parts[index];
+    if (!part) return;
+    downloadBlob(part.name, part.blob, 'image/png');
+    exportProgress.set((current) => (current ? { ...current, parts: current.parts.map((entry, i) => (i === index ? { ...entry, downloaded: true } : entry)) } : current));
+};
+
+// Télécharge le rapport en image(s) PNG. Une seule image : téléchargée directement. Plusieurs : la fenêtre de progression s'ouvre
+// (génération puis un bouton par image — un navigateur n'accepte qu'un téléchargement par clic). Retourne le nombre d'images.
 export async function downloadReportAsPng({ bbCode, title }) {
-    const blobs = await renderReportPngParts({ bbCode, title });
-    for (let index = 0; index < blobs.length; index += 1) {
-        downloadBlob(buildPngFileName(title, index + 1, blobs.length), blobs[index], 'image/png');
-        // Petite pause : le navigateur accepte ainsi plusieurs téléchargements d'affilée.
-        // eslint-disable-next-line no-await-in-loop
-        if (index < blobs.length - 1) await pause(500);
+    let blobs;
+    try {
+        blobs = await renderReportPngParts({ bbCode, title }, {
+            onPlan: (total) => { if (total > 1) exportProgress.set({ title, phase: 'render', total, rendered: 0, parts: [] }); },
+        onPart: (done, total) => { if (total > 1) exportProgress.set((current) => (current ? { ...current, rendered: done } : current)); },
+        });
+    } catch (error) {
+        exportProgress.close(); // une génération ratée ne laisse pas la fenêtre ouverte
+        throw error;
     }
+    if (blobs.length === 1) {
+        downloadBlob(buildPngFileName(title, 1, 1), blobs[0], 'image/png');
+        return 1;
+    }
+    exportProgress.set({
+        title, phase: 'ready', total: blobs.length, rendered: blobs.length,
+        parts: blobs.map((blob, index) => ({ blob, name: buildPngFileName(title, index + 1, blobs.length), downloaded: false })),
+    });
     return blobs.length;
 }
 
@@ -317,11 +374,8 @@ export async function exportReportDocument(format, { bbCode, title, showNotifica
             if (showNotification) showNotification("Génération de l'image…", 'info-circle', 4000);
             if (format === 'png') {
                 const count = await downloadReportAsPng({ bbCode, title: safeTitle });
-                if (showNotification) {
-                    showNotification(count > 1
-                        ? `Rapport long : ${count} images PNG téléchargées (${Array.from({ length: count }, (_, i) => `${i + 1}/${count}`).join(', ')}), à joindre dans l'ordre sur Discord.`
-                        : 'Image PNG téléchargée : vous pouvez la joindre telle quelle sur Discord.', 'check-circle', count > 1 ? 9000 : undefined);
-                }
+                // Plusieurs images : la fenêtre de progression a pris le relais (un bouton de téléchargement par image).
+                if (count === 1 && showNotification) showNotification('Image PNG téléchargée : vous pouvez la joindre telle quelle sur Discord.', 'check-circle');
             } else {
                 await copyReportAsPng({ bbCode, title: safeTitle });
                 if (showNotification) showNotification('Image copiée : collez-la dans Discord avec Ctrl+V.', 'check-circle');

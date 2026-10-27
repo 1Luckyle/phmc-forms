@@ -197,8 +197,8 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         errors.push(`Les candidatures pour « ${position.nom || data.recruitmentPosition} » sont fermées.`);
     }
     // Entretien en cours : un renvoi remettrait la candidature à « envoyée ».
-    if (existing && ['entretien_programme', 'entretien_effectue'].includes(existing.statut)) {
-        errors.push("Cette candidature est en cours de traitement (entretien programmé ou effectué) : elle ne peut plus être renvoyée. Contactez le recrutement pour la modifier.");
+    if (existing && ['en_examen', 'entretien_programme', 'entretien_effectue'].includes(existing.statut)) {
+        errors.push("Cette candidature est en cours de traitement (examen, entretien programmé ou effectué) : elle ne peut plus être renvoyée. Contactez le recrutement depuis « Mon dossier candidat ».");
     }
 
     const need = (field, label) => { if (!filled(data[field])) errors.push(`${label} : champ obligatoire.`); };

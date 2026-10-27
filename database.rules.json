@@ -246,10 +246,13 @@
         ".read":  "auth != null",
         ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
       },
-      // Logs d'activité — lu & écrit par les employés connectés (cocher les cases)
+      // Logs d'activité — lu & écrit par les employés connectés (cocher les cases), sauf quand la carte du type est mise
+      // en pause par un admin (bingo/cards/{type}/paused) : seuls les admins peuvent alors y écrire.
       "logs": {
         ".read":  "auth != null",
-        ".write": "auth != null"
+        "$type": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('bingo').child('cards').child($type).child('paused').val() !== true)"
+        }
       },
       // Demandes de phrases — soumises par les connectés, lues par admin
       "phraseRequests": {
@@ -334,7 +337,7 @@
         "maj": { ".write": "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || auth.uid === data.parent().child('by/uid').val())" },
         "reponses": {
           "$replyId": {
-            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid)",
+            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && root.child('cctvRequests').child($requestId).child('statut').val() !== 'acceptee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'refusee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'cloturee'))",
             ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
           }
         }
@@ -467,7 +470,43 @@
       "$candidatUid": {
         ".read": "auth != null && auth.uid === $candidatUid",
         "$candidatureId": {
-          ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))"
+          ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))",
+          // Un candidat ne peut poser que SES statuts (brouillon, soumise, retirée, en pause) ou garder celui qui est déjà là :
+          // examen, entretien, acceptation et refus sont réservés aux recruteurs et aux admins.
+          ".validate": "(root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'soumise' || newData.child('statut').val() === 'retiree' || newData.child('statut').val() === 'en_pause' || (data.exists() && data.child('statut').val() === newData.child('statut').val())"
+        }
+      }
+    },
+
+    // ─── Échanges candidat ↔ recruteur ────────────────────────────────────────
+    // echangesCandidature/{candidatUid}/{candidatureId}/messages/{id} : un message (ajout seul). Possible tant que la
+    // candidature est « en cours d'examen », en entretien ou acceptée, et que le fil n'est pas fermé (ferme : refus de la
+    // candidature, ou signature du contrat). Le candidat n'écrit que sur SES candidatures ; les recruteurs et admins sur toutes.
+    // echangesMeta/{candidatUid}/{candidatureId} : dernier message (ts, staff, par), pour les pastilles « à répondre » sans lire les fils.
+    "echangesCandidature": {
+      "$candidatUid": {
+        ".read": "auth != null && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+        "$candidatureId": {
+          "messages": {
+            "$messageId": {
+              ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)) && !root.child('echangesCandidature').child($candidatUid).child($candidatureId).child('ferme').exists() && (root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'en_examen' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_programme' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_effectue' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'acceptee')",
+              ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
+            }
+          },
+          // Fermeture du fil : par un recruteur/admin, ou par le candidat lui-même (à la signature de son contrat) ; seuls eux la lèvent.
+          "ferme": {
+            ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $candidatUid && !data.exists()))"
+          }
+        }
+      }
+    },
+    "echangesMeta": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$candidatUid": {
+        ".read": "auth != null && auth.uid === $candidatUid",
+        "$candidatureId": {
+          ".write": "auth != null && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+          ".validate": "newData.hasChildren(['ts', 'staff'])"
         }
       }
     },
@@ -485,7 +524,9 @@
       // la Cloud Function getFleecaPaymentStatus (par payment_id). Avant, ".read": true exposait TOUS les
       // paiements (montants, nœuds patient, IDs) à n'importe qui sans compte.
       ".read":  "auth != null",
-      ".write": false
+      ".write": false,
+      // Nettoyage nocturne des demandes jamais réglées (fleecaGhostPaymentCleanup).
+      ".indexOn": ["status"]
     },
 
     // ─── Factures patient (rapports médicaux civils payants) ──────────────────
@@ -493,7 +534,8 @@
     // facturé (voir src/utils/patientInvoices.js). Lecture : le dossier d'un ID précis par tout connecté
     // (le civil ne lit que le sien côté client), le nœud entier par le personnel et les admins.
     // Écriture : n'importe quel connecté peut CRÉER une facture (jamais directement « paye ») ; seuls le
-    // personnel et les admins peuvent ensuite la modifier ou la supprimer, et personne côté client ne peut
+    // personnel et les admins peuvent ensuite la modifier ou la supprimer (un patient ne peut retirer que sa
+    // facture IMPAYÉE d'un rapport qu'il a créé lui-même, quand il supprime ce rapport), et personne côté client ne peut
     // passer une facture à « paye » ni la ramener en arrière : le règlement est fait par le serveur
     // (webhook Fleeca / getFleecaPaymentStatus), qui contourne ces règles.
     "facturesPatients": {
@@ -503,7 +545,7 @@
         // (ID patient de son profil). Empêche de lire les factures d'autrui par ID deviné.
         ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$factureId": {
-          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()))",
+          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists() || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))",
           ".validate": "newData.hasChildren(['montant', 'statut', 'creeLe']) && newData.child('montant').isNumber() && (newData.child('statut').val() === 'a_payer' || newData.child('statut').val() === 'paye' || newData.child('statut').val() === 'sans_paiement')"
         }
       }

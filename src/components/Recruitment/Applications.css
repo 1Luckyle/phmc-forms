@@ -1,0 +1,30 @@
+/* Candidatures : compléments de style au thème CCTV (cctv-*) partagé par le suivi du recrutement et « Mon dossier candidat ». */
+.rec-internal {
+    margin-left: 8px; padding: 0 8px; font-size: 0.7rem; font-weight: 700; color: #0d1117; background: #79c0ff; border-radius: 8px;
+    vertical-align: middle;
+}
+.rec-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 4px; }
+.rec-interview { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rec-datetime, .rec-select, .rec-textarea {
+    padding: 4px 10px; font-size: 0.85rem; color: #e6edf3; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+}
+.rec-datetime:focus, .rec-select:focus, .rec-textarea:focus { outline: none; border-color: #58a6ff; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.25); }
+.rec-datetime { color-scheme: dark; }
+
+.rec-refusal {
+    display: flex; flex-direction: column; gap: 8px; margin: 10px 0; padding: 12px;
+    background: rgba(248, 81, 73, 0.08); border: 1px solid rgba(248, 81, 73, 0.5); border-radius: 8px;
+}
+.rec-refusal-title { font-weight: 600; color: #ffa198; }
+.rec-select { width: 100%; }
+.rec-textarea { width: 100%; resize: vertical; }
+.rec-refusal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.rec-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 4px; padding-top: 10px; border-top: 1px solid #21262d; }
+.rec-expansion { margin-top: 10px; padding: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; }
+
+.rec-banner { margin: 10px 0; padding: 10px 12px; font-size: 0.88rem; border-radius: 8px; border: 1px solid; }
+.rec-banner.refused { color: #ffa198; background: rgba(248, 81, 73, 0.1); border-color: rgba(248, 81, 73, 0.5); }
+.rec-banner.accepted { color: #7ee787; background: rgba(63, 185, 80, 0.1); border-color: rgba(63, 185, 80, 0.5); }
+.rec-banner.info { color: #c9d1d9; background: rgba(56, 139, 253, 0.1); border-color: rgba(56, 139, 253, 0.45); }
+.rec-banner strong { color: #f0f6fc; }

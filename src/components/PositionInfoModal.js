@@ -128,9 +128,6 @@ const PositionInfoModal = ({
 
 **Aperçu :**
 ${positionData.presentation || '[Aucune description de poste n’est disponible.]'}
-
-Pour plus d'informations détaillées, veuillez consulter l'annonce officielle :
-[url]${positionData.lien || 'Aucune URL fournie'}[/url]
     `;
 
     // --- MODIFIED skillsQualificationsContent ---
@@ -143,9 +140,6 @@ Pour plus d'informations détaillées, veuillez consulter l'annonce officielle 
 
 **Exigences éducatives :**
 - ${positionData.diplome || '[Exigences éducatives non spécifiées]'}
-
-Pour plus d'informations détaillées, veuillez consulter l'annonce officielle :
-[url]${positionData.lien || 'Aucune URL fournie'}[/url]
     `;
     // --- END MODIFICATION ---
 

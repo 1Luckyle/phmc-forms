@@ -29,12 +29,12 @@ import {
     loadPatientDossier, listIndexedPatientIds, groupDossierEntries, canonicalPatientId,
     reportTitleOf, reportCreatorOf, comprehensiveSanitize,
 } from '../utils/patientRecords';
-import { InvoiceStatusBadge } from './PatientInvoicesPanel';
 import useReportInvoices from '../hooks/useReportInvoices';
-import { formatMoney } from '../utils/patientBilling';
+import { formatMoney, INVOICE_STATUS_COLORS } from '../utils/patientBilling';
+import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar } from './Reports/ReportParts';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
-import { downloadBbCodeAsHtml, combineBbCodes, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
@@ -50,7 +50,7 @@ const modalContentStyle = {
     backgroundColor: '#0d1117', color: '#c9d1d9', padding: '20px',
     borderRadius: '5px', width: '95%', maxWidth: '1300px', height: '88vh',
     maxHeight: '88vh', display: 'flex', flexDirection: 'column',
-    overflowY: 'hidden', position: 'relative', border: '1px solid #30363d',
+    overflow: 'hidden', position: 'relative', border: '1px solid #30363d',
 };
 
 const closeButtonStyle = {
@@ -76,38 +76,16 @@ const reactSelectStyles = {
     groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem' }),
 };
 
-const tableStyle = { width: '100%', borderCollapse: 'collapse' };
-const thStyle = {
-    backgroundColor: '#161b22', border: '1px solid #30363d', padding: '10px',
-    textAlign: 'left', fontWeight: '600', position: 'sticky', top: 0, zIndex: 1,
-};
-const tdStyle = {
-    border: '1px solid #30363d', padding: '8px 10px', verticalAlign: 'middle',
-};
-// La colonne d'actions n'est jamais tronquée.
-const actionsTdStyle = { ...tdStyle, whiteSpace: 'nowrap' };
-
-const chipStyle = (highlight) => ({
-    display: 'inline-block', margin: '1px 4px 1px 0', padding: '1px 8px', borderRadius: '10px',
-    fontSize: '0.78em', whiteSpace: 'nowrap',
-    backgroundColor: highlight ? '#1f6feb' : '#21262d', color: highlight ? '#fff' : '#c9d1d9',
-    border: `1px solid ${highlight ? '#1f6feb' : '#30363d'}`,
-});
-
-const visibilityBadge = (entry) => {
-    if (entry.ownerDeleted) {
-        return <span style={{ color: '#8b949e', fontSize: '0.85em' }}>Retiré par son créateur — conservé tant que des copies existent</span>;
-    }
-    if (entry.copiedFrom) {
-        return <span style={{ color: '#8b949e', fontSize: '0.85em' }}>Copie (jamais partageable)</span>;
-    }
+// Visibilité d'un rapport du dossier : libellé, couleur et aide.
+const visibilityInfo = (entry) => {
+    if (entry.ownerDeleted) return { text: 'Retiré par son créateur', color: '#8b949e', hint: 'Conservé tant que des copies existent' };
+    if (entry.copiedFrom) return { text: 'Copie', color: '#8b949e', hint: 'Une copie ne peut jamais être partagée' };
     const labels = {
-        owner: { text: 'Créé par le patient', color: '#3fb950' },
-        shared: { text: 'Partagé avec le patient', color: '#58a6ff' },
-        'staff-only': { text: 'Personnel uniquement', color: '#d29922' },
+        owner: { text: 'Créé par le patient', color: '#3fb950', hint: 'Rapport créé par le patient lui-même' },
+        shared: { text: 'Partagé avec le patient', color: '#58a6ff', hint: 'Le patient le voit dans son dossier' },
+        'staff-only': { text: 'Personnel uniquement', color: '#d29922', hint: "Non partagé : le patient ne le voit pas" },
     };
-    const info = labels[entry.visibility] || { text: entry.visibility || 'Inconnu', color: '#8b949e' };
-    return <span style={{ color: info.color, fontSize: '0.85em' }}>{info.text}</span>;
+    return labels[entry.visibility] || { text: entry.visibility || 'Inconnu', color: '#8b949e', hint: '' };
 };
 
 const PatientDossierModal = ({
@@ -129,6 +107,8 @@ const PatientDossierModal = ({
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState([]);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [searchText, setSearchText] = useState('');
     // État de paiement de chaque rapport payant (rechargé à chaque recherche / « Actualiser »).
     const [invoiceRefresh, setInvoiceRefresh] = useState(0);
     const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
@@ -204,6 +184,8 @@ const PatientDossierModal = ({
         setDeletedMark(null);
         loadDeletedMark(canonical).then(setDeletedMark);
         setSelectedKeys([]);
+        setStatusFilter('all');
+        setSearchText('');
         setInvoiceRefresh((n) => n + 1);
         try {
             const dossier = await loadPatientDossier(canonical);
@@ -248,6 +230,49 @@ const PatientDossierModal = ({
         };
     }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Filtres : recherche par titre + pastilles (mes rapports, créés par le patient, partagés, personnel uniquement, copies, à payer).
+    const matchesDossierFilter = (family, key) => {
+        const { root, copiers, myCopy, iAmHolder } = family;
+        switch (key) {
+            case 'mine': return iAmHolder || !!myCopy;
+            case 'owner': return !root.copiedFrom && root.visibility === 'owner';
+            case 'shared': return !root.copiedFrom && root.visibility === 'shared';
+            case 'staff': return !root.copiedFrom && root.visibility === 'staff-only';
+            case 'copies': return copiers.length > 0;
+            case 'unpaid': return invoiceOf(root)?.statutEffectif === 'a_payer';
+            default: return true;
+        }
+    };
+    const dossierSearched = useMemo(() => {
+        const needle = searchText.trim().toLowerCase();
+        return needle ? families.filter((family) => String(family.root.originalKey || '').toLowerCase().includes(needle)) : families;
+    }, [families, searchText]);
+    const visibleFamilies = useMemo(
+        () => dossierSearched.filter((family) => matchesDossierFilter(family, statusFilter)),
+        [dossierSearched, statusFilter, invoiceOf] // eslint-disable-line react-hooks/exhaustive-deps
+    );
+    const dossierChips = useMemo(() => {
+        const count = (key) => dossierSearched.filter((family) => matchesDossierFilter(family, key)).length;
+        return [
+            { key: 'all', label: 'Tous', count: dossierSearched.length },
+            { key: 'mine', label: 'Mes rapports', count: count('mine'), color: '#58a6ff' },
+            { key: 'owner', label: 'Créés par le patient', count: count('owner'), color: '#3fb950' },
+            { key: 'shared', label: 'Partagés', count: count('shared'), color: '#58a6ff' },
+            { key: 'staff', label: 'Personnel uniquement', count: count('staff'), color: '#d29922' },
+            { key: 'copies', label: 'Avec copies', count: count('copies'), color: '#a371f7' },
+            { key: 'unpaid', label: 'À payer', count: count('unpaid'), color: '#d29922' },
+        ];
+    }, [dossierSearched, invoiceOf]); // eslint-disable-line react-hooks/exhaustive-deps
+    const stats = useMemo(() => {
+        const unpaidFamilies = families.filter((family) => invoiceOf(family.root)?.statutEffectif === 'a_payer');
+        return {
+            mine: families.filter((family) => family.iAmHolder || family.myCopy).length,
+            copies: families.reduce((sum, family) => sum + family.copiers.length, 0),
+            unpaid: unpaidFamilies.length,
+            unpaidAmount: unpaidFamilies.reduce((sum, family) => sum + Number(invoiceOf(family.root)?.montant || 0), 0),
+        };
+    }, [families, invoiceOf]);
+
     const toDeletePayload = (entry) => ({
         key: entry.indexKey,
         reportPath: entry.reportPath,
@@ -281,7 +306,7 @@ const PatientDossierModal = ({
     );
     const toggleKey = (indexKey, checked) =>
         setSelectedKeys((prev) => (checked ? [...new Set([...prev, indexKey])] : prev.filter((k) => k !== indexKey)));
-    const allSelected = families.length > 0 && families.every((f) => selectedKeys.includes(f.root.indexKey));
+    const allSelected = visibleFamilies.length > 0 && visibleFamilies.every((f) => selectedKeys.includes(f.root.indexKey));
 
     const handleDeleteSelected = () => {
         const targets = selectedFamilies.map((f) => f.deleteTarget).filter(Boolean);
@@ -312,17 +337,17 @@ const PatientDossierModal = ({
     const handleExportSelectedDocument = (format) => {
         const roots = selectedFamilies.map((f) => f.root);
         const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
-        exportDocument(format, combineBbCodes(roots), title);
+        exportDocument(format, combineBbCodesForExport(roots), title);
     };
 
     const handleDownloadSelectedHtml = () => {
         const roots = selectedFamilies.map((f) => f.root);
         const title = roots.length === 1 ? (reportTitleOf(roots[0]) || roots[0].originalKey) : `${roots.length} rapports`;
-        downloadHtml(combineBbCodes(roots), title);
+        downloadHtml(combineBbCodesForExport(roots), title);
     };
 
     const renderCopyMenu = (entry) => (
-        <Dropdown className="d-inline-block me-2">
+        <Dropdown className="d-inline-block">
             <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
                 {entry.kind === 'ama' ? (
@@ -359,28 +384,128 @@ const PatientDossierModal = ({
             <div style={modalStyle} onClick={onHide}>
                 <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                     <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
-                    <p style={{ textAlign: 'center', marginTop: '40px' }}>
-                        Cet outil est réservé au personnel PHMC/DMEC connecté.
-                    </p>
+                    <p className="rpt-empty">Cet outil est réservé au personnel PHMC/DMEC connecté.</p>
                 </div>
             </div>,
             document.getElementById('modal-root')
         );
     }
 
+    const typeLabelOf = (entry) => (entry.kind === 'ama'
+        ? 'Formulaire AMA'
+        : (getFormDefinition(entry.bbCodeVersion)?.name || `Formulaire ${entry.bbCodeVersion}`));
+
+    // Une carte par rapport d'origine (ses copies sont résumées dessus).
+    const renderFamilyCard = (family) => {
+        const { root, copiers, myCopy, iAmHolder, deleteTarget, canShare, canCopy } = family;
+        const invoice = invoiceOf(root);
+        const visibility = visibilityInfo(root);
+        const title = reportTitleOf(root) || root.originalKey;
+        const copiersLabel = copiers.map((copier) => (copier.nodeKey === myNodeKey ? 'Vous' : copier.name)).join(', ');
+        return (
+            <ReportCard
+                key={root.indexKey}
+                color={invoice ? (INVOICE_STATUS_COLORS[invoice.statutEffectif] || visibility.color) : visibility.color}
+                selected={selectedKeys.includes(root.indexKey)}
+                selectId={`dossier-select-${root.indexKey}`}
+                onSelect={(checked) => toggleKey(root.indexKey, checked)}
+                dimmed={!!root.ownerDeleted}
+                title={root.originalKey}
+                titleHint={title}
+                meta={`${reportCreatorOf(root) || 'N/A'} · ${root.timestamp ? new Date(root.timestamp).toLocaleString() : 'N/A'} · ${typeLabelOf(root)}${copiers.length ? ` · Copies : ${copiersLabel}` : ''}`}
+                chips={(
+                    <>
+                        {iAmHolder && <Pill color="#58a6ff" title="Rapport que vous avez créé">Mon rapport</Pill>}
+                        {myCopy && !iAmHolder && <Pill color="#a371f7" title="Vous avez une copie de ce rapport">Ma copie</Pill>}
+                        {copiers.length > 0 && (
+                            <Pill color="#a371f7" title={`Médecins qui ont récupéré une copie : ${copiersLabel}`}>{copiers.length} copie{copiers.length > 1 ? 's' : ''}</Pill>
+                        )}
+                        <Pill color={visibility.color} title={visibility.hint}>{visibility.text}</Pill>
+                        <PaymentPill invoice={invoice} />
+                    </>
+                )}
+                actions={(
+                    <>
+                        {loadReport && isLoadable(root) && (
+                            <Button size="sm" variant="primary" onClick={() => handleLoad(root)}>
+                                <i className="fas fa-upload me-1"></i>Charger
+                            </Button>
+                        )}
+                        {renderCopyMenu(root)}
+                        {(root.bbCode || root.imageUrl) && (
+                            <ExpandToggle open={!!openRows[root.indexKey]} onClick={() => toggleRow(root.indexKey)} title="Déplier / replier l'aperçu du rapport" />
+                        )}
+                        {canShare && shareReportWithPatient && (
+                            <Button
+                                size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }}
+                                onClick={async () => {
+                                    await shareReportWithPatient(searchedPatientId, root.indexKey, root.patientNode);
+                                    handleSearch(searchedPatientId);
+                                }}
+                            >
+                                <i className="fas fa-share-nodes me-1"></i>Partager avec le patient
+                            </Button>
+                        )}
+                        {canCopy && copyReportToOwnAccount && (
+                            <Button
+                                size="sm" style={{ backgroundColor: '#316dca', border: 'none' }}
+                                title={`Enregistrer une copie dans les rapports de ${staffAuthorNameForCopy} (une seule copie par médecin)`}
+                                onClick={async () => {
+                                    await copyReportToOwnAccount(root.reportPath, staffAuthorNameForCopy, { patientID: root.patientID, patientNode: root.patientNode });
+                                    handleSearch(searchedPatientId);
+                                }}
+                            >
+                                <i className="fas fa-copy me-1"></i>Récupérer une copie
+                            </Button>
+                        )}
+                        {!staffAuthorNameForCopy && !iAmHolder && (
+                            <span className="rpt-note" title="Votre compte n'est lié à aucune fiche du personnel : impossible de rattacher une copie">Copie indisponible</span>
+                        )}
+                        {deleteReportsForUser && deleteTarget && (
+                            <Button
+                                size="sm" variant="outline-danger" className="ms-auto"
+                                title={myCopy
+                                    ? "Supprime uniquement VOTRE copie : le rapport et les copies des autres médecins restent dans le dossier"
+                                    : 'Supprime ce rapport (conservé dans le dossier tant que des médecins en ont une copie)'}
+                                onClick={() => handleDelete([deleteTarget.entry], `${deleteTarget.label} : « ${root.originalKey} » ?`)}
+                            >
+                                <i className="fas fa-trash me-1"></i>{deleteTarget.label}
+                            </Button>
+                        )}
+                    </>
+                )}
+                expansion={openRows[root.indexKey] ? (
+                    <ReportExpansion
+                        tab={openRows[root.indexKey]}
+                        onTabChange={(tab) => setRowTab(root.indexKey, tab)}
+                        bbCode={root.bbCode}
+                        imageUrl={root.imageUrl}
+                        title={title}
+                    />
+                ) : null}
+            />
+        );
+    };
+
+    const patientName = selectedPatientOption && !selectedPatientOption.__isNew__
+        && canonicalPatientId(selectedPatientOption.value) === searchedPatientId
+        ? selectedPatientOption.label.replace(/\s*\([^)]*\)\s*(—.*)?$/, '').trim() : '';
+    const hasResults = !!searchedPatientId && !isLoading && families.length > 0;
+
     return ReactDOM.createPortal(
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 {forumNoticeModal}
-                <h5 style={{ marginBottom: '10px' }}>Dossier Patient</h5>
-                <p style={{ color: '#8b949e', fontSize: '0.9em', marginBottom: '10px' }}>
-                    Recherchez tous les rapports d'un patient avec ou sans compte : choisissez-le dans la liste ou tapez son ID
-                    (<strong>2752</strong> ou <strong>PHMC-2752</strong>). <strong>Une ligne = un rapport</strong> : les copies des médecins
-                    sont regroupées sur la ligne du rapport d'origine (colonne « Copies »).
-                </p>
+                <div className="rpt-modal-head">
+                    <h5><i className="fas fa-folder-tree me-2"></i>Dossier Patient</h5>
+                    <span className="rpt-sub">
+                        Tous les rapports d'un patient, avec ou sans compte : choisissez-le dans la liste ou tapez son ID (<strong>2752</strong> ou <strong>PHMC-2752</strong>).
+                        Une carte = un rapport ; les copies des médecins sont résumées sur le rapport d'origine.
+                    </span>
+                </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="d-flex flex-wrap align-items-center gap-2 mb-2" style={{ flexShrink: 0 }}>
                     <CreatableSelect
                         options={patientOptions}
                         value={selectedPatientOption}
@@ -396,8 +521,8 @@ const PatientDossierModal = ({
                         isValidNewOption={(typed) => typed.trim().length >= 3}
                         styles={reactSelectStyles}
                     />
-                    <Button onClick={() => handleSearch()} disabled={isLoading || !selectedPatientOption} variant="primary">
-                        {isLoading ? 'Recherche...' : 'Actualiser'}
+                    <Button onClick={() => handleSearch()} disabled={isLoading || !selectedPatientOption} variant="primary" size="sm">
+                        <i className="fas fa-rotate me-1"></i>{isLoading ? 'Recherche…' : 'Actualiser'}
                     </Button>
                     {/* Mode debug : ouvre le dossier du patient de test utilisé par les
                         gabarits « Remplir (debug) » (ID PHMC-99999). */}
@@ -411,188 +536,83 @@ const PatientDossierModal = ({
                     />
                 </div>
 
-                <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                <div className="rpt-body">
                     {searchedPatientId && deletedMark && (
-                        <div style={{ margin: '0 0 10px', padding: '8px 12px', color: '#f0f6fc', background: 'rgba(210, 153, 34, 0.15)', border: '1px solid rgba(210, 153, 34, 0.6)', borderRadius: '6px', fontSize: '0.9rem' }}>
-                            <i className="fas fa-user-slash" style={{ marginRight: '8px', color: '#d29922' }}></i>
+                        <div className="rpt-banner warn">
+                            <i className="fas fa-user-slash me-2" style={{ color: '#d29922' }}></i>
                             {deletedMark.type === 'personnel' ? 'Ancien membre du personnel' : 'Compte supprimé'}
                             {deletedMark.nom ? ` : ${deletedMark.nom}` : ''}{deletedMark.role ? ` (${deletedMark.role})` : ''}
                             {' — '}n'est plus lié à un compte actif depuis le {new Date(deletedMark.supprimeLe).toLocaleDateString('fr-FR')}. Ses rapports et son dossier restent archivés.
                         </div>
                     )}
-                    {searchedPatientId && !isLoading && families.length > 0 && (
-                        <table style={tableStyle}>
-                            <thead>
-                                <tr>
-                                    <th style={{ ...thStyle, width: '40px', textAlign: 'center' }}>
-                                        <Form.Check
-                                            type="checkbox"
-                                            id="dossier-select-all"
-                                            checked={allSelected}
-                                            onChange={(e) => setSelectedKeys(e.target.checked ? families.map((f) => f.root.indexKey) : [])}
-                                            title="Tout sélectionner / désélectionner"
-                                        />
-                                    </th>
-                                    <th style={thStyle}>Titre du rapport</th>
-                                    <th style={thStyle}>Créé par</th>
-                                    <th style={thStyle} title="Médecins qui ont récupéré une copie de ce rapport">Copies</th>
-                                    <th style={thStyle}>Date</th>
-                                    <th style={thStyle}>Visibilité</th>
-                                    <th style={thStyle}>Paiement</th>
-                                    <th style={thStyle}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {families.map((family) => {
-                                    const { root, copiers, myCopy, iAmHolder, deleteTarget, canShare, canCopy } = family;
-                                    const rowStyle = {
-                                        ...(selectedKeys.includes(root.indexKey) ? { backgroundColor: '#161b22' } : {}),
-                                        ...(root.ownerDeleted ? { opacity: 0.65 } : {}),
-                                    };
-                                    return (
-                                        <React.Fragment key={root.indexKey}>
-                                        <tr style={rowStyle}>
-                                            <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                                <Form.Check
-                                                    type="checkbox"
-                                                    id={`dossier-select-${root.indexKey}`}
-                                                    checked={selectedKeys.includes(root.indexKey)}
-                                                    onChange={(e) => toggleKey(root.indexKey, e.target.checked)}
-                                                />
-                                            </td>
-                                            <td style={{ ...tdStyle, minWidth: '220px', overflowWrap: 'anywhere' }} title={reportTitleOf(root) || root.originalKey}>
-                                                {root.originalKey}
-                                                {iAmHolder && <span style={{ ...chipStyle(true), marginLeft: '6px' }}>Mon rapport</span>}
-                                            </td>
-                                            <td style={tdStyle}>{reportCreatorOf(root) || 'N/A'}</td>
-                                            <td style={tdStyle}>
-                                                {copiers.length === 0 ? (
-                                                    <span style={{ color: '#9aa7b4' }}>—</span>
-                                                ) : copiers.map((copier) => (
-                                                    <span key={copier.nodeKey} style={chipStyle(copier.nodeKey === myNodeKey)}
-                                                        title={copier.nodeKey === myNodeKey ? 'Vous avez une copie de ce rapport' : `${copier.name} a une copie de ce rapport`}>
-                                                        {copier.nodeKey === myNodeKey ? 'Vous' : copier.name}
-                                                    </span>
-                                                ))}
-                                            </td>
-                                            <td style={tdStyle}>{root.timestamp ? new Date(root.timestamp).toLocaleString() : 'N/A'}</td>
-                                            <td style={tdStyle}>{visibilityBadge(root)}</td>
-                                            <td style={tdStyle}>
-                                                {(() => {
-                                                    const invoice = invoiceOf(root);
-                                                    if (!invoice) return <span style={{ color: '#9aa7b4' }}>—</span>;
-                                                    return (
-                                                        <>
-                                                            <InvoiceStatusBadge status={invoice.statutEffectif} />
-                                                            {invoice.statutEffectif !== 'sans_paiement' && (
-                                                                <span style={{ marginLeft: '6px', fontSize: '0.8em', color: '#8b949e' }}>{formatMoney(invoice.montant)}</span>
-                                                            )}
-                                                        </>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td style={actionsTdStyle}>
-                                                {(root.bbCode || root.imageUrl) && (
-                                                    <ExpandToggle open={!!openRows[root.indexKey]} onClick={() => toggleRow(root.indexKey)} title="Déplier / replier l'aperçu du rapport" />
-                                                )}
-                                                {loadReport && isLoadable(root) && (
-                                                    <Button size="sm" variant="primary" className="me-2" onClick={() => handleLoad(root)}>
-                                                        Charger
-                                                    </Button>
-                                                )}
-                                                {renderCopyMenu(root)}
-                                                {canShare && shareReportWithPatient && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="me-2"
-                                                        style={{ backgroundColor: '#8957e5', border: 'none' }}
-                                                        onClick={async () => {
-                                                            await shareReportWithPatient(searchedPatientId, root.indexKey, root.patientNode);
-                                                            handleSearch(searchedPatientId);
-                                                        }}
-                                                    >
-                                                        Partager avec le patient
-                                                    </Button>
-                                                )}
-                                                {canCopy && copyReportToOwnAccount && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="me-2"
-                                                        style={{ backgroundColor: '#316dca', border: 'none' }}
-                                                        title={`Enregistrer une copie dans les rapports de ${staffAuthorNameForCopy} (une seule copie par médecin)`}
-                                                        onClick={async () => {
-                                                            await copyReportToOwnAccount(root.reportPath, staffAuthorNameForCopy, { patientID: root.patientID, patientNode: root.patientNode });
-                                                            handleSearch(searchedPatientId);
-                                                        }}
-                                                    >
-                                                        Récupérer une copie
-                                                    </Button>
-                                                )}
-                                                {!staffAuthorNameForCopy && !iAmHolder && (
-                                                    <span style={{ fontSize: '0.75em', color: '#8b949e' }} title="Votre compte n'est lié à aucune fiche du personnel : impossible de rattacher une copie">
-                                                        Copie indisponible
-                                                    </span>
-                                                )}
-                                                {deleteReportsForUser && deleteTarget && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="danger"
-                                                        title={myCopy
-                                                            ? "Supprime uniquement VOTRE copie : le rapport et les copies des autres médecins restent dans le dossier"
-                                                            : 'Supprime ce rapport (conservé dans le dossier tant que des médecins en ont une copie)'}
-                                                        onClick={() => handleDelete([deleteTarget.entry], `${deleteTarget.label} : « ${root.originalKey} » ?`)}
-                                                    >
-                                                        {deleteTarget.label}
-                                                    </Button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                        {openRows[root.indexKey] && (
-                                            <tr>
-                                                <td colSpan={8} style={{ border: '1px solid #30363d', padding: '10px', backgroundColor: '#0d1117' }}>
-                                                    <ReportExpansion
-                                                        tab={openRows[root.indexKey]}
-                                                        onTabChange={(tab) => setRowTab(root.indexKey, tab)}
-                                                        bbCode={root.bbCode}
-                                                        imageUrl={root.imageUrl}
-                                                        title={reportTitleOf(root) || root.originalKey}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        )}
-                                        </React.Fragment>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+
+                    {isLoading && <p className="rpt-muted">Recherche du dossier…</p>}
+
+                    {hasResults && (
+                        <>
+                            <div className="rpt-summary">
+                                <span className="rpt-summary-main">
+                                    <strong>{patientName || searchedPatientId}</strong>
+                                    <small>{patientName ? searchedPatientId : 'Patient'}</small>
+                                </span>
+                                <span className="rpt-stats">
+                                    <span className="rpt-stat"><b>{families.length}</b><span>Rapports</span></span>
+                                    <span className="rpt-stat"><b>{stats.mine}</b><span>À moi</span></span>
+                                    <span className="rpt-stat"><b>{stats.copies}</b><span>Copies</span></span>
+                                    <span className={`rpt-stat${stats.unpaid > 0 ? ' warn' : ''}`}><b>{stats.unpaid}</b><span>À payer{stats.unpaid > 0 ? ` (${formatMoney(stats.unpaidAmount)})` : ''}</span></span>
+                                </span>
+                            </div>
+
+                            <div className="rpt-toolbar">
+                                <div className="rpt-toolbar-row">
+                                    <input
+                                        type="search" className="rpt-search" placeholder="Rechercher par titre…"
+                                        value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                                    />
+                                </div>
+                                <FilterChips items={dossierChips} value={statusFilter} onChange={setStatusFilter} label="Filtrer le dossier" />
+                            </div>
+
+                            {visibleFamilies.length > 0
+                                ? <div className="rpt-list">{visibleFamilies.map(renderFamilyCard)}</div>
+                                : <p className="rpt-empty">Aucun rapport ne correspond à ces filtres.</p>}
+                        </>
                     )}
+
                     {searchedPatientId && !isLoading && families.length === 0 && (
-                        <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                            Aucun rapport trouvé pour l'ID patient "{searchedPatientId}".
+                        <p className="rpt-empty">
+                            Aucun rapport trouvé pour l'ID patient « {searchedPatientId} ».
                             {isAdmin && " Si des rapports devraient exister, lancez « Réindexer les dossiers patients » depuis l'onglet Utilisateurs du panneau admin."}
                         </p>
                     )}
+                    {!searchedPatientId && !isLoading && (
+                        <p className="rpt-empty">Choisissez un patient ci-dessus pour afficher son dossier.</p>
+                    )}
                 </div>
 
-                {families.length > 0 && !isLoading && (
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #30363d', flexShrink: 0, flexWrap: 'wrap' }}>
+                {hasResults && (
+                    <BulkBar count={selectedFamilies.length} onClear={() => setSelectedKeys([])}>
+                        <Form.Check
+                            type="checkbox" id="dossier-select-all" label="Tout" className="align-self-center mb-0 me-1"
+                            checked={allSelected}
+                            onChange={(e) => setSelectedKeys(e.target.checked ? visibleFamilies.map((f) => f.root.indexKey) : [])}
+                            title="Tout sélectionner / désélectionner (rapports affichés)"
+                        />
                         {deleteReportsForUser && (
-                            <Button variant="danger" disabled={selectedFamilies.length === 0} onClick={handleDeleteSelected}
+                            <Button variant="outline-danger" size="sm" disabled={selectedFamilies.length === 0} onClick={handleDeleteSelected}
                                 title="Supprime vos copies / vos rapports parmi la sélection (les autres sont ignorés)">
-                                Supprimer la sélection ({selectedFamilies.length})
+                                <i className="fas fa-trash me-1"></i>Supprimer
                             </Button>
                         )}
                         <Dropdown drop="up">
-                            <Dropdown.Toggle variant="secondary" disabled={selectedFamilies.length === 0}>
-                                Copier la sélection ({selectedFamilies.length})
-                            </Dropdown.Toggle>
+                            <Dropdown.Toggle variant="secondary" size="sm" disabled={selectedFamilies.length === 0}>Copier / exporter</Dropdown.Toggle>
                             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
                                 {bbcodeEnabled && (
-<Dropdown.Item onClick={() => copyText(
-                                    selectedFamilies.map((f) => f.root.bbCode).filter(Boolean).join('\n\n'),
-                                    'BBCode copié !', 'Aucun BBCode trouvé dans la sélection.'
-                                )} title={COPY_BBCODE_HINT}>Copier le BBCode sélectionné<ForumHint kind="bbcode" /></Dropdown.Item>
-)}
+                                    <Dropdown.Item onClick={() => copyText(
+                                        selectedFamilies.map((f) => f.root.bbCode).filter(Boolean).join('\n\n'),
+                                        'BBCode copié !', 'Aucun BBCode trouvé dans la sélection.'
+                                    )} title={COPY_BBCODE_HINT}>Copier le BBCode sélectionné<ForumHint kind="bbcode" /></Dropdown.Item>
+                                )}
                                 <Dropdown.Item onClick={handleDownloadSelectedHtml} title={DOWNLOAD_HTML_HINT}>
                                     Télécharger le HTML sélectionné<ForumHint kind="html" />
                                 </Dropdown.Item>
@@ -606,15 +626,15 @@ const PatientDossierModal = ({
                         </Dropdown>
                         {loadReport && (
                             <Button
-                                variant="success"
+                                variant="success" size="sm"
                                 disabled={selectedFamilies.length !== 1}
                                 title={selectedFamilies.length > 1 ? 'Un seul rapport peut être chargé à la fois' : ''}
                                 onClick={handleLoadSelected}
                             >
-                                Charger le rapport sélectionné ({selectedFamilies.length})
+                                <i className="fas fa-upload me-1"></i>Charger le rapport sélectionné
                             </Button>
                         )}
-                    </div>
+                    </BulkBar>
                 )}
             </div>
         </div>,

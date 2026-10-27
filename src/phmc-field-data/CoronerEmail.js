@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useData } from '../contexts/DataContext';
-import { Form, Button } from 'react-bootstrap';
+import { Form, Button, Alert } from 'react-bootstrap';
 import Select from 'react-select';
 import { getFormDefinition } from '../formDefinitions'; // Import getFormDefinition
 import { createFleecaPayment } from '../utils/fleecaPayment';
 import { getPrice, usePrices } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
+import {
+    prepareCoronerReport, mergeNameList, sameReport, CORONER_REPORT_VERSIONS, CORONER_REPORT_LABELS,
+} from '../utils/coronerAttachments';
 
 const customSelectStyles = {
     control: (base, state) => ({
@@ -92,8 +95,10 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
     addReport,
     removeReport,
     handleReportChange,
-    toggleSavedReports 
+    toggleSavedReports,
+    showNotification
 }) => {
+    const notify = showNotification || (() => {});
     usePrices(); // se redessine si un admin change les tarifs
 
     // Get agencyDataStore from context
@@ -130,6 +135,58 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         }
     };
 
+
+    // Vérifie qu'un contenu est bien un rapport accepté (rapport de décès ou de catastrophe mortelle, d'après ses titres), pas déjà
+    // joint, puis l'ajoute avec le nom du défunt (IC et HRP). `slot` : 'auto' (premier emplacement libre), 'main' ou l'index d'un
+    // rapport supplémentaire. Retourne true si le rapport a été joint.
+    const acceptReport = (bbCode, slot = 'auto') => {
+        const result = prepareCoronerReport(bbCode);
+        if (!result.ok) {
+            notify(result.reason, 'warning', 8000);
+            return false;
+        }
+        const attached = [formData.deathReport, ...(formData.additionalReports || [])];
+        if (attached.some((report) => sameReport(report, result.bbCode))) {
+            notify("Ce rapport est déjà joint à l'e-mail.", 'warning');
+            return false;
+        }
+        setFormData((prev) => {
+            const next = {
+                ...prev,
+                decedentName: mergeNameList(prev.decedentName, result.decedents.map((decedent) => decedent.name)),
+                decedentOOC: mergeNameList(prev.decedentOOC, result.decedents.map((decedent) => decedent.ooc)),
+            };
+            if (result.kind === 'massFatality') next.paperworkType = 'Mass Fatality';
+            if (slot === 'main' || (slot === 'auto' && !String(prev.deathReport || '').trim())) {
+                next.deathReport = result.bbCode;
+            } else if (slot === 'auto') {
+                next.additionalReports = [...(prev.additionalReports || []), result.bbCode];
+            } else {
+                const list = [...(prev.additionalReports || [])];
+                list[slot] = result.bbCode;
+                next.additionalReports = list;
+            }
+            return next;
+        });
+        notify(`${result.kindLabel} reconnu et joint à l'e-mail (noms du défunt ajoutés).`, 'check-circle', 6000);
+        return true;
+    };
+
+    // Un rapport ne se tape pas à la main : on le colle (vérifié) ou on le vide.
+    const handleMainReportPaste = (event) => {
+        event.preventDefault();
+        acceptReport(event.clipboardData.getData('text'), 'main');
+    };
+    const handleMainReportChange = (event) => {
+        if (!event.target.value.trim()) setFormData((prev) => ({ ...prev, deathReport: '' }));
+    };
+    const handleExtraReportPaste = (index) => (event) => {
+        event.preventDefault();
+        acceptReport(event.clipboardData.getData('text'), index);
+    };
+    const handleExtraReportChange = (index) => (event) => {
+        if (!event.target.value.trim()) handleReportChange(index, '');
+    };
 
     return (
         <>
@@ -258,21 +315,31 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                     </div>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Coller le BBCode du formulaire:</Form.Label>
+                                    <Form.Label>Rapport joint (rapport de décès ou de catastrophe mortelle):</Form.Label>
+                                    <Alert variant="info" className="py-2" style={{ fontSize: '0.85em' }}>
+                                        <strong>Rapports acceptés :</strong> {CORONER_REPORT_LABELS.join(' · ')}. Le rapport est vérifié d'après ses titres puis joint
+                                        <strong> en entier</strong> à l'e-mail, avec le nom du défunt (IC et HRP). Tout autre contenu est refusé et le texte ne se saisit pas à la main.
+                                    </Alert>
                                     <Form.Control
                                         as="textarea"
                                         name="deathReport"
-                                        value={formData.deathReport}
-                                        onChange={handleChange}
-                                        placeholder="Joindre la paperasse (Rapport de décès, Fatalité de masse)"
+                                        value={formData.deathReport || ''}
+                                        onChange={handleMainReportChange}
+                                        onPaste={handleMainReportPaste}
+                                        placeholder="Collez ici le BBCode d'un rapport accepté (ou utilisez « Joindre un rapport ») : il sera vérifié avant d'être joint."
                                         rows="2"
                                         className={`form-control ${!formData.deathReport ? 'is-invalid' : ''}`}
-
                                     />
+                                    {formData.deathReport ? (
+                                        <div className="small text-success mt-1">
+                                            <i className="fas fa-check-circle"></i> Rapport vérifié et joint.{' '}
+                                            <Button variant="link" size="sm" className="p-0 align-baseline"
+                                                onClick={() => setFormData((prev) => ({ ...prev, deathReport: '' }))}>
+                                                Retirer le rapport joint
+                                            </Button>
+                                        </div>
+                                    ) : null}
                                 </Form.Group>
-                                <span className="helper-text">
-                                Télécharger l'image. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
-                                </span>
             <Form.Group className="mb-3">
                 <Form.Label>Rapports supplémentaires:</Form.Label>
                 <div className="reports-container">
@@ -281,8 +348,9 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                             <Form.Control
                                 as="textarea"
                                 value={report}
-                                onChange={(e) => handleReportChange(index, e.target.value)}
-                                placeholder="Joindre le rapport de coroner supplémentaire"
+                                onChange={handleExtraReportChange(index)}
+                                onPaste={handleExtraReportPaste(index)}
+                                placeholder="Collez ici le BBCode d'un rapport accepté supplémentaire (il sera vérifié)"
                                 rows="4"
                                 className={`form-control ${!report ? 'is-invalid' : ''}`}
                             />
@@ -307,20 +375,17 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                         <Button
                             variant="info"
                             onClick={() => toggleSavedReports([1, 11], 'Coroner', (reportData) => {
-                                console.log('Selected report data:', reportData);
-                                // Update the deathReport field with the selected report's BBCode
-                                if (reportData && reportData.bbCode) {
-                                    handleChange({
-                                        target: {
-                                            name: 'deathReport',
-                                            value: reportData.bbCode
-                                        }
-                                    });
+                                // Exécuté quand un rapport est choisi dans « Rapports enregistrés » (un seul à la fois).
+                                // Retourner false = rapport refusé (rien n'est joint).
+                                if (!reportData?.bbCode || !CORONER_REPORT_VERSIONS.includes(Number(reportData.bbCodeVersion))) {
+                                    notify(`Ce rapport n'est pas accepté pour un Email DMEC. Rapports acceptés : ${CORONER_REPORT_LABELS.join(', ')}.`, 'warning', 8000);
+                                    return false;
                                 }
+                                return acceptReport(reportData.bbCode, 'auto');
                             })}
                             className="email-button"
                         >
-                            <i className="fas fa-save"></i> Joindre la paperasse (Rapports de décès, Fatalité de masse)
+                            <i className="fas fa-paperclip"></i> Joindre un rapport (décès, catastrophe mortelle)
                         </Button>
 
                     </div>

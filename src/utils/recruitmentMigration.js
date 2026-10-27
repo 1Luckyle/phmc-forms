@@ -185,6 +185,29 @@ export async function applyRecruitmentMigration(plan) {
     return { written: Object.keys(writes).length };
 }
 
+// ───────────────────────────── Migration automatique (une seule fois) ─────────────────────────────
+// Lancée à la première ouverture du panneau admin : copie vers le schéma français, vérifie qu'il ne reste rien à migrer, SAUVEGARDE
+// les anciens nœuds (migrationBackups) puis les supprime. Aucun texte modifié à la main n'est écrasé (voir planRecruitmentMigration :
+// seuls les textes restés identiques à l'original sont traduits). L'état est gardé dans adminSettings/migrationRecrutement.
+// Retourne null si c'était déjà fait ; sinon { copied, removed, backupId, textsToReview }. Ne lève pas : échec = on réessaiera.
+export async function runRecruitmentMigrationOnce(by = null) {
+    try {
+        const flagRef = ref(database, 'adminSettings/migrationRecrutement');
+        const flag = await get(flagRef);
+        if (flag.exists() && flag.val()?.termine) return null;
+
+        const plan = await planRecruitmentMigration({ translate: true });
+        const summary = summarizePlan(plan);
+        const copied = summary.total > 0 ? (await applyRecruitmentMigration(plan)).written : 0;
+        const cleaned = await cleanupLegacyRecruitment(); // refuse s'il reste quelque chose à migrer
+        await set(flagRef, { termine: true, par: by, le: Date.now(), ecritures: copied, sauvegarde: cleaned.backupId });
+        return { copied, removed: cleaned.removed, backupId: cleaned.backupId, textsToReview: summary.toTranslate };
+    } catch (error) {
+        console.warn('Migration du recrutement : non terminée, nouvel essai à la prochaine ouverture.', error?.message || error);
+        return null;
+    }
+}
+
 // ───────────────────────────── Nettoyage (après vérification) ─────────────────────────────
 // Sauvegarde les anciens nœuds puis les supprime. Refuse s'il reste quelque chose à migrer.
 export async function cleanupLegacyRecruitment() {

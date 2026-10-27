@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import {
-    CCTV_STATUSES, CCTV_OPEN_STATUSES, subscribeToAllCctvRequests, subscribeToMyCctvRequests, addCctvReply, setCctvStatus, repliesOf,
+    CCTV_STATUSES, CCTV_OPEN_STATUSES, cctvStatusInfo, subscribeToAllCctvRequests, subscribeToMyCctvRequests, addCctvReply, setCctvStatus, repliesOf,
 } from '../../utils/cctvRequests';
 import './CctvRequests.css';
 
@@ -26,7 +26,7 @@ const QUICK_REPLIES = [
 ];
 
 const StatusChip = ({ status }) => {
-    const info = CCTV_STATUSES[status] || CCTV_STATUSES.nouvelle;
+    const info = cctvStatusInfo(status);
     return <span className="cctv-chip" style={{ '--c': info.color }}><span className="cctv-dot"></span>{info.label}</span>;
 };
 
@@ -37,7 +37,10 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const replies = repliesOf(request);
-    const closed = request.statut === 'cloturee';
+    const closed = request.statut === 'cloturee'; // ancien statut : ces dossiers restent en lecture seule
+    // Décision rendue (acceptée / refusée) : le demandeur ne peut plus écrire sur cette demande ; l'administration, si.
+    const decided = closed || ['acceptee', 'refusee'].includes(request.statut);
+    const canWrite = !closed && (manage || !decided);
     const lastReply = replies[replies.length - 1];
     const awaitingYou = manage ? (request.statut === 'nouvelle' || (lastReply && !lastReply.par?.staff && CCTV_OPEN_STATUSES.includes(request.statut))) : (lastReply?.par?.staff);
 
@@ -67,7 +70,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
     };
 
     return (
-        <div className={`cctv-card ${open ? 'open' : ''}`} style={{ '--c': (CCTV_STATUSES[request.statut] || CCTV_STATUSES.nouvelle).color }}>
+        <div className={`cctv-card ${open ? 'open' : ''}`} style={{ '--c': cctvStatusInfo(request.statut).color }}>
             <button type="button" className="cctv-card-head" onClick={() => setOpen(!open)}>
                 <span className="cctv-card-main">
                     <strong>{request.titre}</strong>
@@ -119,7 +122,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                         </div>
                     )}
 
-                    {!closed ? (
+                    {canWrite ? (
                         <form className="cctv-reply" onSubmit={send}>
                             <textarea
                                 rows={3} value={text} onChange={(e) => setText(e.target.value)} disabled={busy}
@@ -128,7 +131,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                             <div className="cctv-reply-actions">
                                 {manage && (
                                     <select value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy} aria-label="Statut après la réponse">
-                                        <option value="">Garder le statut « {CCTV_STATUSES[request.statut]?.label} »</option>
+                                        <option value="">Garder le statut « {cctvStatusInfo(request.statut).label} »</option>
                                         {Object.entries(CCTV_STATUSES).filter(([key]) => key !== request.statut && key !== 'nouvelle').map(([key, info]) => (
                                             <option key={key} value={key}>Passer en « {info.label} »</option>
                                         ))}
@@ -139,7 +142,12 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                                 </Button>
                             </div>
                         </form>
-                    ) : <p className="cctv-muted"><i className="fas fa-lock me-1"></i>Dossier clôturé.</p>}
+                    ) : (
+                        <p className="cctv-muted">
+                            <i className="fas fa-lock me-1"></i>
+                            {closed ? 'Dossier clôturé.' : `Demande ${request.statut === 'acceptee' ? 'acceptée' : 'refusée'} : vous ne pouvez plus y envoyer de message. Pour une autre demande, utilisez « Nouvelle demande ».`}
+                        </p>
+                    )}
 
                     {manage && (
                         <div className="cctv-status-row">

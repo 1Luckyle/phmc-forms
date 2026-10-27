@@ -36,6 +36,8 @@ const generateBasicPatientFile = (formData) => {
             paymentSection = 'Je suis exempté de payer ce service conformément aux politiques du PHMC.';
         } else if (paymentProofPhotos) {
             paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
+        } else {
+            paymentSection = 'Aucune preuve de paiement fournie';
         }
 
     let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]

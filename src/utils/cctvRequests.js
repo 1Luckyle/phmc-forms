@@ -16,8 +16,13 @@ export const CCTV_STATUSES = {
     en_cours:  { label: 'En cours',        color: '#e3b341', hint: "En cours d'examen." },
     acceptee:  { label: 'Acceptée',        color: '#3fb950', hint: 'Les images seront transmises.' },
     refusee:   { label: 'Refusée',         color: '#ff7b72', hint: 'La demande ne peut pas aboutir.' },
-    cloturee:  { label: 'Clôturée',        color: '#8b949e', hint: 'Dossier terminé.' },
 };
+// Ancien statut « Clôturée » (retiré : une demande est acceptée ou refusée) : seulement pour afficher correctement les demandes
+// qui l'avaient déjà, sans le proposer.
+export const CCTV_LEGACY_STATUSES = {
+    cloturee: { label: 'Clôturée', color: '#8b949e', hint: 'Dossier terminé.' },
+};
+export const cctvStatusInfo = (status) => CCTV_STATUSES[status] || CCTV_LEGACY_STATUSES[status] || CCTV_STATUSES.nouvelle;
 export const CCTV_OPEN_STATUSES = ['nouvelle', 'en_cours'];
 
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
@@ -90,6 +95,7 @@ export const submitCctvRequest = async ({ title, fields, discord, patientID, sum
 export const addCctvReply = async ({ request, text, staff, status, authorName, authorRole }) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
+    if (!staff && ['acceptee', 'refusee', 'cloturee'].includes(request.statut)) throw new Error('Cette demande est traitée : vous ne pouvez plus y envoyer de message.');
     const replyId = push(ref(database, `cctvRequests/${request.id}/reponses`)).key;
     const now = Date.now();
     const reply = {

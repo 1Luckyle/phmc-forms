@@ -15,7 +15,6 @@ import UserStats from '../UserStats';
 import EmailChangeFlow from '../../EmailChangeFlow';
 import AdminReportsTools from '../AdminReportsTools';
 import RankMigrationPanel from './RankMigrationPanel';
-import RecruitmentMigrationPanel from './RecruitmentMigrationPanel';
 import { sendAdminActionWebhook } from '../adminUtils';
 import {
     StaffEditDialog, RemoveStaffDialog, ConvertToCivilDialog, ConvertToStaffDialog,
@@ -544,8 +543,6 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                         {tab === 'tools' && (
                             <>
                                 <RankMigrationPanel adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
-                                <hr />
-                                <RecruitmentMigrationPanel adminEmail={adminEmail} showNotification={showNotification} />
                                 <hr />
                                 <div className="d-flex gap-2 flex-wrap mb-2">
                                     <Button variant="outline-secondary" onClick={onOpenMigrationTools}>

@@ -91,6 +91,7 @@ const BINGO_LINE_NAMES = [
 // MODIFIED: Add isAdmin, sendBingoWebhook, and sendPhraseRequestWebhook props
 const EmsBingoModal = ({ show, onHide, phmcGroupedOptions, coronerGroupedOptions, currentPhmcEmployee, showNotification, setShowEmployeeModal, isAdmin, sendBingoWebhook, sendPhraseRequestWebhook }) => {
     const [phrases, setPhrases] = useState([]);
+    const [isCardPaused, setIsCardPaused] = useState(false); // carte mise en pause par un admin : consultation seulement
     const [masterPhraseList, setMasterPhraseList] = useState([]);
     const [isLoadingPhrases, setIsLoadingPhrases] = useState(true);
     const [markedSquaresLocal, setMarkedSquaresLocal] = useState(new Map());
@@ -184,6 +185,13 @@ const checkForBingo = useCallback((currentMarkedSquares, currentPhrases, previou
             // When no bingo type is selected (e.g., on initial view or after backing out), clear the list.
             setMasterPhraseList([]);
         }
+    }, [show, selectedBingoType]);
+
+    // État « en pause » de la carte (bingo/cards/{type}/paused), suivi en direct.
+    useEffect(() => {
+        if (!show || !selectedBingoType) return undefined;
+        setIsCardPaused(false);
+        return onValue(ref(database, `bingo/cards/${selectedBingoType.path}/paused`), (snap) => setIsCardPaused(snap.val() === true), () => setIsCardPaused(false));
     }, [show, selectedBingoType]);
 
     // Listen for the current card layout from Firebase (now type-specific)
@@ -451,6 +459,10 @@ setCompletedBingoLines(prevCompletedLines => {
     };
 
     const handleSquareClick = useCallback(async (index, phrase) => {
+        if (isCardPaused) {
+            showNotification('La partie est en pause : les cases ne peuvent pas être cochées pour le moment.', 'warning');
+            return;
+        }
         if (!selectedEmployee) {
             showNotification(canPickPlayer
                 ? 'Veuillez sélectionner un joueur dans le menu déroulant avant de marquer un carré !'
@@ -529,7 +541,7 @@ setCompletedBingoLines(prevCompletedLines => {
                 });
             }
         }
-    }, [selectedEmployee, markedSquaresLocal, bingoActivityLog, getEmployeeColor, selectedBingoType, showNotification, canPickPlayer]);
+    }, [selectedEmployee, markedSquaresLocal, bingoActivityLog, getEmployeeColor, selectedBingoType, showNotification, canPickPlayer, isCardPaused]);
 
     // NEW: Admin function to generate a new card
     const handleGenerateNewCard = async () => {
@@ -568,6 +580,7 @@ setCompletedBingoLines(prevCompletedLines => {
             await remove(logRef);
             console.log("[Admin] Setting new card phrases...");
             await set(cardPhrasesRef, newCardPhrases);
+            await set(ref(database, `bingo/cards/${selectedBingoType.path}/lastResetAt`), Date.now());
             
             console.log(`[Admin] New ${selectedBingoType.name} Bingo card generated successfully!`);
             showNotification(`Nouvelle carte de bingo ${selectedBingoType.name} générée avec succès !`, 'check-circle');
@@ -684,6 +697,11 @@ setCompletedBingoLines(prevCompletedLines => {
                     <div className="bingo-content-wrapper">
                         <div className="bingo-main-section">
                             <div className="bingo-grid">
+                                {isCardPaused && phrases.length > 0 && (
+                                    <div className="alert alert-warning py-2 mb-2" role="status">
+                                        <i className="fas fa-pause me-2"></i>Partie en pause : la carte est figée, les cases ne peuvent plus être cochées pour le moment.
+                                    </div>
+                                )}
                                 {renderGrid()}
                             </div>
                         </div>

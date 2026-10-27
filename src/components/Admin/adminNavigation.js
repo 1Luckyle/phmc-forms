@@ -107,11 +107,6 @@ export const ADMIN_SECTION_GROUPS = [
                 description: 'Cartes de bingo du personnel, journal, phrases et demandes de révision.',
                 keywords: 'jeu cartes phrases',
             },
-            {
-                key: 'database', icon: 'fa-database', label: 'Base de données',
-                description: 'Explorateur et éditeur de la base Firebase (à manier avec précaution).',
-                keywords: 'firebase realtime edition données',
-            },
         ],
     },
     {
@@ -122,11 +117,6 @@ export const ADMIN_SECTION_GROUPS = [
                 key: 'debug', icon: 'fa-bug', label: 'Mode debug & simulation',
                 description: 'Remplissage de test, effets de saison, « visualiser en tant que ».',
                 keywords: 'test simulation saison autofill whitelist rôle',
-            },
-            {
-                key: 'webhooks', icon: 'fa-bullhorn', label: 'Webhooks Discord (hérité)',
-                description: "Canaux Discord optionnels. Le suivi des actions se fait désormais dans le journal d'activité.",
-                keywords: 'discord notification canal message',
             },
             {
                 key: 'dev', icon: 'fa-code', label: 'Outils développeur',
