@@ -200,7 +200,12 @@ export async function runRecruitmentMigrationOnce(by = null) {
         const summary = summarizePlan(plan);
         const copied = summary.total > 0 ? (await applyRecruitmentMigration(plan)).written : 0;
         const cleaned = await cleanupLegacyRecruitment(); // refuse s'il reste quelque chose à migrer
-        await set(flagRef, { termine: true, par: by, le: Date.now(), ecritures: copied, sauvegarde: cleaned.backupId });
+        // Le drapeau est posé même si une suppression a échoué (`restants`) : sinon la migration se relançait à CHAQUE
+        // ouverture du panneau admin. Les nœuds restants se suppriment alors à la main dans la console Firebase.
+        await set(flagRef, {
+            termine: true, par: by, le: Date.now(), ecritures: copied, sauvegarde: cleaned.backupId,
+            ...(cleaned.failed.length > 0 ? { restants: cleaned.failed } : {}),
+        });
         return { copied, removed: cleaned.removed, backupId: cleaned.backupId, textsToReview: summary.toTranslate };
     } catch (error) {
         console.warn('Migration du recrutement : non terminée, nouvel essai à la prochaine ouverture.', error?.message || error);
@@ -210,12 +215,37 @@ export async function runRecruitmentMigrationOnce(by = null) {
 
 // ───────────────────────────── Nettoyage (après vérification) ─────────────────────────────
 // Sauvegarde les anciens nœuds puis les supprime. Refuse s'il reste quelque chose à migrer.
+//
+// La sauvegarde a un id FIXE et s'écrit par `update` : un nouvel essai réécrit la même sauvegarde au lieu d'en
+// empiler une de plus (46 Ko chacune, une par ouverture du panneau admin avant ce correctif), et il ne perd pas ce
+// qu'un essai précédent avait déjà sauvegardé puis supprimé. Rien n'est sauvegardé si aucun ancien nœud n'existe.
+const BACKUP_ID = 'recrutement_legacy';
+
+// Supprime un ancien nœud. Les règles n'autorisent l'écriture de jobApplications qu'au niveau
+// {uid}/{candidature} : supprimer le nœud entier est REFUSÉ, d'où le repli enfant par enfant.
+async function removeLegacyNode(path) {
+    try {
+        await remove(ref(database, path));
+        return;
+    } catch (error) {
+        const value = await readNode(path);
+        for (const [childKey, child] of Object.entries(value)) {
+            if (child && typeof child === 'object') {
+                for (const grandChildKey of Object.keys(child)) {
+                    await remove(ref(database, `${path}/${childKey}/${grandChildKey}`));
+                }
+            } else {
+                await remove(ref(database, `${path}/${childKey}`));
+            }
+        }
+    }
+}
+
 export async function cleanupLegacyRecruitment() {
     const plan = await planRecruitmentMigration({ translate: false });
     const left = summarizePlan(plan).total;
     if (left > 0) throw new Error(`Il reste ${left} élément(s) à migrer : lancez d'abord la migration.`);
 
-    const backupId = `recrutement_${Date.now()}`;
     const legacyPositionNodes = RECRUITMENT_CATEGORIES.map((category) => `selectOptions/${category.legacyNode}`);
     const paths = [...LEGACY_NODES, ...legacyPositionNodes];
 
@@ -224,10 +254,26 @@ export async function cleanupLegacyRecruitment() {
         const value = await readNode(path);
         if (Object.keys(value).length > 0) backup[path.replace(/\//g, '__')] = value;
     }
-    await set(ref(database, `migrationBackups/${backupId}`), { createdAt: Date.now(), nodes: Object.keys(backup), data: backup });
+    const present = Object.keys(backup);
+    if (present.length === 0) return { backupId: BACKUP_ID, removed: 0, failed: [] };
 
+    const knownRaw = await readNode(`migrationBackups/${BACKUP_ID}/nodes`);
+    const known = Array.isArray(knownRaw) ? knownRaw : Object.values(knownRaw);
+    const backupUpdate = { majLe: Date.now(), nodes: [...new Set([...known, ...present])] };
+    if (known.length === 0) backupUpdate.createdAt = Date.now();
+    present.forEach((key) => { backupUpdate[`data/${key}`] = backup[key]; });
+    await update(ref(database, `migrationBackups/${BACKUP_ID}`), backupUpdate);
+
+    // Un échec n'arrête pas les autres suppressions : on continue et on le signale (`failed`).
+    const failed = [];
     for (const path of paths) {
-        if (backup[path.replace(/\//g, '__')]) await remove(ref(database, path));
+        if (!backup[path.replace(/\//g, '__')]) continue;
+        try {
+            await removeLegacyNode(path);
+        } catch (error) {
+            console.warn(`Suppression impossible de ${path} :`, error?.message || error);
+            failed.push(path);
+        }
     }
-    return { backupId, removed: Object.keys(backup).length };
+    return { backupId: BACKUP_ID, removed: present.length - failed.length, failed };
 }
