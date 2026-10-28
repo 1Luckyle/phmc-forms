@@ -22,6 +22,7 @@
 //   tant qu'au moins une copie existe.
 import { ref, get, set, update, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
+import { logActivity } from './activityLog';
 import {
     canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId,
 } from './patientId';
@@ -271,6 +272,10 @@ async function removeUnpaidInvoice(patientNode, indexKey) {
         if (!snap.exists() || snap.val().statut === 'paye') return;
         await remove(invoiceRef);
         await remove(ref(database, `facturesEnAttente/${node}/${indexKey}`));
+        logActivity({
+            category: 'facturation', action: 'invoice_deleted', summary: `Facture impayée supprimée avec son rapport : ${snap.val().titre || indexKey}`,
+            details: `Patient : ${node}\nMontant : ${snap.val().montant ?? '—'} $`, target: node,
+        });
     } catch (error) {
         console.warn('Could not remove the invoice of a deleted report:', error);
     }
@@ -321,7 +326,13 @@ export async function deleteReportWithRules(report, viewer) {
         if (indexRef) await update(indexRef, { ownerDeleted: true });
     };
 
+    const isAma = report.kind === 'ama' || indexEntry?.kind === 'ama';
+
     if (viewer.role === 'civil') {
+        // Un AMA (refus de soins signé) fait partie de son dossier médical : le patient ne le supprime jamais.
+        if (isAma) {
+            return { ok: false, action: 'refused', message: "Un formulaire AMA (refus de soins) ne peut pas être supprimé par le patient : il fait partie de son dossier médical." };
+        }
         const createdByStaff = report.sharedByStaff || (indexEntry && indexEntry.visibility !== 'owner');
         if (createdByStaff) {
             return { ok: false, action: 'refused', message: 'Ce rapport a été créé par un membre du personnel : vous ne pouvez pas le supprimer de votre dossier.' };

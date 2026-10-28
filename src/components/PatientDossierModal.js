@@ -39,7 +39,11 @@ import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion'
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { loadDeletedMark } from '../utils/deletedAccounts';
+import { logActivity } from '../utils/activityLog';
 import useWriteLock from '../hooks/useWriteLock';
+
+// Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
+const recentlyViewed = new Map();
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -91,7 +95,7 @@ const visibilityInfo = (entry) => {
 
 const PatientDossierModal = ({
     show, onHide, showNotification, copyReportToOwnAccount, shareReportWithPatient,
-    loadReport, deleteReportsForUser,
+    loadReport, deleteReportsForUser, initialPatientId = '',
 }) => {
     const { isAdmin, employeeProfile, staffName } = useEmployeeAuth();
     const isStaffViewer = isAdmin || !!employeeProfile;
@@ -181,6 +185,10 @@ const PatientDossierModal = ({
             return;
         }
         const canonical = canonicalPatientId(patientId);
+        if ((recentlyViewed.get(canonical) || 0) < Date.now() - 15 * 60 * 1000) {
+            recentlyViewed.set(canonical, Date.now());
+            logActivity({ category: 'rapports', action: 'dossier_viewed', summary: `Dossier patient consulté : ${canonical}`, target: canonical });
+        }
         setIsLoading(true);
         setSearchedPatientId(canonical);
         setDeletedMark(null);
@@ -202,6 +210,15 @@ const PatientDossierModal = ({
             setIsLoading(false);
         }
     };
+
+    // Ouvert depuis l'annuaire sur un patient précis : la recherche est lancée directement.
+    useEffect(() => {
+        if (!show || !initialPatientId) return;
+        const id = canonicalPatientId(initialPatientId);
+        setSelectedPatientOption({ value: id, label: id });
+        handleSearch(id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [show, initialPatientId]);
 
     const copyText = async (text, message, emptyMessage) => {
         if (text) await copyToClipboard(text, showNotification, message);
@@ -227,7 +244,7 @@ const PatientDossierModal = ({
             myCopy,
             iAmHolder,
             deleteTarget,
-            canShare: !rootIsCopy && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
+            canShare: !rootIsCopy && root.kind !== 'ama' && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
             canCopy: !!staffAuthorNameForCopy && !rootIsCopy && !iAmHolder && !myCopy,
         };
     }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -276,6 +293,8 @@ const PatientDossierModal = ({
     }, [families, invoiceOf]);
 
     const toDeletePayload = (entry) => ({
+        kind: entry.kind,
+        title: reportTitleOf(entry) || entry.originalKey,
         key: entry.indexKey,
         reportPath: entry.reportPath,
         patientID: entry.patientID,
@@ -286,7 +305,8 @@ const PatientDossierModal = ({
 
     const handleDelete = async (targets, description) => {
         if (!deleteReportsForUser || targets.length === 0) return;
-        if (!window.confirm(`${description}\n\nCette action est irréversible (les règles de suppression du dossier s'appliquent).`)) return;
+        const hasAma = targets.some((entry) => entry.kind === 'ama');
+        if (!window.confirm(`${description}\n\nCette action est irréversible (les règles de suppression du dossier s'appliquent).${hasAma ? '\n\n⚠ Il s\'agit d\'un formulaire AMA (refus de soins signé par un patient) : sa suppression sera consignée dans le journal d\'activité avec un avertissement.' : ''}`)) return;
         await deleteReportsForUser(targets.map(toDeletePayload), staffAuthorNameForCopy, { skipReload: true });
         setSelectedKeys([]);
         await handleSearch(searchedPatientId);

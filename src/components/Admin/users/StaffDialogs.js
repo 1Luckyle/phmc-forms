@@ -44,7 +44,7 @@ const useBusy = () => {
 export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignant', isRecruiter = false, adminEmail, showNotification, onDone }) => {
     const isEdit = !!member;
     const [family, setFamily] = useState(defaultFamily);
-    const [form, setForm] = useState({ firstName: '', middleName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+    const [form, setForm] = useState({ firstName: '', middleName: '', lastName: '', address: '', zip: '', discord: '', phNumber: '', rank: '', badge: '' });
     const [serviceDirige, setServiceDirige] = useState('');
     const [extraRanks, setExtraRanks] = useState([]);
     const [recruiter, setRecruiter] = useState(false);
@@ -65,6 +65,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             const parts = staffNameParts(member);
             setForm({
                 firstName: parts.firstName, middleName: member.middleName || '', lastName: parts.lastName,
+                address: member.address || '', zip: member.zip || '',
                 discord: member.discord || '', phNumber: member.phNumber || '',
                 // Un ancien rôle anglais (avant migration) est présélectionné sous son équivalent français.
                 rank: normalizeRank(member.rank || member.category || ''), badge: badgeDigits(member.badge),
@@ -74,7 +75,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             setServiceDirige('');
             setExtraRanks([]);
             setRecruiter(false);
-            setForm({ firstName: '', middleName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+            setForm({ firstName: '', middleName: '', lastName: '', address: '', zip: '', discord: '', phNumber: '', rank: '', badge: '' });
         }
     }, [show, member, defaultFamily, isRecruiter, setError]);
 
@@ -90,7 +91,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 `Renommer « ${member.displayName} » en « ${newName} » ?\n\nSes rapports sauvegardés et leurs dossiers patients sont migrés automatiquement vers le nouveau nom. Son ID employé (${member.badge}) ne change pas.`
             )) return;
             const outcome = await updateStaffMember(member, {
-                firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige, extraRanks,
+                firstName: form.firstName, middleName: form.middleName, address: form.address, zip: form.zip, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige, extraRanks,
             });
             if (member.uid && recruiter !== isRecruiter) {
                 await setRecruiterRole(member.uid, recruiter);
@@ -101,7 +102,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
         } else {
             if (!form.firstName.trim() || !form.lastName.trim()) throw new Error('Prénom et nom obligatoires.');
             await addStaffMember(service, {
-                firstName: form.firstName.trim(), middleName: form.middleName, lastName: form.lastName.trim(),
+                firstName: form.firstName.trim(), middleName: form.middleName, address: form.address, zip: form.zip, lastName: form.lastName.trim(),
                 discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge, serviceDirige, extraRanks,
             });
             sendAdminActionWebhook(adminEmail, 'Membre du personnel ajouté', `Membre : ${form.firstName} ${form.lastName}\nFamille : ${STAFF_FAMILIES[family].label}\nRôle : ${rankLabel(service, form.rank)}`, null, 'Admin');
@@ -166,6 +167,16 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     </Form.Group>
                 </div>
                 {isEdit ? <Form.Text className="text-muted d-block mb-3">ID patient : PHMC-{form.badge}</Form.Text> : <div className="mb-2"></div>}
+                <div className="d-flex gap-2 mb-3 align-items-end">
+                    <Form.Group style={{ flex: 2 }}>
+                        <Form.Label>Adresse</Form.Label>
+                        <Form.Control value={form.address} onChange={set('address')} placeholder="facultatif" />
+                    </Form.Group>
+                    <Form.Group style={{ flex: 1 }}>
+                        <Form.Label>Code postal</Form.Label>
+                        <Form.Control value={form.zip} onChange={set('zip')} placeholder="facultatif" />
+                    </Form.Group>
+                </div>
                 <Form.Group>
                     <Form.Label>Discord</Form.Label>
                     <Form.Control value={form.discord} onChange={set('discord')} />

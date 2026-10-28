@@ -47,7 +47,7 @@ const closeStyle = {
     color: '#f85149', fontSize: '28px', lineHeight: 1, cursor: 'pointer', zIndex: 5,
 };
 
-const RecruitmentManager = ({ show, onHide, showNotification }) => {
+const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = '' }) => {
     const { currentEmployee, isAdmin, isRecruiter, canManageRecruitment } = useEmployeeAuth();
     const actorLabel = isAdmin ? 'Admin' : 'Recruteur';
     const actorEmail = currentEmployee?.email || 'Inconnu';
@@ -86,6 +86,9 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
     useEffect(() => {
         if (show) loadPositions();
     }, [show, loadPositions]);
+
+    // Ouvert depuis l'annuaire sur une personne : on arrive sur « Candidatures », déjà filtré sur son nom.
+    useEffect(() => { if (show && initialSearch) setTab('applications'); }, [show, initialSearch]);
 
     useEffect(() => {
         if (!show) { setCategory(''); setTab('positions'); setShowRoleModal(false); setRoleToEdit(null); setRoleToRename(null); }
@@ -278,7 +281,7 @@ const RecruitmentManager = ({ show, onHide, showNotification }) => {
                         </>
                     )}
 
-                    {tab === 'applications' && <PendingJobApplications showNotification={showNotification} />}
+                    {tab === 'applications' && <PendingJobApplications showNotification={showNotification} initialSearch={initialSearch} />}
                     {tab === 'contracts' && <ContractsManager showNotification={showNotification} />}
                     {tab === 'internal' && <InternalRecruitmentManager showNotification={showNotification} onCountChange={setPendingInternal} />}
                 </div>

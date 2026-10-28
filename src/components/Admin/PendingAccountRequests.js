@@ -159,6 +159,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                         badgeDigitsValue: badgeDigits(request.badge),
                         discord: request.discord || '',
                         phNumber: request.phNumber || '',
+                        middleName: request.middleName, address: request.address, zip: request.zip,
                     });
                     await removeRequest(request.email);
                     logAdminAction({ email: currentUser?.email, action: 'Compte du personnel approuvé (compte Civil converti)', details: `Membre : ${request.name}\nCompte : ${civil.email || request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });
@@ -188,7 +189,10 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
             const employeeWithUID = {
                 name: `${firstName} ${lastName}`.trim() || request.name,
                 firstName,
+                ...((request.middleName || '').trim() ? { middleName: request.middleName.trim() } : {}),
                 lastName,
+                ...((request.address || '').trim() ? { address: request.address.trim() } : {}),
+                ...((request.zip || '').trim() ? { zip: request.zip.trim() } : {}),
                 discord: request.discord || '',
                 // Une demande déposée avant la migration peut porter un ancien rôle anglais : on l'enregistre en français.
                 rank: normalizeRank(request.rank),

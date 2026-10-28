@@ -26,6 +26,13 @@ const setCachedSignatureUrl = (url) => {
     } catch (e) { /* stockage indisponible : sans conséquence */ }
 };
 
+// Drapeaux publics (booléens seulement) : permettent à l'annuaire d'indiquer qui a une signature / une carte de visite.
+const syncCreationFlags = async (uid, creations) => {
+    try {
+        await set(ref(database, `creationsFlags/${uid}`), { signature: !!creations.signature, carte: !!creations.businessCard });
+    } catch (error) { /* sans conséquence : seulement l'affichage de l'annuaire */ }
+};
+
 // Ajoute le lien de suppression ImgBB d'une ancienne image à la file consultée par les admins.
 // Best-effort : un échec ici ne doit jamais bloquer la création / suppression de l'utilisateur.
 const queueImgbbDeletion = async (uid, kind, creation) => {
@@ -61,6 +68,7 @@ export const loadUserCreations = async (uid, { patientID } = {}) => {
         } catch (error) { console.warn('Signature du patient non reprise :', error?.message || error); }
     }
     setCachedSignatureUrl(creations.signature?.url || '');
+    await syncCreationFlags(uid, creations);
     return creations;
 };
 
@@ -70,6 +78,7 @@ export const saveUserCreation = async (uid, kind, data, { patientID, actorName }
     const record = { ...data, createdAt: Date.now() };
     await set(ref(database, `userCreations/${uid}/${kind}`), record);
     await queueImgbbDeletion(uid, kind, previous);
+    await syncCreationFlags(uid, { ...(await loadFlagsBase(uid)), [kind]: record });
     if (kind === CREATION_KINDS.signature) {
         setCachedSignatureUrl(record.url);
         // Compte Civil : la signature est aussi celle de son ID patient (les formulaires AMA signent avec).
@@ -78,9 +87,16 @@ export const saveUserCreation = async (uid, kind, data, { patientID, actorName }
     return { saved: record, previous };
 };
 
+// État courant des deux créations (pour recalculer les drapeaux après une écriture).
+const loadFlagsBase = async (uid) => {
+    const value = (await get(ref(database, `userCreations/${uid}`))).val() || {};
+    return { businessCard: value.businessCard || null, signature: value.signature || null };
+};
+
 export const removeUserCreation = async (uid, kind, { patientID } = {}) => {
     const previous = (await get(ref(database, `userCreations/${uid}/${kind}`))).val() || null;
     await remove(ref(database, `userCreations/${uid}/${kind}`));
+    await syncCreationFlags(uid, { ...(await loadFlagsBase(uid)), [kind]: null });
     await queueImgbbDeletion(uid, kind, previous);
     if (kind === CREATION_KINDS.signature) {
         setCachedSignatureUrl('');

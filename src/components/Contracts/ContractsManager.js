@@ -45,7 +45,7 @@ const ContractEditor = ({ show, onHide, contract, staff, issuer, onChanged, show
         if (!show) return;
         setError('');
         setFilter('');
-        setEmployeeUid(contract?.employeeUid || '');
+        setEmployeeUid(contract?.employeUid || '');
         setCandidateService(contract?.service || 'phmc');
         setFields({ ...emptyContractFields(), ...(contract?.champs || {}) });
     }, [show, contract]);

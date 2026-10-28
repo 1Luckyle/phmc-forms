@@ -20,6 +20,7 @@ import { database } from '../firebase';
 import { normalizeRank } from '../constants/ranks';
 import { releaseInternalStatusAfterContract } from './internalRecruitment';
 import { closeThreadsAfterContract } from './applicationThreads';
+import { logActivity } from './activityLog';
 import { assertNotLocked } from './lockdownGuard';
 
 export const CONTRACT_STATUS = {
@@ -248,10 +249,12 @@ export async function saveContractDraft({ id, employee, service, champs, issuer 
         if (!current) throw new Error('Contrat introuvable.');
         if (normalizeContractStatus(current.statut) !== 'brouillon') throw new Error('Ce contrat a été envoyé : retirez-le d\'abord pour le modifier.');
         await update(ref(database, `contrats/${id}`), base);
+        logActivity({ category: 'contrats', action: 'contract_updated', summary: `Brouillon de contrat modifié : ${employee?.displayName || employee?.name || current.employeNom || id}`, target: current.employeNom || undefined });
         return id;
     }
     const newRef = push(ref(database, 'contrats'));
     await set(newRef, { ...base, statut: 'brouillon', creeLe: now, creePar: issuer.uid, creeParNom: issuer.name });
+    logActivity({ category: 'contrats', action: 'contract_created', summary: `Brouillon de contrat créé : ${employee?.displayName || employee?.name || newRef.key}`, target: employee?.displayName || employee?.name || undefined });
     return newRef.key;
 }
 
@@ -290,6 +293,7 @@ export async function retractContract(id) {
         [`contrats/${id}/modifieLe`]: Date.now(),
         [`contratsParEmploye/${contract.employeUid}/${id}`]: null,
     });
+    logActivity({ category: 'contrats', action: 'contract_retracted', severity: 'warning', summary: `Contrat retiré de la liste de l'employé : ${contract.employeNom}`, target: contract.employeNom || undefined });
 }
 
 // Suppression : recruteurs pour un contrat non signé, admins pour n'importe lequel (règles Firebase).
@@ -342,6 +346,7 @@ export async function signContract(contract, { uid, name, signature }) {
         [`contrats/${contract.id}/statut`]: 'signe',
     });
     // Candidature acceptée + contrat signé : le statut de recrutement interne prend fin (best-effort).
+    logActivity({ category: 'contrats', action: 'contract_signed', severity: 'success', summary: `Contrat signé : ${contract.employeNom || name}`, details: `Poste : ${contract.champs?.poste || '—'}\nGrade : ${contract.champs?.role || '—'}`, target: contract.employeNom || name });
     await releaseInternalStatusAfterContract(uid);
     // Les échanges avec le recrutement sur la candidature acceptée se ferment (best-effort).
     await closeThreadsAfterContract(uid);

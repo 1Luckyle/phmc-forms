@@ -109,6 +109,8 @@ init({
       blockAllMedia: false,
     }),
   ],
+  // Avertissement inoffensif du navigateur (un ResizeObserver qui redimensionne ce qu'il observe) : ni erreur, ni bruit dans Sentry.
+  ignoreErrors: [/ResizeObserver loop (limit exceeded|completed with undelivered notifications)/],
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
@@ -121,7 +123,7 @@ console.log("Sentry has been initialized and exposed on window.Sentry");
 // --- Global Error Handling Setup ---
 window.onerror = (message, source, lineno, colno, errorObject) => {
     // Ignore common, non-critical errors that can create a lot of noise.
-    if (typeof message === 'string' && message.includes("ResizeObserver loop limit exceeded")) {
+    if (typeof message === 'string' && /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/.test(message)) {
         return true; // Suppress this error from being processed further.
     }
 

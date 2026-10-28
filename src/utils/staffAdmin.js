@@ -202,7 +202,7 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
 // numéro de badge), pas sur le nom : le prénom et le nom sont modifiables, et les rapports de la
 // personne suivent automatiquement (renameReportOwner). Le numéro de badge — l'ID employé, aussi
 // son ID patient PHMC-{badge} — n'est JAMAIS modifié ici (seul le préfixe suit le grade).
-export async function updateStaffMember(member, { firstName, middleName, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
+export async function updateStaffMember(member, { firstName, middleName, address, zip, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[member.service];
     const snap = await get(ref(database, cfg.path));
     if (!snap.exists()) throw new Error('Liste du personnel introuvable.');
@@ -232,6 +232,8 @@ export async function updateStaffMember(member, { firstName, middleName, lastNam
         const middle = String(middleName).trim();
         if (middle) updated.middleName = middle; else delete updated.middleName;
     }
+    if (address !== undefined) { const value = String(address).trim(); if (value) updated.address = value; else delete updated.address; }
+    if (zip !== undefined) { const value = String(zip).trim(); if (value) updated.zip = value; else delete updated.zip; }
     if (member.service === 'phmc') updated.lastName = newLast;
     if (rank) { updated.rank = rank; updated.category = rank; }
     if (digits) updated.badge = buildBadge(member.service, updated.rank || current.rank, digits); // chiffres inchangés
@@ -267,7 +269,7 @@ export async function updateStaffMember(member, { firstName, middleName, lastNam
 }
 
 // Ajoute une fiche SANS compte de connexion (même écriture que l'ancien « Ajouter un employé »).
-export async function addStaffMember(service, { firstName, middleName, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
+export async function addStaffMember(service, { firstName, middleName, address, zip, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[service];
     const name = `${firstName} ${lastName}`.trim();
     const listSnap = await get(ref(database, cfg.path));
@@ -280,6 +282,8 @@ export async function addStaffMember(service, { firstName, middleName, lastName,
         : { name, lastName, discord: discord || '', phNumber: phNumber || '', badge: buildBadge(service, rank, badgeDigitsValue), rank, category: rank };
     if (service === 'phmc') payload.firstName = firstName;
     if (String(middleName || '').trim()) payload.middleName = String(middleName).trim();
+    if (String(address || '').trim()) payload.address = String(address).trim();
+    if (String(zip || '').trim()) payload.zip = String(zip).trim();
     payload.pole = familyOfRank(rank, service);
     const extras = cleanExtraRanks(extraRanks, rank);
     if (extras.length > 0) payload.extraRanks = extras;
@@ -403,7 +407,7 @@ export async function isUidStaff(uid) {
 }
 
 // Civil → Personnel. Le profil Civil et ses rapports sont CONSERVÉS.
-export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige, extraRanks }) {
+export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige, extraRanks, middleName, address, zip }) {
     const extras = cleanExtraRanks(extraRanks, rank);
     if (!civilian?.uid) throw new Error('Ce compte Civil n\'a pas d\'identifiant de connexion (uid).');
     if (await isUidStaff(civilian.uid)) throw new Error('Cette personne est déjà membre du personnel.');
@@ -420,7 +424,9 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
     const entry = {
         name,
         firstName,
-        ...((civilian.middleName || '').trim() ? { middleName: civilian.middleName.trim() } : {}),
+        ...((String(middleName ?? civilian.middleName ?? '')).trim() ? { middleName: String(middleName ?? civilian.middleName).trim() } : {}),
+        ...((String(address ?? civilian.address ?? '')).trim() ? { address: String(address ?? civilian.address).trim() } : {}),
+        ...((String(zip ?? civilian.zip ?? '')).trim() ? { zip: String(zip ?? civilian.zip).trim() } : {}),
         ...(service === 'phmc' ? { lastName } : {}),
         discord: discord ?? civilian.discord ?? '',
         rank,
@@ -470,8 +476,8 @@ export async function convertStaffToCivilian(member, civilData = {}) {
             middleName: member.middleName || '',
             dateOfBirth: civilData.dateOfBirth || '',
             gender: civilData.gender || '',
-            address: civilData.address || '',
-            zip: civilData.zip || '',
+            address: civilData.address || member.address || '',
+            zip: civilData.zip || member.zip || '',
             phone: member.phNumber || '',
             discord: member.discord || '',
             patientID,

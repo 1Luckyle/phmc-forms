@@ -332,6 +332,10 @@ export const EmployeeAuthProvider = ({ children }) => {
      */
     const logoutEmployee = async () => {
         try {
+            // Journal d'abord (il faut être connecté pour écrire), puis le prochain login de cet onglet sera de nouveau journalisé.
+            const leavingUid = auth.currentUser?.uid;
+            await logActivity({ category: 'auth', action: 'logout', summary: `Déconnexion de ${realName || auth.currentUser?.email || 'un utilisateur'}` });
+            try { if (leavingUid) sessionStorage.removeItem(`activityLogin:${leavingUid}`); } catch (storageError) { /* sans conséquence */ }
             await signOut(auth);
             setCurrentEmployee(null);
             setEmployeeProfile(null);

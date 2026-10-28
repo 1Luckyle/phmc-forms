@@ -145,6 +145,16 @@
       }
     },
 
+    // Drapeaux « a créé sa signature / sa carte de visite » (creationsFlags/{uid} : { signature, carte }), pour l'annuaire. Seuls des
+    // booléens : les images elles-mêmes (userCreations) restent privées. Écrits par la personne (à chaque lecture de ses créations), lus
+    // par le personnel et les admins.
+    "creationsFlags": {
+      "$uid": {
+        ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
+      }
+    },
+
     // ─── File des images ImgBB à supprimer ───────────────────────────────────────
     // ImgBB n'a pas d'API de suppression : quand quelqu'un remplace / supprime sa carte ou sa
     // signature, le lien de suppression ImgBB est ajouté ici. Tout utilisateur connecté peut AJOUTER
@@ -229,7 +239,7 @@
         ".write": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$reportKey": {
           ".read":  "auth != null && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()",
-          ".write": "auth != null && (!data.exists() || data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val())"
+          ".write": "auth != null && (!data.exists() || (data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val() && data.child('kind').val() !== 'ama'))"
         }
       }
     },

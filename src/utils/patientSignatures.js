@@ -9,6 +9,7 @@
 import { ref, get, set, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { canonicalPatientId } from './patientId';
+import { logActivity } from './activityLog';
 import { renderSignatureDataUrl, SIGNATURE_STYLES } from './signatureRenderer';
 
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
@@ -47,5 +48,6 @@ export const ensurePatientSignature = async ({ patientID, patientName, uploadIma
     const dataUrl = await renderSignatureDataUrl(text, style);
     const uploaded = await uploadImageDetailed(dataUrl);
     const signature = await savePatientSignature(patientID, { url: uploaded.url, deleteUrl: uploaded.deleteUrl, text, style, source: 'ama' }, actorName);
+    logActivity({ category: 'comptes', action: 'patient_signature_created', summary: `Signature de patient créée automatiquement : ${text}`, details: `ID patient : ${canonicalPatientId(patientID)}\nCréée par : ${actorName || 'personnel'} (formulaire AMA)`, target: canonicalPatientId(patientID) });
     return { signature, created: true };
 };

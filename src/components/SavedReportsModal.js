@@ -4,7 +4,9 @@ import { Button, Form, Dropdown } from 'react-bootstrap';
 import Select from 'react-select';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
+import { reportTitleOf, reportCreatorOf, comprehensiveSanitize } from '../utils/patientRecords';
+import useReportIndexStatus from '../hooks/useReportIndexStatus';
+import { logActivity } from '../utils/activityLog';
 import { ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
 import { getFormDefinition } from '../formDefinitions';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
@@ -136,6 +138,7 @@ const SavedReportsModal = ({
     preselectedEmployeeType,
     bbCodeVersion,
     attachMode,
+    initialEmployeeName = '',
     loadSharedReportsForPatient,
     loadCivilianDossier,
     shareReportWithPatient,
@@ -162,6 +165,8 @@ const SavedReportsModal = ({
     const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
+    // Partagé avec le patient ? Copie déjà récupérée ? Même enregistrement que « Dossier Patient » (relié : jamais deux fois).
+    const [indexRefresh, setIndexRefresh] = useState(0);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
     const { locked, lockTitle } = useWriteLock();
     const { bbcodeEnabled } = useSiteConfig();
@@ -185,6 +190,9 @@ const SavedReportsModal = ({
     // personnel copie chez l'employé dont la liste est affichée.
     const staffAuthorNameForCopy = staffName
         || (isAdmin ? (selectedEmployee?.value || currentPhmcEmployee || currentCoronerEmployee || null) : null);
+
+    const { statusOf } = useReportIndexStatus(reportsForSelectedUser, !!show && isStaffViewer, indexRefresh);
+    const myCopyKey = comprehensiveSanitize(staffAuthorNameForCopy || '');
 
     // Un employé connecté (non-admin) consulte toujours SES PROPRES rapports,
     // directement, peu importe ce qui est sélectionné dans le formulaire
@@ -273,7 +281,19 @@ const SavedReportsModal = ({
         }
     }, [show, currentCoronerEmployee, currentPhmcEmployee, employeeOptions, preselectedEmployeeType, onEmployeeSelect, isAdmin, currentEmployee, employeeProfile, staffName, isCivilian, civilianProfile, loadSharedReportsForPatient, loadCivilianDossier]);
 
+    // Ouvert depuis l'annuaire sur un employé précis (admin) : on le sélectionne directement.
+    useEffect(() => {
+        if (!show || !initialEmployeeName || !isAdmin) return;
+        const option = employeeOptions?.flatMap((group) => group.options).find((candidate) => candidate.value === initialEmployeeName);
+        if (option && selectedEmployeeRaw?.value !== option.value) handleEmployeeSelect(option);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [show, initialEmployeeName, employeeOptions, isAdmin]);
+
     const handleEmployeeSelect = (selectedOption) => {
+        // Consulter les rapports d'un AUTRE employé (admin) laisse une trace.
+        if (selectedOption && isAdmin && selectedOption.value !== staffName) {
+            logActivity({ category: 'rapports', action: 'reports_viewed_other', summary: `Rapports enregistrés de ${selectedOption.label || selectedOption.value} consultés`, target: String(selectedOption.value) });
+        }
         isManualSelectionRef.current = true;
         setSelectedEmployee(selectedOption);
         setSearchQuery('');
@@ -467,7 +487,8 @@ const SavedReportsModal = ({
             showNotification('Aucun rapport sélectionné ou aucun employé identifié.', 'warning');
             return;
         }
-        if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedReportKeys.length} rapport(s) sélectionné(s) ? Cette action est irréversible.`)) {
+        const hasAma = sortedReports.some((r) => selectedReportKeys.includes(r.key) && r.kind === 'ama');
+        if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedReportKeys.length} rapport(s) sélectionné(s) ? Cette action est irréversible.${hasAma ? '\n\n⚠ La sélection contient un formulaire AMA (refus de soins signé) : sa suppression sera consignée dans le journal d\'activité avec un avertissement.' : ''}`)) {
             return;
         }
         const reportsToDelete = sortedReports
@@ -542,6 +563,8 @@ const SavedReportsModal = ({
 
     // Ce que deleteReportsForUser a besoin de savoir pour appliquer les règles de suppression.
     const toDeletePayload = (report) => ({
+        kind: report.kind,
+        title: reportTitleOf(report) || report.originalKey,
         key: report.key,
         reportPath: report.reportPath,
         patientID: report.patientID,
@@ -639,6 +662,11 @@ const SavedReportsModal = ({
             ? (INVOICE_STATUS_COLORS[invoice.statutEffectif] || '#8b949e')
             : (report.isCopy ? '#a371f7' : (report.sharedByStaff ? '#58a6ff' : '#3fb950'));
         const title = reportTitleOf(report) || report.originalKey;
+        const indexStatus = statusOf(report);
+        const isAma = report.kind === 'ama';
+        // Déjà vu par le patient (partagé, ou créé par lui) : le bouton « Partager » n'a plus de sens. L'AMA est partagé dès sa création.
+        const alreadyShared = isAma || indexStatus?.visibility === 'shared' || indexStatus?.visibility === 'owner';
+        const iHaveCopy = !!myCopyKey && !!indexStatus?.copiedBy?.[myCopyKey];
         return (
             <ReportCard
                 key={report.key}
@@ -654,6 +682,8 @@ const SavedReportsModal = ({
                         <PaymentPill invoice={invoice} />
                         {report.isCopy && <Pill color="#a371f7" title="Copie d'un rapport créé par un autre médecin">Copie</Pill>}
                         {report.sharedByStaff && <Pill color="#58a6ff" title="Rapport partagé avec vous par le personnel">Partagé par le personnel</Pill>}
+                        {alreadyShared && <Pill color="#58a6ff" title="Le patient voit déjà ce rapport dans son dossier">Partagé avec le patient</Pill>}
+                        {iHaveCopy && <Pill color="#a371f7" title="Vous avez déjà récupéré une copie de ce rapport">Vous en avez une copie</Pill>}
                     </>
                 )}
                 actions={(
@@ -678,32 +708,35 @@ const SavedReportsModal = ({
                         {(report.bbCode || report.imageUrl) && (
                             <ExpandToggle open={!!openRows[report.key]} onClick={() => toggleRow(report.key)} title="Déplier / replier l'aperçu du rapport" />
                         )}
-                        {isStaffViewer && report.patientID && !report.sharedByStaff && !report.isCopy && (
+                        {isStaffViewer && report.patientID && !report.sharedByStaff && !report.isCopy && !alreadyShared && (
                             <Button
                                 size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }}
                                 title={locked ? lockTitle : 'Rendre ce rapport visible au patient dans son propre compte'}
                                 disabled={locked}
-                                onClick={() => shareReportWithPatient && shareReportWithPatient(report.patientID, report.key)}
+                                onClick={async () => { if (shareReportWithPatient) { await shareReportWithPatient(report.patientID, report.key); setIndexRefresh((n) => n + 1); } }}
                             >
                                 <i className="fas fa-share-nodes me-1"></i>Partager avec le patient
                             </Button>
                         )}
-                        {isStaffViewer && report.patientID && !report.sharedByStaff && report.authorName !== staffAuthorNameForCopy && (
+                        {isStaffViewer && report.patientID && !report.sharedByStaff && report.authorName !== staffAuthorNameForCopy && !iHaveCopy && (
                             <Button
                                 size="sm" style={{ backgroundColor: '#316dca', border: 'none' }}
                                 title={staffAuthorNameForCopy
                                     ? `Enregistrer une copie de ce rapport dans les rapports de ${staffAuthorNameForCopy}`
                                     : 'Impossible de déterminer à quel médecin rattacher la copie'}
-                                onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy, { patientID: report.patientID })}
+                                onClick={async () => { if (copyReportToOwnAccount) { await copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy, { patientID: report.patientID }); setIndexRefresh((n) => n + 1); } }}
                                 disabled={!staffAuthorNameForCopy || locked}
                             >
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
                         )}
-                        <Button
+                        {!(isCivilian && isAma) && <Button
                             variant="outline-danger" size="sm" className="ms-auto"
                             onClick={async () => {
-                                if (window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.')) {
+                                const message = isAma
+                                    ? "⚠ Vous allez supprimer un formulaire AMA (refus de soins signé par un patient). C'est une action grave : elle sera consignée dans le journal d'activité avec un avertissement.\n\nSupprimer cet AMA ?"
+                                    : 'Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.';
+                                if (window.confirm(message)) {
                                     await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
                                 }
                             }}
@@ -711,7 +744,7 @@ const SavedReportsModal = ({
                             title={locked ? lockTitle : undefined}
                         >
                             <i className="fas fa-trash me-1"></i>Supprimer
-                        </Button>
+                        </Button>}
                     </>
                 )}
                 expansion={openRows[report.key] ? (

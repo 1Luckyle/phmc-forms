@@ -5,9 +5,11 @@
 // ID patient seulement : e-mail, adresse et coordonnées des civils ne sont pas affichés).
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Spinner } from 'react-bootstrap';
+import { Button, Spinner } from 'react-bootstrap';
+import { ref, get } from 'firebase/database';
+import { database } from '../../firebase';
 import {
-    loadStaffMembers, loadCivilians, loadRecruiterUids, loadAdminUids, rankLabel,
+    loadStaffMembers, loadCivilians, loadRecruiterUids, loadAdminUids, rankLabel, badgeDigits,
 } from '../../utils/staffAdmin';
 import { loadInternalGrants } from '../../utils/internalRecruitment';
 import { getEmployeeFullName } from '../../utils/employeeName';
@@ -21,11 +23,15 @@ const FAMILY_COLORS = { soignant: '#3fb950', administration: '#58a6ff', polyvale
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const nameOfCivilian = (civilian) => [civilian.firstName, civilian.middleName, civilian.lastName].filter(Boolean).join(' ').trim() || 'Sans nom';
 
-const DirectoryModal = ({ show, onHide }) => {
+// Accès rapides : ouvrent l'outil correspondant déjà positionné sur la personne (comme si on ouvrait le menu et tapait son nom dans la
+// recherche). `access` dit lesquels l'utilisateur a le droit d'utiliser ; les callbacks viennent de la Boîte à outils.
+const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications }) => {
     const { isAdmin, staffProfile } = useEmployeeAuth();
     // Coordonnées des civils (e-mail, téléphone, Discord, adresse) : admins, personnel soignant et personnel administratif seulement.
     const families = staffProfile ? familiesOfMember(staffProfile, staffProfile.type) : [];
     const canSeeContacts = !!isAdmin || families.includes('soignant') || families.includes('administration');
+    // Adresse des membres du PERSONNEL : personnel administratif et admins seulement.
+    const canSeeStaffAddress = !!isAdmin || families.includes('administration');
     const [tab, setTab] = useState('staff');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -34,6 +40,7 @@ const DirectoryModal = ({ show, onHide }) => {
     const [recruiters, setRecruiters] = useState({});
     const [admins, setAdmins] = useState({});
     const [internalGrants, setInternalGrants] = useState({});
+    const [creationFlags, setCreationFlags] = useState({});   // { uid: { signature, carte } }
     const [family, setFamily] = useState('all');
     const [query, setQuery] = useState('');
 
@@ -45,12 +52,13 @@ const DirectoryModal = ({ show, onHide }) => {
         (async () => {
             try {
                 // Les civils et le recrutement interne ne sont lisibles que selon le rôle : un refus n'empêche pas le reste de s'afficher.
-                const [staffList, civilList, recruiterUids, adminUids, grants] = await Promise.all([
+                const [staffList, civilList, recruiterUids, adminUids, grants, flagsSnap] = await Promise.all([
                     loadStaffMembers(),
                     loadCivilians().catch(() => []),
                     loadRecruiterUids().catch(() => ({})),
                     loadAdminUids().catch(() => ({})),
                     loadInternalGrants().catch(() => ({})),
+                    get(ref(database, 'creationsFlags')).catch(() => null),
                 ]);
                 if (cancelled) return;
                 setStaff(staffList);
@@ -58,6 +66,7 @@ const DirectoryModal = ({ show, onHide }) => {
                 setRecruiters(recruiterUids);
                 setAdmins(adminUids);
                 setInternalGrants(grants);
+                setCreationFlags(flagsSnap && flagsSnap.exists() ? flagsSnap.val() : {});
             } catch (err) {
                 if (!cancelled) setError(err?.message || 'Annuaire illisible.');
             } finally {
@@ -89,7 +98,7 @@ const DirectoryModal = ({ show, onHide }) => {
 
     const needle = normalize(query).trim();
     const staffRows = useMemo(() => staff.filter((member) => (family === 'all' || member.family === family)
-        && (!needle || normalize(`${member.displayName} ${rankLabel(member.service, member.rank || member.category)} ${member.serviceDirige || ''} ${member.badge || ''} ${member.discord || ''} ${member.phNumber || ''}`).includes(needle))),
+        && (!needle || normalize(`${member.displayName} ${rankLabel(member.service, member.rank || member.category)} ${member.serviceDirige || ''} ${member.badge || ''} ${member.discord || ''} ${member.phNumber || ''} ${member.email || ''}`).includes(needle))),
     [staff, family, needle]);
     const civilRows = useMemo(() => pureCivilians.filter((civilian) => !needle || normalize(`${nameOfCivilian(civilian)} ${civilian.patientID || ''} ${canSeeContacts ? `${civilian.email || ''} ${civilian.phone || ''} ${civilian.discord || ''}` : ''}`).includes(needle)),
         [pureCivilians, needle, canSeeContacts]);
@@ -142,12 +151,33 @@ const DirectoryModal = ({ show, onHide }) => {
                                             <span><i className="fas fa-id-badge"></i> {member.badge || '—'}</span>
                                             <span><i className="fas fa-phone"></i> {member.phNumber || '—'}</span>
                                             <span><i className="fab fa-discord"></i> {member.discord || '—'}</span>
+                                            <span><i className="fas fa-envelope"></i> {member.email || '—'}</span>
+                                            {canSeeStaffAddress && (member.address || member.zip) && <span><i className="fas fa-location-dot"></i> {[member.address, member.zip].filter(Boolean).join(' · ')}</span>}
                                         </div>
                                         <div className="dir-chips">
+                                            {member.uid && <Pill color={creationFlags[member.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (Carte de visite & signature)">{creationFlags[member.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>}
+                                            {member.uid && <Pill color={creationFlags[member.uid]?.carte ? '#3fb950' : '#6e7681'} title="A créé sa carte de visite">{creationFlags[member.uid]?.carte ? 'Carte de visite' : 'Sans carte'}</Pill>}
                                             {member.families.map((key) => <Pill key={key} color={FAMILY_COLORS[key]}>{STAFF_FAMILIES[key]?.label || key}</Pill>)}
                                             {member.uid && recruiters[member.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {member.uid && admins[member.uid] === true && <Pill color="#f85149">Admin</Pill>}
                                             {member.uid && internalGrants[member.uid] && <Pill color="#79c0ff" title="Statut de recrutement interne accordé">Recrutement interne</Pill>}
+                                        </div>
+                                        <div className="dir-actions">
+                                            {access.savedReports && onOpenSavedReports && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Rapports enregistrés » sur cet employé" onClick={() => onOpenSavedReports(member.name)}>
+                                                    <i className="fas fa-folder-open me-1"></i>Rapports enregistrés
+                                                </Button>
+                                            )}
+                                            {access.patientDossier && onOpenPatientDossier && badgeDigits(member.badge) && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Dossier Patient » sur son ID patient (PHMC-{ID employé})" onClick={() => onOpenPatientDossier(`PHMC-${badgeDigits(member.badge)}`)}>
+                                                    <i className="fas fa-folder-tree me-1"></i>Dossier patient
+                                                </Button>
+                                            )}
+                                            {access.applications && onOpenApplications && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Gestion du recrutement » sur ses candidatures" onClick={() => onOpenApplications(member.name)}>
+                                                    <i className="fas fa-file-signature me-1"></i>Dossier candidature
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -176,8 +206,21 @@ const DirectoryModal = ({ show, onHide }) => {
                                             )}
                                         </div>
                                         <div className="dir-chips">
+                                            <Pill color={creationFlags[civilian.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (utilisée pour ses documents, ex. AMA)">{creationFlags[civilian.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>
                                             {recruiters[civilian.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {internalGrants[civilian.uid] && <Pill color="#79c0ff" title="Statut de recrutement interne accordé">Recrutement interne</Pill>}
+                                        </div>
+                                        <div className="dir-actions">
+                                            {access.patientDossier && onOpenPatientDossier && civilian.patientID && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Dossier Patient » sur ce patient" onClick={() => onOpenPatientDossier(civilian.patientID)}>
+                                                    <i className="fas fa-folder-tree me-1"></i>Dossier patient
+                                                </Button>
+                                            )}
+                                            {access.applications && onOpenApplications && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Gestion du recrutement » sur ses candidatures" onClick={() => onOpenApplications(nameOfCivilian(civilian))}>
+                                                    <i className="fas fa-file-signature me-1"></i>Dossier candidature
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

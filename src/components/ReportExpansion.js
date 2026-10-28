@@ -84,6 +84,7 @@ export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
     const handleLoad = () => {
         const doc = iframeRef.current?.contentDocument;
         if (!doc || !doc.documentElement) return;
+        let frame = 0;
         const measure = () => {
             const measured = Math.max(doc.documentElement.scrollHeight, doc.body ? doc.body.scrollHeight : 0);
             if (measured > 0) setContentHeight(Math.min(30000, measured + 4));
@@ -91,7 +92,8 @@ export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
         measure();
         if (observerRef.current) observerRef.current.disconnect();
         if (typeof ResizeObserver !== 'undefined') {
-            observerRef.current = new ResizeObserver(measure);
+            // Mesure au prochain affichage : changer la hauteur du cadre DANS le rappel de l'observateur déclenchait l'avertissement « ResizeObserver loop ».
+            observerRef.current = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); });
             observerRef.current.observe(doc.documentElement);
         }
     };

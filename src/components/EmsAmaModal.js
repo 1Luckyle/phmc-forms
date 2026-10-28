@@ -17,7 +17,7 @@ import * as Sentry from '@sentry/react';
 import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { useData } from '../contexts/DataContext';
+import { loadStaffMembers, rankLabel } from '../utils/staffAdmin';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import DebugFillButton from './DebugFillButton';
 import SignatureCreator from './SignatureCreator';
@@ -56,7 +56,7 @@ const civilianName = (c) => [c.firstName, c.middleName, c.lastName].filter(Boole
 
 const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) => {
     const { canUseAma, staffName, currentEmployee, isAdmin } = useEmployeeAuth();
-    const { phmcListData } = useData();
+    const [staffMembers, setStaffMembers] = useState([]);
     const { bbcodeEnabled } = useSiteConfig();
 
     const [employee, setEmployee] = useState(null);                  // { value: nom, uid, label }
@@ -73,10 +73,16 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
 
     // Paramédic : par défaut la personne connectée ; les autres fiches sont proposées (un admin signe pour qui il veut, mais la signature d'un
     // autre n'est lisible que par un admin : sinon cette personne doit signer elle-même).
-    const employeeOptions = useMemo(() => (Array.isArray(phmcListData) ? phmcListData : [])
-        .filter((member) => member && member.name)
-        .map((member) => ({ value: member.name, uid: member.uid || null, label: `${member.name} (${member.rank || member.category || 'PHMC'})` }))
-        .sort((a, b) => a.value.localeCompare(b.value)), [phmcListData]);
+    useEffect(() => {
+        if (!show) return undefined;
+        let cancelled = false;
+        loadStaffMembers().then((list) => { if (!cancelled) setStaffMembers(list); }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [show]);
+    const employeeOptions = useMemo(() => staffMembers
+        .filter((member) => member && member.name && member.service === 'phmc')
+        .map((member) => ({ value: member.name, uid: member.uid || null, label: `${member.displayName || member.name} (${rankLabel(member.service, member.rank || member.category)})` }))
+        .sort((a, b) => a.label.localeCompare(b.label)), [staffMembers]);
 
     useEffect(() => {
         if (!show) return;

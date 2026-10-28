@@ -6,9 +6,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import Select from 'react-select';
-import { useData } from '../../contexts/DataContext';
+import { loadStaffMembers, rankLabel } from '../../utils/staffAdmin';
 import { DECHARGE_TEXT, isAdministrativeMember, signatureMatches } from '../../utils/interviews';
-import { normalizeRank } from '../../constants/ranks';
 import './Applications.css';
 
 const selectStyles = {
@@ -36,7 +35,7 @@ const toLocalInput = (iso) => {
 // application : candidature concernée ; interview : entretien existant (modification) ou null ; actor : { name, uid }
 // onSubmit({ entretien, signature }) → promesse (la fenêtre se ferme si elle réussit).
 const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit }) => {
-    const { phmcListData, coronerListData } = useData();
+    const [members, setMembers] = useState([]);
     const [when, setWhen] = useState('');
     const [lead, setLead] = useState(null);
     const [others, setOthers] = useState([]);
@@ -44,19 +43,28 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
 
-    // Personnel proposé : toutes les fiches (PHMC et DMEC), avec leur rôle pour savoir qui est administratif.
+    // Personnel proposé : TOUTES les fiches (PHMC et DMEC), lues en direct (pas la liste en cache, parfois incomplète), avec leur rôle
+    // pour savoir qui est administratif.
+    useEffect(() => {
+        if (!show) return undefined;
+        let cancelled = false;
+        loadStaffMembers()
+            .then((list) => { if (!cancelled) setMembers(list); })
+            .catch((error) => console.warn('Liste du personnel illisible :', error?.message || error));
+        return () => { cancelled = true; };
+    }, [show]);
+
     const people = useMemo(() => {
-        const list = [...(Array.isArray(phmcListData) ? phmcListData : []), ...(Array.isArray(coronerListData) ? coronerListData : [])]
-            .filter((member) => member && member.name);
         const seen = new Set();
-        return list.filter((member) => (seen.has(member.name) ? false : seen.add(member.name)))
+        return members
+            .filter((member) => member && member.name && (seen.has(member.name) ? false : seen.add(member.name)))
             .map((member) => ({
                 value: member.name,
-                label: `${member.name} (${normalizeRank(member.rank || member.category) || 'Personnel'})`,
+                label: `${member.displayName || member.name} (${rankLabel(member.service, member.rank || member.category)})`,
                 administrative: isAdministrativeMember(member),
             }))
-            .sort((a, b) => a.value.localeCompare(b.value));
-    }, [phmcListData, coronerListData]);
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [members]);
 
     const me = useMemo(() => {
         const known = people.find((person) => person.value === actor?.name);

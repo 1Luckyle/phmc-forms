@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
 import {
-    normalizeApplicationStatus, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
+    normalizeApplicationStatus, applicationStatusLabel, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
 } from '../constants/recruitment';
 import { isLockdownOn, LOCK_MESSAGE } from '../utils/lockdownGuard';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
@@ -994,6 +994,10 @@ Clé : ${sanitizedKey}`,
                 return;
             }
             await set(ref(database, `patientRecords/${location.node}/${reportKey}/visibility`), 'shared');
+            logActivity({
+                category: 'rapports', action: 'report_shared', summary: `Rapport partagé avec le patient : ${entry.title || entry.originalKey || reportKey}`,
+                details: `Patient : ${location.node}\nPartagé par : ${staffName || 'admin'}`, target: location.node,
+            });
             showNotification('Rapport partagé avec le patient.', 'check-circle');
         } catch (error) {
             console.error('Error sharing report with patient:', error);
@@ -1149,6 +1153,24 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 if (outcome.action === 'deleted') result.deleted++;
                 else if (outcome.action === 'hidden') result.hidden++;
                 else { result.refused++; refusals.add(outcome.message); }
+                // Toute suppression laisse une trace dans le journal ; celle d'un AMA (refus de soins signé par un patient) est signalée par un avertissement.
+                if (outcome.action === 'deleted' || outcome.action === 'hidden') {
+                    const isAma = report.kind === 'ama';
+                    const label = report.title || report.key;
+                    logActivity({
+                        category: 'rapports', action: isAma ? 'ama_deleted' : 'report_deleted', severity: isAma ? 'warning' : 'info',
+                        summary: `${isAma ? '⚠ Formulaire AMA ' : 'Rapport '}${report.isCopy ? '(copie) ' : ''}${outcome.action === 'hidden' ? 'retiré' : 'supprimé'} : ${label}`,
+                        details: `${report.patientID ? `Patient : ${report.patientID}\n` : ''}Supprimé par : ${staffName || (isCivilian ? 'le patient' : 'compte sans fiche')}\nRapport : ${reportPath}\nRésultat : ${outcome.action === 'hidden' ? 'retiré (conservé dans le dossier tant que des copies existent)' : 'supprimé définitivement'}`,
+                        target: report.patientID || userId || undefined,
+                    });
+                } else if (outcome.action === 'refused' && report.kind === 'ama') {
+                    logActivity({
+                        category: 'rapports', action: 'ama_delete_refused', severity: 'warning',
+                        summary: `Tentative de suppression d'un AMA refusée : ${report.title || report.key}`,
+                        details: `Patient : ${report.patientID || 'inconnu'}\nPar : ${staffName || (isCivilian ? 'le patient' : 'compte sans fiche')}`,
+                        target: report.patientID || undefined,
+                    });
+                }
             } catch (error) {
                 console.error(`Error deleting report ${report.key} for user ${userId}:`, error);
                 Sentry.captureException(error, { extra: { context: 'deleteReportsForUser', userId, key: report.key } });
@@ -1261,14 +1283,23 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 return { success: false };
             }
 
-            // Un seul poste à la fois par catégorie : choisir un autre poste remplace la candidature en cours.
+            // « Enregistrer » depuis le formulaire REMPLACE la candidature déjà enregistrée dans cette catégorie (un seul poste à la fois) :
+            // on prévient, on demande une vraie confirmation, et on oriente vers « Modifier ma candidature » pour une simple retouche.
             const replacedPoste = !editing && existing?.posteCle && formData.recruitmentPosition && existing.posteCle !== formData.recruitmentPosition
                 ? (existing.poste || existing.posteCle) : null;
-            if (replacedPoste) {
-                const newPoste = positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || formData.recruitmentPosition;
-                if (!window.confirm(`Vous avez déjà une candidature en cours pour « ${replacedPoste} » dans cette catégorie.\n\nL'enregistrer pour « ${newPoste} » la remplacera (on ne peut candidater qu'à un poste par catégorie à la fois). Continuer ?`)) {
-                    return { success: false };
-                }
+            if (!editing && existing) {
+                const newPosteLabel = positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || formData.recruitmentPosition || '—';
+                const message = [
+                    `⚠ Vous avez déjà une candidature enregistrée dans cette catégorie : « ${existing.poste || existing.posteCle || 'poste inconnu'} ».`,
+                    '',
+                    '« Enregistrer » va la REMPLACER ENTIÈREMENT par ce formulaire : tout ce qui était enregistré avant (poste, réponses, texte) sera écrasé et ne pourra pas être récupéré.',
+                    replacedPoste ? `Le poste changerait aussi : « ${replacedPoste} » → « ${newPosteLabel} ».` : '',
+                    '',
+                    'Si vous voulez seulement MODIFIER votre candidature, annulez ici et passez par « Mon dossier candidat » → « Modifier ma candidature » : elle sera mise à jour (sans rien écraser) et le recrutement verra précisément ce qui a changé.',
+                    '',
+                    'Confirmez-vous vouloir tout écraser ?',
+                ].filter((line, index, list) => line !== '' || list[index - 1] !== '').join('\n');
+                if (!window.confirm(message)) return { success: false };
             }
 
             const newDonnees = filterFormData(formData, bbCodeVersion);
@@ -1503,6 +1534,11 @@ Candidature : ${applicationId}`,
                 historique,
             });
             await saveApplication(applicantUid, applicationId, updated);
+            logActivity({
+                category: 'recrutement', action: 'application_status_changed', severity: statut === 'retiree' ? 'warning' : 'info',
+                summary: `Candidature « ${applicationStatusLabel(statut)} » : ${existing.nomCandidat || applicantUid} — ${existing.poste || 'poste inconnu'}`,
+                details: `Ancien statut : ${applicationStatusLabel(existing.statut)}\nIdentifiant : ${applicationId}`, target: existing.nomCandidat || undefined,
+            });
             return { success: true, application: { ...updated, id: applicationId } };
         } catch (error) {
             console.error('Error updating job application status:', error);

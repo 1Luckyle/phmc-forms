@@ -65,13 +65,13 @@ const StatusChip = ({ status }) => (
     <span className="cctv-chip" style={{ '--c': colorOf(status) }}><span className="cctv-dot"></span>{STATUS_LABELS[status] || status}</span>
 );
 
-const PendingJobApplications = ({ showNotification }) => {
+const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
     const [applications, setApplications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [meta, setMeta] = useState({});
-    const [filter, setFilter] = useState('todo');
-    const [search, setSearch] = useState('');
-    const [openId, setOpenId] = useState(null);
+    const [filter, setFilter] = useState(initialSearch ? 'all' : 'todo'); // recherche venue de l'annuaire : toutes les candidatures de la personne
+    const [search, setSearch] = useState(initialSearch);
+    const [openId, setOpenId] = useState(undefined); // undefined = défaut (ouverte s'il n'y a qu'un résultat) ; null = tout replié
     const [interviewTarget, setInterviewTarget] = useState(null); // { application, editing } : fenêtre d'entretien ouverte
     const [refusing, setRefusing] = useState({});      // { [clé]: { reason, detail } } : panneau de refus ouvert
     const [busyKey, setBusyKey] = useState(null);
@@ -354,6 +354,11 @@ const PendingJobApplications = ({ showNotification }) => {
         if (!window.confirm(`Supprimer définitivement la candidature de ${application.nomCandidat || 'ce candidat'} (${application.poste || 'poste inconnu'}) ?`)) return;
         try {
             await removeApplication(application.candidatUid, application.id);
+            logActivity({
+                category: 'recrutement', action: 'application_deleted', severity: 'warning',
+                summary: `Candidature supprimée définitivement : ${application.nomCandidat} — ${application.poste || 'poste inconnu'}`,
+                details: `Statut : ${STATUS_LABELS[application.statut] || application.statut}\nSupprimée par : ${actorName}`, target: application.nomCandidat || undefined,
+            });
             showNotification('Candidature supprimée.', 'trash');
             await loadApplications();
         } catch (error) {
@@ -479,7 +484,7 @@ const PendingJobApplications = ({ showNotification }) => {
             <div className="cctv-list">
                 {shown.map((application) => {
                     const key = keyOf(application);
-                    const isOpen = openId === key || shown.length === 1;
+                    const isOpen = openId === undefined ? shown.length === 1 : openId === key;
                     const replyNeeded = awaitingReply(application);
                     const draft = refusing[key];
                     const busy = busyKey === key;
@@ -488,7 +493,7 @@ const PendingJobApplications = ({ showNotification }) => {
                     const flag = modifiedByApplicant(application) ? 'Modifiée' : (application.statut === 'soumise' ? 'À prendre en charge' : (replyNeeded ? 'À répondre' : (application.statut === 'entretien_effectue' ? 'Décision à rendre' : null)));
                     return (
                         <div key={key} className={`cctv-card ${isOpen ? 'open' : ''}`} style={{ '--c': colorOf(application.statut) }}>
-                            <button type="button" className="cctv-card-head" onClick={() => setOpenId(isOpen && shown.length > 1 ? null : key)}>
+                            <button type="button" className="cctv-card-head" onClick={() => setOpenId(isOpen ? null : key)}>
                                 <span className="cctv-card-main">
                                     <strong>
                                         {application.nomCandidat || 'Candidat inconnu'}

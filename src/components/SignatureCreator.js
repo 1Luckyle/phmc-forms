@@ -5,6 +5,7 @@ import { MyCreationPanel } from './MyCreationPanel';
 import { SIGNATURE_STYLES, buildSignatureText, renderSignatureDataUrl } from '../utils/signatureRenderer';
 import { CREATION_KINDS, saveUserCreation, removeUserCreation } from '../utils/userCreations';
 import { copyToClipboard } from './notificationService';
+import { logActivity } from '../utils/activityLog';
 import './MyCreations.css';
 
 // Polices manuscrites embarquées (utilisées par le canvas de signatureRenderer).
@@ -53,6 +54,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
             }, { patientID: civilian ? patientID : '', actorName: name });
             onCreationChange(saved);
             setEditing(false);
+            logActivity({ category: 'comptes', action: creation ? 'signature_replaced' : 'signature_created', summary: `Signature ${creation ? 'remplacée' : 'créée'} : ${text}`, details: civilian ? `Compte Civil ${patientID || ''} (aussi rangée à son ID patient)` : undefined, target: text });
             showNotification('Signature enregistrée.', 'save');
             await copyToClipboard(uploaded.url, showNotification, 'Lien de la signature copié dans le presse-papiers !');
         } catch (error) {
@@ -69,6 +71,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
         setBusy(true);
         try {
             await removeUserCreation(uid, CREATION_KINDS.signature, { patientID: civilian ? patientID : '' });
+            logActivity({ category: 'comptes', action: 'signature_deleted', severity: 'warning', summary: `Signature supprimée : ${creation?.text || name}`, target: creation?.text || name });
             onCreationChange(null);
             setEditing(false);
             showNotification('Signature supprimée (l\'image sera retirée d\'ImgBB par un administrateur).', 'save');

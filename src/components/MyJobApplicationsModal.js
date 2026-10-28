@@ -15,6 +15,7 @@ import {
     APPLICATION_STATUS, APPLICATION_STATUS_COLORS, APPLICATION_EDITABLE_STATUSES, THREAD_OPEN_STATUSES, positionLabelFor,
 } from '../constants/recruitment';
 import { subscribeMyThreadMeta } from '../utils/applicationThreads';
+import { logActivity } from '../utils/activityLog';
 import { presentsLabel } from '../utils/interviews';
 import { copyToClipboard } from './notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -81,7 +82,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
     const { openForumNotice, forumNoticeModal } = useForumNotice();
     const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
-    const [openId, setOpenId] = useState(null);
+    const [openId, setOpenId] = useState(undefined); // undefined = choix par défaut (ouverte s'il n'y en a qu'une) ; null = tout replié
     const [meta, setMeta] = useState({});
     // Le poste s'affiche sous son libellé français, même pour une ancienne candidature qui n'a gardé que la clé.
     const { selectOptions } = useData();
@@ -104,6 +105,11 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
         if (!window.confirm('Supprimer définitivement cette candidature de votre historique ?')) return;
         try {
             await removeApplication(application.candidatUid, application.id);
+            logActivity({
+                category: 'recrutement', action: 'application_deleted', severity: 'warning',
+                summary: `Candidature supprimée par le candidat : ${application.poste || 'poste inconnu'}`, details: `Statut : ${STATUS_LABELS[application.statut] || application.statut}`,
+                target: application.nomCandidat || undefined,
+            });
             showNotification('Candidature supprimée.', 'trash');
             if (onDeleted) onDeleted();
         } catch (error) {
@@ -168,13 +174,13 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                     <div className="cctv-list">
                         {!isLoading && applications.map((application) => {
                             const color = APPLICATION_STATUS_COLORS[application.statut] || '#8b949e';
-                            const isOpen = openId === application.id || applications.length === 1;
+                            const isOpen = openId === undefined ? applications.length === 1 : openId === application.id;
                             const info = meta[application.id];
                             const newReply = !!info && info.staff && THREAD_OPEN_STATUSES.includes(application.statut);
                             const showThread = THREAD_OPEN_STATUSES.includes(application.statut) || application.statut === 'refusee' || info;
                             return (
                                 <div key={application.id} className={`cctv-card ${isOpen ? 'open' : ''}`} style={{ '--c': color }}>
-                                    <button type="button" className="cctv-card-head" onClick={() => setOpenId(isOpen && applications.length > 1 ? null : application.id)}>
+                                    <button type="button" className="cctv-card-head" onClick={() => setOpenId(isOpen ? null : application.id)}>
                                         <span className="cctv-card-main">
                                             <strong>{application.poste || 'Poste inconnu'}</strong>
                                             <small>Candidat : {application.nomCandidat || '—'} · Déposée le {formatDate(application.creeLe)} · mise à jour {formatDate(application.modifieLe)}</small>

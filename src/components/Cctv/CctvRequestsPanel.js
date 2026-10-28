@@ -296,7 +296,7 @@ const CctvRequestsPanel = ({ scope = 'mine', onNewRequest }) => {
             <div className="cctv-toolbar">
                 <div className="cctv-filters" role="group" aria-label="Statut">
                     {manage && <button type="button" className={filter === 'open' ? 'on' : ''} onClick={() => setFilter('open')}>À traiter <span>{counts.open}</span></button>}
-                    {Object.entries(CCTV_STATUSES).filter(([key]) => manage || key !== 'nouvelle').map(([key, info]) => (
+                    {Object.entries(CCTV_STATUSES).map(([key, info]) => (
                         <button key={key} type="button" className={filter === key ? 'on' : ''} style={{ '--c': info.color }} onClick={() => setFilter(key)}>{info.label} <span>{counts[key] || 0}</span></button>
                     ))}
                     <button type="button" className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>Toutes <span>{counts.all}</span></button>

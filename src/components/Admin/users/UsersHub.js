@@ -26,6 +26,7 @@ import {
 import { STAFF_FAMILIES } from '../../../constants/ranks';
 import { loadContractCandidates } from '../../../utils/contractCandidates';
 import { loadInternalGrants, revokeInternalStatus } from '../../../utils/internalRecruitment';
+import { logActivity } from '../../../utils/activityLog';
 import { getEmployeeFullName } from '../../../utils/employeeName';
 
 const formatShortDate = (ts) => (ts ? new Date(ts).toLocaleDateString('fr-FR') : '');
@@ -231,6 +232,10 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
         setBusy(true);
         try {
             const outcome = await saveCivilianProfile(form, civilian);
+            logActivity({
+                category: 'comptes', action: 'civil_profile_edited', summary: `Profil Civil modifié : ${[form.firstName, form.lastName].filter(Boolean).join(' ')}`,
+                details: `ID patient : ${civilian.patientID || '—'}${outcome.renamedReports > 0 ? `\nRapports migrés vers le nouveau nom : ${outcome.renamedReports}` : ''}`, target: civilian.patientID || undefined,
+            });
             showNotification(outcome.renamedReports > 0
                 ? `Profil Civil mis à jour (${outcome.renamedReports} rapport(s) migré(s) vers le nouveau nom).`
                 : 'Profil Civil mis à jour.', 'success');

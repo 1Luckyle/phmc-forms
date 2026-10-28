@@ -178,6 +178,10 @@ function MainApp({
     // voir PatientDossierModal.js.
     const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
     const [showDirectory, setShowDirectory] = useState(false);
+    // Raccourcis de l'annuaire : ouvrir un outil déjà positionné sur la personne (voir DirectoryModal).
+    const [directoryEmployeeReports, setDirectoryEmployeeReports] = useState('');
+    const [directoryPatientId, setDirectoryPatientId] = useState('');
+    const [directoryApplicantSearch, setDirectoryApplicantSearch] = useState('');
     // « Mon dossier patient » : le personnel peut lui aussi être un patient.
     const [showMyPatientFile, setShowMyPatientFile] = useState(false);
     // « Mon profil » : le personnel modifie lui-même téléphone, Discord et adresse Eyefind Mail.
@@ -397,8 +401,9 @@ function MainApp({
     // Rafraîchit la copie locale de ma signature (proposée dans les formulaires qui la demandent).
     const myCreationsUid = currentEmployee?.uid || null;
     useEffect(() => {
-        if (myCreationsUid) loadUserCreations(myCreationsUid).catch(() => {});
-    }, [myCreationsUid]);
+        if (myCreationsUid) loadUserCreations(myCreationsUid, { patientID: isCivilian ? (civilianProfile?.patientID || '') : '' }).catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [myCreationsUid, isCivilian, civilianProfile?.patientID]);
     // All references to bbCodeVersion now occur after its initialization
     const handleSelectAgencyGroup = (group) => {
         setSelectedAgencyGroup(group);
@@ -2474,10 +2479,6 @@ function MainApp({
                                                     <>
                                                         {editingApplication && Number(editingApplication.version) === Number(bbCodeVersion) ? (
                                                             <>
-                                                                <div className="w-100 mb-1" style={{ padding: '8px 12px', color: '#f0f6fc', background: 'rgba(56, 139, 253, 0.12)', border: '1px solid rgba(56, 139, 253, 0.5)', borderRadius: '8px', fontSize: '0.9rem' }}>
-                                                                    <i className="fas fa-pen me-2"></i>Vous modifiez votre candidature{editingApplication.poste ? <> « <strong>{editingApplication.poste}</strong> »</> : null}.
-                                                                    {' '}Rien n'est changé tant que vous n'enregistrez pas ; le recrutement verra les champs modifiés dans l'historique.
-                                                                </div>
                                                                 <Button type="button" onClick={() => saveJobApplication('edit')} className="copy-button-modern" disabled={isLockdownActive}>
                                                                     <i className="fas fa-save"></i>
                                                                     Enregistrer les modifications
@@ -2527,6 +2528,12 @@ function MainApp({
                                                     </>
                                                 )}
                                             </div>
+                                        {editingApplication && isRecruitmentForm && Number(editingApplication.version) === Number(bbCodeVersion) && (
+                                            <div className="edit-application-banner" role="status">
+                                                <i className="fas fa-pen me-2"></i>Vous modifiez votre candidature{editingApplication.poste ? <> « <strong>{editingApplication.poste}</strong> »</> : null}.
+                                                {' '}Rien n'est changé tant que vous n'enregistrez pas ; le recrutement verra les champs modifiés dans l'historique.
+                                            </div>
+                                        )}
                                         </div>
                                     </div>
 
@@ -2610,8 +2617,9 @@ function MainApp({
 
                         <SavedReportsModal
                             show={showSavedReports}
-                            onHide={closeSavedReports}
-                            onClose={closeSavedReports}
+                            initialEmployeeName={directoryEmployeeReports}
+                            onHide={() => { closeSavedReports(); setDirectoryEmployeeReports(''); }}
+                            onClose={() => { closeSavedReports(); setDirectoryEmployeeReports(''); }}
                             savedReports={savedReports}
                             reportsForSelectedUser={savedReports}
                             loadReport={loadReportForUser}
@@ -2657,10 +2665,18 @@ function MainApp({
                             bbCodeVersion={bbCodeVersion}
                             handleReportSelectedForAttachment={handleReportSelectedForAttachment}
                         />
-                        <DirectoryModal show={showDirectory} onHide={() => setShowDirectory(false)} />
+                        <DirectoryModal
+                            show={showDirectory}
+                            onHide={() => setShowDirectory(false)}
+                            access={{ savedReports: !!isAdmin && toolAccess.savedReports, patientDossier: !!toolAccess.patientDossier, applications: !!toolAccess.recruitment }}
+                            onOpenSavedReports={(employeeName) => { setShowDirectory(false); setDirectoryEmployeeReports(employeeName); if (!showSavedReports) toggleSavedReports(); }}
+                            onOpenPatientDossier={(patientID) => { setShowDirectory(false); setDirectoryPatientId(patientID); setShowPatientDossierModal(true); }}
+                            onOpenApplications={(search) => { setShowDirectory(false); setDirectoryApplicantSearch(search); setShowRecruitmentManager(true); }}
+                        />
                         <PatientDossierModal
                             show={showPatientDossierModal}
-                            onHide={() => setShowPatientDossierModal(false)}
+                            initialPatientId={directoryPatientId}
+                            onHide={() => { setShowPatientDossierModal(false); setDirectoryPatientId(''); }}
                             showNotification={showNotification}
                             shareReportWithPatient={shareReportWithPatient}
                             copyReportToOwnAccount={copyReportToOwnAccount}
@@ -2669,7 +2685,8 @@ function MainApp({
                         />
                         <RecruitmentManager
                             show={showRecruitmentManager}
-                            onHide={() => setShowRecruitmentManager(false)}
+                            initialSearch={directoryApplicantSearch}
+                            onHide={() => { setShowRecruitmentManager(false); setDirectoryApplicantSearch(''); }}
                             showNotification={showNotification}
                         />
                         <AwarenessCalendarModal

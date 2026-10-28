@@ -131,7 +131,10 @@ const OnboardingModal = ({
     const [showAccountCreation, setShowAccountCreation] = useState(false);
     const [accountData, setAccountData] = useState({
         firstName: '',
+        middleName: '',
         lastName: '',
+        address: '',
+        zip: '',
         discord: '',
         rank: '',
         badge: '',
@@ -266,7 +269,10 @@ const OnboardingModal = ({
                         setGtawUserId(result.gtawUserId ?? null);
                         setAccountData({
                             firstName: '',
+                            middleName: '',
                             lastName: '',
+                            address: '',
+                            zip: '',
                             discord: '',
                             rank: '',
                             badge: '',
@@ -301,7 +307,10 @@ const OnboardingModal = ({
                 setIsResettingPassword(false);
                 setAccountData({
                     firstName: '',
+                    middleName: '',
                     lastName: '',
+                    address: '',
+                    zip: '',
                     discord: '',
                     rank: '',
                     badge: '',
@@ -582,7 +591,7 @@ const OnboardingModal = ({
 
     const handleChangeGtawCharacter = () => {
         setSelectedGtawCharacter(null);
-        setAccountData(prev => ({ ...prev, firstName: '', lastName: '', badge: '' }));
+        setAccountData(prev => ({ ...prev, firstName: '', middleName: '', lastName: '', badge: '' }));
     };
 
     const handleCreateAccount = async () => {
@@ -645,7 +654,14 @@ const OnboardingModal = ({
                 ? { gtawCharacterId: selectedGtawCharacter.id, gtawUserId: gtawUserId ?? null }
                 : {};
 
+            // Deuxième prénom et adresse (facultatifs) : ajoutés seulement s'ils sont renseignés.
+            const optionalIdentity = {
+                ...((accountData.middleName || '').trim() ? { middleName: accountData.middleName.trim() } : {}),
+                ...((accountData.address || '').trim() ? { address: accountData.address.trim() } : {}),
+                ...((accountData.zip || '').trim() ? { zip: accountData.zip.trim() } : {}),
+            };
             const newStaffMember = isCoroner ? {
+                ...optionalIdentity,
                 name: newStaffMemberName,
                 firstName: accountData.firstName,
                 lastName: accountData.lastName,
@@ -656,6 +672,7 @@ const OnboardingModal = ({
                 category: accountData.rank,
                 ...gtawFields,
             } : {
+                ...optionalIdentity,
                 name: newStaffMemberName,
                 firstName: accountData.firstName,
                 lastName: accountData.lastName,
@@ -1289,6 +1306,34 @@ const OnboardingModal = ({
                             <div style={formRowStyle}>
                                 <Form.Control
                                     type="text"
+                                    name="middleName"
+                                    value={accountData.middleName}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Deuxième prénom (facultatif)"
+                                    style={formInputStyle}
+                                />
+                            </div>
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="text"
+                                    name="address"
+                                    value={accountData.address}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Adresse (facultatif)"
+                                    style={formInputStyle}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    name="zip"
+                                    value={accountData.zip}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Code postal (facultatif)"
+                                    style={formInputStyle}
+                                />
+                            </div>
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="text"
                                     name="discord"
                                     value={accountData.discord}
                                     onChange={handleAccountDataChange}
@@ -1584,6 +1629,34 @@ const OnboardingModal = ({
                                     placeholder="Nom *"
                                     readOnly={accountCreationMethod === 'gtaw'}
                                     style={{ ...formInputStyle, ...(accountCreationMethod === 'gtaw' ? { opacity: 0.75, cursor: 'not-allowed' } : {}) }}
+                                />
+                            </div>
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="text"
+                                    name="middleName"
+                                    value={accountData.middleName}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Deuxième prénom (facultatif)"
+                                    style={formInputStyle}
+                                />
+                            </div>
+                            <div style={formRowStyle}>
+                                <Form.Control
+                                    type="text"
+                                    name="address"
+                                    value={accountData.address}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Adresse (facultatif)"
+                                    style={formInputStyle}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    name="zip"
+                                    value={accountData.zip}
+                                    onChange={handleAccountDataChange}
+                                    placeholder="Code postal (facultatif)"
+                                    style={formInputStyle}
                                 />
                             </div>
                             <div style={formRowStyle}>

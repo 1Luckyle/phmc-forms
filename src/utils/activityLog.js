@@ -96,6 +96,7 @@ export const logAdminAction = ({ email, action, details, categoryName, actorLabe
 const recentErrors = new Map();
 let errorBudget = 20;
 export const logClientError = ({ message, source, lineno, stack, isButtonClickError }) => {
+    if (/ResizeObserver loop (limit exceeded|completed with undelivered notifications)/.test(String(message || ''))) return Promise.resolve(false); // avertissement inoffensif du navigateur
     const key = String(message || '').slice(0, 120);
     const now = Date.now();
     if (errorBudget <= 0 || (recentErrors.get(key) || 0) > now - 60000) return Promise.resolve(false);
