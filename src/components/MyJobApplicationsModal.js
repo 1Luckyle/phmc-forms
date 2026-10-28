@@ -11,8 +11,11 @@ import { Button, Dropdown } from 'react-bootstrap';
 import { removeApplication } from '../utils/recruitmentStore';
 import { useDebug } from '../contexts/DebugContext';
 import { useData } from '../contexts/DataContext';
-import { APPLICATION_STATUS, APPLICATION_STATUS_COLORS, THREAD_OPEN_STATUSES, positionLabelFor } from '../constants/recruitment';
+import {
+    APPLICATION_STATUS, APPLICATION_STATUS_COLORS, APPLICATION_EDITABLE_STATUSES, THREAD_OPEN_STATUSES, positionLabelFor,
+} from '../constants/recruitment';
 import { subscribeMyThreadMeta } from '../utils/applicationThreads';
+import { presentsLabel } from '../utils/interviews';
 import { copyToClipboard } from './notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ForumHint from './ForumHint';
@@ -54,6 +57,11 @@ const STATUS_HELP = {
     retiree: "Vous avez retiré cette candidature.",
 };
 
+const EVENT_LABELS = {
+    entretien_planifie: 'Entretien programmé', entretien_modifie: 'Entretien modifié', entretien_annule: 'Entretien annulé',
+    candidature_modifiee: 'Vous avez modifié votre candidature',
+};
+
 const ACTIVE_STATUSES = ['soumise', 'en_examen', 'entretien_programme', 'entretien_effectue'];
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -65,7 +73,7 @@ const formatDate = (timestamp) => {
 
 const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
 
-const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onLoad }) => {
+const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onLoad, onEdit }) => {
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
@@ -131,8 +139,11 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
             <ul style={{ paddingLeft: '1.1rem', marginBottom: 0 }}>
                 {history.map((entry, index) => (
                     <li key={`${entry.statut}-${entry.horodatage}-${index}`}>
-                        <span style={{ color: APPLICATION_STATUS_COLORS[entry.statut] || '#c9d1d9' }}>{STATUS_LABELS[entry.statut] || entry.statut}</span>
+                        <span style={{ color: APPLICATION_STATUS_COLORS[entry.statut] || '#c9d1d9' }}>
+                            {entry.evenement ? (EVENT_LABELS[entry.evenement] || entry.evenement) : (STATUS_LABELS[entry.statut] || entry.statut)}
+                        </span>
                         {' — '}{formatDate(entry.horodatage)}
+                        {entry.details && <div className="cctv-muted">{entry.details}</div>}
                     </li>
                 ))}
             </ul>
@@ -187,9 +198,11 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                                 <div className="rec-banner info">{STATUS_HELP[application.statut]}</div>
                                             ) : null}
 
-                                            {application.dateEntretien && (
+                                            {application.dateEntretien && application.statut === 'entretien_programme' && (
                                                 <dl className="cctv-fields">
                                                     <dt>Entretien</dt><dd>{formatDate(application.dateEntretien)}</dd>
+                                                    {application.entretien?.recruteur?.nom && (<><dt>Mené par</dt><dd>{application.entretien.recruteur.nom}</dd></>)}
+                                                    {application.entretien?.presents?.length > 0 && (<><dt>Présents</dt><dd>{presentsLabel(application.entretien)}</dd></>)}
                                                 </dl>
                                             )}
 
@@ -220,6 +233,15 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             )}
 
                                             <div className="rec-tools">
+                                                {onEdit && APPLICATION_EDITABLE_STATUSES.includes(application.statut) && canReload(application) && (
+                                                    <Button
+                                                        size="sm" variant="primary"
+                                                        title="Rouvre votre candidature dans son formulaire pour la modifier : elle est mise à jour (jamais dupliquée) et le recrutement voit ce qui a changé"
+                                                        onClick={() => onEdit(application)}
+                                                    >
+                                                        <i className="fas fa-pen me-1"></i>Modifier ma candidature
+                                                    </Button>
+                                                )}
                                                 {onLoad && (
                                                     <Button
                                                         size="sm" variant="outline-primary" disabled={!canReload(application)}

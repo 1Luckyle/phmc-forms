@@ -99,7 +99,8 @@ const tokenize = (input, warn) => {
         const param = separator === ' ' ? undefined : rawParam;
         if (separator === ' ' && !SPACE_PARAM_TAGS.has(name)) continue;
         if (!KNOWN_TAGS.has(name)) {
-            warn(`Balise inconnue conservée en texte brut : ${full}`);
+            // [x], [X], [ ] : cases à cocher des formulaires, voulues en texte brut (aucun avertissement).
+            if (!/^\[\s*x?\s*\]$/i.test(full)) warn(`Balise inconnue conservée en texte brut : ${full}`);
             continue;   // reste dans le texte (le segment n'est pas coupé)
         }
         pushText(text.slice(lastIndex, match.index));

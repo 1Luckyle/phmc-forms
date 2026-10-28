@@ -94,3 +94,18 @@
     .cctv-fields dd { margin-bottom: 8px; }
     .cctv-flag { display: none; }
 }
+
+/* Modification d'une demande par son auteur, et historique. */
+.cctv-edit { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.cctv-edit-field { display: flex; flex-direction: column; gap: 3px; font-size: 0.86rem; color: #b1bac4; }
+.cctv-edit-field span { font-weight: 600; }
+.cctv-edit-field input, .cctv-edit-field textarea {
+    padding: 6px 10px; color: #e6edf3; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; resize: vertical;
+}
+.cctv-edit-field input:focus, .cctv-edit-field textarea:focus { outline: none; border-color: #58a6ff; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.25); }
+.cctv-history { margin: 6px 0 12px; padding: 0 0 0 4px; list-style: none; font-size: 0.85rem; color: #e6edf3; border-left: 2px solid #30363d; }
+.cctv-history > li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 4px 0 4px 12px; }
+.cctv-history-date { color: #b1bac4; font-size: 0.78rem; white-space: nowrap; }
+.cctv-history ul { margin: 4px 0 0; padding-left: 1.1rem; list-style: disc; }
+.cctv-history del { color: #ffa198; }
+.cctv-history ins { color: #7ee787; text-decoration: none; }

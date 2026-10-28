@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
-import { normalizeApplicationStatus, positionLabelFor } from '../constants/recruitment';
+import {
+    normalizeApplicationStatus, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
+} from '../constants/recruitment';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
 import { database } from '../firebase'; // Assuming this path
 import { ref, get, set } from 'firebase/database';
@@ -119,6 +121,14 @@ export const useReportManagement = (
     const [selectedUserForSavedReports, setSelectedUserForSavedReports] = useState(null);
     // Chargement d'un rapport en attente : { version, data, label }. Voir l'effet plus bas.
     const [pendingFormLoad, setPendingFormLoad] = useState(null);
+    // Mode « modification de ma candidature » : { candidatUid, id, version, poste, statut } ; mémorisé dans le navigateur pour survivre à un
+    // rechargement de page (voir l'effet de reprise plus bas). Effacé à l'enregistrement, à l'annulation, à la déconnexion.
+    const [editingApplication, setEditingApplication] = useState(null);
+    const EDIT_STORAGE_KEY = 'phmcEditingApplication';
+    const forgetEditing = useCallback(() => {
+        setEditingApplication(null);
+        try { localStorage.removeItem(EDIT_STORAGE_KEY); } catch (error) { /* stockage indisponible : sans conséquence */ }
+    }, []);
     const formLoadRefs = useRef({});
     formLoadRefs.current = { initialFormData, setFormData, showNotification, setBbCodeVersion };
     const [preselectedEmployeeType, setPreselectedEmployeeType] = useState(null);
@@ -1183,17 +1193,38 @@ Copie : ${copyPath}`, target: copyAuthorName,
         const bbCodeContent = getBBCodeContent();
         const applicantName = formData.applicantTitleAndFullName
             || `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim();
-        const newStatus = submitAction === 'submit' ? 'soumise' : 'brouillon';
+        // Mode modification : l'enregistrement vise la candidature chargée (même identifiant), jamais une autre.
+        const editing = editingApplication && Number(editingApplication.version) === Number(bbCodeVersion) ? editingApplication : null;
+        let newStatus = submitAction === 'submit' ? 'soumise' : 'brouillon';
 
         try {
+            let editedExisting = null;
+            if (editing) {
+                // Relecture juste avant d'écrire : un entretien a pu être programmé pendant que le formulaire était ouvert.
+                editedExisting = await loadApplication(applicant.uid, editing.id);
+                if (!editedExisting) {
+                    showNotification('Cette candidature n\'existe plus : modification abandonnée.', 'error');
+                    forgetEditing();
+                    return { success: false };
+                }
+                if (!APPLICATION_EDITABLE_STATUSES.includes(editedExisting.statut)) {
+                    showNotification("Un entretien a été programmé ou une décision rendue pendant votre modification : la candidature n'est plus modifiable. Vos changements n'ont pas été enregistrés.", 'warning', 10000);
+                    forgetEditing();
+                    return { success: false };
+                }
+                if (submitAction !== 'submit') newStatus = editedExisting.statut;
+            }
+
             // Candidature existante (nouveau nœud « candidatures » ou ancien « jobApplications »).
             // Candidature déjà prise en charge (examen, entretien) : le formulaire ne peut plus la modifier ni la renvoyer.
             // Elle repasserait sinon à « brouillon » / « soumise » et ferait perdre sa place au candidat.
             const sameFormEarly = (await loadApplicationsOf(applicant.uid)).filter((a) => Number(a.versionBBCode) === Number(bbCodeVersion));
-            const inProgress = sameFormEarly.find((a) => ['en_examen', 'entretien_programme', 'entretien_effectue'].includes(a.statut));
+            const inProgress = editing ? null : sameFormEarly.find((a) => ['en_examen', 'entretien_programme', 'entretien_effectue'].includes(a.statut));
             if (inProgress) {
                 showNotification(
-                    `Votre candidature pour « ${inProgress.poste || 'ce poste'} » est en cours de traitement par le recrutement : elle ne peut plus être modifiée ici. Écrivez au recrutement depuis « Mon dossier candidat », ou retirez-la pour en déposer une autre dans cette catégorie.`,
+                    inProgress.statut === 'en_examen'
+                        ? `Votre candidature pour « ${inProgress.poste || 'ce poste'} » est en cours d'examen : utilisez « Modifier » dans « Mon dossier candidat » pour la changer, ou retirez-la pour en déposer une autre dans cette catégorie.`
+                        : `Votre candidature pour « ${inProgress.poste || 'ce poste'} » est en cours de traitement par le recrutement (entretien) : elle ne peut plus être modifiée. Écrivez au recrutement depuis « Mon dossier candidat », ou retirez-la pour en déposer une autre dans cette catégorie.`,
                     'warning', 10000
                 );
                 return { success: false };
@@ -1204,15 +1235,19 @@ Copie : ${copyPath}`, target: copyAuthorName,
             // une nouvelle candidature dans ce domaine est alors une nouvelle entrée. Le premier identifiant « form_{version} »
             // est conservé tel quel pour ne pas dupliquer les candidatures déjà déposées.
             const sameForm = (await loadApplicationsOf(applicant.uid)).filter((a) => Number(a.versionBBCode) === Number(bbCodeVersion));
-            const existing = sameForm
+            const existing = editedExisting || sameForm
                 .filter((a) => !['acceptee', 'refusee'].includes(a.statut))
                 .sort((a, b) => (b.modifieLe || 0) - (a.modifieLe || 0))[0] || null;
             const applicationId = existing?.id || (sameForm.length > 0 ? `form_${bbCodeVersion}_${Date.now()}` : `form_${bbCodeVersion}`);
 
             // Conditions d'enregistrement : un brouillon exige au moins un poste ; l'envoi exige une candidature
             // complète pour un poste ouvert (voir utils/formValidation.js).
+            const alreadySubmitted = !!editing && !['brouillon', 'en_pause'].includes(editedExisting.statut);
+            const samePoste = !!editing && formData.recruitmentPosition === editedExisting.posteCle;
             const applicationCheck = validateApplication(bbCodeVersion, formData, {
-                mode: submitAction === 'submit' ? 'submit' : 'draft', existing, selectOptions,
+                mode: submitAction === 'submit' || alreadySubmitted ? 'submit' : 'draft',
+                existing: editing ? null : existing,
+                selectOptions: samePoste ? null : selectOptions,   // poste fermé depuis l'envoi : sans effet si on ne le change pas
             });
             if (applicationCheck.errors.length > 0) {
                 showNotification(
@@ -1223,7 +1258,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
             }
 
             // Un seul poste à la fois par catégorie : choisir un autre poste remplace la candidature en cours.
-            const replacedPoste = existing?.posteCle && formData.recruitmentPosition && existing.posteCle !== formData.recruitmentPosition
+            const replacedPoste = !editing && existing?.posteCle && formData.recruitmentPosition && existing.posteCle !== formData.recruitmentPosition
                 ? (existing.poste || existing.posteCle) : null;
             if (replacedPoste) {
                 const newPoste = positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || formData.recruitmentPosition;
@@ -1232,8 +1267,25 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 }
             }
 
+            const newDonnees = filterFormData(formData, bbCodeVersion);
+            const newPoste = positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || definition.name;
+            // Ce que le candidat a changé (consigné dans l'historique pour le recrutement).
+            let editEvent = null;
+            if (editing) {
+                const changedFields = changedApplicationFields(editedExisting.donnees, newDonnees);
+                const posteChanged = (editedExisting.posteCle || '') !== (formData.recruitmentPosition || '');
+                if (changedFields.length === 0 && !posteChanged && submitAction !== 'submit') {
+                    showNotification('Aucune modification à enregistrer.', 'info-circle');
+                    return { success: false };
+                }
+                const parts = [];
+                if (posteChanged) parts.push(`Poste : ${editedExisting.poste || editedExisting.posteCle || '—'} → ${newPoste}`);
+                if (changedFields.length > 0) parts.push(`Champs modifiés : ${changedFields.join(', ')}`);
+                editEvent = { evenement: 'candidature_modifiee', details: parts.join(' ; ') || null, par: applicantName };
+            }
+
             const historique = existing?.historique ? [...existing.historique] : [];
-            historique.push({ statut: newStatus, horodatage: Date.now() });
+            historique.push({ statut: newStatus, horodatage: Date.now(), ...(editEvent || {}) });
 
             const payload = sanitizeForFirebase({
                 candidatUid: applicant.uid,
@@ -1241,13 +1293,17 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 idPatient: applicant.patientID,
                 nomCandidat: applicantName,
                 // Libellé français du poste (la clé, souvent anglaise, est gardée à part).
-                poste: positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) || definition.name,
+                poste: newPoste,
                 posteCle: formData.recruitmentPosition || null,
                 versionBBCode: bbCodeVersion,
-                donnees: filterFormData(formData, bbCodeVersion),
+                donnees: newDonnees,
                 bbcode: bbCodeContent,
                 statut: newStatus,
                 dateEntretien: existing?.dateEntretien || null,
+                // Ce que le recrutement a renseigné ne doit pas disparaître quand le candidat enregistre.
+                entretien: existing?.entretien || undefined,
+                priseEnChargePar: existing?.priseEnChargePar || undefined,
+                refus: existing?.refus || undefined,
                 creeLe: existing?.creeLe || Date.now(),
                 modifieLe: Date.now(),
                 historique,
@@ -1256,8 +1312,8 @@ Copie : ${copyPath}`, target: copyAuthorName,
             await saveApplication(applicant.uid, applicationId, payload);
             logActivity({
                 category: 'recrutement',
-                action: submitAction === 'submit' ? 'application_submitted' : 'application_draft_saved',
-                summary: `${submitAction === 'submit' ? 'Candidature envoyée' : 'Brouillon de candidature enregistré'} : ${applicantName} — ${payload.poste}`,
+                action: editing && submitAction !== 'submit' ? 'application_edited' : (submitAction === 'submit' ? 'application_submitted' : 'application_draft_saved'),
+                summary: `${editing && submitAction !== 'submit' ? 'Candidature modifiée' : (submitAction === 'submit' ? 'Candidature envoyée' : 'Brouillon de candidature enregistré')} : ${applicantName} — ${payload.poste}`,
                 details: `Formulaire : ${definition.name}
 Candidature : ${applicationId}`,
                 target: applicantName,
@@ -1290,9 +1346,12 @@ Candidature : ${applicationId}`,
             }
 
             showNotification(
-                `${submitAction === 'submit' ? 'Candidature envoyée !' : 'Candidature enregistrée (brouillon).'}${replacedPoste ? ` Elle remplace votre candidature pour « ${replacedPoste} ».` : ''}`,
+                editing && submitAction !== 'submit'
+                    ? 'Modifications enregistrées : le recrutement verra ce qui a changé dans l\'historique.'
+                    : `${submitAction === 'submit' ? 'Candidature envoyée !' : 'Candidature enregistrée (brouillon).'}${replacedPoste ? ` Elle remplace votre candidature pour « ${replacedPoste} ».` : ''}`,
                 'save'
             );
+            if (editing) forgetEditing();
             return { success: true };
         } catch (error) {
             console.error('Error saving job application:', error);
@@ -1300,7 +1359,7 @@ Candidature : ${applicationId}`,
             showNotification('Erreur lors de l\'enregistrement de la candidature.', 'error');
             return { success: false };
         }
-    }, [applicant, staffProfile, bbCodeVersion, formData, getBBCodeContent, filterFormData, selectOptions, showNotification]);
+    }, [applicant, staffProfile, bbCodeVersion, formData, getBBCodeContent, filterFormData, selectOptions, showNotification, editingApplication, forgetEditing]);
 
     // Charge les candidatures du civil connecté ("Mes candidatures").
     const loadMyJobApplications = useCallback(async () => {
@@ -1319,6 +1378,73 @@ Candidature : ${applicationId}`,
             setIsLoadingJobApplications(false);
         }
     }, [applicant]);
+
+    // Démarre la modification d'une candidature : relit son état en base (elle a pu changer depuis l'affichage), recharge ses réponses
+    // dans le bon formulaire et lie les enregistrements suivants à CETTE candidature. Retourne true si le mode édition est actif.
+    const startEditingApplication = useCallback(async (application, { resumed = false } = {}) => {
+        if (!applicant?.uid || !application?.id) return false;
+        try {
+            const fresh = await loadApplication(applicant.uid, application.id);
+            if (!fresh) { showNotification('Candidature introuvable.', 'error'); forgetEditing(); return false; }
+            if (!APPLICATION_EDITABLE_STATUSES.includes(fresh.statut)) {
+                showNotification(
+                    fresh.statut === 'entretien_programme' || fresh.statut === 'entretien_effectue'
+                        ? "Un entretien est prévu : la candidature ne peut plus être modifiée. Écrivez au recrutement depuis « Mon dossier candidat » si besoin."
+                        : 'Cette candidature ne peut plus être modifiée.',
+                    'warning', 8000
+                );
+                forgetEditing();
+                return false;
+            }
+            const version = Number(fresh.versionBBCode);
+            if (!version || !getFormDefinition(version)?.FieldComponent || !fresh.donnees || Object.keys(fresh.donnees).length === 0) {
+                showNotification("Cette candidature a été enregistrée sans ses réponses : elle ne peut pas être modifiée. Refaites-la depuis le formulaire.", 'warning', 8000);
+                forgetEditing();
+                return false;
+            }
+            const poste = positionLabelFor(selectOptions, version, fresh.posteCle || fresh.poste) || fresh.poste || '';
+            setPendingFormLoad({ version, data: { ...fresh.donnees }, label: poste || 'Candidature' });
+            const next = { candidatUid: applicant.uid, id: fresh.id, version, poste, statut: fresh.statut };
+            setEditingApplication(next);
+            try { localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify({ uid: applicant.uid, id: fresh.id })); } catch (error) { /* ignoré */ }
+            if (resumed) showNotification(`Modification de votre candidature « ${poste} » reprise : le dernier enregistrement a été rechargé.`, 'info-circle', 6000);
+            return true;
+        } catch (error) {
+            console.error('startEditingApplication', error);
+            showNotification("Impossible de démarrer la modification de la candidature.", 'error');
+            return false;
+        }
+    }, [applicant, selectOptions, showNotification, forgetEditing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const cancelEditingApplication = useCallback(() => {
+        forgetEditing();
+        showNotification('Modification annulée : la candidature enregistrée n\'a pas changé.', 'info-circle');
+    }, [forgetEditing, showNotification]);
+
+    // Reprise après rechargement de la page : si une modification était en cours pour ce compte, on la relance (si la candidature est
+    // encore modifiable). Une seule tentative par compte.
+    const resumedFor = useRef(null);
+    useEffect(() => {
+        if (!applicant?.uid || editingApplication || resumedFor.current === applicant.uid) return;
+        resumedFor.current = applicant.uid;
+        let stored = null;
+        try { stored = JSON.parse(localStorage.getItem(EDIT_STORAGE_KEY) || 'null'); } catch (error) { stored = null; }
+        if (stored?.uid === applicant.uid && stored.id) startEditingApplication({ id: stored.id }, { resumed: true });
+        else if (stored) forgetEditing();
+    }, [applicant?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Se déconnecter (ou changer de compte) abandonne la modification.
+    useEffect(() => {
+        if (!applicant?.uid && editingApplication) forgetEditing();
+    }, [applicant?.uid, editingApplication, forgetEditing]);
+
+    // Changer de formulaire pendant la modification l'abandonne (une candidature ne change pas de formulaire) — sauf pendant le chargement initial.
+    useEffect(() => {
+        if (editingApplication && !pendingFormLoad && Number(bbCodeVersion) !== Number(editingApplication.version)) {
+            forgetEditing();
+            showNotification('Modification abandonnée : vous avez changé de formulaire. La candidature enregistrée n\'a pas changé.', 'warning', 7000);
+        }
+    }, [bbCodeVersion, pendingFormLoad, editingApplication, forgetEditing, showNotification]);
 
     // « Recharger » une candidature de « Mes candidatures » : même mécanisme que le chargement d'un rapport
     // (bascule sur le bon formulaire de candidature puis le remplit avec ses réponses enregistrées).
@@ -1460,6 +1586,9 @@ Candidature : ${applicationId}`,
         saveJobApplication,
         loadMyJobApplications,
         loadApplicationIntoForm,
+        editingApplication,
+        startEditingApplication,
+        cancelEditingApplication,
         updateJobApplicationStatus,
         myJobApplications,
         isLoadingJobApplications,

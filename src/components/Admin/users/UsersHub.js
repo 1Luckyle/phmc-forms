@@ -196,7 +196,9 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
     const [form, setForm] = useState(null);
     const [busy, setBusy] = useState(false);
     useEffect(() => { if (show && civilian) setForm({ ...civilian }); }, [show, civilian]);
-    if (!form) return null;
+    // Fermée : `civilian` repasse à null alors que `form` garde l'ancienne valeur ; sans ce garde-fou, la fenêtre
+    // essayait de relire `civilian.uid` pendant sa fermeture et faisait planter tout l'onglet.
+    if (!form || !civilian) return null;
     const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
     const save = async () => {
         setBusy(true);

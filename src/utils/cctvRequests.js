@@ -27,6 +27,17 @@ export const CCTV_OPEN_STATUSES = ['nouvelle', 'en_cours'];
 
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
 
+// Champs de la demande, dans l'ordre du formulaire. Les obligatoires ne peuvent pas être vidés à la modification.
+export const CCTV_FIELD_LABELS = [
+    "Grade de l'officier requérant", 'Officier requérant', "Numéro de téléphone de l'officier", 'Département requérant', "Nom d'utilisateur Discord",
+    "Date/heure de l'incident", 'Raison de la demande', 'Emplacement de la vidéosurveillance', 'Description des événements', 'Notes hors jeu',
+];
+const OPTIONAL_FIELD_LABELS = ['Notes hors jeu'];
+export const isCctvFieldRequired = (label) => !OPTIONAL_FIELD_LABELS.includes(label);
+
+// Tant que la demande n'est ni acceptée ni refusée, son auteur peut la modifier (et écrire dans le fil).
+export const isCctvEditable = (request) => CCTV_OPEN_STATUSES.includes(request?.statut);
+
 // Demande d'accès au traitement : ajuste le drapeau serveur d'après le rôle (sans effet si la personne n'a pas le rôle).
 let lastSync = 0;
 export const syncCctvAccess = async () => {
@@ -123,12 +134,75 @@ export const setCctvStatus = async (request, status, authorName) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
     const now = Date.now();
+    const actor = clean(authorName || getActivityActorName() || user.email, 120);
+    const historyId = push(ref(database, `cctvRequests/${request.id}/historique`)).key;
     await update(ref(database), {
         [`cctvRequests/${request.id}/statut`]: status,
         [`cctvRequests/${request.id}/maj`]: now,
-        [`cctvRequests/${request.id}/traitePar`]: { uid: user.uid, name: clean(authorName || getActivityActorName() || user.email, 120), ts: now },
+        [`cctvRequests/${request.id}/traitePar`]: { uid: user.uid, name: actor, ts: now },
+        [`cctvRequests/${request.id}/historique/${historyId}`]: { ts: now, type: 'statut', statut: status, de: request.statut || null, par: { uid: user.uid, name: actor, staff: true } },
     });
     logActivity({ category: 'demandes', action: 'cctv_status', summary: `Demande CCTV « ${request.titre} » : ${CCTV_STATUSES[status]?.label || status}`, target: request.id });
+};
+
+// Modifie la demande par son auteur (statut « nouvelle » ou « en cours » seulement). `values` : { [libellé du champ]: valeur }.
+// Les champs modifiés sont consignés dans l'historique (avant / après) pour que l'administration voie ce qui a changé.
+// Retourne { changed: false } s'il n'y a rien à enregistrer.
+export const editCctvRequest = async ({ request, values, authorName }) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Connexion requise.');
+    if (request.by?.uid !== user.uid) throw new Error('Seul l\'auteur de la demande peut la modifier.');
+    if (!isCctvEditable(request)) throw new Error('Cette demande est traitée (acceptée ou refusée) : elle ne peut plus être modifiée.');
+
+    const before = Object.fromEntries((request.champs || []).map((field) => [field.l, field.v]));
+    const labels = [...CCTV_FIELD_LABELS, ...(request.champs || []).map((field) => field.l).filter((label) => !CCTV_FIELD_LABELS.includes(label))];
+    const next = {};
+    labels.forEach((label) => { next[label] = clean(label in values ? values[label] : before[label], 5000); });
+    const missing = labels.filter((label) => isCctvFieldRequired(label) && (label in before || label in values) && !next[label]);
+    if (missing.length) throw new Error(`Champ(s) obligatoire(s) vide(s) : ${missing.join(', ')}.`);
+
+    const modifs = labels
+        .filter((label) => (before[label] || '') !== next[label])
+        .map((label) => ({ l: label, avant: clean(before[label] || '', 1000), apres: clean(next[label], 1000) }));
+    if (modifs.length === 0) return { changed: false };
+
+    const champs = labels.map((label) => ({ l: label, v: next[label] })).filter((field) => field.v);
+    const resume = {
+        agent: clean(next['Officier requérant'], 120),
+        departement: clean(next['Département requérant'], 120),
+        lieu: clean(next['Emplacement de la vidéosurveillance'], 200),
+    };
+    const titre = clean(`${(next['Emplacement de la vidéosurveillance'] || '').split('\n')[0] || 'Lieu non précisé'} — ${next['Département requérant'] || 'Service non précisé'}`, 200);
+    const now = Date.now();
+    const historyId = push(ref(database, `cctvRequests/${request.id}/historique`)).key;
+    await update(ref(database), {
+        [`cctvRequests/${request.id}/champs`]: champs,
+        [`cctvRequests/${request.id}/resume`]: resume,
+        [`cctvRequests/${request.id}/titre`]: titre,
+        [`cctvRequests/${request.id}/maj`]: now,
+        [`cctvRequests/${request.id}/historique/${historyId}`]: {
+            ts: now, type: 'modification',
+            par: { uid: user.uid, name: clean(authorName || getActivityActorName() || user.email || 'Inconnu', 120), staff: false },
+            modifs,
+        },
+    });
+    logActivity({
+        category: 'demandes', action: 'cctv_edited', summary: `Demande de vidéosurveillance modifiée : ${titre}`, target: request.id,
+        details: modifs.map((modif) => modif.l).join(', '),
+    });
+    return { changed: true, modifs };
+};
+
+// Historique d'une demande, du plus ancien au plus récent : dépôt, modifications du demandeur, changements de statut
+// (par réponse ou seuls). Le dépôt et les statuts posés par une réponse se déduisent de la demande elle-même.
+export const historyOf = (request) => {
+    const entries = [];
+    entries.push({ id: 'creation', ts: request.ts || 0, type: 'creation', par: { name: request.by?.name || 'Demandeur', staff: false } });
+    Object.entries(request.historique || {}).forEach(([id, entry]) => entries.push({ id, ...entry }));
+    repliesOf(request).filter((reply) => reply.statut).forEach((reply) => entries.push({
+        id: `reply-${reply.id}`, ts: reply.ts, type: 'statut', statut: reply.statut, par: reply.par,
+    }));
+    return entries.sort((a, b) => (a.ts || 0) - (b.ts || 0));
 };
 
 // Réponses d'une demande, en liste triée par date.

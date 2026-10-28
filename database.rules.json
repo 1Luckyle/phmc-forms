@@ -334,6 +334,17 @@
         ".validate": "newData.hasChildren(['ts', 'statut', 'titre', 'by', 'champs']) && newData.child('titre').isString() && newData.child('titre').val().length <= 200 && (newData.child('statut').val() === 'nouvelle' || newData.child('statut').val() === 'en_cours' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'refusee' || newData.child('statut').val() === 'cloturee')",
         "statut": { ".write": "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)" },
         "traitePar": { ".write": "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)" },
+        // Modification par le demandeur : seulement tant que la demande n'est ni acceptée ni refusée ; chaque modification est consignée
+        // dans l'historique (ajout seul : une entrée ne se réécrit pas).
+        "champs": { ".write": "auth != null && (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours'))" },
+        "resume": { ".write": "auth != null && (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours'))" },
+        "titre": { ".write": "auth != null && (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours'))" },
+        "historique": {
+          "$historyId": {
+            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours')))",
+            ".validate": "newData.hasChildren(['ts', 'type', 'par'])"
+          }
+        },
         "maj": { ".write": "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || auth.uid === data.parent().child('by/uid').val())" },
         "reponses": {
           "$replyId": {
@@ -473,7 +484,9 @@
           ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))",
           // Un candidat ne peut poser que SES statuts (brouillon, soumise, retirée, en pause) ou garder celui qui est déjà là :
           // examen, entretien, acceptation et refus sont réservés aux recruteurs et aux admins.
-          ".validate": "(root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'soumise' || newData.child('statut').val() === 'retiree' || newData.child('statut').val() === 'en_pause' || (data.exists() && data.child('statut').val() === newData.child('statut').val())"
+          // Dès qu'un entretien est programmé (ou une décision rendue), le candidat ne peut plus modifier le contenu de sa candidature
+          // (poste, bbcode) : il peut seulement la mettre en pause ou la retirer.
+          ".validate": "(root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || ((newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'soumise' || newData.child('statut').val() === 'retiree' || newData.child('statut').val() === 'en_pause' || (data.exists() && data.child('statut').val() === newData.child('statut').val())) && (!data.exists() || !(data.child('statut').val() === 'entretien_programme' || data.child('statut').val() === 'entretien_effectue' || data.child('statut').val() === 'acceptee' || data.child('statut').val() === 'refusee') || (newData.child('bbcode').val() === data.child('bbcode').val() && newData.child('poste').val() === data.child('poste').val() && newData.child('posteCle').val() === data.child('posteCle').val())))"
         }
       }
     },
@@ -496,6 +509,19 @@
           // Fermeture du fil : par un recruteur/admin, ou par le candidat lui-même (à la signature de son contrat) ; seuls eux la lèvent.
           "ferme": {
             ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $candidatUid && !data.exists()))"
+          }
+        }
+      }
+    },
+    // Décharges signées par un recruteur qui mène un entretien sans personnel administratif : recrutement et admins seulement
+    // (le candidat n'y a pas accès). Ajout seul.
+    "decharges": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+      "$candidatUid": {
+        "$candidatureId": {
+          "$dechargeId": {
+            ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && !data.exists()",
+            ".validate": "newData.hasChildren(['ts', 'par', 'signature', 'texte'])"
           }
         }
       }

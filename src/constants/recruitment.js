@@ -150,6 +150,41 @@ export const APPLICATION_STATUS_COLORS = {
 // Le fil se ferme au refus, ou à la signature du contrat d'une candidature acceptée.
 export const THREAD_OPEN_STATUSES = ['en_examen', 'entretien_programme', 'entretien_effectue', 'acceptee'];
 
+// Une candidature reste modifiable par son candidat tant qu'aucun entretien n'est prévu (voir database.rules.json).
+export const APPLICATION_EDITABLE_STATUSES = ['brouillon', 'soumise', 'en_pause', 'en_examen'];
+
+// Libellés des champs d'une candidature, pour dire dans l'historique ce que le candidat a modifié.
+export const APPLICATION_FIELD_LABELS = {
+    recruitmentPosition: 'Poste visé', applicantTitleAndFullName: 'Titre et nom complet', genderMale: 'Genre', genderFemale: 'Genre', genderOther: 'Genre',
+    applicantGenderOtherText: 'Genre (précision)', applicantDOB: 'Date de naissance', applicantBirthPlace: 'Lieu de naissance',
+    applicantDOBAndPlace: 'Date et lieu de naissance', applicantAddress: 'Adresse', applicantPhone: 'Téléphone', applicantEmail: 'E-mail',
+    locationPHMC: 'Site (PHMC)', locationPBC: 'Site (PBC)', applicantMedicalConditions: 'Conditions médicales', citizenUS: 'Citoyenneté',
+    citizenPermanent: 'Citoyenneté', citizenNone: 'Citoyenneté', eduHighSchool: 'Études', eduCertificate: 'Études', eduDiploma: 'Études',
+    eduAssociate: 'Études', eduBachelor: 'Études', eduMaster: 'Études', eduDoctorate: 'Études', applicantSchoolName: 'Établissement',
+    applicantEnrollmentTerm: 'Période d\'études', applicantMajor: 'Filière', applicantLanguages: 'Langues', applicantPrevEmployment: 'Emploi précédent',
+    applicantPrevDuties: 'Fonctions précédentes', applicantPrevDismissalReason: 'Motif de départ', applicantMotivationLetter: 'Lettre de motivation',
+    emsLicenseLink: 'Licence', emsPartTimeReason: 'Temps partiel', dfpSanFireLink: 'Preuve DFP (SanFire)', dfpPhmcLink: 'Preuve DFP (PHMC)',
+    dfpLegalFactionLink: 'Preuve DFP (faction légale)', oocUcpName: 'Nom UCP', oocForumName: 'Nom du forum', oocDiscord: 'Discord',
+    oocTimezone: 'Fuseau horaire', oocMedicalExperience: 'Expérience médicale (HRP)', oocOtherCharLicenseProof: 'Preuve de licence (autre personnage)',
+    oocOtherFactionDfpLfm: 'DFP / LFM (autre faction)',
+};
+
+// Champs différents entre deux jeux de réponses → libellés uniques (sans valeurs : certains textes sont longs et personnels).
+export const changedApplicationFields = (before = {}, after = {}) => {
+    const labels = [];
+    const keys = new Set([...Object.keys(before || {}), ...Object.keys(after || {})]);
+    keys.forEach((key) => {
+        if (key === 'recruitmentPosition') return;
+        const a = before?.[key];
+        const b = after?.[key];
+        const empty = (value) => value === undefined || value === null || value === '' || value === false;
+        if (JSON.stringify(a ?? null) === JSON.stringify(b ?? null) || (empty(a) && empty(b))) return;
+        const label = APPLICATION_FIELD_LABELS[key] || key;
+        if (!labels.includes(label)) labels.push(label);
+    });
+    return labels;
+};
+
 // Motifs de refus proposés au recruteur (il peut aussi écrire le sien) : le candidat reçoit toujours une justification.
 export const REFUSAL_REASONS = [
     'Dossier incomplet ou informations manquantes',
@@ -185,11 +220,15 @@ export const normalizeApplication = (raw, id = null, uid = null) => {
         refus: source.refus ?? null,                         // { motif, detail, parNom, le } : justification d'un refus
         priseEnChargePar: source.priseEnChargePar ?? null,   // { uid, nom, le } : recruteur qui examine la candidature
         dateEntretien: source.dateEntretien ?? source.interviewDateTime ?? null,
+        entretien: source.entretien ?? null,                  // { date, recruteur, presents, sansAdministratif, … } : voir utils/interviews.js
         creeLe: source.creeLe ?? source.createdAt ?? null,
         modifieLe: source.modifieLe ?? source.updatedAt ?? null,
         historique: list.map((entry) => ({
             statut: normalizeApplicationStatus(entry.statut ?? entry.status),
             horodatage: entry.horodatage ?? entry.timestamp ?? null,
+            evenement: entry.evenement ?? null,   // entretien_planifie | entretien_modifie | entretien_annule | candidature_modifiee
+            details: entry.details ?? null,
+            par: entry.par ?? null,
         })),
     };
 };

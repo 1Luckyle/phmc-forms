@@ -752,6 +752,9 @@ function MainApp({
         saveJobApplication,
         loadMyJobApplications,
         loadApplicationIntoForm,
+        editingApplication,
+        startEditingApplication,
+        cancelEditingApplication,
         updateJobApplicationStatus,
         myJobApplications,
         isLoadingJobApplications,
@@ -2465,14 +2468,39 @@ function MainApp({
                                                 )}
                                                 {isRecruitmentForm && (isCivilian || (hasInternalRecruitment && staffProfile)) && (
                                                     <>
-                                                        <Button type="button" onClick={() => saveJobApplication('save')} className="copy-button-modern" disabled={isLockdownActive}>
-                                                            <i className="fas fa-save"></i>
-                                                            Enregistrer
-                                                        </Button>
-                                                        <Button type="button" onClick={() => saveJobApplication('submit')} className="copy-button-modern" disabled={isLockdownActive}>
-                                                            <i className="fas fa-paper-plane"></i>
-                                                            Enregistrer et Candidater
-                                                        </Button>
+                                                        {editingApplication && Number(editingApplication.version) === Number(bbCodeVersion) ? (
+                                                            <>
+                                                                <div className="w-100 mb-1" style={{ padding: '8px 12px', color: '#f0f6fc', background: 'rgba(56, 139, 253, 0.12)', border: '1px solid rgba(56, 139, 253, 0.5)', borderRadius: '8px', fontSize: '0.9rem' }}>
+                                                                    <i className="fas fa-pen me-2"></i>Vous modifiez votre candidature{editingApplication.poste ? <> « <strong>{editingApplication.poste}</strong> »</> : null}.
+                                                                    {' '}Rien n'est changé tant que vous n'enregistrez pas ; le recrutement verra les champs modifiés dans l'historique.
+                                                                </div>
+                                                                <Button type="button" onClick={() => saveJobApplication('edit')} className="copy-button-modern" disabled={isLockdownActive}>
+                                                                    <i className="fas fa-save"></i>
+                                                                    Enregistrer les modifications
+                                                                </Button>
+                                                                {['brouillon', 'en_pause'].includes(editingApplication.statut) && (
+                                                                    <Button type="button" onClick={() => saveJobApplication('submit')} className="copy-button-modern" disabled={isLockdownActive}>
+                                                                        <i className="fas fa-paper-plane"></i>
+                                                                        Enregistrer et Candidater
+                                                                    </Button>
+                                                                )}
+                                                                <Button type="button" onClick={cancelEditingApplication} className="copy-button-modern">
+                                                                    <i className="fas fa-xmark"></i>
+                                                                    Annuler la modification
+                                                                </Button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Button type="button" onClick={() => saveJobApplication('save')} className="copy-button-modern" disabled={isLockdownActive}>
+                                                                    <i className="fas fa-save"></i>
+                                                                    Enregistrer
+                                                                </Button>
+                                                                <Button type="button" onClick={() => saveJobApplication('submit')} className="copy-button-modern" disabled={isLockdownActive}>
+                                                                    <i className="fas fa-paper-plane"></i>
+                                                                    Enregistrer et Candidater
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                         <Button type="button" onClick={() => { loadMyJobApplications(); setShowMyJobApplications(true); }} className="copy-button-modern">
                                                             <i className="fas fa-list-check"></i>
                                                             Mes candidatures
@@ -2666,6 +2694,9 @@ function MainApp({
                             onDeleted={() => loadMyJobApplications()}
                             onLoad={(application) => {
                                 if (loadApplicationIntoForm(application)) setShowMyJobApplications(false);
+                            }}
+                            onEdit={async (application) => {
+                                if (await startEditingApplication(application)) setShowMyJobApplications(false);
                             }}
                             onUpdateStatus={async (applicantUid, applicationId, newStatus) => {
                                 const result = await updateJobApplicationStatus(applicantUid, applicationId, newStatus);

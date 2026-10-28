@@ -17,7 +17,7 @@ const generateEmailPHMCEmail = (formData) => {
 
     let bbCode = `[divbox=na][br][/br][imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 [center][/center][br][/br]
-[center][size=130][/center][/size]
+[center][size=130][/size][/center]
 [center][size=150][b]RE: ${internalEmailSubject} [/b][/size][/center]
 
 [hr][/hr][br][/br][list=none]

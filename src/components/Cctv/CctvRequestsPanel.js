@@ -7,7 +7,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import {
-    CCTV_STATUSES, CCTV_OPEN_STATUSES, cctvStatusInfo, subscribeToAllCctvRequests, subscribeToMyCctvRequests, addCctvReply, setCctvStatus, repliesOf,
+    CCTV_STATUSES, CCTV_OPEN_STATUSES, CCTV_FIELD_LABELS, cctvStatusInfo, subscribeToAllCctvRequests, subscribeToMyCctvRequests,
+    addCctvReply, setCctvStatus, editCctvRequest, isCctvEditable, isCctvFieldRequired, historyOf, repliesOf,
 } from '../../utils/cctvRequests';
 import './CctvRequests.css';
 
@@ -21,7 +22,7 @@ const normalize = (value) => String(value || '').normalize('NFD').replace(/[̀-�
 // Réponses types proposées à l'administration (elles remplissent le champ, à relire avant d'envoyer).
 const QUICK_REPLIES = [
     { label: 'Acceptée', status: 'acceptee', text: "Votre demande est acceptée. Les images vous seront transmises prochainement par l'administration du PHMC." },
-    { label: 'Informations manquantes', status: 'en_cours', text: "Nous avons besoin de précisions pour traiter votre demande : merci d'indiquer l'heure exacte de l'incident et la caméra concernée." },
+    { label: 'Informations manquantes', status: 'en_cours', text: "Nous avons besoin de précisions pour traiter votre demande :\n- " },
     { label: 'Refusée', status: 'refusee', text: "Après examen, nous ne pouvons pas donner suite à votre demande. N'hésitez pas à nous contacter pour plus de détails." },
 ];
 
@@ -42,7 +43,35 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
     const decided = closed || ['acceptee', 'refusee'].includes(request.statut);
     const canWrite = !closed && (manage || !decided);
     const lastReply = replies[replies.length - 1];
-    const awaitingYou = manage ? (request.statut === 'nouvelle' || (lastReply && !lastReply.par?.staff && CCTV_OPEN_STATUSES.includes(request.statut))) : (lastReply?.par?.staff);
+    // Modifiée par le demandeur après la dernière action de l'administration : à relire.
+    const history = historyOf(request);
+    const lastModification = [...history].reverse().find((entry) => entry.type === 'modification');
+    const lastStaffAction = Math.max(request.traitePar?.ts || 0, ...replies.filter((reply) => reply.par?.staff).map((reply) => reply.ts || 0));
+    const modifiedSinceStaff = !!lastModification && lastModification.ts > lastStaffAction;
+    const awaitingYou = manage ? (request.statut === 'nouvelle' || modifiedSinceStaff || (lastReply && !lastReply.par?.staff && CCTV_OPEN_STATUSES.includes(request.statut))) : (lastReply?.par?.staff);
+    const canEdit = !manage && isCctvEditable(request);
+    const [editing, setEditing] = useState(null);   // { [libellé]: valeur } pendant la modification
+    const [showHistory, setShowHistory] = useState(false);
+
+    const startEdit = () => {
+        const values = Object.fromEntries((request.champs || []).map((field) => [field.l, field.v]));
+        CCTV_FIELD_LABELS.forEach((label) => { if (!(label in values)) values[label] = ''; });
+        setEditing(values);
+        setError('');
+    };
+    const saveEdit = async () => {
+        setBusy(true);
+        setError('');
+        try {
+            const result = await editCctvRequest({ request, values: editing, authorName: author.name });
+            if (!result.changed) setError('Aucune modification à enregistrer.');
+            else setEditing(null);
+        } catch (err) {
+            setError(err.message || "La modification a échoué.");
+        } finally {
+            setBusy(false);
+        }
+    };
 
     const send = async (event) => {
         event.preventDefault();
@@ -80,22 +109,79 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                         {replies.length > 0 && <> · {replies.length} message{replies.length > 1 ? 's' : ''}</>}
                     </small>
                 </span>
-                {awaitingYou && <span className="cctv-flag">{manage ? 'À traiter' : 'Nouvelle réponse'}</span>}
+                {awaitingYou && <span className="cctv-flag">{manage ? (modifiedSinceStaff && request.statut !== 'nouvelle' ? 'Modifiée' : 'À traiter') : 'Nouvelle réponse'}</span>}
                 <StatusChip status={request.statut} />
                 <i className={`fas fa-chevron-${open ? 'up' : 'down'} cctv-caret`}></i>
             </button>
 
             {open && (
                 <div className="cctv-card-body">
-                    <dl className="cctv-fields">
-                        {(request.champs || []).map((field, index) => (
-                            <React.Fragment key={`${field.l}-${index}`}>
-                                <dt>{field.l}</dt>
-                                <dd>{String(field.v).includes('\n') || String(field.v).length > 110 ? <pre>{field.v}</pre> : field.v}</dd>
-                            </React.Fragment>
-                        ))}
-                        {request.traitePar?.name && (<><dt>Traitée par</dt><dd>{request.traitePar.name} · {formatDate(request.traitePar.ts)}</dd></>)}
-                    </dl>
+                    {editing ? (
+                        <div className="cctv-edit">
+                            <p className="cctv-muted">Modifiez votre demande tant qu'elle n'est ni acceptée ni refusée. Les champs modifiés seront signalés à l'administration.</p>
+                            {Object.keys(editing).map((label) => {
+                                const long = ['Description des événements', 'Notes hors jeu', 'Raison de la demande', 'Emplacement de la vidéosurveillance'].includes(label);
+                                return (
+                                    <label key={label} className="cctv-edit-field">
+                                        <span>{label}{isCctvFieldRequired(label) ? ' *' : ''}</span>
+                                        {long ? (
+                                            <textarea rows={3} value={editing[label]} disabled={busy} onChange={(e) => setEditing((prev) => ({ ...prev, [label]: e.target.value }))} />
+                                        ) : (
+                                            <input type="text" value={editing[label]} disabled={busy} onChange={(e) => setEditing((prev) => ({ ...prev, [label]: e.target.value }))} />
+                                        )}
+                                    </label>
+                                );
+                            })}
+                            <div className="cctv-reply-actions">
+                                <Button variant="secondary" size="sm" onClick={() => setEditing(null)} disabled={busy}>Annuler</Button>
+                                <Button variant="primary" size="sm" onClick={saveEdit} disabled={busy}>
+                                    {busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-floppy-disk me-1"></i>Enregistrer les modifications</>}
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <dl className="cctv-fields">
+                                {(request.champs || []).map((field, index) => (
+                                    <React.Fragment key={`${field.l}-${index}`}>
+                                        <dt>{field.l}</dt>
+                                        <dd>{String(field.v).includes('\n') || String(field.v).length > 110 ? <pre>{field.v}</pre> : field.v}</dd>
+                                    </React.Fragment>
+                                ))}
+                                {request.traitePar?.name && (<><dt>Traitée par</dt><dd>{request.traitePar.name} · {formatDate(request.traitePar.ts)}</dd></>)}
+                            </dl>
+                            <div className="cctv-quick" style={{ marginTop: 0 }}>
+                                {canEdit && <button type="button" onClick={startEdit}><i className="fas fa-pen me-1"></i>Modifier ma demande</button>}
+                                <button type="button" onClick={() => setShowHistory((value) => !value)}>
+                                    <i className="fas fa-clock-rotate-left me-1"></i>{showHistory ? "Masquer l'historique" : `Historique (${history.length})`}
+                                </button>
+                                {!manage && !canEdit && <span>Demande traitée : elle ne peut plus être modifiée.</span>}
+                            </div>
+                            {showHistory && (
+                                <ul className="cctv-history">
+                                    {history.map((entry) => (
+                                        <li key={entry.id}>
+                                            <span className="cctv-history-date">{formatDate(entry.ts)}</span>
+                                            <span>
+                                                {entry.type === 'creation' && <>Demande déposée par <strong>{entry.par?.name}</strong></>}
+                                                {entry.type === 'statut' && <><strong>{entry.par?.name || 'Administration'}</strong> : statut « {cctvStatusInfo(entry.statut).label} »</>}
+                                                {entry.type === 'modification' && (
+                                                    <>
+                                                        <strong>{entry.par?.name}</strong> a modifié sa demande
+                                                        <ul>
+                                                            {(entry.modifs || []).map((modif) => (
+                                                                <li key={modif.l}><em>{modif.l}</em> : <del>{modif.avant || '(vide)'}</del> → <ins>{modif.apres || '(vide)'}</ins></li>
+                                                            ))}
+                                                        </ul>
+                                                    </>
+                                                )}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </>
+                    )}
 
                     <div className="cctv-thread">
                         <div className="cctv-thread-title"><i className="fas fa-comments"></i> Échanges</div>

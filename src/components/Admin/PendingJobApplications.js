@@ -25,6 +25,8 @@ import { subscribeAllThreadMeta } from '../../utils/applicationThreads';
 import { logActivity } from '../../utils/activityLog';
 import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
 import ApplicationThread from '../Recruitment/ApplicationThread';
+import InterviewModal from '../Recruitment/InterviewModal';
+import { describeInterview, interviewChanges, presentsLabel, saveDecharge } from '../../utils/interviews';
 import ForumHint from '../ForumHint';
 import useForumNotice from '../../hooks/useForumNotice';
 import { copyToClipboard } from '../notificationService';
@@ -53,6 +55,10 @@ const formatDate = (ts) => {
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 const OTHER_REASON = '__autre';
+const EVENT_LABELS = {
+    entretien_planifie: 'Entretien programmé', entretien_modifie: 'Entretien modifié', entretien_annule: 'Entretien annulé',
+    candidature_modifiee: 'Candidature modifiée par le candidat',
+};
 const MAIL_MIN_INTERVAL_MS = 30 * 60 * 1000; // un mail « nouveau message » au plus toutes les 30 min par candidature
 
 const StatusChip = ({ status }) => (
@@ -66,7 +72,7 @@ const PendingJobApplications = ({ showNotification }) => {
     const [filter, setFilter] = useState('todo');
     const [search, setSearch] = useState('');
     const [openId, setOpenId] = useState(null);
-    const [interviewInputs, setInterviewInputs] = useState({});
+    const [interviewTarget, setInterviewTarget] = useState(null); // { application, editing } : fenêtre d'entretien ouverte
     const [refusing, setRefusing] = useState({});      // { [clé]: { reason, detail } } : panneau de refus ouvert
     const [busyKey, setBusyKey] = useState(null);
     const lastMailRef = useRef({});
@@ -123,6 +129,11 @@ const PendingJobApplications = ({ showNotification }) => {
     }, []);
 
     const keyOf = (application) => `${application.candidatUid}/${application.id}`;
+    // Candidature modifiée par le candidat depuis la dernière action du recrutement (dernier événement de l'historique) : à relire.
+    const modifiedByApplicant = (application) => {
+        const history = application.historique || [];
+        return ['soumise', 'en_examen'].includes(application.statut) && history.length > 0 && history[history.length - 1].evenement === 'candidature_modifiee';
+    };
     const awaitingReply = (application) => {
         const info = meta[keyOf(application)];
         return !!info && !info.staff && THREAD_OPEN_STATUSES.includes(application.statut);
@@ -152,10 +163,11 @@ const PendingJobApplications = ({ showNotification }) => {
         return !!email;
     };
 
-    const updateStatus = async (application, newStatus, extra = {}) => {
+    // `event` (facultatif) : { evenement, details } consigné dans l'historique avec le nom de la personne qui agit.
+    const updateStatus = async (application, newStatus, extra = {}, event = null) => {
         try {
             const historique = application.historique ? [...application.historique] : [];
-            historique.push({ statut: newStatus, horodatage: Date.now() });
+            historique.push({ statut: newStatus, horodatage: Date.now(), ...(event ? { evenement: event.evenement, details: event.details || null, par: actorName } : {}) });
             await saveApplication(application.candidatUid, application.id, {
                 ...application,
                 ...extra,
@@ -194,24 +206,66 @@ const PendingJobApplications = ({ showNotification }) => {
         loadApplications();
     });
 
-    const handleScheduleInterview = (application) => run(application, async () => {
-        const rawDateTime = interviewInputs[keyOf(application)];
-        if (!rawDateTime) {
-            showNotification('Veuillez choisir une date et une heure pour l\'entretien.', 'warning');
-            return;
+    // Planification ou modification d'un entretien (fenêtre InterviewModal). Une décharge signée est conservée à part si aucun
+    // personnel administratif n'est présent ; tout est consigné dans l'historique et le candidat est prévenu par mail.
+    const handleSaveInterview = async (application, { entretien, signature }) => {
+        const previous = application.statut === 'entretien_programme' ? application.entretien : null;
+        const isEdit = !!previous;
+        const changes = isEdit ? interviewChanges(previous, entretien) : [];
+        if (isEdit && changes.length === 0 && !!previous.sansAdministratif === !!entretien.sansAdministratif) {
+            throw new Error("Aucune modification : changez la date, le recruteur ou les personnes présentes.");
         }
-        const interviewDateTime = new Date(rawDateTime).toISOString();
+        if (entretien.sansAdministratif) {
+            await saveDecharge({ application, actor: { uid: currentEmployee?.uid, name: actorName }, signature, entretien });
+        }
+        const now = Date.now();
+        const full = {
+            ...entretien,
+            planifiePar: previous?.planifiePar || { nom: actorName, le: now },
+            ...(isEdit ? { modifieLe: now, modifiePar: actorName } : {}),
+        };
         const ok = await updateStatus(application, 'entretien_programme', {
-            dateEntretien: interviewDateTime,
-            priseEnChargePar: application.priseEnChargePar || { uid: currentEmployee?.uid || null, nom: actorName, le: Date.now() },
+            entretien: full,
+            dateEntretien: entretien.date,
+            priseEnChargePar: application.priseEnChargePar || { uid: currentEmployee?.uid || null, nom: actorName, le: now },
+        }, {
+            evenement: isEdit ? 'entretien_modifie' : 'entretien_planifie',
+            details: isEdit ? changes.join(' ; ') : describeInterview(entretien),
+        });
+        if (!ok) throw new Error("L'entretien n'a pas pu être enregistré.");
+        journal(isEdit ? 'application_interview_edited' : 'application_interview', `Entretien ${isEdit ? 'modifié' : 'programmé'} : ${application.nomCandidat} — ${application.poste}`, application, 'info',
+            isEdit ? changes.join('\n') : `Entretien ${describeInterview(entretien)}`);
+        const formatted = new Date(entretien.date).toLocaleString('fr-FR');
+        const who = `Il sera mené par ${entretien.recruteur.nom}${entretien.presents.length ? `, en présence de ${presentsLabel(entretien)}` : ''}.`;
+        const intro = isEdit
+            ? `Votre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center a été modifié. Il est désormais programmé le ${formatted}. ${who}\n\nChangements :\n- ${changes.join('\n- ')}`
+            : `Votre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center est programmé le ${formatted}. ${who}`;
+        const introHtml = isEdit
+            ? `<p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center a été <b>modifié</b>. Il est désormais programmé le <b>${formatted}</b>. ${who}</p><p><b>Changements :</b></p><ul>${changes.map((change) => `<li>${change}</li>`).join('')}</ul>`
+            : `<p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center est programmé le <b>${formatted}</b>. ${who}</p>`;
+        await mailApplicant(application, isEdit ? 'Entretien de candidature modifié - PHMC' : 'Entretien de candidature - PHMC',
+            `Bonjour ${application.nomCandidat || ''},\n\n${intro}\n\nMerci de vous présenter à l'étage de l'administration du Pillbox Hill Medical Center, situé au 76 Strawberry Ave, Los Santos.\n\nEn cas d'empêchement, répondez au recrutement depuis « Mon dossier candidat » ou contactez l'administration du PHMC au plus vite.\n\nCordialement,\nPillbox Hill Medical Center`,
+            `<p>Bonjour ${application.nomCandidat || ''},</p>${introHtml}<p>Merci de vous présenter à l'étage de l'administration du Pillbox Hill Medical Center, situé au 76 Strawberry Ave, Los Santos.</p><p>En cas d'empêchement, répondez au recrutement depuis « Mon dossier candidat » ou contactez l'administration du PHMC au plus vite.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        showNotification(isEdit ? 'Entretien modifié et candidat notifié.' : 'Entretien programmé et candidat notifié.', 'success');
+        loadApplications();
+    };
+
+    // Annule l'entretien sans toucher à la candidature : elle repasse « en cours d'examen », prête pour un nouvel entretien.
+    const handleCancelInterview = (application) => run(application, async () => {
+        const reason = window.prompt(`Annuler l'entretien de ${application.nomCandidat} ?\n\nMotif (facultatif, transmis au candidat) :`, '');
+        if (reason === null) return;
+        const note = reason.trim();
+        const previous = application.entretien;
+        const ok = await updateStatus(application, 'en_examen', { entretien: null, dateEntretien: null }, {
+            evenement: 'entretien_annule',
+            details: `${previous ? `Entretien ${describeInterview(previous)} annulé` : 'Entretien annulé'}${note ? ` — ${note}` : ''}`,
         });
         if (!ok) return;
-        journal('application_interview', `Entretien programmé : ${application.nomCandidat} — ${application.poste}`, application, 'info', `Date : ${formatDate(interviewDateTime)}`);
-        const formatted = new Date(interviewDateTime).toLocaleString('fr-FR');
-        await mailApplicant(application, 'Entretien de candidature - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\nVotre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center est programmé le ${formatted}.\n\nMerci de vous présenter à l'étage de l'administration du Pillbox Hill Medical Center, situé au 76 Strawberry Ave, Los Santos.\n\nEn cas d'empêchement, contactez l'administration du PHMC au plus vite.\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center est programmé le <b>${formatted}</b>.</p><p>Merci de vous présenter à l'étage de l'administration du Pillbox Hill Medical Center, situé au 76 Strawberry Ave, Los Santos.</p><p>En cas d'empêchement, contactez l'administration du PHMC au plus vite.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
-        showNotification('Entretien programmé et candidat notifié.', 'success');
+        journal('application_interview_cancelled', `Entretien annulé : ${application.nomCandidat} — ${application.poste}`, application, 'warning', note);
+        await mailApplicant(application, 'Entretien de candidature annulé - PHMC',
+            `Bonjour ${application.nomCandidat || ''},\n\nVotre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center est annulé.${note ? `\n\nMotif : ${note}` : ''}\n\nVotre candidature reste en cours d'examen : le recrutement vous proposera une nouvelle date. Vous pouvez lui écrire depuis « Mon dossier candidat ».\n\nCordialement,\nPillbox Hill Medical Center`,
+            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center est <b>annulé</b>.${note ? ` Motif : ${note}` : ''}</p><p>Votre candidature reste <b>en cours d'examen</b> : le recrutement vous proposera une nouvelle date. Vous pouvez lui écrire depuis <b>« Mon dossier candidat »</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        showNotification('Entretien annulé, candidat notifié. La candidature reste en cours d\'examen.', 'info');
         loadApplications();
     });
 
@@ -337,7 +391,11 @@ const PendingJobApplications = ({ showNotification }) => {
         return (
             <ul style={{ paddingLeft: '1.1rem', marginBottom: 0 }}>
                 {history.map((entry, index) => (
-                    <li key={`${entry.statut}-${entry.horodatage}-${index}`}>{STATUS_LABELS[entry.statut] || entry.statut} — {formatDate(entry.horodatage)}</li>
+                    <li key={`${entry.statut}-${entry.horodatage}-${index}`}>
+                        {entry.evenement ? <strong>{EVENT_LABELS[entry.evenement] || entry.evenement}</strong> : (STATUS_LABELS[entry.statut] || entry.statut)} — {formatDate(entry.horodatage)}
+                        {entry.par ? ` · ${entry.par}` : ''}
+                        {entry.details && <div className="cctv-muted">{entry.details}</div>}
+                    </li>
                 ))}
             </ul>
         );
@@ -349,7 +407,7 @@ const PendingJobApplications = ({ showNotification }) => {
         labelledApplications.forEach((application) => {
             const info = meta[`${application.candidatUid}/${application.id}`];
             const replyNeeded = !!info && !info.staff && THREAD_OPEN_STATUSES.includes(application.statut);
-            if (application.statut === 'soumise' || application.statut === 'entretien_effectue' || replyNeeded) result.todo += 1;
+            if (application.statut === 'soumise' || application.statut === 'entretien_effectue' || replyNeeded || modifiedByApplicant(application)) result.todo += 1;
             if (application.statut === 'soumise') result.soumise += 1;
             else if (application.statut === 'en_examen') result.en_examen += 1;
             else if (['entretien_programme', 'entretien_effectue'].includes(application.statut)) result.entretien += 1;
@@ -362,7 +420,7 @@ const PendingJobApplications = ({ showNotification }) => {
 
     const matchesFilter = (application) => {
         switch (filter) {
-            case 'todo': return application.statut === 'soumise' || application.statut === 'entretien_effectue' || awaitingReply(application);
+            case 'todo': return application.statut === 'soumise' || application.statut === 'entretien_effectue' || awaitingReply(application) || modifiedByApplicant(application);
             case 'soumise': case 'en_examen': case 'acceptee': case 'refusee': return application.statut === filter;
             case 'entretien': return ['entretien_programme', 'entretien_effectue'].includes(application.statut);
             case 'autres': return ['brouillon', 'retiree', 'en_pause'].includes(application.statut);
@@ -406,6 +464,14 @@ const PendingJobApplications = ({ showNotification }) => {
                 <input type="search" className="cctv-search" placeholder="Candidat, poste, ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
 
+            <InterviewModal
+                show={!!interviewTarget} onHide={() => setInterviewTarget(null)}
+                application={interviewTarget?.application}
+                interview={interviewTarget?.editing ? interviewTarget.application.entretien || (interviewTarget.application.dateEntretien ? { date: interviewTarget.application.dateEntretien } : null) : null}
+                actor={{ name: actorName, uid: currentEmployee?.uid }}
+                onSubmit={(payload) => handleSaveInterview(interviewTarget.application, payload)}
+            />
+
             {shown.length === 0 && (
                 <p className="cctv-empty">{labelledApplications.length === 0 ? "Aucune candidature n'a encore été déposée." : 'Aucune candidature ne correspond à ce filtre.'}</p>
             )}
@@ -419,7 +485,7 @@ const PendingJobApplications = ({ showNotification }) => {
                     const busy = busyKey === key;
                     const canAct = !['brouillon', 'retiree', 'en_pause'].includes(application.statut);
                     const refusable = ['soumise', 'en_examen', 'entretien_programme', 'entretien_effectue'].includes(application.statut);
-                    const flag = application.statut === 'soumise' ? 'À prendre en charge' : (replyNeeded ? 'À répondre' : (application.statut === 'entretien_effectue' ? 'Décision à rendre' : null));
+                    const flag = modifiedByApplicant(application) ? 'Modifiée' : (application.statut === 'soumise' ? 'À prendre en charge' : (replyNeeded ? 'À répondre' : (application.statut === 'entretien_effectue' ? 'Décision à rendre' : null)));
                     return (
                         <div key={key} className={`cctv-card ${isOpen ? 'open' : ''}`} style={{ '--c': colorOf(application.statut) }}>
                             <button type="button" className="cctv-card-head" onClick={() => setOpenId(isOpen && shown.length > 1 ? null : key)}>
@@ -444,6 +510,9 @@ const PendingJobApplications = ({ showNotification }) => {
                                         <dt>Déposée le</dt><dd>{formatDate(application.creeLe)}</dd>
                                         {application.priseEnChargePar?.nom && (<><dt>Prise en charge</dt><dd>{application.priseEnChargePar.nom} · {formatDate(application.priseEnChargePar.le)}</dd></>)}
                                         {application.dateEntretien && (<><dt>Entretien</dt><dd>{formatDate(application.dateEntretien)}</dd></>)}
+                                        {application.entretien?.recruteur?.nom && (<><dt>Mené par</dt><dd>{application.entretien.recruteur.nom}</dd></>)}
+                                        {application.entretien?.presents?.length > 0 && (<><dt>Présents</dt><dd>{presentsLabel(application.entretien)}</dd></>)}
+                                        {application.entretien?.sansAdministratif && (<><dt>Décharge</dt><dd>Signée : aucun personnel administratif à l'entretien</dd></>)}
                                         {application.refus?.motif && (
                                             <><dt>Motif du refus</dt><dd>{application.refus.motif}{application.refus.detail ? <><br /><span className="cctv-muted">{application.refus.detail}</span></> : null}{application.refus.parNom ? <span className="cctv-muted"> — {application.refus.parNom}</span> : null}</dd></>
                                         )}
@@ -457,18 +526,22 @@ const PendingJobApplications = ({ showNotification }) => {
                                                 </Button>
                                             )}
                                             {['soumise', 'en_examen'].includes(application.statut) && (
-                                                <span className="rec-interview">
-                                                    <input
-                                                        type="datetime-local" className="rec-datetime" aria-label="Date et heure de l'entretien"
-                                                        value={interviewInputs[key] || ''} onChange={(e) => setInterviewInputs((prev) => ({ ...prev, [key]: e.target.value }))}
-                                                    />
-                                                    <Button size="sm" variant="outline-primary" disabled={busy || !interviewInputs[key]} onClick={() => handleScheduleInterview(application)}>
-                                                        Planifier un entretien
-                                                    </Button>
-                                                </span>
+                                                <Button size="sm" variant="outline-primary" disabled={busy} onClick={() => setInterviewTarget({ application, editing: false })}>
+                                                    <i className="fas fa-calendar-plus me-1"></i>Planifier un entretien
+                                                </Button>
                                             )}
                                             {application.statut === 'entretien_programme' && (
-                                                <Button size="sm" variant="info" disabled={busy} onClick={() => handleMarkInterviewCompleted(application)}>Marquer l'entretien effectué</Button>
+                                                <>
+                                                    <Button size="sm" variant="info" disabled={busy} onClick={() => handleMarkInterviewCompleted(application)}>Marquer l'entretien effectué</Button>
+                                                    <Button size="sm" variant="outline-primary" disabled={busy} onClick={() => setInterviewTarget({ application, editing: true })}
+                                                        title="Décaler l'entretien, changer le recruteur ou les personnes présentes">
+                                                        <i className="fas fa-pen me-1"></i>Modifier l'entretien
+                                                    </Button>
+                                                    <Button size="sm" variant="outline-warning" disabled={busy} onClick={() => handleCancelInterview(application)}
+                                                        title="Annule l'entretien : la candidature reste en cours d'examen">
+                                                        <i className="fas fa-calendar-xmark me-1"></i>Annuler l'entretien
+                                                    </Button>
+                                                </>
                                             )}
                                             {application.statut === 'entretien_effectue' && (
                                                 <Button size="sm" variant="success" disabled={busy} onClick={() => handleAccept(application)}>
