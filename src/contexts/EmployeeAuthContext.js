@@ -160,7 +160,7 @@ export const EmployeeAuthProvider = ({ children }) => {
      * Créer une demande d'approbation de compte employé
      * @param {Object} employeeData - Données de l'employé
      * @param {string} email - Email pour Firebase Auth
-     * @param {string} password - Mot de passe (stocké temporairement haché)
+     * @param {string} password - Ignoré : le mot de passe n'est JAMAIS enregistré (défini par e-mail à l'approbation)
      * @param {boolean} isCoroner - Type d'employé
      */
     const requestEmployeeAccount = async (employeeData, email, password, isCoroner) => {
@@ -174,7 +174,6 @@ export const EmployeeAuthProvider = ({ children }) => {
             const requestData = {
                 ...employeeData,
                 email: email,
-                password: password,
                 isCoroner: isCoroner,
                 requestedAt: new Date().toISOString(),
                 status: 'pending'

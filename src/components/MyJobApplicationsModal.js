@@ -26,6 +26,7 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import './Cctv/CctvRequests.css';
 import './Recruitment/Applications.css';
+import useWriteLock from '../hooks/useWriteLock';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -76,6 +77,7 @@ const applicationTitle = (application) => `Candidature - ${application.poste || 
 const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onLoad, onEdit }) => {
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
+    const { locked, lockTitle } = useWriteLock();
     const { openForumNotice, forumNoticeModal } = useForumNotice();
     const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
@@ -208,16 +210,16 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
 
                                             <div className="rec-actions">
                                                 {application.statut === 'brouillon' && (
-                                                    <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>Candidater</Button>
+                                                    <Button size="sm" variant="primary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'soumise')}>Candidater</Button>
                                                 )}
                                                 {application.statut === 'en_pause' && (
-                                                    <Button size="sm" variant="primary" onClick={() => handleAction(application, 'soumise')}>Reprendre ma candidature</Button>
+                                                    <Button size="sm" variant="primary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'soumise')}>Reprendre ma candidature</Button>
                                                 )}
                                                 {ACTIVE_STATUSES.includes(application.statut) && (
-                                                    <Button size="sm" variant="secondary" onClick={() => handleAction(application, 'en_pause')}>Mettre en pause</Button>
+                                                    <Button size="sm" variant="secondary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'en_pause')}>Mettre en pause</Button>
                                                 )}
                                                 {(ACTIVE_STATUSES.includes(application.statut) || application.statut === 'brouillon' || application.statut === 'en_pause') && (
-                                                    <Button size="sm" variant="outline-danger" onClick={() => { if (window.confirm('Retirer cette candidature ?')) handleAction(application, 'retiree'); }}>
+                                                    <Button size="sm" variant="outline-danger" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => { if (window.confirm('Retirer cette candidature ?')) handleAction(application, 'retiree'); }}>
                                                         Retirer
                                                     </Button>
                                                 )}
@@ -235,8 +237,8 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             <div className="rec-tools">
                                                 {onEdit && APPLICATION_EDITABLE_STATUSES.includes(application.statut) && canReload(application) && (
                                                     <Button
-                                                        size="sm" variant="primary"
-                                                        title="Rouvre votre candidature dans son formulaire pour la modifier : elle est mise à jour (jamais dupliquée) et le recrutement voit ce qui a changé"
+                                                        size="sm" variant="primary" disabled={locked}
+                                                        title={locked ? lockTitle : 'Rouvre votre candidature dans son formulaire pour la modifier : elle est mise à jour (jamais dupliquée) et le recrutement voit ce qui a changé'}
                                                         onClick={() => onEdit(application)}
                                                     >
                                                         <i className="fas fa-pen me-1"></i>Modifier ma candidature

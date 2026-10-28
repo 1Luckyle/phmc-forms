@@ -61,3 +61,14 @@
     align-self: flex-start; /* Aligns button to the start if modal is flex container. Adjust as needed (e.g., center) */
     /* If you want the button to be full width or styled differently, add here */
 }
+
+/* Formulaire AMA : sélection du paramédic et du patient, signatures, aperçu. */
+.ems-ama-modal .ama-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
+.ems-ama-modal .ama-signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin-top: 8px; }
+.ems-ama-modal .ama-sigbox { margin-top: 6px; padding: 8px; background: #fff; border: 1px solid #30363d; border-radius: 6px; text-align: center; }
+.ems-ama-modal .ama-sigbox img { max-width: 100%; max-height: 80px; }
+.ems-ama-modal .ama-create-signature { margin-top: 10px; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; }
+.ems-ama-modal .ama-consent label { color: #e6edf3; }
+@media (max-width: 700px) {
+    .ems-ama-modal .ama-grid, .ems-ama-modal .ama-signatures { grid-template-columns: 1fr; }
+}

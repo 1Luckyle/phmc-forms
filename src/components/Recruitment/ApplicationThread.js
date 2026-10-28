@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
 import { subscribeThread, sendThreadMessage, isThreadOpenStatus } from '../../utils/applicationThreads';
 import '../Cctv/CctvRequests.css';
+import useWriteLock from '../../hooks/useWriteLock';
 
 const pad = (n) => String(n).padStart(2, '0');
 const formatDate = (ts) => {
@@ -23,6 +24,7 @@ const QUICK_REPLIES = [
 ];
 
 const ApplicationThread = ({ application, staff, authorName, authorRole, onSent, onMailNeeded }) => {
+    const { locked, lockTitle } = useWriteLock();
     const [thread, setThread] = useState({ messages: [], ferme: null });
     const [loading, setLoading] = useState(true);
     const [text, setText] = useState('');
@@ -109,7 +111,7 @@ const ApplicationThread = ({ application, staff, authorName, authorRole, onSent,
                             placeholder={staff ? 'Votre message au candidat…' : 'Votre message au recrutement…'}
                         />
                         <div className="cctv-reply-actions">
-                            <Button type="submit" variant="primary" size="sm" disabled={busy || !text.trim()}>
+                            <Button type="submit" variant="primary" size="sm" disabled={busy || !text.trim() || locked} title={locked ? lockTitle : undefined}>
                                 {busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-paper-plane me-1"></i>Envoyer</>}
                             </Button>
                         </div>

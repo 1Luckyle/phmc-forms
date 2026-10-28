@@ -458,3 +458,86 @@
 .bingo-sidebar .form-text {
     color: #ffffff;
 }
+
+
+/* ───────── Nouvelle DA : mêmes surfaces, bordures et accents que le reste du site (CCTV, recrutement, rapports) ───────── */
+.bingo-modal-dialog .modal-content {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 14px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+.bingo-modal-dialog .modal-header,
+.bingo-modal-dialog .modal-footer { border-color: #30363d; background-color: #161b22; }
+.bingo-modal-dialog .modal-header { border-bottom: 1px solid #30363d; }
+.bingo-modal-dialog .modal-footer { border-top: 1px solid #30363d; }
+.bingo-modal-dialog .bingo-title {
+    font-family: inherit;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: none;
+    color: #f0f6fc !important;
+}
+.bingo-modal-dialog .modal-body { background-color: #0d1117; }
+
+.bingo-stage { position: relative; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
+.bingo-grid {
+    gap: 8px;
+    padding: 0;
+    background-color: transparent;
+    border: 0;
+}
+.bingo-square {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 8px;
+    font-weight: 600;
+    color: #e6edf3;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.bingo-square:hover { background-color: #1c2432; border-color: #58a6ff; }
+.bingo-square:active { transform: scale(0.98); }
+.bingo-square.free-space {
+    background: linear-gradient(160deg, #1f2a3d 0%, #0d1117 100%);
+    border-color: #58a6ff;
+    cursor: default;
+}
+.bingo-square.free-space:hover { transform: none; }
+.bingo-modal-dialog .bingo-square.free-space .free-space-text { color: #58a6ff; }
+
+.bingo-sidebar {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+}
+.bingo-sidebar h5 { border-bottom: 1px solid #30363d; color: #f0f6fc; }
+.activity-item { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; }
+.activity-item strong { color: #58a6ff; }
+.react-select-container .react-select__option--is-selected { background-color: #1f6feb !important; }
+
+/* Partie en pause : bannière flottante au-dessus de la grille, grille estompée. */
+.bingo-paused-banner {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    font-size: 0.86rem;
+    color: #f0f6fc;
+    background: rgba(210, 153, 34, 0.92);
+    border: 1px solid #e3b341;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+}
+.bingo-paused-banner strong { color: #fff; }
+.bingo-stage.paused .bingo-grid { opacity: 0.6; filter: saturate(0.7); }
+.bingo-stage.paused .bingo-square { cursor: not-allowed; }

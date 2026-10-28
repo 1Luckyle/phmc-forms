@@ -39,6 +39,7 @@ import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion'
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { loadDeletedMark } from '../utils/deletedAccounts';
+import useWriteLock from '../hooks/useWriteLock';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -113,6 +114,7 @@ const PatientDossierModal = ({
     const [invoiceRefresh, setInvoiceRefresh] = useState(0);
     const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { locked, lockTitle } = useWriteLock();
     const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
@@ -350,7 +352,7 @@ const PatientDossierModal = ({
         <Dropdown className="d-inline-block">
             <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                {entry.kind === 'ama' ? (
+                {entry.kind === 'ama' && !entry.bbCode ? (
                     <>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
                         <Dropdown.Item disabled={!entry.imageUrl} onClick={() => copyText(entry.imageUrl, "Lien de l'image copié !", "Aucun lien d'image.")}>
@@ -437,7 +439,7 @@ const PatientDossierModal = ({
                         )}
                         {canShare && shareReportWithPatient && (
                             <Button
-                                size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }}
+                                size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }} disabled={locked} title={locked ? lockTitle : undefined}
                                 onClick={async () => {
                                     await shareReportWithPatient(searchedPatientId, root.indexKey, root.patientNode);
                                     handleSearch(searchedPatientId);
@@ -449,7 +451,8 @@ const PatientDossierModal = ({
                         {canCopy && copyReportToOwnAccount && (
                             <Button
                                 size="sm" style={{ backgroundColor: '#316dca', border: 'none' }}
-                                title={`Enregistrer une copie dans les rapports de ${staffAuthorNameForCopy} (une seule copie par médecin)`}
+                                disabled={locked}
+                                title={locked ? lockTitle : `Enregistrer une copie dans les rapports de ${staffAuthorNameForCopy} (une seule copie par médecin)`}
                                 onClick={async () => {
                                     await copyReportToOwnAccount(root.reportPath, staffAuthorNameForCopy, { patientID: root.patientID, patientNode: root.patientNode });
                                     handleSearch(searchedPatientId);
@@ -463,8 +466,8 @@ const PatientDossierModal = ({
                         )}
                         {deleteReportsForUser && deleteTarget && (
                             <Button
-                                size="sm" variant="outline-danger" className="ms-auto"
-                                title={myCopy
+                                size="sm" variant="outline-danger" className="ms-auto" disabled={locked}
+                                title={locked ? lockTitle : myCopy
                                     ? "Supprime uniquement VOTRE copie : le rapport et les copies des autres médecins restent dans le dossier"
                                     : 'Supprime ce rapport (conservé dans le dossier tant que des médecins en ont une copie)'}
                                 onClick={() => handleDelete([deleteTarget.entry], `${deleteTarget.label} : « ${root.originalKey} » ?`)}
@@ -599,7 +602,7 @@ const PatientDossierModal = ({
                             title="Tout sélectionner / désélectionner (rapports affichés)"
                         />
                         {deleteReportsForUser && (
-                            <Button variant="outline-danger" size="sm" disabled={selectedFamilies.length === 0} onClick={handleDeleteSelected}
+                            <Button variant="outline-danger" size="sm" disabled={selectedFamilies.length === 0 || locked} onClick={handleDeleteSelected}
                                 title="Supprime vos copies / vos rapports parmi la sélection (les autres sont ignorés)">
                                 <i className="fas fa-trash me-1"></i>Supprimer
                             </Button>

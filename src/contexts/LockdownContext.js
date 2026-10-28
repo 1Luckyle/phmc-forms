@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebase';
 import { ref, onValue } from 'firebase/database';
+import { setLockdownActive } from '../utils/lockdownGuard';
 
 const LockdownContext = createContext();
 
@@ -82,6 +83,9 @@ export const LockdownProvider = ({ children }) => {
         lockdownConfig.affectedDeployments.includes('all') || lockdownConfig.affectedDeployments.includes('tous') ||
         lockdownConfig.affectedDeployments.includes(currentDeployment)
     );
+
+    // Même état pour les fonctions d'écriture hors React (utils/lockdownGuard.js).
+    useEffect(() => { setLockdownActive(isLockdownActive); }, [isLockdownActive]);
 
     return (
         <LockdownContext.Provider value={{

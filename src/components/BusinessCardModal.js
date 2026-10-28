@@ -10,7 +10,7 @@ import { CREATION_KINDS, loadUserCreations, saveUserCreation, removeUserCreation
 import { logActivity } from '../utils/activityLog';
 import './MyCreations.css';
 
-const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload, uploadImageDetailed, uid, defaultName }) => {
+const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload, uploadImageDetailed, uid, defaultName, signatureOnly = false, civilian = false, patientID = '' }) => {
     const [name, setName] = useState('');
     const [rank, setRank] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -40,12 +40,12 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             setImageUrl(null);
             setEditingCard(false);
             if (uid) {
-                loadUserCreations(uid)
+                loadUserCreations(uid, { patientID: civilian ? patientID : '' })
                     .then(setCreations)
                     .catch((error) => console.error('Chargement de mes créations impossible :', error));
             }
         }
-    }, [show, uid]);
+    }, [show, uid, civilian, patientID]);
 
     const handleNameChange = (e) => setName(e.target.value);
     const handleRankChange = (e) => setRank(e.target.value);
@@ -343,7 +343,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         <div className="modal-overlay">
             <div className="agency-selector-modal business-card-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h4>Carte de visite &amp; signature</h4>
+                    <h4>{signatureOnly ? 'Ma signature' : 'Carte de visite & signature'}</h4>
                     <Button
                         variant="secondary"
                         className="close"
@@ -354,18 +354,22 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                     </Button>
                 </div>
                 <p style={{ color: '#8b949e', fontSize: '0.85em', margin: '0 0 10px' }}>
-                    Créez ici votre <strong>carte de visite</strong> et votre <strong>signature</strong> (onglet « Signature », utilisée dans les emails et les contrats).
+                    {signatureOnly
+                        ? <>Créez ici votre <strong>signature</strong> : elle sert à signer vos documents (formulaire de refus de soins, contrat…).</>
+                        : <>Créez ici votre <strong>carte de visite</strong> et votre <strong>signature</strong> (onglet « Signature », utilisée dans les emails et les contrats).</>}
                 </p>
-                <div className="creation-tabs">
-                    <button type="button" className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
-                        <i className="fas fa-id-card"></i> Carte de visite
-                    </button>
-                    <button type="button" className={tab === 'signature' ? 'active' : ''} onClick={() => setTab('signature')}>
-                        <i className="fas fa-signature"></i> Signature
-                    </button>
-                </div>
+                {!signatureOnly && (
+                    <div className="creation-tabs">
+                        <button type="button" className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
+                            <i className="fas fa-id-card"></i> Carte de visite
+                        </button>
+                        <button type="button" className={tab === 'signature' ? 'active' : ''} onClick={() => setTab('signature')}>
+                            <i className="fas fa-signature"></i> Signature
+                        </button>
+                    </div>
+                )}
 
-                {tab === 'signature' ? (
+                {signatureOnly || tab === 'signature' ? (
                     <SignatureCreator
                         uid={uid}
                         defaultName={defaultName || name}
@@ -373,6 +377,8 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         onCreationChange={(signature) => setCreations((current) => ({ ...current, signature }))}
                         uploadImageDetailed={uploadImageDetailed}
                         showNotification={showNotification}
+                        patientID={patientID}
+                        civilian={civilian}
                     />
                 ) : (
                     <>

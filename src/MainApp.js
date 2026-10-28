@@ -85,6 +85,7 @@ const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModa
 const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
+const DirectoryModal = lazy(() => import('./components/Directory/DirectoryModal'));
 const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'));
 const MyProfileModal = lazy(() => import('./components/MyProfileModal'));
 const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendarModal'));
@@ -176,6 +177,7 @@ function MainApp({
     // Outil personnel "Dossier Patient" (Lot 5) : recherche par ID patient,
     // voir PatientDossierModal.js.
     const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
+    const [showDirectory, setShowDirectory] = useState(false);
     // « Mon dossier patient » : le personnel peut lui aussi être un patient.
     const [showMyPatientFile, setShowMyPatientFile] = useState(false);
     // « Mon profil » : le personnel modifie lui-même téléphone, Discord et adresse Eyefind Mail.
@@ -1575,8 +1577,7 @@ function MainApp({
                     show={showEmsAmaModal}
                     onHide={() => setShowEmsAmaModal(false)}
                     showNotification={showNotification}
-                    commitInfo={commitInfo}
-                    handleImageUpload={handleImageUpload}
+                    uploadImageDetailed={uploadImageDetailed}
                 />
 
                 <PositionInfoModal
@@ -1787,6 +1788,8 @@ function MainApp({
                                             const sections = [
                                                 {
                                                     key: 'account', label: 'Mon espace', items: [
+                                                        // Tout compte Civil crée sa signature (utilisée aussi pour ses documents, ex. formulaire AMA) ; le personnel la crée avec sa carte de visite.
+                                                        isCivilian && toolAccess.signature && { key: 'signature', icon: 'fas fa-signature', label: 'Ma signature', onClick: closeAnd(() => setShowBusinessCard(true)) },
                                                         toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
                                                         toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
                                                         // Dossier candidat : toute personne qui peut candidater (compte Civil, ou employé avec le statut de recrutement interne).
@@ -1806,6 +1809,7 @@ function MainApp({
                                                 {
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
+                                                        toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: 'Annuaire', onClick: closeAnd(() => setShowDirectory(true)) },
                                                         toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
                                                         // Demandes de vidéosurveillance : réponse et suivi par l'administration du PHMC (et les admins).
                                                         canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
@@ -2571,8 +2575,11 @@ function MainApp({
                         </div>
 
                         {/* Carte de visite : accessible depuis TOUS les groupes (PHMC, DMEC, recrutement…). */}
-                        {toolAccess.businessCard && (
+                        {(toolAccess.businessCard || (isCivilian && toolAccess.signature)) && (
                             <BusinessCardModal
+                                signatureOnly={!toolAccess.businessCard}
+                                civilian={!!isCivilian}
+                                patientID={isCivilian ? (civilianProfile?.patientID || '') : ''}
                                 show={showBusinessCard}
                                 onHide={() => setShowBusinessCard(false)}
                                 showNotification={showNotification}
@@ -2580,7 +2587,7 @@ function MainApp({
                                 handleImageUpload={handleImageUpload}
                                 uploadImageDetailed={uploadImageDetailed}
                                 uid={currentEmployee?.uid || null}
-                                defaultName={staffName || ''}
+                                defaultName={isCivilian ? [civilianProfile?.firstName, civilianProfile?.middleName, civilianProfile?.lastName].filter(Boolean).join(' ') : (staffName || '')}
                             />
                         )}
 
@@ -2650,6 +2657,7 @@ function MainApp({
                             bbCodeVersion={bbCodeVersion}
                             handleReportSelectedForAttachment={handleReportSelectedForAttachment}
                         />
+                        <DirectoryModal show={showDirectory} onHide={() => setShowDirectory(false)} />
                         <PatientDossierModal
                             show={showPatientDossierModal}
                             onHide={() => setShowPatientDossierModal(false)}

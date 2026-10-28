@@ -202,7 +202,7 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
 // numéro de badge), pas sur le nom : le prénom et le nom sont modifiables, et les rapports de la
 // personne suivent automatiquement (renameReportOwner). Le numéro de badge — l'ID employé, aussi
 // son ID patient PHMC-{badge} — n'est JAMAIS modifié ici (seul le préfixe suit le grade).
-export async function updateStaffMember(member, { firstName, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
+export async function updateStaffMember(member, { firstName, middleName, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[member.service];
     const snap = await get(ref(database, cfg.path));
     if (!snap.exists()) throw new Error('Liste du personnel introuvable.');
@@ -228,6 +228,10 @@ export async function updateStaffMember(member, { firstName, lastName, rank, dis
     }
 
     const updated = { ...current, name: newName, firstName: newFirst };
+    if (middleName !== undefined) {
+        const middle = String(middleName).trim();
+        if (middle) updated.middleName = middle; else delete updated.middleName;
+    }
     if (member.service === 'phmc') updated.lastName = newLast;
     if (rank) { updated.rank = rank; updated.category = rank; }
     if (digits) updated.badge = buildBadge(member.service, updated.rank || current.rank, digits); // chiffres inchangés
@@ -263,7 +267,7 @@ export async function updateStaffMember(member, { firstName, lastName, rank, dis
 }
 
 // Ajoute une fiche SANS compte de connexion (même écriture que l'ancien « Ajouter un employé »).
-export async function addStaffMember(service, { firstName, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
+export async function addStaffMember(service, { firstName, middleName, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[service];
     const name = `${firstName} ${lastName}`.trim();
     const listSnap = await get(ref(database, cfg.path));
@@ -275,6 +279,7 @@ export async function addStaffMember(service, { firstName, lastName, discord, ph
         ? { name, firstName, discord, rank, badge: buildBadge(service, rank, badgeDigitsValue), phNumber: phNumber || '', category: rank }
         : { name, lastName, discord: discord || '', phNumber: phNumber || '', badge: buildBadge(service, rank, badgeDigitsValue), rank, category: rank };
     if (service === 'phmc') payload.firstName = firstName;
+    if (String(middleName || '').trim()) payload.middleName = String(middleName).trim();
     payload.pole = familyOfRank(rank, service);
     const extras = cleanExtraRanks(extraRanks, rank);
     if (extras.length > 0) payload.extraRanks = extras;
@@ -415,6 +420,7 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
     const entry = {
         name,
         firstName,
+        ...((civilian.middleName || '').trim() ? { middleName: civilian.middleName.trim() } : {}),
         ...(service === 'phmc' ? { lastName } : {}),
         discord: discord ?? civilian.discord ?? '',
         rank,
@@ -461,7 +467,7 @@ export async function convertStaffToCivilian(member, civilData = {}) {
             email: member.email || '',
             firstName: member.firstName || parts[0] || '',
             lastName: member.lastName || parts.slice(1).join(' ') || '',
-            middleName: '',
+            middleName: member.middleName || '',
             dateOfBirth: civilData.dateOfBirth || '',
             gender: civilData.gender || '',
             address: civilData.address || '',

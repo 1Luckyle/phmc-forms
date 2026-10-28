@@ -25,6 +25,27 @@ import {
 } from '../../../utils/staffAdmin';
 import { STAFF_FAMILIES } from '../../../constants/ranks';
 import { loadContractCandidates } from '../../../utils/contractCandidates';
+import { loadInternalGrants, revokeInternalStatus } from '../../../utils/internalRecruitment';
+import { getEmployeeFullName } from '../../../utils/employeeName';
+
+const formatShortDate = (ts) => (ts ? new Date(ts).toLocaleDateString('fr-FR') : '');
+// Pastille « Recrutement interne » : la personne a le statut spécial qui lui permet de candidater.
+const InternalBadge = ({ grant }) => (grant ? (
+    <> <Badge bg="info" text="dark" title={`Recrutement interne accordé${grant.accordeParNom ? ` par ${grant.accordeParNom}` : ''}${grant.accordeLe ? ` le ${formatShortDate(grant.accordeLe)}` : ''}`}>Recrutement interne</Badge></>
+) : null);
+
+// Retire le statut de recrutement interne (admin) : la demande passe à « terminée », la personne ne peut plus candidater.
+const revokeInternal = async ({ uid, name, adminEmail, showNotification, reload }) => {
+    if (!window.confirm(`Retirer le statut de recrutement interne de ${name} ? Elle/il ne pourra plus candidater tant qu'une nouvelle demande n'est pas acceptée.`)) return;
+    try {
+        await revokeInternalStatus({ uid, nom: name }, { byName: adminEmail || 'Administrateur' });
+        showNotification(`Statut de recrutement interne retiré à ${name}.`, 'success');
+        reload();
+    } catch (error) {
+        console.error(error);
+        showNotification('Impossible de retirer le statut (règles Firebase à déployer ?).', 'error');
+    }
+};
 
 const matches = (query, ...values) => {
     const q = query.trim().toLowerCase();
@@ -68,7 +89,7 @@ const nameOfCivilian = (c) => `${c.firstName || ''} ${c.lastName || ''}`.trim() 
 // Quatre familles : PHMC Soignant, PHMC Administration & Direction, PHMC Polyvalent, DMEC. Chaque ligne
 // montre la famille, le rôle (en français), le service dirigé d'un Chef de Service et les droits
 // supplémentaires (Recruteur, Admin).
-const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, showNotification, reload }) => {
+const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, internalGrants = {}, adminEmail, showNotification, reload }) => {
     const [query, setQuery] = useState('');
     const [family, setFamily] = useState('all');
     const [editing, setEditing] = useState(null);
@@ -141,10 +162,11 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, show
                                     )}
                                     <tr>
                                         <td className="fw-semibold">
-                                            {m.displayName}{' '}
+                                            {getEmployeeFullName(m, m.displayName)}{' '}
                                             {m.families.map((f) => <React.Fragment key={f}><RoleBadge role={f} />{' '}</React.Fragment>)}
                                             {recruiterUids[m.uid] === true && <> <RoleBadge role="recruiter" /></>}
                                             {adminUids[m.uid] === true && <> <RoleBadge role="admin" /></>}
+                                            <InternalBadge grant={m.uid ? internalGrants[m.uid] : null} />
                                             {m.uid && civilUids.has(m.uid) && <small className="text-muted ms-1" title="Ce compte a aussi un profil Civil (conservé)">+ profil Civil</small>}
                                         </td>
                                         <td>
@@ -164,6 +186,11 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, adminEmail, show
                                                 <Dropdown.Item disabled={!m.uid} onClick={() => toggleRecruiter(m)}>
                                                     <i className="fas fa-user-tie me-2"></i>{recruiterUids[m.uid] === true ? 'Retirer le droit Recruteur' : 'Donner le droit Recruteur'}{!m.uid ? ' (compte requis)' : ''}
                                                 </Dropdown.Item>
+                                                {m.uid && internalGrants[m.uid] && (
+                                                    <Dropdown.Item onClick={() => revokeInternal({ uid: m.uid, name: m.displayName, adminEmail, showNotification, reload })}>
+                                                        <i className="fas fa-user-clock me-2"></i>Retirer le recrutement interne
+                                                    </Dropdown.Item>
+                                                )}
                                                 <Dropdown.Item disabled={!m.uid} onClick={() => setToCivil(m)}>
                                                     <i className="fas fa-user me-2"></i>Passer en Civil{!m.uid ? ' (compte requis)' : ''}
                                                 </Dropdown.Item>
@@ -217,12 +244,12 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
         <Modal show={show} onHide={onHide} centered>
             <Modal.Header closeButton><Modal.Title>Modifier {form.firstName} {form.lastName}</Modal.Title></Modal.Header>
             <Modal.Body>
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill"><Form.Label>Prénom</Form.Label><Form.Control value={form.firstName || ''} onChange={set('firstName')} /></Form.Group>
                     <Form.Group className="flex-fill"><Form.Label>Deuxième prénom</Form.Label><Form.Control value={form.middleName || ''} onChange={set('middleName')} /></Form.Group>
                     <Form.Group className="flex-fill"><Form.Label>Nom</Form.Label><Form.Control value={form.lastName || ''} onChange={set('lastName')} /></Form.Group>
                 </div>
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill"><Form.Label>Date de naissance</Form.Label><Form.Control type="date" value={form.dateOfBirth || ''} onChange={set('dateOfBirth')} /></Form.Group>
                     <Form.Group className="flex-fill"><Form.Label>Genre</Form.Label>
                         <Form.Select value={form.gender || ''} onChange={set('gender')}>
@@ -230,11 +257,11 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
                         </Form.Select>
                     </Form.Group>
                 </div>
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group style={{ flex: 2 }}><Form.Label>Adresse</Form.Label><Form.Control value={form.address || ''} onChange={set('address')} /></Form.Group>
                     <Form.Group style={{ flex: 1 }}><Form.Label>Code postal</Form.Label><Form.Control value={form.zip || ''} onChange={set('zip')} /></Form.Group>
                 </div>
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill"><Form.Label>Téléphone</Form.Label><Form.Control value={form.phone || ''} onChange={set('phone')} /></Form.Group>
                     <Form.Group className="flex-fill"><Form.Label>Discord</Form.Label><Form.Control value={form.discord || ''} onChange={set('discord')} /></Form.Group>
                 </div>
@@ -257,7 +284,7 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
 // ───────────────────────────── Civils (comptes Civils purs) ─────────────────────────────
 // Un Civil « pur » n'a pas de fiche du personnel. Une personne qui a une fiche (y compris un recruteur) est
 // dans l'onglet Personnel, même si elle garde aussi son profil Civil.
-const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, adminEmail, showNotification, reload }) => {
+const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, internalGrants = {}, adminEmail, showNotification, reload }) => {
     const [query, setQuery] = useState('');
     const [editing, setEditing] = useState(null);
     const [toStaff, setToStaff] = useState(null); // { civilian, recruiter }
@@ -321,6 +348,7 @@ const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, adminEmai
                                             </Badge></>
                                         )}
                                         {flaggedRecruiter && <> <span title="Ancien recruteur resté Civil : créez sa fiche du personnel"><RoleBadge role="recruiterNoFile" /></span></>}
+                                        <InternalBadge grant={internalGrants[c.uid]} />
                                     </td>
                                     <td className="text-end">
                                         <ActionsMenu>
@@ -331,6 +359,11 @@ const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, adminEmai
                                             <Dropdown.Item onClick={() => setToStaff({ civilian: c, recruiter: false })}>
                                                 <i className="fas fa-user-md me-2"></i>Passer en Personnel…
                                             </Dropdown.Item>
+                                            {internalGrants[c.uid] && (
+                                                <Dropdown.Item onClick={() => revokeInternal({ uid: c.uid, name: nameOf(c), adminEmail, showNotification, reload })}>
+                                                    <i className="fas fa-user-clock me-2"></i>Retirer le recrutement interne
+                                                </Dropdown.Item>
+                                            )}
                                             {flaggedRecruiter && (
                                                 <Dropdown.Item onClick={() => removeRecruiterFlag(c)}><i className="fas fa-user-slash me-2"></i>Retirer le droit Recruteur</Dropdown.Item>
                                             )}
@@ -479,6 +512,7 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
     const [recruiterUids, setRecruiterUids] = useState({});
     const [adminUids, setAdminUids] = useState({});
     const [candidateRoles, setCandidateRoles] = useState({});
+    const [internalGrants, setInternalGrants] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
 
@@ -486,10 +520,12 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
         setIsLoading(true);
         setLoadError('');
         try {
-            const [staffList, civilList, recruiters, admins, candidates] = await Promise.all([
+            const [staffList, civilList, recruiters, admins, candidates, grants] = await Promise.all([
                 loadStaffMembers(), loadCivilians(), loadRecruiterUids(), loadAdminUids().catch(() => ({})), loadContractCandidates().catch(() => ({})),
+                loadInternalGrants().catch(() => ({})),
             ]);
             setCandidateRoles(candidates);
+            setInternalGrants(grants);
             setStaff(staffList);
             setCivilians(civilList);
             setRecruiterUids(recruiters);
@@ -539,8 +575,8 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                 {loadError && <Alert variant="danger">Chargement impossible : {loadError}</Alert>}
                 {isLoading && tab !== 'tools' ? <div className="text-center py-5"><Spinner animation="border" /></div> : (
                     <div className="uh-panel">
-                        {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} recruiterUids={recruiterUids} adminUids={adminUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
-                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} candidateRoles={candidateRoles} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} recruiterUids={recruiterUids} adminUids={adminUids} internalGrants={internalGrants} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} candidateRoles={candidateRoles} internalGrants={internalGrants} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
                         {tab === 'recruiters' && <RecruitersTab staff={staff} civilians={civilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
                         {tab === 'tools' && (
                             <>

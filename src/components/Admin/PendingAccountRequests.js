@@ -5,7 +5,7 @@ import Select from 'react-select';
 import { database, app as primaryApp } from '../../firebase';
 import { ref, get, set, remove } from 'firebase/database';
 import { initializeApp, deleteApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../constants/ranks';
 import { sendEyefindMail } from '../../utils/eyefindMail';
@@ -25,6 +25,13 @@ const sendMailBestEffort = (params) => {
 
 // map|array|null -> array
 const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
+
+// Mot de passe aléatoire (jamais affiché ni enregistré) : la personne définit le sien via l'e-mail de réinitialisation.
+const randomPassword = () => {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return `Aa1!${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+};
 
 // Helper : crée un compte Firebase Auth via une instance secondaire pour ne pas
 // déconnecter l'admin qui est sur l'instance principale.
@@ -164,9 +171,16 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
             // Compte lié à GTA World (pas de mot de passe défini) : création côté
             // serveur via l'Admin SDK. Sinon, compte classique via l'instance
             // secondaire pour ne PAS déconnecter l'admin sur l'instance principale.
-            const user = request.gtawCharacterId != null
-                ? await createGtawUserAccount(request.email)
-                : await createUserWithSecondaryApp(request.email, request.password);
+            let needsPasswordEmail = false;
+            let user;
+            if (request.gtawCharacterId != null) {
+                user = await createGtawUserAccount(request.email);
+            } else {
+                // Ancienne demande (avant ce correctif) : son mot de passe est encore dans la base, on s'en sert une dernière fois.
+                // Sinon : mot de passe aléatoire + e-mail de définition de mot de passe.
+                needsPasswordEmail = !request.password;
+                user = await createUserWithSecondaryApp(request.email, request.password || randomPassword());
+            }
 
             // Ajouter l'UID Firebase aux données de l'employé
             const firstName = request.firstName || '';
@@ -202,6 +216,17 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
 
             // Supprimer la demande de la liste des demandes en attente
             await removeRequest(request.email);
+
+            // Ancienne voie « mot de passe » : la personne définit son mot de passe via l'e-mail de réinitialisation (jamais enregistré chez nous).
+            if (needsPasswordEmail) {
+                try {
+                    const appBase = window.location.hostname !== 'localhost' ? 'https://1luckyle.github.io/phmc-forms/' : `${window.location.origin}/phmc-forms/`;
+                    await sendPasswordResetEmail(auth, request.email, { url: `${appBase}#/reset-password`, handleCodeInApp: false });
+                } catch (resetError) {
+                    console.warn('Mail de définition du mot de passe non envoyé :', resetError);
+                    showNotification(`Compte créé, mais l'e-mail de définition du mot de passe n'a pas pu partir (${resetError.code || resetError.message}). La personne peut utiliser « Mot de passe oublié ».`, 'warning');
+                }
+            }
 
             sendMailBestEffort({
                 to: request.email,

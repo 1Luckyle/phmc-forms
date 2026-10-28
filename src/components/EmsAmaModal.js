@@ -1,482 +1,400 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Form, Button } from 'react-bootstrap';
-import * as Sentry from "@sentry/react";
-import EMSAMAImage from '../assets/EMSAMA.png';
-import { copyToClipboard } from './notificationService';
-import DebugFillButton from './DebugFillButton';
-import { ref, set } from 'firebase/database';
+// src/components/EmsAmaModal.js
+//
+// Formulaire AMA (Contre Avis Médical — refus de traitement médical), réservé au personnel soignant.
+//   • on SÉLECTIONNE le paramédic et le patient (au lieu de les écrire) ;
+//   • le document est reconstitué en BBCode (generateAma.js) : aperçu en direct, copie, HTML, PDF, image — plus de téléversement de
+//     l'AMA sur ImgBB (seules les signatures sont des images) ;
+//   • le paramédic signe avec SA signature (« Carte de visite & signature ») : s'il n'en a pas, on l'invite à la créer ;
+//   • le patient signe avec la signature rangée à son ID patient ; s'il n'en a pas, elle est créée automatiquement à partir de son nom
+//     et enregistrée (un patient qui a un compte Civil la retrouve dans « Ma signature ») ;
+//   • on certifie que c'est bien le patient (ou son représentant légal) qui signe, comme le consentement des certificats médicaux ;
+//   • l'AMA est enregistré chez le créateur ET partagé automatiquement avec le patient (grâce à son ID patient).
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Form, Spinner } from 'react-bootstrap';
+import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
+import * as Sentry from '@sentry/react';
+import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { useData } from '../contexts/DataContext';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import DebugFillButton from './DebugFillButton';
+import SignatureCreator from './SignatureCreator';
+import { ReportPreviewFrame } from './ReportExpansion';
+import { copyToClipboard } from './notificationService';
+import generateAma from '../phmc-bbcode-generators/generateAma';
 import { buildReportTitle } from '../utils/reportTitle';
-import { normalizePatientId, writeIndexEntry, comprehensiveSanitize } from '../utils/patientRecords';
+import {
+    normalizePatientId, writeIndexEntry, comprehensiveSanitize, listIndexedPatientIds,
+} from '../utils/patientRecords';
+import { loadUserCreations } from '../utils/userCreations';
+import { loadPatientSignature, ensurePatientSignature } from '../utils/patientSignatures';
+import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
+import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { logActivity } from '../utils/activityLog';
-
+import { isLockdownOn, LOCK_MESSAGE } from '../utils/lockdownGuard';
 import './EmsAmaModal.css';
 
-const EmsAmaModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload }) => {
-    const [patientSignature, setPatientSignature] = useState('');
+const selectStyles = {
+    control: (base, state) => ({ ...base, backgroundColor: '#0d1117', borderColor: state.isFocused ? '#58a6ff' : '#30363d', minHeight: '36px', '&:hover': { borderColor: '#58a6ff' } }),
+    menu: (base) => ({ ...base, backgroundColor: '#161b22', zIndex: 2000, border: '1px solid #30363d' }),
+    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#30363d' : '#161b22', color: '#e6edf3' }),
+    singleValue: (base) => ({ ...base, color: '#e6edf3' }),
+    input: (base) => ({ ...base, color: '#e6edf3' }),
+    placeholder: (base) => ({ ...base, color: '#9aa7b4' }),
+    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.72rem' }),
+};
+
+const pad = (n) => String(n).padStart(2, '0');
+const nowLabel = () => {
+    const d = new Date();
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const civilianName = (c) => [c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+
+const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) => {
+    const { canUseAma, staffName, currentEmployee, isAdmin } = useEmployeeAuth();
+    const { phmcListData } = useData();
+    const { bbcodeEnabled } = useSiteConfig();
+
+    const [employee, setEmployee] = useState(null);                  // { value: nom, uid, label }
+    const [patientOptions, setPatientOptions] = useState([]);
+    const [patientOption, setPatientOption] = useState(null);        // { value: ID canonique, label }
+    const [patientName, setPatientName] = useState('');
+    const [guardianName, setGuardianName] = useState('');
     const [date, setDate] = useState('');
-    const [guardianSignature, setGuardianSignature] = useState('');
-    const [paramedicSignature, setParamedicSignature] = useState('');
-    const [imageUrl, setImageUrl] = useState(null);
-    const [isSaving, setIsSaving] = useState(false);
-    // ID du patient : ne s'imprime PAS sur le document, il sert uniquement à ranger l'AMA
-    // dans les rapports du médecin et dans le dossier du patient.
-    const [patientID, setPatientID] = useState('');
-    // L'AMA est réservé au personnel soignant du PHMC (famille « PHMC · Soignant ») et aux admins.
-    const { canUseAma, staffName } = useEmployeeAuth();
-    const [isPreviewVisible, setIsPreviewVisible] = useState(true);
+    const [certified, setCertified] = useState(false);
+    const [employeeSignature, setEmployeeSignature] = useState(undefined);   // undefined = chargement, null = aucune
+    const [patientSignature, setPatientSignature] = useState(undefined);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(null);                        // { bbCode, title, patientID } après l'enregistrement
 
-    const patientSignaturePreviewRef = useRef(null);
-    const datePreviewRef = useRef(null);
-    const guardianSignaturePreviewRef = useRef(null);
-    const paramedicSignaturePreviewRef = useRef(null);
-    const amaCardPreviewRef = useRef(null);
-
-    const webhookQueue = useRef([]);
-    const isWebhookProcessing = useRef(false);
-    const lastWebhookCallTimestamp = useRef(0);
-    const webhookRateLimitDelay = 1100;
+    // Paramédic : par défaut la personne connectée ; les autres fiches sont proposées (un admin signe pour qui il veut, mais la signature d'un
+    // autre n'est lisible que par un admin : sinon cette personne doit signer elle-même).
+    const employeeOptions = useMemo(() => (Array.isArray(phmcListData) ? phmcListData : [])
+        .filter((member) => member && member.name)
+        .map((member) => ({ value: member.name, uid: member.uid || null, label: `${member.name} (${member.rank || member.category || 'PHMC'})` }))
+        .sort((a, b) => a.value.localeCompare(b.value)), [phmcListData]);
 
     useEffect(() => {
-        if (show) {
-            setPatientSignature(localStorage.getItem('emsAmaPatientSignature') || '');
-            setDate(localStorage.getItem('emsAmaDate') || '');
-            setGuardianSignature(localStorage.getItem('emsAmaGuardianSignature') || '');
-            setParamedicSignature(localStorage.getItem('emsAmaParamedicSignature') || '');
-            setImageUrl(null);
-            setPatientID('');
-        }
+        if (!show) return;
+        setSaved(null);
+        setCertified(false);
+        setGuardianName('');
+        setDate(nowLabel());
+        setPatientOption(null);
+        setPatientName('');
+        const own = employeeOptions.find((option) => option.value === staffName);
+        setEmployee(own || (staffName ? { value: staffName, uid: currentEmployee?.uid || null, label: staffName } : null));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show]);
 
-    const handlePatientSignatureChange = (e) => setPatientSignature(e.target.value);
-    const handleDateChange = (e) => setDate(e.target.value);
-    const handleGuardianSignatureChange = (e) => setGuardianSignature(e.target.value);
-    const handleParamedicSignatureChange = (e) => setParamedicSignature(e.target.value);
-    // Mode debug : données de test.
-    const handleDebugFill = () => {
-        const now = new Date();
-        const pad = (n) => String(n).padStart(2, '0');
-        setPatientSignature('Jean Testard');
-        setDate(`${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} / ${pad(now.getHours())}:${pad(now.getMinutes())}`);
-        setGuardianSignature('Marie Testard');
-        setParamedicSignature('Paul Secouriste');
-        setPatientID('PHMC-99999');
-    };
-
-    const processWebhookQueue = useCallback(async () => {
-        if (webhookQueue.current.length === 0 || isWebhookProcessing.current) {
-            return;
-        }
-        isWebhookProcessing.current = true;
-        const now = Date.now();
-        const timeSinceLastCall = now - lastWebhookCallTimestamp.current;
-
-        if (timeSinceLastCall < webhookRateLimitDelay) {
-            const delay = webhookRateLimitDelay - timeSinceLastCall;
-            setTimeout(() => {
-                isWebhookProcessing.current = false;
-                processWebhookQueue();
-            }, delay);
-            return;
-        }
-
-        const { webhookURL, message } = webhookQueue.current.shift();
-
-        try {
-            const response = await fetch(webhookURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(message)
-            });
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error('Failed to send Discord webhook (AMA):', response.status, response.statusText, errorData);
-                Sentry.captureMessage("Discord Webhook Send Failure (AMA)", {
-                    extra: { status: response.status, statusText: response.statusText, responseBody: errorData },
-                    level: "error"
-                });
-            } else {
-                lastWebhookCallTimestamp.current = Date.now();
-            }
-        } catch (error) {
-            console.error('Error sending Discord webhook (AMA):', error);
-            Sentry.captureException(error, { extra: { context: 'Discord Webhook Send Function (AMA)' } });
-        } finally {
-            isWebhookProcessing.current = false;
-            if (webhookQueue.current.length > 0) {
-                setTimeout(processWebhookQueue, 0);
-            }
-        }
-    }, []);
-
-    const sendDiscordWebhook = useCallback(async (patientSig, formDate, guardianSig, paramedicSig, generatedImageUrl, errorMessage = null) => {
-        // Journal d'activité ; l'envoi Discord ci-dessous est facultatif.
-        logActivity({
-            category: 'rapports',
-            action: errorMessage ? 'ama_failed' : 'ama_created',
-            summary: errorMessage ? 'Échec de la création d\'un formulaire AMA' : 'Formulaire AMA (refus de soins) généré',
-            details: errorMessage ? String(errorMessage).slice(0, 1000) : (formDate ? `Date du formulaire : ${formDate}` : undefined),
-            severity: errorMessage ? 'error' : 'success',
-        });
-        const webhookURL = null;
-        if (!webhookURL) {
-            return;
-        }
-
-        const embed = {
-            title: "Alerte création de formulaire EMS AMA !",
-            description: "Un nouveau formulaire EMS AMA a été généré.",
-            color: errorMessage ? 0xFF0000 : 0x00FF00,
-            fields: [
-                { name: "Signature du patient", value: patientSig || "N/A", inline: true },
-                { name: "Date", value: formDate || "N/A", inline: true },
-                { name: "Signature du tuteur", value: guardianSig || "N/A", inline: true },
-                { name: "Signature du paramédic", value: paramedicSig || "N/A", inline: true },
-                errorMessage ? { name: "Erreur", value: ```${errorMessage.substring(0, 1000)}```, inline: false } : null
-            ].filter(field => field !== null),
-            footer: {
-                text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
-            },
-            timestamp: new Date().toISOString()
-        };
-
-        if (generatedImageUrl) {
-            embed.image = { url: generatedImageUrl };
-        } else if (!errorMessage) {
-            embed.fields.push({ name: "Statut de l'image", value: "Image téléchargée, mais le lien est manquant.", inline: false });
-        } else {
-            embed.fields.push({ name: "Statut de l'image", value: "Échec du téléchargement de l'image.", inline: false });
-        }
-
-        const message = { embeds: [embed] };
-        webhookQueue.current.push({ webhookURL, message });
-        if (!isWebhookProcessing.current) {
-            processWebhookQueue();
-        }
-    }, [commitInfo, processWebhookQueue]);
-
-    const patientSignatureOverlayStyle = {
-        position: 'absolute', top: '73%', left: '12%', color: 'black',
-        fontSize: '20px', fontFamily: 'LufgaBold, Arial, sans-serif', whiteSpace: 'nowrap'
-    };
-    const dateOverlayStyle = {
-        position: 'absolute', top: '83%', left: '12%', color: 'black',
-        fontSize: '20px', fontFamily: 'LufgaBold, Arial, sans-serif', whiteSpace: 'nowrap'
-    };
-    const guardianSignatureOverlayStyle = {
-        position: 'absolute', top: '73%', left: '60%', color: 'black',
-        fontSize: '20px', fontFamily: 'LufgaBold, Arial, sans-serif', whiteSpace: 'nowrap'
-    };
-    const paramedicSignatureOverlayStyle = {
-        position: 'absolute', top: '83%', left: '60%', color: 'black',
-        fontSize: '20px', fontFamily: 'LufgaBold, Arial, sans-serif', whiteSpace: 'nowrap'
-    };
-
-
-    const handleSave = useCallback(async () => {
-        if (!canUseAma) {
-            showNotification('Le formulaire AMA est réservé au personnel soignant.', 'warning');
-            return;
-        }
-        if (!patientID.trim()) {
-            showNotification("Renseignez l'ID du patient : il permet d'enregistrer l'AMA dans son dossier.", 'warning');
-            return;
-        }
-        setIsSaving(true);
-        showNotification('Traitement du formulaire AMA...', 'upload');
-
-        localStorage.setItem('emsAmaPatientSignature', patientSignature);
-        localStorage.setItem('emsAmaDate', date);
-        localStorage.setItem('emsAmaGuardianSignature', guardianSignature);
-        localStorage.setItem('emsAmaParamedicSignature', paramedicSignature);
-
-        const amaImageActualWidth = 1000;
-        const amaImageActualHeight = 1414;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = amaImageActualWidth;
-        canvas.height = amaImageActualHeight;
-        const ctx = canvas.getContext('2d');
-
-        const loadImage = (src) => {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                img.onload = () => resolve(img);
-                img.onerror = (err) => {
-                    console.error("Failed to load base AMA image for canvas:", err);
-                    Sentry.captureException(err, { extra: { context: 'AMA loadImage', imgSrc: src } });
-                    reject(new Error("Impossible de charger l'image AMA de base."));
-                };
-                img.src = src;
-            });
-        };
-        
-        try {
-            const baseImage = await loadImage(EMSAMAImage);
-            
-            if (document.fonts && typeof document.fonts.ready === 'function') {
-                await document.fonts.ready;
-                console.log("Fonts ready for AMA canvas.");
-            } else {
-                console.warn("document.fonts.ready not available. Text rendering might be inconsistent.");
-            }
-
-            ctx.drawImage(baseImage, 0, 0, amaImageActualWidth, amaImageActualHeight);
-            ctx.textBaseline = 'top';
-
-            const patientSigX = amaImageActualWidth * (parseFloat(patientSignatureOverlayStyle.left) / 100);
-            const patientSigY = amaImageActualHeight * (parseFloat(patientSignatureOverlayStyle.top) / 100);
-            const patientSigFontSize = parseInt(patientSignatureOverlayStyle.fontSize);
-            ctx.fillStyle = patientSignatureOverlayStyle.color;
-            ctx.font = `${patientSigFontSize}px ${patientSignatureOverlayStyle.fontFamily}`
-            ctx.fillText(patientSignature, patientSigX, patientSigY);
-
-            const dateX = amaImageActualWidth * (parseFloat(dateOverlayStyle.left) / 100);
-            const dateY = amaImageActualHeight * (parseFloat(dateOverlayStyle.top) / 100);
-            const dateFontSize = parseInt(dateOverlayStyle.fontSize);
-            ctx.fillStyle = dateOverlayStyle.color;
-            ctx.font = `${dateFontSize}px ${dateOverlayStyle.fontFamily}`
-            ctx.fillText(date, dateX, dateY);
-
-            const guardianSigX = amaImageActualWidth * (parseFloat(guardianSignatureOverlayStyle.left) / 100);
-            const guardianSigY = amaImageActualHeight * (parseFloat(guardianSignatureOverlayStyle.top) / 100);
-            const guardianSigFontSize = parseInt(guardianSignatureOverlayStyle.fontSize);
-            ctx.fillStyle = guardianSignatureOverlayStyle.color;
-            ctx.font = `${guardianSigFontSize}px ${guardianSignatureOverlayStyle.fontFamily}`
-            ctx.fillText(guardianSignature, guardianSigX, guardianSigY);
-
-            const paramedicSigX = amaImageActualWidth * (parseFloat(paramedicSignatureOverlayStyle.left) / 100);
-            const paramedicSigY = amaImageActualHeight * (parseFloat(paramedicSignatureOverlayStyle.top) / 100);
-            const paramedicSigFontSize = parseInt(paramedicSignatureOverlayStyle.fontSize);
-            ctx.fillStyle = paramedicSignatureOverlayStyle.color;
-            ctx.font = `${paramedicSigFontSize}px ${paramedicSignatureOverlayStyle.fontFamily}`
-            ctx.fillText(paramedicSignature, paramedicSigX, paramedicSigY);
-
-            const dataUrl = canvas.toDataURL('image/png');
-
-            showNotification('Téléchargement en cours...', 'upload');
-            const link = await handleImageUpload(dataUrl);
-            setImageUrl(link);
-            // Enregistre l'AMA comme n'importe quel rapport : « Rapports enregistrés » du
-            // médecin + dossier du patient (non partagé tant que le médecin ne le décide pas).
-            // Le formulaire lui-même ne contient pas l'ID patient : il sert uniquement à ranger.
+    // Patients proposés : comptes Civils + patients connus par des rapports (comme « Dossier Patient »).
+    useEffect(() => {
+        if (!show) return undefined;
+        let cancelled = false;
+        (async () => {
             try {
-                if (!staffName) {
-                    showNotification("Votre compte n'est lié à aucune fiche du personnel : l'AMA n'a pas pu être rangé dans vos rapports.", 'warning', 7000);
-                } else {
-                    const normalizedId = normalizePatientId(patientID);
-                    const title = buildReportTitle(40, { patientID: normalizedId, patientSignature, date }, 'Formulaire AMA');
-                    const reportKey = `${comprehensiveSanitize(title)}_${Date.now()}`;
-                    const reportPath = `savedReports/${comprehensiveSanitize(staffName)}/${reportKey}`;
-                    const timestamp = Date.now();
-                    await set(ref(database, reportPath), {
-                        bbCodeVersion: 40,
-                        kind: 'ama',
-                        bbCode: '',
-                        imageUrl: link,
-                        originalKey: title,
-                        title,
-                        authorName: staffName,
-                        creatorName: staffName,
-                        timestamp,
-                        data: {
-                            patientID: normalizedId,
-                            patientName: patientSignature,
-                            patientSignature,
-                            date,
-                            guardianSignature,
-                            paramedicSignature,
-                            imageUrl: link,
-                        },
+                const [civilSnap, indexed] = await Promise.all([get(ref(database, 'civilians')), listIndexedPatientIds().catch(() => [])]);
+                const withAccount = new Map();
+                if (civilSnap.exists()) {
+                    Object.values(civilSnap.val()).forEach((c) => {
+                        if (c && c.patientID) {
+                            const id = normalizePatientId(c.patientID);
+                            const name = civilianName(c);
+                            withAccount.set(id, { value: id, name, label: `${name} (${id})` });
+                        }
                     });
-                    await writeIndexEntry({
-                        patientID: normalizedId,
-                        indexKey: reportKey,
-                        entry: {
-                            reportPath,
-                            visibility: 'staff-only',
-                            bbCodeVersion: 40,
-                            kind: 'ama',
-                            originalKey: title,
-                            title,
-                            authorName: staffName,
-                            creatorName: staffName,
-                            patientName: patientSignature,
-                            timestamp,
-                        },
-                    });
-                    showNotification(`AMA enregistré dans vos rapports et dans le dossier de ${normalizedId}.`, 'save');
                 }
-            } catch (saveError) {
-                console.error('Error saving AMA report:', saveError);
-                Sentry.captureException(saveError, { extra: { context: 'EMS AMA report save' } });
-                showNotification("L'image AMA a été créée mais n'a pas pu être enregistrée dans les rapports.", 'warning', 7000);
+                const withoutAccount = indexed.filter((p) => !withAccount.has(normalizePatientId(p.patientNode)))
+                    .map((p) => ({ value: p.patientNode, name: p.patientName || '', label: `${p.patientName || 'Patient sans compte'} (${p.patientNode})` }));
+                if (!cancelled) {
+                    setPatientOptions([
+                        { label: 'Patients avec un compte', options: [...withAccount.values()].sort((a, b) => a.label.localeCompare(b.label)) },
+                        { label: 'Patients sans compte', options: withoutAccount.sort((a, b) => a.label.localeCompare(b.label)) },
+                    ].filter((group) => group.options.length > 0));
+                }
+            } catch (error) {
+                console.warn('Liste des patients indisponible :', error?.message || error);
             }
-            showNotification(`Formulaire AMA enregistré et téléchargé : ${link}`, 'save');
-            sendDiscordWebhook(patientSignature, date, guardianSignature, paramedicSignature, link);
+        })();
+        return () => { cancelled = true; };
+    }, [show]);
 
-            await copyToClipboard(link, showNotification, 'Lien de l\'image copié dans le presse-papiers !');
+    // Signature du paramédic choisi.
+    const employeeUid = employee?.uid || (employee?.value === staffName ? currentEmployee?.uid : null);
+    useEffect(() => {
+        if (!show || !employeeUid) { setEmployeeSignature(employee ? null : undefined); return undefined; }
+        let cancelled = false;
+        setEmployeeSignature(undefined);
+        loadUserCreations(employeeUid)
+            .then((creations) => { if (!cancelled) setEmployeeSignature(creations.signature || null); })
+            .catch(() => { if (!cancelled) setEmployeeSignature(null); });
+        return () => { cancelled = true; };
+    }, [show, employeeUid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const patientID = patientOption ? normalizePatientId(patientOption.value) : '';
+    // Signature du patient : celle de son ID si elle existe (sinon créée automatiquement à l'enregistrement).
+    useEffect(() => {
+        if (!show || !patientID) { setPatientSignature(undefined); return undefined; }
+        let cancelled = false;
+        setPatientSignature(undefined);
+        loadPatientSignature(patientID)
+            .then((signature) => { if (!cancelled) setPatientSignature(signature || null); })
+            .catch(() => { if (!cancelled) setPatientSignature(null); });
+        return () => { cancelled = true; };
+    }, [show, patientID]);
+
+    const handlePatientChange = (option) => {
+        setPatientOption(option);
+        if (option) setPatientName(option.name || (option.__isNew__ ? '' : option.label.replace(/\s*\([^)]*\)\s*$/, '')));
+        else setPatientName('');
+    };
+
+    const bbCode = useMemo(() => generateAma({
+        patientName, patientSignatureUrl: patientSignature?.url || '', guardianName, date,
+        paramedicName: employee?.value || '', paramedicSignatureUrl: employeeSignature?.url || '',
+    }), [patientName, patientSignature, guardianName, date, employee, employeeSignature]);
+
+    const handleDebugFill = () => {
+        const option = { value: 'PHMC-99999', name: 'Jean Michel Testard', label: 'Jean Michel Testard (PHMC-99999)' };
+        setPatientOption(option);
+        setPatientName(option.name);
+        setGuardianName('Marie Testard');
+        setCertified(true);
+    };
+
+    const handleSave = async () => {
+        if (isLockdownOn()) { showNotification(LOCK_MESSAGE, 'warning'); return; }
+        if (!canUseAma) { showNotification('Le formulaire AMA est réservé au personnel soignant.', 'warning'); return; }
+        if (!staffName) { showNotification("Votre compte n'est lié à aucune fiche du personnel : l'AMA ne peut pas être rangé dans vos rapports.", 'warning', 7000); return; }
+        if (!employee?.value) { showNotification('Choisissez le paramédic qui signe.', 'warning'); return; }
+        if (!employeeSignature?.url) { showNotification("Le paramédic doit d'abord créer sa signature (voir plus bas) : elle s'imprime sous son nom.", 'warning', 7000); return; }
+        if (!patientID) { showNotification('Choisissez le patient (ou tapez son ID).', 'warning'); return; }
+        if (!patientName.trim()) { showNotification('Indiquez le nom du patient : il sert à créer sa signature et figure sur le document.', 'warning'); return; }
+        if (!certified) { showNotification('Certifiez que c\'est bien le patient (ou son représentant légal) qui signe.', 'warning'); return; }
+
+        setSaving(true);
+        try {
+            // Signature du patient : celle de son ID, sinon créée à partir de son nom puis enregistrée pour lui.
+            const { signature, created } = await ensurePatientSignature({
+                patientID, patientName: patientName.trim(), uploadImageDetailed, actorName: staffName,
+            });
+            if (created) showNotification(`Signature créée pour ${patientName.trim()} et enregistrée à son ID (${patientID}).`, 'info-circle', 6000);
+            setPatientSignature(signature);
+
+            const finalCode = generateAma({
+                patientName: patientName.trim(), patientSignatureUrl: signature.url, guardianName, date,
+                paramedicName: employee.value, paramedicSignatureUrl: employeeSignature.url,
+            });
+            const title = buildReportTitle(40, { patientID, patientSignature: patientName.trim(), date }, 'Formulaire AMA');
+            const reportKey = `${comprehensiveSanitize(title)}_${Date.now()}`;
+            const reportPath = `savedReports/${comprehensiveSanitize(staffName)}/${reportKey}`;
+            const timestamp = Date.now();
+            await set(ref(database, reportPath), {
+                bbCodeVersion: 40,
+                kind: 'ama',
+                bbCode: finalCode,
+                originalKey: title,
+                title,
+                authorName: staffName,
+                creatorName: staffName,
+                timestamp,
+                data: {
+                    patientID,
+                    patientName: patientName.trim(),
+                    patientSignatureUrl: signature.url,
+                    guardianName: guardianName.trim(),
+                    paramedicName: employee.value,
+                    paramedicSignatureUrl: employeeSignature.url,
+                    date,
+                    patientSignatureCertified: true,
+                    certifiedBy: staffName,
+                },
+            });
+            // Copie automatique chez le patient : le rapport est PARTAGÉ avec lui dès sa création (il le retrouve dans son dossier, grâce à son ID).
+            await writeIndexEntry({
+                patientID,
+                indexKey: reportKey,
+                entry: {
+                    reportPath,
+                    visibility: 'shared',
+                    bbCodeVersion: 40,
+                    kind: 'ama',
+                    originalKey: title,
+                    title,
+                    authorName: staffName,
+                    creatorName: staffName,
+                    patientName: patientName.trim(),
+                    timestamp,
+                },
+            });
+            logActivity({
+                category: 'rapports', action: 'ama_created', severity: 'success',
+                summary: 'Formulaire AMA (refus de soins) enregistré et partagé avec le patient',
+                details: `Patient : ${patientID}\nParamédic : ${employee.value}`, target: patientID,
+            });
+            setSaved({ bbCode: finalCode, title, patientID });
+            showNotification(`AMA enregistré dans vos rapports et partagé avec ${patientName.trim()} (${patientID}).`, 'save');
         } catch (error) {
-            console.error('Error in AMA handleSave:', error);
-            let errorContext = 'Erreur lors de la génération du formulaire AMA';
-            let detailedMessage = error.message || String(error);
-
-            if (detailedMessage.includes('upload failed')) errorContext = 'Échec du téléchargement';
-            else if (detailedMessage.includes('Failed to load base AMA image')) errorContext = 'Échec du chargement de l\'image AMA de base';
-            else errorContext = 'Échec de la génération de l\'image';
-            
-            showNotification(`${errorContext}: ${detailedMessage.substring(0,100)}...`, 'error');
-            Sentry.captureException(error, { extra: { context: 'EMS AMA Save', patientSignature, date, detailedMessage } });
-            sendDiscordWebhook(patientSignature, date, guardianSignature, paramedicSignature, null, `${errorContext}: ${detailedMessage}`);
+            console.error('Error saving AMA report:', error);
+            Sentry.captureException(error, { extra: { context: 'EMS AMA report save' } });
+            logActivity({ category: 'rapports', action: 'ama_failed', severity: 'error', summary: "Échec de l'enregistrement d'un formulaire AMA", details: String(error?.message || error).slice(0, 500) });
+            showNotification(`Échec de l'enregistrement de l'AMA : ${String(error?.message || error).slice(0, 120)}`, 'error');
         } finally {
-            setIsSaving(false);
+            setSaving(false);
         }
-    }, [
-        patientSignature, date, guardianSignature, paramedicSignature, patientID, canUseAma, staffName,
-        showNotification, handleImageUpload, sendDiscordWebhook, commitInfo,
-        patientSignatureOverlayStyle, dateOverlayStyle, guardianSignatureOverlayStyle, paramedicSignatureOverlayStyle
-    ]);
+    };
 
+    if (!show) return null;
 
-    if (!show) {
-        return null;
-    }
+    const shell = (children) => (
+        <div className="modal-overlay">
+            <div className="agency-selector-modal ems-ama-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h4>EMS - Contre Avis Médical (AMA)</h4>
+                    <Button variant="secondary" className="close" onClick={onHide} aria-label="Fermer"><i className="fas fa-times"></i></Button>
+                </div>
+                {children}
+            </div>
+        </div>
+    );
 
     // Réservé aux médecins : les autres voient seulement ce message.
     if (!canUseAma) {
-        return (
-            <div className="modal-overlay">
-                <div className="agency-selector-modal ems-ama-modal" onClick={e => e.stopPropagation()}>
-                    <div className="modal-header">
-                        <h4>EMS - Contre Avis Médical (AMA)</h4>
-                        <Button variant="secondary" className="close" onClick={onHide} aria-label="Fermer">
-                            <i className="fas fa-times"></i>
+        return shell(<div className="ems-ama-modal-body"><p>Le formulaire AMA est réservé au personnel soignant du PHMC connecté.</p></div>);
+    }
+
+    const ownSelected = employee?.value === staffName;
+    const needsOwnSignature = employeeSignature === null && ownSelected;
+
+    // Après l'enregistrement : le document est prêt, avec ses exports.
+    if (saved) {
+        return shell(
+            <div className="ems-ama-modal-body">
+                <Alert variant="success">
+                    <strong>AMA enregistré.</strong> Il est dans vos « Rapports enregistrés » et partagé avec le patient ({saved.patientID}) : il le retrouve dans son dossier.
+                </Alert>
+                <div className="d-flex flex-wrap gap-2 mb-3">
+                    {bbcodeEnabled && (
+                        <Button variant="secondary" size="sm" title={COPY_BBCODE_HINT} onClick={() => copyToClipboard(saved.bbCode, showNotification, 'BBCode copié !')}>
+                            <i className="fas fa-copy me-1"></i>Copier le BBCode
                         </Button>
-                    </div>
-                    <div className="ems-ama-modal-body">
-                        <p>Le formulaire AMA est réservé au personnel soignant du PHMC connecté.</p>
-                    </div>
+                    )}
+                    <Button variant="secondary" size="sm" title={DOWNLOAD_HTML_HINT} onClick={() => downloadBbCodeAsHtml({ bbCode: saved.bbCode, title: saved.title, showNotification })}>
+                        <i className="fas fa-file-code me-1"></i>Télécharger le HTML
+                    </Button>
+                    <Button variant="secondary" size="sm" title={PDF_EXPORT_LABEL} onClick={() => exportReportDocument('pdf', { bbCode: saved.bbCode, title: saved.title, showNotification })}>
+                        <i className="fas fa-file-pdf me-1"></i>PDF
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => exportReportDocument('png', { bbCode: saved.bbCode, title: saved.title, showNotification })}>
+                        <i className="fas fa-image me-1"></i>Image (PNG)
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => exportReportDocument('png-copy', { bbCode: saved.bbCode, title: saved.title, showNotification })}>
+                        <i className="fas fa-clipboard me-1"></i>Copier l'image
+                    </Button>
+                </div>
+                <ReportPreviewFrame bbCode={saved.bbCode} title={saved.title} height={520} />
+                <div className="d-flex gap-2 mt-3">
+                    <Button variant="primary" onClick={() => setSaved(null)}>Nouvel AMA</Button>
+                    <Button variant="outline-secondary" onClick={onHide}>Fermer</Button>
                 </div>
             </div>
         );
     }
 
-    return (
-        <div className="modal-overlay">
-            <div className="agency-selector-modal ems-ama-modal" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h4>EMS - Contre Avis Médical (AMA)</h4>
-                    <Button
-                        variant="secondary"
-                        className="close"
-                        onClick={onHide}
-                        aria-label="Fermer la fenêtre modale EMS AMA"
-                    >
-                        <i className="fas fa-times"></i>
-                    </Button>
+    return shell(
+        <>
+            <div className="ems-ama-modal-body">
+                <div className="ama-grid">
+                    <Form.Group className="mb-2">
+                        <Form.Label>Paramédic qui signe *</Form.Label>
+                        <Select
+                            value={employee} onChange={setEmployee} options={employeeOptions} styles={selectStyles} menuPortalTarget={document.body}
+                            isDisabled={saving} placeholder="Choisir un employé…" noOptionsMessage={() => 'Aucun employé'}
+                        />
+                        {!ownSelected && !isAdmin && employee && (
+                            <Form.Text style={{ color: '#e3b341' }}>La signature d'un autre employé n'est pas accessible : il doit signer depuis son compte.</Form.Text>
+                        )}
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Patient *</Form.Label>
+                        <CreatableSelect
+                            value={patientOption} onChange={handlePatientChange} options={patientOptions} styles={selectStyles} menuPortalTarget={document.body}
+                            isClearable isDisabled={saving} placeholder="Choisir un patient ou taper son ID (ex. 2752)…"
+                            noOptionsMessage={() => 'Tapez un ID patient'} formatCreateLabel={(typed) => `Utiliser l'ID « ${normalizePatientId(typed)} »`}
+                            isValidNewOption={(typed) => typed.trim().length >= 3}
+                            getNewOptionData={(input) => ({ value: normalizePatientId(input), label: normalizePatientId(input), name: '', __isNew__: true })}
+                        />
+                        <Form.Text style={{ color: '#9aa7b4' }}>L'ID ne s'imprime pas : il sert à ranger l'AMA chez le patient et à retrouver sa signature.</Form.Text>
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Nom du patient (imprimé) *</Form.Label>
+                        <Form.Control size="sm" value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Prénom Nom" disabled={saving} />
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Date / heure</Form.Label>
+                        <Form.Control size="sm" value={date} onChange={(e) => setDate(e.target.value)} placeholder="JJ/MM/AAAA HH:MM" disabled={saving} />
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Label>Représentant légal (nom, si applicable)</Form.Label>
+                        <Form.Control size="sm" value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder="Facultatif" disabled={saving} />
+                    </Form.Group>
                 </div>
-                <div className="ems-ama-modal-body">
-                    {imageUrl && (
-                        <div className="imgur-link-container">
-                            <p>
-                                <strong>Lien de l'image : </strong>
-                                <a href={imageUrl} target="_blank" rel="noopener noreferrer">
-                                    {imageUrl}
-                                </a>
-                            </p>
-                            Instructions !
-                            <br />
-                            1) /note [identifiant de l'élément de note vierge dans votre inventaire] [quantité] [nom pour les cartes]
-                            <br />
-                            2) /note [identifiant du nouvel élément de note dans votre inventaire] [quantité] [contenu] [URL depuis ImgBB]
-                        </div>
-                    )}
 
-                    <Button
-                        variant="outline-info"
-                        onClick={() => setIsPreviewVisible(!isPreviewVisible)}
-                        className="mb-3 w-100"
-                    >
-                        {isPreviewVisible ? 'Masquer l\'aperçu du formulaire' : 'Afficher l\'aperçu du formulaire'}
-                    </Button>
-
-                    {isPreviewVisible && (
-                        <div 
-                            className="business-card-image-container" // Re-use class if styles are similar
-                            ref={amaCardPreviewRef} 
-                            style={{
-                                position: 'relative', 
-                                width: '100%', 
-                                maxWidth: '800px', // Adjust as needed for AMA form aspect ratio
-                                margin: '0 auto 1rem auto' 
-                            }}
-                        >
-                            <img
-                                src={EMSAMAImage}
-                                alt="Aperçu du formulaire EMS AMA"
-                                style={{ display: 'block', width: '100%', height: 'auto', border: '1px solid #ccc' }}
-                            />
-                            <div
-                                ref={patientSignaturePreviewRef}
-                                style={patientSignatureOverlayStyle} // Use defined style object
-                            >
-                                {patientSignature}
-                            </div>
-                            <div
-                                ref={datePreviewRef}
-                                style={dateOverlayStyle} // Use defined style object
-                            >
-                                {date}
-                            </div>
-                            <div
-                                ref={guardianSignaturePreviewRef}
-                                style={guardianSignatureOverlayStyle} // Use defined style object
-                            >
-                                {guardianSignature}
-                            </div>
-                            <div
-                                ref={paramedicSignaturePreviewRef}
-                                style={paramedicSignatureOverlayStyle} // Use defined style object
-                            >
-                                {paramedicSignature}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="business-card-input-fields"> {/* Re-use class if styles are similar */}
-                        <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>ID du patient *</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="ex. PHMC-1234" value={patientID} onChange={(e) => setPatientID(e.target.value)} onBlur={() => setPatientID((current) => (current.trim() ? normalizePatientId(current) : current))} />
-                            <Form.Text style={{ color: '#8b949e' }}>
-                                Non imprimé sur le document : sert uniquement à enregistrer l'AMA dans vos rapports et dans le dossier du patient.
-                            </Form.Text>
-                        </Form.Group>
-                        <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Signature du patient (nom)</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="Entrer le nom complet du patient" value={patientSignature} onChange={handlePatientSignatureChange} />
-                        </Form.Group>
-                        <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Date</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="JJ/MM/AAAA / XX:XX" value={date} onChange={handleDateChange} />
-                        </Form.Group>
-                        <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Signature du tuteur (nom, si applicable)</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="Entrer le nom complet du tuteur" value={guardianSignature} onChange={handleGuardianSignatureChange} />
-                        </Form.Group>
-                        <Form.Group className="mb-2 ems-ama-input-group">
-                            <Form.Label>Signature du paramédic (nom)</Form.Label>
-                            <Form.Control size="sm" type="text" placeholder="Entrer votre nom complet" value={paramedicSignature} onChange={handleParamedicSignatureChange} />
-                        </Form.Group>
+                {/* Signatures */}
+                <div className="ama-signatures">
+                    <div>
+                        <strong>Signature du paramédic</strong>
+                        {employeeSignature === undefined && <p className="text-muted mb-0"><Spinner size="sm" animation="border" className="me-2" />Chargement…</p>}
+                        {employeeSignature?.url && <div className="ama-sigbox"><img src={employeeSignature.url} alt="Signature du paramédic" /></div>}
+                        {needsOwnSignature && (
+                            <Alert variant="warning" className="mt-2 mb-2">
+                                <i className="fas fa-signature me-2"></i>Vous n'avez pas encore de signature : créez-la avant de signer, elle s'imprimera sous votre nom.
+                            </Alert>
+                        )}
+                        {employeeSignature === null && !ownSelected && <p className="text-warning mb-0">Aucune signature accessible pour cette personne.</p>}
+                    </div>
+                    <div>
+                        <strong>Signature du patient</strong>
+                        {!patientID && <p className="text-muted mb-0">Choisissez d'abord le patient.</p>}
+                        {patientID && patientSignature === undefined && <p className="text-muted mb-0"><Spinner size="sm" animation="border" className="me-2" />Recherche…</p>}
+                        {patientSignature?.url && <div className="ama-sigbox"><img src={patientSignature.url} alt="Signature du patient" /></div>}
+                        {patientID && patientSignature === null && (
+                            <p className="text-info mb-0"><i className="fas fa-wand-magic-sparkles me-2"></i>Aucune signature pour cet ID : elle sera créée automatiquement à partir du nom du patient et enregistrée pour lui.</p>
+                        )}
                     </div>
                 </div>
-                <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="ems-ama-save-button" />
-                <Button className="ems-ama-save-button" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? 'Enregistrement...' : 'Enregistrer et téléverser le formulaire AMA'}
-                </Button>
+
+                {needsOwnSignature && currentEmployee?.uid && (
+                    <div className="ama-create-signature">
+                        <SignatureCreator
+                            uid={currentEmployee.uid}
+                            defaultName={staffName || ''}
+                            creation={null}
+                            onCreationChange={(created) => setEmployeeSignature(created || null)}
+                            uploadImageDetailed={uploadImageDetailed}
+                            showNotification={showNotification}
+                        />
+                    </div>
+                )}
+
+                <Form.Check
+                    className="mt-3 ama-consent" type="checkbox" id="ama-certify" checked={certified} disabled={saving}
+                    onChange={(e) => setCertified(e.target.checked)}
+                    label={<><strong>Je certifie que c'est bien le patient (ou son représentant légal) qui signe</strong> ce refus de soins, après lui avoir expliqué les risques et les options, et en sa présence.</>}
+                />
+
+                <h6 className="mt-3">Aperçu du document</h6>
+                <ReportPreviewFrame bbCode={bbCode} title="Formulaire AMA" height={460} />
             </div>
-        </div>
+            <DebugFillButton onFill={handleDebugFill} disabled={saving} className="ems-ama-save-button" />
+            <Button className="ems-ama-save-button" onClick={handleSave} disabled={saving || !certified || !employeeSignature?.url || !patientID}>
+                {saving ? 'Enregistrement…' : 'Signer et enregistrer l\'AMA'}
+            </Button>
+        </>
     );
 };
 

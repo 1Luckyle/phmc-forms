@@ -77,11 +77,6 @@ export const ADMIN_SECTION_GROUPS = [
         label: 'Site',
         items: [
             {
-                key: 'serviceStatus', icon: 'fa-server', label: 'Statut du service',
-                description: "Les messages d'état affichés par le site selon l'endroit où il est hébergé.",
-                keywords: 'état disponibilité déploiement bandeau',
-            },
-            {
                 key: 'lockdown', icon: 'fa-lock', label: 'Confinement',
                 description: 'Verrouiller temporairement le site, avec un message pour les visiteurs.',
                 keywords: 'maintenance verrouillage blocage',

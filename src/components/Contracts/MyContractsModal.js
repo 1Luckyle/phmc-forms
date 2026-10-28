@@ -17,6 +17,8 @@ import { downloadBbCodeAsHtml, contractToBbCode, contractTitle } from '../../uti
 
 const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed }) => {
     const { currentEmployee, staffName, civilianProfile } = useEmployeeAuth();
+    // Un candidat (compte Civil sans fiche du personnel) signe avec son nom seul, et sa signature est aussi celle de son ID patient.
+    const isCivilSigner = !staffName && !!civilianProfile;
     // Nom proposé pour la signature : fiche du personnel, sinon profil Civil (candidat en attente de contrat).
     const signatureName = staffName || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ');
     const uid = currentEmployee?.uid;
@@ -34,7 +36,7 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
         setLoading(true);
         setError('');
         try {
-            const [list, creations] = await Promise.all([loadMyContracts(uid), loadUserCreations(uid)]);
+            const [list, creations] = await Promise.all([loadMyContracts(uid), loadUserCreations(uid, { patientID: isCivilSigner ? civilianProfile?.patientID : '' })]);
             setContracts(list);
             setSignature(creations.signature);
             // Un seul contrat à signer : on l'ouvre directement.
@@ -155,6 +157,8 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
                                         onCreationChange={(created) => { setSignature(created); if (created) setShowCreator(false); }}
                                         uploadImageDetailed={uploadImageDetailed}
                                         showNotification={showNotification}
+                                        civilian={isCivilSigner}
+                                        patientID={isCivilSigner ? (civilianProfile?.patientID || '') : ''}
                                     />
                                     <Button variant="link" size="sm" onClick={() => setShowCreator(false)}>Fermer la création de signature</Button>
                                 </div>

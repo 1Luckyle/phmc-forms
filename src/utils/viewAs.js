@@ -188,11 +188,13 @@ export const getToolAccess = (identity) => {
         savedReports: !!currentEmployee,
         patientDossier: !isCivilian && !!(isAdmin || (currentEmployee && (!staffProfile || careOrDmec))),
         recruitment: !!canManageRecruitment,
+        // Annuaire (consultation seule) : le personnel et les admins.
+        directory: isStaffMember || !!isAdmin,
         ama: !!canUseAma,
         // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
         // (depuis « Mes contrats ») mais pas sa carte de visite.
         businessCard: !!(isAdmin || employeeProfile || isRecruiter),
-        signature: !!(isAdmin || employeeProfile || isRecruiter || isContractCandidate),
+        signature: !!(isAdmin || employeeProfile || isRecruiter || isContractCandidate || isCivilian),
     };
 };
 
@@ -204,6 +206,7 @@ export const TOOL_ACCESS_LABELS = {
     savedReports: 'Rapports enregistrés',
     patientDossier: 'Dossier Patient',
     recruitment: 'Gestion du recrutement',
+    directory: 'Annuaire (consultation seule)',
     ama: 'EMS Contre Avis Médical',
     businessCard: 'Créer sa carte de visite',
     signature: 'Créer sa signature',

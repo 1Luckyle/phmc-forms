@@ -594,7 +594,7 @@ const OnboardingModal = ({
             // Validation des champs
             // Un compte lié à GTA World se connecte uniquement via OAuth (voir
             // gtawEmployeeLogin côté serveur) : pas besoin de mot de passe.
-            const baseRequired = isGtawAccount ? ['email'] : ['email', 'password', 'confirmPassword'];
+            const baseRequired = ['email'];
             const specificRequired = isCoroner
                 ? ['firstName', 'lastName', 'discord', 'rank', 'badge', 'phNumber']
                 : ['firstName', 'lastName', 'discord', 'rank', 'badge', 'phNumber'];
@@ -626,23 +626,6 @@ const OnboardingModal = ({
                 showNotification('Le numéro de badge doit contenir 4 ou 5 chiffres.', 'warning');
                 setIsCreatingAccount(false);
                 return;
-            }
-
-            if (!isGtawAccount) {
-                // Vérification des mots de passe
-                if (accountData.password !== accountData.confirmPassword) {
-                    showNotification('Les mots de passe ne correspondent pas.', 'warning');
-                    setIsCreatingAccount(false);
-                    return;
-                }
-
-                // Validation mot de passe (minimum 8 caractères, majuscule, chiffre, caractère spécial)
-                const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-                if (!passwordRegex.test(accountData.password)) {
-                    showNotification('Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.', 'warning');
-                    setIsCreatingAccount(false);
-                    return;
-                }
             }
 
             // Construire le badge complet avec préfixe
@@ -1397,32 +1380,10 @@ const OnboardingModal = ({
                                     Pas besoin de mot de passe : votre compte est déjà lié à votre personnage GTA World via le bouton « Créer mon compte avec GTA World ».
                                 </div>
                             ) : (
-                                <>
-                                    <div style={formRowStyle}>
-                                        <Form.Control
-                                            type="password"
-                                            name="password"
-                                            value={accountData.password}
-                                            onChange={handleAccountDataChange}
-                                            placeholder="Mot de passe *"
-                                            style={formInputStyle}
-                                            autoComplete="new-password"
-                                        />
-                                        <Form.Control
-                                            type="password"
-                                            name="confirmPassword"
-                                            value={accountData.confirmPassword}
-                                            onChange={handleAccountDataChange}
-                                            placeholder="Confirmer le mot de passe *"
-                                            style={formInputStyle}
-                                            autoComplete="new-password"
-                                        />
-                                    </div>
-                                    <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
-                                        <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
-                                        Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
-                                    </div>
-                                </>
+                                <div style={{ marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.85em', color: '#ffc107' }}>
+                                    <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
+                                    Aucun mot de passe n'est demandé ici : une fois votre demande approuvée, vous recevrez un e-mail pour <strong>définir votre mot de passe</strong>. Il n'est jamais enregistré en clair.
+                                </div>
                             )}
                             <div style={{ marginBottom: '10px', textAlign: 'right' }}>
                                 <DebugFillButton onFill={handleDebugFillAccount} />
@@ -1719,32 +1680,10 @@ const OnboardingModal = ({
                                     Pas besoin de mot de passe : votre compte est déjà lié à votre personnage GTA World via le bouton « Créer mon compte avec GTA World ».
                                 </div>
                             ) : (
-                                <>
-                                    <div style={formRowStyle}>
-                                        <Form.Control
-                                            type="password"
-                                            name="password"
-                                            value={accountData.password}
-                                            onChange={handleAccountDataChange}
-                                            placeholder="Mot de passe *"
-                                            style={formInputStyle}
-                                            autoComplete="new-password"
-                                        />
-                                        <Form.Control
-                                            type="password"
-                                            name="confirmPassword"
-                                            value={accountData.confirmPassword}
-                                            onChange={handleAccountDataChange}
-                                            placeholder="Confirmer le mot de passe *"
-                                            style={formInputStyle}
-                                            autoComplete="new-password"
-                                        />
-                                    </div>
-                                    <div style={{ marginTop: '-5px', marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.82em', color: '#ffc107' }}>
-                                        <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
-                                        Le mot de passe doit contenir <strong>au moins 8 caractères</strong>, dont une majuscule, un chiffre et un caractère spécial (ex: <code style={{ color: '#ffc107' }}>A1b@cdef</code>).
-                                    </div>
-                                </>
+                                <div style={{ marginBottom: '15px', padding: '8px 10px', backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '5px', fontSize: '0.85em', color: '#ffc107' }}>
+                                    <i className="fas fa-shield-alt" style={{ marginRight: '6px' }}></i>
+                                    Aucun mot de passe n'est demandé ici : une fois votre demande approuvée, vous recevrez un e-mail pour <strong>définir votre mot de passe</strong>. Il n'est jamais enregistré en clair.
+                                </div>
                             )}
                             <div style={{ marginBottom: '10px', textAlign: 'right' }}>
                                 <DebugFillButton onFill={handleDebugFillAccount} />

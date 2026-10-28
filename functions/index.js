@@ -1757,6 +1757,12 @@ const resolveStaffEmailChangeTarget = async (req, res, requestedUid) => {
             res.status(403).json({ error: 'forbidden', message: 'Vous ne pouvez modifier que votre propre adresse.' });
             return null;
         }
+        // Un admin ne change pas l'adresse d'un autre admin : chacun change la sienne (code envoyé à SA nouvelle boîte).
+        const targetIsAdmin = (await db.ref(`adminUIDs/${targetUid}`).once('value')).val() === true;
+        if (targetIsAdmin) {
+            res.status(403).json({ error: 'forbidden', message: "L'adresse d'un administrateur ne peut être modifiée que par lui-même (Mon profil)." });
+            return null;
+        }
     }
     return { callerUid: decoded.uid, targetUid };
 };
@@ -1950,6 +1956,15 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
         }
 
         await requestRef.remove();
+
+        // Trace dans le journal d'activité : qui a changé l'adresse de qui (avertissement si ce n'est pas la personne elle-même).
+        const changedBySomeoneElse = !!request.requestedBy && request.requestedBy !== targetUid;
+        await logServerActivity({
+            category: 'comptes', action: 'email_changed', severity: changedBySomeoneElse ? 'warning' : 'info',
+            summary: changedBySomeoneElse ? `Adresse e-mail modifiée par un administrateur : ${oldEmail} → ${newEmail}` : `Adresse e-mail modifiée par son titulaire : ${oldEmail} → ${newEmail}`,
+            details: `Compte : ${targetUid}${changedBySomeoneElse ? `\nDemandé par : ${request.requestedBy}` : ''}`,
+            target: staff.entry.name || staff.entry.email || targetUid,
+        });
 
         // Prévient l'ancienne adresse (alerte anti-usurpation) — jamais bloquant.
         try {

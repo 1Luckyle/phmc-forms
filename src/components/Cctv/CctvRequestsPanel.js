@@ -11,6 +11,7 @@ import {
     addCctvReply, setCctvStatus, editCctvRequest, isCctvEditable, isCctvFieldRequired, historyOf, repliesOf,
 } from '../../utils/cctvRequests';
 import './CctvRequests.css';
+import useWriteLock from '../../hooks/useWriteLock';
 
 const pad = (n) => String(n).padStart(2, '0');
 const formatDate = (ts) => {
@@ -32,6 +33,7 @@ const StatusChip = ({ status }) => {
 };
 
 const RequestCard = ({ request, manage, author, defaultOpen }) => {
+    const { locked, lockTitle } = useWriteLock();
     const [open, setOpen] = useState(defaultOpen);
     const [text, setText] = useState('');
     const [nextStatus, setNextStatus] = useState('');
@@ -134,7 +136,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                             })}
                             <div className="cctv-reply-actions">
                                 <Button variant="secondary" size="sm" onClick={() => setEditing(null)} disabled={busy}>Annuler</Button>
-                                <Button variant="primary" size="sm" onClick={saveEdit} disabled={busy}>
+                                <Button variant="primary" size="sm" onClick={saveEdit} disabled={busy || locked} title={locked ? lockTitle : undefined}>
                                     {busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-floppy-disk me-1"></i>Enregistrer les modifications</>}
                                 </Button>
                             </div>
@@ -151,7 +153,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                                 {request.traitePar?.name && (<><dt>Traitée par</dt><dd>{request.traitePar.name} · {formatDate(request.traitePar.ts)}</dd></>)}
                             </dl>
                             <div className="cctv-quick" style={{ marginTop: 0 }}>
-                                {canEdit && <button type="button" onClick={startEdit}><i className="fas fa-pen me-1"></i>Modifier ma demande</button>}
+                                {canEdit && <button type="button" onClick={startEdit} disabled={locked} title={locked ? lockTitle : undefined}><i className="fas fa-pen me-1"></i>Modifier ma demande</button>}
                                 <button type="button" onClick={() => setShowHistory((value) => !value)}>
                                     <i className="fas fa-clock-rotate-left me-1"></i>{showHistory ? "Masquer l'historique" : `Historique (${history.length})`}
                                 </button>
@@ -223,7 +225,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                                         ))}
                                     </select>
                                 )}
-                                <Button type="submit" variant="primary" size="sm" disabled={busy || !text.trim()}>
+                                <Button type="submit" variant="primary" size="sm" disabled={busy || !text.trim() || locked} title={locked ? lockTitle : undefined}>
                                     {busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-paper-plane me-1"></i>Envoyer</>}
                                 </Button>
                             </div>
@@ -239,7 +241,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                         <div className="cctv-status-row">
                             <span>Statut sans message :</span>
                             {Object.entries(CCTV_STATUSES).filter(([key]) => key !== 'nouvelle').map(([key, info]) => (
-                                <button key={key} type="button" disabled={busy || request.statut === key} style={{ '--c': info.color }} onClick={() => changeStatus(key)}>{info.label}</button>
+                                <button key={key} type="button" disabled={busy || locked || request.statut === key} style={{ '--c': info.color }} onClick={() => changeStatus(key)}>{info.label}</button>
                             ))}
                         </div>
                     )}
@@ -252,6 +254,7 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
 
 const CctvRequestsPanel = ({ scope = 'mine', onNewRequest }) => {
     const manage = scope === 'all';
+    const { locked, lockTitle } = useWriteLock();
     const { staffName, staffProfile, isAdmin, civilianProfile, currentEmployee } = useEmployeeAuth();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -299,7 +302,7 @@ const CctvRequestsPanel = ({ scope = 'mine', onNewRequest }) => {
                     <button type="button" className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>Toutes <span>{counts.all}</span></button>
                 </div>
                 <input type="search" className="cctv-search" placeholder="Rechercher…" value={search} onChange={(e) => setSearch(e.target.value)} />
-                {onNewRequest && <Button variant="primary" size="sm" onClick={onNewRequest}><i className="fas fa-plus me-1"></i>Nouvelle demande</Button>}
+                {onNewRequest && <Button variant="primary" size="sm" onClick={onNewRequest} disabled={locked} title={locked ? lockTitle : undefined}><i className="fas fa-plus me-1"></i>Nouvelle demande</Button>}
             </div>
 
             {error && <div className="cctv-error">Lecture impossible : {error}</div>}

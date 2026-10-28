@@ -15,6 +15,7 @@ import { ref, get, set, update, onValue } from 'firebase/database';
 import { database } from '../firebase';
 import { logActivity } from './activityLog';
 import { loadApplicationsOf } from './recruitmentStore';
+import { assertNotLocked } from './lockdownGuard';
 
 export const INTERNAL_REQUEST_STATUS = {
     en_attente: { label: 'En attente', color: '#e3b341' },
@@ -38,6 +39,7 @@ export const subscribeToMyInternalRecruitment = (uid, callback) => {
 
 // L'employé demande le statut. member : { name, role, badge }.
 export const requestInternalRecruitment = async ({ uid, member, motif }) => {
+    assertNotLocked();
     await set(ref(database, `demandesMobilite/${uid}`), {
         statut: 'en_attente',
         creeLe: Date.now(),
@@ -50,6 +52,12 @@ export const requestInternalRecruitment = async ({ uid, member, motif }) => {
 };
 
 // ── Côté recrutement ──
+// Statuts de recrutement interne ACCORDÉS : { [uid]: { accordeLe, accordeParNom, … } } (lecture : recrutement et admins).
+export const loadInternalGrants = async () => {
+    const snapshot = await get(ref(database, 'statutsMobilite'));
+    return snapshot.exists() ? snapshot.val() : {};
+};
+
 export const loadInternalRequests = async () => {
     const [requestsSnap, grantedSnap] = await Promise.all([get(ref(database, 'demandesMobilite')), get(ref(database, 'statutsMobilite'))]);
     const granted = grantedSnap.val() || {};
@@ -59,6 +67,7 @@ export const loadInternalRequests = async () => {
 };
 
 export const acceptInternalRequest = async (request, { byUid, byName, note }) => {
+    assertNotLocked();
     const now = Date.now();
     await update(ref(database), {
         [`statutsMobilite/${request.uid}`]: { accordeLe: now, accordePar: byUid || null, accordeParNom: clean(byName, 120), demandeLe: request.creeLe || null },
@@ -71,6 +80,7 @@ export const acceptInternalRequest = async (request, { byUid, byName, note }) =>
 };
 
 export const refuseInternalRequest = async (request, { byName, note }) => {
+    assertNotLocked();
     await update(ref(database), {
         [`demandesMobilite/${request.uid}/statut`]: 'refusee',
         [`demandesMobilite/${request.uid}/traiteLe`]: Date.now(),
@@ -82,6 +92,7 @@ export const refuseInternalRequest = async (request, { byName, note }) => {
 
 // Retrait manuel par le recrutement (le statut disparaît ; la demande passe à « terminée »).
 export const revokeInternalStatus = async (request, { byName }) => {
+    assertNotLocked();
     await update(ref(database), {
         [`statutsMobilite/${request.uid}`]: null,
         [`demandesMobilite/${request.uid}/statut`]: 'terminee',

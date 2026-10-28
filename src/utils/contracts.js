@@ -20,6 +20,7 @@ import { database } from '../firebase';
 import { normalizeRank } from '../constants/ranks';
 import { releaseInternalStatusAfterContract } from './internalRecruitment';
 import { closeThreadsAfterContract } from './applicationThreads';
+import { assertNotLocked } from './lockdownGuard';
 
 export const CONTRACT_STATUS = {
     brouillon: { label: 'Brouillon', variant: 'secondary', legacy: 'draft' },
@@ -225,6 +226,7 @@ export async function loadMyContracts(uid) {
 // `employee` : { uid, displayName, badge, email, kind: 'staff' | 'candidate' | 'recruiter' } (kind en anglais en
 // interne côté interface ; il est enregistré en français).
 export async function saveContractDraft({ id, employee, service, champs, issuer }) {
+    assertNotLocked();
     // Un recruteur ne rédige pas son propre contrat (aussi imposé par database.rules.json) ; un admin le peut.
     if (employee.uid === issuer.uid && !issuer.isAdmin) {
         throw new Error('Vous ne pouvez pas rédiger votre propre contrat : demandez à un admin ou à un autre recruteur.');
@@ -255,6 +257,7 @@ export async function saveContractDraft({ id, employee, service, champs, issuer 
 
 // Fige le texte puis rend le contrat visible par l'employé.
 export async function sendContract(id, issuerName) {
+    assertNotLocked();
     const contract = normalizeContract((await get(ref(database, `contrats/${id}`))).val(), id);
     if (!contract.employeUid) throw new Error('Contrat introuvable.');
     if (contract.statut === 'signe') throw new Error('Ce contrat est déjà signé.');
@@ -276,6 +279,7 @@ export async function sendContract(id, issuerName) {
 
 // Repasse un contrat envoyé (non signé) en brouillon : il disparaît de la liste de l'employé.
 export async function retractContract(id) {
+    assertNotLocked();
     const contract = normalizeContract((await get(ref(database, `contrats/${id}`))).val(), id);
     if (!contract.employeUid) throw new Error('Contrat introuvable.');
     if (contract.statut === 'signe') throw new Error('Un contrat signé ne peut pas être retiré.');
@@ -290,6 +294,7 @@ export async function retractContract(id) {
 
 // Suppression : recruteurs pour un contrat non signé, admins pour n'importe lequel (règles Firebase).
 export async function deleteContract(id) {
+    assertNotLocked();
     const raw = (await get(ref(database, `contrats/${id}`))).val();
     if (!raw) return;
     const uid = raw.employeUid;
@@ -323,6 +328,7 @@ const embedSignatureImage = async (url) => {
 // Signe un contrat envoyé. `signature` = création « signature » de l'employé ({ url, ... }).
 // Les règles Firebase vérifient que l'URL est bien celle de SA signature enregistrée.
 export async function signContract(contract, { uid, name, signature }) {
+    assertNotLocked();
     if (!signature?.url) throw new Error('Créez d\'abord votre signature (Boîte à outils → Carte de visite & signature).');
     if (contract.statut !== 'envoye') throw new Error('Ce contrat n\'est pas en attente de signature.');
     if (contract.employeUid !== uid) throw new Error('Ce contrat ne vous est pas destiné.');

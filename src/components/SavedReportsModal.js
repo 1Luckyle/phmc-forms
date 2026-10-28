@@ -17,6 +17,7 @@ import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBC
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import useWriteLock from '../hooks/useWriteLock';
 
 const modalStyle = {
     position: 'fixed',
@@ -162,6 +163,7 @@ const SavedReportsModal = ({
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
+    const { locked, lockTitle } = useWriteLock();
     const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
     // Personne de connecté = aucune liste, même si une sélection (ou des rapports) datait d'une session
@@ -588,7 +590,7 @@ const SavedReportsModal = ({
                 Copier
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                {report.kind === 'ama' ? (
+                {report.kind === 'ama' && !report.bbCode ? (
                     <>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyImageLink(report)} disabled={!report.imageUrl}>
@@ -679,7 +681,8 @@ const SavedReportsModal = ({
                         {isStaffViewer && report.patientID && !report.sharedByStaff && !report.isCopy && (
                             <Button
                                 size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }}
-                                title="Rendre ce rapport visible au patient dans son propre compte"
+                                title={locked ? lockTitle : 'Rendre ce rapport visible au patient dans son propre compte'}
+                                disabled={locked}
                                 onClick={() => shareReportWithPatient && shareReportWithPatient(report.patientID, report.key)}
                             >
                                 <i className="fas fa-share-nodes me-1"></i>Partager avec le patient
@@ -692,7 +695,7 @@ const SavedReportsModal = ({
                                     ? `Enregistrer une copie de ce rapport dans les rapports de ${staffAuthorNameForCopy}`
                                     : 'Impossible de déterminer à quel médecin rattacher la copie'}
                                 onClick={() => copyReportToOwnAccount && copyReportToOwnAccount(report.reportPath, staffAuthorNameForCopy, { patientID: report.patientID })}
-                                disabled={!staffAuthorNameForCopy}
+                                disabled={!staffAuthorNameForCopy || locked}
                             >
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
@@ -704,7 +707,8 @@ const SavedReportsModal = ({
                                     await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
                                 }
                             }}
-                            disabled={isLoadingReports || !selectedEmployee}
+                            disabled={isLoadingReports || !selectedEmployee || locked}
+                            title={locked ? lockTitle : undefined}
                         >
                             <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>
@@ -853,7 +857,7 @@ const SavedReportsModal = ({
                             checked={isAllCurrentPageSelected} onChange={(e) => handleSelectAllChange(e.target.checked)}
                             title="Sélectionner/Désélectionner tout sur cette page"
                         />
-                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0}>
+                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0 || locked} title={locked ? lockTitle : undefined}>
                             <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>
                         <Dropdown drop="up">

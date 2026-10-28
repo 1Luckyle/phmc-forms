@@ -9,6 +9,7 @@
 // depuis le panneau admin (Images à supprimer) et l'entrée disparaît de la file.
 import { ref, get, set, remove, push } from 'firebase/database';
 import { database } from '../firebase';
+import { loadPatientSignature, savePatientSignature, removePatientSignature } from './patientSignatures';
 
 export const CREATION_KINDS = { card: 'businessCard', signature: 'signature' };
 
@@ -43,28 +44,46 @@ const queueImgbbDeletion = async (uid, kind, creation) => {
     }
 };
 
-export const loadUserCreations = async (uid) => {
+// `patientID` (compte Civil) : sans signature à lui, la personne HÉRITE de celle de son ID patient (créée par exemple lors d'un
+// formulaire AMA) : elle devient sa signature.
+export const loadUserCreations = async (uid, { patientID } = {}) => {
     if (!uid) return { businessCard: null, signature: null };
     const snap = await get(ref(database, `userCreations/${uid}`));
     const value = snap.exists() ? snap.val() : {};
     const creations = { businessCard: value.businessCard || null, signature: value.signature || null };
+    if (!creations.signature && patientID) {
+        try {
+            const inherited = await loadPatientSignature(patientID);
+            if (inherited?.url) {
+                creations.signature = { url: inherited.url, deleteUrl: inherited.deleteUrl || '', text: inherited.text || '', style: inherited.style, createdAt: inherited.creeLe || Date.now(), inheritedFromPatient: true };
+                await set(ref(database, `userCreations/${uid}/signature`), creations.signature);
+            }
+        } catch (error) { console.warn('Signature du patient non reprise :', error?.message || error); }
+    }
     setCachedSignatureUrl(creations.signature?.url || '');
     return creations;
 };
 
 // Enregistre (ou remplace) la création de ce type. Retourne l'ancienne (pour proposer sa suppression).
-export const saveUserCreation = async (uid, kind, data) => {
+export const saveUserCreation = async (uid, kind, data, { patientID, actorName } = {}) => {
     const previous = (await get(ref(database, `userCreations/${uid}/${kind}`))).val() || null;
     const record = { ...data, createdAt: Date.now() };
     await set(ref(database, `userCreations/${uid}/${kind}`), record);
     await queueImgbbDeletion(uid, kind, previous);
-    if (kind === CREATION_KINDS.signature) setCachedSignatureUrl(record.url);
+    if (kind === CREATION_KINDS.signature) {
+        setCachedSignatureUrl(record.url);
+        // Compte Civil : la signature est aussi celle de son ID patient (les formulaires AMA signent avec).
+        if (patientID) await savePatientSignature(patientID, { url: record.url, deleteUrl: record.deleteUrl, text: record.text, style: record.style, source: 'civil' }, actorName).catch((error) => console.warn('Signature du patient non synchronisée :', error?.message || error));
+    }
     return { saved: record, previous };
 };
 
-export const removeUserCreation = async (uid, kind) => {
+export const removeUserCreation = async (uid, kind, { patientID } = {}) => {
     const previous = (await get(ref(database, `userCreations/${uid}/${kind}`))).val() || null;
     await remove(ref(database, `userCreations/${uid}/${kind}`));
     await queueImgbbDeletion(uid, kind, previous);
-    if (kind === CREATION_KINDS.signature) setCachedSignatureUrl('');
+    if (kind === CREATION_KINDS.signature) {
+        setCachedSignatureUrl('');
+        if (patientID) await removePatientSignature(patientID).catch(() => {});
+    }
 };

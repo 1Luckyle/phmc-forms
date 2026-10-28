@@ -15,9 +15,11 @@ export const SIGNATURE_STYLES = [
 export const getSignatureStyle = (key) => SIGNATURE_STYLES.find((s) => s.key === key) || SIGNATURE_STYLES[0];
 
 // Texte de la signature : « Dr. » + nom du médecin (sans doublon si déjà présent).
-export const buildSignatureText = (fullName) => {
+// `doctor: false` (patient, compte Civil) : le nom seul, sans « Dr. ».
+export const buildSignatureText = (fullName, { doctor = true } = {}) => {
     const clean = (fullName || '').replace(/\s+/g, ' ').trim().replace(/^(dr\.?|docteur)\s+/i, '');
-    return clean ? `Dr. ${clean}` : '';
+    if (!clean) return '';
+    return doctor ? `Dr. ${clean}` : clean;
 };
 
 const ensureFont = async (family) => {

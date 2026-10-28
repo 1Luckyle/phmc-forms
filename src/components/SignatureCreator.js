@@ -11,7 +11,8 @@ import './MyCreations.css';
 import './SignatureFonts.css';
 
 // Onglet « Signature » : une seule signature par personne, au format « Dr. Prénom Nom ».
-const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, uploadImageDetailed, showNotification }) => {
+// `patientID` + `civilian` : compte Civil — nom sans « Dr. », et la signature est aussi enregistrée à l'ID patient (formulaires AMA).
+const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, uploadImageDetailed, showNotification, patientID = '', civilian = false }) => {
     const [name, setName] = useState(defaultName || '');
     const [styleKey, setStyleKey] = useState(SIGNATURE_STYLES[0].key);
     const [previews, setPreviews] = useState({});
@@ -20,7 +21,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
 
     useEffect(() => { setName(defaultName || ''); }, [defaultName]);
 
-    const text = buildSignatureText(name);
+    const text = buildSignatureText(name, { doctor: !civilian });
     const showForm = !creation || editing;
 
     // Aperçu de chaque style (recalculé quand le texte change).
@@ -49,7 +50,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
             const uploaded = await uploadImageDetailed(dataUrl);
             const { saved } = await saveUserCreation(uid, CREATION_KINDS.signature, {
                 url: uploaded.url, deleteUrl: uploaded.deleteUrl, text, style: styleKey,
-            });
+            }, { patientID: civilian ? patientID : '', actorName: name });
             onCreationChange(saved);
             setEditing(false);
             showNotification('Signature enregistrée.', 'save');
@@ -67,7 +68,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
         if (!window.confirm('Supprimer votre signature ? Elle ne sera plus associée à votre compte.')) return;
         setBusy(true);
         try {
-            await removeUserCreation(uid, CREATION_KINDS.signature);
+            await removeUserCreation(uid, CREATION_KINDS.signature, { patientID: civilian ? patientID : '' });
             onCreationChange(null);
             setEditing(false);
             showNotification('Signature supprimée (l\'image sera retirée d\'ImgBB par un administrateur).', 'save');
@@ -99,7 +100,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
                             <i className="fas fa-exclamation-triangle"></i> Créer une nouvelle signature remplacera l'actuelle.
                         </p>
                     )}
-                    <Form.Label>Nom du médecin</Form.Label>
+                    <Form.Label>{civilian ? 'Votre nom' : 'Nom du médecin'}</Form.Label>
                     <Form.Control
                         className="mb-2"
                         type="text"
@@ -131,7 +132,9 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
                 </>
             )}
             <p style={{ fontSize: '0.8em', opacity: 0.75, marginTop: 10 }}>
-                Cette signature est proposée automatiquement dans les formulaires qui demandent une image de signature.
+                {civilian
+                    ? "Cette signature est la vôtre pour tous vos documents (par exemple un formulaire de refus de soins signé avec le personnel) : si une signature a déjà été créée à votre nom, vous la retrouvez ici."
+                    : 'Cette signature est proposée automatiquement dans les formulaires qui demandent une image de signature.'}
             </p>
         </div>
     );

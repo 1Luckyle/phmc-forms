@@ -7,6 +7,7 @@
 import { ref, push, set } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity, getActivityActorName } from './activityLog';
+import { isLockdownOn } from './lockdownGuard';
 
 export const REQUEST_TYPES = {
 
@@ -30,6 +31,7 @@ const clean = (value, max) => String(value ?? '').trim().slice(0, max);
 // by : { name, discord? } (le nom affiché de la personne ; l'uid vient de la session).
 // Renvoie { ok, id } — ok = false (sans exception) si la personne n'est pas connectée ou si Firebase refuse.
 export const submitSiteRequest = async ({ type, title, fields, by = {} }) => {
+    if (isLockdownOn()) return { ok: false, reason: 'lockdown' };
     const user = auth.currentUser;
     if (!user) return { ok: false, reason: 'not-signed-in' };
     if (!REQUEST_TYPES[type]) return { ok: false, reason: 'bad-type' };

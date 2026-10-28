@@ -13,6 +13,7 @@ import { ref, push, update, set, onValue } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { THREAD_OPEN_STATUSES } from '../constants/recruitment';
 import { loadApplicationsOf } from './recruitmentStore';
+import { assertNotLocked } from './lockdownGuard';
 
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
 
@@ -43,6 +44,7 @@ export const subscribeMyThreadMeta = (candidatUid, onData, onError) => onValue(
 
 // Envoie un message. `application` : candidature normalisée (id, candidatUid, statut). `staff` : true pour le recrutement.
 export const sendThreadMessage = async ({ application, text, staff, authorName, authorRole }) => {
+    assertNotLocked();
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
     if (!isThreadOpenStatus(application.statut)) throw new Error("Les échanges ne sont pas ouverts sur cette candidature (ou ne le sont plus).");

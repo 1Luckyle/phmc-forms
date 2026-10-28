@@ -10,6 +10,7 @@ import emsBingoBackground from '../assets/EMMafia_Pride.png';
 import { getRoleInfo } from '../constants/ranks';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { useDebug } from '../contexts/DebugContext';
+import { isLockdownOn, LOCK_MESSAGE } from '../utils/lockdownGuard';
 
 // Function to shuffle an array (used by admin to generate new card)
 const getShuffledPhrases = (phrases) => {
@@ -459,6 +460,10 @@ setCompletedBingoLines(prevCompletedLines => {
     };
 
     const handleSquareClick = useCallback(async (index, phrase) => {
+        if (isLockdownOn()) {
+            showNotification(LOCK_MESSAGE, 'warning');
+            return;
+        }
         if (isCardPaused) {
             showNotification('La partie est en pause : les cases ne peuvent pas être cochées pour le moment.', 'warning');
             return;
@@ -696,13 +701,17 @@ setCompletedBingoLines(prevCompletedLines => {
                 {selectedBingoType ? (
                     <div className="bingo-content-wrapper">
                         <div className="bingo-main-section">
-                            <div className="bingo-grid">
+                            {/* Bannière de pause : posée PAR-DESSUS la grille (position absolue), elle ne décale plus rien. */}
+                            <div className={`bingo-stage${isCardPaused && phrases.length > 0 ? ' paused' : ''}`}>
                                 {isCardPaused && phrases.length > 0 && (
-                                    <div className="alert alert-warning py-2 mb-2" role="status">
-                                        <i className="fas fa-pause me-2"></i>Partie en pause : la carte est figée, les cases ne peuvent plus être cochées pour le moment.
+                                    <div className="bingo-paused-banner" role="status">
+                                        <i className="fas fa-pause"></i>
+                                        <span><strong>Partie en pause</strong> — la carte est figée, les cases ne peuvent plus être cochées pour le moment.</span>
                                     </div>
                                 )}
-                                {renderGrid()}
+                                <div className="bingo-grid">
+                                    {renderGrid()}
+                                </div>
                             </div>
                         </div>
                         <div className="bingo-sidebar">

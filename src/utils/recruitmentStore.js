@@ -15,6 +15,7 @@ import {
     STATUT_FERME, STATUT_OUVERT, normalizeApplication, toStoredApplication,
     positionsFromSelectOptions, getCategoryPositions,
 } from '../constants/recruitment';
+import { assertNotLocked } from './lockdownGuard';
 
 // ───────────────────────────── Postes ─────────────────────────────
 
@@ -98,11 +99,13 @@ export const loadApplication = async (uid, id) => {
 
 // Écrit une candidature dans le nœud français (champs français) et retire son éventuelle copie ancienne.
 export const saveApplication = async (uid, id, application) => {
+    assertNotLocked();
     await set(ref(database, `${NEW_NODE}/${uid}/${id}`), toStoredApplication(application));
     try { await remove(ref(database, `${OLD_NODE}/${uid}/${id}`)); } catch (error) { /* ancien nœud absent ou non modifiable : sans conséquence */ }
 };
 
 export const removeApplication = async (uid, id) => {
+    assertNotLocked();
     await remove(ref(database, `${NEW_NODE}/${uid}/${id}`));
     try { await remove(ref(database, `${OLD_NODE}/${uid}/${id}`)); } catch (error) { /* idem */ }
 };

@@ -8,6 +8,7 @@ import { ref, push, update, onValue, query, orderByChild, limitToLast } from 'fi
 import { database, auth } from '../firebase';
 import { logActivity, getActivityActorName } from './activityLog';
 import { canonicalPatientId } from './patientId';
+import { assertNotLocked } from './lockdownGuard';
 
 const SYNC_ACCESS_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/syncCctvAccess';
 
@@ -67,6 +68,7 @@ export const useCctvManager = (isAdmin) => {
 
 // fields : [{ label, value }] dans l'ordre d'affichage. summary : { agent, departement, lieu } pour les listes.
 export const submitCctvRequest = async ({ title, fields, discord, patientID, summary = {} }) => {
+    assertNotLocked();
     const user = auth.currentUser;
     if (!user) return { ok: false, reason: 'not-signed-in' };
     const requestRef = push(ref(database, 'cctvRequests'));
@@ -104,6 +106,7 @@ export const submitCctvRequest = async ({ title, fields, discord, patientID, sum
 
 // Une réponse dans le fil. `staff` : message de l'administration (affiché comme tel). `status` : nouveau statut (optionnel, gestionnaires).
 export const addCctvReply = async ({ request, text, staff, status, authorName, authorRole }) => {
+    assertNotLocked();
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
     if (!staff && ['acceptee', 'refusee', 'cloturee'].includes(request.statut)) throw new Error('Cette demande est traitée : vous ne pouvez plus y envoyer de message.');
@@ -131,6 +134,7 @@ export const addCctvReply = async ({ request, text, staff, status, authorName, a
 };
 
 export const setCctvStatus = async (request, status, authorName) => {
+    assertNotLocked();
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
     const now = Date.now();
@@ -149,6 +153,7 @@ export const setCctvStatus = async (request, status, authorName) => {
 // Les champs modifiés sont consignés dans l'historique (avant / après) pour que l'administration voie ce qui a changé.
 // Retourne { changed: false } s'il n'y a rien à enregistrer.
 export const editCctvRequest = async ({ request, values, authorName }) => {
+    assertNotLocked();
     const user = auth.currentUser;
     if (!user) throw new Error('Connexion requise.');
     if (request.by?.uid !== user.uid) throw new Error('Seul l\'auteur de la demande peut la modifier.');

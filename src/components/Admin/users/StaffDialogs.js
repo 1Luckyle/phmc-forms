@@ -44,7 +44,7 @@ const useBusy = () => {
 export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignant', isRecruiter = false, adminEmail, showNotification, onDone }) => {
     const isEdit = !!member;
     const [family, setFamily] = useState(defaultFamily);
-    const [form, setForm] = useState({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+    const [form, setForm] = useState({ firstName: '', middleName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
     const [serviceDirige, setServiceDirige] = useState('');
     const [extraRanks, setExtraRanks] = useState([]);
     const [recruiter, setRecruiter] = useState(false);
@@ -64,7 +64,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             setRecruiter(isRecruiter);
             const parts = staffNameParts(member);
             setForm({
-                firstName: parts.firstName, lastName: parts.lastName,
+                firstName: parts.firstName, middleName: member.middleName || '', lastName: parts.lastName,
                 discord: member.discord || '', phNumber: member.phNumber || '',
                 // Un ancien rôle anglais (avant migration) est présélectionné sous son équivalent français.
                 rank: normalizeRank(member.rank || member.category || ''), badge: badgeDigits(member.badge),
@@ -74,7 +74,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             setServiceDirige('');
             setExtraRanks([]);
             setRecruiter(false);
-            setForm({ firstName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
+            setForm({ firstName: '', middleName: '', lastName: '', discord: '', phNumber: '', rank: '', badge: '' });
         }
     }, [show, member, defaultFamily, isRecruiter, setError]);
 
@@ -90,7 +90,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 `Renommer « ${member.displayName} » en « ${newName} » ?\n\nSes rapports sauvegardés et leurs dossiers patients sont migrés automatiquement vers le nouveau nom. Son ID employé (${member.badge}) ne change pas.`
             )) return;
             const outcome = await updateStaffMember(member, {
-                firstName: form.firstName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige, extraRanks,
+                firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, rank: form.rank, discord: form.discord, phNumber: form.phNumber, serviceDirige, extraRanks,
             });
             if (member.uid && recruiter !== isRecruiter) {
                 await setRecruiterRole(member.uid, recruiter);
@@ -101,7 +101,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
         } else {
             if (!form.firstName.trim() || !form.lastName.trim()) throw new Error('Prénom et nom obligatoires.');
             await addStaffMember(service, {
-                firstName: form.firstName.trim(), lastName: form.lastName.trim(),
+                firstName: form.firstName.trim(), middleName: form.middleName, lastName: form.lastName.trim(),
                 discord: form.discord, phNumber: form.phNumber, rank: form.rank, badgeDigitsValue: form.badge, serviceDirige, extraRanks,
             });
             sendAdminActionWebhook(adminEmail, 'Membre du personnel ajouté', `Membre : ${form.firstName} ${form.lastName}\nFamille : ${STAFF_FAMILIES[family].label}\nRôle : ${rankLabel(service, form.rank)}`, null, 'Admin');
@@ -118,10 +118,14 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
             </Modal.Header>
             <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill">
                         <Form.Label>Prénom</Form.Label>
                         <Form.Control value={form.firstName} onChange={set('firstName')} />
+                    </Form.Group>
+                    <Form.Group className="flex-fill">
+                        <Form.Label>Deuxième prénom</Form.Label>
+                        <Form.Control value={form.middleName} onChange={set('middleName')} placeholder="facultatif" />
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Nom</Form.Label>
@@ -146,7 +150,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     allowedServices={isEdit ? [member.service] : null}
                     idPrefix="staff-edit"
                 />
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex gap-2 mb-1 align-items-end">
                     <Form.Group className="flex-fill">
                         <Form.Label>{isEdit ? 'ID employé (badge) — non modifiable' : 'ID employé / badge (4 ou 5 chiffres)'}</Form.Label>
                         {isEdit ? (
@@ -155,13 +159,13 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                         ) : (
                             <DigitsInput value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
                         )}
-                        {isEdit && <Form.Text className="text-muted">ID patient : PHMC-{form.badge}</Form.Text>}
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Téléphone</Form.Label>
                         <Form.Control value={form.phNumber} onChange={set('phNumber')} />
                     </Form.Group>
                 </div>
+                {isEdit ? <Form.Text className="text-muted d-block mb-3">ID patient : PHMC-{form.badge}</Form.Text> : <div className="mb-2"></div>}
                 <Form.Group>
                     <Form.Label>Discord</Form.Label>
                     <Form.Control value={form.discord} onChange={set('discord')} />

@@ -15,7 +15,6 @@ import ReviewPhraseRequestsModal from './ReviewPhraseRequestsModal';
 import * as Sentry from "@sentry/react";
 import UserManagementModal from './UserManagementModal';
 import AdminDashboard from './AdminDashboard';
-import UserDataExchangeModal from './UserDataExchangeModal';
 import { logAdminAction } from '../../utils/activityLog';
 
 
@@ -176,12 +175,7 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
     const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
     
     const [showUserManagementModal, setShowUserManagementModal] = useState(false);
-    const [showUserDataExchangeModal, setShowUserDataExchangeModal] = useState(false);
 
-    const [formGeneratorStatus, setFormGeneratorStatus] = useState('');
-    const [alternativeFormGeneratorStatus, setAlternativeFormGeneratorStatus] = useState('');
-    const [localHostStatus, setLocalHostStatus] = useState('');
-    const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
     const [lockdownConfig, setLockdownConfig] = useState({
         enabled: false,
@@ -208,18 +202,6 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
             timestamp: Date.now(),
         });
     };
-
-    useEffect(() => {
-        const statusRef = ref(database, 'serviceStatus');
-        const unsubscribe = onValue(statusRef, (snapshot) => {
-            const statusData = snapshot.val();
-            setFormGeneratorStatus(statusData?.formGeneratorStatus || '');
-            setAlternativeFormGeneratorStatus(statusData?.alternativeFormGeneratorStatus || '');
-            setLocalHostStatus(statusData?.localHostStatus || '');
-            setIsLoadingStatus(false);
-        });
-        return () => unsubscribe();
-    }, []);
 
     // Load webhooks on component mount
     useEffect(() => {
@@ -252,44 +234,6 @@ const AdminAuthAndActions = ({ formData, setFormData, showNotification, showNoti
         });
         return () => unsubscribe();
     }, []);
-
-    const handleUpdateServiceStatus = async () => {
-        setIsUpdatingDb(true);
-        const statusRef = ref(database, 'serviceStatus');
-        const { userAgent, timeZone } = getUserContext();
-        const newStatuses = {
-            formGeneratorStatus,
-            alternativeFormGeneratorStatus,
-            localHostStatus
-        };
-        try {
-            await update(statusRef, newStatuses);
-            showInAppNotification(`Service statuses updated.`, "check-circle");
-            sendAdminActionWebhook(
-                currentUser.email,
-                "État du service mis à jour",
-                `Générateur de formulaires: ${formGeneratorStatus}\
-Générateur de formulaires alternatif: ${alternativeFormGeneratorStatus}\
-Localhost/Staging: ${localHostStatus}`,
-                "État du service",
-                userAgent,
-                timeZone
-            );
-        } catch (error) {
-            console.error("Error updating service status:", error);
-            showInAppNotification("Échec de la mise à jour des états du service.", "error");
-            sendAdminActionWebhook(
-                currentUser.email,
-                "Échec de la mise à jour des états du service",
-                `Erreur: ${error.message}`,
-                "État du service",
-                userAgent,
-                timeZone
-            );
-        } finally {
-            setIsUpdatingDb(false);
-        }
-    };
 
     const handleUpdateLockdownStatus = async () => {
         setIsUpdatingDb(true);
@@ -1432,14 +1376,6 @@ Clé : ${savedRoleData.cle}`,
                 currentUser={currentUser}
                 desktopNotificationPermission={desktopNotificationPermission}
                 handleEnableDesktopNotifications={handleEnableDesktopNotifications}
-                isLoadingStatus={isLoadingStatus}
-                formGeneratorStatus={formGeneratorStatus}
-                setFormGeneratorStatus={setFormGeneratorStatus}
-                alternativeFormGeneratorStatus={alternativeFormGeneratorStatus}
-                setAlternativeFormGeneratorStatus={setAlternativeFormGeneratorStatus}
-                localHostStatus={localHostStatus}
-                setLocalHostStatus={setLocalHostStatus}
-                handleUpdateServiceStatus={handleUpdateServiceStatus}
                 isUpdatingDb={isUpdatingDb}
                 selectedRecruitmentCategory={selectedRecruitmentCategory}
                 setSelectedRecruitmentCategory={setSelectedRecruitmentCategory}
@@ -1463,8 +1399,6 @@ Clé : ${savedRoleData.cle}`,
                 setShowUserManagementModal={setShowUserManagementModal}
 
                 setShowMarkdownModal={setShowMarkdownModal}
-                // Pass handler for the User Data exchange debug modal
-                setShowUserDataExchangeModal={setShowUserDataExchangeModal}
                 handleLogout={handleLogout}
                 Sentry={Sentry}
                 showInAppNotification={showInAppNotification}
@@ -1523,13 +1457,6 @@ Clé : ${savedRoleData.cle}`,
                 onHide={() => setShowUserManagementModal(false)}
                 database={database}
                 showNotification={showInAppNotification}
-            />
-            <UserDataExchangeModal
-                show={showUserDataExchangeModal}
-                onHide={() => setShowUserDataExchangeModal(false)}
-                showNotification={showInAppNotification}
-                sendAdminActionWebhook={sendAdminActionWebhook}
-                adminUserEmail={currentUser?.email}
             />
         </>
     );

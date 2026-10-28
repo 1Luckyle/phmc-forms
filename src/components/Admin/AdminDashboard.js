@@ -87,14 +87,6 @@ const AdminDashboard = ({
     currentUser,
     desktopNotificationPermission,
     handleEnableDesktopNotifications,
-    isLoadingStatus,
-    formGeneratorStatus,
-    setFormGeneratorStatus,
-    alternativeFormGeneratorStatus,
-    setAlternativeFormGeneratorStatus,
-    localHostStatus,
-    setLocalHostStatus,
-    handleUpdateServiceStatus,
     isUpdatingDb,
     selectedAdminBingoType,
     setSelectedAdminBingoType,
@@ -112,7 +104,6 @@ const AdminDashboard = ({
     handleLogout,
     Sentry,
     showInAppNotification,
-    setShowUserDataExchangeModal,
     lockdownConfig,
     setLockdownConfig,
     handleUpdateLockdownStatus,
@@ -324,33 +315,6 @@ const AdminDashboard = ({
                         />
                         <Button variant="primary" onClick={handleUpdateAuthConfig} disabled={isUpdatingDb}>
                             {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer'}
-                        </Button>
-                    </SectionCard>
-                );
-
-            case 'serviceStatus':
-                return (
-                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
-                        {isLoadingStatus ? (
-                            <Spinner animation="border" size="sm" />
-                        ) : (
-                            <div className="adm-form-grid">
-                                <div className="form-group">
-                                    <label>Générateur de formulaires (site principal)</label>
-                                    <input type="text" value={formGeneratorStatus} onChange={(event) => setFormGeneratorStatus(event.target.value)} placeholder="ex. Entièrement mis à jour" className="form-control" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Générateur de formulaires (adresse alternative)</label>
-                                    <input type="text" value={alternativeFormGeneratorStatus} onChange={(event) => setAlternativeFormGeneratorStatus(event.target.value)} placeholder="ex. Mises à jour différées" className="form-control" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Localhost / staging</label>
-                                    <input type="text" value={localHostStatus} onChange={(event) => setLocalHostStatus(event.target.value)} placeholder="ex. En développement" className="form-control" />
-                                </div>
-                            </div>
-                        )}
-                        <Button variant="primary" onClick={handleUpdateServiceStatus} disabled={isUpdatingDb || isLoadingStatus}>
-                            {isUpdatingDb ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer les statuts'}
                         </Button>
                     </SectionCard>
                 );
@@ -604,13 +568,6 @@ const AdminDashboard = ({
                 return (
                     <SectionCard icon={current.icon} title={current.label} description={current.description}>
                         <div className="adm-actions-grid">
-                            <div className="adm-fieldset">
-                                <div className="adm-fieldset-title">Données</div>
-                                <p className="text-muted small">Exporter ou importer les données d'un utilisateur (migration, dépannage).</p>
-                                <Button variant="info" onClick={() => setShowUserDataExchangeModal(true)}>
-                                    <i className="fas fa-user-secret"></i> Échange de données utilisateur
-                                </Button>
-                            </div>
                             <div className="adm-fieldset adm-fieldset-danger">
                                 <div className="adm-fieldset-title">Suivi des erreurs</div>
                                 <p className="text-muted small">Provoque une erreur volontaire pour vérifier qu'elle arrive bien dans Sentry.</p>

@@ -1,0 +1,23 @@
+/* Annuaire (consultation seule) : même fenêtre centrée que la gestion du recrutement. */
+.dir-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.6); }
+.dir-content {
+    position: relative; display: flex; flex-direction: column; width: 96%; max-width: 1100px; height: 90vh; padding: 20px; overflow: hidden;
+    color: #c9d1d9; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+}
+.dir-close { position: absolute; top: 12px; right: 16px; z-index: 5; color: #f85149; font-size: 28px; line-height: 1; background: transparent; border: 0; cursor: pointer; }
+.dir-title { margin: 0 0 4px; color: #f0f6fc; }
+.dir-sub { margin: 0 0 12px; color: #8b949e; font-size: 0.85rem; }
+.dir-count { margin-left: 6px; padding: 0 7px; font-size: 0.72rem; color: #c9d1d9; background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
+.dir-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.dir-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 4px; }
+.dir-list { display: flex; flex-direction: column; gap: 8px; }
+.dir-row {
+    --c: #58a6ff; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 8px 14px;
+    background: #0d1117; border: 1px solid #30363d; border-left: 4px solid var(--c); border-radius: 8px;
+}
+.dir-main { display: flex; flex-direction: column; flex: 1 1 260px; min-width: 0; }
+.dir-main strong { color: #f0f6fc; }
+.dir-main small { color: #b1bac4; }
+.dir-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: #c9d1d9; font-size: 0.84rem; }
+.dir-meta i { margin-right: 5px; color: #8b949e; }
+.dir-chips { display: flex; flex-wrap: wrap; gap: 6px; }

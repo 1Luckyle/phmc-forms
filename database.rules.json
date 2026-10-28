@@ -526,6 +526,16 @@
         }
       }
     },
+    // Signature d'un patient (signaturesPatients/{ID patient}) : créée automatiquement à sa première signature (formulaire AMA…) par le
+    // personnel, ou par le patient lui-même depuis son compte Civil ; lisible par le personnel et par le patient concerné. Le personnel
+    // la CRÉE seulement (jamais d'écrasement) ; le patient peut la remplacer ou la supprimer ; les admins gèrent tout.
+    "signaturesPatients": {
+      "$patientId": {
+        ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || (!root.child('civilians').child(auth.uid).exists() && !data.exists()))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['url', 'creeLe']) && newData.child('url').isString() && newData.child('url').val().length <= 600)"
+      }
+    },
     "echangesMeta": {
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
       "$candidatUid": {

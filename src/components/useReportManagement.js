@@ -3,6 +3,7 @@ import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/r
 import {
     normalizeApplicationStatus, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
 } from '../constants/recruitment';
+import { isLockdownOn, LOCK_MESSAGE } from '../utils/lockdownGuard';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
 import { database } from '../firebase'; // Assuming this path
 import { ref, get, set } from 'firebase/database';
@@ -964,6 +965,7 @@ Clé : ${sanitizedKey}`,
     };
 
     const shareReportWithPatient = useCallback(async (patientID, reportKey, patientNode) => {
+        if (isLockdownOn()) { showNotification(LOCK_MESSAGE, 'warning'); return; }
         if (!patientID || !reportKey) return;
         try {
             const location = await findIndexLocation(patientID, reportKey, patientNode);
@@ -1008,6 +1010,7 @@ Clé : ${sanitizedKey}`,
     // propres rapports. copyAuthorName DOIT être le nom du médecin (jamais son e-mail) :
     // c'est la clé sous laquelle sa liste « Rapports enregistrés » est chargée.
     const copyReportToOwnAccount = useCallback(async (reportPath, copyAuthorName, meta = {}) => {
+        if (isLockdownOn()) { showNotification(LOCK_MESSAGE, 'warning'); return; }
         if (!reportPath || !copyAuthorName) {
             showNotification('Impossible de déterminer votre identité pour la copie.', 'error');
             return;
@@ -1135,6 +1138,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
         const list = (Array.isArray(reports) ? reports : [reports]).filter(Boolean);
         const result = { deleted: 0, hidden: 0, refused: 0 };
         if (list.length === 0) return result;
+        if (isLockdownOn()) { showNotification(LOCK_MESSAGE, 'warning'); return result; }
         const viewer = { role: isCivilian ? 'civil' : 'staff', isAdmin, staffName };
         const refusals = new Set();
 
@@ -1355,6 +1359,7 @@ Candidature : ${applicationId}`,
             return { success: true };
         } catch (error) {
             console.error('Error saving job application:', error);
+            if (error?.code === 'lockdown') { showNotification(LOCK_MESSAGE, 'warning'); return { success: false }; }
             Sentry.captureException(error, { extra: { context: 'saveJobApplication', bbCodeVersion } });
             showNotification('Erreur lors de l\'enregistrement de la candidature.', 'error');
             return { success: false };
@@ -1501,6 +1506,7 @@ Candidature : ${applicationId}`,
             return { success: true, application: { ...updated, id: applicationId } };
         } catch (error) {
             console.error('Error updating job application status:', error);
+            if (error?.code === 'lockdown') { showNotification(LOCK_MESSAGE, 'warning'); return { success: false }; }
             Sentry.captureException(error, { extra: { context: 'updateJobApplicationStatus', applicantUid, applicationId, newStatus } });
             showNotification('Erreur lors de la mise à jour de la candidature.', 'error');
             return { success: false };
