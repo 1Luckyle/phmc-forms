@@ -30,7 +30,7 @@ import { logAdminAction } from '../../utils/activityLog';
 import PricingManager from './PricingManager';
 import CitiesManager from './CitiesManager';
 import TransparencyManager from './TransparencyManager';
-import FireSafetyManager from './FireSafetyManager';
+import MailTemplatesManager from './MailTemplatesManager';
 import { runRecruitmentMigrationOnce } from '../../utils/recruitmentMigration';
 
 const LAST_SECTION_KEY = 'adminLastSection';
@@ -406,11 +406,12 @@ const AdminDashboard = ({
                     />
                 );
 
-            case 'fireSafety':
+            case 'mails':
                 return (
-                    <FireSafetyManager
+                    <MailTemplatesManager
                         showNotification={showInAppNotification}
                         adminName={currentUser?.displayName || currentUser?.email || ''}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'E-mails' })}
                     />
                 );
 

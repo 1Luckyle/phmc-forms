@@ -1,7 +1,8 @@
 // src/components/MyProfileModal.js
 //
 // « Mon profil » pour le PERSONNEL (PHMC / DMEC) : chacun peut modifier lui-même son prénom / nom, son
-// téléphone et son Discord, et changer son adresse Eyefind Mail après vérification par code (voir
+// deuxième prénom, adresse, ville / code postal, téléphone et Discord (tout ce qui est demandé à la création du compte), choisir son titre
+// (Dr. / Pr., pour les grades médecins), et changer son adresse Eyefind Mail après vérification par code (voir
 // EmailChangeFlow). Tout est rattaché à l'ID (badge = ID employé / patient, qui ne change jamais) : un
 // changement de nom déplace les rapports enregistrés sous le nouveau nom. Grade et badge restent gérés par les admins.
 import React, { useEffect, useState } from 'react';
@@ -10,11 +11,16 @@ import BaseModal from './BaseModal';
 import EmailChangeFlow from './EmailChangeFlow';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { updateOwnStaffContact, updateOwnStaffName, rankLabel, staffNameParts } from '../utils/staffAdmin';
-import { extraRanksOf } from '../constants/ranks';
+import { extraRanksOf, DOCTOR_RANKS } from '../constants/ranks';
+import TitlePrefixPicker from './TitlePrefixPicker';
+import ZipCityField from './ZipCityField';
 
 const MyProfileModal = ({ show, onHide, showNotification }) => {
     const { currentEmployee, staffProfile, staffName, updateLocalStaffProfile } = useEmployeeAuth();
     const [firstName, setFirstName] = useState('');
+    const [middleName, setMiddleName] = useState('');
+    const [address, setAddress] = useState('');
+    const [zip, setZip] = useState('');
     const [lastName, setLastName] = useState('');
     const [phNumber, setPhNumber] = useState('');
     const [discord, setDiscord] = useState('');
@@ -26,6 +32,9 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
         const parts = staffNameParts(staffProfile || {});
         setFirstName(parts.firstName || '');
         setLastName(parts.lastName || '');
+        setMiddleName(staffProfile?.middleName || '');
+        setAddress(staffProfile?.address || '');
+        setZip(staffProfile?.zip || '');
         setPhNumber(staffProfile?.phNumber || '');
         setDiscord(staffProfile?.discord || '');
         setError('');
@@ -35,7 +44,10 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
     const ownsProfile = !!currentEmployee?.uid && staffProfile?.uid === currentEmployee.uid;
     const currentParts = staffNameParts(staffProfile || {});
     const nameChanged = firstName.trim() !== (currentParts.firstName || '') || lastName.trim() !== (currentParts.lastName || '');
-    const contactChanged = (phNumber.trim() !== String(staffProfile?.phNumber || '')) || (discord.trim() !== String(staffProfile?.discord || ''));
+    const contactChanged = (phNumber.trim() !== String(staffProfile?.phNumber || '')) || (discord.trim() !== String(staffProfile?.discord || ''))
+        || middleName.trim() !== String(staffProfile?.middleName || '') || address.trim() !== String(staffProfile?.address || '') || zip.trim() !== String(staffProfile?.zip || '');
+    // Le titre (Dr. / Pr.) fait partie du prénom : seuls les grades médecins (principal ou cumulé) peuvent en choisir un.
+    const canHaveTitle = [staffProfile?.rank, ...extraRanksOf(staffProfile || {})].some((rank) => DOCTOR_RANKS.includes(rank));
     const dirty = nameChanged || contactChanged;
 
     const handleSave = async () => {
@@ -47,8 +59,8 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
         setError('');
         try {
             if (contactChanged) {
-                await updateOwnStaffContact(currentEmployee.uid, { phNumber, discord });
-                updateLocalStaffProfile({ phNumber: phNumber.trim(), discord: discord.trim() });
+                await updateOwnStaffContact(currentEmployee.uid, { phNumber, discord, middleName, address, zip });
+                updateLocalStaffProfile({ phNumber: phNumber.trim(), discord: discord.trim(), middleName: middleName.trim(), address: address.trim(), zip: zip.trim() });
             }
             if (nameChanged) {
                 const result = await updateOwnStaffName(currentEmployee.uid, { firstName, lastName });
@@ -80,6 +92,12 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                         <div><small className="text-muted">Le grade et le badge (votre ID) sont gérés par les administrateurs.</small></div>
                     </div>
 
+                    {canHaveTitle && (
+                        <Form.Group className="mb-2">
+                            <Form.Label>Titre</Form.Label>
+                            <TitlePrefixPicker firstName={firstName} onChange={setFirstName} />
+                        </Form.Group>
+                    )}
                     <div className="d-flex gap-3 flex-wrap">
                         <Form.Group className="mb-3 flex-grow-1">
                             <Form.Label>Prénom</Form.Label>
@@ -96,6 +114,20 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                         </Alert>
                     )}
 
+                    <Form.Group className="mb-3">
+                        <Form.Label>Deuxième prénom <small className="text-muted">(facultatif)</small></Form.Label>
+                        <Form.Control value={middleName} maxLength={40} onChange={(e) => setMiddleName(e.target.value)} />
+                    </Form.Group>
+                    <div className="d-flex gap-3 flex-wrap">
+                        <Form.Group className="mb-3" style={{ flex: '2 1 220px' }}>
+                            <Form.Label>Adresse <small className="text-muted">(facultatif)</small></Form.Label>
+                            <Form.Control value={address} maxLength={150} onChange={(e) => setAddress(e.target.value)} />
+                        </Form.Group>
+                        <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
+                            <Form.Label>Ville / code postal</Form.Label>
+                            <ZipCityField zip={zip} onZipChange={setZip} placeholder="Code postal (facultatif)" />
+                        </Form.Group>
+                    </div>
                     <Form.Group className="mb-3">
                         <Form.Label>Téléphone</Form.Label>
                         <Form.Control value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />

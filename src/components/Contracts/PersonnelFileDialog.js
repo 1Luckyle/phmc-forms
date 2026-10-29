@@ -12,7 +12,9 @@ import ContractDocument, { ContractExportBar } from './ContractDocument';
 import {
     CONTRACT_STATUS, CONTRACT_TYPES, loadAllContracts, contractLabel, contractStatusLabel, contractTypeOf, isOfferExpired,
 } from '../../utils/contracts';
-import { CONTRACT_TYPE_INFO, formatDateFr, formatTimestampDateFr, isEmploymentType, SANCTIONS, FIN_MOTIFS } from '../../utils/contractDocs';
+import { CONTRACT_TYPE_INFO, formatDateFr, formatTimestampDateFr, isEmploymentType, isDisciplinaryType, SANCTIONS, FIN_MOTIFS } from '../../utils/contractDocs';
+import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { canManageDiscipline } from '../../constants/ranks';
 import { buildPersonnelFile, eventDate, timelineGroup } from '../../utils/personnelFile';
 
 const GROUP_LABELS = { contrat: 'Contrat', avenant: 'Avenant', procedure: 'Procédure', fin: 'Fin de contrat' };
@@ -55,7 +57,16 @@ const PersonnelFileDialog = ({ show, onHide, uid, name, contracts: provided, sho
     }, [show, provided, load]);
 
     const all = provided || loaded;
-    const file = useMemo(() => buildPersonnelFile(all, uid), [all, uid]);
+    const built = useMemo(() => buildPersonnelFile(all, uid), [all, uid]);
+    // Un recruteur voit les contrats et avenants, pas la procédure disciplinaire (convocations, sanctions) ni les fins de contrat dans la chronologie.
+    const { isAdmin, staffProfile } = useEmployeeAuth();
+    const seesDiscipline = !!isAdmin || canManageDiscipline(staffProfile);
+    const file = useMemo(() => (seesDiscipline ? built : {
+        ...built,
+        timeline: built.timeline.filter((c) => !isDisciplinaryType(contractTypeOf(c))),
+        procedures: [],
+        counts: Object.fromEntries(Object.entries(built.counts).filter(([type]) => !isDisciplinaryType(type))),
+    }), [built, seesDiscipline]);
     const { active, lapsed, procedures, employment, timeline, counts, drafts } = file;
 
     return (

@@ -9,7 +9,7 @@ import { database } from '../firebase'; // Assuming this path
 import { ref, get, set } from 'firebase/database';
 import * as Sentry from "@sentry/react";
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { sendEyefindMail } from '../utils/eyefindMail';
+import { sendTemplatedMail } from '../utils/mailTemplates';
 import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
@@ -20,6 +20,7 @@ import { logActivity } from '../utils/activityLog';
 import { isCareStaff } from '../hooks/useBillingRole';
 import { isBillableVersion } from '../utils/patientBilling';
 import { getFormAccess } from '../utils/formAccess';
+import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from '../utils/notifications';
 import { readFamiliesOf, locksPatient } from '../utils/reportAccess';
 import { loadDeathLock, declareDeath, DEATH_LOCK_MESSAGE } from '../utils/deathReports';
 import {
@@ -1025,6 +1026,7 @@ Clé : ${sanitizedKey}`,
                 details: `Patient : ${location.node}\nPartagé par : ${staffName || 'admin'}`, target: location.node,
             });
             showNotification('Rapport partagé avec le patient.', 'check-circle');
+            findCivilianUidByPatientId(location.node).then((uid) => notifyUser(uid, { type: 'partage', titre: 'Un rapport a été partagé avec vous', texte: entry.title || entry.originalKey || undefined, lien: { cible: 'dossierPatient' } }));
         } catch (error) {
             console.error('Error sharing report with patient:', error);
             Sentry.captureException(error, { extra: { context: 'shareReportWithPatient', patientID, reportKey } });
@@ -1146,6 +1148,11 @@ Clé : ${sanitizedKey}`,
             }
 
             showNotification(`Copie enregistrée dans les rapports de ${copyAuthorName}.`, 'save');
+            // Prévient l'auteur du rapport copié (membre du personnel, sinon le patient lui-même).
+            (async () => {
+                const uid = (await findStaffUidByNode(sourcePath.split('/')[1], sanitizeAuthorKey)) || (patientID ? await findCivilianUidByPatientId(patientID) : null);
+                notifyUser(uid, { type: 'copie', titre: `${copyAuthorName} a copié l'un de vos rapports`, texte: reportTitleOf(original) || undefined, lien: { cible: 'rapports' } });
+            })();
             logActivity({
                 category: 'rapports', action: 'report_copied', summary: `Rapport copié vers les rapports de ${copyAuthorName}`,
                 details: `Chemin source : ${sourcePath}
@@ -1377,6 +1384,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
             });
 
             await saveApplication(applicant.uid, applicationId, payload);
+            if (newStatus === 'soumise') notifyGroup('recrutement', { type: 'recrutement', titre: `Nouvelle candidature : ${payload.poste || definition.name}`, texte: applicantName, lien: { cible: 'recrutement' } });
             logActivity({
                 category: 'recrutement',
                 action: editing && submitAction !== 'submit' ? 'application_edited' : (submitAction === 'submit' ? 'application_submitted' : 'application_draft_saved'),
@@ -1391,12 +1399,7 @@ Candidature : ${applicationId}`,
                 // Best-effort : un mail/webhook raté ne doit jamais faire échouer
                 // la candidature elle-même (déjà persistée à ce stade).
                 if (applicant.email) {
-                    sendEyefindMail({
-                        to: applicant.email,
-                        subject: 'Candidature reçue - PHMC',
-                        body: `Bonjour ${applicantName},\n\nNous avons bien reçu votre candidature pour le poste "${payload.poste || definition.name}". Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.\n\nCordialement,\nLe Pillbox Hill Medical Center`,
-                        html: `<p>Bonjour ${applicantName},</p><p>Nous avons bien reçu votre candidature pour le poste « <b>${payload.poste || definition.name}</b> ». Notre équipe l'examinera prochainement et vous recontactera pour la suite du processus.</p><p>Cordialement,<br>Le Pillbox Hill Medical Center</p>`,
-                    }).catch((err) => console.warn('Eyefind Mail (accusé de réception candidature) échoué:', err));
+                    sendTemplatedMail('candidature_recue', { to: applicant.email, vars: { nom: applicantName, poste: payload.poste || definition.name } });
                 }
 
                 const discordWebhookUrl = null || null;
@@ -1431,13 +1434,15 @@ Candidature : ${applicationId}`,
 
     // Charge les candidatures du civil connecté ("Mes candidatures").
     const loadMyJobApplications = useCallback(async () => {
-        if (!applicant?.uid) {
+        // Un employé sans statut de recrutement interne n'est pas « candidat » (applicant), mais consulte quand même son dossier.
+        const ownerUid = applicant?.uid || (staffProfile && currentEmployee?.uid) || null;
+        if (!ownerUid) {
             setMyJobApplications([]);
             return;
         }
         setIsLoadingJobApplications(true);
         try {
-            const apps = await loadApplicationsOf(applicant.uid);
+            const apps = await loadApplicationsOf(ownerUid);
             setMyJobApplications(apps);
         } catch (error) {
             console.error('Error loading job applications:', error);
@@ -1445,7 +1450,7 @@ Candidature : ${applicationId}`,
         } finally {
             setIsLoadingJobApplications(false);
         }
-    }, [applicant]);
+    }, [applicant, staffProfile, currentEmployee]);
 
     // Démarre la modification d'une candidature : relit son état en base (elle a pu changer depuis l'affichage), recharge ses réponses
     // dans le bon formulaire et lie les enregistrements suivants à CETTE candidature. Retourne true si le mode édition est actif.
@@ -1566,6 +1571,7 @@ Candidature : ${applicationId}`,
                 historique,
             });
             await saveApplication(applicantUid, applicationId, updated);
+            if (statut === 'soumise') notifyGroup('recrutement', { type: 'recrutement', titre: `Candidature (re)soumise : ${existing.poste || 'poste'}`, texte: existing.nomCandidat || undefined, lien: { cible: 'recrutement' } });
             logActivity({
                 category: 'recrutement', action: 'application_status_changed', severity: statut === 'retiree' ? 'warning' : 'info',
                 summary: `Candidature « ${applicationStatusLabel(statut)} » : ${existing.nomCandidat || applicantUid} — ${existing.poste || 'poste inconnu'}`,

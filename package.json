@@ -40,6 +40,7 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
+    "sync:mail": "node scripts/sync-mail-templates.mjs",
     "test": "craco test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build && node scripts/stamp-build.js",

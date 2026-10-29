@@ -38,8 +38,7 @@ const TransparencyPage = () => {
 
     if (!grid && !error) return <div className="tp-page"><div className="tp-wrap text-center"><Spinner animation="border" /></div></div>;
 
-    const direction = data?.direction;
-    const hasDirection = direction && (direction.nom || direction.contact);
+    const membres = data?.membres || [];
 
     return (
         <div className="tp-page">
@@ -56,11 +55,15 @@ const TransparencyPage = () => {
                     <>
                         <section className="tp-section">
                             <h2>Direction</h2>
-                            {hasDirection ? (
-                                <div className="tp-direction">
-                                    {direction.nom && <strong>{direction.nom}</strong>}
-                                    {direction.fonction && <span>{direction.fonction}</span>}
-                                    {direction.contact && <span><i className="fas fa-envelope me-2"></i>{direction.contact}</span>}
+                            {membres.length > 0 ? (
+                                <div className="tp-direction-list">
+                                    {membres.map((member, index) => (
+                                        <div className="tp-direction" key={`${member.nom}-${index}`}>
+                                            {member.nom && <strong>{member.nom}</strong>}
+                                            {member.fonction && <span>{member.fonction}</span>}
+                                            {member.contact && <span><i className="fas fa-envelope me-2"></i>{member.contact}</span>}
+                                        </div>
+                                    ))}
                                 </div>
                             ) : <p className="tp-muted">Information non renseignée pour le moment.</p>}
                             <p className="tp-muted">

@@ -12,9 +12,9 @@
 // poussées : tout passe par des clés lues au moment de l'écriture.
 import { ref, get, set, update, push, query, orderByChild, equalTo } from 'firebase/database';
 import { database, auth } from '../firebase';
-import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, familiesOfMember, extraRanksOf, cleanExtraRanks, sortKeyOfRank } from '../constants/ranks';
+import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, familiesOfMember, extraRanksOf, cleanExtraRanks, sortKeyOfRank, canManageFireSafety, canManageDiscipline } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';
-import { sendEyefindMail } from './eyefindMail';
+import { sendTemplatedMail } from './mailTemplates';
 import { canonicalPatientId } from './patientId';
 import { findPatientNodes } from './patientRecords';
 import { assertNoneFrozen } from './judicialFreeze';
@@ -26,13 +26,6 @@ export const STAFF_SERVICES = {
 };
 
 const sanitizeNode = (name) => String(name || '').trim().replace(/[.#$[\]/ ]+/g, '_').replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
-
-const sendMailBestEffort = (params) => {
-    if (!params.to) return;
-    sendEyefindMail(params).then((result) => {
-        if (!result.ok) console.warn('Eyefind Mail non envoyé:', result.error, result.message);
-    });
-};
 
 // Libellé français d'un rôle ; une ancienne valeur anglaise (avant migration) est traduite à la volée.
 export const rankLabel = (service, rankValue) => {
@@ -262,12 +255,7 @@ export async function updateStaffMember(member, { firstName, middleName, address
 
     if (rank && rank !== normalizeRank(current.rank)) {
         const label = rankLabel(member.service, rank);
-        sendMailBestEffort({
-            to: current.email,
-            subject: 'Changement de grade - Pillbox Hill Medical Center',
-            body: `Bonjour ${newName},\n\nVotre grade au sein du Pillbox Hill Medical Center a été mis à jour : ${label}.\n\nCordialement,\nPillbox Hill Medical Center`,
-            html: `<p>Bonjour ${newName},</p><p>Votre grade au sein du <b>Pillbox Hill Medical Center</b> a été mis à jour : <b>${label}</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-        });
+                sendTemplatedMail('grade_modifie', { to: current.email, vars: { nom: newName, grade: label } });
     }
     return { updated, renamed, previousName: current.name };
 }
@@ -379,12 +367,7 @@ export async function removeStaffMember(member) {
     await syncStaffUidsQuietly();
     await removePersonalData(member.uid);
     await deleteLoginAccount(member.uid, member.email);
-    sendMailBestEffort({
-        to: member.email,
-        subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
-        body: `Bonjour ${member.displayName},\n\nVotre compte et vos fonctions au sein du Pillbox Hill Medical Center ont été résiliés. Vos informations personnelles sont supprimées ; vos rapports et dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${member.displayName},</p><p>Votre compte et vos fonctions au sein du <b>Pillbox Hill Medical Center</b> ont été résiliés. Vos informations personnelles sont supprimées ; vos rapports et dossiers restent archivés et vous les retrouverez si vous recréez un compte.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-    });
+        sendTemplatedMail('fin_fonctions_compte_supprime', { to: member.email, vars: { nom: member.displayName } });
 }
 
 // Retire UNIQUEMENT la fiche (tableau ou objet), sans toucher au compte ni aux rapports.
@@ -417,10 +400,10 @@ export async function syncStaffUids() {
     const [phmcSnap, coronerSnap, ...currentSnaps] = await Promise.all([
         get(ref(database, 'staff/phmc')),
         get(ref(database, 'staff/coroner')),
-        ...['staffUIDs', 'soignantUIDs', 'dmecUIDs', 'noeudsRapports', 'noeudsAnciens'].map((path) => get(ref(database, path)).catch(() => null)),
+        ...['staffUIDs', 'soignantUIDs', 'dmecUIDs', 'gestionIncendieUIDs', 'disciplineUIDs', 'noeudsRapports', 'noeudsAnciens'].map((path) => get(ref(database, path)).catch(() => null)),
     ]);
     const asArray = (value) => (!value ? [] : Array.isArray(value) ? value : Object.values(value));
-    const wanted = { staffUIDs: {}, soignantUIDs: {}, dmecUIDs: {}, noeudsRapports: {}, noeudsAnciens: {} };
+    const wanted = { staffUIDs: {}, soignantUIDs: {}, dmecUIDs: {}, gestionIncendieUIDs: {}, disciplineUIDs: {}, noeudsRapports: {}, noeudsAnciens: {} };
     [['phmc', phmcSnap], ['coroner', coronerSnap]].forEach(([service, snap]) => {
         asArray(snap.val()).forEach((entry) => {
             if (!entry || !entry.uid) return;
@@ -428,6 +411,8 @@ export async function syncStaffUids() {
             wanted.staffUIDs[entry.uid] = true;
             if (families.includes('soignant')) wanted.soignantUIDs[entry.uid] = true;
             if (families.includes('dmec')) wanted.dmecUIDs[entry.uid] = true;
+            if (canManageFireSafety(entry)) wanted.gestionIncendieUIDs[entry.uid] = true;
+            if (canManageDiscipline(entry)) wanted.disciplineUIDs[entry.uid] = true;
             const node = sanitizeNode(entry.name || [entry.firstName, entry.lastName].filter(Boolean).join(' '));
             if (node) wanted.noeudsRapports[entry.uid] = node;
         });
@@ -509,12 +494,7 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
     await set(push(ref(database, cfg.path)), entry);
     await clearDeletedMark(staffPatientIdOf(entry, civilian.patientID));
     await syncStaffUidsQuietly();
-    sendMailBestEffort({
-        to: civilian.email,
-        subject: 'Votre compte est désormais un compte du personnel - Pillbox Hill Medical Center',
-        body: `Bonjour ${name},\n\nVotre compte a été converti en compte du personnel (${rankLabel(service, rank)}, badge ${entry.badge}). Reconnectez-vous pour accéder à vos nouveaux outils. Vos dossiers de patient sont conservés.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${name},</p><p>Votre compte a été converti en <b>compte du personnel</b> (${rankLabel(service, rank)}, badge <b>${entry.badge}</b>). Reconnectez-vous pour accéder à vos nouveaux outils. Vos dossiers de patient sont conservés.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-    });
+        sendTemplatedMail('compte_converti_personnel', { to: civilian.email, vars: { nom: name, grade: rankLabel(service, rank), badge: entry.badge } });
     return entry;
 }
 
@@ -554,12 +534,7 @@ export async function convertStaffToCivilian(member, civilData = {}) {
     }
     await removeStaffEntry(member);
     await syncStaffUidsQuietly();
-    sendMailBestEffort({
-        to: member.email,
-        subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
-        body: `Bonjour ${member.displayName},\n\nVos fonctions au sein du Pillbox Hill Medical Center ont pris fin. Votre compte est conservé en tant que compte Civil : vous gardez accès à vos dossiers de patient et à vos candidatures.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${member.displayName},</p><p>Vos fonctions au sein du <b>Pillbox Hill Medical Center</b> ont pris fin. Votre compte est conservé en tant que <b>compte Civil</b> : vous gardez accès à vos dossiers de patient et à vos candidatures.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-    });
+        sendTemplatedMail('fin_fonctions_compte_civil', { to: member.email, vars: { nom: member.displayName } });
     return { createdProfile };
 }
 
@@ -608,12 +583,7 @@ export async function deleteCivilianAccount(civilian) {
     await markAccountDeleted(civilian.patientID, { type: 'civil', nom: displayName });
     await removePersonalData(civilian.uid);
     await deleteLoginAccount(civilian.uid, civilian.email);
-    sendMailBestEffort({
-        to: civilian.email,
-        subject: 'Votre compte Civil a été supprimé - Pillbox Hill Medical Center',
-        body: `Bonjour ${displayName},\n\nVotre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur. Vos informations personnelles sont supprimées ; vos dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${displayName},</p><p>Votre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur. Vos informations personnelles sont supprimées ; vos dossiers restent archivés et vous les retrouverez si vous recréez un compte.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-    });
+        sendTemplatedMail('compte_civil_supprime', { to: civilian.email, vars: { nom: displayName } });
 }
 
 // ───────────────────────────── Auto-édition du profil ─────────────────────────────
@@ -622,7 +592,7 @@ export async function deleteCivilianAccount(civilian) {
 // champs et le nom, et uniquement quand l'uid de la fiche est celui de la personne connectée). Le grade,
 // le badge et l'e-mail restent réservés aux admins (l'e-mail passe par un code de vérification : voir
 // requestStaffEmailChange dans eyefindMail.js).
-export async function updateOwnStaffContact(uid, { phNumber, discord }) {
+export async function updateOwnStaffContact(uid, { phNumber, discord, middleName, address, zip }) {
     if (!uid) throw new Error('Compte introuvable.');
     for (const service of Object.values(STAFF_SERVICES)) {
         const snap = await get(ref(database, service.path));
@@ -633,6 +603,11 @@ export async function updateOwnStaffContact(uid, { phNumber, discord }) {
         const patch = {};
         if (phNumber !== undefined) patch[`${service.path}/${found[0]}/phNumber`] = String(phNumber).trim();
         if (discord !== undefined) patch[`${service.path}/${found[0]}/discord`] = String(discord).trim();
+        // Facultatifs : vides = retirés de la fiche.
+        const optional = { middleName, address, zip };
+        Object.entries(optional).forEach(([field, value]) => {
+            if (value !== undefined) patch[`${service.path}/${found[0]}/${field}`] = String(value).trim() || null;
+        });
         await update(ref(database), patch);
         return { service: service.key, key: found[0] };
     }

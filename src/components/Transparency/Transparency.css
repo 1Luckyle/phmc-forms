@@ -33,6 +33,35 @@
 .tm-line > .form-control { flex: 1 1 200px; }
 .tm-totals { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 10px 12px; margin-bottom: 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
 
+/* Direction & contact : une carte par ligne publiée */
+.tm-members { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.tm-member { border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.03); }
+.tm-member-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tm-member-rank { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #58a6ff; }
+.tm-member-tools { display: flex; gap: 4px; }
+.tm-wide-field { width: 100%; margin-bottom: 14px; }
+.tm-wide-field textarea { width: 100%; }
+
+/* Grille salariale : l'éditeur et, sur le côté, la grille de référence */
+.tm-grille-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.tm-ref { position: sticky; top: 12px; border: 1px solid rgba(88, 166, 255, 0.35); border-radius: 10px; padding: 12px; background: rgba(88, 166, 255, 0.05); }
+.tm-ref-title { font-weight: 700; margin-bottom: 4px; }
+.tm-ref-help { font-size: 0.78rem; color: #8b949e; margin: 0 0 10px; }
+.tm-ref-list { display: flex; flex-direction: column; }
+.tm-ref-row { display: grid; grid-template-columns: 22px 1fr; gap: 0 8px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.tm-ref-row.done .tm-ref-label { color: #3fb950; }
+.tm-ref-rang { grid-row: span 2; color: #6e7681; font-size: 0.8rem; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.tm-ref-label { font-size: 0.88rem; font-weight: 600; }
+.tm-ref-amounts { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.tm-ref-sep { color: #6e7681; }
+.tm-ref-amount { border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.05); color: #e6edf3; border-radius: 6px; padding: 1px 8px; font-size: 0.8rem; font-variant-numeric: tabular-nums; cursor: pointer; }
+.tm-ref-amount:hover { border-color: #58a6ff; background: rgba(88, 166, 255, 0.18); }
+
+@media (max-width: 991px) {
+    .tm-grille-layout { grid-template-columns: 1fr; }
+    .tm-ref { position: static; }
+}
+
 @media (max-width: 575px) {
     .tm-echelon { grid-template-columns: 1fr 110px auto; }
 }

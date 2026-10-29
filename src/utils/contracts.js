@@ -24,11 +24,12 @@ import { normalizeRank } from '../constants/ranks';
 import { releaseInternalStatusAfterContract } from './internalRecruitment';
 import { closeThreadsAfterContract } from './applicationThreads';
 import { requestRoleAfterContract } from './contractFollowUp';
+import { notifyUser, notifyGroup } from './notifications';
 import { logActivity } from './activityLog';
 import { assertNotLocked } from './lockdownGuard';
 import {
     CONTRACT_TYPES, MODEL_VERSION, acceptanceKind, isEmploymentType, typeOfChamps, emptyContractFields, validateDocFields, buildContractBb,
-    buildReference, statusLabel,
+    buildReference, statusLabel, isDisciplinaryType,
 } from './contractDocs';
 
 export {
@@ -162,6 +163,10 @@ export async function saveContractDraft({ id, employee, service, champs, issuer 
     if (employee.uid === issuer.uid && !issuer.isAdmin) {
         throw new Error('Vous ne pouvez pas rédiger votre propre contrat : demandez à un admin ou à un autre recruteur.');
     }
+    // Convocation, sanction et fin de contrat : jamais par un recruteur (aussi imposé par database.rules.json).
+    if (isDisciplinaryType(typeOfChamps(champs)) && !issuer.canDiscipline) {
+        throw new Error('Les documents disciplinaires sont rédigés par la Direction, son assistance ou le personnel administratif.');
+    }
     const now = Date.now();
     const typeEmploye = employee.kind === 'candidate' ? 'candidat' : (employee.kind === 'recruiter' ? 'recruteur' : 'personnel');
     const base = {
@@ -227,6 +232,7 @@ export async function sendContract(id, issuer) {
         [`contrats/${id}/modifieLe`]: now,
         [`contratsParEmploye/${contract.employeUid}/${id}`]: true,
     });
+    notifyUser(contract.employeUid, { type: 'contrat', titre: `Nouveau document à consulter : ${CONTRACT_TYPES[type]}`, texte: rendered.reference, lien: { cible: 'contrats' } });
     logActivity({
         category: 'contrats', action: 'contract_sent', severity: ['sanction', 'fin'].includes(type) ? 'warning' : 'info',
         summary: `${CONTRACT_TYPES[type]} envoyé : ${contract.employeNom}`, details: `Référence : ${rendered.reference}`, target: contract.employeNom || undefined,
@@ -312,6 +318,7 @@ export async function signContract(contract, { uid, name, signature }) {
         summary: `${CONTRACT_TYPES[type]} ${accord ? 'signé' : 'reçu (accusé de réception)'} : ${contract.employeNom || name}`,
         details: `Référence : ${contract.reference}\nFonction : ${contract.champs?.poste || '—'}\nGrade : ${contract.champs?.role || '—'}`, target: contract.employeNom || name,
     });
+    notifyGroup('recrutement', { type: 'contrat', titre: `${CONTRACT_TYPES[type]} ${accord ? 'signé' : 'reçu'} : ${contract.employeNom || name}`, texte: contract.reference, lien: { cible: 'recrutement' } });
     // Seul un CONTRAT d'emploi signé met fin au statut « candidat accepté » et aux échanges de candidature (best-effort).
     let followUp = { kind: 'none' };
     if (isEmploymentType(type)) {

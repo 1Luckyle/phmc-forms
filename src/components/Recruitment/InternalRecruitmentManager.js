@@ -8,7 +8,7 @@ import { Button, Spinner } from 'react-bootstrap';
 import { ref, get } from 'firebase/database';
 import { database } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
-import { sendEyefindMail } from '../../utils/eyefindMail';
+import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import {
     INTERNAL_REQUEST_STATUS, loadInternalRequests, acceptInternalRequest, refuseInternalRequest, revokeInternalStatus,
@@ -68,14 +68,10 @@ const InternalRecruitmentManager = ({ showNotification, onCountChange }) => {
     }, [requests]);
     const shown = requests.filter((request) => filter === 'all' || request.statut === filter);
 
-    const notify = async (request, subject, text) => {
+    const notify = async (request, templateId, vars = {}) => {
         const to = await staffEmailOf(request.uid);
         if (!to) return;
-        sendEyefindMail({
-            to, subject,
-            body: `Bonjour ${request.nom},\n\n${text}\n\nCordialement,\nPillbox Hill Medical Center`,
-            html: `<p>Bonjour ${request.nom},</p><p>${text.replace(/\n/g, '<br>')}</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-        }).catch(() => {});
+        sendTemplatedMail(templateId, { to, vars: { nom: request.nom, ...vars } });
     };
 
     const act = async (request, task, success) => {
@@ -95,13 +91,13 @@ const InternalRecruitmentManager = ({ showNotification, onCountChange }) => {
     const accept = (request) => act(request, async () => {
         await acceptInternalRequest(request, { byUid: currentEmployee?.uid, byName: actorName, note: notes[request.uid] });
         sendAdminActionWebhook(currentEmployee?.email, 'Statut de recrutement interne accordé', `Membre : ${request.nom}`, null, actorLabel);
-        notify(request, 'Statut de recrutement interne accordé - PHMC', 'Votre demande de recrutement interne est acceptée : vous pouvez de nouveau candidater aux offres depuis les formulaires de candidature.');
+        notify(request, 'recrutement_interne_accorde');
     }, 'Statut accordé : l\'employé peut candidater.');
 
     const refuse = (request) => act(request, async () => {
         await refuseInternalRequest(request, { byName: actorName, note: notes[request.uid] });
         sendAdminActionWebhook(currentEmployee?.email, 'Demande de recrutement interne refusée', `Membre : ${request.nom}`, null, actorLabel);
-        notify(request, 'Votre demande de recrutement interne - PHMC', `Votre demande de recrutement interne n'a pas été retenue.${notes[request.uid] ? `\nMotif : ${notes[request.uid]}` : ''}`);
+        notify(request, 'recrutement_interne_refuse', { motif: notes[request.uid] || '' });
     }, 'Demande refusée.');
 
     const revoke = (request) => {

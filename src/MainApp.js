@@ -1,7 +1,7 @@
 // src/MainApp.js
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, Fragment } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { formDefinitions, getFormDefinition } from './formDefinitions'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { Button, Dropdown, Modal, OverlayTrigger, Popover } from 'react-bootstrap';
@@ -14,7 +14,7 @@ import * as Sentry from "@sentry/react";
 import { useNotification } from './contexts/NotificationContext';
 import SwitchableFormButtons from './components/SwitchableFormButtons';
 import { handleSaveReportAndNotify, handleCopyBBCodeOnly, handlePhmcRecruitmentCopyAndNotify, sendBingoNotification, sendPhraseRequestNotification } from './components/notificationService';
-import { sendEyefindMail } from './utils/eyefindMail';
+import { sendTemplatedMail } from './utils/mailTemplates';
 import { useData } from './contexts/DataContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import { useModal } from './contexts/ModalProvider';
@@ -53,6 +53,9 @@ import HeaderInfo from './components/HeaderInfo';
 import SeasonControls from './components/SeasonControls';
 import ViewAsBanner from './components/ViewAsBanner';
 import { getToolAccess } from './utils/viewAs';
+import NotificationBell from './components/Notifications/NotificationBell';
+import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
+import { groupsFor } from './utils/notifications';
 import useFormAccess from './hooks/useFormAccess';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
@@ -93,6 +96,8 @@ const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendar
 const MyContractsModal = lazy(() => import('./components/Contracts/MyContractsModal'));
 const LawEnforcementModal = lazy(() => import('./components/LawEnforcement/LawEnforcementModal'));
 const FireReportModal = lazy(() => import('./components/FireSafety/FireReportModal'));
+const FireSafetyModal = lazy(() => import('./components/FireSafety/FireSafetyModal'));
+const DisciplineModal = lazy(() => import('./components/Contracts/DisciplineModal'));
 const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
@@ -195,6 +200,23 @@ function MainApp({
     const [showMyContracts, setShowMyContracts] = useState(false);
     const [showLawEnforcement, setShowLawEnforcement] = useState(false);
     const [showFireReport, setShowFireReport] = useState(false);
+    const [showFireManage, setShowFireManage] = useState(false);
+    const [showDiscipline, setShowDiscipline] = useState(false);
+
+    // Central de notifications : où mène un clic sur une notification (le lien est posé à l'envoi, voir utils/notifications.js).
+    const handleNotificationNavigate = (lien) => {
+        switch (lien?.cible) {
+            case 'candidature': loadMyJobApplications(); setShowMyJobApplications(true); break;
+            case 'recrutement': setShowRecruitmentManager(true); break;
+            case 'cctv': setCctvHubTab(lien.section === 'manage' ? 'manage' : 'mine'); setShowCctvHub(true); break;
+            case 'contrats': setShowMyContracts(true); break;
+            case 'dossierPatient': setShowMyPatientFile(true); break;
+            case 'rapports': setShowSavedReports(true); break;
+            case 'incendie': if (toolAccess.fireManage) setShowFireManage(true); break;
+            case 'admin': navigate('/admin', { state: { section: lien.section } }); break;
+            default: break;
+        }
+    };
     // Gestion du recrutement (admins + recruteurs).
     const [showRecruitmentManager, setShowRecruitmentManager] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
@@ -1029,16 +1051,7 @@ function MainApp({
             .find((emp) => emp.name === employeeName);
         if (employeeRecord?.email) {
             const formName = getFormDefinition(bbCodeVersion)?.name || 'un rapport';
-            sendEyefindMail({
-                to: employeeRecord.email,
-                subject: 'Rapport enregistré sur votre compte - PHMC',
-                body: `Bonjour ${employeeName},\n\nUn administrateur a enregistré « ${formName} » sur votre compte PHMC. Vous pouvez le consulter dans « Rapports enregistrés ».\n\nCordialement,\nPillbox Hill Medical Center`,
-                html: `<p>Bonjour ${employeeName},</p><p>Un administrateur a enregistré « ${formName} » sur votre compte PHMC. Vous pouvez le consulter dans « Rapports enregistrés ».</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-            }).then((result) => {
-                if (!result.ok) {
-                    console.warn('Eyefind Mail non envoyé:', result.error, result.message);
-                }
-            });
+            sendTemplatedMail('rapport_enregistre_admin', { to: employeeRecord.email, vars: { nom: employeeName, formulaire: formName } });
         }
     }, [runSaveReport, phmcListData, coronerListData, bbCodeVersion]);
 
@@ -1746,6 +1759,13 @@ function MainApp({
                     <div className="form-container">
                         <div className="button-group">
                             <div className="floating-tools-container">
+                                {currentEmployee && (
+                                    <NotificationBell
+                                        uid={currentEmployee.uid}
+                                        groups={groupsFor({ isAdmin, canManageRecruitment: canManageRecruitment || isRecruiter, canManageFire: toolAccess.fireManage })}
+                                        onNavigate={handleNotificationNavigate}
+                                    />
+                                )}
                                 <Dropdown drop="up" show={showToolsDropdown} onToggle={(isOpen) => setShowToolsDropdown(isOpen)}>
                                     <Dropdown.Toggle variant="secondary" id="dropdown-tools">
                                         <i className="fas fa-tools"></i> Boite à Outils
@@ -1794,7 +1814,10 @@ function MainApp({
                                                     "Voulez-vous continuer ?"
                                                 );
                                                 if (confirmed) {
+                                                    let keptToolbox = null;
+                                                    try { keptToolbox = localStorage.getItem(TOOLBOX_STORAGE_KEY); } catch (error) { /* ignoré */ }
                                                     localStorage.clear();
+                                                    if (keptToolbox) { try { localStorage.setItem(TOOLBOX_STORAGE_KEY, keptToolbox); } catch (error) { /* ignoré */ } }
                                                     sessionStorage.clear();
                                                     window.location.reload();
                                                 }
@@ -1806,8 +1829,8 @@ function MainApp({
                                                         isCivilian && toolAccess.signature && { key: 'signature', icon: 'fas fa-signature', label: 'Ma signature', onClick: closeAnd(() => setShowBusinessCard(true)) },
                                                         toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
                                                         toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
-                                                        // Dossier candidat : toute personne qui peut candidater (compte Civil, ou employé avec le statut de recrutement interne).
-                                                        (isCivilian || hasInternalRecruitment) && { key: 'candidate', icon: 'fas fa-file-signature', label: 'Mon dossier candidat', onClick: closeAnd(() => { loadMyJobApplications(); setShowMyJobApplications(true); }) },
+                                                        // Dossier candidat : consultable par tout compte Civil ou employé ; seuls les Civils et les employés avec le statut de recrutement interne peuvent agir dessus.
+                                                        (isCivilian || !!staffProfile) && { key: 'candidate', icon: 'fas fa-file-signature', label: 'Mon dossier candidat', onClick: closeAnd(() => { loadMyJobApplications(); setShowMyJobApplications(true); }) },
                                                         // Vidéosurveillance : tout compte connecté envoie et suit ses demandes ; l'administration y traite aussi celles reçues.
                                                         currentEmployee && { key: 'cctvMine', icon: 'fas fa-video', label: 'Mes demandes de vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('mine'); setShowCctvHub(true); }) },
                                                         toolAccess.myPatientFile && { key: 'myfile', icon: 'fas fa-user-injured', label: 'Mon dossier patient', onClick: closeAnd(() => setShowMyPatientFile(true)) },
@@ -1829,6 +1852,8 @@ function MainApp({
                                                         canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
                                                         toolAccess.lawEnforcement && { key: 'lawEnforcement', icon: 'fas fa-scale-balanced', label: "Demandes des forces de l'ordre", onClick: closeAnd(() => setShowLawEnforcement(true)) },
                                                         toolAccess.fireReport && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
+                                                        toolAccess.disciplineManage && { key: 'disciplineManage', icon: 'fas fa-gavel', label: 'Documents disciplinaires', onClick: closeAnd(() => setShowDiscipline(true)) },
+                                                        toolAccess.fireManage && { key: 'fireManage', icon: 'fas fa-fire-extinguisher', label: 'Gestion de la sécurité incendie', onClick: closeAnd(() => setShowFireManage(true)) },
                                                         toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
                                                 },
@@ -1865,19 +1890,7 @@ function MainApp({
                                                 .map((section) => ({ ...section, items: section.items.filter(Boolean) }))
                                                 .filter((section) => section.items.length > 0);
 
-                                            return sections.map((section, index) => (
-                                                <Fragment key={section.key}>
-                                                    {index > 0 && <Dropdown.Divider />}
-                                                    <Dropdown.Header style={{ textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.06em', paddingBottom: '2px' }}>
-                                                        {section.label}
-                                                    </Dropdown.Header>
-                                                    {section.items.map((item) => (
-                                                        <Dropdown.Item key={item.key} onClick={item.onClick} style={item.style}>
-                                                            <i className={item.icon}></i> {item.label}
-                                                        </Dropdown.Item>
-                                                    ))}
-                                                </Fragment>
-                                            ));
+                                            return <ToolboxSections sections={sections} menuOpen={showToolsDropdown} />;
                                         })()}
                                     </Dropdown.Menu>
                                 </Dropdown>
@@ -2704,6 +2717,12 @@ function MainApp({
                             show={showAwarenessCalendar}
                             onHide={() => setShowAwarenessCalendar(false)}
                         />
+                        {toolAccess.disciplineManage && (
+                            <DisciplineModal show={showDiscipline} onHide={() => setShowDiscipline(false)} showNotification={showNotification} />
+                        )}
+                        {toolAccess.fireManage && (
+                            <FireSafetyModal show={showFireManage} onHide={() => setShowFireManage(false)} showNotification={showNotification} />
+                        )}
                         <FireReportModal
                             show={showFireReport}
                             onHide={() => setShowFireReport(false)}
@@ -2738,6 +2757,8 @@ function MainApp({
                             isLoading={isLoadingJobApplications}
                             showNotification={showNotification}
                             onDeleted={() => loadMyJobApplications()}
+                            onRefresh={() => loadMyJobApplications()}
+                            canAct={isCivilian || hasInternalRecruitment}
                             onLoad={(application) => {
                                 if (loadApplicationIntoForm(application)) setShowMyJobApplications(false);
                             }}

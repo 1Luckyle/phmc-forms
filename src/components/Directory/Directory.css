@@ -20,5 +20,7 @@
 .dir-main small { color: #b1bac4; }
 .dir-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: #c9d1d9; font-size: 0.84rem; }
 .dir-meta i { margin-right: 5px; color: #8b949e; }
-.dir-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Les pastilles (signature, carte de visite, grades…) ont toujours leur propre ligne, sous le nom et les coordonnées. */
+.dir-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 0 100%; }
+.dir-chips:empty { display: none; }
 .dir-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 0 100%; }

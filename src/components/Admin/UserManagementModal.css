@@ -1,3 +1,22 @@
-.user-management-modal .modal {
-    z-index: 1050 !important;
+/* « Migrer des rapports » : fenêtre sombre (BaseModal + dark-ui). */
+.um-intro { color: #9da7b3; margin: 0 0 14px; font-size: 0.92rem; }
+.um-pair { display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr); gap: 10px; align-items: end; margin-bottom: 14px; }
+.um-pair .form-label { font-size: 0.82rem; font-weight: 600; }
+.um-arrow { text-align: center; color: #58a6ff; padding-bottom: 9px; }
+.um-hint { color: #8b949e; font-size: 0.88rem; margin: 0 0 6px; }
+.um-plan { border: 1px solid #30363d; border-radius: 10px; background: rgba(255, 255, 255, 0.03); padding: 12px 14px; }
+.um-plan-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.um-plan-figures div { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 8px 10px; }
+.um-plan-figures strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.um-plan-figures span { color: #9da7b3; font-size: 0.76rem; }
+.um-plan-figures .warn strong { color: #e3b341; }
+.um-plan-notes { margin: 0; padding-left: 18px; color: #9da7b3; font-size: 0.82rem; }
+.um-plan-notes li + li { margin-top: 3px; }
+.um-plan-notes code { color: #c9d1d9; }
+.um-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #30363d; }
+
+@media (max-width: 575px) {
+    .um-pair { grid-template-columns: 1fr; }
+    .um-arrow { transform: rotate(90deg); padding: 0; }
+    .um-plan-figures { grid-template-columns: 1fr; }
 }

@@ -14,6 +14,7 @@ import { database, auth } from '../firebase';
 import { THREAD_OPEN_STATUSES } from '../constants/recruitment';
 import { loadApplicationsOf } from './recruitmentStore';
 import { assertNotLocked } from './lockdownGuard';
+import { notifyUser, notifyGroup } from './notifications';
 
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
 
@@ -61,6 +62,11 @@ export const sendThreadMessage = async ({ application, text, staff, authorName, 
         [`${base}/messages/${messageId}`]: { ts: now, par, texte: body },
         [`echangesMeta/${application.candidatUid}/${application.id}`]: { ts: now, staff: !!staff, par: par.name },
     });
+    if (staff) {
+        notifyUser(application.candidatUid, { type: 'message', titre: 'Nouvelle réponse du recrutement', texte: application.poste || undefined, lien: { cible: 'candidature' } });
+    } else {
+        notifyGroup('recrutement', { type: 'message', titre: `Message de ${par.name}`, texte: body, lien: { cible: 'recrutement' } });
+    }
     return { id: messageId, ts: now, par, texte: body };
 };
 

@@ -5,7 +5,7 @@
 // pastille « Nouvelle réponse »), et dans la carte : le déroulé, le motif d'un éventuel refus, les actions (Candidater /
 // Mettre en pause / Retirer), les échanges avec le recrutement dès que la candidature est « en cours d'examen », puis le
 // rechargement dans le formulaire, l'export (BBCode, HTML, PDF, image) et l'aperçu / BBCode / historique.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Dropdown } from 'react-bootstrap';
 import { removeApplication } from '../utils/recruitmentStore';
@@ -15,6 +15,7 @@ import {
     APPLICATION_STATUS, APPLICATION_STATUS_COLORS, APPLICATION_EDITABLE_STATUSES, THREAD_OPEN_STATUSES, positionLabelFor,
 } from '../constants/recruitment';
 import { subscribeMyThreadMeta } from '../utils/applicationThreads';
+import InternalRecruitmentRequest from './Recruitment/InternalRecruitmentRequest';
 import { logActivity } from '../utils/activityLog';
 import { presentsLabel } from '../utils/interviews';
 import { copyToClipboard } from './notificationService';
@@ -75,7 +76,9 @@ const formatDate = (timestamp) => {
 
 const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
 
-const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onLoad, onEdit }) => {
+// `canAct` : faux pour un employé sans statut de recrutement interne : il consulte son dossier sans pouvoir agir ; ses candidatures encore ouvertes
+// sont mises en pause automatiquement jusqu'à ce qu'il obtienne le statut.
+const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onRefresh, onLoad, onEdit, canAct = true }) => {
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { locked, lockTitle } = useWriteLock();
@@ -93,6 +96,22 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
     })), [rawApplications, selectOptions]);
 
     const candidatUid = applications[0]?.candidatUid || null;
+
+    // Mise en pause automatique (une fois par candidature) des candidatures ouvertes d'un employé sans recrutement interne.
+    const autoPaused = useRef(new Set());
+    useEffect(() => {
+        if (!show || canAct || isLoading || !onUpdateStatus) return;
+        const toPause = applications.filter((application) => ACTIVE_STATUSES.includes(application.statut) && !autoPaused.current.has(application.id));
+        if (toPause.length === 0) return;
+        toPause.forEach((application) => autoPaused.current.add(application.id));
+        (async () => {
+            for (const application of toPause) {
+                await onUpdateStatus(application.candidatUid, application.id, 'en_pause');
+            }
+            logActivity({ category: 'recrutement', action: 'applications_auto_paused', severity: 'info', summary: `${toPause.length} candidature(s) mise(s) en pause : recrutement interne non accordé`, target: toPause[0].nomCandidat || undefined });
+            if (onRefresh) onRefresh();
+        })();
+    }, [show, canAct, isLoading, applications, onUpdateStatus, onRefresh]);
     useEffect(() => {
         if (!show || !candidatUid) return undefined;
         const unsubscribe = subscribeMyThreadMeta(candidatUid, setMeta, () => setMeta({}));
@@ -166,6 +185,16 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                 <h5 style={{ marginBottom: '4px' }}><i className="fas fa-folder-open me-2"></i>Mon dossier candidat</h5>
                 <p className="cctv-muted" style={{ marginBottom: '12px' }}>Suivez vos candidatures et échangez avec le recrutement dès qu'une candidature est en cours d'examen.</p>
 
+                {!canAct && (
+                    <div className="rec-banner info" style={{ marginBottom: '12px' }}>
+                        <div style={{ marginBottom: '8px' }}>
+                            <i className="fas fa-lock me-2"></i><strong>Consultation seule.</strong> Vous êtes employé : vous gardez l'accès à votre dossier, mais vous ne pouvez plus agir sur vos candidatures
+                            tant que le recrutement ne vous a pas accordé le <strong>statut de recrutement interne</strong>. Vos candidatures encore ouvertes sont mises en pause automatiquement ;
+                            vous pourrez les relancer dès que vous aurez ce statut.
+                        </div>
+                        <div className="d-flex flex-wrap gap-2"><InternalRecruitmentRequest showNotification={showNotification} disabled={locked} /></div>
+                    </div>
+                )}
                 <div className="cctv-panel" style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '4px' }}>
                     {isLoading && <p className="cctv-muted">Chargement...</p>}
                     {!isLoading && applications.length === 0 && (
@@ -202,6 +231,8 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                                 <div className="rec-banner accepted">
                                                     <strong>Félicitations, votre candidature est acceptée.</strong> Le recrutement vous contactera pour la suite ; vous pouvez échanger avec lui ci-dessous jusqu'à la signature de votre contrat.
                                                 </div>
+                                            ) : !canAct && application.statut === 'en_pause' ? (
+                                                <div className="rec-banner info">Candidature en pause : vous n'avez pas le statut de recrutement interne. Elle pourra être reprise dès que le recrutement vous l'aura accordé (demande ci-dessus).</div>
                                             ) : STATUS_HELP[application.statut] ? (
                                                 <div className="rec-banner info">{STATUS_HELP[application.statut]}</div>
                                             ) : null}
@@ -215,16 +246,16 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             )}
 
                                             <div className="rec-actions">
-                                                {application.statut === 'brouillon' && (
+                                                {canAct && application.statut === 'brouillon' && (
                                                     <Button size="sm" variant="primary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'soumise')}>Candidater</Button>
                                                 )}
-                                                {application.statut === 'en_pause' && (
+                                                {canAct && application.statut === 'en_pause' && (
                                                     <Button size="sm" variant="primary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'soumise')}>Reprendre ma candidature</Button>
                                                 )}
-                                                {ACTIVE_STATUSES.includes(application.statut) && (
+                                                {canAct && ACTIVE_STATUSES.includes(application.statut) && (
                                                     <Button size="sm" variant="secondary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'en_pause')}>Mettre en pause</Button>
                                                 )}
-                                                {(ACTIVE_STATUSES.includes(application.statut) || application.statut === 'brouillon' || application.statut === 'en_pause') && (
+                                                {canAct && (ACTIVE_STATUSES.includes(application.statut) || application.statut === 'brouillon' || application.statut === 'en_pause') && (
                                                     <Button size="sm" variant="outline-danger" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => { if (window.confirm('Retirer cette candidature ?')) handleAction(application, 'retiree'); }}>
                                                         Retirer
                                                     </Button>
@@ -237,11 +268,11 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             </div>
 
                                             {showThread && (
-                                                <ApplicationThread application={application} staff={false} authorName={application.nomCandidat} authorRole="Candidat" />
+                                                <ApplicationThread application={application} staff={false} authorName={application.nomCandidat} authorRole="Candidat" readOnly={!canAct} />
                                             )}
 
                                             <div className="rec-tools">
-                                                {onEdit && APPLICATION_EDITABLE_STATUSES.includes(application.statut) && canReload(application) && (
+                                                {canAct && onEdit && APPLICATION_EDITABLE_STATUSES.includes(application.statut) && canReload(application) && (
                                                     <Button
                                                         size="sm" variant="primary" disabled={locked}
                                                         title={locked ? lockTitle : 'Rouvre votre candidature dans son formulaire pour la modifier : elle est mise à jour (jamais dupliquée) et le recrutement voit ce qui a changé'}
@@ -250,7 +281,7 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                                         <i className="fas fa-pen me-1"></i>Modifier ma candidature
                                                     </Button>
                                                 )}
-                                                {onLoad && (
+                                                {canAct && onLoad && (
                                                     <Button
                                                         size="sm" variant="outline-primary" disabled={!canReload(application)}
                                                         title={canReload(application)

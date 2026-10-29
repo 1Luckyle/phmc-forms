@@ -67,6 +67,18 @@
           "discord": {
             ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
             ".validate": "(newData.isString() && newData.val().length <= 64) || newData.isNumber()"
+          },
+          "middleName": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "address": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 150"
+          },
+          "zip": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 12"
           }
         }
       },
@@ -87,6 +99,18 @@
           "discord": {
             ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
             ".validate": "(newData.isString() && newData.val().length <= 64) || newData.isNumber()"
+          },
+          "middleName": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "address": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 150"
+          },
+          "zip": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length <= 12"
           }
         }
       }
@@ -135,6 +159,18 @@
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
     "dmecUIDs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+    // gestionIncendieUIDs/{uid}: true — comptes qui gèrent la sécurité incendie avec les admins : Directeur(trice), Assistant(e) de Direction et
+    // Personnel Administratif (rôle principal ou cumulé ; pas les Chargé(e)s de Recrutement). Reconstruit par syncStaffUids (admins).
+    "gestionIncendieUIDs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+    // disciplineUIDs/{uid}: true — comptes qui rédigent les documents disciplinaires (convocation, sanction, fin de contrat) avec les admins :
+    // Directeur(trice), Assistant(e) de Direction et Personnel Administratif (pas les Chargé(e)s de Recrutement). Reconstruit par syncStaffUids.
+    "disciplineUIDs": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
@@ -207,7 +243,81 @@
       ".indexOn": ["auteurUid"],
       "$id": {
         ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('auteurUid').val() === auth.uid && root.child('staffUIDs').child(auth.uid).val() === true))",
-        ".validate": "!newData.exists() || (newData.hasChildren(['auteurUid', 'auteurNom', 'le', 'service', 'agent', 'type', 'baseLegale', 'decision']) && newData.child('auteurUid').isString() && newData.child('auteurNom').isString() && newData.child('auteurNom').val().length <= 120 && newData.child('le').isNumber() && newData.child('le').val() <= now + 3600000 && newData.child('service').isString() && newData.child('service').val().length > 0 && newData.child('service').val().length <= 80 && newData.child('agent').isString() && newData.child('agent').val().length > 0 && newData.child('agent').val().length <= 120 && (newData.child('type').val() === 'presence' || newData.child('type').val() === 'etat' || newData.child('type').val() === 'dossier' || newData.child('type').val() === 'prelevement' || newData.child('type').val() === 'identite_defunt' || newData.child('type').val() === 'images' || newData.child('type').val() === 'autre') && (newData.child('baseLegale').val() === 'mandat' || newData.child('baseLegale').val() === 'consentement' || newData.child('baseLegale').val() === 'danger' || newData.child('baseLegale').val() === 'aucune') && (newData.child('decision').val() === 'remis' || newData.child('decision').val() === 'refuse' || newData.child('decision').val() === 'transmis') && (!newData.child('patientID').exists() || (newData.child('patientID').isString() && newData.child('patientID').val().length <= 40)) && (!newData.child('reference').exists() || (newData.child('reference').isString() && newData.child('reference').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))"
+        ".validate": "!newData.exists() || (newData.hasChildren(['auteurUid', 'auteurNom', 'le', 'service', 'agent', 'type', 'baseLegale', 'decision']) && newData.child('auteurUid').isString() && newData.child('auteurNom').isString() && newData.child('auteurNom').val().length <= 120 && newData.child('le').isNumber() && newData.child('le').val() <= now + 3600000 && newData.child('service').isString() && newData.child('service').val().length > 0 && newData.child('service').val().length <= 80 && newData.child('agent').isString() && newData.child('agent').val().length > 0 && newData.child('agent').val().length <= 120 && (newData.child('type').val() === 'presence' || newData.child('type').val() === 'etat' || newData.child('type').val() === 'dossier' || newData.child('type').val() === 'prelevement' || newData.child('type').val() === 'identite_defunt' || newData.child('type').val() === 'autopsie' || newData.child('type').val() === 'certificat_deces' || newData.child('type').val() === 'prelevements_scelles' || newData.child('type').val() === 'restitution' || newData.child('type').val() === 'examen_vivant' || newData.child('type').val() === 'images' || newData.child('type').val() === 'autre') && (newData.child('baseLegale').val() === 'mandat' || newData.child('baseLegale').val() === 'consentement' || newData.child('baseLegale').val() === 'danger' || newData.child('baseLegale').val() === 'aucune') && (newData.child('decision').val() === 'remis' || newData.child('decision').val() === 'refuse' || newData.child('decision').val() === 'transmis') && (!newData.child('patientID').exists() || (newData.child('patientID').isString() && newData.child('patientID').val().length <= 40)) && (!newData.child('reference').exists() || (newData.child('reference').isString() && newData.child('reference').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))"
+      }
+    },
+
+    // ─── Central de notifications (la cloche, src/utils/notifications.js) ──────────────────────────────────────────────
+    // notifications/{uid}/{id} : notifications PERSONNELLES. Lecture : leur destinataire. N'importe quel compte connecté peut en CRÉER une pour
+    // quelqu'un d'autre (réponse à un message, changement de statut, partage…), à son propre nom (deUid), jamais la modifier ensuite ; le
+    // destinataire peut les supprimer.
+    "notifications": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$id": {
+          ".write": "auth != null && (auth.uid === $uid || (!data.exists() && newData.exists()))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
+          "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
+          "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    // notificationsGroupes/{admin|recrutement|incendie}/{id} : notifications de GROUPE (tout ce qui arrive en l'absence de l'administration, du
+    // recrutement ou des gestionnaires incendie). Création : tout compte connecté ; lecture et suppression : les membres du groupe.
+    "notificationsGroupes": {
+      "admin": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true)",
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
+          "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
+          "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
+          "$other": { ".validate": false }
+        }
+      },
+      "recrutement": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
+          "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
+          "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
+          "$other": { ".validate": false }
+        }
+      },
+      "incendie": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
+          "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
+          "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
+          "$other": { ".validate": false }
+        }
+      },
+      "administration": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
+          "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
+          "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    // notificationsLecture/{uid} : { luJusqua, groupesDepuis, lues: { clé: true } } — ce que la personne a lu. Lisible et modifiable par elle seule.
+    "notificationsLecture": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "luJusqua": { ".validate": "newData.isNumber()" },
+        "groupesDepuis": { ".validate": "newData.isNumber()" },
+        "lues": { "$cle": { ".validate": "newData.isBoolean()" } },
+        "$other": { ".validate": false }
       }
     },
 
@@ -218,7 +328,7 @@
       ".read": "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
       "controles": {
         "$id": {
-          ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
           ".validate": "!newData.exists() || (newData.hasChildren(['le', 'parUid', 'parNom', 'etage', 'items']) && newData.child('le').isNumber() && newData.child('parUid').isString() && newData.child('parNom').isString() && newData.child('parNom').val().length <= 120 && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 60 && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().length <= 500)))",
           "items": {
             "$item": {
@@ -229,13 +339,13 @@
       },
       "nonConformites": {
         "$id": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('source').val() === 'signalement' && newData.child('statut').val() === 'ouverte' && newData.child('creePar').child('uid').val() === auth.uid))",
-          ".validate": "!newData.exists() || (newData.hasChildren(['creeLe', 'creePar', 'etage', 'article', 'description', 'statut', 'source']) && newData.child('creeLe').isNumber() && newData.child('creePar').hasChildren(['uid', 'nom']) && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 60 && (newData.child('article').val() === '202' || newData.child('article').val() === '203' || newData.child('article').val() === '204' || newData.child('article').val() === '205' || newData.child('article').val() === '206' || newData.child('article').val() === '207' || newData.child('article').val() === '208' || newData.child('article').val() === 'autre') && newData.child('description').isString() && newData.child('description').val().length >= 5 && newData.child('description').val().length <= 500 && (newData.child('statut').val() === 'ouverte' || newData.child('statut').val() === 'resolue') && (newData.child('source').val() === 'controle' || newData.child('source').val() === 'signalement') && (!newData.child('responsable').exists() || (newData.child('responsable').isString() && newData.child('responsable').val().length <= 120)) && (!newData.child('echeance').exists() || newData.child('echeance').isNumber()) && (!newData.child('resolutionNote').exists() || (newData.child('resolutionNote').isString() && newData.child('resolutionNote').val().length <= 500)))"
+          ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('source').val() === 'signalement' && newData.child('statut').val() === 'ouverte' && newData.child('creePar').child('uid').val() === auth.uid))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['creeLe', 'creePar', 'etage', 'article', 'description', 'statut', 'source']) && newData.child('creeLe').isNumber() && newData.child('creePar').hasChildren(['uid', 'nom']) && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 120 && (newData.child('article').val() === '202' || newData.child('article').val() === '203' || newData.child('article').val() === '204' || newData.child('article').val() === '205' || newData.child('article').val() === '206' || newData.child('article').val() === '207' || newData.child('article').val() === '208' || newData.child('article').val() === 'autre') && newData.child('description').isString() && newData.child('description').val().length >= 5 && newData.child('description').val().length <= 500 && (newData.child('statut').val() === 'ouverte' || newData.child('statut').val() === 'resolue') && (newData.child('source').val() === 'controle' || newData.child('source').val() === 'signalement') && (!newData.child('responsable').exists() || (newData.child('responsable').isString() && newData.child('responsable').val().length <= 120)) && (!newData.child('echeance').exists() || newData.child('echeance').isNumber()) && (!newData.child('resolutionNote').exists() || (newData.child('resolutionNote').isString() && newData.child('resolutionNote').val().length <= 500)))"
         }
       },
       "exercices": {
         "$id": {
-          ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
           ".validate": "!newData.exists() || (newData.hasChildren(['le', 'parUid', 'parNom', 'etage', 'participants', 'duree']) && newData.child('le').isNumber() && newData.child('etage').isString() && newData.child('etage').val().length <= 60 && newData.child('participants').isNumber() && newData.child('duree').isNumber() && (!newData.child('observations').exists() || (newData.child('observations').isString() && newData.child('observations').val().length <= 500)))"
         }
       }
@@ -304,7 +414,13 @@
     // Lockdown doit être lu par tout le monde (LockdownContext / useDeploymentConfig).
     "adminSettings": {
       ".read":  true,
-      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
+      // Modèles des mails du système (Panneau admin → E-mails, src/utils/mailTemplatesCore.js) : { subject, body, majLe, majPar }.
+      "mailTemplates": {
+        "$id": {
+          ".validate": "newData.hasChild('body') && newData.child('body').isString() && newData.child('body').val().length <= 4000 && (!newData.child('subject').exists() || (newData.child('subject').isString() && newData.child('subject').val().length <= 150)) && (!newData.child('majPar').exists() || (newData.child('majPar').isString() && newData.child('majPar').val().length <= 120))"
+        }
+      }
     },
 
     // ─── Statut des services (bandeaux, disponibilité) ────────────────────────
@@ -799,13 +915,16 @@
     //   • Écriture : admins sans restriction ; recruteurs tant que le contrat n'est pas signé, sans jamais
     //     pouvoir poser le statut « signe » (seul l'employé signe) et sans pouvoir créer ni modifier leur
     //     PROPRE contrat (employeUid === leur uid) : c'est un admin ou un autre recruteur qui s'en charge.
+    //   • Documents DISCIPLINAIRES (champs.typeContrat = convocation | sanction | fin) : rédigés par les admins et par disciplineUIDs (Direction,
+    //     assistance, personnel administratif), jamais par les recruteurs ; l'inverse pour les autres documents (contrats, avenants), que
+    //     disciplineUIDs ne touche pas. Lecture du nœud : admins, recruteurs et disciplineUIDs.
     //   • Signature : l'employé destinataire pose signature + signeLe + statut « signe », uniquement depuis
     //     « envoye » et uniquement avec l'image de SA signature enregistrée (userCreations/{uid}/signature).
     "contrats": {
-      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || root.child('disciplineUIDs').child(auth.uid).val() === true)",
       "$contractId": {
         ".read": "auth != null && data.child('employeUid').val() === auth.uid && data.child('statut').val() !== 'brouillon'",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid))",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid && !(data.child('champs').child('typeContrat').val() === 'convocation' || data.child('champs').child('typeContrat').val() === 'sanction' || data.child('champs').child('typeContrat').val() === 'fin') && !(newData.child('champs').child('typeContrat').val() === 'convocation' || newData.child('champs').child('typeContrat').val() === 'sanction' || newData.child('champs').child('typeContrat').val() === 'fin')) || (root.child('disciplineUIDs').child(auth.uid).val() === true && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid && (!data.exists() || (data.child('champs').child('typeContrat').val() === 'convocation' || data.child('champs').child('typeContrat').val() === 'sanction' || data.child('champs').child('typeContrat').val() === 'fin')) && (!newData.exists() || (newData.child('champs').child('typeContrat').val() === 'convocation' || newData.child('champs').child('typeContrat').val() === 'sanction' || newData.child('champs').child('typeContrat').val() === 'fin'))))",
         ".validate": "newData.hasChildren(['employeUid', 'statut']) && (newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'envoye' || newData.child('statut').val() === 'signe')",
         "statut": {
           ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()"
@@ -827,7 +946,7 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$contractId": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid))"
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid) || (root.child('disciplineUIDs').child(auth.uid).val() === true && $uid !== auth.uid))"
         }
       }
     },

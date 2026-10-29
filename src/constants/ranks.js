@@ -208,3 +208,15 @@ export const getTitlePrefix = (firstName) => {
   const match = /^(Dr\.|Pr\.)\s+/.exec(firstName || '');
   return match ? match[1] : null;
 };
+
+// Gestion de la sécurité incendie (registre, contrôles, non-conformités, exercices) : la Direction et l'administration — Directeur(trice),
+// Assistant(e) de Direction, Personnel Administratif (rôle principal ou cumulé) —, à l'exclusion des Chargé(e)s de Recrutement.
+export const FIRE_MANAGER_ROLES = ['Directeur(trice)', 'Assistant(e) de Direction', 'Personnel Administratif'];
+export const canManageFireSafety = (member) => {
+    if (!member) return false;
+    return [member.rank || member.category, ...extraRanksOf(member)].some((value) => FIRE_MANAGER_ROLES.includes(normalizeRank(value)));
+};
+
+// Documents disciplinaires (convocation, sanction, fin de contrat) : mêmes rôles que ci-dessus, jamais les Chargé(e)s de Recrutement.
+export const DISCIPLINE_ROLES = FIRE_MANAGER_ROLES;
+export const canManageDiscipline = canManageFireSafety;

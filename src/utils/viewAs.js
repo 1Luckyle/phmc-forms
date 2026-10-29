@@ -12,7 +12,7 @@
 //     écrire au nom d'un faux profil ;
 //   • la simulation ne vit que dans le navigateur de l'admin (localStorage) et n'est honorée que si le
 //     vrai compte est administrateur.
-import { getRoleInfo, familiesOfMember } from '../constants/ranks';
+import { getRoleInfo, familiesOfMember, canManageFireSafety, canManageDiscipline } from '../constants/ranks';
 import { getFormAccess, summarizeFormAccess } from './formAccess';
 
 const KEY = 'debugViewAs';
@@ -194,6 +194,10 @@ export const getToolAccess = (identity) => {
         lawEnforcement: isStaffMember || !!isAdmin,
         // Signaler un problème de sécurité incendie (registre des admins) : tout le personnel.
         fireReport: isStaffMember || !!isAdmin,
+        // Gestion de la sécurité incendie (registre, non-conformités, exercices) : admins, Direction et personnel administratif.
+        fireManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
+        // Documents disciplinaires (convocations, sanctions, fins de contrat) : admins, Direction et personnel administratif, pas les recruteurs.
+        disciplineManage: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
         ama: !!canUseAma,
         // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
         // (depuis « Mes contrats ») mais pas sa carte de visite.
@@ -213,6 +217,8 @@ export const TOOL_ACCESS_LABELS = {
     directory: 'Annuaire (consultation seule)',
     lawEnforcement: "Demandes des forces de l'ordre",
     fireReport: 'Signaler un problème incendie',
+    fireManage: 'Gestion de la sécurité incendie',
+    disciplineManage: 'Documents disciplinaires',
     ama: 'EMS Contre Avis Médical',
     businessCard: 'Créer sa carte de visite',
     signature: 'Créer sa signature',

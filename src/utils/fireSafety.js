@@ -8,7 +8,9 @@
 import { ref, get, set, push, update } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity } from './activityLog';
+import { notifyGroup } from './notifications';
 
+import { FLOOR_LABELS } from '../constants/buildingPlan';
 export const REMINDER_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -39,7 +41,7 @@ export const ARTICLES = {
 
 export const NC_STATUS = { ouverte: 'Ouverte', resolue: 'Résolue' };
 
-export const ETAGE_SUGGESTIONS = ['Rez-de-chaussée', 'Étage 1', 'Étage 2', 'Étage 3', 'Étage 4', 'Étage 5', 'Toit', 'Sous-sol', 'Parking'];
+export const ETAGE_SUGGESTIONS = [...FLOOR_LABELS, 'Parking', 'Extérieur du bâtiment'];
 
 const asList = (value) => (value ? Object.entries(value).map(([id, entry]) => ({ id, ...entry })) : []);
 export const etageKey = (etage) => String(etage || '').trim().toLowerCase();
@@ -96,7 +98,7 @@ const newNonConformity = ({ etage, article, description, source, name, responsab
     const entry = {
         creeLe: Date.now(),
         creePar: whoAmI(name),
-        etage: clean(etage, 60),
+        etage: clean(etage, 120),
         article: ARTICLES[article] ? String(article) : 'autre',
         description: clean(description, 500),
         statut: 'ouverte',
@@ -139,10 +141,11 @@ export async function saveControl({ etage, items, notes, name, createNonConformi
 // Signalement d'un problème par n'importe quel membre du personnel (ou un admin).
 export async function reportProblem({ etage, article, description, name }) {
     if (!auth.currentUser) throw new Error('Connexion requise.');
-    if (!clean(etage, 60)) throw new Error("Indiquez l'étage concerné.");
+    if (!clean(etage, 120)) throw new Error("Indiquez l'étage concerné.");
     if (clean(description, 500).length < 5) throw new Error('Décrivez le problème en quelques mots.');
     const entry = newNonConformity({ etage, article, description, source: 'signalement', name });
     await set(push(ref(database, 'securiteIncendie/nonConformites')), entry);
+    notifyGroup('incendie', { type: 'incendie', titre: 'Problème de sécurité incendie signalé', texte: `${entry.etage} — ${entry.description}`, lien: { cible: 'incendie' } });
     logActivity({
         category: 'securite', action: 'fire_problem_reported', severity: 'warning',
         summary: `Problème de sécurité incendie signalé : ${entry.etage}`, details: `${ARTICLES[entry.article]}\n${entry.description}`,

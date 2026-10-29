@@ -7,3 +7,15 @@
 .le-table-scroll { overflow-x: auto; }
 .le-table { font-size: 0.88rem; }
 .le-table td, .le-table th { vertical-align: top; }
+
+/* Registre : lisible sur fond sombre */
+.le-table { --bs-table-bg: #0d1117; --bs-table-color: #e6edf3; --bs-table-striped-bg: #161b22; --bs-table-border-color: #30363d; color: #e6edf3; }
+.le-table th { color: #8b949e; font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.04em; border-bottom: 2px solid #30363d; }
+.le-table td { color: #e6edf3; border-color: #21262d; }
+.le-table small, .le-table .text-muted { color: #9aa7b4 !important; }
+.le-decision { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.le-decision-remis { background: rgba(210, 153, 34, 0.2); color: #f2cc60; border: 1px solid #9e6a03; }
+.le-decision-refuse { background: rgba(46, 160, 67, 0.2); color: #56d364; border: 1px solid #238636; }
+.le-decision-transmis { background: rgba(56, 139, 253, 0.2); color: #79c0ff; border: 1px solid #1f6feb; }
+.le-memo .alert .btn-outline-dark { color: inherit; border-color: currentColor; background: rgba(255, 255, 255, 0.55); }
+.le-memo .alert .btn-outline-dark:hover { background: rgba(255, 255, 255, 0.85); color: #111; }

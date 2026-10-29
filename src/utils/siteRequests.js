@@ -8,6 +8,7 @@ import { ref, push, set } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity, getActivityActorName } from './activityLog';
 import { isLockdownOn } from './lockdownGuard';
+import { notifyGroup } from './notifications';
 
 export const REQUEST_TYPES = {
 
@@ -57,6 +58,7 @@ export const submitSiteRequest = async ({ type, title, fields, by = {} }) => {
             summary: `${REQUEST_TYPES[type].label} : ${entry.title}`,
             target: newRef.key,
         });
+        notifyGroup('admin', { type: type === 'bug' ? 'bug' : 'fonctionnalite', titre: REQUEST_TYPES[type].label, texte: `${entry.title} — ${entry.by.name}`, lien: { cible: 'admin', section: 'siteRequests' } });
         return { ok: true, id: newRef.key };
     } catch (error) {
         console.error('Envoi de la demande impossible :', error);

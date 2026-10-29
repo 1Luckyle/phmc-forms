@@ -13,8 +13,10 @@ import {
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
-    isQuarterOver, totals, formatMoney, LINE_TYPES,
+    isQuarterOver, totals, formatMoney, LINE_TYPES, quarterSchedule, MAX_MEMBERS,
 } from '../../utils/transparency';
+import { loadStaffMembers } from '../../utils/staffAdmin';
+import { getEmployeeFullName } from '../../utils/employeeName';
 import '../Transparency/Transparency.css';
 
 const TABS = [
@@ -26,22 +28,86 @@ const TABS = [
 const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString('fr-FR') : '—');
 
 // ───────────────────────────── Direction & contact ─────────────────────────────
+// Les têtes logiques d'une page de transparence, tirées des fiches du personnel (rôle principal ou cumulé) : la direction, son assistance,
+// les chefs de service et le recrutement.
+const LEADERSHIP_GROUPS = [
+    { key: 'direction', label: 'Direction', roles: ['Directeur(trice)'] },
+    { key: 'assistance', label: 'Assistance de direction', roles: ['Assistant(e) de Direction'] },
+    { key: 'chefs', label: 'Chefs de service', roles: ['Chef de Service'] },
+    { key: 'recrutement', label: 'Recrutement', roles: ['Chargé(e) de Recrutement'] },
+];
+// Proposées d'office quand rien n'est encore publié.
+const DEFAULT_GROUPS = ['direction', 'assistance'];
+
+const contactOf = (member) => [member.email, member.phNumber ? `tél. ${member.phNumber}` : ''].filter(Boolean).join(' · ');
+const functionOf = (member, role) => (role === 'Chef de Service' && member.serviceDirige ? `Chef(fe) de service — ${member.serviceDirige}` : role);
+const lineOf = (entry) => ({ nom: entry.name, fonction: functionOf(entry.member, entry.role), contact: contactOf(entry.member) });
+const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+
 const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
-    const [form, setForm] = useState({ nom: '', fonction: '', contact: '', contactDemandes: '' });
+    const [lines, setLines] = useState([]);
+    const [contactDemandes, setContactDemandes] = useState('');
     const [saving, setSaving] = useState(false);
+    const [leaders, setLeaders] = useState([]);
+    const [prefilled, setPrefilled] = useState(false);
 
     useEffect(() => {
-        setForm({ nom: data.direction.nom, fonction: data.direction.fonction, contact: data.direction.contact, contactDemandes: data.contactDemandes });
+        setLines(data.membres.map((member) => ({ ...member })));
+        setContactDemandes(data.contactDemandes);
+        setPrefilled(false);
     }, [data]);
 
-    const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    useEffect(() => {
+        let cancelled = false;
+        loadStaffMembers().then((members) => {
+            if (cancelled) return;
+            const entries = [];
+            members.forEach((member) => {
+                const roles = [member.rank || member.category, ...(member.extraRanks || [])];
+                LEADERSHIP_GROUPS.forEach((group) => {
+                    const role = roles.find((value) => group.roles.includes(value));
+                    if (role) entries.push({ group: group.key, member, role, name: getEmployeeFullName(member) });
+                });
+            });
+            setLeaders(entries);
+            // Rien n'est encore publié : on propose la direction et son assistance (non enregistrées tant qu'on ne publie pas).
+            if (data.membres.length === 0) {
+                const proposed = entries.filter((entry) => DEFAULT_GROUPS.includes(entry.group));
+                if (proposed.length > 0) {
+                    setLines(proposed.map(lineOf));
+                    setPrefilled(true);
+                }
+            }
+        }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [data.membres.length]);
+
+    const isListed = (entry) => lines.some((line) => sameName(line.nom, entry.name));
+    const addLeader = (entry) => {
+        if (isListed(entry)) return;
+        if (lines.length >= MAX_MEMBERS) { showNotification(`Au plus ${MAX_MEMBERS} lignes sur la page publique.`, 'warning'); return; }
+        setLines((prev) => [...prev, lineOf(entry)]);
+        setPrefilled(true);
+    };
+    const removeLeader = (entry) => setLines((prev) => prev.filter((line) => !sameName(line.nom, entry.name)));
+
+    const addBlank = () => setLines((prev) => (prev.length >= MAX_MEMBERS ? prev : [...prev, { nom: '', fonction: '', contact: '' }]));
+    const removeLine = (index) => setLines((prev) => prev.filter((line, i) => i !== index));
+    const changeLine = (index, field, value) => setLines((prev) => prev.map((line, i) => (i === index ? { ...line, [field]: value } : line)));
+    const moveLine = (index, delta) => setLines((prev) => {
+        const target = index + delta;
+        if (target < 0 || target >= prev.length) return prev;
+        const next = [...prev];
+        [next[index], next[target]] = [next[target], next[index]];
+        return next;
+    });
 
     const save = async () => {
         setSaving(true);
         try {
-            await saveDirection(form);
+            await saveDirection({ membres: lines, contactDemandes });
             showNotification('Direction et contact publiés.', 'check-circle');
-            if (onLogAction) onLogAction('Page Transparence : direction et contact modifiés', `Direction : ${form.nom || '—'}`);
+            if (onLogAction) onLogAction('Page Transparence : direction et contact modifiés', lines.filter((line) => line.nom).map((line) => `${line.nom} (${line.fonction || '—'})`).join(', ') || 'Aucune ligne');
             onSaved();
         } catch (error) {
             showNotification(`Enregistrement impossible : ${error.message}`, 'error');
@@ -54,21 +120,120 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
         <>
             <p className="text-muted">
                 Un établissement public publie sur son site le nom de la personne qui le dirige et un moyen de la contacter (Code du Gouvernement, art. 326).
+                Vous pouvez aussi publier d'autres lignes (assistance de direction, chefs de service…) : la première est la personne qui dirige.
             </p>
-            <div className="adm-form-grid">
-                <div className="form-group"><label>Nom de la personne qui dirige l'établissement</label><Form.Control value={form.nom} onChange={set('nom')} placeholder="ex. Dr Jane Doe" /></div>
-                <div className="form-group"><label>Fonction</label><Form.Control value={form.fonction} onChange={set('fonction')} placeholder="ex. Directrice du Pillbox Hill Medical Center" /></div>
-                <div className="form-group"><label>Moyen de la contacter</label><Form.Control value={form.contact} onChange={set('contact')} placeholder="ex. info@phmc.health · MP forum PHMC · standard : 50056" /></div>
-                <div className="form-group"><label>Où adresser une demande d'accès aux informations <small className="text-muted">(facultatif)</small></label>
-                    <Form.Control as="textarea" rows={2} value={form.contactDemandes} onChange={set('contactDemandes')}
-                        placeholder="ex. Écrivez à la Direction : une réponse est apportée sous 7 jours (Code du Gouvernement, art. 328)." /></div>
+            {prefilled && <Alert variant="info" className="py-2 small">Lignes remplies d'après les fiches du personnel : vérifiez-les, puis publiez.</Alert>}
+
+            <div className="tm-members">
+                {lines.length === 0 && <p className="text-muted small mb-2">Aucune ligne. Ajoutez une personne depuis la liste ci-dessous ou une ligne vide.</p>}
+                {lines.map((line, index) => (
+                    <div className="tm-member" key={index}>
+                        <div className="tm-member-head">
+                            <span className="tm-member-rank">{index === 0 ? 'Direction' : `Ligne ${index + 1}`}</span>
+                            <div className="tm-member-tools">
+                                <Button size="sm" variant="outline-secondary" disabled={index === 0} onClick={() => moveLine(index, -1)} title="Monter"><i className="fas fa-arrow-up"></i></Button>
+                                <Button size="sm" variant="outline-secondary" disabled={index === lines.length - 1} onClick={() => moveLine(index, 1)} title="Descendre"><i className="fas fa-arrow-down"></i></Button>
+                                <Button size="sm" variant="outline-danger" onClick={() => removeLine(index)} title="Retirer cette ligne"><i className="fas fa-trash"></i></Button>
+                            </div>
+                        </div>
+                        <div className="adm-form-grid">
+                            <div className="form-group"><label>Nom</label><Form.Control value={line.nom} onChange={(e) => changeLine(index, 'nom', e.target.value)} placeholder="ex. Dr Jane Doe" /></div>
+                            <div className="form-group"><label>Fonction</label><Form.Control value={line.fonction} onChange={(e) => changeLine(index, 'fonction', e.target.value)} placeholder="ex. Directrice du Pillbox Hill Medical Center" /></div>
+                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info@phmc.health · tél. 50056" /></div>
+                        </div>
+                    </div>
+                ))}
+                <Button size="sm" variant="outline-primary" onClick={addBlank} disabled={lines.length >= MAX_MEMBERS}><i className="fas fa-plus me-1"></i>Ajouter une ligne vide</Button>
             </div>
+
+            <div className="form-group tm-wide-field">
+                <label>Où adresser une demande d'accès aux informations <small className="text-muted">(facultatif)</small></label>
+                <Form.Control as="textarea" rows={3} value={contactDemandes} onChange={(e) => setContactDemandes(e.target.value)}
+                    placeholder="ex. Écrivez à la Direction : une réponse est apportée sous 7 jours (Code du Gouvernement, art. 328)." />
+            </div>
+
             <Button variant="primary" onClick={save} disabled={saving}>{saving ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer et publier'}</Button>
+
+            <h6 className="mt-4">Équipe de direction (d'après les fiches du personnel)</h6>
+            <p className="text-muted small mb-2">Noms et contacts tirés des grades. « Ajouter » place la personne sur la page publique (vous pouvez ensuite retoucher sa ligne ci-dessus).</p>
+            {leaders.length === 0 ? <p className="text-muted small">Aucune fiche avec un grade de direction, d'assistance, de chef de service ou de recrutement.</p> : (
+                LEADERSHIP_GROUPS.map((group) => {
+                    const entries = leaders.filter((entry) => entry.group === group.key);
+                    if (entries.length === 0) return null;
+                    return (
+                        <div className="adm-fieldset mb-2" key={group.key}>
+                            <div className="adm-fieldset-title">{group.label}</div>
+                            {entries.map((entry) => {
+                                const listed = isListed(entry);
+                                return (
+                                    <div key={`${entry.member.service}-${entry.member.storageKey}`} className="d-flex flex-wrap align-items-center gap-2 py-1">
+                                        <div style={{ flex: '1 1 260px' }}>
+                                            <strong>{entry.name}</strong> <span className="text-muted">— {functionOf(entry.member, entry.role)}</span>
+                                            <small className="d-block text-muted">{contactOf(entry.member) || 'Aucun contact renseigné'}</small>
+                                        </div>
+                                        {listed
+                                            ? <Button size="sm" variant="outline-secondary" onClick={() => removeLeader(entry)}><i className="fas fa-check me-1"></i>Sur la page · Retirer</Button>
+                                            : <Button size="sm" variant="outline-primary" onClick={() => addLeader(entry)}><i className="fas fa-plus me-1"></i>Ajouter à la page</Button>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })
+            )}
         </>
     );
 };
 
 // ───────────────────────────── Grille salariale ─────────────────────────────
+// Grille de référence du PHMC (« Rangs et Salaires ») : sert d'aide à la saisie, à côté de l'éditeur. Les deux montants sont repris tels que fournis ;
+// un clic sur l'un d'eux ajoute un échelon de ce montant au(x) grade(s) correspondant(s).
+const REFERENCE_GRID = [
+    { rang: 15, label: 'Directrice', grades: ['Directeur(trice)'], montants: [4500, 90000] },
+    { rang: 14, label: 'Assistante de Direction', grades: ['Assistant(e) de Direction'], montants: [4250, 85000] },
+    { rang: 13, label: 'Chef de Service', grades: ['Chef de Service'], montants: [4000, 80000] },
+    { rang: 12, label: 'Personnel Administratif', grades: ['Personnel Administratif'], montants: [3000, 60000] },
+    { rang: 11, label: 'Médecin Titulaire', grades: ['Médecin Titulaire'], montants: [3750, 75000] },
+    { rang: 10, label: 'Docteur Junior', grades: ['Docteur Junior'], montants: [3500, 70000] },
+    { rang: 9, label: 'Interne en Médecine', grades: ['Interne en Médecine'], montants: [3000, 60000] },
+    { rang: 8, label: 'Paramedic', grades: ['Paramedic'], montants: [3500, 70000] },
+    { rang: 7, label: 'Infirmier en Pratique Avancée', grades: ['Infirmier(ère) en Pratique Avancée'], montants: [3500, 70000] },
+    { rang: 6, label: 'Infirmier', grades: ['Infirmier(ère)'], montants: [3200, 64000] },
+    { rang: 5, label: 'Technicien Ambulancier (EMT)', grades: ['Technicien(ne) Ambulancier(ère) (EMT)'], montants: [2900, 58000] },
+    { rang: 4, label: 'Agent de Maîtrise', grades: ['Agent Maîtrise'], montants: [3100, 62000] },
+    { rang: 3, label: 'Aide Soignant', grades: ['Aide Soignant(e)'], montants: [2700, 54000] },
+    { rang: 2, label: 'Externe / Étudiant', grades: ['Externe / Étudiant(e) en Médecine', 'Externe / Étudiant(e) Infirmier(ère)', 'Externe / Étudiant(e) Paramédical(e)'], montants: [2500, 50000] },
+    { rang: 1, label: 'Personnel Polyvalent', grades: ['Personnel Polyvalent'], montants: [2600, 52000] },
+];
+const money = (value) => `${Number(value).toLocaleString('fr-FR')} $`;
+
+const ReferenceGrid = ({ roleByValue, hasEchelons, onAdd }) => (
+    <aside className="tm-ref" aria-label="Grille de référence">
+        <div className="tm-ref-title"><i className="fas fa-list-ol me-2"></i>Rangs et salaires — PHMC</div>
+        <p className="tm-ref-help">Grille de référence. Cliquez un montant pour l'ajouter comme échelon au grade correspondant.</p>
+        <div className="tm-ref-list">
+            {REFERENCE_GRID.map((row) => {
+                const done = row.grades.every((grade) => hasEchelons(roleByValue[grade]));
+                return (
+                    <div className={`tm-ref-row${done ? ' done' : ''}`} key={row.rang}>
+                        <span className="tm-ref-rang">{row.rang}</span>
+                        <span className="tm-ref-label">{row.label}{done && <i className="fas fa-check ms-1" title="Échelons déjà saisis"></i>}</span>
+                        <span className="tm-ref-amounts">
+                            {row.montants.map((montant, index) => (
+                                <React.Fragment key={montant}>
+                                    {index > 0 && <span className="tm-ref-sep">–</span>}
+                                    <button type="button" className="tm-ref-amount" title={`Ajouter un échelon de ${money(montant)} à ${row.grades.length > 1 ? 'ces grades' : 'ce grade'}`}
+                                        onClick={() => onAdd(row.grades.map((grade) => roleByValue[grade]).filter(Boolean), montant)}>{money(montant)}</button>
+                                </React.Fragment>
+                            ))}
+                        </span>
+                    </div>
+                );
+            })}
+        </div>
+    </aside>
+);
+
 const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
     const [grid, setGrid] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -93,10 +258,21 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
         return { ...prev, grades };
     });
 
-    const addEchelon = (role) => {
+    const addEchelon = (role, montant = '') => {
         const current = echelonsOf(role);
-        setEchelons(role, [...current, { libelle: `Échelon ${current.length + 1}`, montant: '' }]);
+        setEchelons(role, [...current, { libelle: `Échelon ${current.length + 1}`, montant: montant === '' ? '' : String(montant) }]);
     };
+    const roleByValue = useMemo(() => Object.fromEntries(ROLES.map((role) => [role.value, role])), []);
+    // Ajout d'un échelon depuis la grille de référence : un seul passage d'état pour plusieurs grades (ex. les trois « Externe »).
+    const addReferenceEchelon = (roles, montant) => update((prev) => {
+        const grades = { ...prev.grades };
+        roles.forEach((role) => {
+            const key = gradeKeyOf(role.value);
+            const current = grades[key]?.echelons || [];
+            grades[key] = { grade: role.value, echelons: [...current, { libelle: `Échelon ${current.length + 1}`, montant: String(montant) }] };
+        });
+        return { ...prev, grades };
+    });
     const changeEchelon = (role, index, field, value) => setEchelons(role, echelonsOf(role).map((e, i) => (i === index ? { ...e, [field]: value } : e)));
     const removeEchelon = (role, index) => setEchelons(role, echelonsOf(role).filter((e, i) => i !== index));
 
@@ -120,7 +296,8 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
     const publishedCount = Object.keys(grid.grades).length;
 
     return (
-        <>
+        <div className="tm-grille-layout">
+          <div className="tm-grille-main">
             <p className="text-muted">
                 Le salaire de chaque échelon est <strong>public</strong> (Code du Gouvernement, art. 326) et fait foi dans les contrats : le champ « échelon » d'un contrat
                 propose ceux du grade choisi et préremplit la rémunération. Un grade sans échelon n'apparaît pas sur la page publique.
@@ -164,7 +341,9 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
                 <Button variant="primary" onClick={save} disabled={saving || !dirty}>{saving ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer et publier la grille'}</Button>
                 {dirty && <small className="text-warning">Modifications non publiées.</small>}
             </div>
-        </>
+          </div>
+          <ReferenceGrid roleByValue={roleByValue} hasEchelons={(role) => !!role && echelonsOf(role).length > 0} onAdd={addReferenceEchelon} />
+        </div>
     );
 };
 
@@ -179,6 +358,43 @@ const writeDraft = (key, value) => {
 };
 const clearDraft = (key) => {
     try { localStorage.removeItem(DRAFT_KEY(key)); } catch (error) { /* rien à faire */ }
+};
+
+const longDate = (date) => date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+const DAY = 24 * 60 * 60 * 1000;
+
+// Quand publier : chaque trimestre se termine à une date fixe et ses comptes se publient dès le lendemain (art. 327 : « à la fin de chaque trimestre »).
+const QuarterCalendar = ({ year, comptes, onPick, selected }) => {
+    const now = Date.now();
+    return (
+        <div className="mb-3">
+            <div className="table-responsive">
+                <table className="table table-sm mb-1" style={{ color: 'inherit' }}>
+                    <thead><tr><th>Trimestre {year}</th><th>Période</th><th>À publier à partir du</th><th>État</th></tr></thead>
+                    <tbody>
+                        {quarterSchedule(year).map((entry) => {
+                            const published = comptes[entry.key];
+                            const over = now >= entry.publishFrom.getTime();
+                            const lateDays = Math.floor((now - entry.publishFrom.getTime()) / DAY);
+                            let state = <Badge bg="secondary">À venir</Badge>;
+                            if (published) state = <Badge bg="success">Publié le {new Date(published.publieLe).toLocaleDateString('fr-FR')}</Badge>;
+                            else if (over) state = <Badge bg={lateDays > 30 ? 'danger' : 'warning'} text={lateDays > 30 ? undefined : 'dark'}>À publier{lateDays > 0 ? ` (depuis ${lateDays} j)` : ' maintenant'}</Badge>;
+                            else if (now >= entry.startsOn.getTime()) state = <Badge bg="info" text="dark">En cours (fin le {longDate(entry.endsOn)})</Badge>;
+                            return (
+                                <tr key={entry.key} style={{ cursor: 'pointer', fontWeight: entry.quarter === selected ? 600 : 400 }} onClick={() => onPick(entry.quarter)}>
+                                    <td>T{entry.quarter}</td>
+                                    <td>{longDate(entry.startsOn)} → {longDate(entry.endsOn)}</td>
+                                    <td>{longDate(entry.publishFrom)}</td>
+                                    <td>{state}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+            <small className="text-muted">Le texte demande une publication « à la fin de chaque trimestre » : aucun délai supplémentaire n'est fixé, publiez donc dès la date indiquée. Cliquez une ligne pour ouvrir le trimestre.</small>
+        </div>
+    );
 };
 
 const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName }) => {
@@ -280,6 +496,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                     {hasDraft && <Badge bg="warning" text="dark" className="ms-1">Brouillon non publié</Badge>}
                 </div>
             </div>
+            <QuarterCalendar year={year} comptes={data.comptes} onPick={(q) => setQuarter(q)} selected={quarter} />
             {publishedKeys.length > 0 && <small className="text-muted d-block mb-2">Déjà publiés : {publishedKeys.map(quarterLabel).join(' · ')}.</small>}
 
             <div className="tm-lines">

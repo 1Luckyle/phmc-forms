@@ -14,8 +14,10 @@
 import { ref, get, set, update, onValue } from 'firebase/database';
 import { database } from '../firebase';
 import { logActivity } from './activityLog';
-import { loadApplicationsOf } from './recruitmentStore';
+import { loadApplicationsOf, saveApplication } from './recruitmentStore';
+import { loadStaffMembers } from './staffAdmin';
 import { assertNotLocked } from './lockdownGuard';
+import { notifyUser, notifyGroup } from './notifications';
 
 export const INTERNAL_REQUEST_STATUS = {
     en_attente: { label: 'En attente', color: '#e3b341' },
@@ -48,6 +50,7 @@ export const requestInternalRecruitment = async ({ uid, member, motif }) => {
         badge: clean(member.badge, 40),
         motif: clean(motif, 1500),
     });
+    notifyGroup('recrutement', { type: 'recrutement', titre: 'Demande de recrutement interne', texte: clean(member.name, 120), lien: { cible: 'recrutement' } });
     logActivity({ category: 'recrutement', action: 'internal_request', summary: `Demande de recrutement interne : ${clean(member.name, 120)}`, details: clean(motif, 1500) || undefined, target: clean(member.name, 120) });
 };
 
@@ -76,6 +79,7 @@ export const acceptInternalRequest = async (request, { byUid, byName, note }) =>
         [`demandesMobilite/${request.uid}/traiteParNom`]: clean(byName, 120),
         [`demandesMobilite/${request.uid}/noteRecruteur`]: clean(note, 1000),
     });
+    notifyUser(request.uid, { type: 'statut', titre: 'Statut de recrutement interne accordé', texte: 'Vous pouvez maintenant candidater.', lien: { cible: 'candidature' } });
     logActivity({ category: 'recrutement', action: 'internal_accepted', summary: `Statut de recrutement interne accordé : ${request.nom}`, target: request.nom, severity: 'success' });
 };
 
@@ -87,6 +91,7 @@ export const refuseInternalRequest = async (request, { byName, note }) => {
         [`demandesMobilite/${request.uid}/traiteParNom`]: clean(byName, 120),
         [`demandesMobilite/${request.uid}/noteRecruteur`]: clean(note, 1000),
     });
+    notifyUser(request.uid, { type: 'statut', titre: 'Demande de recrutement interne refusée', texte: clean(note, 300) || undefined, lien: { cible: 'candidature' } });
     logActivity({ category: 'recrutement', action: 'internal_refused', summary: `Demande de recrutement interne refusée : ${request.nom}`, details: clean(note, 1000) || undefined, target: request.nom, severity: 'warning' });
 };
 
@@ -100,6 +105,56 @@ export const revokeInternalStatus = async (request, { byName }) => {
         [`demandesMobilite/${request.uid}/traiteParNom`]: clean(byName, 120),
     });
     logActivity({ category: 'recrutement', action: 'internal_revoked', summary: `Statut de recrutement interne retiré : ${request.nom}`, target: request.nom });
+};
+
+// Candidatures encore en cours d'instruction : seules celles-ci sont mises en pause (une décision rendue ou un retrait ne bouge plus).
+const OPEN_STATUSES = ['soumise', 'en_examen', 'entretien_programme', 'entretien_effectue'];
+
+// Mise en pause automatique, côté recrutement, des candidatures ouvertes d'un employé SANS statut de recrutement interne (il ne peut pas candidater
+// tant que le recrutement ne le lui a pas accordé). Ne dépend donc plus de l'ouverture de son propre dossier candidat. Chaque mise en pause est
+// consignée dans l'historique de la candidature. Au mieux : une erreur n'empêche jamais l'affichage de la liste.
+// → les candidatures mises en pause (versions à jour), à substituer aux anciennes dans la liste affichée.
+export const pauseApplicationsWithoutInternalStatus = async (applications, actorName = 'Le recrutement') => {
+    try {
+        const open = (applications || []).filter((application) => OPEN_STATUSES.includes(application.statut));
+        if (open.length === 0) return [];
+        const [members, grants] = await Promise.all([loadStaffMembers(), loadInternalGrants()]);
+        const staffUids = new Set(members.map((member) => member.uid).filter(Boolean));
+        const targets = open.filter((application) => staffUids.has(application.candidatUid) && !grants[application.candidatUid]);
+        const paused = [];
+        for (const application of targets) {
+            const now = Date.now();
+            const next = {
+                ...application,
+                statut: 'en_pause',
+                modifieLe: now,
+                historique: [...(application.historique || []), {
+                    statut: 'en_pause', horodatage: now, evenement: 'mise_en_pause_auto',
+                    details: 'Recrutement interne non accordé : candidature suspendue jusqu\'à l\'obtention du statut.', par: clean(actorName, 120),
+                }],
+            };
+            try {
+                await saveApplication(application.candidatUid, application.id, next);
+                paused.push(next);
+                notifyUser(application.candidatUid, {
+                    type: 'statut', titre: 'Candidature mise en pause : recrutement interne requis',
+                    texte: application.poste || undefined, lien: { cible: 'candidature' },
+                });
+            } catch (error) {
+                console.warn('Mise en pause automatique impossible :', error?.message || error);
+            }
+        }
+        if (paused.length > 0) {
+            logActivity({
+                category: 'recrutement', action: 'applications_auto_paused', severity: 'info',
+                summary: `${paused.length} candidature(s) mise(s) en pause : recrutement interne non accordé`, target: paused[0].nomCandidat || undefined,
+            });
+        }
+        return paused;
+    } catch (error) {
+        console.warn('Contrôle du recrutement interne impossible :', error?.message || error);
+        return [];
+    }
 };
 
 // Appelé après la signature d'un contrat : si la personne a le statut ET une candidature acceptée, il est retiré.

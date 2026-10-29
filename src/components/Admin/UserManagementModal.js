@@ -1,247 +1,114 @@
+// src/components/Admin/UserManagementModal.js
+//
+// « Migrer des rapports » (Utilisateurs → Outils) : déplace les rapports enregistrés d'un rédacteur vers un autre (compte en double, ancien nom,
+// fiche reprise par une autre personne). Avant d'écrire, la fenêtre montre ce qui va bouger et ce qui restera en conflit ; la destination est
+// sauvegardée (migrationBackups) et les dossiers patients suivent les rapports déplacés.
+//
+// Les anciens boutons « Nettoyer / Migrer tous les noms d'utilisateur » ont été retirés : ils renommaient en masse les nœuds de rapports sans
+// mettre à jour les dossiers patients ni le nœud de chaque compte (noeudsRapports), et les rapports se rangent désormais sous le nom de la fiche.
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Form, Spinner } from 'react-bootstrap';
+import { ref, get, set, update } from 'firebase/database';
+import BaseModal from '../BaseModal';
 import { normalizePatientId } from '../../utils/patientRecords';
-import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Alert } from 'react-bootstrap';
-import { ref, get, set, remove, update } from "firebase/database";
-import './UserManagementModal.css';
-import { sendDiscordNotification } from './adminUtils';
 import { assertNoneFrozen } from '../../utils/judicialFreeze';
+import { logActivity } from '../../utils/activityLog';
+import './UserManagementModal.css';
+
+const nodeLabel = (node) => node.replace(/_/g, ' ');
+const sanitizeForFirebasePath = (str) => str.replace(/[.#$[/ \]]/g, '_');
 
 const UserManagementModal = ({ show, onHide, database, showNotification }) => {
-    const [users, setUsers] = useState([]);
-    const [sourceUser, setSourceUser] = useState('');
-    const [destinationUser, setDestinationUser] = useState('');
-    const [confirm, setConfirm] = useState(false);
+    const [nodes, setNodes] = useState(null);     // { [nœud]: [identifiants de rapports] }
+    const [source, setSource] = useState('');
+    const [destination, setDestination] = useState('');
+    const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
 
-    const comprehensiveSanitize = (str) => {
-        if (!str) return '';
-        let sanitized = str.trim().replace(/[.#$[\/ \]]+/g, '_');
-        sanitized = sanitized.replace(/_{2,}/g, '_');
-        sanitized = sanitized.replace(/^_+|_+$/g, '');
-        return sanitized;
+    const loadNodes = async () => {
+        try {
+            const snapshot = await get(ref(database, 'savedReports'));
+            const value = snapshot.exists() ? snapshot.val() : {};
+            setNodes(Object.fromEntries(Object.entries(value).map(([node, reports]) => [node, Object.keys(reports || {})])));
+        } catch (err) {
+            console.error('Error fetching users:', err);
+            setError('Impossible de récupérer les rédacteurs. Veuillez réessayer plus tard.');
+            setNodes({});
+        }
     };
 
     useEffect(() => {
-        if (show) {
-            const fetchUsers = async () => {
-                try {
-                    const savedReportsRef = ref(database, 'savedReports');
-                    const snapshot = await get(savedReportsRef);
-                    if (snapshot.exists()) {
-                        setUsers(Object.keys(snapshot.val()));
-                    } else {
-                        setUsers([]);
-                    }
-                } catch (error) {
-                    console.error("Error fetching users:", error);
-                    setError("Impossible de récupérer les utilisateurs. Veuillez réessayer plus tard.");
-                }
-            };
-            fetchUsers();
-        }
-    }, [show, database]);
+        if (show) { setNodes(null); setSource(''); setDestination(''); setError(''); loadNodes(); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [show]);
 
-    const sanitizeForFirebasePath = (str) => {
-        return str.replace(/[.#$[\/ \]]/g, '_');
-    };
+    const names = useMemo(() => Object.keys(nodes || {}).sort((a, b) => nodeLabel(a).localeCompare(nodeLabel(b))), [nodes]);
 
-    const sendMigrationNotification = async (source, destination, count) => {
-        const webhookURL = null;
-        const payload = {
-            embeds: [{
-                title: "Migration des données utilisateur",
-                description: `Migration réussie de ${count} rapports de **${source}** vers **${destination}**.**Ceci est une notification de test.**`,
-                color: 0x00ff00, // Green
-                timestamp: new Date().toISOString(),
-            }]
-        };
-        await sendDiscordNotification(webhookURL, payload, "Migration des données utilisateur", null);
-    };
-
-    const handleSanitizeAllUsernames = async () => {
-        if (!window.confirm("Êtes-vous sûr de vouloir nettoyer tous les noms d'utilisateur ? Cette opération supprimera les espaces et les tirets bas multiples. Il s'agit d'une opération unique et irréversible.")) {
-            return;
-        }
-
-        const savedReportsRef = ref(database, 'savedReports');
-        try {
-            const snapshot = await get(savedReportsRef);
-            if (!snapshot.exists()) {
-                showNotification("Aucun rapport enregistré trouvé à nettoyer.", "info");
-                return;
-            }
-
-            const allReports = snapshot.val();
-            const updates = {};
-            let sanitizedCount = 0;
-            await assertNoneFrozen(Object.keys(allReports).filter((name) => name !== comprehensiveSanitize(name)).flatMap((name) => Object.keys(allReports[name] || {})));
-
-            for (const userName in allReports) {
-                const sanitizedUserName = comprehensiveSanitize(userName);
-                if (userName !== sanitizedUserName) {
-                    const oldUserData = allReports[userName];
-                    const newUserData = allReports[sanitizedUserName] || {};
-
-                    for (const reportId in oldUserData) {
-                        if (!newUserData[reportId]) {
-                            newUserData[reportId] = oldUserData[reportId];
-                        }
-                    }
-
-                    updates[`savedReports/${sanitizedUserName}`] = newUserData;
-                    updates[`savedReports/${userName}`] = null;
-                    sanitizedCount++;
-                }
-            }
-
-            if (sanitizedCount > 0) {
-                await update(ref(database), updates);
-                showNotification(`Nettoyage réussi de ${sanitizedCount} noms d'utilisateur.`, "success");
-            } else {
-                showNotification("Aucun nom d'utilisateur trouvé nécessitant un nettoyage.", "info");
-            }
-
-            const newSnapshot = await get(savedReportsRef);
-            if (newSnapshot.exists()) {
-                setUsers(Object.keys(newSnapshot.val()));
-            } else {
-                setUsers([]);
-            }
-
-        } catch (error) {
-            console.error("Error sanitizing all usernames:", error);
-            showNotification(`Erreur lors du nettoyage des noms d'utilisateur : ${error.message}`, "error");
-        }
-    };
-
-    const handleMigrateAllUsernames = async () => {
-        if (!window.confirm("Êtes-vous sûr de vouloir migrer tous les noms d'utilisateur avec des espaces pour utiliser des tirets bas ? Il s'agit d'une opération unique et irréversible.")) {
-            return;
-        }
-    
-        const savedReportsRef = ref(database, 'savedReports');
-        try {
-            const snapshot = await get(savedReportsRef);
-            if (!snapshot.exists()) {
-                showNotification("Aucun rapport enregistré trouvé à migrer.", "info");
-                return;
-            }
-    
-            const allReports = snapshot.val();
-            const updates = {};
-            let migratedCount = 0;
-            await assertNoneFrozen(Object.keys(allReports).filter((name) => name.includes(' ')).flatMap((name) => Object.keys(allReports[name] || {})));
-    
-            for (const userName in allReports) {
-                if (userName.includes(' ')) {
-                    const newUserName = userName.replace(/ /g, '_');
-                    const oldUserData = allReports[userName];
-                    const newUserData = allReports[newUserName] || {};
-    
-                    // Merge old data into new data, avoiding overwrites
-                    for (const reportId in oldUserData) {
-                        if (!newUserData[reportId]) {
-                            newUserData[reportId] = oldUserData[reportId];
-                        }
-                    }
-    
-                    updates[`savedReports/${newUserName}`] = newUserData;
-                    updates[`savedReports/${userName}`] = null; // Mark for deletion
-                    migratedCount++;
-                }
-            }
-    
-            if (migratedCount > 0) {
-                await update(ref(database), updates);
-                showNotification(`Migration réussie de ${migratedCount} noms d'utilisateur.`, "success");
-            } else {
-                showNotification("Aucun nom d'utilisateur avec des espaces trouvé à migrer.", "info");
-            }
-    
-            // Refresh users in the dropdown
-            const newSnapshot = await get(savedReportsRef);
-            if (newSnapshot.exists()) {
-                setUsers(Object.keys(newSnapshot.val()));
-            } else {
-                setUsers([]);
-            }
-    
-        } catch (error) {
-            console.error("Error migrating all usernames:", error);
-            showNotification(`Erreur lors de la migration des noms d'utilisateur : ${error.message}`, "error");
-        }
-    };
+    // Ce que la migration ferait : rapports déplacés, et rapports de même identifiant déjà présents chez la destination (laissés chez la source).
+    const plan = useMemo(() => {
+        if (!nodes || !source || !destination || source === destination) return null;
+        const destinationKeys = new Set(nodes[destination] || []);
+        const sourceKeys = nodes[source] || [];
+        const conflicts = sourceKeys.filter((key) => destinationKeys.has(key));
+        return { total: sourceKeys.length, moved: sourceKeys.length - conflicts.length, conflicts: conflicts.length, destinationCount: destinationKeys.size };
+    }, [nodes, source, destination]);
 
     const handleMigrate = async () => {
-        if (!sourceUser || !destinationUser || !confirm) {
-            setError("Veuillez sélectionner les deux utilisateurs et confirmer la migration.");
-            return;
-        }
-
-        if (sourceUser === destinationUser) {
-            setError("Les utilisateurs source et destination ne peuvent pas être les mêmes.");
-            return;
-        }
+        if (!plan) return;
+        if (plan.moved === 0) { setError('Aucun rapport à déplacer : tous ceux de la source existent déjà chez la destination.'); return; }
+        if (!window.confirm(`Déplacer ${plan.moved} rapport(s) de « ${nodeLabel(source)} » vers « ${nodeLabel(destination)} » ?\n\n`
+            + `${plan.conflicts > 0 ? `${plan.conflicts} rapport(s) en conflit resteront chez « ${nodeLabel(source)} ».\n` : ''}La destination est sauvegardée avant l'écriture.`)) return;
 
         setError('');
-
-        const sourceUserRef = ref(database, `savedReports/${sourceUser}`);
-        const destinationUserRef = ref(database, `savedReports/${destinationUser}`);
+        setBusy(true);
+        const sourceRef = ref(database, `savedReports/${source}`);
+        const destinationRef = ref(database, `savedReports/${destination}`);
         const backupDate = new Date().toISOString().replace(/:/g, '-').replace(/\./g, '-');
-        const sanitizedDestinationUser = sanitizeForFirebasePath(destinationUser);
-        const backupRef = ref(database, `migrationBackups/${sanitizedDestinationUser}_${backupDate}`);
+        const backupRef = ref(database, `migrationBackups/${sanitizeForFirebasePath(destination)}_${backupDate}`);
         let destinationBackup = null;
+        let destinationWritten = false;
 
         try {
-            const sourceSnapshot = await get(sourceUserRef);
-            if (!sourceSnapshot.exists()) {
-                showNotification("L'utilisateur source n'a pas de données à migrer.", "warning");
-                return;
-            }
+            const sourceSnapshot = await get(sourceRef);
+            if (!sourceSnapshot.exists()) { showNotification("Le rédacteur source n'a pas de rapports à migrer.", 'warning'); return; }
+            const sourceReports = sourceSnapshot.val();
+            await assertNoneFrozen(Object.keys(sourceReports));
 
-            await assertNoneFrozen(Object.keys(sourceSnapshot.val()));
-            const destinationSnapshot = await get(destinationUserRef);
+            const destinationSnapshot = await get(destinationRef);
             if (destinationSnapshot.exists()) {
                 destinationBackup = destinationSnapshot.val();
                 await set(backupRef, destinationBackup);
             }
 
-            const sourceReports = sourceSnapshot.val();
-            const destinationReports = destinationBackup || {};
+            const merged = { ...(destinationBackup || {}) };
             const conflictedReports = [];
-            let migratedCount = 0;
-
-            Object.keys(sourceReports).forEach(key => {
-                if (destinationReports[key]) {
-                    conflictedReports.push(key);
-                } else {
-                    destinationReports[key] = sourceReports[key];
-                    migratedCount++;
-                }
+            const movedKeys = [];
+            Object.keys(sourceReports).forEach((key) => {
+                if (merged[key]) conflictedReports.push(key);
+                else { merged[key] = sourceReports[key]; movedKeys.push(key); }
             });
 
-            await set(destinationUserRef, destinationReports);
-            await remove(sourceUserRef);
+            await set(destinationRef, merged);
+            destinationWritten = true;
+            // Seuls les rapports déplacés quittent la source : ceux en conflit y restent au lieu d'être perdus.
+            const removals = {};
+            movedKeys.forEach((key) => { removals[`savedReports/${source}/${key}`] = null; });
+            await update(ref(database), removals);
 
-            // Les dossiers patients pointent vers l'ANCIEN chemin (savedReports/{source}/…) :
-            // sans cette mise à jour, les rapports migrés disparaissaient des dossiers patients.
-            // On corrige aussi le nom d'auteur (une adresse e-mail devient le nom du médecin) et
-            // les marqueurs « copié par » des rapports d'origine.
+            // Les dossiers patients pointent vers l'ANCIEN chemin (savedReports/{source}/…) : on les redirige, on corrige le nom d'auteur
+            // (une adresse e-mail devient le nom du médecin) et les marqueurs « copié par » des rapports d'origine.
             try {
                 const nameCounts = {};
-                Object.entries(destinationBackup || {}).forEach(([key, r]) => {
-                    if (sourceReports[key]) return; // rapports qu'on vient de migrer : pas représentatifs
-                    if (r && r.authorName) nameCounts[r.authorName] = (nameCounts[r.authorName] || 0) + 1;
+                Object.values(destinationBackup || {}).forEach((report) => {
+                    if (report && report.authorName) nameCounts[report.authorName] = (nameCounts[report.authorName] || 0) + 1;
                 });
                 const knownDestinationName = Object.entries(nameCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-                const destinationAuthorName = knownDestinationName || destinationUser.replace(/_/g, ' ');
+                const destinationAuthorName = knownDestinationName || nodeLabel(destination);
                 const indexUpdates = {};
-                Object.keys(sourceReports).forEach((key) => {
-                    if (conflictedReports.includes(key)) return; // conflit : non migré
+                movedKeys.forEach((key) => {
                     const report = sourceReports[key] || {};
-                    const newPath = `savedReports/${destinationUser}/${key}`;
-                    const oldAuthor = report.authorName;
-                    const wasSelfCreated = !report.creatorName || report.creatorName === oldAuthor;
+                    const newPath = `savedReports/${destination}/${key}`;
+                    const wasSelfCreated = !report.creatorName || report.creatorName === report.authorName;
                     indexUpdates[`${newPath}/authorName`] = destinationAuthorName;
                     if (wasSelfCreated) indexUpdates[`${newPath}/creatorName`] = destinationAuthorName;
                     const patientNode = normalizePatientId(report.data && report.data.patientID);
@@ -252,84 +119,93 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
                     }
                     if (report.copiedFrom && report.copiedFrom.patientNode && report.copiedFrom.indexKey) {
                         const base = `patientRecords/${report.copiedFrom.patientNode}/${report.copiedFrom.indexKey}/copiedBy`;
-                        indexUpdates[`${base}/${sourceUser}`] = null;
-                        indexUpdates[`${base}/${destinationUser}`] = key;
+                        indexUpdates[`${base}/${source}`] = null;
+                        indexUpdates[`${base}/${destination}`] = key;
                     }
                 });
-                if (Object.keys(indexUpdates).length > 0) {
-                    await update(ref(database), indexUpdates);
-                }
+                if (Object.keys(indexUpdates).length > 0) await update(ref(database), indexUpdates);
             } catch (indexError) {
                 console.warn('Reports migrated but patient records could not be updated:', indexError);
                 showNotification("Rapports migrés, mais l'index des dossiers patients n'a pas pu être mis à jour : utilisez « Réindexer les dossiers patients ».", 'warning');
             }
 
-            if (conflictedReports.length > 0) {
-                showNotification(`Migration terminée, mais ${conflictedReports.length} rapports n'ont pas été migrés en raison de conflits.`, "warning");
-            } else {
-                showNotification("Données utilisateur migrées avec succès.", "success");
-            }
-            
-            if (migratedCount > 0) {
-                await sendMigrationNotification(sourceUser, destinationUser, migratedCount);
-            }
-
+            logActivity({
+                category: 'rapports', action: 'reports_migrated', severity: 'warning',
+                summary: `Rapports migrés : ${movedKeys.length} de ${nodeLabel(source)} vers ${nodeLabel(destination)}`,
+                details: conflictedReports.length > 0 ? `${conflictedReports.length} rapport(s) en conflit laissé(s) chez la source.` : undefined,
+                target: nodeLabel(destination),
+            });
+            showNotification(conflictedReports.length > 0
+                ? `Migration terminée : ${movedKeys.length} rapport(s) déplacé(s), ${conflictedReports.length} en conflit laissé(s) chez la source.`
+                : `${movedKeys.length} rapport(s) migré(s) vers ${nodeLabel(destination)}.`, conflictedReports.length > 0 ? 'warning' : 'success');
             onHide();
-
-        } catch (error) {
-            console.error("Error migrating data:", error);
-            showNotification(`Erreur lors de la migration des données : ${error.message}`, "error");
-
-            if (destinationBackup) {
-                await set(destinationUserRef, destinationBackup);
-                showNotification("La migration a échoué. Les données originales de l'utilisateur de destination ont été restaurées.", "info");
+        } catch (err) {
+            console.error('Error migrating data:', err);
+            showNotification(`Erreur lors de la migration des données : ${err.message}`, 'error');
+            if (destinationWritten || destinationBackup) {
+                try {
+                    await set(destinationRef, destinationBackup);
+                    showNotification("La migration a échoué. Les rapports d'origine de la destination ont été restaurés.", 'info');
+                } catch (restoreError) {
+                    console.error('Restore failed:', restoreError);
+                }
             }
+        } finally {
+            setBusy(false);
         }
     };
 
+    const optionLabel = (node) => `${nodeLabel(node)} — ${(nodes[node] || []).length} rapport(s)`;
+
     return (
-        <Modal show={show} onHide={onHide} className="user-management-modal">
-            <Modal.Header closeButton>
-                <Modal.Title>Gestion des utilisateurs</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                {error && <Alert variant="danger">{error}</Alert>}
-                <p>Migration des rapports enregistrés d'un utilisateur à un autre.</p>
-                <Form>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Sélectionnez l'utilisateur source</Form.Label>
-                        <Form.Control as="select" value={sourceUser} onChange={e => setSourceUser(e.target.value)}>
-                            <option value="">Sélectionnez un utilisateur</option>
-                            {users.map(user => <option key={user} value={user}>{user}</option>)}
-                        </Form.Control>
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Sélectionnez l'utilisateur de destination</Form.Label>
-                        <Form.Control as="select" value={destinationUser} onChange={e => setDestinationUser(e.target.value)}>
-                            <option value="">Sélectionnez un utilisateur</option>
-                            {users.map(user => <option key={user} value={user}>{user}</option>)}
-                        </Form.Control>
-                    </Form.Group>
-                    <Form.Group className="mb-3" controlId="formBasicCheckbox">
-                        <Form.Check type="checkbox" label="Je confirme que je souhaite migrer les données." checked={confirm} onChange={e => setConfirm(e.target.checked)} />
-                    </Form.Group>
-                </Form>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>
-                    Fermer
+        <BaseModal isOpen={show} onClose={onHide} title="Migrer des rapports" modalSize="medium" zIndex={1100} className="um-modal">
+            <p className="um-intro">
+                Déplace les rapports d'un rédacteur vers un autre : compte en double, ancien nom, fiche reprise par quelqu'un d'autre. Les dossiers patients suivent les rapports.
+            </p>
+            {error && <Alert variant="danger" className="py-2" dismissible onClose={() => setError('')}>{error}</Alert>}
+            {!nodes ? <div className="text-center py-4"><Spinner animation="border" /></div> : (
+                <>
+                    <div className="um-pair">
+                        <Form.Group>
+                            <Form.Label>Depuis (source)</Form.Label>
+                            <Form.Select value={source} onChange={(e) => setSource(e.target.value)}>
+                                <option value="">Choisir un rédacteur…</option>
+                                {names.map((node) => <option key={node} value={node} disabled={node === destination}>{optionLabel(node)}</option>)}
+                            </Form.Select>
+                        </Form.Group>
+                        <div className="um-arrow" aria-hidden="true"><i className="fas fa-arrow-right"></i></div>
+                        <Form.Group>
+                            <Form.Label>Vers (destination)</Form.Label>
+                            <Form.Select value={destination} onChange={(e) => setDestination(e.target.value)}>
+                                <option value="">Choisir un rédacteur…</option>
+                                {names.map((node) => <option key={node} value={node} disabled={node === source}>{optionLabel(node)}</option>)}
+                            </Form.Select>
+                        </Form.Group>
+                    </div>
+
+                    {plan ? (
+                        <div className="um-plan" role="status">
+                            <div className="um-plan-figures">
+                                <div><strong>{plan.moved}</strong><span>rapport(s) déplacé(s)</span></div>
+                                <div className={plan.conflicts > 0 ? 'warn' : ''}><strong>{plan.conflicts}</strong><span>en conflit (restent à la source)</span></div>
+                                <div><strong>{plan.destinationCount + plan.moved}</strong><span>chez la destination après</span></div>
+                            </div>
+                            <ul className="um-plan-notes">
+                                <li>La destination est sauvegardée dans <code>migrationBackups</code> avant l'écriture ; en cas d'échec, elle est restaurée.</li>
+                                {plan.conflicts > 0 && <li>Un rapport est « en conflit » quand la destination en a déjà un de même identifiant : il n'est pas écrasé, et celui de la source reste en place.</li>}
+                                <li>Les rapports gelés (gel judiciaire) bloquent la migration.</li>
+                            </ul>
+                        </div>
+                    ) : <p className="um-hint">Choisissez une source et une destination pour voir ce qui sera déplacé.</p>}
+                </>
+            )}
+            <div className="um-footer">
+                <Button variant="outline-secondary" onClick={onHide} disabled={busy}>Fermer</Button>
+                <Button variant="primary" onClick={handleMigrate} disabled={busy || !plan || plan.moved === 0}>
+                    {busy ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-right-left me-2"></i>{plan ? `Migrer ${plan.moved} rapport(s)` : 'Migrer'}</>}
                 </Button>
-                <Button variant="success" onClick={handleSanitizeAllUsernames}>
-                    Nettoyer tous les noms d'utilisateur
-                </Button>
-                <Button variant="warning" onClick={handleMigrateAllUsernames}>
-                    Migrer tous les noms d'utilisateur
-                </Button>
-                <Button variant="primary" onClick={handleMigrate} disabled={!sourceUser || !destinationUser || !confirm}>
-                    Migrer les données
-                </Button>
-            </Modal.Footer>
-        </Modal>
+            </div>
+        </BaseModal>
     );
 };
 

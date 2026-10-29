@@ -52,6 +52,27 @@
     font-weight: 600;
 }
 
+/* Titre centré, avec de la marge de chaque côté (la croix est posée à droite sans pousser le titre). */
+.modal-container > .modal-header {
+    position: relative;
+    justify-content: center;
+    padding: 1rem 3rem;
+}
+
+.modal-container > .modal-header .modal-title {
+    text-align: center;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-container > .modal-header .modal-close-button {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 .modal-close-button {
     background: none;
     border: none;

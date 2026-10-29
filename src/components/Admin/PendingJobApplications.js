@@ -18,10 +18,13 @@ import {
     APPLICATION_STATUS, APPLICATION_STATUS_COLORS, REFUSAL_REASONS, THREAD_OPEN_STATUSES, positionsFromSelectOptions, positionLabelFor,
 } from '../../constants/recruitment';
 import { useDebug } from '../../contexts/DebugContext';
-import { sendEyefindMail } from '../../utils/eyefindMail';
+import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { loadContractCandidates, setContractCandidate, clearContractCandidate } from '../../utils/contractCandidates';
 import { subscribeAllThreadMeta } from '../../utils/applicationThreads';
+import { notifyUser } from '../../utils/notifications';
+import { pauseApplicationsWithoutInternalStatus } from '../../utils/internalRecruitment';
+import { applicationStatusLabel as statusLabelOf } from '../../constants/recruitment';
 import { logActivity } from '../../utils/activityLog';
 import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
 import ApplicationThread from '../Recruitment/ApplicationThread';
@@ -37,12 +40,6 @@ import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocume
 import '../Cctv/CctvRequests.css';
 import '../Recruitment/Applications.css';
 
-const sendMailBestEffort = (params) => {
-    sendEyefindMail(params).then((result) => {
-        if (!result.ok) console.warn('Eyefind Mail non envoyé:', result.error, result.message);
-    });
-};
-
 const STATUS_LABELS = Object.fromEntries(Object.entries(APPLICATION_STATUS).map(([key, value]) => [key, value.label]));
 const colorOf = (status) => APPLICATION_STATUS_COLORS[status] || '#8b949e';
 
@@ -57,7 +54,7 @@ const normalize = (value) => String(value || '').normalize('NFD').replace(/[̀-�
 const OTHER_REASON = '__autre';
 const EVENT_LABELS = {
     entretien_planifie: 'Entretien programmé', entretien_modifie: 'Entretien modifié', entretien_annule: 'Entretien annulé',
-    candidature_modifiee: 'Candidature modifiée par le candidat',
+    candidature_modifiee: 'Candidature modifiée par le candidat', mise_en_pause_auto: 'Mise en pause automatique',
 };
 const MAIL_MIN_INTERVAL_MS = 30 * 60 * 1000; // un mail « nouveau message » au plus toutes les 30 min par candidature
 
@@ -111,7 +108,16 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
     const loadApplications = async () => {
         try {
             // Candidatures déjà normalisées au format français (ancien et nouveau nœud fusionnés).
-            setApplications(await loadAllApplications());
+            const loaded = await loadAllApplications();
+            // Un employé sans recrutement interne ne peut pas candidater : ses candidatures ouvertes sont mises en pause d'office.
+            const paused = await pauseApplicationsWithoutInternalStatus(loaded, actorName);
+            if (paused.length > 0) {
+                const byKey = new Map(paused.map((application) => [`${application.candidatUid}/${application.id}`, application]));
+                setApplications(loaded.map((application) => byKey.get(`${application.candidatUid}/${application.id}`) || application));
+                showNotification(`${paused.length} candidature(s) d'un employé sans recrutement interne mise(s) en pause.`, 'info');
+            } else {
+                setApplications(loaded);
+            }
         } catch (error) {
             console.error('Error loading job applications:', error);
             showNotification('Erreur lors du chargement des candidatures', 'error');
@@ -157,9 +163,10 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         }
     };
 
-    const mailApplicant = async (application, subject, text, html) => {
+    // `templateId` : modèle de mail (utils/mailTemplatesCore.js) ; le nom et le poste du candidat sont ajoutés aux variables.
+    const mailApplicant = async (application, templateId, vars = {}) => {
         const email = await getApplicantEmail(application);
-        if (email) sendMailBestEffort({ to: email, subject, body: text, html });
+        if (email) sendTemplatedMail(templateId, { to: email, vars: { nom: application.nomCandidat || '', poste: application.poste || '', ...vars } });
         return !!email;
     };
 
@@ -174,6 +181,12 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
                 statut: newStatus,
                 modifieLe: Date.now(),
                 historique,
+            });
+            const EVENT_TITLES = { entretien_planifie: 'Entretien programmé', entretien_modifie: 'Entretien modifié', entretien_annule: 'Entretien annulé' };
+            notifyUser(application.candidatUid, {
+                type: 'statut',
+                titre: EVENT_TITLES[event?.evenement] || `Votre candidature : ${statusLabelOf(newStatus)}`,
+                texte: application.poste || undefined, lien: { cible: 'candidature' },
             });
             return true;
         } catch (error) {
@@ -199,9 +212,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         const ok = await updateStatus(application, 'en_examen', { priseEnChargePar: { uid: currentEmployee?.uid || null, nom: actorName, le: Date.now() } });
         if (!ok) return;
         journal('application_in_review', `Candidature prise en charge : ${application.nomCandidat} — ${application.poste}`, application);
-        await mailApplicant(application, 'Votre candidature est en cours d\'examen - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\nVotre candidature pour le poste "${application.poste || ''}" est en cours d'examen par ${actorName}. Vous pouvez échanger avec le recrutement depuis l'outil PHMC-FR : Boîte à outils → « Mon dossier candidat ».\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Votre candidature pour le poste « <b>${application.poste || ''}</b> » est <b>en cours d'examen</b> par ${actorName}. Vous pouvez échanger avec le recrutement depuis l'outil PHMC-FR : <b>Boîte à outils → « Mon dossier candidat »</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        await mailApplicant(application, 'candidature_en_examen', { recruteur: actorName });
         showNotification('Candidature prise en charge : les échanges avec le candidat sont ouverts.', 'success');
         loadApplications();
     });
@@ -237,15 +248,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
             isEdit ? changes.join('\n') : `Entretien ${describeInterview(entretien)}`);
         const formatted = new Date(entretien.date).toLocaleString('fr-FR');
         const who = `Il sera mené par ${entretien.recruteur.nom}${entretien.presents.length ? `, en présence de ${presentsLabel(entretien)}` : ''}.`;
-        const intro = isEdit
-            ? `Votre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center a été modifié. Il est désormais programmé le ${formatted}. ${who}\n\nChangements :\n- ${changes.join('\n- ')}`
-            : `Votre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center est programmé le ${formatted}. ${who}`;
-        const introHtml = isEdit
-            ? `<p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center a été <b>modifié</b>. Il est désormais programmé le <b>${formatted}</b>. ${who}</p><p><b>Changements :</b></p><ul>${changes.map((change) => `<li>${change}</li>`).join('')}</ul>`
-            : `<p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center est programmé le <b>${formatted}</b>. ${who}</p>`;
-        await mailApplicant(application, isEdit ? 'Entretien de candidature modifié - PHMC' : 'Entretien de candidature - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\n${intro}\n\nMerci de vous présenter à l'étage de l'administration du Pillbox Hill Medical Center, situé au 76 Strawberry Ave, Los Santos.\n\nEn cas d'empêchement, répondez au recrutement depuis « Mon dossier candidat » ou contactez l'administration du PHMC au plus vite.\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p>${introHtml}<p>Merci de vous présenter à l'étage de l'administration du Pillbox Hill Medical Center, situé au 76 Strawberry Ave, Los Santos.</p><p>En cas d'empêchement, répondez au recrutement depuis « Mon dossier candidat » ou contactez l'administration du PHMC au plus vite.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        await mailApplicant(application, isEdit ? 'entretien_modifie' : 'entretien_programme', { date_entretien: formatted, organisation: who, changements: changes });
         showNotification(isEdit ? 'Entretien modifié et candidat notifié.' : 'Entretien programmé et candidat notifié.', 'success');
         loadApplications();
     };
@@ -262,9 +265,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         });
         if (!ok) return;
         journal('application_interview_cancelled', `Entretien annulé : ${application.nomCandidat} — ${application.poste}`, application, 'warning', note);
-        await mailApplicant(application, 'Entretien de candidature annulé - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\nVotre entretien pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center est annulé.${note ? `\n\nMotif : ${note}` : ''}\n\nVotre candidature reste en cours d'examen : le recrutement vous proposera une nouvelle date. Vous pouvez lui écrire depuis « Mon dossier candidat ».\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Votre entretien pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center est <b>annulé</b>.${note ? ` Motif : ${note}` : ''}</p><p>Votre candidature reste <b>en cours d'examen</b> : le recrutement vous proposera une nouvelle date. Vous pouvez lui écrire depuis <b>« Mon dossier candidat »</b>.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        await mailApplicant(application, 'entretien_annule', { motif: note });
         showNotification('Entretien annulé, candidat notifié. La candidature reste en cours d\'examen.', 'info');
         loadApplications();
     });
@@ -287,9 +288,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         const ok = await updateStatus(application, 'acceptee');
         if (!ok) return;
         journal('application_accepted', `Candidature acceptée : ${application.nomCandidat} — ${application.poste}`, application, 'success');
-        await mailApplicant(application, 'Votre candidature a été acceptée - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\nFélicitations ! Votre candidature pour le poste "${application.poste || ''}" au Pillbox Hill Medical Center a été acceptée.\n\nVous serez contacté(e) prochainement par l'administration pour la suite des formalités. Vous pouvez continuer à échanger avec le recrutement depuis « Mon dossier candidat » jusqu'à la signature de votre contrat.\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Félicitations ! Votre candidature pour le poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center a été <b>acceptée</b>.</p><p>Vous serez contacté(e) prochainement par l'administration pour la suite des formalités. Vous pouvez continuer à échanger avec le recrutement depuis <b>« Mon dossier candidat »</b> jusqu'à la signature de votre contrat.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        await mailApplicant(application, 'candidature_acceptee');
         showNotification('Candidature acceptée et candidat notifié.', 'success');
         loadApplications();
     });
@@ -311,11 +310,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         if (!ok) return;
         cancelRefusal(application);
         journal('application_refused', `Candidature refusée : ${application.nomCandidat} — ${application.poste}`, application, 'warning', `Motif : ${motif}${refus.detail ? `\n${refus.detail}` : ''}`);
-        const extraText = refus.detail ? `\n${refus.detail}` : '';
-        const extraHtml = refus.detail ? `<br>${refus.detail}` : '';
-        await mailApplicant(application, 'Votre candidature - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\nNous vous remercions pour votre candidature au poste "${application.poste || ''}" au Pillbox Hill Medical Center. Après examen, celle-ci n'a malheureusement pas été retenue.\n\nMotif : ${motif}${extraText}\n\nVous pouvez candidater à nouveau ultérieurement.\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Nous vous remercions pour votre candidature au poste « <b>${application.poste || ''}</b> » au Pillbox Hill Medical Center. Après examen, celle-ci n'a malheureusement pas été retenue.</p><p><b>Motif :</b> ${motif}${extraHtml}</p><p>Vous pouvez candidater à nouveau ultérieurement.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        await mailApplicant(application, 'candidature_refusee', { motif, detail: refus.detail || '' });
         showNotification('Candidature refusée, motif transmis au candidat.', 'info');
         loadApplications();
     });
@@ -326,23 +321,21 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         const hasRole = !!contractCandidates[application.candidatUid];
         try {
             if (hasRole) {
-                if (!window.confirm(`Retirer le rôle « en attente de contrat » à ${application.nomCandidat} ? Il n'aura plus accès à ses contrats ni à la création de sa signature par ce biais.`)) return;
+                if (!window.confirm(`Retirer le rôle « en attente de contrat » à ${application.nomCandidat} ? Il n'aura plus accès à ses contrats par ce biais.`)) return;
                 await clearContractCandidate(application.candidatUid);
                 setContractCandidates((current) => { const next = { ...current }; delete next[application.candidatUid]; return next; });
                 journal('contract_role_removed', `Rôle « en attente de contrat » retiré : ${application.nomCandidat}`, application);
                 showNotification('Rôle « en attente de contrat » retiré.', 'info');
                 return;
             }
-            if (!window.confirm(`Passer ${application.nomCandidat} en « attente de signature de contrat » ?\n\nIl pourra consulter et signer son contrat, et créer sa signature, depuis la Boîte à outils.`)) return;
+            if (!window.confirm(`Passer ${application.nomCandidat} en « attente de signature de contrat » ?\n\nIl pourra consulter et signer son contrat depuis la Boîte à outils.`)) return;
             await setContractCandidate(application.candidatUid, {
                 byUid: currentEmployee?.uid, byName: actorName, applicationId: application.id, position: application.poste || null,
                 role: roleOfPosition(application.poste),
             });
             setContractCandidates((current) => ({ ...current, [application.candidatUid]: { definiParNom: actorName, definiLe: Date.now() } }));
             journal('contract_role_set', `Rôle « en attente de contrat » posé : ${application.nomCandidat}`, application, 'success');
-            await mailApplicant(application, 'Votre contrat vous attend - PHMC',
-                `Bonjour ${application.nomCandidat || ''},\n\nVotre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la Boîte à outils, « Mes contrats » vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.\n\nCordialement,\nPillbox Hill Medical Center`,
-                `<p>Bonjour ${application.nomCandidat || ''},</p><p>Votre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la <b>Boîte à outils</b>, <b>« Mes contrats »</b> vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+            await mailApplicant(application, 'contrat_en_preparation');
             showNotification('Candidat passé en attente de contrat (notifié).', 'success');
         } catch (error) {
             console.error('Error toggling contract role:', error);
@@ -373,9 +366,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         const previous = lastMailRef.current[key] || 0;
         if (message.ts - previous < MAIL_MIN_INTERVAL_MS) return;
         lastMailRef.current[key] = message.ts;
-        await mailApplicant(application, 'Nouveau message sur votre candidature - PHMC',
-            `Bonjour ${application.nomCandidat || ''},\n\nLe recrutement vous a écrit à propos de votre candidature pour le poste "${application.poste || ''}". Connectez-vous à l'outil PHMC-FR : Boîte à outils → « Mon dossier candidat » pour lire le message et y répondre.\n\nCordialement,\nPillbox Hill Medical Center`,
-            `<p>Bonjour ${application.nomCandidat || ''},</p><p>Le recrutement vous a écrit à propos de votre candidature pour le poste « <b>${application.poste || ''}</b> ». Connectez-vous à l'outil PHMC-FR : <b>Boîte à outils → « Mon dossier candidat »</b> pour lire le message et y répondre.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`);
+        await mailApplicant(application, 'candidature_message');
     };
 
     // ───────── Export ─────────
@@ -559,7 +550,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
                                             {application.statut === 'acceptee' && !application.interne && (
                                                 <Button size="sm" variant={contractCandidates[application.candidatUid] ? 'outline-warning' : 'info'} disabled={busy}
                                                     onClick={() => handleToggleContractRole(application)}
-                                                    title="Rôle facultatif : donne au candidat accès à son contrat et à la création de sa signature">
+                                                    title="Rôle facultatif : donne au candidat accès à son contrat">
                                                     <i className="fas fa-file-signature me-1"></i>
                                                     {contractCandidates[application.candidatUid] ? 'Retirer « attente de contrat »' : 'Passer en attente de contrat'}
                                                 </Button>

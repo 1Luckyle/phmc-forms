@@ -1,6 +1,7 @@
 // src/components/Contracts/ContractsManager.js
 //
-// Onglet « Contrats » de la Gestion du recrutement (admins + recruteurs) : liste des documents contractuels, création / édition d'un brouillon sur le
+// Onglet « Contrats » de la Gestion du recrutement (admins + recruteurs) et fenêtre « Documents disciplinaires » (admins, Direction, assistance,
+// personnel administratif) : liste des documents contractuels, création / édition d'un brouillon sur le
 // MODÈLE VERROUILLÉ de chaque type (voir utils/contractDocs.js : contrat CDI ou CDD, convention de stage, avenant, convocation à un entretien préalable,
 // notification de sanction, notification de fin de contrat), envoi à un membre du personnel (qui le signe depuis « Mes contrats »), retrait, suppression
 // et consultation des documents signés.
@@ -8,6 +9,8 @@
 // Le formulaire se construit à partir des champs du type choisi ; l'aperçu est le document final, dans la charte graphique du PHMC (BBCode).
 // Un recruteur ne peut jamais rédiger SON PROPRE contrat (un admin ou un autre recruteur le fait) : règle appliquée ici, dans saveContractDraft et dans
 // database.rules.json.
+// `scope` sépare les deux usages : « recruitment » (contrats, conventions, avenants : recruteurs et admins) et « discipline » (convocations, sanctions,
+// fins de contrat : jamais les recruteurs).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Dropdown, Form, Spinner, Table } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
@@ -17,11 +20,11 @@ import ContractDocument, { ContractExportBar } from './ContractDocument';
 import PersonnelFileDialog from './PersonnelFileDialog';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
-import { normalizeRank, getRoleInfo } from '../../constants/ranks';
+import { normalizeRank, getRoleInfo, canManageDiscipline } from '../../constants/ranks';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { loadUserCreations } from '../../utils/userCreations';
 import { loadSalaryGrid, echelonsFor, formatAmount } from '../../utils/salaryGrid';
-import { sendEyefindMail } from '../../utils/eyefindMail';
+import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import {
     CONTRACT_STATUS, CONTRACT_TYPES, loadAllContracts, saveContractDraft, sendContract, retractContract, deleteContract,
@@ -29,7 +32,7 @@ import {
 } from '../../utils/contracts';
 import {
     CONTRACT_TYPE_INFO, isEmploymentType, emptyContractFields, visibleFields, validateDocFields, buildContractBb, formatDateFr,
-    formatTimestampDateFr, acceptanceKind, SANCTIONS, FIN_MOTIFS,
+    formatTimestampDateFr, acceptanceKind, SANCTIONS, FIN_MOTIFS, isDisciplinaryType,
 } from '../../utils/contractDocs';
 
 const TYPE_GROUPS = [
@@ -56,11 +59,15 @@ const issuerTitleOf = (staffProfile, isAdmin) => {
     return isAdmin ? 'Administration' : 'Chargé(e) de recrutement';
 };
 
+// Types proposés selon l'usage : les documents disciplinaires d'un côté, tout le reste de l'autre.
+const typesForScope = (scope) => Object.keys(CONTRACT_TYPES).filter((key) => (scope === 'discipline') === isDisciplinaryType(key));
+const groupsForScope = (scope) => TYPE_GROUPS.filter((g) => g.key === 'all' || (scope === 'discipline' ? ['procedure', 'fin'] : ['contrat', 'avenant']).includes(g.key));
+
 // ───────────────────────────── Éditeur / lecture d'un document ─────────────────────────────
 // `staff` = destinataires possibles : membres du personnel (kind « staff »), recruteurs (kind « recruiter ») et candidats acceptés ayant le rôle
 // « en attente de contrat » (kind « candidate », réservés aux contrats et conventions). Recruteurs et candidats sont des comptes Civils sans fiche :
 // le service se choisit dans l'éditeur. `contracts` = tous les documents (pour retrouver le contrat modifié ou la convocation de la personne).
-const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, issuer, onChanged, showNotification }) => {
+const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, issuer, scope, onChanged, showNotification }) => {
     const [type, setType] = useState('cdi');
     const [employeeUid, setEmployeeUid] = useState('');
     const [candidateService, setCandidateService] = useState('phmc');
@@ -182,15 +189,9 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
     const notifyEmployee = (ref) => {
         if (!employee.email) return;
         const accord = acceptanceKind(type, fields) === 'accord';
-        const subject = accord ? 'Un document vous attend - Pillbox Hill Medical Center' : 'Un document vous a été notifié - Pillbox Hill Medical Center';
-        const lead = accord
-            ? `Un document (${CONTRACT_TYPES[type]}, réf. ${ref}) a été préparé à votre attention. Connectez-vous à l'outil PHMC-FR, ouvrez la Boîte à outils puis « Mes contrats » pour le lire et le signer.`
-            : `Un document (${CONTRACT_TYPES[type]}, réf. ${ref}) vous a été notifié. Connectez-vous à l'outil PHMC-FR, ouvrez la Boîte à outils puis « Mes contrats » pour en prendre connaissance et accuser réception.`;
-        sendEyefindMail({
+        sendTemplatedMail(accord ? 'document_a_signer' : 'document_notifie', {
             to: employee.email,
-            subject,
-            body: `Bonjour ${employee.displayName},\n\n${lead}\n\nCordialement,\nPillbox Hill Medical Center`,
-            html: `<p>Bonjour ${employee.displayName},</p><p>${lead.replace('« Mes contrats »', '<b>« Mes contrats »</b>').replace('Boîte à outils', '<b>Boîte à outils</b>')}</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+            vars: { nom: employee.displayName, type_document: CONTRACT_TYPES[type], reference: ref },
         });
     };
 
@@ -372,7 +373,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         <Form.Group className="mb-3">
                             <Form.Label>Type de document</Form.Label>
                             <Form.Select value={type} onChange={(e) => onChangeType(e.target.value)}>
-                                {Object.entries(CONTRACT_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                                {typesForScope(scope).map((key) => <option key={key} value={key}>{CONTRACT_TYPES[key]}</option>)}
                             </Form.Select>
                             <Form.Text className="text-muted">{TYPE_HELP[type]}</Form.Text>
                         </Form.Group>
@@ -448,7 +449,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 };
 
 // ───────────────────────────── Liste ─────────────────────────────
-const ContractsManager = ({ showNotification }) => {
+const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
     const { currentEmployee, isAdmin, staffName, staffProfile, civilianProfile } = useEmployeeAuth();
     const [contracts, setContracts] = useState([]);
     const [staff, setStaff] = useState([]);
@@ -470,16 +471,19 @@ const ContractsManager = ({ showNotification }) => {
             || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ')
             || currentEmployee?.email || 'Le recrutement',
         title: issuerTitleOf(staffProfile, isAdmin),
-        label: isAdmin ? 'Admin' : 'Recruteur',
+        label: isAdmin ? 'Admin' : (scope === 'discipline' ? 'Administration' : 'Recruteur'),
         isAdmin,
-    }), [currentEmployee, staffName, staffProfile, civilianProfile, isAdmin]);
+        // Les recruteurs ne rédigent jamais de document disciplinaire (aussi imposé par saveContractDraft et database.rules.json).
+        canDiscipline: !!isAdmin || canManageDiscipline(staffProfile),
+    }), [currentEmployee, staffName, staffProfile, civilianProfile, isAdmin, scope]);
 
     const load = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
+            const optional = (promise, fallback) => (scope === 'discipline' ? promise.catch(() => fallback) : promise);
             const [list, members, roleMap, civilians, recruiterMap] = await Promise.all([
-                loadAllContracts(), loadStaffMembers(), loadContractCandidates(), loadCivilians(), loadRecruiterUids(),
+                loadAllContracts(), loadStaffMembers(), optional(loadContractCandidates(), {}), optional(loadCivilians(), []), optional(loadRecruiterUids(), {}),
             ]);
             setContracts(list);
             setStaff(members.map((m) => ({ ...m, kind: 'staff' })));
@@ -492,7 +496,11 @@ const ContractsManager = ({ showNotification }) => {
                 badge: '',
             })));
             // Candidats avec le rôle : on retrouve leur profil Civil (nom, e-mail).
-            setCandidates(civilians.filter((c) => roleMap[c.uid]).map((c) => ({
+            // Dès qu'un candidat a son rôle du personnel (fiche posée par l'admin), il n'est plus « en attente de contrat » : on le retire de la liste
+            // et on nettoie son marqueur resté dans la base (best-effort).
+            const staffUids = new Set(members.map((m) => m.uid).filter(Boolean));
+            civilians.filter((c) => roleMap[c.uid] && staffUids.has(c.uid)).forEach((c) => { clearContractCandidate(c.uid).catch(() => {}); });
+            setCandidates(civilians.filter((c) => roleMap[c.uid] && !staffUids.has(c.uid)).map((c) => ({
                 uid: c.uid,
                 kind: 'candidate',
                 displayName: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email || c.uid,
@@ -507,7 +515,7 @@ const ContractsManager = ({ showNotification }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [scope]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -533,11 +541,13 @@ const ContractsManager = ({ showNotification }) => {
     const rows = useMemo(() => {
         const q = query.trim().toLowerCase();
         return contracts.filter((c) => {
-            const info = CONTRACT_TYPE_INFO[contractTypeOf(c)];
+            const type = contractTypeOf(c);
+            if ((scope === 'discipline') !== isDisciplinaryType(type)) return false;
+            const info = CONTRACT_TYPE_INFO[type];
             if (group !== 'all' && info?.group !== group) return false;
             return !q || (c.employeNom || '').toLowerCase().includes(q) || (c.champs?.poste || '').toLowerCase().includes(q) || (c.reference || '').toLowerCase().includes(q);
         });
-    }, [contracts, query, group]);
+    }, [contracts, query, group, scope]);
 
     const handleDelete = async (contract) => {
         const warning = contract.statut === 'signe'
@@ -561,16 +571,16 @@ const ContractsManager = ({ showNotification }) => {
             <div className="d-flex gap-2 mb-3 flex-wrap align-items-center">
                 <Form.Control type="search" style={{ maxWidth: 300 }} placeholder="Rechercher (employé, fonction, référence)…" value={query} onChange={(e) => setQuery(e.target.value)} />
                 <Form.Select style={{ maxWidth: 230 }} value={group} onChange={(e) => setGroup(e.target.value)} aria-label="Filtrer par type de document">
-                    {TYPE_GROUPS.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
+                    {groupsForScope(scope).map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
                 </Form.Select>
                 <Dropdown>
                     <Dropdown.Toggle variant="success" size="sm" disabled={loading}>
                         <i className="fas fa-plus-circle me-1"></i>Nouveau document
                     </Dropdown.Toggle>
-                    <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                        {Object.entries(CONTRACT_TYPES).map(([key, label]) => (
+                    <Dropdown.Menu className="contracts-menu" popperConfig={{ strategy: 'fixed' }}>
+                        {typesForScope(scope).map((key) => (
                             <Dropdown.Item key={key} onClick={() => { setEditing(undefined); setNewType(key); }} title={TYPE_HELP[key]}>
-                                <i className={`fas ${CONTRACT_TYPE_INFO[key].icon} me-2`}></i>{label}
+                                <i className={`fas ${CONTRACT_TYPE_INFO[key].icon} me-2`}></i>{CONTRACT_TYPES[key]}
                             </Dropdown.Item>
                         ))}
                     </Dropdown.Menu>
@@ -578,10 +588,10 @@ const ContractsManager = ({ showNotification }) => {
                 <Button variant="outline-secondary" size="sm" onClick={load} disabled={loading}><i className="fas fa-sync-alt"></i></Button>
             </div>
 
-            {candidates.length > 0 && (
+            {scope !== 'discipline' && candidates.length > 0 && (
                 <div className="mb-3">
                     <div className="small mb-1" style={{ color: '#8b949e' }}>
-                        Candidats acceptés en attente de contrat ({candidates.length}) — ils voient « Mes contrats » et peuvent créer leur signature :
+                        Candidats acceptés en attente de contrat ({candidates.length}) — ils voient « Mes contrats » pour consulter et signer leur contrat :
                     </div>
                     <div className="d-flex flex-wrap gap-2">
                         {candidates.map((candidate) => (
@@ -597,7 +607,7 @@ const ContractsManager = ({ showNotification }) => {
 
             {loading && <Spinner animation="border" size="sm" />}
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
-            {!loading && !error && rows.length === 0 && <p style={{ color: '#8b949e' }}>Aucun document.</p>}
+            {!loading && !error && rows.length === 0 && <p style={{ color: '#8b949e' }}>Aucun document{scope === 'discipline' ? ' disciplinaire' : ''}.</p>}
 
             {rows.length > 0 && (
                 <div className="table-responsive">
@@ -660,6 +670,7 @@ const ContractsManager = ({ showNotification }) => {
                 staff={recipients}
                 contracts={contracts}
                 issuer={issuer}
+                scope={scope}
                 onChanged={load}
                 showNotification={showNotification}
             />

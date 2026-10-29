@@ -9,6 +9,7 @@ import { database, auth } from '../firebase';
 import { logActivity, getActivityActorName } from './activityLog';
 import { canonicalPatientId } from './patientId';
 import { assertNotLocked } from './lockdownGuard';
+import { notifyUser, notifyGroup } from './notifications';
 
 const SYNC_ACCESS_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/syncCctvAccess';
 
@@ -97,6 +98,7 @@ export const submitCctvRequest = async ({ title, fields, discord, patientID, sum
             [`cctvParDemandeur/${user.uid}/${id}`]: true,
         });
         logActivity({ category: 'demandes', action: 'request_cctv', summary: `Demande de vidéosurveillance : ${entry.titre}`, target: id });
+        notifyGroup('administration', { type: 'cctv', titre: 'Nouvelle demande de vidéosurveillance', texte: `${entry.titre} — ${entry.by.name}`, lien: { cible: 'cctv', section: 'manage' } });
         return { ok: true, id };
     } catch (error) {
         console.error('Envoi de la demande CCTV impossible :', error);
@@ -124,6 +126,16 @@ export const addCctvReply = async ({ request, text, staff, status, authorName, a
         updates[`cctvRequests/${request.id}/traitePar`] = { uid: user.uid, name: reply.par.name, ts: now };
     }
     await update(ref(database), updates);
+    const statusChanged = !!(staff && status && status !== request.statut);
+    if (staff) {
+        notifyUser(request.by?.uid, {
+            type: statusChanged ? 'statut' : 'message',
+            titre: statusChanged ? `Demande de vidéosurveillance : ${CCTV_STATUSES[status]?.label || status}` : 'Nouvelle réponse à votre demande de vidéosurveillance',
+            texte: request.titre, lien: { cible: 'cctv', section: 'mine' },
+        });
+    } else {
+        notifyGroup('administration', { type: 'message', titre: `Réponse du demandeur : ${request.titre}`, texte: reply.par.name, lien: { cible: 'cctv', section: 'manage' } });
+    }
     if (staff) {
         logActivity({
             category: 'demandes', action: 'cctv_reply',
@@ -147,6 +159,7 @@ export const setCctvStatus = async (request, status, authorName) => {
         [`cctvRequests/${request.id}/historique/${historyId}`]: { ts: now, type: 'statut', statut: status, de: request.statut || null, par: { uid: user.uid, name: actor, staff: true } },
     });
     logActivity({ category: 'demandes', action: 'cctv_status', summary: `Demande CCTV « ${request.titre} » : ${CCTV_STATUSES[status]?.label || status}`, target: request.id });
+    notifyUser(request.by?.uid, { type: 'statut', titre: `Demande de vidéosurveillance : ${CCTV_STATUSES[status]?.label || status}`, texte: request.titre, lien: { cible: 'cctv', section: 'mine' } });
 };
 
 // Modifie la demande par son auteur (statut « nouvelle » ou « en cours » seulement). `values` : { [libellé du champ]: valeur }.

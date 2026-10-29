@@ -8,21 +8,11 @@ import { initializeApp, deleteApp, getApps } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../constants/ranks';
-import { sendEyefindMail } from '../../utils/eyefindMail';
+import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { logAdminAction } from '../../utils/activityLog';
 import { convertCivilianToStaff, badgeDigits, syncStaffUids } from '../../utils/staffAdmin';
 import { clearDeletedMark, staffPatientIdOf } from '../../utils/deletedAccounts';
 import { clearContractCandidate } from '../../utils/contractCandidates';
-
-// Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
-// débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
-const sendMailBestEffort = (params) => {
-    sendEyefindMail(params).then((result) => {
-        if (!result.ok) {
-            console.warn('Eyefind Mail non envoyé:', result.error, result.message);
-        }
-    });
-};
 
 // map|array|null -> array
 const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
@@ -244,12 +234,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 }
             }
 
-            sendMailBestEffort({
-                to: request.email,
-                subject: 'Votre compte PHMC a été approuvé',
-                body: `Bonjour ${request.name},\n\nVotre demande de compte auprès du Pillbox Hill Medical Center a été approuvée. Votre badge est ${request.badge || 'en cours d\'attribution'}.\n\nVous pouvez dès à présent vous connecter sur l'outil PHMC-FR.\n\nCordialement,\nPillbox Hill Medical Center`,
-                html: `<p>Bonjour ${request.name},</p><p>Votre demande de compte auprès du <b>Pillbox Hill Medical Center</b> a été approuvée. Votre badge est <b>${request.badge || 'en cours d\'attribution'}</b>.</p><p>Vous pouvez dès à présent vous connecter sur l'outil PHMC-FR.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-            });
+                        sendTemplatedMail('compte_approuve', { to: request.email, vars: { nom: request.name, badge: request.badge || 'en cours d\'attribution' } });
 
             logAdminAction({ email: currentUser?.email, action: 'Compte du personnel approuvé', details: `Membre : ${request.name}
 Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });
@@ -269,12 +254,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
         try {
             await removeRequest(request.email);
 
-            sendMailBestEffort({
-                to: request.email,
-                subject: 'Votre demande de compte PHMC',
-                body: `Bonjour ${request.name},\n\nVotre demande de compte auprès du Pillbox Hill Medical Center n'a pas été retenue. Pour plus d'informations, contactez la direction du PHMC.\n\nCordialement,\nPillbox Hill Medical Center`,
-                html: `<p>Bonjour ${request.name},</p><p>Votre demande de compte auprès du <b>Pillbox Hill Medical Center</b> n'a pas été retenue. Pour plus d'informations, contactez la direction du PHMC.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
-            });
+                        sendTemplatedMail('compte_refuse', { to: request.email, vars: { nom: request.name } });
 
             logAdminAction({ email: currentUser?.email, action: 'Demande de compte refusée', details: `Membre : ${request.name}
 Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });

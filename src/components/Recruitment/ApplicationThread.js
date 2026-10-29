@@ -23,7 +23,7 @@ const QUICK_REPLIES = [
     { label: 'Dossier bien reçu', text: "Bonjour, nous avons bien reçu votre candidature, elle est en cours d'examen. Nous reviendrons vers vous rapidement." },
 ];
 
-const ApplicationThread = ({ application, staff, authorName, authorRole, onSent, onMailNeeded }) => {
+const ApplicationThread = ({ application, staff, authorName, authorRole, onSent, onMailNeeded, readOnly = false }) => {
     const { locked, lockTitle } = useWriteLock();
     const [thread, setThread] = useState({ messages: [], ferme: null });
     const [loading, setLoading] = useState(true);
@@ -95,7 +95,7 @@ const ApplicationThread = ({ application, staff, authorName, authorRole, onSent,
             ))}
             <div ref={endRef} />
 
-            {open ? (
+            {open && !readOnly ? (
                 <>
                     {staff && (
                         <div className="cctv-quick">
@@ -117,7 +117,9 @@ const ApplicationThread = ({ application, staff, authorName, authorRole, onSent,
                         </div>
                     </form>
                 </>
-            ) : <p className="cctv-muted"><i className="fas fa-lock me-1"></i>{closedNote}</p>}
+            ) : (readOnly
+                ? <p className="cctv-muted"><i className="fas fa-lock me-1"></i>Lecture seule : il faut le statut de recrutement interne pour écrire au recrutement.</p>
+                : <p className="cctv-muted"><i className="fas fa-lock me-1"></i>{closedNote}</p>)}
             {error && <div className="cctv-error">{error}</div>}
         </div>
     );

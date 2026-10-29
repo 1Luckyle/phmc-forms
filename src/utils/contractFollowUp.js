@@ -10,6 +10,7 @@ import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
 import { normalizeRank, familyOfRank } from '../constants/ranks';
 import { logActivity } from './activityLog';
+import { notifyGroup } from './notifications';
 
 const ensureArray = (value) => (Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : []);
 
@@ -53,6 +54,7 @@ export async function requestRoleAfterContract(contract, { uid, name }) {
                 summary: `Contrat signé : changement de grade à valider pour ${own.entry.name} (${own.entry.rank || '—'} → ${role})`,
                 target: own.entry.name,
             });
+            notifyGroup('admin', { type: 'compte', titre: `Contrat signé : grade à valider pour ${own.entry.name}`, texte: `${own.entry.rank || '—'} → ${role}`, lien: { cible: 'admin', section: 'pendingModifications' } });
             return { kind: 'modification' };
         }
 
@@ -91,6 +93,7 @@ export async function requestRoleAfterContract(contract, { uid, name }) {
             summary: `Contrat signé : compte du personnel à créer pour ${fullName} (${role})`,
             target: fullName,
         });
+        notifyGroup('admin', { type: 'compte', titre: `Contrat signé : compte du personnel à créer pour ${fullName}`, texte: role, lien: { cible: 'admin', section: 'pendingAccounts' } });
         return { kind: 'account' };
     } catch (error) {
         // Clé déjà utilisée = demande déjà déposée pour ce contrat/cette adresse : rien à refaire.

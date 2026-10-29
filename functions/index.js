@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
 import crypto from 'crypto';
+import { renderMail } from './mailTemplatesCore.js';
 
 // Initialize Firebase Admin SDK
 // L'URL de la Realtime Database est fournie explicitement : sans elle,
@@ -1179,13 +1180,10 @@ export const fleecaWebhook = onRequest({ secrets: [...FLEECA_SECRETS, 'EYEFIND_A
                 const payerAddress = deriveEyefindAddress(payerFirstName, payerLastName);
                 if (eyefindApiKey && payerAddress) {
                     const amount = Number(payload.amount || 0).toLocaleString('fr-FR');
-                    await sendEyefindMailInternal({
-                        apiKey: eyefindApiKey,
-                        to: payerAddress,
-                        subject: 'Reçu de paiement - Pillbox Hill Medical Center',
-                        body: `Bonjour ${payload.payer_name},\n\nNous confirmons la réception de votre paiement de ${amount}$ (${payload.description || 'services PHMC'}) via Fleeca.\n\nRéférence du paiement : ${paymentId}\n\nCordialement,\nPillbox Hill Medical Center`,
-                        html: `<p>Bonjour ${payload.payer_name},</p><p>Nous confirmons la réception de votre paiement de <b>${amount}$</b> (${payload.description || 'services PHMC'}) via Fleeca.</p><p>Référence du paiement : ${paymentId}</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+                    const mail = await composeServerMail('recu_paiement', {
+                        nom: payload.payer_name, montant: `${amount}$`, description: payload.description || 'services PHMC', reference: paymentId,
                     });
+                    await sendEyefindMailInternal({ apiKey: eyefindApiKey, to: payerAddress, ...mail });
                 }
             } catch (mailError) {
                 console.warn(`Failed to send Eyefind Mail receipt for payment ${paymentId}:`, mailError);
@@ -1403,6 +1401,18 @@ const sendEyefindMailInternal = async ({ apiKey, to, subject, body, html }) => {
     }
 
     return eyefindData;
+};
+
+// Mails modifiables par les admins (Panneau admin → E-mails) : le texte enregistré dans adminSettings/mailTemplates l'emporte, sinon le texte par
+// défaut du catalogue (mailTemplatesCore.js, copie de src/utils/mailTemplatesCore.js). Ne lève jamais pour la lecture des modèles.
+const composeServerMail = async (id, vars) => {
+    let overrides = {};
+    try {
+        overrides = (await db.ref('adminSettings/mailTemplates').once('value')).val() || {};
+    } catch (error) {
+        console.warn('Modèles de mail illisibles, texte par défaut utilisé :', error);
+    }
+    return renderMail(id, vars, overrides);
 };
 
 // --- Anti-abus des endpoints qui envoient des mails ---
@@ -1629,13 +1639,7 @@ export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS },
             expiresAt: Date.now() + EMAIL_VERIFICATION_TTL_MS,
         });
 
-        await sendEyefindMailInternal({
-            apiKey,
-            to: email,
-            subject: 'Code de vérification - PHMC',
-            body: `Votre code de vérification pour créer votre compte Civil PHMC-FR est : ${code}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
-            html: `<p>Votre code de vérification pour créer votre compte Civil PHMC-FR est :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#2ea043;">${code}</p><p>Ce code expire dans 15 minutes.</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
-        });
+        await sendEyefindMailInternal({ apiKey, to: email, ...(await composeServerMail('verification_creation_compte', { code })) });
 
         res.status(200).json({ success: true });
     } catch (error) {
@@ -1847,13 +1851,7 @@ export const requestStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
         const code = String(crypto.randomInt(100000, 1000000));
         // Envoi AVANT l'enregistrement : si l'adresse n'existe pas (recipient_not_found), aucune
         // demande n'est créée et l'erreur est relayée telle quelle au client.
-        await sendEyefindMailInternal({
-            apiKey,
-            to: newEmail,
-            subject: 'Code de vérification - changement d\'adresse PHMC',
-            body: `Votre code de vérification pour changer l'adresse de votre compte PHMC-FR est : ${code}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
-            html: `<p>Votre code de vérification pour changer l'adresse de votre compte PHMC-FR est :</p><p style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#2ea043;">${code}</p><p>Ce code expire dans 15 minutes.</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
-        });
+        await sendEyefindMailInternal({ apiKey, to: newEmail, ...(await composeServerMail('verification_changement_adresse', { code })) });
         await requestRef.set({
             newEmail,
             code,
@@ -1970,13 +1968,7 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
         try {
             const apiKey = process.env.EYEFIND_API_KEY;
             if (apiKey) {
-                await sendEyefindMailInternal({
-                    apiKey,
-                    to: oldEmail,
-                    subject: 'Adresse de votre compte PHMC modifiée',
-                    body: `L'adresse de votre compte PHMC-FR a été remplacée par ${newEmail}.\n\nSi vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.`,
-                    html: `<p>L'adresse de votre compte PHMC-FR a été remplacée par <b>${newEmail}</b>.</p><p>Si vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.</p>`,
-                });
+                await sendEyefindMailInternal({ apiKey, to: oldEmail, ...(await composeServerMail('adresse_modifiee_alerte', { nouvelle_adresse: newEmail })) });
             }
         } catch (mailError) {
             console.warn('Could not notify old address of email change:', mailError && mailError.body ? mailError.body : mailError);
@@ -2238,21 +2230,14 @@ const invoiceRecipientOf = (invoice) => {
 
 const sendInvoiceMail = async ({ apiKey, to, patientName, invoices, reminder }) => {
     const total = invoices.reduce((sum, invoice) => sum + Number(invoice.montant || 0), 0);
-    const lines = invoices.map((invoice) => `- ${invoice.titre || 'Rapport médical'} : ${formatInvoiceMoney(invoice.montant)}`).join('\n');
-    const htmlLines = invoices.map((invoice) => `<li>${escapeHtml(invoice.titre || 'Rapport médical')} — <b>${formatInvoiceMoney(invoice.montant)}</b></li>`).join('');
-    const intro = reminder
-        ? 'Un petit rappel : les rapports médicaux suivants établis à votre nom sont toujours à régler.'
-        : 'Des rapports médicaux ont été établis à votre nom et sont à régler.';
-    const subject = reminder
-        ? `Rappel : ${invoices.length} paiement(s) en attente - Pillbox Hill Medical Center`
-        : `${invoices.length} paiement(s) à effectuer - Pillbox Hill Medical Center`;
-    await sendEyefindMailInternal({
-        apiKey,
-        to,
-        subject,
-        body: `Bonjour ${patientName || ''},\n\n${intro}\n\n${lines}\n\nTotal à payer : ${formatInvoiceMoney(total)}\n\nConnectez-vous à l'outil PHMC-FR (${INVOICE_SITE_URL}) : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.\n\nCordialement,\nPillbox Hill Medical Center`,
-        html: `<p>Bonjour ${escapeHtml(patientName || '')},</p><p>${intro}</p><ul>${htmlLines}</ul><p>Total à payer : <b>${formatInvoiceMoney(total)}</b></p><p>Connectez-vous à <a href="${INVOICE_SITE_URL}">l'outil PHMC-FR</a> : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.</p><p>Cordialement,<br>Pillbox Hill Medical Center</p>`,
+    const mail = await composeServerMail(reminder ? 'facture_rappel' : 'facture_a_payer', {
+        nom: patientName || '',
+        nombre: invoices.length,
+        factures: invoices.map((invoice) => `${invoice.titre || 'Rapport médical'} : ${formatInvoiceMoney(invoice.montant)}`),
+        total: formatInvoiceMoney(total),
+        site: INVOICE_SITE_URL,
     });
+    await sendEyefindMailInternal({ apiKey, to, ...mail });
 };
 
 // Dernière vérification juste avant d'écrire à un patient : on relit chaque facture, car elle a pu être supprimée

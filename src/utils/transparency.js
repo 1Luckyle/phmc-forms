@@ -5,7 +5,7 @@
 // liées à une enquête pénale).
 //
 // Stockage : adminSettings/transparence (lecture publique, écriture admin : voir database.rules.json)
-//   { direction: { nom, fonction, contact }, contactDemandes, comptes: { 'AAAA-Tn': { periode, publieLe, publiePar, lignes: [{ type, libelle, montant }], notes } } }
+//   { direction: { nom, fonction, contact }, equipe: [{ nom, fonction, contact }], contactDemandes, comptes: { 'AAAA-Tn': { periode, publieLe, publiePar, lignes: [{ type, libelle, montant }], notes } } }
 // Seuls les comptes PUBLIÉS sont enregistrés (la lecture du nœud étant publique, un brouillon n'y serait pas privé) : le brouillon d'un trimestre reste
 // dans le navigateur de l'admin (voir TransparencyManager).
 import { ref, get, set, update, remove } from 'firebase/database';
@@ -40,6 +40,17 @@ export const quarterBounds = (key) => {
     const startMonth = (parsed.quarter - 1) * 3;
     return [new Date(parsed.year, startMonth, 1).getTime(), new Date(parsed.year, startMonth + 3, 1).getTime()];
 };
+
+// Calendrier des quatre trimestres d'une année : le trimestre se termine le dernier jour du dernier mois, et ses comptes se publient « à la fin de
+// chaque trimestre » (Code du Gouvernement, art. 327), donc dès le lendemain (aucun délai de grâce n'est fixé par le texte).
+// → [{ key, quarter, label, startsOn: Date, endsOn: Date (dernier jour), publishFrom: Date (lendemain) }]
+export const quarterSchedule = (year) => [1, 2, 3, 4].map((quarter) => {
+    const startMonth = (quarter - 1) * 3;
+    return {
+        key: quarterKey(year, quarter), quarter, label: quarterLabel(quarterKey(year, quarter)),
+        startsOn: new Date(year, startMonth, 1), endsOn: new Date(year, startMonth + 3, 0), publishFrom: new Date(year, startMonth + 3, 1),
+    };
+});
 
 export const currentQuarterKey = (now = Date.now()) => {
     const d = new Date(now);
@@ -90,6 +101,14 @@ export const formatMoney = (value) => `${Number(value || 0).toLocaleString('fr-F
 
 // ───────────────────────────── Lecture / écriture ─────────────────────────────
 
+export const MAX_MEMBERS = 12;
+
+const cleanMember = (member) => ({
+    nom: String(member?.nom || '').trim().slice(0, 120),
+    fonction: String(member?.fonction || '').trim().slice(0, 120),
+    contact: String(member?.contact || '').trim().slice(0, 240),
+});
+
 export const normalizeTransparency = (raw) => {
     const comptes = {};
     Object.entries(raw?.comptes || {}).forEach(([key, account]) => {
@@ -102,12 +121,11 @@ export const normalizeTransparency = (raw) => {
             notes: String(account.notes || ''),
         };
     });
+    const direction = cleanMember(raw?.direction);
+    const membres = [direction, ...asArray(raw?.equipe).map(cleanMember)].filter((member) => member.nom || member.contact);
     return {
-        direction: {
-            nom: String(raw?.direction?.nom || ''),
-            fonction: String(raw?.direction?.fonction || ''),
-            contact: String(raw?.direction?.contact || ''),
-        },
+        direction,   // la personne qui dirige (première ligne) : champ historique, conservé
+        membres,     // toutes les lignes publiées : direction, assistance de direction, etc.
         contactDemandes: String(raw?.contactDemandes || ''),
         comptes,
     };
@@ -118,9 +136,13 @@ export const loadTransparency = async () => {
     return normalizeTransparency(snap.exists() ? snap.val() : null);
 };
 
-export const saveDirection = async ({ nom, fonction, contact, contactDemandes }) => {
+// membres : [{ nom, fonction, contact }] — la première ligne est la personne qui dirige (stockée dans `direction`), les suivantes dans `equipe`.
+export const saveDirection = async ({ membres, contactDemandes }) => {
+    const lines = asArray(membres).map(cleanMember).filter((member) => member.nom || member.contact);
+    if (lines.length > MAX_MEMBERS) throw new Error(`Au plus ${MAX_MEMBERS} lignes sur la page publique.`);
     await update(ref(database, TRANSPARENCY_PATH), {
-        direction: { nom: String(nom || '').trim().slice(0, 120), fonction: String(fonction || '').trim().slice(0, 120), contact: String(contact || '').trim().slice(0, 240) },
+        direction: lines[0] || { nom: '', fonction: '', contact: '' },
+        equipe: lines.slice(1),
         contactDemandes: String(contactDemandes || '').trim().slice(0, 400),
     });
 };

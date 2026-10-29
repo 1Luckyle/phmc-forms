@@ -92,9 +92,9 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'ville adresse code postal zip quartier',
             },
             {
-                key: 'fireSafety', icon: 'fa-fire-extinguisher', label: 'Sécurité incendie',
-                description: "Registre des contrôles par étage, des non-conformités signalées et des exercices d'évacuation.",
-                keywords: 'incendie feu extincteur alarme issue de secours gicleur détecteur fumée évacuation exercice contrôle non-conformité sécurité',
+                key: 'mails', icon: 'fa-envelope-open-text', label: 'E-mails',
+                description: 'Tous les mails envoyés par le système : quand ils partent, à qui, leur aperçu, et leur texte modifiable.',
+                keywords: 'mail e-mail email courrier eyefind message notification modèle texte aperçu envoi candidature compte facture code vérification',
             },
             {
                 key: 'transparency', icon: 'fa-scale-balanced', label: 'Transparence',

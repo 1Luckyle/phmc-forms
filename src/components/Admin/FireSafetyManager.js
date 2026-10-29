@@ -4,7 +4,8 @@
 // (l'exemption de l'article 401 ne vise que le Titre IV : formation et certificat). Quatre vues : vue d'ensemble (dernier contrôle par étage, rappel au-delà
 // de 30 jours), contrôles (check-list art. 202 à 208), non-conformités (responsable, échéance, résolution) et exercices d'évacuation.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Form, Spinner, Table } from 'react-bootstrap';
+import { Alert, Badge, Button, Form, Modal, Spinner, Table } from 'react-bootstrap';
+import { loadStaffMembers } from '../../utils/staffAdmin';
 import {
     CHECKLIST, ITEM_STATUS, ARTICLES, NC_STATUS, ETAGE_SUGGESTIONS, REMINDER_DAYS, emptyItems, failedItems, floorStatus, isOverdue, summary,
     loadFireSafety, saveControl, addNonConformity, assignNonConformity, resolveNonConformity, reopenNonConformity, saveDrill,
@@ -21,6 +22,40 @@ const TABS = [
 const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleDateString('fr-FR') : '—');
 const dateToMs = (value) => (value ? new Date(`${value}T23:59:59`).getTime() : null);
 const msToDate = (value) => (value ? new Date(value).toISOString().slice(0, 10) : '');
+
+// Date avec calendrier : le sélecteur s'ouvre dès qu'on clique dans le champ (pas seulement sur l'icône).
+const DateField = ({ value, onChange, ...rest }) => (
+    <Form.Control
+        type="date" value={value} onChange={onChange} {...rest}
+        onClick={(event) => { try { event.currentTarget.showPicker?.(); } catch (error) { /* navigateur sans showPicker : la saisie reste possible */ } }}
+    />
+);
+
+// Responsable de la correction : choisi parmi le personnel administratif et polyvalent (liste chargée une fois).
+let staffPromise = null;
+const loadResponsables = () => {
+    if (!staffPromise) {
+        staffPromise = loadStaffMembers()
+            .then((members) => members.filter((member) => (member.families || [member.family]).some((family) => family === 'administration' || family === 'polyvalent')))
+            .catch((error) => { staffPromise = null; throw error; });
+    }
+    return staffPromise;
+};
+
+const ResponsableSelect = ({ value, onChange }) => {
+    const [members, setMembers] = useState([]);
+    useEffect(() => { loadResponsables().then(setMembers).catch(() => setMembers([])); }, []);
+    const known = members.some((member) => member.displayName === value);
+    return (
+        <Form.Select value={value || ''} onChange={(event) => onChange(event.target.value)} aria-label="Responsable">
+            <option value="">— Aucun responsable —</option>
+            {value && !known && <option value={value}>{value}</option>}
+            {members.map((member) => (
+                <option key={`${member.service}-${member.storageKey}`} value={member.displayName}>{member.displayName} — {member.rank || member.category}</option>
+            ))}
+        </Form.Select>
+    );
+};
 
 const EtageInput = ({ value, onChange }) => (
     <>
@@ -114,8 +149,8 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
                         label={`Ouvrir une non-conformité pour chacun des ${failed.length} point${failed.length > 1 ? 's' : ''} non conforme${failed.length > 1 ? 's' : ''}`} />
                     {createNc && (
                         <div className="adm-form-grid mt-2">
-                            <Form.Group><Form.Label>Responsable <small className="text-muted">(facultatif)</small></Form.Label><Form.Control value={responsable} maxLength={120} onChange={(e) => setResponsable(e.target.value)} placeholder="ex. Service technique" /></Form.Group>
-                            <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><Form.Control type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} /></Form.Group>
+                            <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect value={responsable} onChange={setResponsable} /></Form.Group>
+                            <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField value={echeance} onChange={(e) => setEcheance(e.target.value)} /></Form.Group>
                         </div>
                     )}
                 </Alert>
@@ -149,6 +184,7 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
     const [filter, setFilter] = useState('ouverte');
     const [form, setForm] = useState({ etage: '', article: '202', description: '', responsable: '', echeance: '' });
     const [busy, setBusy] = useState(false);
+    const [assigning, setAssigning] = useState(null); // { nc, responsable, echeance }
 
     const list = data.nonConformites.filter((nc) => filter === 'all' || nc.statut === filter);
     const run = async (action, successMessage) => {
@@ -161,13 +197,11 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
         setForm({ etage: '', article: '202', description: '', responsable: '', echeance: '' });
     }, 'Non-conformité ajoutée.');
 
-    const assign = (nc) => {
-        const responsable = window.prompt('Responsable de la correction :', nc.responsable || '');
-        if (responsable === null) return;
-        const due = window.prompt('Échéance (AAAA-MM-JJ), vide pour aucune :', msToDate(nc.echeance));
-        if (due === null) return;
-        if (due && Number.isNaN(new Date(due).getTime())) { showNotification('Date invalide (format AAAA-MM-JJ).', 'warning'); return; }
-        run(() => assignNonConformity(nc.id, { responsable, echeance: dateToMs(due) }), 'Responsable et échéance mis à jour.');
+    const assign = (nc) => setAssigning({ nc, responsable: nc.responsable || '', echeance: msToDate(nc.echeance) });
+    const confirmAssign = () => {
+        const { nc, responsable, echeance } = assigning;
+        setAssigning(null);
+        run(() => assignNonConformity(nc.id, { responsable, echeance: dateToMs(echeance) }), 'Responsable et échéance mis à jour.');
     };
     const resolve = (nc) => {
         const note = window.prompt('Comment le problème a-t-il été corrigé ? (facultatif)', '');
@@ -182,10 +216,31 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
                 <Form.Group><Form.Label>Obligation concernée</Form.Label>
                     <Form.Select value={form.article} onChange={(e) => setForm({ ...form, article: e.target.value })}>{Object.entries(ARTICLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Description</Form.Label><Form.Control value={form.description} maxLength={500} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="ex. Extincteur du couloir expiré" /></Form.Group>
-                <Form.Group><Form.Label>Responsable <small className="text-muted">(facultatif)</small></Form.Label><Form.Control value={form.responsable} maxLength={120} onChange={(e) => setForm({ ...form, responsable: e.target.value })} /></Form.Group>
-                <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><Form.Control type="date" value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
+                <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect value={form.responsable} onChange={(responsable) => setForm({ ...form, responsable })} /></Form.Group>
+                <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
             </div>
             <Button variant="primary" onClick={add} disabled={busy || !form.etage.trim() || form.description.trim().length < 5}>Ajouter la non-conformité</Button>
+
+            <Modal show={!!assigning} onHide={() => setAssigning(null)} centered>
+                <Modal.Header closeButton><Modal.Title>Responsable et échéance</Modal.Title></Modal.Header>
+                <Modal.Body>
+                    {assigning && (
+                        <>
+                            <p className="mb-3">{assigning.nc.etage} — {assigning.nc.description}</p>
+                            <Form.Group className="mb-3"><Form.Label>Responsable de la correction</Form.Label>
+                                <ResponsableSelect value={assigning.responsable} onChange={(responsable) => setAssigning({ ...assigning, responsable })} />
+                                <Form.Text className="text-muted">Personnel administratif ou polyvalent.</Form.Text></Form.Group>
+                            <Form.Group><Form.Label>Échéance</Form.Label>
+                                <DateField value={assigning.echeance} onChange={(e) => setAssigning({ ...assigning, echeance: e.target.value })} />
+                                <Form.Text className="text-muted">Cliquez dans le champ pour ouvrir le calendrier ; laissez vide pour aucune échéance.</Form.Text></Form.Group>
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setAssigning(null)}>Annuler</Button>
+                    <Button variant="primary" onClick={confirmAssign}>Enregistrer</Button>
+                </Modal.Footer>
+            </Modal>
 
             <div className="d-flex gap-2 align-items-center mt-4 mb-2">
                 <h6 className="mb-0 me-2">Non-conformités</h6>

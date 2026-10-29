@@ -41,7 +41,9 @@ import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentE
 import { loadDeletedMark } from '../utils/deletedAccounts';
 import { logActivity } from '../utils/activityLog';
 import useWriteLock from '../hooks/useWriteLock';
-import { readFamiliesOf, canViewOthersReport } from '../utils/reportAccess';
+import { readFamiliesOf, canViewOthersReport, isDmecReportVersion } from '../utils/reportAccess';
+import useReportGovernance from '../hooks/useReportGovernance';
+import { FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathReports';
 
 // Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
@@ -87,6 +89,7 @@ const reactSelectStyles = {
 const visibilityInfo = (entry) => {
     if (entry.ownerDeleted) return { text: 'Retiré par son créateur', color: '#8b949e', hint: 'Conservé tant que des copies existent' };
     if (entry.copiedFrom) return { text: 'Copie', color: '#8b949e', hint: 'Une copie ne peut jamais être partagée' };
+    if (isDmecReportVersion(entry.bbCodeVersion) && entry.visibility === 'staff-only') return { text: 'Réservé au DMEC', color: '#d29922', hint: 'Les rapports du DMEC ne sont pas partagés avec le patient' };
     const labels = {
         owner: { text: 'Créé par le patient', color: '#3fb950', hint: 'Rapport créé par le patient lui-même' },
         shared: { text: 'Partagé avec le patient', color: '#58a6ff', hint: 'Le patient le voit dans son dossier' },
@@ -105,6 +108,12 @@ const PatientDossierModal = ({
     // Nom du médecin sous lequel ses rapports sont rangés (jamais l'e-mail).
     const staffAuthorNameForCopy = staffName || null;
     const myNodeKey = comprehensiveSanitize(staffAuthorNameForCopy);
+
+    // Ce que la personne peut lire : un soignant ne lit que les rapports du PHMC (soins), un membre du DMEC que ceux du DMEC (médecine légale).
+    // Les deux rôles ou un admin voient tout : rien à signaler.
+    const seesEverything = isAdmin || (viewerFamilies.dmec && viewerFamilies.soignant);
+    const scopeLabel = seesEverything ? '' : (viewerFamilies.dmec ? 'du DMEC' : 'du PHMC');
+    const otherScopeLabel = viewerFamilies.dmec ? 'du PHMC (soins)' : 'du DMEC (médecine légale)';
 
     const [selectedPatientOption, setSelectedPatientOption] = useState(null);
     const [patientOptions, setPatientOptions] = useState([]);
@@ -125,6 +134,10 @@ const PatientDossierModal = ({
     const { invoiceOf } = useReportInvoices(entries, !!show, invoiceRefresh);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
     const { locked, lockTitle } = useWriteLock();
+    const gov = useReportGovernance({ active: !!show && isStaffViewer, showNotification });
+    // Rapports du patient que la personne n'a pas le droit de lire (soignants ↔ DMEC) : comptés pour ne pas laisser croire que le dossier est vide.
+    const [hiddenCounts, setHiddenCounts] = useState({ dmec: 0, soignant: 0 });
+    const hiddenCount = seesEverything ? 0 : (viewerFamilies.dmec ? hiddenCounts.soignant : hiddenCounts.dmec);
     const { bbcodeEnabled } = useSiteConfig();
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
@@ -213,13 +226,18 @@ const PatientDossierModal = ({
             // restent toujours visibles. Voir reportAccess.js : mêmes règles que la base.
             const viewer = { isAdmin, ...viewerFamilies };
             const publishedKeys = await loadPublishedKeys();
+            const hidden = new Map();
             const dossier = await loadPatientDossier(canonical, {
+                onHidden: (entry) => { if (!entry.copiedFrom) hidden.set(entry.reportPath, isDmecReportVersion(entry.bbCodeVersion) ? 'dmec' : 'soignant'); },
                 canRead: (entry) => (!!myNodeKey && comprehensiveSanitize(entry.authorName) === myNodeKey)
                     || canViewOthersReport(entry, viewer, publishedKeys),
             });
             setEntries(dossier);
+            const counts = { dmec: 0, soignant: 0 };
+            hidden.forEach((family) => { counts[family] += 1; });
+            setHiddenCounts(counts);
             if (dossier.length === 0) {
-                showNotification(`Aucun rapport trouvé pour l'ID patient "${canonical}".`, 'info-circle');
+                showNotification(`Aucun rapport${scopeLabel ? ` ${scopeLabel}` : ''} trouvé pour l'ID patient "${canonical}".`, 'info-circle');
             }
         } catch (error) {
             console.error('Error searching patient dossier:', error);
@@ -262,7 +280,7 @@ const PatientDossierModal = ({
             myCopy,
             iAmHolder,
             deleteTarget,
-            canShare: !rootIsCopy && root.kind !== 'ama' && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
+            canShare: !rootIsCopy && root.kind !== 'ama' && !isDmecReportVersion(root.bbCodeVersion) && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
             canCopy: !!staffAuthorNameForCopy && !rootIsCopy && !iAmHolder && !myCopy && (!deathLock || canWriteOnDeceased),
         };
     }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy, deathLock, canWriteOnDeceased]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -462,6 +480,7 @@ const PatientDossierModal = ({
                         )}
                         <Pill color={visibility.color} title={visibility.hint}>{visibility.text}</Pill>
                         <PaymentPill invoice={invoice} />
+                        {gov.chips(root)}
                     </>
                 )}
                 actions={(
@@ -499,13 +518,14 @@ const PatientDossierModal = ({
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
                         )}
+                        {gov.buttons(root)}
                         {!staffAuthorNameForCopy && !iAmHolder && (
                             <span className="rpt-note" title="Votre compte n'est lié à aucune fiche du personnel : impossible de rattacher une copie">Copie indisponible</span>
                         )}
                         {deleteReportsForUser && deleteTarget && (
                             <Button
-                                size="sm" variant="outline-danger" className="ms-auto" disabled={locked}
-                                title={locked ? lockTitle : myCopy
+                                size="sm" variant="outline-danger" className="ms-auto" disabled={locked || gov.isFrozen(root)}
+                                title={locked ? lockTitle : gov.isFrozen(root) ? FREEZE_MESSAGE : myCopy
                                     ? "Supprime uniquement VOTRE copie : le rapport et les copies des autres médecins restent dans le dossier"
                                     : 'Supprime ce rapport (conservé dans le dossier tant que des médecins en ont une copie)'}
                                 onClick={() => handleDelete([deleteTarget.entry], `${deleteTarget.label} : « ${root.originalKey} » ?`)}
@@ -538,6 +558,7 @@ const PatientDossierModal = ({
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 {forumNoticeModal}
+                {gov.dialogs}
                 <div className="rpt-modal-head">
                     <h5><i className="fas fa-folder-tree me-2"></i>Dossier Patient</h5>
                     <span className="rpt-sub">
@@ -614,6 +635,14 @@ const PatientDossierModal = ({
                         </div>
                     )}
 
+                    {searchedPatientId && !isLoading && hiddenCount > 0 && (
+                        <div className="rpt-banner">
+                            <i className="fas fa-eye-slash me-2" style={{ color: '#58a6ff' }}></i>
+                            {families.length > 0 ? `Vous voyez ${families.length} rapport${families.length > 1 ? 's' : ''} ${scopeLabel}. ` : ''}
+                            Ce dossier contient aussi <strong>{hiddenCount} rapport{hiddenCount > 1 ? 's' : ''} {otherScopeLabel}</strong> que vous ne pouvez pas consulter ({viewerFamilies.dmec ? 'réservés au personnel soignant' : 'réservés au DMEC'}).
+                        </div>
+                    )}
+
                     {isLoading && <p className="rpt-muted">Recherche du dossier…</p>}
 
                     {hasResults && (
@@ -649,7 +678,7 @@ const PatientDossierModal = ({
 
                     {searchedPatientId && !isLoading && families.length === 0 && (
                         <p className="rpt-empty">
-                            Aucun rapport trouvé pour l'ID patient « {searchedPatientId} ».
+                            Aucun rapport {scopeLabel ? `${scopeLabel} ` : ''}trouvé pour l'ID patient « {searchedPatientId} ».
                             {isAdmin && " Si des rapports devraient exister, lancez « Réindexer les dossiers patients » depuis l'onglet Utilisateurs du panneau admin."}
                         </p>
                     )}

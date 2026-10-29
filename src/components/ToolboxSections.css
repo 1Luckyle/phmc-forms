@@ -1,0 +1,75 @@
+/* Sections de la Boîte à Outils (ToolboxSections.js) */
+.tb-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding-top: 0.25rem;
+    padding-bottom: 2px;
+}
+
+/* Petit bouton à droite du nom : regrouper / dérouler */
+.tb-toggle {
+    flex: 0 0 auto;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    opacity: 0.5;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    cursor: pointer;
+}
+.tb-toggle:hover,
+.tb-toggle:focus-visible { opacity: 1; background: rgba(128, 128, 128, 0.25); }
+
+/* Section regroupée : une ligne, son sous-menu se déroule au survol */
+.tb-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 0.5rem 0 0;
+}
+.tb-row:hover,
+.tb-row.open { background: rgba(128, 128, 128, 0.18); }
+.tb-row-main {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 0.4rem 0 0.4rem 1rem;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    text-align: left;
+    cursor: default;
+}
+.tb-row-arrow { font-size: 0.65rem; opacity: 0.6; }
+.tb-row-label { flex: 1 1 auto; text-transform: uppercase; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; }
+.tb-row-count {
+    font-size: 0.68rem;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(128, 128, 128, 0.3);
+}
+
+/* Sous-menu : rendu dans <body>, position fixe (coordonnées calculées par le composant) */
+.dropdown-menu.tb-flyout {
+    position: fixed;
+    inset: auto;
+    display: block;
+    z-index: 1065;
+    min-width: 240px;
+    max-width: min(340px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    margin: 0;
+    transform: none;
+}
+.tb-flyout .dropdown-item { display: block; width: 100%; text-align: left; white-space: normal; }

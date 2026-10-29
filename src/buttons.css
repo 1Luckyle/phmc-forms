@@ -763,3 +763,20 @@ input[type="radio"] {
     font-size: 12px;
     margin-left: 10px;
 }
+
+
+/* Boîte à Outils : la liste s'allonge avec les outils ; sur un petit écran elle défile au lieu de déborder (rien d'inatteignable). */
+.floating-tools-container .dropdown-menu {
+  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  max-width: calc(100vw - 24px);
+}
+
+@media (max-width: 576px) {
+  .floating-tools-container { right: 12px; bottom: 12px; }
+  .floating-tools-container .dropdown-menu { min-width: min(280px, calc(100vw - 24px)); }
+  .floating-tools-container .dropdown-item { white-space: normal; padding-top: 0.55rem; padding-bottom: 0.55rem; }
+}

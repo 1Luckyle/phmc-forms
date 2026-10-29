@@ -115,7 +115,8 @@ export async function writeIndexEntry({ patientID, indexKey, entry }) {
 // `patientNode` (le nœud d'index où l'entrée vit réellement) pour pouvoir la modifier.
 // `canRead(entry)` (facultatif) : ne résout pas les entrées que le lecteur n'a pas le droit d'ouvrir (soignants ↔ DMEC, voir
 // reportAccess.js) au lieu de les demander à la base, qui les refuserait.
-export async function loadPatientDossier(inputId, { canRead } = {}) {
+// `onHidden(entry)` : appelée pour chaque rapport que `canRead` écarte (sert à informer la personne de ce qu'elle ne voit pas).
+export async function loadPatientDossier(inputId, { canRead, onHidden } = {}) {
     const nodes = await findPatientNodes(inputId);
     const entries = [];
     const seen = new Set();
@@ -135,7 +136,10 @@ export async function loadPatientDossier(inputId, { canRead } = {}) {
         const rawEntries = Object.entries(indexSnap.val() || {});
         const resolved = await Promise.all(rawEntries.map(async ([indexKey, entry]) => {
             if (!entry?.reportPath || seen.has(entry.reportPath)) return null;
-            if (canRead && !canRead({ ...entry, indexKey })) return null;
+            if (canRead && !canRead({ ...entry, indexKey })) {
+                if (onHidden) onHidden({ ...entry, indexKey });
+                return null;
+            }
             try {
                 const reportSnap = await get(ref(database, entry.reportPath));
                 if (!reportSnap.exists()) return null;
@@ -153,6 +157,7 @@ export async function loadPatientDossier(inputId, { canRead } = {}) {
                     originalKey: report.originalKey,
                     title: report.title || entry.title || null,
                     bbCodeVersion: report.bbCodeVersion,
+                    publie: report.publie === true,
                     timestamp: report.timestamp,
                     authorName: report.authorName,
                     creatorName: report.creatorName || report.originalAuthorName || entry.creatorName || report.authorName,

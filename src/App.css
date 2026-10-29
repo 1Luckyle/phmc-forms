@@ -206,6 +206,12 @@ select {
     color: #acb1cad3;
     margin-bottom: 0.9rem;
 }
+
+/* Fenêtres Bootstrap à fond blanc (Modifier, Gestion des utilisateurs…) : le gris pâle ci-dessus, pensé pour les fonds sombres, y était presque
+   illisible. Même spécificité que .form-label (via :where) et placé après lui ; les fenêtres sombres (.dark-ui, bingo…) gardent leurs règles. */
+:where(.modal-dialog .modal-content) .form-label {
+    color: #3d4451;
+}
 #webpack-dev-server-client-overlay-div {
     display: none !important;
 }

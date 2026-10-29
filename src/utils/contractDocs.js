@@ -43,6 +43,11 @@ export const CONTRACT_TYPE_INFO = {
 export const EMPLOYMENT_TYPES = ['cdi', 'cdd', 'stage'];
 export const isEmploymentType = (type) => EMPLOYMENT_TYPES.includes(type);
 
+// Procédure disciplinaire et fin de contrat : rédigées par la Direction, son assistance, le personnel administratif et les admins — pas par les
+// recruteurs (voir database.rules.json : contrats, disciplineUIDs).
+export const DISCIPLINARY_TYPES = ['convocation', 'sanction', 'fin'];
+export const isDisciplinaryType = (type) => DISCIPLINARY_TYPES.includes(type);
+
 export const typeOfChamps = (champs) => (CONTRACT_TYPES[champs?.typeContrat] ? champs.typeContrat : 'cdi');
 
 // Libellés de statut, selon qu'il s'agisse d'un accord ou d'une notification.
@@ -71,7 +76,7 @@ const FIELDS = {
         f('essaiJours', 'Période d\'essai (jours)', 'number', { placeholder: '0 = aucune', help: 'Maximum 60 jours pour un CDI.', half: true }),
         f('remuneration', 'Rémunération brute', 'text', { required: true, placeholder: 'ex. 85 $ de l\'heure', half: true }),
         f('echelon', 'Échelon de la grille salariale', 'text', { placeholder: 'ex. Échelon 3', help: 'La grille est publiée par l\'employeur (Code du Gouvernement, art. 326).', half: true }),
-        f('horaires', 'Horaires / disponibilités', 'text', { placeholder: 'ex. 3 plages de 4 h par semaine, astreintes le week-end', half: false }),
+        f('horaires', 'Horaires / disponibilités', 'text', { placeholder: 'ex. 3 plages de 4 h par semaine, astreintes le week-end', half: true }),
         f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, help: 'Au-delà, l\'offre est caduque (Code Civil, art. 203).', half: true }),
         f('clausesParticulieres', 'Clauses particulières', 'textarea', { placeholder: 'Facultatif : mission spéciale, formation exigée, astreinte…' }),
     ],

@@ -86,7 +86,17 @@ export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
         if (!doc || !doc.documentElement) return;
         let frame = 0;
         const measure = () => {
-            const measured = Math.max(doc.documentElement.scrollHeight, doc.body ? doc.body.scrollHeight : 0);
+            // On mesure le CORPS du document, pas la racine : documentElement.scrollHeight ne descend jamais sous la hauteur du cadre, donc un
+            // contrat court affiché après un long gardait une grande page blanche en bas.
+            const body = doc.body;
+            let measured = 0;
+            if (body) {
+                const style = doc.defaultView ? doc.defaultView.getComputedStyle(body) : null;
+                const margins = style ? (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0) : 0;
+                measured = Math.ceil(Math.max(body.getBoundingClientRect().height, body.scrollHeight) + margins);
+            } else {
+                measured = doc.documentElement.scrollHeight;
+            }
             if (measured > 0) setContentHeight(Math.min(30000, measured + 4));
         };
         measure();

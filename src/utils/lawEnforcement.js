@@ -18,8 +18,23 @@ export const REQUEST_TYPES = {
     prelevement: 'Prélèvement (sang, ADN…)',
     identite_defunt: "Identité d'un défunt",
     images: 'Images (vidéosurveillance…)',
+    // Médecine légale (DMEC)
+    autopsie: "Rapport d'autopsie / conclusions médico-légales",
+    certificat_deces: 'Certificat de décès / cause du décès',
+    prelevements_scelles: 'Prélèvements et scellés (ADN, toxicologie, effets du défunt)',
+    restitution: 'Restitution du corps ou des effets personnels',
+    examen_vivant: "Examen ou constat d'une personne vivante",
     autre: 'Autre',
 };
+
+// Deux services, deux logiques : les SOINS (PHMC : patients vivants) et la MÉDECINE LÉGALE (DMEC : défunts, prélèvements, constats sur
+// réquisition). Chaque service ne propose que ses types de demande ; les deux restent valides dans le registre.
+export const SCOPES = { soins: 'Soins (PHMC)', dmec: 'Médecine légale (DMEC)' };
+export const REQUEST_TYPE_KEYS = {
+    soins: ['presence', 'etat', 'dossier', 'prelevement', 'identite_defunt', 'images', 'autre'],
+    dmec: ['autopsie', 'certificat_deces', 'identite_defunt', 'prelevements_scelles', 'restitution', 'examen_vivant', 'images', 'autre'],
+};
+export const requestTypesFor = (scope = 'soins') => Object.fromEntries((REQUEST_TYPE_KEYS[scope] || REQUEST_TYPE_KEYS.soins).map((key) => [key, REQUEST_TYPES[key]]));
 
 export const LEGAL_BASES = {
     mandat: 'Mandat ou injonction de la Cour',
@@ -81,20 +96,69 @@ export const OUTCOMES = {
     },
 };
 
+// ── Médecine légale (DMEC) : le défunt ne peut plus consentir et le secret survit au décès ; la voie normale est la RÉQUISITION de l'autorité
+// judiciaire, vérifiée par la Direction du DMEC. Mêmes références légales que ci-dessus (à compléter si le DMEC dispose de ses propres articles).
+export const REFUSAL_TEXT_DMEC = "Je suis tenu(e) au secret médical, qui s'applique aussi après le décès (Code Pénal, art. 323) : sans réquisition, mandat ou injonction de l'autorité judiciaire, je ne peux vous communiquer ni rapport d'autopsie, ni résultats, ni informations sur le défunt, ni lui remettre de prélèvement ou d'effets. Si vous disposez d'une réquisition, veuillez la remettre à la Direction du DMEC, qui la traitera.";
+
+export const QUESTIONS_DMEC = {
+    mandat: {
+        text: "L'agent présente-t-il une réquisition, un mandat ou une injonction écrite de l'autorité judiciaire ?",
+        help: 'Réquisition à expert, ordonnance d\'autopsie, mandat : Code de Procédure Judiciaire, art. 330, 341 et 422.',
+        yes: 'direction', no: 'consentement',
+    },
+    consentement: {
+        text: "La personne concernée est-elle VIVANTE et consent-elle, en personne et librement, à la communication ? (pour un défunt : « Non »)",
+        help: "Un défunt ne peut plus consentir : l'accord d'un proche ou d'un tiers ne remplace ni sa volonté ni une réquisition.",
+        yes: 'consentement_ok', no: 'danger',
+    },
+    danger: {
+        text: "Un danger de mort imminent pour des personnes VIVANTES (substance toxique, risque sanitaire…) impose-t-il de communiquer, et la communication permet-elle de l'écarter ?",
+        help: 'Code Pénal, art. 123.',
+        yes: 'danger_ok', no: 'refus',
+    },
+};
+
+export const OUTCOMES_DMEC = {
+    direction: {
+        tone: 'info', base: 'mandat', decision: 'transmis',
+        title: 'Ne remettez rien vous-même : transmettez à la Direction du DMEC',
+        body: "Prenez la réquisition (ou son numéro de référence) et notez l'identité de l'agent : la Direction vérifie le document et décide. Rapport, résultats, prélèvements, scellés et effets du défunt ne sortent qu'avec une décharge signée (qui, quand, quoi) — et seulement vers l'autorité requérante.",
+    },
+    consentement_ok: {
+        tone: 'success', base: 'consentement', decision: 'remis',
+        title: 'Communiquez seulement ce que la personne autorise',
+        body: "Limitez-vous à ce que la personne vivante accepte et à ce qui est demandé (constat de blessures, par exemple). Notez son accord dans le registre.",
+    },
+    danger_ok: {
+        tone: 'warning', base: 'danger', decision: 'remis',
+        title: "Communiquez seulement l'essentiel, puis prévenez la Direction du DMEC",
+        body: "Donnez uniquement l'information nécessaire pour écarter le danger (pas le dossier du défunt). Prévenez ensuite la Direction et enregistrez la demande.",
+    },
+    refus: {
+        tone: 'danger', base: 'aucune', decision: 'refuse',
+        title: 'Refus poli : le secret survit au décès',
+        body: "Sans réquisition, sans consentement d'une personne vivante et sans danger vital, le secret médical s'applique, y compris pour un défunt. Vous pouvez dire :",
+        script: REFUSAL_TEXT_DMEC,
+    },
+};
+
 // → { question } tant que l'arbre n'est pas terminé, { outcome, key } à la fin. `answers` : suite de true / false depuis la première question.
-export const adviceFor = (answers = []) => {
+// `scope` : 'soins' (PHMC) ou 'dmec' (médecine légale).
+export const adviceFor = (answers = [], scope = 'soins') => {
+    const questions = scope === 'dmec' ? QUESTIONS_DMEC : QUESTIONS;
+    const outcomes = scope === 'dmec' ? OUTCOMES_DMEC : OUTCOMES;
     let key = 'mandat';
     for (const answer of answers) {
-        const step = QUESTIONS[key];
+        const step = questions[key];
         if (!step) break;
         key = answer ? step.yes : step.no;
     }
-    return QUESTIONS[key] ? { key, question: QUESTIONS[key] } : { key, outcome: OUTCOMES[key] };
+    return questions[key] ? { key, question: questions[key] } : { key, outcome: outcomes[key] };
 };
 
 // ───────────────────────────── Registre ─────────────────────────────
 
-export const emptyRequest = () => ({ service: '', agent: '', type: 'dossier', patientID: '', baseLegale: 'aucune', reference: '', decision: 'refuse', note: '' });
+export const emptyRequest = (scope = 'soins') => ({ service: '', agent: '', type: scope === 'dmec' ? 'autopsie' : 'dossier', patientID: '', baseLegale: 'aucune', reference: '', decision: 'refuse', note: '' });
 
 // → liste de messages d'erreur (vide si la fiche est valide).
 export const validateRequest = (form) => {
