@@ -22,6 +22,7 @@ import { useSettings } from './contexts/SettingsProvider';
 import { useWebhooks } from './hooks/useWebhooks';
 import { useImageUpload } from './hooks/useImageUpload';
 import { loadUserCreations } from './utils/userCreations';
+import { syncStaffUids } from './utils/staffAdmin';
 import { normalizeBBCodeLineBreaks } from './utils/bbcodeLineBreaks';
 import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './utils/bbcodeToHtml';
 import ForumCopyNoticeModal, { isForumNoticeHidden } from './components/ForumCopyNoticeModal';
@@ -400,6 +401,10 @@ function MainApp({
     const { isUploading, handleImageUpload, uploadImageDetailed } = useImageUpload(showNotification, setFormData);
     // Rafraîchit la copie locale de ma signature (proposée dans les formulaires qui la demandent).
     const myCreationsUid = currentEmployee?.uid || null;
+    // Un admin qui se connecte resynchronise les droits « personnel » (staffUIDs) : rattrape les comptes ajoutés ou convertis par une autre voie.
+    useEffect(() => {
+        if (isAdmin && myCreationsUid) syncStaffUids().catch(() => {});
+    }, [isAdmin, myCreationsUid]);
     useEffect(() => {
         if (myCreationsUid) loadUserCreations(myCreationsUid, { patientID: isCivilian ? (civilianProfile?.patientID || '') : '' }).catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -21,7 +21,7 @@ import {
 } from './StaffDialogs';
 import {
     rankLabel, loadStaffMembers, loadCivilians, loadRecruiterUids, loadAdminUids,
-    setRecruiterRole, saveCivilianProfile, deleteCivilianAccount,
+    setRecruiterRole, saveCivilianProfile, deleteCivilianAccount, syncStaffUids,
 } from '../../../utils/staffAdmin';
 import { STAFF_FAMILIES } from '../../../constants/ranks';
 import { loadContractCandidates } from '../../../utils/contractCandidates';
@@ -588,6 +588,20 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                                 <RankMigrationPanel adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
                                 <hr />
                                 <div className="d-flex gap-2 flex-wrap mb-2">
+                                    <Button
+                                        variant="outline-primary"
+                                        title="À utiliser si un membre du personnel (ex. converti depuis un Civil) ne peut pas lire les rapports ou les dossiers patients"
+                                        onClick={async () => {
+                                            try {
+                                                const result = await syncStaffUids();
+                                                showNotification(`Droits du personnel synchronisés (${result.total} comptes ; ${result.added} ajouté(s), ${result.removed} retiré(s)).`, 'success');
+                                            } catch (error) {
+                                                showNotification(`Synchronisation impossible : ${error.message}`, 'error');
+                                            }
+                                        }}
+                                    >
+                                        <i className="fas fa-user-shield"></i> Synchroniser les droits du personnel
+                                    </Button>
                                     <Button variant="outline-secondary" onClick={onOpenMigrationTools}>
                                         <i className="fas fa-exchange-alt"></i> Outils de migration des rapports
                                     </Button>

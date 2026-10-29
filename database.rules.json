@@ -117,6 +117,17 @@
       "postesMedecineLegale":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } }
     },
 
+    // ─── Droits « personnel » ─────────────────────────────────────────────────────
+    // staffUIDs/{uid}: true — tout compte qui a une fiche dans staff/phmc ou staff/coroner. Les règles s'en servent
+    // pour distinguer un membre du PERSONNEL d'un simple Civil : « avoir un profil civilians » ne suffit plus, car un
+    // Civil converti en Personnel garde son profil Civil (ses dossiers de patient) et perdait ainsi ses droits
+    // (rapports, dossiers patients…). Maintenu par les admins (conversions, ajout/retrait du personnel, et
+    // « Synchroniser les droits du personnel » dans Utilisateurs → Outils) ; lisible/modifiable par les admins seulement.
+    "staffUIDs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
     // ─── Rôle « recruteur » ───────────────────────────────────────────────────
     // recruiterUIDs/{uid}: true — posé/retiré par un admin (menu de gestion des
     // utilisateurs). Un recruteur reste un compte Civil ; ce drapeau lui ajoute l'onglet
@@ -151,9 +162,9 @@
     "creationsFlags": {
       // Lecture du NŒUD entier (l'annuaire lit tous les drapeaux d'un coup) : sans cette règle au niveau du nœud, la lecture
       // était refusée et tout le monde apparaissait « Sans signature / Sans carte » dans l'annuaire.
-      ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
-        ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
         ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
       }
     },
@@ -236,10 +247,10 @@
         // Lecture du nœud d'auteur : personnel et admins (modèle collaboratif). Un CIVIL ne lit plus par nom —
         // il charge son dossier via patientRecords (par ID patient) et ne peut lire qu'un rapport portant SON
         // ID patient ($reportKey ci-dessous). L'ID patient étant stable, ça survit à la recréation de compte.
-        ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
         // Écriture : personnel/admins sur tout rapport. Un CIVIL ne peut que CRÉER un rapport, ou modifier/
         // supprimer un rapport déjà à SON ID patient — il ne peut plus écraser/supprimer le rapport d'un autre.
-        ".write": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$reportKey": {
           ".read":  "auth != null && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()",
           ".write": "auth != null && (!data.exists() || (data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val() && data.child('kind').val() !== 'ama'))"
@@ -293,7 +304,7 @@
     // (« ancien membre du personnel, plus lié à un compte »). Effacé à la recréation du compte (par la personne elle-même ou un admin).
     "comptesSupprimes": {
       "$patientId": {
-        ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
         ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || !newData.exists())"
       }
     },
@@ -414,7 +425,7 @@
       // de collision d'ID patient a été déplacée côté serveur (createGtawCivilianAccount), donc un civil
       // n'a plus besoin de lire tout le nœud : il ne lit que SON propre profil ($uid ci-dessous). Ferme
       // l'énumération des coordonnées (nom, e-mail, téléphone, Discord, gtawUserId) de tous les civils.
-      ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
@@ -442,13 +453,13 @@
       // Lecture de TOUT le nœud (liste des patients sans compte dans « Dossier
       // Patient », réindexation admin) : personnel et admins uniquement — un civil
       // ne peut lire que le dossier d'un ID précis (règle $patientId ci-dessous).
-      ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         // Personnel/admins : tout dossier (via la lecture du nœud parent). Civil : UNIQUEMENT le dossier
         // dont l'ID patient est celui de son propre profil (plus d'énumération des dossiers par ID deviné).
-        ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$indexKey": {
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists() || data.child('visibility').val() === 'owner')"
+          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || data.child('visibility').val() === 'owner')"
         }
       }
     },
@@ -469,7 +480,7 @@
     "jobApplications": {
       // Lecture du nœud ENTIER : admins, recruteurs (qui restent des comptes Civil) et personnel
       // (revue des candidatures). Un civil ne lit QUE ses propres candidatures ($applicantUid ci-dessous).
-      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists())",
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true))",
       "$applicantUid": {
         ".read": "auth != null && auth.uid === $applicantUid",
         "$applicationId": {
@@ -490,7 +501,7 @@
     "candidatures": {
       // Lecture du nœud ENTIER : admins, recruteurs (qui restent des comptes Civil) et personnel
       // (revue des candidatures). Un civil ne lit QUE ses propres candidatures ($candidatUid ci-dessous).
-      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists())",
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true))",
       "$candidatUid": {
         ".read": "auth != null && auth.uid === $candidatUid",
         "$candidatureId": {
@@ -544,8 +555,8 @@
     // la CRÉE seulement (jamais d'écrasement) ; le patient peut la remplacer ou la supprimer ; les admins gèrent tout.
     "signaturesPatients": {
       "$patientId": {
-        ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || (!root.child('civilians').child(auth.uid).exists() && !data.exists()))",
+        ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && !data.exists()))",
         ".validate": "!newData.exists() || (newData.hasChildren(['url', 'creeLe']) && newData.child('url').isString() && newData.child('url').val().length <= 600)"
       }
     },
@@ -588,13 +599,13 @@
     // passer une facture à « paye » ni la ramener en arrière : le règlement est fait par le serveur
     // (webhook Fleeca / getFleecaPaymentStatus), qui contourne ces règles.
     "facturesPatients": {
-      ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         // Personnel/admins : toutes les factures (via le nœud parent). Civil : seulement SES factures
         // (ID patient de son profil). Empêche de lire les factures d'autrui par ID deviné.
-        ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$factureId": {
-          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists()) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).exists() || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))",
+          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true)) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))",
           ".validate": "newData.hasChildren(['montant', 'statut', 'creeLe']) && newData.child('montant').isNumber() && (newData.child('statut').val() === 'a_payer' || newData.child('statut').val() === 'paye' || newData.child('statut').val() === 'sans_paiement')"
         }
       }

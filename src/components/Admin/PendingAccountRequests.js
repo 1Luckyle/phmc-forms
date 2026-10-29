@@ -10,7 +10,7 @@ import { auth } from '../../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../constants/ranks';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { logAdminAction } from '../../utils/activityLog';
-import { convertCivilianToStaff, badgeDigits } from '../../utils/staffAdmin';
+import { convertCivilianToStaff, badgeDigits, syncStaffUids } from '../../utils/staffAdmin';
 import { clearDeletedMark, staffPatientIdOf } from '../../utils/deletedAccounts';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
@@ -217,6 +217,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 : [...Object.values(currentStaff), employeeWithUID];
             await set(listRef, newStaffArray);
             await clearDeletedMark(staffPatientIdOf(employeeWithUID));
+            await syncStaffUids().catch((error) => console.warn('Droits du personnel non synchronisés :', error?.message || error));
 
             // Supprimer la demande de la liste des demandes en attente
             await removeRequest(request.email);

@@ -290,6 +290,7 @@ export async function addStaffMember(service, { firstName, middleName, address, 
     if ([rank, ...extras].some((value) => getRoleInfo(value)?.needsServiceDirige) && serviceDirige) payload.serviceDirige = String(serviceDirige).trim();
     await set(push(ref(database, cfg.path)), payload);
     await clearDeletedMark(staffPatientIdOf(payload));
+    await syncStaffUidsQuietly();
     return payload;
 }
 
@@ -371,6 +372,7 @@ export async function removeStaffMember(member) {
         type: 'personnel', nom: member.displayName || member.name, role: rankLabel(member.service, member.rank),
     });
     await removeStaffEntry(member);
+    await syncStaffUidsQuietly();
     await removePersonalData(member.uid);
     await deleteLoginAccount(member.uid, member.email);
     sendMailBestEffort({
@@ -399,6 +401,32 @@ async function removeStaffEntry(member) {
 }
 
 // ───────────────────────────── Conversions ─────────────────────────────
+
+// Droits « personnel » : staffUIDs/{uid}: true pour tout compte qui a une fiche dans staff/phmc ou staff/coroner. Les règles Firebase
+// s'en servent pour distinguer le personnel d'un simple Civil (un Civil converti en Personnel garde son profil Civil : sans ce marqueur,
+// il restait traité comme un Civil et ne pouvait ni lire les rapports ni les dossiers patients). Reconstruit à partir des listes du
+// personnel : ajoute les manquants, retire ceux qui n'ont plus de fiche. Réservé aux admins (règle d'écriture).
+export async function syncStaffUids() {
+    const [phmcSnap, coronerSnap, currentSnap] = await Promise.all([
+        get(ref(database, 'staff/phmc')),
+        get(ref(database, 'staff/coroner')),
+        get(ref(database, 'staffUIDs')),
+    ]);
+    const asArray = (value) => (!value ? [] : Array.isArray(value) ? value : Object.values(value));
+    const wanted = new Set();
+    [...asArray(phmcSnap.val()), ...asArray(coronerSnap.val())].forEach((entry) => { if (entry && entry.uid) wanted.add(entry.uid); });
+    const current = currentSnap.exists() ? currentSnap.val() : {};
+    const updates = {};
+    let added = 0;
+    let removed = 0;
+    wanted.forEach((uid) => { if (current[uid] !== true) { updates[`staffUIDs/${uid}`] = true; added += 1; } });
+    Object.keys(current).forEach((uid) => { if (!wanted.has(uid)) { updates[`staffUIDs/${uid}`] = null; removed += 1; } });
+    if (added + removed > 0) await update(ref(database), updates);
+    return { added, removed, total: wanted.size };
+}
+
+// Version « au mieux » pour les opérations d'administration : un échec ne doit jamais bloquer la conversion / l'ajout.
+const syncStaffUidsQuietly = () => syncStaffUids().catch((error) => console.warn('Droits du personnel non synchronisés :', error?.message || error));
 
 export async function isUidStaff(uid) {
     if (!uid) return false;
@@ -445,6 +473,7 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
     };
     await set(push(ref(database, cfg.path)), entry);
     await clearDeletedMark(staffPatientIdOf(entry, civilian.patientID));
+    await syncStaffUidsQuietly();
     sendMailBestEffort({
         to: civilian.email,
         subject: 'Votre compte est désormais un compte du personnel - Pillbox Hill Medical Center',
@@ -489,6 +518,7 @@ export async function convertStaffToCivilian(member, civilData = {}) {
         await set(civilRef, createdProfile);
     }
     await removeStaffEntry(member);
+    await syncStaffUidsQuietly();
     sendMailBestEffort({
         to: member.email,
         subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
