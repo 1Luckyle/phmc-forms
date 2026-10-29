@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[9898],{9898:(s,e,i)=>{i.r(e),i.d(e,{default:()=>l});i(5043);var o=i(6564),t=(i(5662),i(9155)),c=i(579);const l=s=>{let{show:e,onHide:i,showNotification:l}=s;return(0,c.jsx)(o.A,{isOpen:e,onClose:i,title:"Documents disciplinaires",modalSize:"xl",zIndex:1100,className:"dark-ui",children:(0,c.jsx)(t.A,{scope:"discipline",showNotification:l})})}}}]);
-//# sourceMappingURL=9898.a4e2300c.chunk.js.map
