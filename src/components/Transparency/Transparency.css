@@ -18,6 +18,14 @@
 .tp-table thead th { color: #8b949e; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .tp-table tbody th { font-weight: 600; }
 .tp-num { text-align: right !important; white-space: nowrap; }
+/* Mêmes colonnes, aux mêmes largeurs, dans toutes les tables de la page (une table par famille de grades, une par trimestre) */
+.tp-table-grid, .tp-table-accounts { table-layout: fixed; min-width: 520px; }
+.tp-table-grid th:nth-child(1), .tp-table-grid td:nth-child(1) { width: 44%; }
+.tp-table-grid th:nth-child(2), .tp-table-grid td:nth-child(2) { width: 24%; }
+.tp-table-grid th:nth-child(3), .tp-table-grid td:nth-child(3) { width: 32%; }
+.tp-table-accounts th:nth-child(1), .tp-table-accounts td:nth-child(1) { width: 56%; }
+.tp-table-accounts th:nth-child(2), .tp-table-accounts td:nth-child(2) { width: 20%; }
+.tp-table-accounts th:nth-child(3), .tp-table-accounts td:nth-child(3) { width: 24%; }
 .tp-quarter { border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; background: #0d1117; }
 .tp-quarter summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; cursor: pointer; }
 .tp-quarter summary span { color: #9da7b3; font-size: 0.88rem; }

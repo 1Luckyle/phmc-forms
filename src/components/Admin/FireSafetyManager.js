@@ -339,8 +339,10 @@ const Drills = ({ data, onSaved, showNotification, adminName }) => {
             <div className="adm-form-grid">
                 <Form.Group><Form.Label>Zone <small className="text-muted">(vide = tout le bâtiment)</small></Form.Label><EtageInput value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value })} emptyLabel="Tout le bâtiment" /></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Participants <small className="text-muted">(personnel, sélection multiple)</small></Form.Label><ParticipantsSelect value={form.participants} onChange={(participants) => setForm({ ...form, participants })} /></Form.Group>
+                <div className="fs-pair fs-pair-even">
                 <Form.Group><Form.Label>Autres personnes <small className="text-muted">(patients, visiteurs — nombre, facultatif)</small></Form.Label><Form.Control inputMode="numeric" value={form.autres} onChange={(e) => setForm({ ...form, autres: e.target.value.replace(/\D/g, '') })} /></Form.Group>
                 <Form.Group><Form.Label>Durée d'évacuation (minutes)</Form.Label><Form.Control inputMode="numeric" value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value.replace(/\D/g, '') })} /></Form.Group>
+                </div>
                 <Form.Group className="fs-wide"><Form.Label>Observations <small className="text-muted">(facultatif)</small></Form.Label><Form.Control as="textarea" rows={2} maxLength={500} value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} /></Form.Group>
             </div>
             <Button variant="primary" onClick={submit} disabled={busy || total === 0 || !form.duree}>Enregistrer l'exercice{total > 0 ? ` (${total} participant${total > 1 ? 's' : ''})` : ''}</Button>

@@ -44,11 +44,21 @@ export const quarterBounds = (key) => {
 // Calendrier des quatre trimestres d'une année : le trimestre se termine le dernier jour du dernier mois, et ses comptes se publient « à la fin de
 // chaque trimestre » (Code du Gouvernement, art. 327), donc dès le lendemain (aucun délai de grâce n'est fixé par le texte).
 // → [{ key, quarter, label, startsOn: Date, endsOn: Date (dernier jour), publishFrom: Date (lendemain) }]
-export const quarterSchedule = (year) => [1, 2, 3, 4].map((quarter) => {
+// Les trimestres antérieurs à l'ouverture de l'établissement n'existent pas ; celui de l'ouverture commence à cette date.
+export const OPENING_DATE = new Date(2024, 8, 8);   // 8 septembre 2024
+export const OPENING_YEAR = OPENING_DATE.getFullYear();
+
+export const isBeforeOpening = (key) => {
+    const bounds = quarterBounds(key);
+    return !!bounds && bounds[1] <= OPENING_DATE.getTime();
+};
+
+export const quarterSchedule = (year) => [1, 2, 3, 4].filter((quarter) => !isBeforeOpening(quarterKey(year, quarter))).map((quarter) => {
     const startMonth = (quarter - 1) * 3;
+    const firstDay = new Date(year, startMonth, 1);
     return {
         key: quarterKey(year, quarter), quarter, label: quarterLabel(quarterKey(year, quarter)),
-        startsOn: new Date(year, startMonth, 1), endsOn: new Date(year, startMonth + 3, 0), publishFrom: new Date(year, startMonth + 3, 1),
+        startsOn: firstDay < OPENING_DATE ? OPENING_DATE : firstDay, endsOn: new Date(year, startMonth + 3, 0), publishFrom: new Date(year, startMonth + 3, 1),
     };
 });
 
@@ -166,6 +176,7 @@ export const saveDirection = async ({ membres, contactDemandes }) => {
 // Publie (ou met à jour) les comptes d'un trimestre. Retourne le compte enregistré.
 export const publishAccounts = async (key, { lignes, notes, soldeOuverture }, byName) => {
     if (!parseQuarterKey(key)) throw new Error('Trimestre invalide.');
+    if (isBeforeOpening(key)) throw new Error("Ce trimestre est antérieur à l'ouverture de l'établissement (8 septembre 2024).");
     const { errors, lines } = validateLines(lignes);
     if (errors.length > 0) throw new Error(errors.slice(0, 3).join(' '));
     if (lines.length === 0) throw new Error('Ajoutez au moins une ligne avant de publier.');

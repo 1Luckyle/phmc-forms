@@ -46,7 +46,10 @@ const MedicalRelease = ({
     const minorGuard = useMinorTitleGuard(formData, setFormData);
     // Praticien consulté : un personnel qui remplit pour un patient est lui-même le praticien (liste restreinte à lui) ; quand la personne est son propre
     // patient (Civil, DMEC, soignant pour lui-même), elle choisit parmi tout le personnel PHMC.
-    const practitionerOptions = (filledByStaff ? phmcGroupedOptions : unrestrictedPhmcGroupedOptions) || phmcGroupedOptions || [];
+    // Seul le personnel soignant peut être « praticien consulté » (ni administration, ni polyvalent, ni DMEC).
+    const practitionerOptions = ((filledByStaff ? phmcGroupedOptions : unrestrictedPhmcGroupedOptions) || phmcGroupedOptions || [])
+        .map((group) => ({ ...group, options: group.options.filter((option) => !option.families || option.families.includes('soignant')) }))
+        .filter((group) => group.options.length > 0);
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {

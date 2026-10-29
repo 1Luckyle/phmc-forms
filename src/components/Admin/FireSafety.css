@@ -16,9 +16,10 @@
 .fs-overdue { background: rgba(248, 81, 73, 0.08); }
 .fs-wide { grid-column: 1 / -1; }
 /* Deux champs côte à côte sur toute la largeur (responsable plus large que l'échéance), alignés sur le bas même si un libellé passe à la ligne */
+.fs-pair.fs-pair-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .fs-pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; align-items: end; }
 
 @media (max-width: 575px) {
-    .fs-pair { grid-template-columns: 1fr; }
+    .fs-pair, .fs-pair.fs-pair-even { grid-template-columns: 1fr; }
     .fs-check { grid-template-columns: 1fr; }
 }

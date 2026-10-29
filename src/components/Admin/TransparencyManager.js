@@ -13,7 +13,7 @@ import {
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
-    isQuarterOver, totals, formatMoney, LINE_TYPES, quarterSchedule, MAX_MEMBERS, previousQuarterKey,
+    isQuarterOver, totals, formatMoney, LINE_TYPES, quarterSchedule, MAX_MEMBERS, previousQuarterKey, OPENING_YEAR,
 } from '../../utils/transparency';
 import { loadStaffMembers } from '../../utils/staffAdmin';
 import { getEmployeeFullName } from '../../utils/employeeName';
@@ -489,12 +489,18 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             </p>
             <div className="d-flex flex-wrap gap-2 align-items-end mb-3">
                 <Form.Group><Form.Label>Année</Form.Label>
-                    <Form.Select value={year} onChange={(e) => setYear(Number(e.target.value))}>
-                        {[...new Set([nowYear + 1, nowYear, nowYear - 1, nowYear - 2, year])].sort((a, b) => b - a).map((y) => <option key={y} value={y}>{y}</option>)}
+                    <Form.Select value={year} onChange={(e) => {
+                        const nextYear = Number(e.target.value);
+                        setYear(nextYear);
+                        // Premier trimestre existant de l'année (l'établissement a ouvert le 8 septembre 2024) si le trimestre choisi n'existe pas.
+                        const available = quarterSchedule(nextYear).map((entry) => entry.quarter);
+                        if (!available.includes(quarter)) setQuarter(available[0]);
+                    }}>
+                        {Array.from({ length: Math.max(nowYear + 1, year) - OPENING_YEAR + 1 }, (_, i) => Math.max(nowYear + 1, year) - i).map((y) => <option key={y} value={y}>{y}</option>)}
                     </Form.Select></Form.Group>
                 <Form.Group><Form.Label>Trimestre</Form.Label>
                     <Form.Select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))}>
-                        {[1, 2, 3, 4].map((q) => <option key={q} value={q}>T{q}</option>)}
+                        {quarterSchedule(year).map((entry) => <option key={entry.quarter} value={entry.quarter}>T{entry.quarter}</option>)}
                     </Form.Select></Form.Group>
                 <div className="pb-2">
                     {published ? <Badge bg="success">Publié le {formatDate(published.publieLe)}</Badge> : <Badge bg="secondary">Non publié</Badge>}

@@ -80,7 +80,7 @@ const TransparencyPage = () => {
                                         <div key={family.key} className="tp-family">
                                             <h3>{family.label}</h3>
                                             <div className="tp-table-scroll">
-                                                <table className="tp-table">
+                                                <table className="tp-table tp-table-grid">
                                                     <thead><tr><th>Grade</th><th>Échelon</th><th>Rémunération</th></tr></thead>
                                                     <tbody>
                                                         {grades.map(({ role, echelons }) => echelons.map((echelon, index) => (
@@ -111,7 +111,7 @@ const TransparencyPage = () => {
                                             <span>Recettes {formatMoney(sums.recettes)} · Dépenses {formatMoney(sums.depenses)} · Solde de clôture <b className={sums.cloture < 0 ? 'neg' : 'pos'}>{formatMoney(sums.cloture)}</b></span>
                                         </summary>
                                         <div className="tp-table-scroll">
-                                            <table className="tp-table">
+                                            <table className="tp-table tp-table-accounts">
                                                 <thead><tr><th>Libellé</th><th>Nature</th><th className="tp-num">Montant</th></tr></thead>
                                                 <tbody>
                                                     {sums.ouverture !== 0 && <tr><td>Solde d'ouverture du trimestre</td><td>Report</td><td className="tp-num">{formatMoney(sums.ouverture)}</td></tr>}
