@@ -13,7 +13,7 @@ import {
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
-    isQuarterOver, totals, formatMoney, LINE_TYPES, quarterSchedule, MAX_MEMBERS,
+    isQuarterOver, totals, formatMoney, LINE_TYPES, quarterSchedule, MAX_MEMBERS, previousQuarterKey,
 } from '../../utils/transparency';
 import { loadStaffMembers } from '../../utils/staffAdmin';
 import { getEmployeeFullName } from '../../utils/employeeName';
@@ -410,23 +410,28 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     const published = data.comptes[key] || null;
     const [lignes, setLignes] = useState([]);
     const [notes, setNotes] = useState('');
+    const [ouverture, setOuverture] = useState('');   // solde d'ouverture (texte saisi)
     const [busy, setBusy] = useState(false);
     const [hasDraft, setHasDraft] = useState(false);
 
     // Le brouillon du navigateur prime sur la version publiée.
     useEffect(() => {
         const draft = readDraft(key);
-        if (draft) { setLignes(draft.lignes || []); setNotes(draft.notes || ''); setHasDraft(true); }
-        else { setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) }))); setNotes(published?.notes || ''); setHasDraft(false); }
+        if (draft) { setLignes(draft.lignes || []); setNotes(draft.notes || ''); setOuverture(draft.ouverture || ''); setHasDraft(true); }
+        else { setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) }))); setNotes(published?.notes || ''); setOuverture(published?.soldeOuverture ? String(published.soldeOuverture) : ''); setHasDraft(false); }
     }, [key, published]);
 
-    const touch = (nextLignes, nextNotes) => {
-        setLignes(nextLignes); setNotes(nextNotes);
-        writeDraft(key, { lignes: nextLignes, notes: nextNotes });
+    const touch = (nextLignes, nextNotes, nextOuverture = ouverture) => {
+        setLignes(nextLignes); setNotes(nextNotes); setOuverture(nextOuverture);
+        writeDraft(key, { lignes: nextLignes, notes: nextNotes, ouverture: nextOuverture });
         setHasDraft(true);
     };
 
-    const sums = totals(lignes);
+    const sums = totals(lignes, ouverture);
+    // Solde de clôture du trimestre précédent, s'il est publié : proposé comme solde d'ouverture de celui-ci.
+    const previousKey = previousQuarterKey(key);
+    const previousAccount = previousKey ? data.comptes[previousKey] : null;
+    const previousClosing = previousAccount ? totals(previousAccount.lignes, previousAccount.soldeOuverture).cloture : null;
 
     const addLine = (type) => touch([...lignes, { type, libelle: '', montant: '' }], notes);
     const changeLine = (index, field, value) => touch(lignes.map((l, i) => (i === index ? { ...l, [field]: value } : l)), notes);
@@ -448,11 +453,11 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         if (!isQuarterOver(key) && !window.confirm(`Le ${quarterLabel(key)} n'est pas terminé. Publier quand même des comptes provisoires ?`)) return;
         setBusy(true);
         try {
-            await publishAccounts(key, { lignes, notes }, adminName);
+            await publishAccounts(key, { lignes, notes, soldeOuverture: ouverture }, adminName);
             clearDraft(key);
             setHasDraft(false);
             showNotification(`Comptes du ${quarterLabel(key)} publiés.`, 'check-circle');
-            if (onLogAction) onLogAction('Comptes trimestriels publiés', `${quarterLabel(key)} · recettes ${formatMoney(sums.recettes)} · dépenses ${formatMoney(sums.depenses)}`);
+            if (onLogAction) onLogAction('Comptes trimestriels publiés', `${quarterLabel(key)} · ouverture ${formatMoney(sums.ouverture)} · recettes ${formatMoney(sums.recettes)} · dépenses ${formatMoney(sums.depenses)} · clôture ${formatMoney(sums.cloture)}`);
             onSaved();
         } catch (error) {
             showNotification(error.message, 'error');
@@ -472,7 +477,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         } finally { setBusy(false); }
     };
 
-    const discardDraft = () => { clearDraft(key); setHasDraft(false); setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) }))); setNotes(published?.notes || ''); };
+    const discardDraft = () => { clearDraft(key); setHasDraft(false); setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) }))); setNotes(published?.notes || ''); setOuverture(published?.soldeOuverture ? String(published.soldeOuverture) : ''); };
 
     const publishedKeys = Object.keys(data.comptes).sort().reverse();
 
@@ -499,6 +504,21 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             <QuarterCalendar year={year} comptes={data.comptes} onPick={(q) => setQuarter(q)} selected={quarter} />
             {publishedKeys.length > 0 && <small className="text-muted d-block mb-2">Déjà publiés : {publishedKeys.map(quarterLabel).join(' · ')}.</small>}
 
+            <div className="tm-opening">
+                <Form.Group>
+                    <Form.Label>Solde d'ouverture <small className="text-muted">(solde au début du trimestre ; à renseigner au moins pour le premier, négatif possible)</small></Form.Label>
+                    <div className="d-flex flex-wrap gap-2 align-items-center">
+                        <Form.Control style={{ maxWidth: 220 }} inputMode="decimal" value={ouverture} placeholder="ex. 250000"
+                            onChange={(e) => touch(lignes, notes, e.target.value.replace(/[^\d.,-]/g, '').replace(/(?!^)-/g, ''))} />
+                        {previousClosing !== null && (
+                            <Button size="sm" variant="outline-info" onClick={() => touch(lignes, notes, String(previousClosing))} title={`Clôture du ${quarterLabel(previousKey)}`}>
+                                <i className="fas fa-arrow-right-to-bracket me-1"></i>Reprendre la clôture du trimestre précédent ({formatMoney(previousClosing)})
+                            </Button>
+                        )}
+                    </div>
+                </Form.Group>
+            </div>
+
             <div className="tm-lines">
                 {lignes.length === 0 && <p className="text-muted">Aucune ligne. Ajoutez des recettes et des dépenses, ou préremplissez les recettes avec les factures payées.</p>}
                 {lignes.map((line, index) => (
@@ -522,9 +542,11 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             </div>
 
             <div className="tm-totals">
+                <span>Ouverture : <strong>{formatMoney(sums.ouverture)}</strong></span>
                 <span>Recettes : <strong>{formatMoney(sums.recettes)}</strong></span>
                 <span>Dépenses : <strong>{formatMoney(sums.depenses)}</strong></span>
-                <span>Solde : <strong className={sums.solde < 0 ? 'text-danger' : 'text-success'}>{formatMoney(sums.solde)}</strong></span>
+                <span>Variation : <strong className={sums.solde < 0 ? 'text-danger' : 'text-success'}>{formatMoney(sums.solde)}</strong></span>
+                <span>Solde de clôture : <strong className={sums.cloture < 0 ? 'text-danger' : 'text-success'}>{formatMoney(sums.cloture)}</strong></span>
             </div>
 
             <Form.Group className="mb-3">

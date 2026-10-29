@@ -6,13 +6,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Form, Spinner } from 'react-bootstrap';
 import {
-    MAIL_TEMPLATES, MAIL_CATEGORIES, loadMailOverrides, saveMailTemplate, resetMailTemplate, renderMail, sampleVars, validateTemplate, SUBJECT_MAX, BODY_MAX,
+    MAIL_TEMPLATES, MAIL_CATEGORIES, loadMailOverrides, saveMailTemplate, resetMailTemplate, renderMail, wrapMailHtml, sampleVars, validateTemplate, SUBJECT_MAX, BODY_MAX,
 } from '../../utils/mailTemplates';
 import './MailTemplatesManager.css';
 
 const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString('fr-FR') : '');
 
-const PREVIEW_STYLE = 'body{font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222;margin:0;padding:16px;background:#fff}p{margin:0 0 12px}ul{margin:0 0 12px;padding-left:22px}a{color:#0b5ed7}';
+const PREVIEW_STYLE = 'body{margin:0;background:#0d1117}p{margin:0 0 12px}ul{margin:0 0 12px;padding-left:22px}';
 
 const effectiveOf = (id, overrides) => {
     const template = MAIL_TEMPLATES[id];
@@ -114,7 +114,7 @@ const MailTemplatesManager = ({ showNotification, onLogAction, adminName }) => {
     const custom = overrides[selected];
     const isServer = template.canal.startsWith('Serveur');
     const scalarVars = template.vars.filter((variable) => !variable.liste);
-    const iframeDoc = `<!doctype html><html><head><meta charset="utf-8"><style>${PREVIEW_STYLE}</style></head><body>${preview.html}</body></html>`;
+    const iframeDoc = `<!doctype html><html><head><meta charset="utf-8"><style>${PREVIEW_STYLE}</style></head><body>${wrapMailHtml(preview.html)}</body></html>`;
 
     return (
         <div className="adm-card mt-card">

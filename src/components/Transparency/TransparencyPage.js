@@ -103,17 +103,18 @@ const TransparencyPage = () => {
                         <section className="tp-section">
                             <h2>Comptes trimestriels</h2>
                             {quarters.length === 0 ? <p className="tp-muted">Aucun compte n'a encore été publié.</p> : quarters.map((account) => {
-                                const sums = totals(account.lignes);
+                                const sums = totals(account.lignes, account.soldeOuverture);
                                 return (
                                     <details key={account.periode} className="tp-quarter" open={account === quarters[0]}>
                                         <summary>
                                             <strong>{quarterLabel(account.periode)}</strong>
-                                            <span>Recettes {formatMoney(sums.recettes)} · Dépenses {formatMoney(sums.depenses)} · Solde <b className={sums.solde < 0 ? 'neg' : 'pos'}>{formatMoney(sums.solde)}</b></span>
+                                            <span>Recettes {formatMoney(sums.recettes)} · Dépenses {formatMoney(sums.depenses)} · Solde de clôture <b className={sums.cloture < 0 ? 'neg' : 'pos'}>{formatMoney(sums.cloture)}</b></span>
                                         </summary>
                                         <div className="tp-table-scroll">
                                             <table className="tp-table">
                                                 <thead><tr><th>Libellé</th><th>Nature</th><th className="tp-num">Montant</th></tr></thead>
                                                 <tbody>
+                                                    {sums.ouverture !== 0 && <tr><td>Solde d'ouverture du trimestre</td><td>Report</td><td className="tp-num">{formatMoney(sums.ouverture)}</td></tr>}
                                                     {account.lignes.map((line, index) => (
                                                         <tr key={index}><td>{line.libelle}</td><td>{line.type === 'depense' ? 'Dépense' : 'Recette'}</td><td className="tp-num">{formatMoney(line.montant)}</td></tr>
                                                     ))}

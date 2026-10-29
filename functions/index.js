@@ -5,7 +5,7 @@ import fetch from "node-fetch";
 import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
 import crypto from 'crypto';
-import { renderMail } from './mailTemplatesCore.js';
+import { renderMail, wrapMailHtml, PHMC_SITE_URL } from './mailTemplatesCore.js';
 
 // Initialize Firebase Admin SDK
 // L'URL de la Realtime Database est fournie explicitement : sans elle,
@@ -1297,11 +1297,7 @@ const EYEFIND_SECRETS = ['EYEFIND_API_KEY'];
 // partie des domaines d'images autorisés par le nettoyeur HTML d'Eyefind
 // Mail. Styles en ligne (pas de <style>/classe) car la plupart des clients
 // mail ignorent ou suppriment les feuilles de style externes/internes.
-const PHMC_LOGO_URL = 'https://i.imgur.com/oB47nCI.png';
-const PHMC_SITE_URL = 'https://1luckyle.github.io/phmc-forms/';
-
-// Les liens du contenu reçoivent la couleur du thème (le bleu par défaut des clients mail est illisible sur fond sombre).
-const styleEmailLinks = (html) => String(html).replace(/<a\s+(?![^>]*\bstyle=)/gi, '<a style="color:#58a6ff;text-decoration:underline;" ');
+// (logo, adresse du site et styles des liens : voir mailTemplatesCore.js)
 
 // Mail sans corps HTML : on en fabrique un à partir du texte (paragraphes + retours à la ligne), pour que TOUS les mails
 // aient la même présentation.
@@ -1310,31 +1306,7 @@ const textToEmailHtml = (text) => String(text || '')
     .map((paragraph) => `<p>${escapeHtml(paragraph.trim()).replace(/\n/g, '<br>')}</p>`)
     .join('');
 
-const wrapEmailHtml = (rawHtml) => {
-    const html = styleEmailLinks(rawHtml);
-    return `
-<div style="background-color:#0d1117;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background-color:#161b22;border-radius:10px;overflow:hidden;border:1px solid #30363d;">
-    <tr>
-      <td style="background-color:#010409;padding:24px;text-align:center;border-bottom:3px solid #2ea043;">
-        <img src="${PHMC_LOGO_URL}" alt="Pillbox Hill Medical Center" style="max-width:180px;height:auto;" />
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:28px 32px;color:#c9d1d9;font-size:15px;line-height:1.6;">
-        ${html}
-      </td>
-    </tr>
-    <tr>
-      <td style="background-color:#010409;padding:16px 32px;text-align:center;color:#6e7681;font-size:12px;border-top:1px solid #30363d;">
-        Pillbox Hill Medical Center — 76 Strawberry Ave, Los Santos<br />
-        Cet email est envoyé automatiquement par l'outil PHMC-FR, merci de ne pas y répondre directement.<br />
-        <a href="${PHMC_SITE_URL}" style="display:inline-block;margin-top:8px;color:#58a6ff;text-decoration:underline;font-weight:bold;">Ouvrir l'outil PHMC-FR</a>
-      </td>
-    </tr>
-  </table>
-</div>`;
-};
+const wrapEmailHtml = wrapMailHtml;
 
 // Adresse Eyefind Mail d'un joueur : convention prenomnom@mail.eyefind.fr
 // (prénom et nom concaténés, sans séparateur — ex: rosecallahan@mail.eyefind.fr).

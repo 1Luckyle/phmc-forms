@@ -5,7 +5,7 @@
 // liées à une enquête pénale).
 //
 // Stockage : adminSettings/transparence (lecture publique, écriture admin : voir database.rules.json)
-//   { direction: { nom, fonction, contact }, equipe: [{ nom, fonction, contact }], contactDemandes, comptes: { 'AAAA-Tn': { periode, publieLe, publiePar, lignes: [{ type, libelle, montant }], notes } } }
+//   { direction: { nom, fonction, contact }, equipe: [{ nom, fonction, contact }], contactDemandes, comptes: { 'AAAA-Tn': { periode, publieLe, publiePar, soldeOuverture, lignes: [{ type, libelle, montant }], notes } } }
 // Seuls les comptes PUBLIÉS sont enregistrés (la lecture du nœud étant publique, un brouillon n'y serait pas privé) : le brouillon d'un trimestre reste
 // dans le navigateur de l'admin (voir TransparencyManager).
 import { ref, get, set, update, remove } from 'firebase/database';
@@ -90,11 +90,26 @@ export const validateLines = (lines) => {
     return { errors, lines: valid };
 };
 
-export const totals = (lines) => {
+// Solde d'ouverture d'un trimestre (report du précédent, ou solde de départ de l'établissement) : peut être négatif ; vide = 0.
+export const parseOpening = (value) => {
+    const amount = parseAmount(value);
+    return Number.isFinite(amount) ? amount : 0;
+};
+
+// Clé du trimestre précédent (« 2026-T1 » → « 2025-T4 »).
+export const previousQuarterKey = (key) => {
+    const parsed = parseQuarterKey(key);
+    if (!parsed) return null;
+    return parsed.quarter === 1 ? quarterKey(parsed.year - 1, 4) : quarterKey(parsed.year, parsed.quarter - 1);
+};
+
+// `solde` = variation du trimestre (recettes − dépenses) ; `cloture` = solde d'ouverture + variation.
+export const totals = (lines, opening = 0) => {
     const normalized = normalizeLines(lines);
     const recettes = normalized.filter((l) => l.type === 'recette').reduce((sum, l) => sum + l.montant, 0);
     const depenses = normalized.filter((l) => l.type === 'depense').reduce((sum, l) => sum + l.montant, 0);
-    return { recettes, depenses, solde: recettes - depenses };
+    const ouverture = parseOpening(opening);
+    return { recettes, depenses, solde: recettes - depenses, ouverture, cloture: ouverture + recettes - depenses };
 };
 
 export const formatMoney = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} $`;
@@ -117,6 +132,7 @@ export const normalizeTransparency = (raw) => {
             periode: key,
             publieLe: account.publieLe || null,
             publiePar: account.publiePar || '',
+            soldeOuverture: parseOpening(account.soldeOuverture),
             lignes: normalizeLines(account.lignes),
             notes: String(account.notes || ''),
         };
@@ -148,15 +164,18 @@ export const saveDirection = async ({ membres, contactDemandes }) => {
 };
 
 // Publie (ou met à jour) les comptes d'un trimestre. Retourne le compte enregistré.
-export const publishAccounts = async (key, { lignes, notes }, byName) => {
+export const publishAccounts = async (key, { lignes, notes, soldeOuverture }, byName) => {
     if (!parseQuarterKey(key)) throw new Error('Trimestre invalide.');
     const { errors, lines } = validateLines(lignes);
     if (errors.length > 0) throw new Error(errors.slice(0, 3).join(' '));
     if (lines.length === 0) throw new Error('Ajoutez au moins une ligne avant de publier.');
+    const opening = parseOpening(soldeOuverture);
+    if (Math.abs(opening) > MAX_LINE_AMOUNT) throw new Error('Solde d\'ouverture invalide (au plus 1 000 000 000 en valeur absolue).');
     const account = {
         periode: key,
         publieLe: Date.now(),
         publiePar: byName || '',
+        soldeOuverture: opening,
         lignes: lines,
         notes: String(notes || '').trim().slice(0, 1500),
     };

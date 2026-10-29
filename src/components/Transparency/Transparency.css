@@ -31,6 +31,7 @@
 .tm-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .tm-line { display: flex; flex-wrap: wrap; gap: 6px; }
 .tm-line > .form-control { flex: 1 1 200px; }
+.tm-opening { margin-bottom: 14px; }
 .tm-totals { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 10px 12px; margin-bottom: 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
 
 /* Direction & contact : une carte par ligne publiée */
