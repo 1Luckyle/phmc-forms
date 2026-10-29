@@ -7,6 +7,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 
 // CollapsibleHeader copié de PatientAdvanced.js
@@ -91,6 +92,7 @@ const BasicPatientFile = ({
 
     return (
         <>
+            <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
             {/* --- 1. Informations générales --- */}
             <CollapsibleHeader
                 title="Informations générales"

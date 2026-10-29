@@ -7,6 +7,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 const customSelectStyles = {
     control: (base, state) => ({
@@ -139,6 +140,7 @@ const MedicalRelease = ({
 
     return (
         <>
+        <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', date: 'dateOfBirth', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
         <Form.Label>Titre / Prénom (Deuxième Prénom) & Nom du patient / Date de naissance</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select

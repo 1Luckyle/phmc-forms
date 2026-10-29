@@ -76,6 +76,8 @@ export async function requestRoleAfterContract(contract, { uid, name }) {
             phNumber: civil?.phone || '',
             ...(civil?.address ? { address: civil.address } : {}),
             ...(civil?.zip ? { zip: civil.zip } : {}),
+            ...(civil?.dateOfBirth ? { dateOfBirth: civil.dateOfBirth } : {}),
+            ...(civil?.gender ? { gender: civil.gender } : {}),
             rank: role,
             badge: '',
             isCoroner: service === 'coroner',

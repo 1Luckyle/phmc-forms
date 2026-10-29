@@ -21,6 +21,8 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
     const [middleName, setMiddleName] = useState('');
     const [address, setAddress] = useState('');
     const [zip, setZip] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState('');
+    const [gender, setGender] = useState('');
     const [lastName, setLastName] = useState('');
     const [phNumber, setPhNumber] = useState('');
     const [discord, setDiscord] = useState('');
@@ -35,6 +37,8 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
         setMiddleName(staffProfile?.middleName || '');
         setAddress(staffProfile?.address || '');
         setZip(staffProfile?.zip || '');
+        setDateOfBirth(staffProfile?.dateOfBirth || '');
+        setGender(staffProfile?.gender || '');
         setPhNumber(staffProfile?.phNumber || '');
         setDiscord(staffProfile?.discord || '');
         setError('');
@@ -45,7 +49,8 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
     const currentParts = staffNameParts(staffProfile || {});
     const nameChanged = firstName.trim() !== (currentParts.firstName || '') || lastName.trim() !== (currentParts.lastName || '');
     const contactChanged = (phNumber.trim() !== String(staffProfile?.phNumber || '')) || (discord.trim() !== String(staffProfile?.discord || ''))
-        || middleName.trim() !== String(staffProfile?.middleName || '') || address.trim() !== String(staffProfile?.address || '') || zip.trim() !== String(staffProfile?.zip || '');
+        || middleName.trim() !== String(staffProfile?.middleName || '') || address.trim() !== String(staffProfile?.address || '') || zip.trim() !== String(staffProfile?.zip || '')
+        || dateOfBirth !== String(staffProfile?.dateOfBirth || '') || gender !== String(staffProfile?.gender || '');
     // Le titre (Dr. / Pr.) fait partie du prénom : seuls les grades médecins (principal ou cumulé) peuvent en choisir un.
     const canHaveTitle = [staffProfile?.rank, ...extraRanksOf(staffProfile || {})].some((rank) => DOCTOR_RANKS.includes(rank));
     const dirty = nameChanged || contactChanged;
@@ -59,8 +64,8 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
         setError('');
         try {
             if (contactChanged) {
-                await updateOwnStaffContact(currentEmployee.uid, { phNumber, discord, middleName, address, zip });
-                updateLocalStaffProfile({ phNumber: phNumber.trim(), discord: discord.trim(), middleName: middleName.trim(), address: address.trim(), zip: zip.trim() });
+                await updateOwnStaffContact(currentEmployee.uid, { phNumber, discord, middleName, address, zip, dateOfBirth, gender });
+                updateLocalStaffProfile({ phNumber: phNumber.trim(), discord: discord.trim(), middleName: middleName.trim(), address: address.trim(), zip: zip.trim(), dateOfBirth, gender });
             }
             if (nameChanged) {
                 const result = await updateOwnStaffName(currentEmployee.uid, { firstName, lastName });
@@ -128,6 +133,22 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                             <ZipCityField zip={zip} onZipChange={setZip} placeholder="Code postal (facultatif)" />
                         </Form.Group>
                     </div>
+                    <div className="d-flex gap-3 flex-wrap">
+                        <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
+                            <Form.Label>Date de naissance <small className="text-muted">(facultatif)</small></Form.Label>
+                            <Form.Control type="date" value={dateOfBirth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDateOfBirth(e.target.value)} />
+                        </Form.Group>
+                        <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
+                            <Form.Label>Genre à l'état civil <small className="text-muted">(facultatif)</small></Form.Label>
+                            <Form.Select value={gender} onChange={(e) => setGender(e.target.value)}>
+                                <option value="">—</option>
+                                <option value="Male">Homme</option>
+                                <option value="Female">Femme</option>
+                                <option value="Other">Autre</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </div>
+                    <Form.Text className="text-muted d-block mb-3">Ces deux informations servent à pré-remplir vos propres dossiers médicaux (bouton « C'est pour moi »).</Form.Text>
                     <Form.Group className="mb-3">
                         <Form.Label>Téléphone</Form.Label>
                         <Form.Control value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />

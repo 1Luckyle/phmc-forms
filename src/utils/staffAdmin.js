@@ -198,7 +198,7 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
 // numéro de badge), pas sur le nom : le prénom et le nom sont modifiables, et les rapports de la
 // personne suivent automatiquement (renameReportOwner). Le numéro de badge — l'ID employé, aussi
 // son ID patient PHMC-{badge} — n'est JAMAIS modifié ici (seul le préfixe suit le grade).
-export async function updateStaffMember(member, { firstName, middleName, address, zip, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
+export async function updateStaffMember(member, { firstName, middleName, address, zip, dateOfBirth, gender, lastName, rank, discord, phNumber, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[member.service];
     const snap = await get(ref(database, cfg.path));
     if (!snap.exists()) throw new Error('Liste du personnel introuvable.');
@@ -230,6 +230,9 @@ export async function updateStaffMember(member, { firstName, middleName, address
     }
     if (address !== undefined) { const value = String(address).trim(); if (value) updated.address = value; else delete updated.address; }
     if (zip !== undefined) { const value = String(zip).trim(); if (value) updated.zip = value; else delete updated.zip; }
+    // Date de naissance (AAAA-MM-JJ) et genre : repris par « C'est pour moi » dans les dossiers médicaux civils.
+    if (dateOfBirth !== undefined) { const value = String(dateOfBirth).trim(); if (value) updated.dateOfBirth = value; else delete updated.dateOfBirth; }
+    if (gender !== undefined) { const value = String(gender).trim(); if (value) updated.gender = value; else delete updated.gender; }
     if (member.service === 'phmc') updated.lastName = newLast;
     if (rank) { updated.rank = rank; updated.category = rank; }
     if (digits) updated.badge = buildBadge(member.service, updated.rank || current.rank, digits); // chiffres inchangés
@@ -261,7 +264,7 @@ export async function updateStaffMember(member, { firstName, middleName, address
 }
 
 // Ajoute une fiche SANS compte de connexion (même écriture que l'ancien « Ajouter un employé »).
-export async function addStaffMember(service, { firstName, middleName, address, zip, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
+export async function addStaffMember(service, { firstName, middleName, address, zip, dateOfBirth, gender, lastName, discord, phNumber, rank, badgeDigitsValue, serviceDirige, extraRanks }) {
     const cfg = STAFF_SERVICES[service];
     const name = `${firstName} ${lastName}`.trim();
     const listSnap = await get(ref(database, cfg.path));
@@ -276,6 +279,8 @@ export async function addStaffMember(service, { firstName, middleName, address, 
     if (String(middleName || '').trim()) payload.middleName = String(middleName).trim();
     if (String(address || '').trim()) payload.address = String(address).trim();
     if (String(zip || '').trim()) payload.zip = String(zip).trim();
+    if (String(dateOfBirth || '').trim()) payload.dateOfBirth = String(dateOfBirth).trim();
+    if (String(gender || '').trim()) payload.gender = String(gender).trim();
     payload.pole = familyOfRank(rank, service);
     const extras = cleanExtraRanks(extraRanks, rank);
     if (extras.length > 0) payload.extraRanks = extras;
@@ -455,7 +460,7 @@ export async function isUidStaff(uid) {
 }
 
 // Civil → Personnel. Le profil Civil et ses rapports sont CONSERVÉS.
-export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige, extraRanks, middleName, address, zip }) {
+export async function convertCivilianToStaff(civilian, { service, rank, badgeDigitsValue, discord, phNumber, serviceDirige, extraRanks, middleName, address, zip, dateOfBirth, gender }) {
     const extras = cleanExtraRanks(extraRanks, rank);
     if (!civilian?.uid) throw new Error('Ce compte Civil n\'a pas d\'identifiant de connexion (uid).');
     if (await isUidStaff(civilian.uid)) throw new Error('Cette personne est déjà membre du personnel.');
@@ -475,6 +480,8 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
         ...((String(middleName ?? civilian.middleName ?? '')).trim() ? { middleName: String(middleName ?? civilian.middleName).trim() } : {}),
         ...((String(address ?? civilian.address ?? '')).trim() ? { address: String(address ?? civilian.address).trim() } : {}),
         ...((String(zip ?? civilian.zip ?? '')).trim() ? { zip: String(zip ?? civilian.zip).trim() } : {}),
+        ...((String(dateOfBirth ?? civilian.dateOfBirth ?? '')).trim() ? { dateOfBirth: String(dateOfBirth ?? civilian.dateOfBirth).trim() } : {}),
+        ...((String(gender ?? civilian.gender ?? '')).trim() ? { gender: String(gender ?? civilian.gender).trim() } : {}),
         ...(service === 'phmc' ? { lastName } : {}),
         discord: discord ?? civilian.discord ?? '',
         rank,
@@ -518,8 +525,8 @@ export async function convertStaffToCivilian(member, civilData = {}) {
             firstName: member.firstName || parts[0] || '',
             lastName: member.lastName || parts.slice(1).join(' ') || '',
             middleName: member.middleName || '',
-            dateOfBirth: civilData.dateOfBirth || '',
-            gender: civilData.gender || '',
+            dateOfBirth: civilData.dateOfBirth || member.dateOfBirth || '',
+            gender: civilData.gender || member.gender || '',
             address: civilData.address || member.address || '',
             zip: civilData.zip || member.zip || '',
             phone: member.phNumber || '',
@@ -592,7 +599,7 @@ export async function deleteCivilianAccount(civilian) {
 // champs et le nom, et uniquement quand l'uid de la fiche est celui de la personne connectée). Le grade,
 // le badge et l'e-mail restent réservés aux admins (l'e-mail passe par un code de vérification : voir
 // requestStaffEmailChange dans eyefindMail.js).
-export async function updateOwnStaffContact(uid, { phNumber, discord, middleName, address, zip }) {
+export async function updateOwnStaffContact(uid, { phNumber, discord, middleName, address, zip, dateOfBirth, gender }) {
     if (!uid) throw new Error('Compte introuvable.');
     for (const service of Object.values(STAFF_SERVICES)) {
         const snap = await get(ref(database, service.path));
@@ -604,7 +611,7 @@ export async function updateOwnStaffContact(uid, { phNumber, discord, middleName
         if (phNumber !== undefined) patch[`${service.path}/${found[0]}/phNumber`] = String(phNumber).trim();
         if (discord !== undefined) patch[`${service.path}/${found[0]}/discord`] = String(discord).trim();
         // Facultatifs : vides = retirés de la fiche.
-        const optional = { middleName, address, zip };
+        const optional = { middleName, address, zip, dateOfBirth, gender };
         Object.entries(optional).forEach(([field, value]) => {
             if (value !== undefined) patch[`${service.path}/${found[0]}/${field}`] = String(value).trim() || null;
         });

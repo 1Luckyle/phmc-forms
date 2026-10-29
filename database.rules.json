@@ -79,6 +79,14 @@
           "zip": {
             ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
             ".validate": "newData.isString() && newData.val().length <= 12"
+          },
+          "dateOfBirth": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
+          },
+          "gender": {
+            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && (newData.val() === 'Male' || newData.val() === 'Female' || newData.val() === 'Other')"
           }
         }
       },
@@ -111,6 +119,14 @@
           "zip": {
             ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
             ".validate": "newData.isString() && newData.val().length <= 12"
+          },
+          "dateOfBirth": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
+          },
+          "gender": {
+            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".validate": "newData.isString() && (newData.val() === 'Male' || newData.val() === 'Female' || newData.val() === 'Other')"
           }
         }
       }

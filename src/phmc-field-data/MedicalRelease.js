@@ -7,6 +7,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 import { GUARDIAN_RELATIONS, ageOn, isMinorPatient } from '../utils/minors';
 
@@ -77,7 +78,9 @@ const MedicalRelease = ({
     }, [isCivilian, civilianProfile, setFormData]);
 
     return (
-        <>        <Form.Group className="mb-3">
+        <>
+        <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientZIP: 'zip', patientPH: 'phone', patientEmail: 'email' }} />
+        <Form.Group className="mb-3">
 
         <Form.Label>Titre / Prénom / Deuxième prénom / Nom de famille / Date de naissance</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>

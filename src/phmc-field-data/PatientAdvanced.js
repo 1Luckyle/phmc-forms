@@ -8,6 +8,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 // Helper component for collapsible section headers - Copied from Nursing.js
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
@@ -116,6 +117,7 @@ const [activeSection, setActiveSection] = useState('general-info');
 
 
         <>
+            <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
             {/* --- 1. General Information --- */}
             <CollapsibleHeader
                 title="Informations générales"

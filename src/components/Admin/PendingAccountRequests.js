@@ -194,6 +194,8 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 lastName,
                 ...((request.address || '').trim() ? { address: request.address.trim() } : {}),
                 ...((request.zip || '').trim() ? { zip: request.zip.trim() } : {}),
+                ...((request.dateOfBirth || '').trim() ? { dateOfBirth: request.dateOfBirth.trim() } : {}),
+                ...((request.gender || '').trim() ? { gender: request.gender.trim() } : {}),
                 discord: request.discord || '',
                 // Une demande déposée avant la migration peut porter un ancien rôle anglais : on l'enregistre en français.
                 rank: normalizeRank(request.rank),
