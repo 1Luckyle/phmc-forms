@@ -91,6 +91,8 @@ const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'))
 const MyProfileModal = lazy(() => import('./components/MyProfileModal'));
 const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendarModal'));
 const MyContractsModal = lazy(() => import('./components/Contracts/MyContractsModal'));
+const LawEnforcementModal = lazy(() => import('./components/LawEnforcement/LawEnforcementModal'));
+const FireReportModal = lazy(() => import('./components/FireSafety/FireReportModal'));
 const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
@@ -191,6 +193,8 @@ function MainApp({
     const [showAwarenessCalendar, setShowAwarenessCalendar] = useState(false);
     // « Mes contrats » : le personnel lit et signe les contrats envoyés par les recruteurs.
     const [showMyContracts, setShowMyContracts] = useState(false);
+    const [showLawEnforcement, setShowLawEnforcement] = useState(false);
+    const [showFireReport, setShowFireReport] = useState(false);
     // Gestion du recrutement (admins + recruteurs).
     const [showRecruitmentManager, setShowRecruitmentManager] = useState(false);
     const [showBbcodeToMarkdown, setShowBbcodeToMarkdown] = useState(false);
@@ -1823,6 +1827,8 @@ function MainApp({
                                                         toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
                                                         // Demandes de vidéosurveillance : réponse et suivi par l'administration du PHMC (et les admins).
                                                         canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
+                                                        toolAccess.lawEnforcement && { key: 'lawEnforcement', icon: 'fas fa-scale-balanced', label: "Demandes des forces de l'ordre", onClick: closeAnd(() => setShowLawEnforcement(true)) },
+                                                        toolAccess.fireReport && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
                                                         toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
                                                 },
@@ -2698,6 +2704,16 @@ function MainApp({
                             show={showAwarenessCalendar}
                             onHide={() => setShowAwarenessCalendar(false)}
                         />
+                        <FireReportModal
+                            show={showFireReport}
+                            onHide={() => setShowFireReport(false)}
+                            showNotification={showNotification}
+                        />
+                        <LawEnforcementModal
+                            show={showLawEnforcement}
+                            onHide={() => setShowLawEnforcement(false)}
+                            showNotification={showNotification}
+                        />
                         <MyContractsModal
                             show={showMyContracts}
                             onHide={() => setShowMyContracts(false)}
@@ -2914,6 +2930,11 @@ function MainAppWrapper() {
         patientMedInfoFormatOther: '',
         StupidDateFrom: '',
         StupidDateTo: '',
+        requestingAuthority: '',
+        requestingAuthorityRef: '',
+        guardianName: '',
+        guardianRelation: '',
+        patientEmancipated: false,
         patientFirstName: '',
         patientMiddleName: '',
         patientLastName: '',

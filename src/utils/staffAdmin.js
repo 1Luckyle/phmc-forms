@@ -17,6 +17,7 @@ import { getEmployeeDisplayName } from './employeeName';
 import { sendEyefindMail } from './eyefindMail';
 import { canonicalPatientId } from './patientId';
 import { findPatientNodes } from './patientRecords';
+import { assertNoneFrozen } from './judicialFreeze';
 import { markAccountDeleted, clearDeletedMark, staffPatientIdOf } from './deletedAccounts';
 
 export const STAFF_SERVICES = {
@@ -129,6 +130,8 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
     }
 
     const reports = sourceSnap.val();
+    // Gel judiciaire : déplacer un rapport gelé (et réécrire son auteur) le modifierait ; l'opération attend la levée du gel.
+    await assertNoneFrozen(Object.keys(reports));
     const writes = {};
     const deletions = {};
     const nodeCache = new Map(); // nœud d'index -> entrées

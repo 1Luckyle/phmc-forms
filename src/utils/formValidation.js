@@ -23,6 +23,7 @@ import { canonicalPatientId } from './patientId';
 import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
+import { guardianErrors, isMinorPatient } from './minors';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
@@ -107,6 +108,15 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     }
     if (version === 24 && !(Array.isArray(data.MedicalRecordsRelease) && data.MedicalRecordsRelease.length > 0)) {
         errors.push('Sélectionnez au moins un élément du dossier médical à divulguer.');
+    }
+    // Patient mineur : l'autorisation de divulgation est signée par son représentant légal (sauf mineur émancipé).
+    if (version === 24) {
+        guardianErrors({
+            minor: isMinorPatient({ birthDate: data.patientDateOfBirth, titleIsMinor: data.patientTitle === 'Mineur' }),
+            emancipated: !!data.patientEmancipated,
+            guardianName: data.guardianName,
+            guardianRelation: data.guardianRelation,
+        }).forEach((message) => errors.push(message));
     }
     if (version === 26 && !(Array.isArray(data.UpdateMedicalFile) && data.UpdateMedicalFile.length > 0)) {
         errors.push('Sélectionnez au moins un élément du dossier médical à mettre à jour.');

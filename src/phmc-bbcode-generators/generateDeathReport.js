@@ -1,4 +1,5 @@
 import { buildDecedentDescription } from './shared/decedentDescription';
+import { requestingAuthorityLine } from './shared/requestingAuthority';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -92,6 +93,8 @@ const getDepartmentFullName = (shortCode) => {
     const decedentDescriptionParagraph = decedentDescription
         ? `\n\nDescription du défunt: ${decedentDescription}`
         : '';
+    const authorityLine = requestingAuthorityLine(formData);
+    const authorityParagraph = authorityLine ? `\n\n${authorityLine}` : '';
 
     const bbCode = `[divbox=transparent][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
 
@@ -104,7 +107,7 @@ Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à 
 
 Le ${coronerRank || 'Coroner'}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]${coronerBadge || 'N/A'}[/b], est arrivé sur les lieux et a identifié l'individu comme étant [b]${decedentName || 'Défunt non identifié'}[/b] (ID Patient : ${formData.patientID || 'Non applicable'}), qui est estimé être décédé à [b]${pronouncedTimeOfDeath || 'Heure inconnue'}[/b]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [b]synopsis[/b] suivant: ${synopsis || 'Aucun synopsis fourni.'}${decedentDescriptionParagraph}
 
-D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [b]${probableCauseOfDeath || 'Indéterminée'}[/b]. La manière du décès a été classée comme [b]${mannerOfDeath || 'Indéterminée'}[/b].
+D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [b]${probableCauseOfDeath || 'Indéterminée'}[/b]. La manière du décès a été classée comme [b]${mannerOfDeath || 'Indéterminée'}[/b].${authorityParagraph}
 [/divbox]
 [divbox=transparent][center][b]B. DOSSIER PHOTOGRAPHIQUE DOCUMENTAIRE[/b][/center]
 [hr][/hr]

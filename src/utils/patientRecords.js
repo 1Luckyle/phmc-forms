@@ -24,6 +24,7 @@ import { ref, get, set, update, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity } from './activityLog';
 import { releaseDeathArtifacts } from './deathReports';
+import { loadFreeze, isFrozen, FREEZE_MESSAGE } from './judicialFreeze';
 import {
     canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId,
 } from './patientId';
@@ -301,6 +302,11 @@ async function removeUnpaidInvoice(patientNode, indexKey) {
 export async function deleteReportWithRules(report, viewer) {
     const { reportPath } = report;
     const indexKey = report.indexKey || report.key || (reportPath ? reportPath.split('/').pop() : null);
+
+    // Gel judiciaire : un rapport gelé ne se supprime ni ne se retire (les règles l'interdisent au personnel ; pour un admin c'est ici).
+    if (isFrozen(await loadFreeze(reportPath || indexKey))) {
+        return { ok: false, action: 'refused', message: FREEZE_MESSAGE };
+    }
 
     // Retrouve l'entrée d'index (si le rapport est lié à un patient).
     let indexRef = null;

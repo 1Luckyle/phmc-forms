@@ -11,6 +11,7 @@ import TitlePrefixPicker from './TitlePrefixPicker';
 import { sendEyefindMail } from '../utils/eyefindMail';
 import { markAccountDeleted, staffPatientIdOf } from '../utils/deletedAccounts';
 import { getEmployeeDisplayName } from '../utils/employeeName';
+import { assertNoneFrozen } from '../utils/judicialFreeze';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
 // débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
@@ -707,6 +708,8 @@ const EmployeeModal = ({
       if (reportsSnap.exists()) {
         const allReports = reportsSnap.val();
         const reportsUpdates = {};
+        // Gel judiciaire : on ne supprime ni ne déplace les rapports d'un compte tant que l'un d'eux est gelé.
+        await assertNoneFrozen(staffToRemove.flatMap((empName) => Object.keys(allReports[empName.replace(/[.#$[/ \]]/g, '_')] || {})));
         for (const empName of staffToRemove) {
           const sanitized = empName.replace(/[.#$[\/ \]]/g, '_');
           if (allReports[sanitized]) {

@@ -14,7 +14,10 @@ const Footer = () => {
                 <span className="contact-info">
                     FOURNI À GTA WORLD (EU). ICÔNES FOURNIES PAR FLATICON.
                 </span>
-                <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">Voir la politique de confidentialité</button>
+                <div>
+                    <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">Voir la politique de confidentialité</button>
+                    <a href="#/transparence" className="privacy-policy-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Transparence</a>
+                </div>
             </div>
             <PrivacyPolicyModal isOpen={isPrivacyPolicyModalOpen} onClose={togglePrivacyPolicyModal} />
         </div>

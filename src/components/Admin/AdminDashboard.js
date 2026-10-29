@@ -28,6 +28,8 @@ import ActivityLog from './ActivityLog';
 import SiteRequests from './SiteRequests';
 import { logAdminAction } from '../../utils/activityLog';
 import PricingManager from './PricingManager';
+import TransparencyManager from './TransparencyManager';
+import FireSafetyManager from './FireSafetyManager';
 import { runRecruitmentMigrationOnce } from '../../utils/recruitmentMigration';
 
 const LAST_SECTION_KEY = 'adminLastSection';
@@ -392,6 +394,23 @@ const AdminDashboard = ({
                     <PricingManager
                         showNotification={showInAppNotification}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Tarifs' })}
+                    />
+                );
+
+            case 'fireSafety':
+                return (
+                    <FireSafetyManager
+                        showNotification={showInAppNotification}
+                        adminName={currentUser?.displayName || currentUser?.email || ''}
+                    />
+                );
+
+            case 'transparency':
+                return (
+                    <TransparencyManager
+                        showNotification={showInAppNotification}
+                        adminName={currentUser?.displayName || currentUser?.email || ''}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Transparence' })}
                     />
                 );
 

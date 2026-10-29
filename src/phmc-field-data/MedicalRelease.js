@@ -7,6 +7,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import { GUARDIAN_RELATIONS, ageOn, isMinorPatient } from '../utils/minors';
 
 const MedicalRelease = ({
     formData,
@@ -31,6 +32,8 @@ const MedicalRelease = ({
         return selectedCount * costPerItem;
     };
     const approximateCost = calculateCost();
+    const isMinor = isMinorPatient({ birthDate: formData.patientDateOfBirth, titleIsMinor: formData.patientTitle === 'Mineur' });
+    const minorAge = ageOn(formData.patientDateOfBirth);
     // Si c'est un membre du personnel PHMC/DMEC connecté qui remplit ce
     // formulaire (pas le civil lui-même), le paiement ne doit jamais être
     // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
@@ -134,6 +137,47 @@ const MedicalRelease = ({
                     className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
                 />
             </Form.Group>
+            {isMinor && (
+                <div className="mb-3 p-3 border rounded" style={{ borderColor: '#e3b341' }}>
+                    <strong style={{ color: '#e3b341' }}>
+                        <i className="fas fa-child me-2"></i>Patient mineur{minorAge !== null ? ` (${minorAge} ans)` : ''}
+                    </strong>
+                    <p className="helper-text mb-2">
+                        Un mineur ne signe pas seul cette autorisation : son représentant légal (parent ou tuteur) la signe à sa place.
+                    </p>
+                    <Form.Check
+                        type="checkbox"
+                        id="patientEmancipated"
+                        label=" Mineur émancipé (il signe lui-même)"
+                        checked={!!formData.patientEmancipated}
+                        onChange={(e) => setFormData(prev => ({ ...prev, patientEmancipated: e.target.checked }))}
+                        className="mb-2"
+                    />
+                    {!formData.patientEmancipated && (
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <Form.Control
+                                type="text"
+                                name="guardianName"
+                                value={formData.guardianName || ''}
+                                onChange={handleChange}
+                                placeholder="Prénom Nom du représentant légal"
+                                required
+                                className={`form-control ${!formData.guardianName ? 'is-invalid' : ''}`}
+                            />
+                            <Form.Select
+                                name="guardianRelation"
+                                value={formData.guardianRelation || ''}
+                                onChange={handleChange}
+                                required
+                                className={`form-control ${!formData.guardianRelation ? 'is-invalid' : ''}`}
+                            >
+                                <option value="" disabled>Lien avec le patient</option>
+                                {GUARDIAN_RELATIONS.map((relation) => <option key={relation} value={relation}>{relation}</option>)}
+                            </Form.Select>
+                        </div>
+                    )}
+                </div>
+            )}
             <Form.Label>Genre à l'état civil :</Form.Label>
                 <Form.Check
                     type="radio"

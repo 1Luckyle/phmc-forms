@@ -23,13 +23,14 @@ import DebugFillButton from './DebugFillButton';
 import SignatureCreator from './SignatureCreator';
 import { ReportPreviewFrame } from './ReportExpansion';
 import { copyToClipboard } from './notificationService';
-import generateAma from '../phmc-bbcode-generators/generateAma';
+import generateAma, { effectiveGuardian } from '../phmc-bbcode-generators/generateAma';
 import { buildReportTitle } from '../utils/reportTitle';
 import {
     normalizePatientId, writeIndexEntry, comprehensiveSanitize, listIndexedPatientIds,
 } from '../utils/patientRecords';
 import { loadUserCreations } from '../utils/userCreations';
 import { loadPatientSignature, ensurePatientSignature } from '../utils/patientSignatures';
+import { GUARDIAN_RELATIONS } from '../utils/minors';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { logActivity } from '../utils/activityLog';
@@ -65,6 +66,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     const [patientOption, setPatientOption] = useState(null);        // { value: ID canonique, label }
     const [patientName, setPatientName] = useState('');
     const [guardianName, setGuardianName] = useState('');
+    const [minor, setMinor] = useState(false);                       // le patient a moins de 18 ans
+    const [emancipated, setEmancipated] = useState(false);          // mineur émancipé : il refuse lui-même
+    const [guardianRelation, setGuardianRelation] = useState('');
     const [date, setDate] = useState('');
     const [certified, setCertified] = useState(false);
     const [employeeSignature, setEmployeeSignature] = useState(undefined);   // undefined = chargement, null = aucune
@@ -90,6 +94,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         setSaved(null);
         setCertified(false);
         setGuardianName('');
+        setMinor(false);
+        setEmancipated(false);
+        setGuardianRelation('');
         setDate(nowLabel());
         setPatientOption(null);
         setPatientName('');
@@ -161,9 +168,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     };
 
     const bbCode = useMemo(() => generateAma({
-        patientName, patientSignatureUrl: patientSignature?.url || '', guardianName, date,
+        patientName, patientSignatureUrl: patientSignature?.url || '', guardianName, guardianRelation, minor, emancipated, date,
         paramedicName: employee?.value || '', paramedicSignatureUrl: employeeSignature?.url || '',
-    }), [patientName, patientSignature, guardianName, date, employee, employeeSignature]);
+    }), [patientName, patientSignature, guardianName, guardianRelation, minor, emancipated, date, employee, employeeSignature]);
 
     const handleDebugFill = () => {
         const option = { value: 'PHMC-99999', name: 'Jean Michel Testard', label: 'Jean Michel Testard (PHMC-99999)' };
@@ -182,6 +189,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         if (!patientID) { showNotification('Choisissez le patient (ou tapez son ID).', 'warning'); return; }
         if (!isAdmin && await loadDeathLock(patientID)) { showNotification(DEATH_LOCK_MESSAGE, 'warning', 10000); return; }
         if (!patientName.trim()) { showNotification('Indiquez le nom du patient : il sert à créer sa signature et figure sur le document.', 'warning'); return; }
+        if (minor && !emancipated && (!guardianName.trim() || !guardianRelation)) { showNotification('Patient mineur : indiquez le nom du représentant légal et son lien avec le patient.', 'warning', 7000); return; }
         if (!certified) { showNotification('Certifiez que c\'est bien le patient (ou son représentant légal) qui signe.', 'warning'); return; }
 
         setSaving(true);
@@ -194,7 +202,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
             setPatientSignature(signature);
 
             const finalCode = generateAma({
-                patientName: patientName.trim(), patientSignatureUrl: signature.url, guardianName, date,
+                patientName: patientName.trim(), patientSignatureUrl: signature.url, guardianName: guardianName.trim(), guardianRelation, minor, emancipated, date,
                 paramedicName: employee.value, paramedicSignatureUrl: employeeSignature.url,
             });
             const title = buildReportTitle(40, { patientID, patientSignature: patientName.trim(), date }, 'Formulaire AMA');
@@ -214,7 +222,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                     patientID,
                     patientName: patientName.trim(),
                     patientSignatureUrl: signature.url,
-                    guardianName: guardianName.trim(),
+                    ...effectiveGuardian({ guardianName, guardianRelation, minor, emancipated }),
+                    minor,
+                    emancipated: minor && emancipated,
                     paramedicName: employee.value,
                     paramedicSignatureUrl: employeeSignature.url,
                     date,
@@ -346,10 +356,35 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                         <Form.Label>Date / heure</Form.Label>
                         <Form.Control size="sm" value={date} onChange={(e) => setDate(e.target.value)} placeholder="JJ/MM/AAAA HH:MM" disabled={saving} />
                     </Form.Group>
-                    <Form.Group className="mb-2">
-                        <Form.Label>Représentant légal (nom, si applicable)</Form.Label>
-                        <Form.Control size="sm" value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder="Facultatif" disabled={saving} />
-                    </Form.Group>
+                    <Form.Check
+                        className="mb-2" type="checkbox" id="ama-minor" checked={minor} disabled={saving}
+                        onChange={(e) => setMinor(e.target.checked)}
+                        label="Le patient est mineur (moins de 18 ans)"
+                    />
+                    {minor && (
+                        <Alert variant="warning" className="py-2 small">
+                            Un mineur ne refuse pas seul des soins : son représentant légal (parent ou tuteur) doit être présent, être informé des risques et signer à sa place.
+                            <Form.Check
+                                className="mt-1" type="checkbox" id="ama-emancipated" checked={emancipated} disabled={saving}
+                                onChange={(e) => setEmancipated(e.target.checked)}
+                                label="Mineur émancipé (il refuse lui-même)"
+                            />
+                        </Alert>
+                    )}
+                    {(!minor || !emancipated) && (
+                        <Form.Group className="mb-2">
+                            <Form.Label>Représentant légal {minor ? '*' : '(nom, si applicable)'}</Form.Label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <Form.Control size="sm" value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder={minor ? 'Prénom Nom' : 'Facultatif'} disabled={saving} />
+                                {minor && (
+                                    <Form.Select size="sm" value={guardianRelation} onChange={(e) => setGuardianRelation(e.target.value)} disabled={saving}>
+                                        <option value="">Lien avec le patient…</option>
+                                        {GUARDIAN_RELATIONS.map((relation) => <option key={relation} value={relation}>{relation}</option>)}
+                                    </Form.Select>
+                                )}
+                            </div>
+                        </Form.Group>
+                    )}
                 </div>
 
                 {/* Signatures */}

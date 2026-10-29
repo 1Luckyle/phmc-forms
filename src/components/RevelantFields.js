@@ -18,6 +18,7 @@ const getRelevantFields = (bbCodeVersion) => {
                 'scenePhotos', 'additionalImages', 'requestingOfficer',
                 'patientID', 'evidenceLockerID', 'decedentAttributes', 'massFatality', 'showRequestingOfficerInput',
                 'decedentAge', 'decedentSex', 'decedentMarks',
+                'requestingAuthority', 'requestingAuthorityRef',
             ];
         case 2: // Email Generator
             return [
@@ -48,6 +49,8 @@ const getRelevantFields = (bbCodeVersion) => {
                 'decedentOOC',
                 'autopsyDate',
                 'autopsyTime',
+                'requestingAuthority',
+                'requestingAuthorityRef',
                 'placeOfDeath',
                 'causeOfDeath', // Corrected: removed backticks
                 'deathType',
@@ -236,6 +239,7 @@ const getRelevantFields = (bbCodeVersion) => {
                 'payNow', 
                 'paymentProofPhotos',
                 'patientID', 'patientTitle', 'patientGender', 'patientPhoneType',
+                'guardianName', 'guardianRelation', 'patientEmancipated',
             ];
         case 25: // Patient File - Basic
             return [

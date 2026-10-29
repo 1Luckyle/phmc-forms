@@ -14,6 +14,7 @@ import Admin from './components/Admin/Admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import PasswordResetHandler from './components/Auth/PasswordResetHandler';
 import FleecaPaymentSuccess from './components/FleecaPaymentSuccess';
+import TransparencyPage from './components/Transparency/TransparencyPage';
 
 function App() {
     const [formData, setFormData] = useState({});
@@ -168,6 +169,11 @@ const initialFormData = {
     patientMedInfoFormatOther: '',
     StupidDateFrom: '',
     StupidDateTo: '',
+    requestingAuthority: '',
+    requestingAuthorityRef: '',
+    guardianName: '',
+    guardianRelation: '',
+    patientEmancipated: false,
     patientFirstName: '',
     patientMiddleName: '',
     patientLastName: '',
@@ -295,6 +301,7 @@ const initialFormData = {
                                     <Route path="/" element={<MainApp formData={formData} setFormData={setFormData} lastWebhookIdentifier={lastWebhookIdentifier} setLastWebhookIdentifier={setLastWebhookIdentifier} initialFormData={initialFormData} showNotification={showNotification} removeNotification={removeNotification} setShowAdblockNotification={setShowAdblockNotification} />} />
                                     <Route path="/reset-password" element={<PasswordResetHandler />} />
                                     <Route path="/payment/success" element={<FleecaPaymentSuccess />} />
+                                    <Route path="/transparence" element={<TransparencyPage />} />
                                     <Route path="/login" element={<GtaLogin />} />
                                     <Route path="/auth/gta/callback" element={<GtaCallback />} />
                                     <Route path="/admin" element={<ProtectedRoute><Admin formData={formData} setFormData={setFormData} showNotification={showNotification} /></ProtectedRoute>} />

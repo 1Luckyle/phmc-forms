@@ -1,5 +1,6 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import { getPrice } from '../utils/pricing';
+import { isMinorPatient } from '../utils/minors';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs
@@ -42,6 +43,20 @@ const generateMedicalRecordRelease = (formData) => {
     const firstPaymentProofUrl = (paymentProofPhotos || '').split(',')[0].trim();
     const patientFullName = `${patientFirstName || ''} ${patientMiddleName || ''} ${patientLastName || ''}`.replace(/\s+/g, ' ').trim(); // Combine and clean up spaces
 
+    // Patient mineur : l'autorisation est signée par son représentant légal (sauf mineur émancipé, qui signe lui-même).
+    const minor = isMinorPatient({ birthDate: patientDateOfBirth, titleIsMinor: formData.patientTitle === 'Mineur' });
+    const emancipated = minor && !!formData.patientEmancipated;
+    const guardianName = String(formData.guardianName || '').trim() || NOT_FILLED;
+    const guardianRelation = String(formData.guardianRelation || '').trim() || NOT_FILLED;
+    const needsGuardian = minor && !emancipated;
+    const guardianInfoLine = needsGuardian
+        ? `\n[b]Représentant légal:[/b]\n[i]${guardianName} (${guardianRelation})[/i][br][/br]`
+        : (emancipated ? '\n[i]Mineur émancipé : le patient signe lui-même cette autorisation.[/i][br][/br]' : '');
+    const guardianParagraph = needsGuardian
+        ? `[b]Patient mineur.[/b] La présente autorisation est signée par ${guardianName}, ${guardianRelation} de ${patientFullName}, qui agit en son nom : les mentions « je soussigné(e) » ci-dessous s'entendent du représentant légal.\n\n`
+        : '';
+    const signerLine = needsGuardian ? `${guardianName} — ${guardianRelation} de ${patientFullName} (mineur)` : patientFullName;
+
     let bbCode = `[divbox=white] [center] [img]https://i.ibb.co/0pgw9hHm/phmc.png[/img] [/center] [/divbox]
 [divbox=white]
 [br][/br][color=#800000][size=150][b]I. INFORMATIONS DU PATIENT[/b][/size][/color][hr][/hr]
@@ -68,7 +83,7 @@ const generateMedicalRecordRelease = (formData) => {
 [b]Adresse:[/b]
 [i]${patientAddress}[/i][br][/br]
 [b]Code postal:[/b]
-[i]${patientZIP}[/i][br][/br][/list]
+[i]${patientZIP}[/i][br][/br]${guardianInfoLine}[/list]
 [br][/br][color=#800000][size=150][b]II. COORDONNÉES[/b][/size][/color][hr][/hr]
 [list=none]
 [b]Type de téléphone:[/b] [i](sélectionnez-en un)[/i]
@@ -111,7 +126,7 @@ const generateMedicalRecordRelease = (formData) => {
 [i]${phmcEmployee}[/i]
 [br][/br][/list]
 [color=#800000][size=150][b]IV. AUTORISATION DE DIVULGATION DES INFORMATIONS[/b][/size][/color][hr][/hr][br][/br]
-[list=none]Je soussigné(e), ${patientFullName}, autorise par la présente le Pillbox Hill Medical Center à divulguer mes informations de santé individuellement identifiables. Je comprends que cette autorisation est volontaire et que je peux refuser de signer cette autorisation. Je comprends également que mes soins de santé ne seront pas affectés si je ne signe pas ce formulaire.
+[list=none]${guardianParagraph}Je soussigné(e), ${patientFullName}, autorise par la présente le Pillbox Hill Medical Center à divulguer mes informations de santé individuellement identifiables. Je comprends que cette autorisation est volontaire et que je peux refuser de signer cette autorisation. Je comprends également que mes soins de santé ne seront pas affectés si je ne signe pas ce formulaire.
 
 Je soussigné(e), ${patientFullName}, comprends que si le destinataire autorisé à recevoir les informations n'est pas une entité couverte, les informations divulguées peuvent ne plus être protégées par les réglementations fédérales et étatiques sur la vie privée.
 
@@ -122,8 +137,8 @@ Je soussigné(e), ${patientFullName}, comprends que le dossier peut ne pas être
 En tapant mon nom ci-dessous, je soussigné(e), ${patientFullName}, certifie que ces informations peuvent être utilisées dans le but de traiter ma demande d'autorisation de divulgation de dossiers médicaux. Je considère ceci comme ma signature électronique pour cette demande.
 [br][/br]
 [/list]
-[list=none][b]Signature:[/b]
-[i]${patientFullName}[/i][br][/br]
+[list=none][b]Signature${needsGuardian ? ' du représentant légal' : ''}:[/b]
+[i]${signerLine}[/i][br][/br]
 [b]Date:[/b]
 [i]${SubmitDate}[/i]
 ${formData.filledByStaff && approximateCost > 0 ? `

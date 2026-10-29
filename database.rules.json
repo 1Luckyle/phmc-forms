@@ -180,8 +180,65 @@
     "rapportsPublics": {
       ".read":  "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$reportKey": {
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
+        ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
         ".validate": "!newData.exists() || (newData.hasChildren(['reportPath', 'uid', 'publieLe']) && newData.child('publieLe').isNumber())"
+      }
+    },
+
+    // GEL JUDICIAIRE d'un rapport (procédure en cours : mandat, réquisition, enquête) : gelsJudiciaires/{clé du rapport}: { reportPath, uid, par,
+    // depuis, actif, patientID?, autorite, reference, motif, levee?: { motif, par, le } }. Posé par le DMEC (ou un admin) ; tant que actif vaut true,
+    // le rapport ne peut être ni modifié ni supprimé ni (dé)publié (voir savedReports et rapportsPublics). Seul un ADMIN lève le gel, avec un
+    // justificatif obligatoire (levee.motif) : l'entrée n'est jamais supprimée, elle garde la trace du gel et de sa levée. Un NOUVEAU gel sur un rapport
+    // déjà gelé puis libéré est réservé aux admins et doit conserver l'historique (precedents) : un DMEC ne peut pas annuler la levée d'un admin.
+    // Lecture : le personnel.
+    "gelsJudiciaires": {
+      ".read":  "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+      "$reportKey": {
+        ".write": "auth != null && (((root.child('adminUIDs').child(auth.uid).val() === true || root.child('dmecUIDs').child(auth.uid).val() === true) && newData.child('actif').val() === true && newData.child('uid').val() === auth.uid && !data.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true && newData.child('actif').val() === true && newData.child('uid').val() === auth.uid && data.child('actif').val() === false && newData.child('precedents').exists()) || (root.child('adminUIDs').child(auth.uid).val() === true && data.child('actif').val() === true && newData.child('actif').val() === false))",
+        ".validate": "newData.hasChildren(['reportPath', 'uid', 'depuis', 'actif', 'motif']) && newData.child('actif').isBoolean() && newData.child('depuis').isNumber() && newData.child('uid').isString() && newData.child('motif').isString() && newData.child('motif').val().length >= 3 && newData.child('motif').val().length <= 500 && (newData.child('actif').val() === true || (newData.child('levee').child('motif').isString() && newData.child('levee').child('motif').val().length >= 3 && newData.child('levee').child('motif').val().length <= 500))"
+      }
+    },
+
+    // Registre des demandes des forces de l'ordre (secret médical, voir src/utils/lawEnforcement.js) : demandesAutorites/{id}: { auteurUid, auteurNom,
+    // le, service, agent, type, baseLegale, decision, patientID?, reference?, note? }. AUCUN contenu médical. Création : un membre du personnel, à son
+    // propre nom (jamais modifiée ensuite par lui). Lecture : les admins ; le personnel ne lit que SES fiches, par une requête filtrée sur auteurUid.
+    // Modification et suppression : admins.
+    "demandesAutorites": {
+      ".read":    "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (query.orderByChild === 'auteurUid' && query.equalTo === auth.uid))",
+      ".indexOn": ["auteurUid"],
+      "$id": {
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('auteurUid').val() === auth.uid && root.child('staffUIDs').child(auth.uid).val() === true))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['auteurUid', 'auteurNom', 'le', 'service', 'agent', 'type', 'baseLegale', 'decision']) && newData.child('auteurUid').isString() && newData.child('auteurNom').isString() && newData.child('auteurNom').val().length <= 120 && newData.child('le').isNumber() && newData.child('le').val() <= now + 3600000 && newData.child('service').isString() && newData.child('service').val().length > 0 && newData.child('service').val().length <= 80 && newData.child('agent').isString() && newData.child('agent').val().length > 0 && newData.child('agent').val().length <= 120 && (newData.child('type').val() === 'presence' || newData.child('type').val() === 'etat' || newData.child('type').val() === 'dossier' || newData.child('type').val() === 'prelevement' || newData.child('type').val() === 'identite_defunt' || newData.child('type').val() === 'images' || newData.child('type').val() === 'autre') && (newData.child('baseLegale').val() === 'mandat' || newData.child('baseLegale').val() === 'consentement' || newData.child('baseLegale').val() === 'danger' || newData.child('baseLegale').val() === 'aucune') && (newData.child('decision').val() === 'remis' || newData.child('decision').val() === 'refuse' || newData.child('decision').val() === 'transmis') && (!newData.child('patientID').exists() || (newData.child('patientID').isString() && newData.child('patientID').val().length <= 40)) && (!newData.child('reference').exists() || (newData.child('reference').isString() && newData.child('reference').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))"
+      }
+    },
+
+    // Registre de sécurité incendie (src/utils/fireSafety.js, Code du Feu Titre II) : securiteIncendie/{controles|nonConformites|exercices}/{id}.
+    // Lecture : le personnel et les admins. Écriture : admins ; seule exception, un membre du personnel peut SIGNALER un problème : créer une
+    // non-conformité ouverte, source « signalement », à son propre nom (il ne la modifie plus ensuite).
+    "securiteIncendie": {
+      ".read": "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+      "controles": {
+        "$id": {
+          ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+          ".validate": "!newData.exists() || (newData.hasChildren(['le', 'parUid', 'parNom', 'etage', 'items']) && newData.child('le').isNumber() && newData.child('parUid').isString() && newData.child('parNom').isString() && newData.child('parNom').val().length <= 120 && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 60 && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().length <= 500)))",
+          "items": {
+            "$item": {
+              ".validate": "newData.val() === 'ok' || newData.val() === 'nc' || newData.val() === 'na'"
+            }
+          }
+        }
+      },
+      "nonConformites": {
+        "$id": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('source').val() === 'signalement' && newData.child('statut').val() === 'ouverte' && newData.child('creePar').child('uid').val() === auth.uid))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['creeLe', 'creePar', 'etage', 'article', 'description', 'statut', 'source']) && newData.child('creeLe').isNumber() && newData.child('creePar').hasChildren(['uid', 'nom']) && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 60 && (newData.child('article').val() === '202' || newData.child('article').val() === '203' || newData.child('article').val() === '204' || newData.child('article').val() === '205' || newData.child('article').val() === '206' || newData.child('article').val() === '207' || newData.child('article').val() === '208' || newData.child('article').val() === 'autre') && newData.child('description').isString() && newData.child('description').val().length >= 5 && newData.child('description').val().length <= 500 && (newData.child('statut').val() === 'ouverte' || newData.child('statut').val() === 'resolue') && (newData.child('source').val() === 'controle' || newData.child('source').val() === 'signalement') && (!newData.child('responsable').exists() || (newData.child('responsable').isString() && newData.child('responsable').val().length <= 120)) && (!newData.child('echeance').exists() || newData.child('echeance').isNumber()) && (!newData.child('resolutionNote').exists() || (newData.child('resolutionNote').isString() && newData.child('resolutionNote').val().length <= 500)))"
+        }
+      },
+      "exercices": {
+        "$id": {
+          ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+          ".validate": "!newData.exists() || (newData.hasChildren(['le', 'parUid', 'parNom', 'etage', 'participants', 'duree']) && newData.child('le').isNumber() && newData.child('etage').isString() && newData.child('etage').val().length <= 60 && newData.child('participants').isNumber() && newData.child('duree').isNumber() && (!newData.child('observations').exists() || (newData.child('observations').isString() && newData.child('observations').val().length <= 500)))"
+        }
       }
     },
 
@@ -322,7 +379,11 @@
           // PATIENT DÉCÉDÉ : tant que patientsDecedes/{ID} existe, le personnel non DMEC ne peut ni créer un rapport sur cet ID ni en changer
           // le contenu (bbCode) ; supprimer, ou poser un simple marqueur (ownerDeleted…), reste possible.
           // Un CIVIL ne peut que CRÉER un rapport, ou modifier/supprimer un rapport déjà à SON ID patient (jamais un AMA).
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama'))))",
+          // GEL JUDICIAIRE : tant que gelsJudiciaires/{clé du rapport}/actif vaut true, aucun compte du personnel ni Civil ne peut modifier ni
+          // supprimer ce rapport ; il faut d'abord lever le gel (admin, avec un justificatif : voir gelsJudiciaires). LIMITE : le droit d'écriture
+          // d'un admin sur le NŒUD entier (renommage, fusion de comptes : ligne « .write » de $userKey) l'emporte sur cette règle ; pour les
+          // admins le gel est donc appliqué par l'application (deleteReportWithRules ; assertNoneFrozen avant chaque opération d'admin sur un nœud entier), pas par la base.
+          ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama'))))",
           // Marqueurs que les renommages de fiche mettent à jour dans les COPIES d'un autre médecin (voir renameReportOwner).
           "copiedFrom": {
             "reportPath": {

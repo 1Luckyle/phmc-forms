@@ -20,7 +20,8 @@ import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion'
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import useWriteLock from '../hooks/useWriteLock';
-import { readFamiliesOf, isPublicDeathVersion } from '../utils/reportAccess';
+import { readFamiliesOf, isPublicDeathVersion, isDmecReportVersion } from '../utils/reportAccess';
+import { loadFreezeMap, freezeReport, liftFreeze, isFrozen, AUTHORITY_TYPES, FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { publishReport, unpublishReport } from '../utils/deathReports';
 import PublishedDeathReportsModal from './PublishedDeathReportsModal';
 
@@ -173,6 +174,11 @@ const SavedReportsModal = ({
     const [publishOverrides, setPublishOverrides] = useState({}); // { [clé du rapport]: true | false } après une (dé)publication
     const [unpublishTarget, setUnpublishTarget] = useState(null);
     const [unpublishReason, setUnpublishReason] = useState('');
+    // Gel judiciaire : { [clé du rapport]: entrée } ; la fenêtre de saisie sert à geler (autorité, référence, motif) et à lever (justificatif).
+    const [freezes, setFreezes] = useState({});
+    const [freezeTarget, setFreezeTarget] = useState(null);   // { report, mode: 'freeze' | 'lift' }
+    const [freezeForm, setFreezeForm] = useState({ autorite: 'mandat', reference: '', motif: '' });
+    const [freezeBusy, setFreezeBusy] = useState(false);
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     // Partagé avec le patient ? Copie déjà récupérée ? Même enregistrement que « Dossier Patient » (relié : jamais deux fois).
@@ -620,6 +626,51 @@ const SavedReportsModal = ({
         }
     };
 
+    // Gel judiciaire (DMEC et admins : geler ; admins : lever, avec justificatif).
+    useEffect(() => {
+        if (!show || !isStaffViewer) return undefined;
+        let cancelled = false;
+        // Une lecture ratée n'efface rien : la suppression et les opérations d'admin revérifient le gel elles-mêmes.
+        loadFreezeMap().then((map) => { if (!cancelled) setFreezes(map); }).catch((error) => console.warn('Gels judiciaires illisibles :', error?.message || error));
+        return () => { cancelled = true; };
+    }, [show, isStaffViewer]);
+    const freezeOf = (report) => freezes[String(report.reportPath || '').split('/').pop()] || null;
+
+    const openFreezeDialog = (report, mode) => {
+        setFreezeForm({ autorite: 'mandat', reference: '', motif: '' });
+        setFreezeTarget({ report, mode });
+    };
+
+    const handleConfirmFreeze = async () => {
+        if (!freezeTarget || freezeBusy) return;
+        const { report, mode } = freezeTarget;
+        const key = String(report.reportPath || '').split('/').pop();
+        setFreezeBusy(true);
+        try {
+            if (mode === 'freeze') {
+                const entry = await freezeReport({
+                    reportPath: report.reportPath, title: reportTitleOf(report) || report.originalKey, patientID: report.patientID,
+                    byName: staffName || 'admin', ...freezeForm,
+                });
+                setFreezes((previous) => ({ ...previous, [key]: entry }));
+                showNotification('Rapport gelé : il ne peut plus être modifié, supprimé ni publié.', 'check-circle');
+            } else {
+                await liftFreeze({
+                    reportPath: report.reportPath, title: reportTitleOf(report) || report.originalKey, patientID: report.patientID,
+                    byName: staffName || 'admin', reason: freezeForm.motif,
+                });
+                setFreezes((previous) => ({ ...previous, [key]: { ...previous[key], actif: false } }));
+                showNotification('Gel judiciaire levé.', 'check-circle');
+            }
+            setFreezeTarget(null);
+        } catch (error) {
+            console.error('Gel judiciaire impossible :', error);
+            showNotification(String(error?.message || error).slice(0, 160), 'error');
+        } finally {
+            setFreezeBusy(false);
+        }
+    };
+
     const handleCopyTitle = async (report) => {
         const title = reportTitleOf(report);
         if (title) {
@@ -716,6 +767,9 @@ const SavedReportsModal = ({
         const iHaveCopy = !!myCopyKey && !!indexStatus?.copiedBy?.[myCopyKey];
         const isPublicDeath = isPublicDeathVersion(report.bbCodeVersion) && !report.isCopy;
         const isPublished = isPublicDeath && (publishOverrides[report.key] ?? report.publie === true);
+        const freeze = freezeOf(report);
+        const frozen = isFrozen(freeze);
+        const canFreeze = viewerIsDmec && isDmecReportVersion(report.bbCodeVersion) && !report.isCopy && !isAttachMode;
         return (
             <ReportCard
                 key={report.key}
@@ -734,6 +788,7 @@ const SavedReportsModal = ({
                         {alreadyShared && <Pill color="#58a6ff" title="Le patient voit déjà ce rapport dans son dossier">Partagé avec le patient</Pill>}
                         {iHaveCopy && <Pill color="#a371f7" title="Vous avez déjà récupéré une copie de ce rapport">Vous en avez une copie</Pill>}
                         {isPublished && <Pill color="#58a6ff" title="Publié : tout le personnel du PHMC peut le consulter">Publié</Pill>}
+                        {frozen && <Pill color="#f85149" title={`Gel judiciaire depuis le ${new Date(freeze.depuis).toLocaleDateString('fr-FR')} (${AUTHORITY_TYPES[freeze.autorite] || 'autorité'}${freeze.reference ? ` ${freeze.reference}` : ''}) : ${freeze.motif}`}>Gel judiciaire</Pill>}
                     </>
                 )}
                 actions={(
@@ -780,11 +835,21 @@ const SavedReportsModal = ({
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
                         )}
+                        {canFreeze && (frozen ? (isAdmin && (
+                            <Button size="sm" variant="outline-danger" title="Lever le gel judiciaire (un justificatif est demandé)" disabled={locked || freezeBusy} onClick={() => openFreezeDialog(report, 'lift')}>
+                                <i className="fas fa-lock-open me-1"></i>Lever le gel
+                            </Button>
+                        )) : ((isAdmin || !freeze) && (
+                            // Un rapport dont le gel a été levé ne se regèle que par un admin (l'historique du gel est conservé).
+                            <Button size="sm" variant="outline-danger" title={locked ? lockTitle : 'Geler ce rapport (procédure judiciaire en cours) : plus aucune modification ni suppression'} disabled={locked || freezeBusy} onClick={() => openFreezeDialog(report, 'freeze')}>
+                                <i className="fas fa-gavel me-1"></i>Geler
+                            </Button>
+                        )))}
                         {isPublicDeath && viewerIsDmec && !isAttachMode && (isPublished ? (
                             <Button
                                 size="sm" variant="outline-warning"
                                 title={locked ? lockTitle : 'Retirer la publication (un justificatif est demandé)'}
-                                disabled={locked || publishBusy}
+                                disabled={locked || publishBusy || frozen}
                                 onClick={() => { setUnpublishReason(''); setUnpublishTarget(report); }}
                             >
                                 <i className="fas fa-eye-slash me-1"></i>Dépublier
@@ -793,7 +858,7 @@ const SavedReportsModal = ({
                             <Button
                                 size="sm" variant="success"
                                 title={locked ? lockTitle : 'Rendre ce rapport consultable par tout le personnel du PHMC'}
-                                disabled={locked || publishBusy}
+                                disabled={locked || publishBusy || frozen}
                                 onClick={() => handlePublish(report)}
                             >
                                 <i className="fas fa-bullhorn me-1"></i>Publier
@@ -809,8 +874,8 @@ const SavedReportsModal = ({
                                     await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
                                 }
                             }}
-                            disabled={isLoadingReports || !selectedEmployee || locked}
-                            title={locked ? lockTitle : undefined}
+                            disabled={isLoadingReports || !selectedEmployee || locked || frozen}
+                            title={locked ? lockTitle : (frozen ? FREEZE_MESSAGE : undefined)}
                         >
                             <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>}
@@ -846,6 +911,41 @@ const SavedReportsModal = ({
                         <Button variant="secondary" onClick={() => setUnpublishTarget(null)} disabled={publishBusy}>Annuler</Button>
                         <Button variant="warning" onClick={handleConfirmUnpublish} disabled={publishBusy || !unpublishReason.trim()}>
                             <i className="fas fa-eye-slash me-1"></i>Dépublier
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+                <Modal show={!!freezeTarget} onHide={() => { if (!freezeBusy) setFreezeTarget(null); }} centered style={{ zIndex: 1070 }}>
+                    <Modal.Header closeButton><Modal.Title>{freezeTarget?.mode === 'lift' ? 'Lever le gel judiciaire' : 'Geler ce rapport'}</Modal.Title></Modal.Header>
+                    <Modal.Body>
+                        {freezeTarget?.mode === 'lift' ? (
+                            <>
+                                <p className="mb-2">« {reportTitleOf(freezeTarget.report) || freezeTarget.report.originalKey} » pourra de nouveau être modifié ou supprimé. Indiquez le justificatif (il est consigné dans le journal d'activité et sur le gel).</p>
+                                <Form.Control as="textarea" rows={3} maxLength={500} autoFocus value={freezeForm.motif} onChange={(event) => setFreezeForm((f) => ({ ...f, motif: event.target.value }))} placeholder="Justificatif (obligatoire)" />
+                            </>
+                        ) : (
+                            <>
+                                <p className="mb-2">Tant que le rapport est gelé, plus personne ne peut le modifier, le supprimer, le publier ou le dépublier. Seul un administrateur peut lever le gel, avec un justificatif.</p>
+                                <Form.Group className="mb-2">
+                                    <Form.Label>Autorité à l'origine du gel</Form.Label>
+                                    <Form.Select value={freezeForm.autorite} onChange={(event) => setFreezeForm((f) => ({ ...f, autorite: event.target.value }))}>
+                                        {Object.entries(AUTHORITY_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                    </Form.Select>
+                                </Form.Group>
+                                <Form.Group className="mb-2">
+                                    <Form.Label>Référence <small className="text-muted">(n° de mandat, de dossier… facultatif)</small></Form.Label>
+                                    <Form.Control maxLength={120} value={freezeForm.reference} onChange={(event) => setFreezeForm((f) => ({ ...f, reference: event.target.value }))} />
+                                </Form.Group>
+                                <Form.Group>
+                                    <Form.Label>Motif du gel</Form.Label>
+                                    <Form.Control as="textarea" rows={2} maxLength={500} autoFocus value={freezeForm.motif} onChange={(event) => setFreezeForm((f) => ({ ...f, motif: event.target.value }))} placeholder="ex. Enquête en cours, rapport requis par le tribunal" />
+                                </Form.Group>
+                            </>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setFreezeTarget(null)} disabled={freezeBusy}>Annuler</Button>
+                        <Button variant="danger" onClick={handleConfirmFreeze} disabled={freezeBusy || freezeForm.motif.trim().length < 3}>
+                            <i className={`fas ${freezeTarget?.mode === 'lift' ? 'fa-lock-open' : 'fa-gavel'} me-1`}></i>{freezeTarget?.mode === 'lift' ? 'Lever le gel' : 'Geler le rapport'}
                         </Button>
                     </Modal.Footer>
                 </Modal>

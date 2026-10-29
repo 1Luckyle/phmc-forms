@@ -14,11 +14,13 @@ import * as Sentry from '@sentry/react';
 import BaseModal from '../BaseModal';
 import '../DarkUi.css';
 import ContractDocument, { ContractExportBar } from './ContractDocument';
+import PersonnelFileDialog from './PersonnelFileDialog';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
 import { normalizeRank, getRoleInfo } from '../../constants/ranks';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { loadUserCreations } from '../../utils/userCreations';
+import { loadSalaryGrid, echelonsFor, formatAmount } from '../../utils/salaryGrid';
 import { sendEyefindMail } from '../../utils/eyefindMail';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import {
@@ -66,6 +68,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
     const [fields, setFields] = useState(emptyContractFields('cdi'));
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [grid, setGrid] = useState(null);   // grille des rémunérations publiée (page Transparence)
 
     const isNew = !contract;
     const ownContract = !!contract && contract.employeUid === issuer.uid && !issuer.isAdmin;
@@ -73,6 +76,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 
     useEffect(() => {
         if (!show) return;
+        loadSalaryGrid().then(setGrid);
         setError('');
         setFilter('');
         const initialType = contract ? contractTypeOf(contract) : (newType || 'cdi');
@@ -220,10 +224,39 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         onHide();
     });
 
+    // Échelons publiés pour le grade choisi : choisir un échelon préremplit la rémunération (modifiable).
+    const gridEchelons = useMemo(() => echelonsFor(grid, fields.role), [grid, fields.role]);
+    const pickEchelon = (libelle) => setFields((prev) => {
+        const found = gridEchelons.find((e) => e.libelle === libelle);
+        return { ...prev, echelon: libelle, ...(found ? { remuneration: formatAmount(found.montant, grid.unite) } : {}) };
+    });
+    const gridWarning = useMemo(() => {
+        const found = gridEchelons.find((e) => e.libelle === fields.echelon);
+        if (!found || !fields.remuneration) return '';
+        const expected = formatAmount(found.montant, grid.unite);
+        return fields.remuneration.trim() === expected ? '' : `La grille publiée indique « ${expected} » pour cet échelon : la rémunération du contrat diffère.`;
+    }, [gridEchelons, grid, fields.echelon, fields.remuneration]);
+
     const renderField = (field) => {
         const value = fields[field.key] ?? '';
         const common = { value, onChange: set(field.key) };
         let control;
+        if (field.key === 'echelon' && gridEchelons.length > 0) {
+            control = (
+                <Form.Select value={value} onChange={(e) => pickEchelon(e.target.value)}>
+                    <option value="">Aucun échelon</option>
+                    {gridEchelons.map((e) => <option key={e.libelle} value={e.libelle}>{e.libelle} — {formatAmount(e.montant, grid.unite)}</option>)}
+                    {value && !gridEchelons.some((e) => e.libelle === value) && <option value={value}>{value} (hors grille)</option>}
+                </Form.Select>
+            );
+            return (
+                <Form.Group key={field.key} className={field.half ? 'contract-field-half' : ''}>
+                    <Form.Label>{field.label}<small className="text-muted"> (facultatif)</small></Form.Label>
+                    {control}
+                    <Form.Text className="text-muted d-block">Échelons publiés pour ce grade : le choix préremplit la rémunération.</Form.Text>
+                </Form.Group>
+            );
+        }
         switch (field.type) {
             case 'role':
                 control = (
@@ -294,6 +327,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                 {field.type !== 'checkbox' && <Form.Label>{field.label}{field.required ? '' : <small className="text-muted"> (facultatif)</small>}</Form.Label>}
                 {control}
                 {field.help && field.type !== 'checkbox' && <Form.Text className="text-muted d-block">{field.help}</Form.Text>}
+                {field.key === 'remuneration' && gridWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{gridWarning}</Form.Text>}
             </Form.Group>
         );
     };
@@ -426,6 +460,7 @@ const ContractsManager = ({ showNotification }) => {
     const [group, setGroup] = useState('all');
     const [editing, setEditing] = useState(undefined); // undefined = fermé, sinon le document existant à ouvrir
     const [newType, setNewType] = useState(null);       // type d'un nouveau document en cours de création
+    const [fileOf, setFileOf] = useState(null);         // { uid, name } : dossier du personnel ouvert
 
     const issuer = useMemo(() => ({
         uid: currentEmployee?.uid,
@@ -598,6 +633,9 @@ const ContractsManager = ({ showNotification }) => {
                                                         ? <><i className="fas fa-edit me-1"></i>Modifier</>
                                                         : <><i className="fas fa-eye me-1"></i>Voir</>}
                                                 </Button>
+                                                <Button size="sm" variant="outline-info" title="Dossier du personnel : tous les documents de cette personne" onClick={() => setFileOf({ uid: c.employeUid, name: c.employeNom })}>
+                                                    <i className="fas fa-folder-open"></i>
+                                                </Button>
                                                 {/* Un document signé ne se supprime que par un admin (règles Firebase). */}
                                                 {(isAdmin || (c.statut !== 'signe' && c.employeUid !== issuer.uid)) && (
                                                     <Button size="sm" variant="outline-danger" onClick={() => handleDelete(c)}><i className="fas fa-trash"></i></Button>
@@ -611,6 +649,8 @@ const ContractsManager = ({ showNotification }) => {
                     </Table>
                 </div>
             )}
+
+            <PersonnelFileDialog show={!!fileOf} onHide={() => setFileOf(null)} uid={fileOf?.uid} name={fileOf?.name} contracts={contracts} showNotification={showNotification} />
 
             <ContractEditor
                 show={editing !== undefined || !!newType}

@@ -10,6 +10,7 @@ export const ACTIVITY_CATEGORIES = {
     comptes:     { label: 'Comptes & personnel',      icon: 'fa-users-gear',           color: '#79c0ff' },
     facturation: { label: 'Facturation & paiements',  icon: 'fa-file-invoice-dollar',  color: '#e3b341' },
     demandes:    { label: 'Demandes du site',         icon: 'fa-inbox',                color: '#ffa657' },
+    securite:    { label: 'Sécurité incendie',        icon: 'fa-fire-extinguisher',    color: '#f0883e' },
     bingo:       { label: 'Bingo',                    icon: 'fa-dice',                 color: '#f778ba' },
     admin:       { label: 'Administration',           icon: 'fa-shield-halved',        color: '#ff9bce' },
     erreurs:     { label: 'Erreurs',                  icon: 'fa-triangle-exclamation', color: '#ff7b72' },

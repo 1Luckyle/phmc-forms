@@ -1,0 +1,38 @@
+/* Page publique « Transparence » + éditeur admin (classes tm-*) */
+
+.tp-page { min-height: 100vh; background: #0d1117; color: #e6edf3; padding: 24px 16px 48px; }
+.tp-wrap { max-width: 900px; margin: 0 auto; }
+.tp-back { display: inline-block; margin-bottom: 16px; color: #58a6ff; text-decoration: none; font-size: 0.9rem; }
+.tp-back:hover { text-decoration: underline; }
+.tp-page h1 { font-size: 1.8rem; margin-bottom: 8px; }
+.tp-intro { color: #9da7b3; margin-bottom: 24px; }
+.tp-section { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; }
+.tp-section h2 { font-size: 1.2rem; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #30363d; }
+.tp-family h3 { font-size: 1rem; color: #58a6ff; margin: 16px 0 8px; }
+.tp-muted { color: #8b949e; font-size: 0.88rem; margin: 10px 0 0; }
+.tp-direction { display: flex; flex-direction: column; gap: 4px; }
+.tp-direction strong { font-size: 1.1rem; }
+.tp-table-scroll { overflow-x: auto; }
+.tp-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.tp-table th, .tp-table td { padding: 8px 10px; border-bottom: 1px solid #21262d; text-align: left; vertical-align: top; }
+.tp-table thead th { color: #8b949e; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.tp-table tbody th { font-weight: 600; }
+.tp-num { text-align: right !important; white-space: nowrap; }
+.tp-quarter { border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; background: #0d1117; }
+.tp-quarter summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; cursor: pointer; }
+.tp-quarter summary span { color: #9da7b3; font-size: 0.88rem; }
+.tp-quarter .pos { color: #3fb950; }
+.tp-quarter .neg { color: #f85149; }
+
+/* Éditeur admin */
+.tm-grade { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 0; }
+.tm-grade-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tm-echelon { display: grid; grid-template-columns: 1fr 160px auto; gap: 6px; margin-bottom: 6px; }
+.tm-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.tm-line { display: flex; flex-wrap: wrap; gap: 6px; }
+.tm-line > .form-control { flex: 1 1 200px; }
+.tm-totals { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 10px 12px; margin-bottom: 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+
+@media (max-width: 575px) {
+    .tm-echelon { grid-template-columns: 1fr 110px auto; }
+}

@@ -4,6 +4,7 @@ import Select from 'react-select';
 import AutopsyDiagramModal from '../components/AutopsyDiagramModal';
 import * as Sentry from "@sentry/react";
 import DecedentDetailsFields from './shared/DecedentDetailsFields';
+import RequestingAuthorityFields from './shared/RequestingAuthorityFields';
 
 const Autopsy = ({
     formData,
@@ -174,6 +175,7 @@ const Autopsy = ({
                 />
             </div>
             <DecedentDetailsFields formData={formData} handleChange={handleChange} showMeasures />
+            <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
             <Form.Label className="form-section-title">Date et heure de l'autopsie</Form.Label>
              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
                 <Form.Control

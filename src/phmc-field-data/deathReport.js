@@ -3,6 +3,7 @@ import { Form, Button, InputGroup } from 'react-bootstrap';
 import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
 import DecedentDetailsFields from './shared/DecedentDetailsFields';
+import RequestingAuthorityFields from './shared/RequestingAuthorityFields';
 
 const DeathReport = ({
     formData,
@@ -197,6 +198,7 @@ useEffect(() => {
                 <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (optionnel, le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
             </div>
             <DecedentDetailsFields formData={formData} handleChange={handleChange} />
+            <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
             <Form.Label className="form-section-title">Circonstances du décès</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
 

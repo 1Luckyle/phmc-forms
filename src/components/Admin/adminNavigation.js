@@ -87,6 +87,16 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'prix tarif coût montant argent paiement fleeca facture dossier médical autopsie dollars',
             },
             {
+                key: 'fireSafety', icon: 'fa-fire-extinguisher', label: 'Sécurité incendie',
+                description: "Registre des contrôles par étage, des non-conformités signalées et des exercices d'évacuation.",
+                keywords: 'incendie feu extincteur alarme issue de secours gicleur détecteur fumée évacuation exercice contrôle non-conformité sécurité',
+            },
+            {
+                key: 'transparency', icon: 'fa-scale-balanced', label: 'Transparence',
+                description: "La page publique de l'établissement : direction, grille des rémunérations et comptes trimestriels.",
+                keywords: 'transparence grille salariale salaire échelon comptes trimestre recettes dépenses direction publication',
+            },
+            {
                 key: 'display', icon: 'fa-sliders', label: 'Affichage & BBCode',
                 description: "Réglages d'affichage communs à tous : accès au BBCode ou HTML et aperçu seulement.",
                 keywords: 'bbcode html aperçu copie convertisseur',

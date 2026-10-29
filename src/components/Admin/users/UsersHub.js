@@ -15,6 +15,7 @@ import UserStats from '../UserStats';
 import EmailChangeFlow from '../../EmailChangeFlow';
 import AdminReportsTools from '../AdminReportsTools';
 import RankMigrationPanel from './RankMigrationPanel';
+import PersonnelFileDialog from '../../Contracts/PersonnelFileDialog';
 import { sendAdminActionWebhook } from '../adminUtils';
 import {
     StaffEditDialog, RemoveStaffDialog, ConvertToCivilDialog, ConvertToStaffDialog,
@@ -97,6 +98,7 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, internalGrants =
     const [adding, setAdding] = useState(false);
     const [removing, setRemoving] = useState(null);
     const [toCivil, setToCivil] = useState(null);
+    const [fileOf, setFileOf] = useState(null);
 
     // Avec le cumul de rôles, une personne n'est comptée qu'UNE fois : par la famille de son rôle principal
     // (ses badges montrent quand même toutes ses familles). Les filtres suivent les mêmes compteurs.
@@ -183,6 +185,9 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, internalGrants =
                                             : <span className="text-muted" title="Fiche sans compte de connexion"><i className="fas fa-minus-circle"></i> aucun</span>}</td>
                                         <td className="text-end">
                                             <ActionsMenu>
+                                                <Dropdown.Item disabled={!m.uid} onClick={() => setFileOf(m)}>
+                                                    <i className="fas fa-folder-open me-2"></i>Dossier du personnel{!m.uid ? ' (compte requis)' : ''}
+                                                </Dropdown.Item>
                                                 <Dropdown.Item onClick={() => setEditing(m)}><i className="fas fa-edit me-2"></i>Modifier (rôle, badge…)</Dropdown.Item>
                                                 <Dropdown.Item disabled={!m.uid} onClick={() => toggleRecruiter(m)}>
                                                     <i className="fas fa-user-tie me-2"></i>{recruiterUids[m.uid] === true ? 'Retirer le droit Recruteur' : 'Donner le droit Recruteur'}{!m.uid ? ' (compte requis)' : ''}
@@ -208,6 +213,7 @@ const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, internalGrants =
                 </table>
             </div>
 
+            <PersonnelFileDialog show={!!fileOf} onHide={() => setFileOf(null)} uid={fileOf?.uid} name={fileOf ? (fileOf.displayName || fileOf.name) : ''} showNotification={showNotification} />
             <StaffEditDialog show={!!editing} onHide={() => setEditing(null)} member={editing} isRecruiter={!!editing && recruiterUids[editing.uid] === true}
                 adminEmail={adminEmail} showNotification={showNotification} onDone={reload} />
             <StaffEditDialog show={adding} onHide={() => setAdding(false)} member={null} defaultFamily={family === 'all' ? 'soignant' : family}

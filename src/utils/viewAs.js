@@ -190,6 +190,10 @@ export const getToolAccess = (identity) => {
         recruitment: !!canManageRecruitment,
         // Annuaire (consultation seule) : le personnel et les admins.
         directory: isStaffMember || !!isAdmin,
+        // Demandes des forces de l'ordre (aide-mémoire + registre) : tout le personnel, puisque n'importe qui peut être interpellé par un agent.
+        lawEnforcement: isStaffMember || !!isAdmin,
+        // Signaler un problème de sécurité incendie (registre des admins) : tout le personnel.
+        fireReport: isStaffMember || !!isAdmin,
         ama: !!canUseAma,
         // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
         // (depuis « Mes contrats ») mais pas sa carte de visite.
@@ -207,6 +211,8 @@ export const TOOL_ACCESS_LABELS = {
     patientDossier: 'Dossier Patient',
     recruitment: 'Gestion du recrutement',
     directory: 'Annuaire (consultation seule)',
+    lawEnforcement: "Demandes des forces de l'ordre",
+    fireReport: 'Signaler un problème incendie',
     ama: 'EMS Contre Avis Médical',
     businessCard: 'Créer sa carte de visite',
     signature: 'Créer sa signature',

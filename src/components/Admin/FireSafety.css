@@ -1,0 +1,21 @@
+/* Registre de sécurité incendie (admin) */
+.fs-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.fs-kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04); }
+.fs-kpi strong { font-size: 1.5rem; line-height: 1.1; }
+.fs-kpi span { font-size: 0.82rem; opacity: 0.8; }
+.fs-kpi.ok strong { color: #3fb950; }
+.fs-kpi.warn strong { color: #e3b341; }
+.fs-kpi.bad strong { color: #f85149; }
+.fs-checklist { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.fs-check { display: grid; grid-template-columns: 1fr 160px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.04); }
+.fs-status-nc { border-color: #f85149; color: #f85149; }
+.fs-status-ok { border-color: #3fb950; }
+.fs-table-scroll { overflow-x: auto; }
+.fs-table { font-size: 0.88rem; }
+.fs-table td, .fs-table th { vertical-align: top; }
+.fs-overdue { background: rgba(248, 81, 73, 0.08); }
+.fs-wide { grid-column: 1 / -1; }
+
+@media (max-width: 575px) {
+    .fs-check { grid-template-columns: 1fr; }
+}

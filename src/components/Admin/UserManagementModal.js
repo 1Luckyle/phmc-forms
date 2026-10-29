@@ -4,6 +4,7 @@ import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { ref, get, set, remove, update } from "firebase/database";
 import './UserManagementModal.css';
 import { sendDiscordNotification } from './adminUtils';
+import { assertNoneFrozen } from '../../utils/judicialFreeze';
 
 const UserManagementModal = ({ show, onHide, database, showNotification }) => {
     const [users, setUsers] = useState([]);
@@ -73,6 +74,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
             const allReports = snapshot.val();
             const updates = {};
             let sanitizedCount = 0;
+            await assertNoneFrozen(Object.keys(allReports).filter((name) => name !== comprehensiveSanitize(name)).flatMap((name) => Object.keys(allReports[name] || {})));
 
             for (const userName in allReports) {
                 const sanitizedUserName = comprehensiveSanitize(userName);
@@ -128,6 +130,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
             const allReports = snapshot.val();
             const updates = {};
             let migratedCount = 0;
+            await assertNoneFrozen(Object.keys(allReports).filter((name) => name.includes(' ')).flatMap((name) => Object.keys(allReports[name] || {})));
     
             for (const userName in allReports) {
                 if (userName.includes(' ')) {
@@ -196,6 +199,7 @@ const UserManagementModal = ({ show, onHide, database, showNotification }) => {
                 return;
             }
 
+            await assertNoneFrozen(Object.keys(sourceSnapshot.val()));
             const destinationSnapshot = await get(destinationUserRef);
             if (destinationSnapshot.exists()) {
                 destinationBackup = destinationSnapshot.val();

@@ -1,0 +1,166 @@
+// src/utils/transparency.js
+//
+// Page « Transparence » d'un établissement public (Code du Gouvernement, art. 326 à 328) : nom et contact de la personne qui dirige l'établissement,
+// grille des rémunérations (voir salaryGrid.js) et comptes publiés à la fin de chaque trimestre (art. 327, avec la possibilité d'anonymiser les lignes
+// liées à une enquête pénale).
+//
+// Stockage : adminSettings/transparence (lecture publique, écriture admin : voir database.rules.json)
+//   { direction: { nom, fonction, contact }, contactDemandes, comptes: { 'AAAA-Tn': { periode, publieLe, publiePar, lignes: [{ type, libelle, montant }], notes } } }
+// Seuls les comptes PUBLIÉS sont enregistrés (la lecture du nœud étant publique, un brouillon n'y serait pas privé) : le brouillon d'un trimestre reste
+// dans le navigateur de l'admin (voir TransparencyManager).
+import { ref, get, set, update, remove } from 'firebase/database';
+import { database } from '../firebase';
+import { parseAmount } from './amounts';
+
+export const TRANSPARENCY_PATH = 'adminSettings/transparence';
+export const MAX_LINE_AMOUNT = 1000000000;
+
+const asArray = (value) => (!value ? [] : Array.isArray(value) ? value : Object.values(value));
+
+export const LINE_TYPES = { recette: 'Recette', depense: 'Dépense' };
+
+// ───────────────────────────── Trimestres ─────────────────────────────
+
+export const quarterKey = (year, quarter) => `${year}-T${quarter}`;
+
+export const parseQuarterKey = (key) => {
+    const match = /^(\d{4})-T([1-4])$/.exec(String(key || ''));
+    return match ? { year: Number(match[1]), quarter: Number(match[2]) } : null;
+};
+
+export const quarterLabel = (key) => {
+    const parsed = parseQuarterKey(key);
+    return parsed ? `${parsed.quarter === 1 ? '1er' : `${parsed.quarter}e`} trimestre ${parsed.year}` : String(key);
+};
+
+// [début, fin[ en millisecondes (heure locale du navigateur).
+export const quarterBounds = (key) => {
+    const parsed = parseQuarterKey(key);
+    if (!parsed) return null;
+    const startMonth = (parsed.quarter - 1) * 3;
+    return [new Date(parsed.year, startMonth, 1).getTime(), new Date(parsed.year, startMonth + 3, 1).getTime()];
+};
+
+export const currentQuarterKey = (now = Date.now()) => {
+    const d = new Date(now);
+    return quarterKey(d.getFullYear(), Math.floor(d.getMonth() / 3) + 1);
+};
+
+export const isQuarterOver = (key, now = Date.now()) => {
+    const bounds = quarterBounds(key);
+    return !!bounds && now >= bounds[1];
+};
+
+// ───────────────────────────── Lignes et totaux ─────────────────────────────
+
+export const normalizeLines = (lines) => asArray(lines)
+    .map((line) => ({
+        type: line?.type === 'depense' ? 'depense' : 'recette',
+        libelle: String(line?.libelle || '').trim(),
+        montant: parseAmount(line?.montant),
+    }))
+    .filter((line) => line.libelle && Number.isFinite(line.montant));
+
+// Validation AVANT publication : contrairement à normalizeLines (qui ignore ce qui est invalide pour l'affichage), rien ne disparaît ni ne devient « 0 $ »
+// en silence. Une ligne entièrement vide est ignorée ; une ligne sans libellé, ou dont le montant est vide ou invalide, est une erreur.
+// → { errors: [message], lines: [{ type, libelle, montant }] }
+export const validateLines = (lines) => {
+    const errors = [];
+    const valid = [];
+    asArray(lines).forEach((line, index) => {
+        const libelle = String(line?.libelle || '').trim();
+        const blankAmount = String(line?.montant ?? '').trim() === '';
+        if (!libelle && blankAmount) return;
+        const montant = parseAmount(line?.montant);
+        if (!libelle) errors.push(`Ligne ${index + 1} : le libellé est vide.`);
+        else if (!Number.isFinite(montant) || montant < 0 || montant > MAX_LINE_AMOUNT) errors.push(`Ligne ${index + 1} (« ${libelle} ») : le montant est vide ou invalide (entre 0 et 1 000 000 000).`);
+        else valid.push({ type: line?.type === 'depense' ? 'depense' : 'recette', libelle, montant });
+    });
+    return { errors, lines: valid };
+};
+
+export const totals = (lines) => {
+    const normalized = normalizeLines(lines);
+    const recettes = normalized.filter((l) => l.type === 'recette').reduce((sum, l) => sum + l.montant, 0);
+    const depenses = normalized.filter((l) => l.type === 'depense').reduce((sum, l) => sum + l.montant, 0);
+    return { recettes, depenses, solde: recettes - depenses };
+};
+
+export const formatMoney = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} $`;
+
+// ───────────────────────────── Lecture / écriture ─────────────────────────────
+
+export const normalizeTransparency = (raw) => {
+    const comptes = {};
+    Object.entries(raw?.comptes || {}).forEach(([key, account]) => {
+        if (!parseQuarterKey(key) || !account) return;
+        comptes[key] = {
+            periode: key,
+            publieLe: account.publieLe || null,
+            publiePar: account.publiePar || '',
+            lignes: normalizeLines(account.lignes),
+            notes: String(account.notes || ''),
+        };
+    });
+    return {
+        direction: {
+            nom: String(raw?.direction?.nom || ''),
+            fonction: String(raw?.direction?.fonction || ''),
+            contact: String(raw?.direction?.contact || ''),
+        },
+        contactDemandes: String(raw?.contactDemandes || ''),
+        comptes,
+    };
+};
+
+export const loadTransparency = async () => {
+    const snap = await get(ref(database, TRANSPARENCY_PATH));
+    return normalizeTransparency(snap.exists() ? snap.val() : null);
+};
+
+export const saveDirection = async ({ nom, fonction, contact, contactDemandes }) => {
+    await update(ref(database, TRANSPARENCY_PATH), {
+        direction: { nom: String(nom || '').trim().slice(0, 120), fonction: String(fonction || '').trim().slice(0, 120), contact: String(contact || '').trim().slice(0, 240) },
+        contactDemandes: String(contactDemandes || '').trim().slice(0, 400),
+    });
+};
+
+// Publie (ou met à jour) les comptes d'un trimestre. Retourne le compte enregistré.
+export const publishAccounts = async (key, { lignes, notes }, byName) => {
+    if (!parseQuarterKey(key)) throw new Error('Trimestre invalide.');
+    const { errors, lines } = validateLines(lignes);
+    if (errors.length > 0) throw new Error(errors.slice(0, 3).join(' '));
+    if (lines.length === 0) throw new Error('Ajoutez au moins une ligne avant de publier.');
+    const account = {
+        periode: key,
+        publieLe: Date.now(),
+        publiePar: byName || '',
+        lignes: lines,
+        notes: String(notes || '').trim().slice(0, 1500),
+    };
+    await set(ref(database, `${TRANSPARENCY_PATH}/comptes/${key}`), account);
+    return account;
+};
+
+export const unpublishAccounts = async (key) => {
+    if (!parseQuarterKey(key)) throw new Error('Trimestre invalide.');
+    await remove(ref(database, `${TRANSPARENCY_PATH}/comptes/${key}`));
+};
+
+// Recettes tirées des factures payées dans le trimestre (admins : la lecture de tous les patients leur est ouverte). Retourne { montant, count }.
+export const suggestQuarterRevenue = async (key) => {
+    const bounds = quarterBounds(key);
+    if (!bounds) return { montant: 0, count: 0 };
+    const snap = await get(ref(database, 'facturesPatients'));
+    let montant = 0;
+    let count = 0;
+    Object.values(snap.val() || {}).forEach((patientInvoices) => {
+        Object.values(patientInvoices || {}).forEach((invoice) => {
+            if (invoice?.statut === 'paye' && invoice.payeLe >= bounds[0] && invoice.payeLe < bounds[1]) {
+                montant += Number(invoice.montant) || 0;
+                count += 1;
+            }
+        });
+    });
+    return { montant, count };
+};
