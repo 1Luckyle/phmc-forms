@@ -185,6 +185,9 @@ const SavedReportsModal = ({
     // Le personnel (admin ou employé identifié) peut partager/copier un
     // rapport lié à un patient — un civil ne le peut jamais (Lot 5).
     const isStaffViewer = isAdmin || !!employeeProfile;
+    // Tout le personnel peut CONSULTER les rapports d'un collègue (modèle collaboratif), mais seul un admin peut modifier / supprimer
+    // ceux d'un autre : sur la liste d'un collègue, les suppressions sont masquées pour le personnel non admin.
+    const readOnlyOthers = !isAdmin && !!employeeProfile && !!selectedEmployee && selectedEmployee.value !== staffName;
     // Nom sous lequel le médecin range ses rapports : sa fiche personnel (même pour
     // un admin, voir EmployeeAuthContext), JAMAIS son e-mail. Un admin sans fiche
     // personnel copie chez l'employé dont la liste est affichée.
@@ -291,7 +294,7 @@ const SavedReportsModal = ({
 
     const handleEmployeeSelect = (selectedOption) => {
         // Consulter les rapports d'un AUTRE employé (admin) laisse une trace.
-        if (selectedOption && isAdmin && selectedOption.value !== staffName) {
+        if (selectedOption && isStaffViewer && selectedOption.value !== staffName) {
             logActivity({ category: 'rapports', action: 'reports_viewed_other', summary: `Rapports enregistrés de ${selectedOption.label || selectedOption.value} consultés`, target: String(selectedOption.value) });
         }
         isManualSelectionRef.current = true;
@@ -316,9 +319,11 @@ const SavedReportsModal = ({
             options = options.filter((group) => group.label === 'PHMC Staff');
         }
         
-        // Si admin, montrer tous les employés
-        if (isAdmin) {
-            return options;
+        // Admin ou personnel : tous les employés (le personnel retrouve toujours sa propre entrée, même si la liste en cache ne la contient pas encore).
+        if (isAdmin || employeeProfile) {
+            const ownName = staffName || employeeProfile?.name;
+            const hasOwn = ownName && options.some((group) => group.options.some((opt) => opt.value === ownName));
+            return ownName && !hasOwn ? [{ label: 'Moi', options: [{ value: ownName, label: ownName }] }, ...options] : options;
         }
         
         // Si pas connecté, ne montrer personne
@@ -730,7 +735,7 @@ const SavedReportsModal = ({
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
                         )}
-                        {!(isCivilian && isAma) && <Button
+                        {!(isCivilian && isAma) && !readOnlyOthers && <Button
                             variant="outline-danger" size="sm" className="ms-auto"
                             onClick={async () => {
                                 const message = isAma
@@ -776,7 +781,7 @@ const SavedReportsModal = ({
                     </span>
                 </div>
 
-                {isAdmin && (
+                {isStaffViewer && (
                     <div className="d-flex flex-wrap align-items-end gap-2 mb-2" style={{ flexShrink: 0 }}>
                         <Form.Group controlId="employeeSelect" style={{ flex: '1 1 320px', maxWidth: '520px' }}>
                             <Form.Label className="mb-1">Employé dont on affiche les rapports</Form.Label>
@@ -872,7 +877,7 @@ const SavedReportsModal = ({
                         <p className="rpt-empty">
                             {!currentEmployee
                                 ? 'Vous devez être connecté pour consulter les rapports enregistrés.'
-                                : isAdmin
+                                : isStaffViewer
                                 ? 'Veuillez sélectionner un employé pour voir ses rapports enregistrés.'
                                 : 'Impossible de retrouver votre fiche employé associée à ce compte. Contactez un administrateur.'}
                         </p>
@@ -890,7 +895,7 @@ const SavedReportsModal = ({
                             checked={isAllCurrentPageSelected} onChange={(e) => handleSelectAllChange(e.target.checked)}
                             title="Sélectionner/Désélectionner tout sur cette page"
                         />
-                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0 || locked} title={locked ? lockTitle : undefined}>
+                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0 || locked || readOnlyOthers} title={readOnlyOthers ? "Vous ne pouvez pas supprimer les rapports d'un autre employé" : (locked ? lockTitle : undefined)}>
                             <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>
                         <Dropdown drop="up">
