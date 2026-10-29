@@ -41,6 +41,8 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
     const [admins, setAdmins] = useState({});
     const [internalGrants, setInternalGrants] = useState({});
     const [creationFlags, setCreationFlags] = useState({});   // { uid: { signature, carte } }
+    // Faux si la lecture des drapeaux est refusée : on n'affiche alors AUCUNE pastille « Sans signature / Sans carte » (sinon tout le monde semble n'avoir rien créé).
+    const [flagsReadable, setFlagsReadable] = useState(false);
     const [family, setFamily] = useState('all');
     const [query, setQuery] = useState('');
 
@@ -67,6 +69,7 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
                 setAdmins(adminUids);
                 setInternalGrants(grants);
                 setCreationFlags(flagsSnap && flagsSnap.exists() ? flagsSnap.val() : {});
+                setFlagsReadable(!!flagsSnap);
             } catch (err) {
                 if (!cancelled) setError(err?.message || 'Annuaire illisible.');
             } finally {
@@ -155,8 +158,8 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
                                             {canSeeStaffAddress && (member.address || member.zip) && <span><i className="fas fa-location-dot"></i> {[member.address, member.zip].filter(Boolean).join(' · ')}</span>}
                                         </div>
                                         <div className="dir-chips">
-                                            {member.uid && <Pill color={creationFlags[member.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (Carte de visite & signature)">{creationFlags[member.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>}
-                                            {member.uid && <Pill color={creationFlags[member.uid]?.carte ? '#3fb950' : '#6e7681'} title="A créé sa carte de visite">{creationFlags[member.uid]?.carte ? 'Carte de visite' : 'Sans carte'}</Pill>}
+                                            {member.uid && flagsReadable && <Pill color={creationFlags[member.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (Carte de visite & signature)">{creationFlags[member.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>}
+                                            {member.uid && flagsReadable && <Pill color={creationFlags[member.uid]?.carte ? '#3fb950' : '#6e7681'} title="A créé sa carte de visite">{creationFlags[member.uid]?.carte ? 'Carte de visite' : 'Sans carte'}</Pill>}
                                             {member.families.map((key) => <Pill key={key} color={FAMILY_COLORS[key]}>{STAFF_FAMILIES[key]?.label || key}</Pill>)}
                                             {member.uid && recruiters[member.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {member.uid && admins[member.uid] === true && <Pill color="#f85149">Admin</Pill>}
@@ -206,7 +209,7 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
                                             )}
                                         </div>
                                         <div className="dir-chips">
-                                            <Pill color={creationFlags[civilian.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (utilisée pour ses documents, ex. AMA)">{creationFlags[civilian.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>
+                                            {flagsReadable && <Pill color={creationFlags[civilian.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (utilisée pour ses documents, ex. AMA)">{creationFlags[civilian.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>}
                                             {recruiters[civilian.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {internalGrants[civilian.uid] && <Pill color="#79c0ff" title="Statut de recrutement interne accordé">Recrutement interne</Pill>}
                                         </div>

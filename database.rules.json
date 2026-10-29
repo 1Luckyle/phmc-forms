@@ -149,6 +149,9 @@
     // booléens : les images elles-mêmes (userCreations) restent privées. Écrits par la personne (à chaque lecture de ses créations), lus
     // par le personnel et les admins.
     "creationsFlags": {
+      // Lecture du NŒUD entier (l'annuaire lit tous les drapeaux d'un coup) : sans cette règle au niveau du nœud, la lecture
+      // était refusée et tout le monde apparaissait « Sans signature / Sans carte » dans l'annuaire.
+      ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
         ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
@@ -290,7 +293,7 @@
     // (« ancien membre du personnel, plus lié à un compte »). Effacé à la recréation du compte (par la personne elle-même ou un admin).
     "comptesSupprimes": {
       "$patientId": {
-        ".read":  "auth != null && !root.child('civilians').child(auth.uid).exists()",
+        ".read":  "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
         ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || !newData.exists())"
       }
     },
@@ -439,7 +442,7 @@
       // Lecture de TOUT le nœud (liste des patients sans compte dans « Dossier
       // Patient », réindexation admin) : personnel et admins uniquement — un civil
       // ne peut lire que le dossier d'un ID précis (règle $patientId ci-dessous).
-      ".read": "auth != null && !root.child('civilians').child(auth.uid).exists()",
+      ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         // Personnel/admins : tout dossier (via la lecture du nœud parent). Civil : UNIQUEMENT le dossier
         // dont l'ID patient est celui de son propre profil (plus d'énumération des dossiers par ID deviné).
@@ -585,7 +588,7 @@
     // passer une facture à « paye » ni la ramener en arrière : le règlement est fait par le serveur
     // (webhook Fleeca / getFleecaPaymentStatus), qui contourne ces règles.
     "facturesPatients": {
-      ".read": "auth != null && !root.child('civilians').child(auth.uid).exists()",
+      ".read": "auth != null && (!root.child('civilians').child(auth.uid).exists() || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         // Personnel/admins : toutes les factures (via le nœud parent). Civil : seulement SES factures
         // (ID patient de son profil). Empêche de lire les factures d'autrui par ID deviné.

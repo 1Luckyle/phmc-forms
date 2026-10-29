@@ -139,13 +139,16 @@ const PatientDossierModal = ({
                     }),
                 ]);
                 const withAccount = new Map();
+                // Nombre de rapports par patient (index patientRecords) : affiché aussi pour les patients AVEC compte.
+                const reportCounts = new Map(indexed.map((p) => [canonicalPatientId(p.patientNode), p.reportCount]));
                 if (civilSnap.exists()) {
                     Object.values(civilSnap.val()).forEach((c) => {
                         if (c && c.patientID) {
                             const id = canonicalPatientId(c.patientID);
+                            const reportCount = reportCounts.get(id) || 0;
                             withAccount.set(id, {
                                 value: id,
-                                label: `${c.firstName || ''} ${c.lastName || ''} (${id})`.trim(),
+                                label: `${`${c.firstName || ''} ${c.lastName || ''} (${id})`.trim()}${reportCount > 0 ? ` — ${reportCount} rapport(s)` : ''}`,
                             });
                         }
                     });

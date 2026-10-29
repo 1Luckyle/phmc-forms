@@ -1,7 +1,8 @@
 // src/context/DataContext.js
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
-import { database } from '../firebase';
+import { database, auth } from '../firebase';
 import { ref, get, onValue } from 'firebase/database';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useNotification } from './NotificationContext';
 import { positionsFromSelectOptions } from '../constants/recruitment';
 
@@ -272,6 +273,30 @@ export const DataProvider = ({ children }) => {
         console.log('🔄 Select options updated from Firebase');
       }
     });
+  }, [updateCacheSegment]);
+
+  // `staff` n'est lisible qu'une fois connecté. Le listener posé au démarrage (déconnecté) est ANNULÉ par le refus et ne se
+  // réabonne PAS tout seul : sans ceci, la liste du personnel restait vide jusqu'au rechargement de la page (liste d'employés
+  // vide dans « Rapports enregistrés »). À chaque connexion on relit donc la liste et on repose le listener.
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      const staffRef = ref(database, CACHE_SEGMENTS.STAFF);
+      const applyStaff = (snapshot) => {
+        if (!snapshot.exists()) return;
+        const staffData = snapshot.val();
+        if (JSON.stringify(staffData) === JSON.stringify(dataCache.current[CACHE_SEGMENTS.STAFF])) return;
+        updateCacheSegment(CACHE_SEGMENTS.STAFF, staffData);
+      };
+      try {
+        applyStaff(await get(staffRef));
+      } catch (error) {
+        console.warn('Lecture du personnel impossible après la connexion :', error?.message || error);
+      }
+      if (firebaseListeners.current.staff) firebaseListeners.current.staff();
+      firebaseListeners.current.staff = onValue(staffRef, applyStaff, () => {});
+    });
+    return unsubscribeAuth;
   }, [updateCacheSegment]);
 
   // --- Chargement principal + Fallback Seed ---
