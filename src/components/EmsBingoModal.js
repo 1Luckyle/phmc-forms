@@ -90,7 +90,7 @@ const BINGO_LINE_NAMES = [
 ];
 
 // MODIFIED: Add isAdmin, sendBingoWebhook, and sendPhraseRequestWebhook props
-const EmsBingoModal = ({ show, onHide, phmcGroupedOptions, coronerGroupedOptions, currentPhmcEmployee, showNotification, setShowEmployeeModal, isAdmin, sendBingoWebhook, sendPhraseRequestWebhook }) => {
+const EmsBingoModal = ({ show, onHide, phmcGroupedOptions, coronerGroupedOptions, currentPhmcEmployee, showNotification, isAdmin, sendBingoWebhook, sendPhraseRequestWebhook }) => {
     const [phrases, setPhrases] = useState([]);
     const [isCardPaused, setIsCardPaused] = useState(false); // carte mise en pause par un admin : consultation seulement
     const [masterPhraseList, setMasterPhraseList] = useState([]);

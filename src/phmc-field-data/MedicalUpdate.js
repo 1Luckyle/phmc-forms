@@ -7,6 +7,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 const customSelectStyles = {
     control: (base, state) => ({
         ...base,
@@ -112,6 +113,7 @@ const MedicalRelease = ({
     // pas avoir lieu.
     const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
     const { filledByStaff } = useBillingRole(formData, setFormData);
+    const minorGuard = useMinorTitleGuard(formData, setFormData, { titleField: 'patientTitleOptions', dobField: 'date' });
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {
@@ -149,7 +151,7 @@ const MedicalRelease = ({
             <option value="" disabled>Titre</option>
             {/* Ensure patientTitle (the options array) is not null/undefined before mapping */}
             {(patientTitleOptions || []).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+                <option key={option.value} value={option.value} disabled={minorGuard.isDisabled(option)}>{minorGuard.label(option)}</option>
             ))}
         </Form.Select>
                 <Form.Control
@@ -837,7 +839,7 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case pour générer un lien de paiement Fleeca.
+                        Cochez cette case pour générer un lien de paiement Fleeca. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).
                     </span>
                 </Form.Group>
             )}

@@ -375,8 +375,15 @@ export const EmployeeAuthProvider = ({ children }) => {
     }, [uid]);
     // Rôle facultatif « en attente de signature de contrat » (candidatsContrat/{uid}), posé par un
     // recruteur sur le compte Civil d'un candidat accepté. En direct (onValue) : le candidat voit
-    // « Mes contrats » apparaître sans avoir à se reconnecter.
+    // « Mes documents administratifs » apparaître sans avoir à se reconnecter.
     const [isContractCandidate, setIsContractCandidate] = useState(false);
+    // Documents administratifs déjà envoyés à la personne (contratsParEmploye/{uid}, lisible par elle) : un ancien membre du personnel, redevenu
+    // Civil, garde ainsi « Mes documents administratifs » pour retrouver ses contrats et notifications (archive en lecture seule côté PHMC).
+    const [hasAdminDocuments, setHasAdminDocuments] = useState(false);
+    useEffect(() => {
+        if (!uid) { setHasAdminDocuments(false); return undefined; }
+        return onValue(ref(database, `contratsParEmploye/${uid}`), (snapshot) => setHasAdminDocuments(snapshot.exists()), () => setHasAdminDocuments(false));
+    }, [uid]);
     // Statut de recrutement interne (évolution interne) : accordé par le recrutement, il rouvre les candidatures à un employé.
     const [hasInternalRecruitment, setHasInternalRecruitment] = useState(false);
     useEffect(() => {
@@ -442,6 +449,7 @@ export const EmployeeAuthProvider = ({ children }) => {
     }, [isLoading, realName, realRole, isAdmin]);
 
     const value = {
+        hasAdminDocuments: !simulation && hasAdminDocuments,
         isRecruiter: effective.isRecruiter,
         isContractCandidate: effective.isContractCandidate,
         hasInternalRecruitment,

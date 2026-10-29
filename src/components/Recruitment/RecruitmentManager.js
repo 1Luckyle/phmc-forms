@@ -8,7 +8,7 @@
 //     (sensible) est réservé aux ADMINS, y compris côté règles Firebase ;
 //   • Candidatures : suivi du pipeline (entretiens, acceptation/refus, historique).
 //   • Contrats : rédiger un contrat (modèle verrouillé) et l'envoyer à un membre du personnel qui le
-//     signe depuis « Mes contrats » (voir components/Contracts).
+//     signe depuis « Mes documents administratifs » (voir components/Contracts).
 // Les actions sont journalisées sur Discord comme avant (sendAdminActionWebhook).
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';

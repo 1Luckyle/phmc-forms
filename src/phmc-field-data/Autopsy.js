@@ -14,7 +14,6 @@ const Autopsy = ({
     unrestrictedCoronerGroupedOptions,
     handleSelectChange,
     isUploading,
-    setShowEmployeeModal,
     showNotification,
     commitInfo, // <-- Add commitInfo to props
     removeNotification,
@@ -379,18 +378,7 @@ const Autopsy = ({
                 placeholder="Opinion de l'examinateur médical sur l'état du défunt et la cause du décès"
                 className={`form-control mb-2 ${!formData.synopsis ? 'is-invalid' : ''}`}
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Examinateur médical effectuant l'autopsie</Form.Label>
-                <button
-                    type="button"
-                    onClick={() => setShowEmployeeModal(true)}
-                    className="close-button"
-                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', lineHeight: '1.2' }}
-                >
-                    <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Nom manquant?
-                </button>
-            </div>
+            <Form.Label>Examinateur médical effectuant l'autopsie</Form.Label>
             <Select
                 name="coronerEmployee"
                 value={coronerGroupedOptions
@@ -426,18 +414,7 @@ const Autopsy = ({
             />
             <Form.Label></Form.Label>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Chef médecin légiste-Coroner</Form.Label>
-                <button
-                    type="button"
-                    onClick={() => setShowEmployeeModal(true)}
-                    className="close-button"
-                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', lineHeight: '1.2' }}
-                >
-                    <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Nom manquant?
-                </button>
-            </div>
+            <Form.Label>Chef médecin légiste-Coroner</Form.Label>
             <Select
                 name="chiefCoronerEmployee"
                 value={unrestrictedCoronerGroupedOptions

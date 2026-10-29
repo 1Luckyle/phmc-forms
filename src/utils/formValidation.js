@@ -23,7 +23,7 @@ import { canonicalPatientId } from './patientId';
 import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
-import { guardianErrors, isMinorPatient } from './minors';
+import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } from './minors';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
@@ -108,6 +108,14 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     }
     if (version === 24 && !(Array.isArray(data.MedicalRecordsRelease) && data.MedicalRecordsRelease.length > 0)) {
         errors.push('Sélectionnez au moins un élément du dossier médical à divulguer.');
+    }
+    // Titre « Mineur » incompatible avec la date de naissance.
+    if (CIVIL_MEDICAL_VERSIONS.includes(version)) {
+        const title = data.patientTitle ?? data.patientTitleOptions;
+        const age = ageOn(version === 26 ? data.date : data.patientDateOfBirth);
+        if (isMinorTitle(title) && (age === null || age >= MAJORITY_AGE)) {
+            errors.push('Titre « Mineur » : la date de naissance doit indiquer un patient de moins de 18 ans.');
+        }
     }
     // Patient mineur : l'autorisation de divulgation est signée par son représentant légal (sauf mineur émancipé).
     if (version === 24) {

@@ -11,7 +11,6 @@ export const ModalProvider = ({ children }) => {
     const [easterEggType, setEasterEggType] = useState(null);
     const [showAgencySelector, setShowAgencySelector] = useState(false);
     const [hideAgencySelector, setHideAgencySelector] = useState(false);
-    const [showEmployeeModal, setShowEmployeeModal] = useState(false);
     const [showEmsAmaModal, setShowEmsAmaModal] = useState(false);
     const [showBusinessCard, setShowBusinessCard] = useState(false);
     const [showCoronerTips, setShowCoronerTips] = useState(false);
@@ -31,7 +30,6 @@ export const ModalProvider = ({ children }) => {
         easterEggType, setEasterEggType,
         showAgencySelector, setShowAgencySelector,
         hideAgencySelector, setHideAgencySelector,
-        showEmployeeModal, setShowEmployeeModal,
         showEmsAmaModal, setShowEmsAmaModal,
         showBusinessCard, setShowBusinessCard,
         showCoronerTips, setShowCoronerTips,

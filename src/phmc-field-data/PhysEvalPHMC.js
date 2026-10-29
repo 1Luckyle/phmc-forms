@@ -9,7 +9,6 @@ const PhysEval = ({
             phmcGroupedOptions,
             setFormData,
             phmcRank,
-            setShowEmployeeModal,
             BodyMassIndex,
             temperature,
             heartRate,
@@ -71,22 +70,7 @@ const PhysEval = ({
                                                 <option key={option.value} value={option.value}>{option.label}</option>
                                             ))}
                                         </Form.Select>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                                    <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEmployeeModal(true)}
-                                        className="close-button"
-                                        style={{
-                                            padding: '0.25rem 0.5rem',
-                                            fontSize: '0.8rem',     
-                                            lineHeight: '1.2'       
-                                        }}
-                                    >
-                                        <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i> {/* Changed icon */}
-                                        Nom manquant?
-                                    </button>
-                                </div>
+                                        <Form.Label>Identifiants de l'employé</Form.Label>
 
                                 <Select
                                     name="phmcEmployee"

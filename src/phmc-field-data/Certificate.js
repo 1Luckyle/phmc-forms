@@ -9,7 +9,6 @@ const Certificate = ({
     setFormData,
     coronerGroupedOptions,
     handleSelectChange,
-    setShowEmployeeModal,
     isUploading,
     handleImageUpload,
     currentUtcTime, // Assuming you want to display current time for date/time fields
@@ -18,18 +17,7 @@ const Certificate = ({
         <>
             <p>Ce formulaire est utilisé pour créer un certificat de décès. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
             {/* Coroner Employee Selection */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Coroner délivrant le certificat</Form.Label>
-                <button
-                    type="button"
-                    onClick={() => setShowEmployeeModal(true)}
-                    className="close-button"
-                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', lineHeight: '1.2' }}
-                >
-                    <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Nom manquant?
-                </button>
-            </div>
+            <Form.Label>Coroner délivrant le certificat</Form.Label>
             <Select
                 name="coronerEmployee"
                 value={coronerGroupedOptions

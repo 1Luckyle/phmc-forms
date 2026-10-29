@@ -5,7 +5,6 @@ import Select from 'react-select'; // Make sure react-select is imported
 const CommNotePBC = ({
     formData,
     handleChange,
-    setShowEmployeeModal,
     phmcGroupedOptions,
     departmentLarge,
     setFormData // We need this for the Select's onChange logic
@@ -54,22 +53,7 @@ const CommNotePBC = ({
             />
 
             <Form.Label></Form.Label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
-                <button
-                    type="button"
-                    onClick={() => setShowEmployeeModal(true)}
-                    className="close-button" // Consider a more specific class if needed
-                    style={{
-                        padding: '0.25rem 0.5rem',
-                        fontSize: '0.8rem',
-                        lineHeight: '1.2'
-                    }}
-                >
-                    <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i>
-                    Nom manquant?
-                </button>
-            </div>
+            <Form.Label>Identifiants de l'employé</Form.Label>
 
             <Select
                 name="phmcEmployee"

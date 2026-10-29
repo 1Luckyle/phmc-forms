@@ -74,14 +74,6 @@ export const MAIL_TEMPLATES = {
         subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
         body: `Bonjour {{nom}},\n\nVotre compte et vos fonctions au sein du **Pillbox Hill Medical Center** ont été résiliés. Vos informations personnelles sont supprimées ; vos rapports et dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\n${SIG}`,
     },
-    fin_fonctions_resiliation: {
-        category: 'comptes', label: 'Fin de fonctions — résiliation (gestion du personnel)',
-        quand: 'Quand un membre du personnel est retiré depuis l\'ancienne fenêtre « Gérer le personnel » (compte supprimé).',
-        destinataire: 'Le membre du personnel retiré', canal: 'Application (action d\'un admin)',
-        vars: [NOM], required: [],
-        subject: 'Fin de vos fonctions - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nVotre compte et vos fonctions au sein du **Pillbox Hill Medical Center** ont été résiliés.\n\n${SIG}`,
-    },
     fin_fonctions_compte_civil: {
         category: 'comptes', label: 'Fin de fonctions — retour en compte Civil',
         quand: 'Quand un admin remet un membre du personnel en compte Civil (Utilisateurs → Personnel → Repasser en Civil).',
@@ -165,7 +157,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le candidat accepté', canal: 'Application (action d\'un recruteur)',
         vars: [NOM], required: [],
         subject: 'Votre contrat vous attend - PHMC',
-        body: `Bonjour {{nom}},\n\nVotre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la **Boîte à outils**, **« Mes contrats »** vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nVotre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la **Boîte à outils**, **« Mes documents administratifs »** vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.\n\n${SIG}`,
     },
     candidature_message: {
         category: 'recrutement', label: 'Nouveau message sur une candidature',
@@ -195,11 +187,11 @@ export const MAIL_TEMPLATES = {
     // ───────────── Contrats ─────────────
     document_a_signer: {
         category: 'contrats', label: 'Document à signer (contrat, avenant…)',
-        quand: 'Quand un contrat, une convention ou un avenant est ENVOYÉ à l\'employé (à lire puis signer dans « Mes contrats »).',
+        quand: 'Quand un contrat, une convention ou un avenant est ENVOYÉ à l\'employé (à lire puis signer dans « Mes documents administratifs »).',
         destinataire: 'L\'employé ou le candidat accepté', canal: 'Application (envoi du document)',
         vars: [NOM, v('type_document', 'Type de document', 'CDI'), v('reference', 'Référence', 'PHMC-CT-2026-0042')], required: [],
         subject: 'Un document vous attend - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) a été préparé à votre attention. Connectez-vous à l'outil PHMC-FR, ouvrez la **Boîte à outils** puis **« Mes contrats »** pour le lire et le signer.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) a été préparé à votre attention. Connectez-vous à l'outil PHMC-FR, ouvrez la **Boîte à outils** puis **« Mes documents administratifs »** pour le lire et le signer.\n\n${SIG}`,
     },
     document_notifie: {
         category: 'contrats', label: 'Document notifié (convocation, sanction, fin de contrat)',
@@ -207,7 +199,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'L\'employé concerné', canal: 'Application (envoi du document)',
         vars: [NOM, v('type_document', 'Type de document', 'Convocation à un entretien préalable'), v('reference', 'Référence', 'PHMC-CV-2026-0007')], required: [],
         subject: 'Un document vous a été notifié - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) vous a été notifié. Connectez-vous à l'outil PHMC-FR, ouvrez la **Boîte à outils** puis **« Mes contrats »** pour en prendre connaissance et accuser réception.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) vous a été notifié. Connectez-vous à l'outil PHMC-FR, ouvrez la **Boîte à outils** puis **« Mes documents administratifs »** pour en prendre connaissance et accuser réception.\n\n${SIG}`,
     },
 
     // ───────────── Rapports & facturation ─────────────

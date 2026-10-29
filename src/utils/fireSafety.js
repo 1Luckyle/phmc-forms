@@ -179,11 +179,14 @@ export async function reopenNonConformity(id) {
     await update(ref(database, `securiteIncendie/nonConformites/${id}`), { statut: 'ouverte', resolueLe: null, resolueParNom: null, resolutionNote: null });
 }
 
-export async function saveDrill({ etage, participants, duree, observations, name }) {
+// `participantsNoms` : noms du personnel présent ; `autres` : nombre de personnes non listées (patients, visiteurs). `participants` = total.
+export async function saveDrill({ etage, participants, participantsNoms = [], autres = 0, duree, observations, name }) {
     if (!auth.currentUser) throw new Error('Connexion requise.');
     const entry = {
         le: Date.now(), parUid: auth.currentUser.uid, parNom: clean(name, 120), etage: clean(etage, 60) || 'Tout le bâtiment',
-        participants: Math.max(0, Math.min(5000, Number(participants) || 0)), duree: Math.max(0, Math.min(600, Number(duree) || 0)),
+        participants: Math.max(0, Math.min(5000, (participantsNoms.length + (Number(autres) || 0)) || Number(participants) || 0)), duree: Math.max(0, Math.min(600, Number(duree) || 0)),
+        ...(participantsNoms.length > 0 ? { participantsNoms: participantsNoms.slice(0, 300).map((nom) => clean(nom, 120)) } : {}),
+        ...(Number(autres) > 0 ? { autres: Math.min(5000, Number(autres)) } : {}),
         ...(observations ? { observations: clean(observations, 500) } : {}),
     };
     await set(push(ref(database, 'securiteIncendie/exercices')), entry);

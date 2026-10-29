@@ -2,7 +2,7 @@
 //
 // Rôle facultatif « en attente de signature de contrat » : après l'acceptation d'une candidature, le
 // recruteur peut le poser sur le compte Civil du candidat (candidatsContrat/{uid}). Ce rôle donne
-// accès à « Mes contrats » (lire, signer, consulter), SANS
+// accès à « Mes documents administratifs » (lire, signer, consulter), SANS
 // transformer le candidat en membre du personnel. Il n'est jamais posé automatiquement.
 //
 // Enregistrement (français) : { definiPar, definiParNom, definiLe, candidatureId, poste, role }.

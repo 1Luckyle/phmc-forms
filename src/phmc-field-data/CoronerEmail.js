@@ -87,7 +87,6 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
     handleChange,
     setFormData, // <-- Make sure setFormData is passed as a prop
     handleSelectChange, // Added this prop
-    setShowEmployeeModal,
     coronerGroupedOptions,
     handleFillCoronerPhone,
     fillPhoneChecked,
@@ -192,23 +191,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         <>
             <p>Veuillez faire attention lors de l'ajout de rapports, cela peut prendre un certain temps à traiter. De plus, l'ajout de rapports ajoutera automatiquement le nom du défunt et le nom HRP du défunt !!!</p>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                                    <Form.Label style={{ marginBottom: 0 }}>Identifiants de l'employé</Form.Label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEmployeeModal(true)}
-                                        className="close-button"
-                                        style={{
-                                            padding: '0.25rem 0.5rem',
-                                            fontSize: '0.8rem',     
-                                            lineHeight: '1.2'       
-                                        }}
-                                    >
-                                        <i className="fas fa-question-circle" style={{ marginRight: '5px' }}></i> {/* Changed icon */}
-                                        Nom manquant?
-                                    </button>
-
-                                </div>
+                                <Form.Label>Identifiants de l'employé</Form.Label>
                             <Select
                                     name="coronerEmployee"
                                     value={coronerGroupedOptions

@@ -3,7 +3,7 @@
 // « Dossier du personnel » : la chronologie de tous les documents contractuels d'une personne (contrats, conventions de stage, avenants, convocations,
 // sanctions, fins de contrat), avec un résumé de sa situation : contrat en cours et conditions actuelles après avenants, procédures disciplinaires
 // restées sans décision. Réservé aux admins et aux recruteurs (la lecture de tous les contrats l'est aussi, voir database.rules.json) ; la personne
-// elle-même retrouve ses documents dans « Mes contrats ».
+// elle-même retrouve ses documents dans « Mes documents administratifs ».
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Spinner } from 'react-bootstrap';
 import BaseModal from '../BaseModal';

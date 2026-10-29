@@ -3,7 +3,7 @@
 // Onglet « Contrats » de la Gestion du recrutement (admins + recruteurs) et fenêtre « Documents disciplinaires » (admins, Direction, assistance,
 // personnel administratif) : liste des documents contractuels, création / édition d'un brouillon sur le
 // MODÈLE VERROUILLÉ de chaque type (voir utils/contractDocs.js : contrat CDI ou CDD, convention de stage, avenant, convocation à un entretien préalable,
-// notification de sanction, notification de fin de contrat), envoi à un membre du personnel (qui le signe depuis « Mes contrats »), retrait, suppression
+// notification de sanction, notification de fin de contrat), envoi à un membre du personnel (qui le signe depuis « Mes documents administratifs »), retrait, suppression
 // et consultation des documents signés.
 //
 // Le formulaire se construit à partir des champs du type choisi ; l'aperçu est le document final, dans la charte graphique du PHMC (BBCode).
@@ -67,7 +67,7 @@ const groupsForScope = (scope) => TYPE_GROUPS.filter((g) => g.key === 'all' || (
 // `staff` = destinataires possibles : membres du personnel (kind « staff »), recruteurs (kind « recruiter ») et candidats acceptés ayant le rôle
 // « en attente de contrat » (kind « candidate », réservés aux contrats et conventions). Recruteurs et candidats sont des comptes Civils sans fiche :
 // le service se choisit dans l'éditeur. `contracts` = tous les documents (pour retrouver le contrat modifié ou la convocation de la personne).
-const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, issuer, scope, onChanged, showNotification }) => {
+const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, issuer, scope, archived = false, onChanged, showNotification }) => {
     const [type, setType] = useState('cdi');
     const [employeeUid, setEmployeeUid] = useState('');
     const [candidateService, setCandidateService] = useState('phmc');
@@ -79,7 +79,8 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 
     const isNew = !contract;
     const ownContract = !!contract && contract.employeUid === issuer.uid && !issuer.isAdmin;
-    const readOnly = (!!contract && contract.statut !== 'brouillon') || ownContract;
+    // Un document d'une personne qui n'est plus dans le personnel est une archive : consultable, jamais modifiable.
+    const readOnly = (!!contract && contract.statut !== 'brouillon') || ownContract || archived;
 
     useEffect(() => {
         if (!show) return;
@@ -352,7 +353,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                     {ownContract && (
                         <Alert variant="info" className="py-2">
                             Il s'agit de votre propre document : un recruteur ne peut pas le modifier, c'est un admin ou un autre recruteur qui s'en charge.
-                            {contract.statut !== 'signe' && ' Vous le lirez et le signerez depuis « Mes contrats » dès qu\'il vous aura été envoyé.'}
+                            {contract.statut !== 'signe' && ' Vous le lirez et le signerez depuis « Mes documents administratifs » dès qu\'il vous aura été envoyé.'}
                         </Alert>
                     )}
                     {contract.texteFige
@@ -449,7 +450,8 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 };
 
 // ───────────────────────────── Liste ─────────────────────────────
-const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
+// `initialQuery` : recherche pré-remplie (raccourci de l'annuaire).
+const ContractsManager = ({ showNotification, scope = 'recruitment', initialQuery = '' }) => {
     const { currentEmployee, isAdmin, staffName, staffProfile, civilianProfile } = useEmployeeAuth();
     const [contracts, setContracts] = useState([]);
     const [staff, setStaff] = useState([]);
@@ -457,7 +459,8 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
     const [recruiters, setRecruiters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [query, setQuery] = useState('');
+    const [registryComplete, setRegistryComplete] = useState(false); // faux si la liste des comptes n'a pas pu être lue en entier
+    const [query, setQuery] = useState(initialQuery);
     const [group, setGroup] = useState('all');
     const [editing, setEditing] = useState(undefined); // undefined = fermé, sinon le document existant à ouvrir
     const [newType, setNewType] = useState(null);       // type d'un nouveau document en cours de création
@@ -481,11 +484,13 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
         setLoading(true);
         setError('');
         try {
-            const optional = (promise, fallback) => (scope === 'discipline' ? promise.catch(() => fallback) : promise);
+            let partial = false;
+            const optional = (promise, fallback) => (scope === 'discipline' ? promise.catch(() => { partial = true; return fallback; }) : promise);
             const [list, members, roleMap, civilians, recruiterMap] = await Promise.all([
                 loadAllContracts(), loadStaffMembers(), optional(loadContractCandidates(), {}), optional(loadCivilians(), []), optional(loadRecruiterUids(), {}),
             ]);
             setContracts(list);
+            setRegistryComplete(!partial);
             setStaff(members.map((m) => ({ ...m, kind: 'staff' })));
             // Recruteurs : comptes Civils portant le drapeau recruiterUIDs (techniquement des employés).
             setRecruiters(civilians.filter((c) => recruiterMap[c.uid] === true).map((c) => ({
@@ -526,6 +531,14 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
         [...staff, ...recruiters, ...candidates].forEach((m) => { if (m.uid && !byUid.has(m.uid)) byUid.set(m.uid, m); });
         return [...byUid.values()];
     }, [staff, recruiters, candidates]);
+
+    // Archives : documents de personnes qui ne sont plus destinataires possibles (ex-employés redevenus Civils, rôle retiré). Elles gardent leurs
+    // documents et les consultent depuis « Mes documents administratifs » ; pour le PHMC, plus rien ne s'envoie, ne se modifie ni ne se supprime
+    // (sauf suppression par un admin).
+    const recipientUids = useMemo(() => new Set(recipients.map((m) => m.uid)), [recipients]);
+    const isArchived = useCallback((c) => registryComplete && !!c.employeUid && !recipientUids.has(c.employeUid), [registryComplete, recipientUids]);
+
+    useEffect(() => { setQuery(initialQuery || ''); }, [initialQuery]);
 
     const handleRemoveRole = async (candidate) => {
         if (!window.confirm(`Retirer le rôle « en attente de contrat » à ${candidate.displayName} ?`)) return;
@@ -591,7 +604,7 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
             {scope !== 'discipline' && candidates.length > 0 && (
                 <div className="mb-3">
                     <div className="small mb-1" style={{ color: '#8b949e' }}>
-                        Candidats acceptés en attente de contrat ({candidates.length}) — ils voient « Mes contrats » pour consulter et signer leur contrat :
+                        Candidats acceptés en attente de contrat ({candidates.length}) — ils voient « Mes documents administratifs » pour consulter et signer leur contrat :
                     </div>
                     <div className="d-flex flex-wrap gap-2">
                         {candidates.map((candidate) => (
@@ -627,7 +640,10 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
                                 return (
                                     <tr key={c.id}>
                                         <td><span className="contract-type-pill"><i className={`fas ${info?.icon || 'fa-file'}`}></i>{info?.short || type}</span></td>
-                                        <td className="fw-semibold">{c.employeNom}</td>
+                                        <td className="fw-semibold">
+                                            {c.employeNom}
+                                            {isArchived(c) && <Badge bg="secondary" className="ms-2 fw-normal" title="Cette personne ne fait plus partie du personnel : le dossier est une archive en lecture seule.">Archive</Badge>}
+                                        </td>
                                         <td>{subject}</td>
                                         <td>{date ? formatDateFr(date) : '—'}</td>
                                         <td>
@@ -639,7 +655,7 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
                                         <td>
                                             <div className="contracts-row-actions">
                                                 <Button size="sm" variant="outline-light" onClick={() => { setNewType(null); setEditing(c); }}>
-                                                    {c.statut === 'brouillon' && (isAdmin || c.employeUid !== issuer.uid)
+                                                    {c.statut === 'brouillon' && !isArchived(c) && (isAdmin || c.employeUid !== issuer.uid)
                                                         ? <><i className="fas fa-edit me-1"></i>Modifier</>
                                                         : <><i className="fas fa-eye me-1"></i>Voir</>}
                                                 </Button>
@@ -647,7 +663,7 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
                                                     <i className="fas fa-folder-open"></i>
                                                 </Button>
                                                 {/* Un document signé ne se supprime que par un admin (règles Firebase). */}
-                                                {(isAdmin || (c.statut !== 'signe' && c.employeUid !== issuer.uid)) && (
+                                                {(isAdmin || (c.statut !== 'signe' && c.employeUid !== issuer.uid && !isArchived(c))) && (
                                                     <Button size="sm" variant="outline-danger" onClick={() => handleDelete(c)}><i className="fas fa-trash"></i></Button>
                                                 )}
                                             </div>
@@ -671,6 +687,7 @@ const ContractsManager = ({ showNotification, scope = 'recruitment' }) => {
                 contracts={contracts}
                 issuer={issuer}
                 scope={scope}
+                archived={!!editing && isArchived(editing)}
                 onChanged={load}
                 showNotification={showNotification}
             />

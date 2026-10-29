@@ -169,7 +169,7 @@ export const deriveIdentity = ({ employeeProfile, civilianProfile, adminStaffPro
 // matrice de l'aperçu admin s'appuient dessus, pour qu'ils ne puissent pas diverger.
 export const getToolAccess = (identity) => {
     const {
-        currentEmployee, employeeProfile, isAdmin, isRecruiter, isContractCandidate,
+        currentEmployee, employeeProfile, isAdmin, isRecruiter, isContractCandidate, hasAdminDocuments,
         isCivilian, staffName, canUseAma, canManageRecruitment, staffProfile,
     } = identity;
     const isStaffMember = !isCivilian && !!staffName;
@@ -181,7 +181,7 @@ export const getToolAccess = (identity) => {
     return {
         ...forms,
         myProfile: isStaffMember,
-        myContracts: isStaffMember || !!isContractCandidate || !!isRecruiter,
+        myContracts: isStaffMember || !!isContractCandidate || !!isRecruiter || !!hasAdminDocuments,
         myPatientFile: isStaffMember,
         // Le Bingo est réservé au personnel (une fiche du personnel) : ni visiteurs, ni Civils, ni candidats.
         bingo: isStaffMember,
@@ -200,7 +200,7 @@ export const getToolAccess = (identity) => {
         disciplineManage: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
         ama: !!canUseAma,
         // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
-        // (depuis « Mes contrats ») mais pas sa carte de visite.
+        // (depuis « Mes documents administratifs ») mais pas sa carte de visite.
         businessCard: !!(isAdmin || employeeProfile || isRecruiter),
         signature: !!(isAdmin || employeeProfile || isRecruiter || isContractCandidate || isCivilian),
     };
@@ -208,7 +208,7 @@ export const getToolAccess = (identity) => {
 
 export const TOOL_ACCESS_LABELS = {
     myProfile: 'Mon profil',
-    myContracts: 'Mes contrats',
+    myContracts: 'Mes documents administratifs',
     myPatientFile: 'Mon dossier patient',
     bingo: 'Bingo',
     savedReports: 'Rapports enregistrés',

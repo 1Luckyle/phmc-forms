@@ -44,7 +44,6 @@ import corpse from './assets/corpse.png'
 import tombstone from './assets/tombstone.png'
 import phmcpaletobay from './assets/phmcpaletobaylogo.png'
 import './assets/fonts/Poppins-Medium.ttf';
-import { sendMissingEmployeeNotification } from './components/notificationService';
 
 // css fun
 import './App.css';
@@ -86,7 +85,6 @@ const BusinessCardModal = lazy(() => import('./components/BusinessCardModal'));
 const EmsAmaModal = lazy(() => import('./components/EmsAmaModal'));
 const EasterEggModal = lazy(() => import('./components/EasterEggModal'));
 const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModal'));
-const EmployeeModal = lazy(() => import('./components/EmployeeModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
 const DirectoryModal = lazy(() => import('./components/Directory/DirectoryModal'));
@@ -150,7 +148,6 @@ function MainApp({
         easterEggType, setEasterEggType,
         showAgencySelector, setShowAgencySelector,
         hideAgencySelector, setHideAgencySelector,
-        showEmployeeModal, setShowEmployeeModal,
         showEmsAmaModal, setShowEmsAmaModal,
         showBusinessCard, setShowBusinessCard,
         showCoronerTips, setShowCoronerTips,
@@ -163,9 +160,9 @@ function MainApp({
 
     } = useModal();
     
-    const { currentEmployee, employeeProfile, staffProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, canManageRecruitment, hasInternalRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
+    const { currentEmployee, employeeProfile, staffProfile, civilianProfile, isCivilian, isAdmin, canUseAma, staffName, isRecruiter, isContractCandidate, hasAdminDocuments, canManageRecruitment, hasInternalRecruitment, viewAs, logoutEmployee, isLoading: authLoading } = useEmployeeAuth();
     // Ce que la personne (ou le profil simulé par un admin) voit dans la Boîte à outils : une seule définition, voir utils/viewAs.js.
-    const toolAccess = getToolAccess({ currentEmployee, employeeProfile, staffProfile, isAdmin, isRecruiter, isContractCandidate, isCivilian, staffName, canUseAma, canManageRecruitment });
+    const toolAccess = getToolAccess({ currentEmployee, employeeProfile, staffProfile, isAdmin, isRecruiter, isContractCandidate, hasAdminDocuments, isCivilian, staffName, canUseAma, canManageRecruitment });
     const [showLoginModal, setShowLoginModal] = useState(false);
     // Vidéosurveillance : le menu (envoyer / suivre / traiter) et, depuis lui, le formulaire de nouvelle demande.
     const [showCctvHub, setShowCctvHub] = useState(false);
@@ -190,13 +187,14 @@ function MainApp({
     const [directoryEmployeeReports, setDirectoryEmployeeReports] = useState('');
     const [directoryPatientId, setDirectoryPatientId] = useState('');
     const [directoryApplicantSearch, setDirectoryApplicantSearch] = useState('');
+    const [directoryDisciplineSearch, setDirectoryDisciplineSearch] = useState('');
     // « Mon dossier patient » : le personnel peut lui aussi être un patient.
     const [showMyPatientFile, setShowMyPatientFile] = useState(false);
     // « Mon profil » : le personnel modifie lui-même téléphone, Discord et adresse Eyefind Mail.
     const [showMyProfile, setShowMyProfile] = useState(false);
     // Calendrier des événements de sensibilisation médicale (Octobre Rose, Movember...).
     const [showAwarenessCalendar, setShowAwarenessCalendar] = useState(false);
-    // « Mes contrats » : le personnel lit et signe les contrats envoyés par les recruteurs.
+    // « Mes documents administratifs » : le personnel lit et signe les contrats envoyés par les recruteurs.
     const [showMyContracts, setShowMyContracts] = useState(false);
     const [showLawEnforcement, setShowLawEnforcement] = useState(false);
     const [showFireReport, setShowFireReport] = useState(false);
@@ -385,20 +383,6 @@ function MainApp({
     const CONSULTATION_NOTES_PHMC_VERSION = 20;
     const CONSULTATION_NOTES_PBC_VERSION = 21;
 
-    const [isRemoveStaff, setIsRemoveStaff] = useState(false);
-    const [missingEmployeeData, setMissingEmployeeData] = useState({
-        coronerName: '',
-        coronerDiscord: '',
-        employeeLastName: '',
-        coronerRank: '',
-        coronerPHNumber: '',
-        coronerEmployee: '',
-        coronerBadge: '',
-        phmcEmployee: '',
-        staffToRemove: [],
-        authorizedBy: '',
-    });
-    const [staffToRemove, setStaffToRemove] = useState([]);
     const [webhookMessage, setWebhookMessage] = useState('');
     const [webhookTitle, setWebhookTitle] = useState('');
     const [isBbcodeRequest, setIsBbcodeRequest] = useState(false);
@@ -1142,40 +1126,6 @@ function MainApp({
         form => form.group === "PHMC Recruitment"
     );
 
-    const handleMissingEmployeeSubmit = async (actionType, employeeType, selectedEmployeeName, newRank, staffToRemove, authorizedBy, missingEmployeeData, updatedStaff, adminUserEmail) => {
-        const actionLabels = { addEmployee: 'Membre du personnel ajouté', editUser: 'Fiche du personnel modifiée', removeStaff: 'Membre(s) du personnel supprimé(s)', updateRank: 'Rôle modifié' };
-        logActivity({
-            category: 'comptes',
-            action: actionType,
-            summary: `${actionLabels[actionType] || 'Gestion du personnel'} (${employeeType === 'coroner' ? 'DMEC' : 'PHMC'}) : ${actionType === 'removeStaff' ? (staffToRemove || []).join(', ') : (selectedEmployeeName || missingEmployeeData?.coronerName || 'n/a')}`,
-            details: [newRank ? `Nouveau rôle : ${newRank}` : '', authorizedBy ? `Autorisé par : ${authorizedBy}` : ''].filter(Boolean).join(' · ') || undefined,
-        });
-        await sendMissingEmployeeNotification(
-            actionType,
-            employeeType,
-            selectedEmployeeName,
-            newRank,
-            coronerListData, 
-            phmcListData, 
-            staffToRemove,
-            authorizedBy,
-            missingEmployeeData,
-            commitInfo,
-            showNotification, 
-            formData.coronerEmployee, 
-            formData.phmcEmployee,
-            adminUserEmail || formData.adminUserEmail
-        );
-
-        if (actionType === 'updateRank') {
-            showNotification("Mise à jour des données du personnel...", 'info-circle', 2000);
-        }
-
-        if (actionType === 'updateRank') {
-            showNotification("Mise à jour des données du personnel...", 'check-circle', 3000);
-        }
-    };
-
     useEffect(() => {
         const redirectPath = sessionStorage.getItem('redirectPath');
         if (redirectPath) {
@@ -1377,16 +1327,6 @@ function MainApp({
 
         if (isChecked) {
             setFormData(prev => ({ ...prev, massFatality: false }));
-        }
-
-        if (isChecked) {
-            setIsRemoveStaff(false);
-            setMissingEmployeeData(prev => ({
-                ...prev,
-                staffToRemove: [],
-                employeeLastName: '',
-                authorizedBy: '',
-            }));
         }
 
         if (type === 'john') {
@@ -1742,12 +1682,12 @@ function MainApp({
                                 <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement ») et pouvez créer votre carte de visite.</>
                             )}
                             {isRecruiter && !isContractCandidate && (
-                                <> Si un admin ou un autre recruteur vous prépare un contrat, vous le trouverez dans « Mes contrats » (Boîte à outils).</>
+                                <> Si un admin ou un autre recruteur vous prépare un contrat, vous le trouverez dans « Mes documents administratifs » (Boîte à outils).</>
                             )}
                             {isContractCandidate && (
-                                <> <strong style={{ color: '#58a6ff' }}>Votre contrat vous attend :</strong> lisez-le et signez-le depuis « Mes contrats » (vous pouvez y créer votre signature).{' '}
+                                <> <strong style={{ color: '#58a6ff' }}>Votre contrat vous attend :</strong> lisez-le et signez-le depuis « Mes documents administratifs » (vous pouvez y créer votre signature).{' '}
                                     <Button variant="info" size="sm" className="ms-1" onClick={() => setShowMyContracts(true)}>
-                                        <i className="fas fa-file-contract me-1"></i>Mes contrats
+                                        <i className="fas fa-file-contract me-1"></i>Mes documents administratifs
                                     </Button>
                                 </>
                             )}
@@ -1790,11 +1730,7 @@ function MainApp({
                                                 <Dropdown.Divider />
                                             </>
                                         ) : null}
-                                        {/* "Gérer le Personnel" déplacé dans le Panneau Admin (section
-                                            Utilisateurs) — la modale reste montée ci-dessous pour les
-                                            boutons "Nom manquant ?" des formulaires (setShowEmployeeModal),
-                                            un usage self-service distinct de la gestion admin complète. */}
-                                        {/* Menu organisé en catégories ; une catégorie sans entrée visible pour le rôle
+                                                                        {/* Menu organisé en catégories ; une catégorie sans entrée visible pour le rôle
                                             de la personne (visiteur, civil, candidat, recruteur, personnel, admin) n'est
                                             pas affichée, ni son séparateur. */}
                                         {(() => {
@@ -1828,7 +1764,7 @@ function MainApp({
                                                         // Tout compte Civil crée sa signature (utilisée aussi pour ses documents, ex. formulaire AMA) ; le personnel la crée avec sa carte de visite.
                                                         isCivilian && toolAccess.signature && { key: 'signature', icon: 'fas fa-signature', label: 'Ma signature', onClick: closeAnd(() => setShowBusinessCard(true)) },
                                                         toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
-                                                        toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes contrats', onClick: closeAnd(() => setShowMyContracts(true)) },
+                                                        toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes documents administratifs', onClick: closeAnd(() => setShowMyContracts(true)) },
                                                         // Dossier candidat : consultable par tout compte Civil ou employé ; seuls les Civils et les employés avec le statut de recrutement interne peuvent agir dessus.
                                                         (isCivilian || !!staffProfile) && { key: 'candidate', icon: 'fas fa-file-signature', label: 'Mon dossier candidat', onClick: closeAnd(() => { loadMyJobApplications(); setShowMyJobApplications(true); }) },
                                                         // Vidéosurveillance : tout compte connecté envoie et suit ses demandes ; l'administration y traite aussi celles reçues.
@@ -2054,7 +1990,6 @@ function MainApp({
                                         coronerGroupedOptions={coronerGroupedOptions}
                                         unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions}
                                         unrestrictedCoronerGroupedOptions={unrestrictedCoronerGroupedOptions}
-                                        setShowEmployeeModal={setShowEmployeeModal}
                                         handleSelectChange={handleSelectChange}
                                         isUploading={isUploading}
                                         handleImageUpload={handleImageUpload}
@@ -2239,7 +2174,6 @@ function MainApp({
                             coronerGroupedOptions={coronerGroupedOptions}
                             currentPhmcEmployee={formData.phmcEmployee}
                             showNotification={showNotification}
-                            setShowEmployeeModal={setShowEmployeeModal}
                             isAdmin={formData.isAdminAuthenticated}
                             sendBingoWebhook={({ scorer, bingoType, phrase, lineName, marked, commitInfo: ci }) => {
                                 // Journal d'activité : seuls les BINGO comptent (les marqueurs posés seraient du bruit).
@@ -2303,35 +2237,6 @@ function MainApp({
                                 </div>
                             </Modal.Body>
                         </Modal>
-
-                        <EmployeeModal
-                            show={showEmployeeModal}
-                            onHide={() => {
-                                setShowEmployeeModal(false);
-                                setIsJohnDoe(false);
-                                setIsJaneDoe(false);
-                                setIsRemoveStaff(false);
-                            }}
-                            isJohnDoe={isJohnDoe}
-                            coronerList={coronerListData}
-                            phmcList={phmcListData}
-                            isRemoveStaff={isRemoveStaff}
-                            showNotification={showNotification}
-                            handleDoeChange={handleDoeChange}
-                            handleRemoveStaffChange={(selectedOptions) => {
-                                setStaffToRemove(selectedOptions ? selectedOptions.map(option => option.value) : []);
-                            }}
-                            missingEmployeeData={missingEmployeeData}
-                            handleMissingEmployeeChange={(e) => {
-                                setMissingEmployeeData({ ...missingEmployeeData, [e.target.name]: e.target.value });
-                            }}
-                            phmcGroupedOptions={phmcGroupedOptions}
-                            coronerGroupedOptions={coronerGroupedOptions}
-                            employeeOptions={combinedStaffOptions}
-                            handleMissingEmployeeSubmit={handleMissingEmployeeSubmit}
-                            isAdminAuthenticated={formData.isAdminAuthenticated}
-                            adminUserEmail={formData.adminUserEmail}
-                        />            
 
                         <div className="bbcode-section">
                             {getBBCodeContent()?.length > 30000 && (
@@ -2692,10 +2597,11 @@ function MainApp({
                         <DirectoryModal
                             show={showDirectory}
                             onHide={() => setShowDirectory(false)}
-                            access={{ savedReports: !!isAdmin && toolAccess.savedReports, patientDossier: !!toolAccess.patientDossier, applications: !!toolAccess.recruitment }}
+                            access={{ savedReports: !!isAdmin && toolAccess.savedReports, patientDossier: !!toolAccess.patientDossier, applications: !!toolAccess.recruitment, discipline: !!toolAccess.disciplineManage }}
                             onOpenSavedReports={(employeeName) => { setShowDirectory(false); setDirectoryEmployeeReports(employeeName); if (!showSavedReports) toggleSavedReports(); }}
                             onOpenPatientDossier={(patientID) => { setShowDirectory(false); setDirectoryPatientId(patientID); setShowPatientDossierModal(true); }}
                             onOpenApplications={(search) => { setShowDirectory(false); setDirectoryApplicantSearch(search); setShowRecruitmentManager(true); }}
+                            onOpenDiscipline={(search) => { setShowDirectory(false); setDirectoryDisciplineSearch(search); setShowDiscipline(true); }}
                         />
                         <PatientDossierModal
                             show={showPatientDossierModal}
@@ -2718,7 +2624,7 @@ function MainApp({
                             onHide={() => setShowAwarenessCalendar(false)}
                         />
                         {toolAccess.disciplineManage && (
-                            <DisciplineModal show={showDiscipline} onHide={() => setShowDiscipline(false)} showNotification={showNotification} />
+                            <DisciplineModal show={showDiscipline} initialSearch={directoryDisciplineSearch} onHide={() => { setShowDiscipline(false); setDirectoryDisciplineSearch(''); }} showNotification={showNotification} />
                         )}
                         {toolAccess.fireManage && (
                             <FireSafetyModal show={showFireManage} onHide={() => setShowFireManage(false)} showNotification={showNotification} />

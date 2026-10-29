@@ -5,6 +5,7 @@
 // de 30 jours), contrôles (check-list art. 202 à 208), non-conformités (responsable, échéance, résolution) et exercices d'évacuation.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, Modal, Spinner, Table } from 'react-bootstrap';
+import Select from 'react-select';
 import { loadStaffMembers } from '../../utils/staffAdmin';
 import {
     CHECKLIST, ITEM_STATUS, ARTICLES, NC_STATUS, ETAGE_SUGGESTIONS, REMINDER_DAYS, emptyItems, failedItems, floorStatus, isOverdue, summary,
@@ -57,12 +58,47 @@ const ResponsableSelect = ({ value, onChange }) => {
     );
 };
 
-const EtageInput = ({ value, onChange }) => (
-    <>
-        <Form.Control list="fs-etages" value={value} onChange={onChange} placeholder="ex. Étage 2" maxLength={60} />
-        <datalist id="fs-etages">{ETAGE_SUGGESTIONS.map((e) => <option key={e} value={e} />)}</datalist>
-    </>
+// Étage / zone : liste déroulante du plan du bâtiment (plus de saisie libre). Une valeur ancienne hors liste reste affichée et sélectionnable.
+const EtageInput = ({ value, onChange, emptyLabel = "Choisir l'étage…" }) => (
+    <Form.Select value={value || ''} onChange={onChange} aria-label="Étage">
+        <option value="">{emptyLabel}</option>
+        {value && !ETAGE_SUGGESTIONS.includes(value) && <option value={value}>{value}</option>}
+        {ETAGE_SUGGESTIONS.map((etage) => <option key={etage} value={etage}>{etage}</option>)}
+    </Form.Select>
 );
+
+// Participants d'un exercice : tout le personnel, en sélection multiple (recherche en tapant).
+let allStaffPromise = null;
+const loadAllStaff = () => {
+    if (!allStaffPromise) allStaffPromise = loadStaffMembers().catch((error) => { allStaffPromise = null; throw error; });
+    return allStaffPromise;
+};
+const selectStyles = {
+    control: (base, state) => ({ ...base, minHeight: 38, backgroundColor: '#0d1117', borderColor: state.isFocused ? '#388bfd' : '#30363d', boxShadow: 'none', '&:hover': { borderColor: '#6e7681' } }),
+    menu: (base) => ({ ...base, backgroundColor: '#161b22', border: '1px solid #30363d', zIndex: 1100 }),
+    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#30363d' : 'transparent', color: '#e6edf3' }),
+    multiValue: (base) => ({ ...base, backgroundColor: '#30363d' }),
+    multiValueLabel: (base) => ({ ...base, color: '#e6edf3' }),
+    multiValueRemove: (base) => ({ ...base, color: '#9da7b3', '&:hover': { backgroundColor: '#da3633', color: '#fff' } }),
+    input: (base) => ({ ...base, color: '#e6edf3' }),
+    placeholder: (base) => ({ ...base, color: '#8b949e' }),
+    noOptionsMessage: (base) => ({ ...base, color: '#8b949e' }),
+};
+const ParticipantsSelect = ({ value, onChange }) => {
+    const [members, setMembers] = useState([]);
+    useEffect(() => { loadAllStaff().then(setMembers).catch(() => setMembers([])); }, []);
+    const options = useMemo(() => members
+        .map((member) => ({ value: `${member.service}-${member.storageKey}`, name: member.displayName, label: `${member.displayName} — ${member.rank || member.category || ''}` }))
+        .sort((a, b) => a.name.localeCompare(b.name)), [members]);
+    return (
+        <Select
+            isMulti closeMenuOnSelect={false} options={options} value={value} onChange={(selected) => onChange(selected || [])}
+            placeholder="Choisir les participants (tapez pour rechercher)…" noOptionsMessage={() => 'Aucun membre du personnel'}
+            styles={selectStyles} menuPortalTarget={document.body} aria-label="Participants"
+        />
+    );
+};
 
 // ───────────────────────────── Vue d'ensemble ─────────────────────────────
 const Overview = ({ data }) => {
@@ -148,7 +184,7 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
                     <Form.Check type="checkbox" id="fs-create-nc" checked={createNc} onChange={(e) => setCreateNc(e.target.checked)}
                         label={`Ouvrir une non-conformité pour chacun des ${failed.length} point${failed.length > 1 ? 's' : ''} non conforme${failed.length > 1 ? 's' : ''}`} />
                     {createNc && (
-                        <div className="adm-form-grid mt-2">
+                        <div className="fs-pair mt-2">
                             <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect value={responsable} onChange={setResponsable} /></Form.Group>
                             <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField value={echeance} onChange={(e) => setEcheance(e.target.value)} /></Form.Group>
                         </div>
@@ -216,8 +252,10 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
                 <Form.Group><Form.Label>Obligation concernée</Form.Label>
                     <Form.Select value={form.article} onChange={(e) => setForm({ ...form, article: e.target.value })}>{Object.entries(ARTICLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Description</Form.Label><Form.Control value={form.description} maxLength={500} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="ex. Extincteur du couloir expiré" /></Form.Group>
-                <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect value={form.responsable} onChange={(responsable) => setForm({ ...form, responsable })} /></Form.Group>
-                <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
+                <div className="fs-pair">
+                    <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect value={form.responsable} onChange={(responsable) => setForm({ ...form, responsable })} /></Form.Group>
+                    <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
+                </div>
             </div>
             <Button variant="primary" onClick={add} disabled={busy || !form.etage.trim() || form.description.trim().length < 5}>Ajouter la non-conformité</Button>
 
@@ -282,32 +320,35 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
 };
 
 // ───────────────────────────── Exercices ─────────────────────────────
+const EMPTY_DRILL = { etage: '', participants: [], autres: '', duree: '', observations: '' };
 const Drills = ({ data, onSaved, showNotification, adminName }) => {
-    const [form, setForm] = useState({ etage: '', participants: '', duree: '', observations: '' });
+    const [form, setForm] = useState(EMPTY_DRILL);
     const [busy, setBusy] = useState(false);
+    const total = form.participants.length + (Number(form.autres) || 0);
     const submit = async () => {
         setBusy(true);
         try {
-            await saveDrill({ ...form, name: adminName });
+            await saveDrill({ ...form, participantsNoms: form.participants.map((participant) => participant.name), autres: Number(form.autres) || 0, name: adminName });
             showNotification("Exercice d'évacuation enregistré.", 'check-circle');
-            setForm({ etage: '', participants: '', duree: '', observations: '' });
+            setForm(EMPTY_DRILL);
             onSaved();
         } catch (error) { showNotification(error.message, 'error'); } finally { setBusy(false); }
     };
     return (
         <>
             <div className="adm-form-grid">
-                <Form.Group><Form.Label>Zone <small className="text-muted">(vide = tout le bâtiment)</small></Form.Label><EtageInput value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value })} /></Form.Group>
-                <Form.Group><Form.Label>Participants</Form.Label><Form.Control inputMode="numeric" value={form.participants} onChange={(e) => setForm({ ...form, participants: e.target.value.replace(/\D/g, '') })} /></Form.Group>
+                <Form.Group><Form.Label>Zone <small className="text-muted">(vide = tout le bâtiment)</small></Form.Label><EtageInput value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value })} emptyLabel="Tout le bâtiment" /></Form.Group>
+                <Form.Group className="fs-wide"><Form.Label>Participants <small className="text-muted">(personnel, sélection multiple)</small></Form.Label><ParticipantsSelect value={form.participants} onChange={(participants) => setForm({ ...form, participants })} /></Form.Group>
+                <Form.Group><Form.Label>Autres personnes <small className="text-muted">(patients, visiteurs — nombre, facultatif)</small></Form.Label><Form.Control inputMode="numeric" value={form.autres} onChange={(e) => setForm({ ...form, autres: e.target.value.replace(/\D/g, '') })} /></Form.Group>
                 <Form.Group><Form.Label>Durée d'évacuation (minutes)</Form.Label><Form.Control inputMode="numeric" value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value.replace(/\D/g, '') })} /></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Observations <small className="text-muted">(facultatif)</small></Form.Label><Form.Control as="textarea" rows={2} maxLength={500} value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} /></Form.Group>
             </div>
-            <Button variant="primary" onClick={submit} disabled={busy || !form.participants || !form.duree}>Enregistrer l'exercice</Button>
+            <Button variant="primary" onClick={submit} disabled={busy || total === 0 || !form.duree}>Enregistrer l'exercice{total > 0 ? ` (${total} participant${total > 1 ? 's' : ''})` : ''}</Button>
             <h6 className="mt-4">Exercices réalisés</h6>
             {data.exercices.length === 0 ? <p className="text-muted">Aucun exercice enregistré.</p> : (
                 <Table size="sm" className="fs-table">
                     <thead><tr><th>Date</th><th>Zone</th><th>Participants</th><th>Durée</th><th>Observations</th></tr></thead>
-                    <tbody>{data.exercices.map((e) => <tr key={e.id}><td>{formatDate(e.le)}</td><td>{e.etage}</td><td>{e.participants}</td><td>{e.duree} min</td><td className="text-muted">{e.observations || ''}</td></tr>)}</tbody>
+                    <tbody>{data.exercices.map((e) => <tr key={e.id}><td>{formatDate(e.le)}</td><td>{e.etage}</td><td>{e.participants}{e.participantsNoms?.length > 0 && <small className="d-block text-muted">{Object.values(e.participantsNoms).join(', ')}</small>}</td><td>{e.duree} min</td><td className="text-muted">{e.observations || ''}</td></tr>)}</tbody>
                 </Table>
             )}
         </>

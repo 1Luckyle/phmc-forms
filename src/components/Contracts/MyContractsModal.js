@@ -1,6 +1,6 @@
 // src/components/Contracts/MyContractsModal.js
 //
-// « Mes contrats » pour le personnel : liste des documents envoyés par les recruteurs (contrats, conventions de stage, avenants, convocations,
+// « Mes documents administratifs » pour le personnel : liste des documents envoyés par les recruteurs (contrats, conventions de stage, avenants, convocations,
 // notifications de sanction ou de fin de contrat). Un document en attente se lit puis se signe avec l'image de signature de « Mes créations » :
 // c'est une ACCEPTATION pour un contrat, un avenant ou une rupture d'un commun accord, un simple ACCUSÉ DE RÉCEPTION pour une notification. Une fois
 // signé, il reste consultable (texte figé + signature). La signature se crée directement ici si elle n'existe pas encore.
@@ -82,7 +82,7 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
     };
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title="Mes contrats" modalSize="large" className="dark-ui">
+        <BaseModal isOpen={show} onClose={onHide} title="Mes documents administratifs" modalSize="large" className="dark-ui">
             {loading && <Spinner animation="border" size="sm" />}
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 

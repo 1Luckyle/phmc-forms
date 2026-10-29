@@ -1,6 +1,6 @@
 // src/components/Contracts/ContractDocument.js
 //
-// Affichage d'un document contractuel, partagé par l'éditeur du recruteur (aperçu), la liste des recruteurs/admins et « Mes contrats » de l'employé.
+// Affichage d'un document contractuel, partagé par l'éditeur du recruteur (aperçu), la liste des recruteurs/admins et « Mes documents administratifs » de l'employé.
 //   • Un document récent est du BBCode (comme l'AMA et les formulaires) : il s'affiche dans le même cadre d'aperçu que les rapports, avec l'en-tête
 //     et les bandeaux du PHMC, et il s'exporte de la même façon (HTML, PDF, image).
 //   • Un ANCIEN contrat (texte brut figé, sans BBCode) s'affiche comme avant, sur fond clair.

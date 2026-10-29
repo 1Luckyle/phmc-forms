@@ -23,9 +23,9 @@ const FAMILY_COLORS = { soignant: '#3fb950', administration: '#58a6ff', polyvale
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const nameOfCivilian = (civilian) => [civilian.firstName, civilian.middleName, civilian.lastName].filter(Boolean).join(' ').trim() || 'Sans nom';
 
-// Accès rapides : ouvrent l'outil correspondant déjà positionné sur la personne (comme si on ouvrait le menu et tapait son nom dans la
+// Accès rapides (dont « Dossier disciplinaire » pour les admins, la Direction et le personnel administratif) : ouvrent l'outil correspondant déjà positionné sur la personne (comme si on ouvrait le menu et tapait son nom dans la
 // recherche). `access` dit lesquels l'utilisateur a le droit d'utiliser ; les callbacks viennent de la Boîte à outils.
-const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications }) => {
+const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications, onOpenDiscipline }) => {
     const { isAdmin, staffProfile } = useEmployeeAuth();
     // Coordonnées des civils (e-mail, téléphone, Discord, adresse) : admins, personnel soignant et personnel administratif seulement.
     const families = staffProfile ? familiesOfMember(staffProfile, staffProfile.type) : [];
@@ -181,6 +181,11 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
                                                     <i className="fas fa-file-signature me-1"></i>Dossier candidature
                                                 </Button>
                                             )}
+                                            {access.discipline && onOpenDiscipline && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Documents disciplinaires » sur cette personne (convocations, sanctions, fins de contrat)" onClick={() => onOpenDiscipline(member.displayName)}>
+                                                    <i className="fas fa-gavel me-1"></i>Dossier disciplinaire
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -222,6 +227,11 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
                                             {access.applications && onOpenApplications && (
                                                 <Button size="sm" variant="outline-secondary" title="Ouvre « Gestion du recrutement » sur ses candidatures" onClick={() => onOpenApplications(nameOfCivilian(civilian))}>
                                                     <i className="fas fa-file-signature me-1"></i>Dossier candidature
+                                                </Button>
+                                            )}
+                                            {access.discipline && onOpenDiscipline && (
+                                                <Button size="sm" variant="outline-secondary" title="Ouvre « Documents disciplinaires » sur cette personne (convocations, sanctions, fins de contrat)" onClick={() => onOpenDiscipline(nameOfCivilian(civilian))}>
+                                                    <i className="fas fa-gavel me-1"></i>Dossier disciplinaire
                                                 </Button>
                                             )}
                                         </div>

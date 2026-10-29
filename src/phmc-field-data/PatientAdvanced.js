@@ -8,6 +8,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 // Helper component for collapsible section headers - Copied from Nursing.js
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     <Button
@@ -73,6 +74,7 @@ const [activeSection, setActiveSection] = useState('general-info');
         // pas avoir lieu.
         const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
         const { filledByStaff } = useBillingRole(formData, setFormData);
+    const minorGuard = useMinorTitleGuard(formData, setFormData);
         // Répercuté dans formData car le générateur BBCode (fonction pure, sans
         // accès au contexte React) en a besoin pour afficher le bon texte.
         useEffect(() => {
@@ -154,7 +156,7 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 >
                                     <option value="" disabled>Titre</option>
                                     {patientTitleOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                        <option key={option.value} value={option.value} disabled={minorGuard.isDisabled(option)}>{minorGuard.label(option)}</option>
                                     ))}
                                 </Form.Select>
                             </OverlayTrigger>

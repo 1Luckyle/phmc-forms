@@ -7,6 +7,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 import { GUARDIAN_RELATIONS, ageOn, isMinorPatient } from '../utils/minors';
 
 const MedicalRelease = ({
@@ -19,6 +20,7 @@ const MedicalRelease = ({
     formatOptions, // Updated: Was PurposeMedicalInformationReleaseFormat
     medicalRecordOptions, // Updated: Was MedicalRecordsRelease
     phmcGroupedOptions,
+    unrestrictedPhmcGroupedOptions,
 
 }) => {
     usePrices(); // se redessine si un admin change les tarifs
@@ -41,6 +43,10 @@ const MedicalRelease = ({
     // pas avoir lieu.
     const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
     const { filledByStaff } = useBillingRole(formData, setFormData);
+    const minorGuard = useMinorTitleGuard(formData, setFormData);
+    // Praticien consulté : un personnel qui remplit pour un patient est lui-même le praticien (liste restreinte à lui) ; quand la personne est son propre
+    // patient (Civil, DMEC, soignant pour lui-même), elle choisit parmi tout le personnel PHMC.
+    const practitionerOptions = (filledByStaff ? phmcGroupedOptions : unrestrictedPhmcGroupedOptions) || phmcGroupedOptions || [];
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {
@@ -82,7 +88,7 @@ const MedicalRelease = ({
                     <option value="" disabled>Titre</option>
                     {/* Updated to use patientTitleOptions prop */}
                     {(patientTitleOptions || []).map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
+                        <option key={option.value} value={option.value} disabled={minorGuard.isDisabled(option)}>{minorGuard.label(option)}</option>
                     ))}
                 </Form.Select>
                 <Form.Control
@@ -466,7 +472,7 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case pour générer un lien de paiement Fleeca.
+                        Cochez cette case pour générer un lien de paiement Fleeca. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).
                     </span>
                 </Form.Group>
             )}
@@ -498,7 +504,7 @@ const MedicalRelease = ({
             <Form.Label>Praticien consulté:</Form.Label> 
     <Select
             name="phmcEmployee"
-            value={phmcGroupedOptions
+            value={practitionerOptions
                 .flatMap(group => group.options)
                 .find(option => option.value === formData.phmcEmployee) || null}
             onChange={(selectedOption) => {
@@ -520,7 +526,7 @@ const MedicalRelease = ({
                     }));
                 }
             }}
-            options={phmcGroupedOptions}
+            options={practitionerOptions}
             isClearable
             placeholder="Quel médecin vous a traité? (Vous pouvez taper pour rechercher!)"
             className="form-control" 
