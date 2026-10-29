@@ -1,18 +1,21 @@
 // src/utils/contracts.js
 //
-// Contrats de travail rattachés à un membre du personnel, un recruteur ou un candidat accepté (compte lié
-// par uid). Tout est en FRANÇAIS, y compris dans la base.
+// Documents contractuels rattachés à un membre du personnel, un recruteur ou un candidat accepté (compte lié par uid) : contrats (CDI, CDD),
+// conventions de stage, avenants, et notifications de la procédure disciplinaire (convocation, sanction, fin de contrat). Tout est en FRANÇAIS, y
+// compris dans la base. Le catalogue, les champs, la validation et le CONTENU JURIDIQUE sont dans utils/contractDocs.js et utils/contractClauses.js ;
+// ici, le cycle de vie et l'accès à Firebase.
 //
 // Cycle de vie :  brouillon (recruteur/admin) -> envoyé (visible par l'employé) -> signé.
-//   • Le MODÈLE est verrouillé : le recruteur ne remplit que les champs de `champs`, le reste du texte vient
-//     de renderContract. Au moment de l'envoi, le texte rendu est FIGÉ dans le contrat (texteFige) : la
-//     signature porte ainsi sur ce texte précis, même si le modèle change ensuite.
-//   • L'employé signe avec l'image de signature de « Mes créations » (userCreations/{uid}/signature).
-//     L'image est recopiée en data-URL quand le navigateur y est autorisé (imageData) : remplacer ou supprimer
-//     plus tard sa signature ne casse pas un contrat déjà signé.
+//   • Le MODÈLE est verrouillé : le recruteur ne remplit que les champs du type de document, le reste du texte vient du modèle. Au moment de
+//     l'envoi, le BBCode rendu est FIGÉ dans le document (bbCodeFige) : la signature porte sur ce texte précis, même si le modèle change ensuite.
+//     (Les anciens contrats n'ont que texteFige, en texte brut : ils restent lisibles tels quels.)
+//   • L'employé signe avec l'image de signature de « Mes créations » (userCreations/{uid}/signature). Pour un contrat, un avenant ou une rupture
+//     d'un commun accord, c'est une ACCEPTATION ; pour une convocation, une sanction ou une notification de fin, un simple ACCUSÉ DE RÉCEPTION.
+//     L'image est recopiée en data-URL quand le navigateur y est autorisé (imageData) : remplacer ou supprimer sa signature plus tard ne casse pas
+//     un document déjà signé.
 //
 // Stockage (règles : database.rules.json) :
-//   contrats/{id}                        le contrat ; lecture recruteurs/admins, ou employé si ≠ brouillon
+//   contrats/{id}                        le document ; lecture recruteurs/admins, ou employé si ≠ brouillon
 //   contratsParEmploye/{employeUid}/{id}  index lisible par l'employé (n'existe qu'une fois envoyé)
 //   (anciens nœuds contracts / contractsByEmployee : déplacés par la migration « Recrutement en français »)
 import { ref, get, set, update, remove, push } from 'firebase/database';
@@ -22,6 +25,14 @@ import { releaseInternalStatusAfterContract } from './internalRecruitment';
 import { closeThreadsAfterContract } from './applicationThreads';
 import { logActivity } from './activityLog';
 import { assertNotLocked } from './lockdownGuard';
+import {
+    CONTRACT_TYPES, MODEL_VERSION, acceptanceKind, isEmploymentType, typeOfChamps, emptyContractFields, validateDocFields, buildContractBb,
+    buildReference, statusLabel,
+} from './contractDocs';
+
+export {
+    CONTRACT_TYPES, emptyContractFields, validateDocFields, statusLabel, isEmploymentType, typeOfChamps, acceptanceKind, buildContractBb,
+};
 
 export const CONTRACT_STATUS = {
     brouillon: { label: 'Brouillon', variant: 'secondary', legacy: 'draft' },
@@ -31,40 +42,18 @@ export const CONTRACT_STATUS = {
 const LEGACY_CONTRACT_STATUS = Object.fromEntries(Object.entries(CONTRACT_STATUS).map(([key, value]) => [value.legacy, key]));
 export const normalizeContractStatus = (value) => (CONTRACT_STATUS[value] ? value : (LEGACY_CONTRACT_STATUS[value] || value));
 
-export const CONTRACT_TYPES = {
-    cdi: 'Contrat à durée indéterminée (CDI)',
-    cdd: 'Contrat à durée déterminée (CDD)',
-};
-
-// Structure employeur affichée dans le contrat, selon le service de la personne.
-const EMPLOYERS = {
-    phmc: 'le Pillbox Hill Medical Center (PHMC)',
-    coroner: 'le service de médecine légale (DMEC) du Pillbox Hill Medical Center',
-};
-
-export const emptyContractFields = () => ({
-    poste: '',
-    role: '',
-    typeContrat: 'cdi',
-    dateDebut: '',
-    dateFin: '',
-    remuneration: '',
-    essaiJours: '',
-    responsable: '',
-    horaires: '',
-});
-
 // Ancien champ (anglais) -> nouveau champ des conditions d'un contrat.
 const LEGACY_FIELD_NAMES = {
     position: 'poste', rank: 'role', contractType: 'typeContrat', startDate: 'dateDebut', endDate: 'dateFin',
     salary: 'remuneration', trialDays: 'essaiJours', supervisor: 'responsable', schedule: 'horaires',
 };
 
-// Contrat au format FRANÇAIS à partir d'une entrée de la base (ancienne ou nouvelle forme).
+// Document au format FRANÇAIS à partir d'une entrée de la base (ancienne ou nouvelle forme).
 export const normalizeContract = (raw, id = null) => {
     const source = raw || {};
     const rawFields = source.champs || source.fields || {};
-    const champs = { ...emptyContractFields() };
+    const rawType = rawFields.typeContrat ?? rawFields.contractType;
+    const champs = { ...emptyContractFields(CONTRACT_TYPES[rawType] ? rawType : 'cdi') };
     Object.entries(rawFields).forEach(([key, value]) => { champs[LEGACY_FIELD_NAMES[key] || key] = value ?? ''; });
     champs.role = normalizeRank(champs.role);
     const signature = source.signature
@@ -77,119 +66,53 @@ export const normalizeContract = (raw, id = null) => {
         }
         : null;
     const rawKind = source.typeEmploye ?? source.employeeKind;
+    const service = source.service || 'phmc';
+    const creeLe = source.creeLe ?? source.createdAt ?? null;
+    const identifier = id ?? source.id ?? null;
     return {
-        id: id ?? source.id ?? null,
+        id: identifier,
         employeUid: source.employeUid ?? source.employeeUid ?? null,
         employeNom: source.employeNom ?? source.employeeName ?? '',
         employeBadge: source.employeBadge ?? source.employeeBadge ?? '',
         employeEmail: source.employeEmail ?? source.employeeEmail ?? '',
-        service: source.service || 'phmc',
+        service,
         typeEmploye: rawKind === 'staff' ? 'personnel' : (rawKind === 'candidate' ? 'candidat' : (rawKind === 'recruiter' ? 'recruteur' : (rawKind || 'personnel'))),
         champs,
         statut: normalizeContractStatus(source.statut ?? source.status),
-        creeLe: source.creeLe ?? source.createdAt ?? null,
+        creeLe,
         creePar: source.creePar ?? source.createdBy ?? null,
         creeParNom: source.creeParNom ?? source.createdByName ?? '',
         modifieLe: source.modifieLe ?? source.updatedAt ?? null,
         envoyeLe: source.envoyeLe ?? source.sentAt ?? null,
         signeLe: source.signeLe ?? source.signedAt ?? null,
         texteFige: source.texteFige ?? source.renderedText ?? '',
+        // BBCode figé à l'envoi (absent des anciens contrats : ils n'ont que le texte brut).
+        bbCodeFige: source.bbCodeFige ?? '',
+        modele: source.modele ?? null,
+        reference: source.reference || buildReference({ service, id: identifier, timestamp: source.envoyeLe ?? source.sentAt ?? creeLe }),
+        offreExpireLe: source.offreExpireLe ?? null,
+        emetteur: source.emetteur ?? null,
         signature,
     };
 };
 
-const formatDate = (isoDate) => {
-    if (!isoDate) return '—';
-    const [y, m, d] = String(isoDate).split('-').map(Number);
-    if (!y || !m || !d) return isoDate;
-    return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+// Type du document (cdi, cdd, stage, avenant, convocation, sanction, fin).
+export const contractTypeOf = (contract) => typeOfChamps(contract?.champs);
+
+// Libellé du statut adapté au type (« Signé » pour un contrat, « Reçu » pour une notification).
+export const contractStatusLabel = (contract) => statusLabel(contract.statut, contractTypeOf(contract), contract.champs);
+
+export const isOfferExpired = (contract, now = Date.now()) => contract?.statut === 'envoye' && !!contract.offreExpireLe && now > contract.offreExpireLe;
+
+// Intitulé court d'un document, pour les listes et les notifications.
+export const contractLabel = (contract) => {
+    const type = contractTypeOf(contract);
+    if (type === 'cdi' || type === 'cdd' || type === 'stage') return `${CONTRACT_TYPES[type].replace(/ \(.*\)$/, '')} — ${contract.champs?.poste || 'sans intitulé'}`;
+    return CONTRACT_TYPES[type];
 };
 
-// Valide les champs saisis ; retourne la liste des erreurs (vide = valide).
-export const validateContractFields = (champs) => {
-    const errors = [];
-    if (!champs.poste.trim()) errors.push('La fonction exercée est obligatoire.');
-    if (!champs.role) errors.push('Le rôle est obligatoire.');
-    if (!champs.dateDebut) errors.push('La date de début est obligatoire.');
-    if (!champs.remuneration.trim()) errors.push('La rémunération est obligatoire.');
-    if (champs.typeContrat === 'cdd') {
-        if (!champs.dateFin) errors.push('La date de fin est obligatoire pour un CDD.');
-        else if (champs.dateDebut && champs.dateFin < champs.dateDebut) errors.push('La date de fin précède la date de début.');
-    }
-    if (champs.essaiJours !== '' && !(Number(champs.essaiJours) >= 0 && Number.isInteger(Number(champs.essaiJours)))) {
-        errors.push('La période d\'essai doit être un nombre entier de jours.');
-    }
-    return errors;
-};
-
-// Rend le contrat à partir du MODÈLE VERROUILLÉ. Retourne { title, sections: [{ heading, paragraphs }], text }.
-export const renderContract = ({ service, employeeName, employeeBadge, champs, issuerName }) => {
-    const employer = EMPLOYERS[service] || EMPLOYERS.phmc;
-    const isCdd = champs.typeContrat === 'cdd';
-    const trial = Number(champs.essaiJours) > 0
-        ? `Le présent contrat débute par une période d'essai de ${Number(champs.essaiJours)} jour(s), pendant laquelle chaque partie peut y mettre fin librement et sans préavis.`
-        : 'Le présent contrat ne comporte pas de période d\'essai.';
-
-    const sections = [
-        {
-            heading: 'Article 1 — Engagement',
-            paragraphs: [
-                `Entre ${employer}, représenté par ${issuerName || 'son service de recrutement'}, ci-après « l'employeur »,`,
-                `et ${employeeName}${employeeBadge ? ` (ID employé ${employeeBadge})` : ''}, ci-après « l'employé(e) »,`,
-                `il est convenu ce qui suit : l'employé(e) est engagé(e) en qualité de ${champs.poste.trim()}, avec le rôle de ${normalizeRank(champs.role) || '—'}.`,
-            ],
-        },
-        {
-            heading: 'Article 2 — Durée et période d\'essai',
-            paragraphs: [
-                isCdd
-                    ? `Le présent contrat est conclu pour une durée déterminée, du ${formatDate(champs.dateDebut)} au ${formatDate(champs.dateFin)}.`
-                    : `Le présent contrat est conclu pour une durée indéterminée et prend effet le ${formatDate(champs.dateDebut)}.`,
-                trial,
-            ],
-        },
-        {
-            heading: 'Article 3 — Fonctions et organisation',
-            paragraphs: [
-                `L'employé(e) exerce ses fonctions sous l'autorité de ${champs.responsable.trim() || 'sa hiérarchie directe'}.`,
-                champs.horaires.trim()
-                    ? `Horaires et disponibilités : ${champs.horaires.trim()}.`
-                    : 'Les horaires et disponibilités sont définis avec la hiérarchie selon les besoins du service.',
-            ],
-        },
-        {
-            heading: 'Article 4 — Rémunération',
-            paragraphs: [`En contrepartie de son travail, l'employé(e) perçoit la rémunération suivante : ${champs.remuneration.trim()}.`],
-        },
-        {
-            heading: 'Article 5 — Obligations de l\'employé(e)',
-            paragraphs: [
-                'L\'employé(e) s\'engage à respecter le secret médical et la confidentialité des dossiers patients, le règlement intérieur et la hiérarchie du service, ainsi que les règles de conduite en vigueur.',
-                'Tout manquement grave peut entraîner des sanctions, pouvant aller jusqu\'à la rupture du contrat.',
-            ],
-        },
-        {
-            heading: 'Article 6 — Rupture du contrat',
-            paragraphs: [
-                isCdd
-                    ? 'Le contrat prend fin à son terme, sauf renouvellement écrit. Il peut être rompu avant terme d\'un commun accord ou en cas de faute grave.'
-                    : 'Chaque partie peut mettre fin au contrat, sous réserve d\'en informer l\'autre partie. L\'employeur peut y mettre fin immédiatement en cas de faute grave.',
-            ],
-        },
-        {
-            heading: 'Article 7 — Acceptation',
-            paragraphs: ['La signature électronique de l\'employé(e) ci-dessous vaut lecture et acceptation de l\'ensemble des articles du présent contrat.'],
-        },
-    ];
-
-    const title = `Contrat de travail — ${employeeName}`;
-    const text = [
-        title.toUpperCase(),
-        '',
-        ...sections.flatMap((s) => [s.heading, ...s.paragraphs, '']),
-    ].join('\n').trim();
-    return { title, sections, text };
-};
+// Compat : ancienne signature de validation (liste d'erreurs seulement).
+export const validateContractFields = (champs, ctx) => validateDocFields(typeOfChamps(champs), champs, ctx).errors;
 
 // ───────────────────────────── Lecture ─────────────────────────────
 
@@ -221,9 +144,15 @@ export async function loadMyContracts(uid) {
     return contracts.filter(Boolean).sort((a, b) => (b.envoyeLe || b.creeLe || 0) - (a.envoyeLe || a.creeLe || 0));
 }
 
+const loadContract = async (id) => {
+    if (!id) return null;
+    const snap = await get(ref(database, `contrats/${id}`));
+    return snap.exists() ? normalizeContract(snap.val(), id) : null;
+};
+
 // ───────────────────────────── Recruteur / admin ─────────────────────────────
 
-// Crée ou met à jour un BROUILLON (un contrat envoyé doit d'abord être retiré).
+// Crée ou met à jour un BROUILLON (un document envoyé doit d'abord être retiré).
 // `employee` : { uid, displayName, badge, email, kind: 'staff' | 'candidate' | 'recruiter' } (kind en anglais en
 // interne côté interface ; il est enregistré en français).
 export async function saveContractDraft({ id, employee, service, champs, issuer }) {
@@ -244,56 +173,85 @@ export async function saveContractDraft({ id, employee, service, champs, issuer 
         typeEmploye,
         modifieLe: now,
     };
+    const typeLabel = CONTRACT_TYPES[typeOfChamps(champs)] || 'Document';
     if (id) {
         const current = (await get(ref(database, `contrats/${id}`))).val();
         if (!current) throw new Error('Contrat introuvable.');
-        if (normalizeContractStatus(current.statut) !== 'brouillon') throw new Error('Ce contrat a été envoyé : retirez-le d\'abord pour le modifier.');
+        if (normalizeContractStatus(current.statut) !== 'brouillon') throw new Error('Ce document a été envoyé : retirez-le d\'abord pour le modifier.');
         await update(ref(database, `contrats/${id}`), base);
-        logActivity({ category: 'contrats', action: 'contract_updated', summary: `Brouillon de contrat modifié : ${employee?.displayName || employee?.name || current.employeNom || id}`, target: current.employeNom || undefined });
+        logActivity({ category: 'contrats', action: 'contract_updated', summary: `Brouillon modifié (${typeLabel}) : ${employee?.displayName || employee?.name || current.employeNom || id}`, target: current.employeNom || undefined });
         return id;
     }
     const newRef = push(ref(database, 'contrats'));
     await set(newRef, { ...base, statut: 'brouillon', creeLe: now, creePar: issuer.uid, creeParNom: issuer.name });
-    logActivity({ category: 'contrats', action: 'contract_created', summary: `Brouillon de contrat créé : ${employee?.displayName || employee?.name || newRef.key}`, target: employee?.displayName || employee?.name || undefined });
+    logActivity({ category: 'contrats', action: 'contract_created', summary: `Brouillon créé (${typeLabel}) : ${employee?.displayName || employee?.name || newRef.key}`, target: employee?.displayName || employee?.name || undefined });
     return newRef.key;
 }
 
-// Fige le texte puis rend le contrat visible par l'employé.
-export async function sendContract(id, issuerName) {
+// Fige le texte puis rend le document visible par l'employé. Les documents liés (contrat modifié, convocation) sont relus dans la base :
+// on ne se fie jamais à ce que l'interface a affiché. `issuer` : { name, title, signatureUrl }. Retourne { contract, warnings }.
+export async function sendContract(id, issuer) {
     assertNotLocked();
-    const contract = normalizeContract((await get(ref(database, `contrats/${id}`))).val(), id);
-    if (!contract.employeUid) throw new Error('Contrat introuvable.');
-    if (contract.statut === 'signe') throw new Error('Ce contrat est déjà signé.');
-    const errors = validateContractFields(contract.champs);
+    const contract = await loadContract(id);
+    if (!contract?.employeUid) throw new Error('Contrat introuvable.');
+    if (contract.statut === 'signe') throw new Error('Ce document est déjà signé.');
+    const type = contractTypeOf(contract);
+    const champs = contract.champs;
+
+    const refContract = champs.contratRefId ? await loadContract(champs.contratRefId) : null;
+    const convocation = champs.convocationRefId ? await loadContract(champs.convocationRefId) : null;
+    if (champs.contratRefId && !refContract) throw new Error('Le contrat concerné est introuvable.');
+    if (refContract && refContract.employeUid !== contract.employeUid) throw new Error('Le contrat concerné n\'appartient pas à cette personne.');
+    if (convocation && convocation.employeUid !== contract.employeUid) throw new Error('La convocation n\'appartient pas à cette personne.');
+
+    const now = Date.now();
+    const { errors, warnings } = validateDocFields(type, champs, { refContract, convocation, now }, { forSend: true });
     if (errors.length) throw new Error(errors.join(' '));
-    const rendered = renderContract({
-        service: contract.service, employeeName: contract.employeNom, employeeBadge: contract.employeBadge,
-        champs: contract.champs, issuerName,
+
+    const rendered = buildContractBb({
+        type, service: contract.service, employeeName: contract.employeNom, employeeBadge: contract.employeBadge, champs,
+        issuer, id, timestamp: now, refContract, convocation,
     });
+    const days = Number(champs.validiteOffreJours) || 0;
+    const needsOffer = acceptanceKind(type, champs) === 'accord' && days > 0;
     await update(ref(database), {
         [`contrats/${id}/statut`]: 'envoye',
-        [`contrats/${id}/texteFige`]: rendered.text,
-        [`contrats/${id}/envoyeLe`]: Date.now(),
-        [`contrats/${id}/modifieLe`]: Date.now(),
+        [`contrats/${id}/bbCodeFige`]: rendered.bbCode,
+        [`contrats/${id}/texteFige`]: rendered.plain,
+        [`contrats/${id}/reference`]: rendered.reference,
+        [`contrats/${id}/modele`]: MODEL_VERSION,
+        [`contrats/${id}/emetteur`]: { nom: issuer.name || '', titre: issuer.title || '' },
+        [`contrats/${id}/offreExpireLe`]: needsOffer ? now + days * 86400000 : null,
+        [`contrats/${id}/envoyeLe`]: now,
+        [`contrats/${id}/modifieLe`]: now,
         [`contratsParEmploye/${contract.employeUid}/${id}`]: true,
     });
-    return contract;
+    logActivity({
+        category: 'contrats', action: 'contract_sent', severity: ['sanction', 'fin'].includes(type) ? 'warning' : 'info',
+        summary: `${CONTRACT_TYPES[type]} envoyé : ${contract.employeNom}`, details: `Référence : ${rendered.reference}`, target: contract.employeNom || undefined,
+    });
+    return { contract, warnings, reference: rendered.reference };
 }
 
-// Repasse un contrat envoyé (non signé) en brouillon : il disparaît de la liste de l'employé.
+// Repasse un document envoyé (non signé) en brouillon : il disparaît de la liste de l'employé.
 export async function retractContract(id) {
     assertNotLocked();
     const contract = normalizeContract((await get(ref(database, `contrats/${id}`))).val(), id);
     if (!contract.employeUid) throw new Error('Contrat introuvable.');
-    if (contract.statut === 'signe') throw new Error('Un contrat signé ne peut pas être retiré.');
+    if (contract.statut === 'signe') throw new Error('Un document signé ne peut pas être retiré.');
     await update(ref(database), {
         [`contrats/${id}/statut`]: 'brouillon',
         [`contrats/${id}/texteFige`]: null,
+        [`contrats/${id}/bbCodeFige`]: null,
+        [`contrats/${id}/reference`]: null,
+        [`contrats/${id}/modele`]: null,
+        [`contrats/${id}/emetteur`]: null,
+        [`contrats/${id}/offreExpireLe`]: null,
         [`contrats/${id}/envoyeLe`]: null,
         [`contrats/${id}/modifieLe`]: Date.now(),
         [`contratsParEmploye/${contract.employeUid}/${id}`]: null,
     });
-    logActivity({ category: 'contrats', action: 'contract_retracted', severity: 'warning', summary: `Contrat retiré de la liste de l'employé : ${contract.employeNom}`, target: contract.employeNom || undefined });
+    logActivity({ category: 'contrats', action: 'contract_retracted', severity: 'warning', summary: `${CONTRACT_TYPES[contractTypeOf(contract)]} retiré de la liste de l'employé : ${contract.employeNom}`, target: contract.employeNom || undefined });
 }
 
 // Suppression : recruteurs pour un contrat non signé, admins pour n'importe lequel (règles Firebase).
@@ -329,26 +287,34 @@ const embedSignatureImage = async (url) => {
     }
 };
 
-// Signe un contrat envoyé. `signature` = création « signature » de l'employé ({ url, ... }).
+// Signe un document envoyé. `signature` = création « signature » de l'employé ({ url, ... }).
 // Les règles Firebase vérifient que l'URL est bien celle de SA signature enregistrée.
 export async function signContract(contract, { uid, name, signature }) {
     assertNotLocked();
     if (!signature?.url) throw new Error('Créez d\'abord votre signature (Boîte à outils → Carte de visite & signature).');
-    if (contract.statut !== 'envoye') throw new Error('Ce contrat n\'est pas en attente de signature.');
-    if (contract.employeUid !== uid) throw new Error('Ce contrat ne vous est pas destiné.');
+    if (contract.statut !== 'envoye') throw new Error('Ce document n\'est pas en attente de signature.');
+    if (contract.employeUid !== uid) throw new Error('Ce document ne vous est pas destiné.');
+    if (isOfferExpired(contract)) throw new Error('L\'offre n\'est plus valable : elle est caduque. Demandez au recrutement de vous renvoyer le document.');
+    const type = contractTypeOf(contract);
+    const accord = acceptanceKind(type, contract.champs) === 'accord';
     const now = Date.now();
     const embedded = await embedSignatureImage(signature.url);
-    const signatureRecord = { url: signature.url, signeParUid: uid, signeParNom: name, signeLe: now };
+    const signatureRecord = { url: signature.url, signeParUid: uid, signeParNom: name || '', signeLe: now };
     if (embedded) signatureRecord.imageData = embedded;
     await update(ref(database), {
         [`contrats/${contract.id}/signature`]: signatureRecord,
         [`contrats/${contract.id}/signeLe`]: now,
         [`contrats/${contract.id}/statut`]: 'signe',
     });
-    // Candidature acceptée + contrat signé : le statut de recrutement interne prend fin (best-effort).
-    logActivity({ category: 'contrats', action: 'contract_signed', severity: 'success', summary: `Contrat signé : ${contract.employeNom || name}`, details: `Poste : ${contract.champs?.poste || '—'}\nGrade : ${contract.champs?.role || '—'}`, target: contract.employeNom || name });
-    await releaseInternalStatusAfterContract(uid);
-    // Les échanges avec le recrutement sur la candidature acceptée se ferment (best-effort).
-    await closeThreadsAfterContract(uid);
+    logActivity({
+        category: 'contrats', action: accord ? 'contract_signed' : 'contract_acknowledged', severity: accord ? 'success' : 'info',
+        summary: `${CONTRACT_TYPES[type]} ${accord ? 'signé' : 'reçu (accusé de réception)'} : ${contract.employeNom || name}`,
+        details: `Référence : ${contract.reference}\nFonction : ${contract.champs?.poste || '—'}\nGrade : ${contract.champs?.role || '—'}`, target: contract.employeNom || name,
+    });
+    // Seul un CONTRAT d'emploi signé met fin au statut « candidat accepté » et aux échanges de candidature (best-effort).
+    if (isEmploymentType(type)) {
+        await releaseInternalStatusAfterContract(uid);
+        await closeThreadsAfterContract(uid);
+    }
     return { ...contract, statut: 'signe', signeLe: now, signature: signatureRecord };
 }

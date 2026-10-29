@@ -6,6 +6,7 @@
 //   • le HTML est destiné au forum GTA World (copier-coller du fichier ouvert dans le navigateur).
 // La conversion se fait dans le navigateur (aucun appel serveur, donc aucun coût Firebase).
 import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './bbcodeToHtml';
+import { contractBbCode } from './contractCompose';
 
 export const BBCODE_FORUM_HINT = 'forum PHMC, pas encore disponible';
 export const HTML_FORUM_HINT = 'forum GTA World';
@@ -41,9 +42,11 @@ export const downloadBbCodeAsHtml = ({ bbCode, title, showNotification }) => {
     }
 };
 
-// Contrat (texte figé + signature) → BBCode, pour passer par la même conversion HTML que les rapports.
-// Première ligne = titre, lignes « Article N… » = intertitres, le reste = paragraphes.
+// Document contractuel (BBCode figé + signature) → BBCode, pour passer par la même conversion HTML que les rapports. Un ANCIEN contrat n'a que son texte brut
+// figé : première ligne = titre, lignes « Article N… » = intertitres, le reste = paragraphes.
 export const contractToBbCode = (contract) => {
+    const modern = contractBbCode(contract);
+    if (modern) return modern;
     const lines = String(contract?.texteFige || '').split('\n');
     const out = lines.map((line, index) => {
         if (!line.trim()) return '';
@@ -63,4 +66,8 @@ export const contractToBbCode = (contract) => {
     return out.join('\n');
 };
 
-export const contractTitle = (contract) => `Contrat - ${contract?.employeNom || contract?.champs?.poste || 'PHMC'}`;
+const CONTRACT_TITLES = {
+    cdi: 'Contrat de travail (CDI)', cdd: 'Contrat de travail (CDD)', stage: 'Convention de stage', avenant: 'Avenant',
+    convocation: 'Convocation à un entretien préalable', sanction: 'Notification de sanction', fin: 'Notification de fin de contrat',
+};
+export const contractTitle = (contract) => `${CONTRACT_TITLES[contract?.champs?.typeContrat] || 'Contrat'} - ${contract?.employeNom || contract?.champs?.poste || 'PHMC'}`;
