@@ -34,6 +34,7 @@ import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../u
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { logActivity } from '../utils/activityLog';
 import { isLockdownOn, LOCK_MESSAGE } from '../utils/lockdownGuard';
+import { loadDeathLock, DEATH_LOCK_MESSAGE } from '../utils/deathReports';
 import './EmsAmaModal.css';
 
 const selectStyles = {
@@ -179,6 +180,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         if (!employee?.value) { showNotification('Choisissez le paramédic qui signe.', 'warning'); return; }
         if (!employeeSignature?.url) { showNotification("Le paramédic doit d'abord créer sa signature (voir plus bas) : elle s'imprime sous son nom.", 'warning', 7000); return; }
         if (!patientID) { showNotification('Choisissez le patient (ou tapez son ID).', 'warning'); return; }
+        if (!isAdmin && await loadDeathLock(patientID)) { showNotification(DEATH_LOCK_MESSAGE, 'warning', 10000); return; }
         if (!patientName.trim()) { showNotification('Indiquez le nom du patient : il sert à créer sa signature et figure sur le document.', 'warning'); return; }
         if (!certified) { showNotification('Certifiez que c\'est bien le patient (ou son représentant légal) qui signe.', 'warning'); return; }
 

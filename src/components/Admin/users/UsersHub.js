@@ -594,7 +594,11 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                                         onClick={async () => {
                                             try {
                                                 const result = await syncStaffUids();
-                                                showNotification(`Droits du personnel synchronisés (${result.total} comptes ; ${result.added} ajouté(s), ${result.removed} retiré(s)).`, 'success');
+                                                if (result.familiesSynced === false) {
+                                                    showNotification(`Droits du personnel synchronisés (${result.total} comptes), mais les familles (soignant / DMEC) et les nœuds de rapports n'ont pas pu être écrits : déployez les règles Firebase puis relancez.`, 'warning', 9000);
+                                                } else {
+                                                    showNotification(`Droits du personnel synchronisés (${result.total} comptes ; ${result.added} ajouté(s), ${result.removed} retiré(s) ; ${result.changes} marqueur(s) de famille / de rapports mis à jour).`, 'success');
+                                                }
                                             } catch (error) {
                                                 showNotification(`Synchronisation impossible : ${error.message}`, 'error');
                                             }

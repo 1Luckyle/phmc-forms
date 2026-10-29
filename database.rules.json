@@ -128,6 +128,63 @@
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
     },
 
+    // Familles du personnel, pour les règles de lecture des rapports (savedReports) : soignantUIDs/{uid}: true (famille « PHMC · Soignant »),
+    // dmecUIDs/{uid}: true (famille « DMEC · Médecine légale »). Cumul de rôles : un compte peut être dans les deux. Reconstruits avec
+    // staffUIDs par syncStaffUids (admins).
+    "soignantUIDs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+    "dmecUIDs": {
+      ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "root.child('adminUIDs').child(auth.uid).val() === true"
+    },
+
+    // noeudsRapports/{uid}: nom de nœud savedReports de ce compte (nom de la fiche du personnel, assaini). Posé par les admins
+    // (syncStaffUids) ; sert à vérifier qu'un compte ne lit que SON nœud de rapports. Lisible par son titulaire. Un compte peut
+    // seulement réclamer lui-même un nom de nœud LIBRE (aucun rapport dessous) ou revenir à un de SES anciens nœuds (noeudsAnciens) :
+    // c'est ce que fait un renommage de sa propre fiche (et son annulation), sans jamais pouvoir se « rattacher » au nœud d'un collègue. La prochaine synchronisation admin remet tout à la valeur exacte.
+    "noeudsRapports": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && newData.isString() && newData.val().length <= 120 && (!root.child('savedReports').child(newData.val()).exists() || root.child('noeudsAnciens').child(auth.uid).child(newData.val()).exists())))"
+      }
+    },
+
+    // noeudsAnciens/{uid}/{nœud}: true — ancien nom de nœud d'un compte, le temps d'un renommage de SA PROPRE fiche : les nouveaux rapports sont
+    // écrits sous le nouveau nom (réclamé dans noeudsRapports), les anciens sont supprimés sous l'ancien. Un compte ne peut y inscrire que
+    // SON nœud actuel (avant de le quitter) et se retirer de la liste ; les admins le purgent à chaque synchronisation (syncStaffUids).
+    "noeudsAnciens": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        "$node": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && ((newData.val() === true && root.child('noeudsRapports').child(auth.uid).val() === $node) || !newData.exists())))"
+        }
+      }
+    },
+
+    // Patients déclarés DÉCÉDÉS : patientsDecedes/{ID patient canonique}: { depuis, uid, par, rapport }. Posé par le DMEC (ou un admin) quand
+    // il enregistre un rapport de décès portant cet ID ; retiré par celui qui l'a posé (suppression de son rapport) ou par un admin
+    // (déblocage). Tant qu'il existe, le personnel non DMEC ne peut plus rien enregistrer sur ce patient (voir savedReports) ; le dossier
+    // reste consultable. Lecture : le personnel (pour afficher le message avant d'enregistrer).
+    "patientsDecedes": {
+      "$patientId": {
+        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['depuis', 'uid']) && newData.child('depuis').isNumber() && newData.child('uid').isString())"
+      }
+    },
+
+    // Rapports Publics de Décès PUBLIÉS : rapportsPublics/{clé du rapport}: { reportPath, uid, par, titre, patientID?, publieLe }. Posé et retiré
+    // par le DMEC (l'auteur) ou un admin ; lu par tout le personnel. Sa présence rend le rapport (version 37) lisible par tout le personnel.
+    "rapportsPublics": {
+      ".read":  "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+      "$reportKey": {
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['reportPath', 'uid', 'publieLe']) && newData.child('publieLe').isNumber())"
+      }
+    },
+
     // ─── Rôle « recruteur » ───────────────────────────────────────────────────
     // recruiterUIDs/{uid}: true — posé/retiré par un admin (menu de gestion des
     // utilisateurs). Un recruteur reste un compte Civil ; ce drapeau lui ajoute l'onglet
@@ -244,16 +301,37 @@
         ".write": false
       },
       "$userKey": {
-        // Lecture du nœud d'auteur : personnel et admins (modèle collaboratif). Un CIVIL ne lit plus par nom —
-        // il charge son dossier via patientRecords (par ID patient) et ne peut lire qu'un rapport portant SON
-        // ID patient ($reportKey ci-dessous). L'ID patient étant stable, ça survit à la recréation de compte.
-        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
-        // Écriture : personnel/admins sur tout rapport. Un CIVIL ne peut que CRÉER un rapport, ou modifier/
-        // supprimer un rapport déjà à SON ID patient — il ne peut plus écraser/supprimer le rapport d'un autre.
-        ".write": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+        // Lecture du NŒUD d'un auteur (= sa liste « Rapports enregistrés ») : l'auteur lui-même et les admins. Le nœud porte le NOM
+        // de l'auteur : noeudsRapports/{uid} (posé par les admins, voir syncStaffUids) dit à quel nœud un compte a droit. Plus
+        // personne ne peut parcourir ce que fait un collègue ; un rapport s'ouvre par son chemin, voir $reportKey ci-dessous.
+        ".read":  "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && root.child('noeudsRapports').child(auth.uid).val() === $userKey))",
+        // Écriture du nœud ENTIER (renommage, fusion de comptes) : admins seulement. Les rapports se créent / modifient / suppriment
+        // un par un, voir $reportKey (un .write posé ici s'appliquerait à tous les rapports et empêcherait le blocage « patient décédé »).
+        ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
         "$reportKey": {
-          ".read":  "auth != null && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()",
-          ".write": "auth != null && (!data.exists() || (data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val() && data.child('kind').val() !== 'ama'))"
+          // Lecture d'un rapport d'un AUTRE auteur : jamais par liste, seulement quand il est dans un dossier patient (il porte un ID
+          // patient) ET que la famille du lecteur est la bonne : soignants ↔ rapports soignants, DMEC ↔ rapports DMEC (liste des
+          // formulaires DMEC = DMEC_FORM_VERSIONS). Exception : un Rapport Public de Décès (37) PUBLIÉ par le DMEC, lisible par tout le
+          // personnel ; la publication est prouvée par rapportsPublics/{clé}, que seuls le DMEC et les admins peuvent écrire. Un Civil
+          // ne lit que le rapport qui porte SON ID patient.
+          ".read":  "auth != null && ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.child('data').child('patientID').exists() && ((root.child('soignantUIDs').child(auth.uid).val() === true && !(data.child('bbCodeVersion').val() === 1 || data.child('bbCodeVersion').val() === 2 || data.child('bbCodeVersion').val() === 4 || data.child('bbCodeVersion').val() === 8 || data.child('bbCodeVersion').val() === 11 || data.child('bbCodeVersion').val() === 37)) || (root.child('dmecUIDs').child(auth.uid).val() === true && (data.child('bbCodeVersion').val() === 1 || data.child('bbCodeVersion').val() === 2 || data.child('bbCodeVersion').val() === 4 || data.child('bbCodeVersion').val() === 8 || data.child('bbCodeVersion').val() === 11 || data.child('bbCodeVersion').val() === 37))))) || (root.child('staffUIDs').child(auth.uid).val() === true && data.child('bbCodeVersion').val() === 37 && root.child('rapportsPublics').child($reportKey).exists()))",
+          // Écriture : admins sans restriction. Personnel : SON nœud seulement (noeudsRapports/{uid}, ou un ancien nom le temps d'un
+          // renommage : noeudsAnciens) ; chez un collègue, on ne peut que (1) supprimer un rapport déjà « retiré » (ownerDeleted : nettoyage d'un
+          // original orphelin quand sa dernière copie disparaît), (2) mettre à jour copiedFrom/reportPath et creatorName (voir plus bas : un
+          // renommage met à jour les COPIES des autres médecins). Jamais créer, modifier ou supprimer le rapport d'un collègue.
+          // PATIENT DÉCÉDÉ : tant que patientsDecedes/{ID} existe, le personnel non DMEC ne peut ni créer un rapport sur cet ID ni en changer
+          // le contenu (bbCode) ; supprimer, ou poser un simple marqueur (ownerDeleted…), reste possible.
+          // Un CIVIL ne peut que CRÉER un rapport, ou modifier/supprimer un rapport déjà à SON ID patient (jamais un AMA).
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama'))))",
+          // Marqueurs que les renommages de fiche mettent à jour dans les COPIES d'un autre médecin (voir renameReportOwner).
+          "copiedFrom": {
+            "reportPath": {
+              ".write": "auth != null && root.child('staffUIDs').child(auth.uid).val() === true && newData.isString()"
+            }
+          },
+          "creatorName": {
+            ".write": "auth != null && root.child('staffUIDs').child(auth.uid).val() === true && newData.isString()"
+          }
         }
       }
     },
@@ -459,7 +537,9 @@
         // dont l'ID patient est celui de son propre profil (plus d'énumération des dossiers par ID deviné).
         ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$indexKey": {
-          ".write": "auth != null && (newData.exists() || root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || data.child('visibility').val() === 'owner')"
+          // Personnel : tout, SAUF créer une NOUVELLE entrée sur un patient décédé (patientsDecedes/{ID}) quand on n'est pas DMEC.
+          // Civil : créer / modifier ; supprimer seulement une entrée « owner » (la sienne).
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.exists() || !newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !root.child('patientsDecedes').child($patientId).exists())) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (newData.exists() || data.child('visibility').val() === 'owner')))"
         }
       }
     },

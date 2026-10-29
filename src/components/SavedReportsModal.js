@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { Button, Form, Dropdown } from 'react-bootstrap';
+import { Button, Form, Dropdown, Modal } from 'react-bootstrap';
 import Select from 'react-select';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
@@ -20,6 +20,9 @@ import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion'
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import useWriteLock from '../hooks/useWriteLock';
+import { readFamiliesOf, isPublicDeathVersion } from '../utils/reportAccess';
+import { publishReport, unpublishReport } from '../utils/deathReports';
+import PublishedDeathReportsModal from './PublishedDeathReportsModal';
 
 const modalStyle = {
     position: 'fixed',
@@ -162,7 +165,14 @@ const SavedReportsModal = ({
     const lastLoadedEmployeeRef = useRef(null);
     const isManualSelectionRef = useRef(false);
 
-    const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
+    const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName, staffProfile } = useEmployeeAuth();
+    // Rapport Public de Décès : le DMEC (et les admins) le publie / le dépublie ; tout le personnel lit ceux qui sont publiés.
+    const viewerIsDmec = isAdmin || readFamiliesOf(staffProfile).dmec;
+    const [showPublished, setShowPublished] = useState(false);
+    const [publishBusy, setPublishBusy] = useState(false);
+    const [publishOverrides, setPublishOverrides] = useState({}); // { [clé du rapport]: true | false } après une (dé)publication
+    const [unpublishTarget, setUnpublishTarget] = useState(null);
+    const [unpublishReason, setUnpublishReason] = useState('');
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     // Partagé avec le patient ? Copie déjà récupérée ? Même enregistrement que « Dossier Patient » (relié : jamais deux fois).
@@ -185,9 +195,6 @@ const SavedReportsModal = ({
     // Le personnel (admin ou employé identifié) peut partager/copier un
     // rapport lié à un patient — un civil ne le peut jamais (Lot 5).
     const isStaffViewer = isAdmin || !!employeeProfile;
-    // Tout le personnel peut CONSULTER les rapports d'un collègue (modèle collaboratif), mais seul un admin peut modifier / supprimer
-    // ceux d'un autre : sur la liste d'un collègue, les suppressions sont masquées pour le personnel non admin.
-    const readOnlyOthers = !isAdmin && !!employeeProfile && !!selectedEmployee && selectedEmployee.value !== staffName;
     // Nom sous lequel le médecin range ses rapports : sa fiche personnel (même pour
     // un admin, voir EmployeeAuthContext), JAMAIS son e-mail. Un admin sans fiche
     // personnel copie chez l'employé dont la liste est affichée.
@@ -294,7 +301,7 @@ const SavedReportsModal = ({
 
     const handleEmployeeSelect = (selectedOption) => {
         // Consulter les rapports d'un AUTRE employé (admin) laisse une trace.
-        if (selectedOption && isStaffViewer && selectedOption.value !== staffName) {
+        if (selectedOption && isAdmin && selectedOption.value !== staffName) {
             logActivity({ category: 'rapports', action: 'reports_viewed_other', summary: `Rapports enregistrés de ${selectedOption.label || selectedOption.value} consultés`, target: String(selectedOption.value) });
         }
         isManualSelectionRef.current = true;
@@ -319,11 +326,9 @@ const SavedReportsModal = ({
             options = options.filter((group) => group.label === 'PHMC Staff');
         }
         
-        // Admin ou personnel : tous les employés (le personnel retrouve toujours sa propre entrée, même si la liste en cache ne la contient pas encore).
-        if (isAdmin || employeeProfile) {
-            const ownName = staffName || employeeProfile?.name;
-            const hasOwn = ownName && options.some((group) => group.options.some((opt) => opt.value === ownName));
-            return ownName && !hasOwn ? [{ label: 'Moi', options: [{ value: ownName, label: ownName }] }, ...options] : options;
+        // Si admin, montrer tous les employés
+        if (isAdmin) {
+            return options;
         }
         
         // Si pas connecté, ne montrer personne
@@ -578,6 +583,43 @@ const SavedReportsModal = ({
         copiedFrom: report.copiedFrom,
     });
 
+    const handlePublish = async (report) => {
+        if (publishBusy) return;
+        if (!window.confirm("Publier ce rapport public de décès ? Tout le personnel du PHMC pourra le consulter (lecture seule). Vous pourrez le dépublier plus tard, avec un justificatif.")) return;
+        setPublishBusy(true);
+        try {
+            await publishReport({ reportPath: report.reportPath, title: reportTitleOf(report) || report.originalKey, patientID: report.patientID, byName: staffName || 'admin' });
+            setPublishOverrides((previous) => ({ ...previous, [report.key]: true }));
+            showNotification('Rapport publié : le personnel peut maintenant le consulter.', 'check-circle');
+        } catch (error) {
+            console.error('Publication impossible :', error);
+            showNotification(`Publication impossible : ${String(error?.message || error).slice(0, 140)}`, 'error');
+        } finally {
+            setPublishBusy(false);
+        }
+    };
+
+    const handleConfirmUnpublish = async () => {
+        if (!unpublishTarget || publishBusy) return;
+        if (!unpublishReason.trim()) { showNotification('Un justificatif est obligatoire pour dépublier un rapport.', 'warning'); return; }
+        setPublishBusy(true);
+        try {
+            await unpublishReport({
+                reportPath: unpublishTarget.reportPath, title: reportTitleOf(unpublishTarget) || unpublishTarget.originalKey,
+                patientID: unpublishTarget.patientID, byName: staffName || 'admin', reason: unpublishReason,
+            });
+            setPublishOverrides((previous) => ({ ...previous, [unpublishTarget.key]: false }));
+            showNotification('Rapport dépublié : le personnel ne peut plus le consulter.', 'check-circle');
+            setUnpublishTarget(null);
+            setUnpublishReason('');
+        } catch (error) {
+            console.error('Dépublication impossible :', error);
+            showNotification(`Dépublication impossible : ${String(error?.message || error).slice(0, 140)}`, 'error');
+        } finally {
+            setPublishBusy(false);
+        }
+    };
+
     const handleCopyTitle = async (report) => {
         const title = reportTitleOf(report);
         if (title) {
@@ -672,6 +714,8 @@ const SavedReportsModal = ({
         // Déjà vu par le patient (partagé, ou créé par lui) : le bouton « Partager » n'a plus de sens. L'AMA est partagé dès sa création.
         const alreadyShared = isAma || indexStatus?.visibility === 'shared' || indexStatus?.visibility === 'owner';
         const iHaveCopy = !!myCopyKey && !!indexStatus?.copiedBy?.[myCopyKey];
+        const isPublicDeath = isPublicDeathVersion(report.bbCodeVersion) && !report.isCopy;
+        const isPublished = isPublicDeath && (publishOverrides[report.key] ?? report.publie === true);
         return (
             <ReportCard
                 key={report.key}
@@ -689,6 +733,7 @@ const SavedReportsModal = ({
                         {report.sharedByStaff && <Pill color="#58a6ff" title="Rapport partagé avec vous par le personnel">Partagé par le personnel</Pill>}
                         {alreadyShared && <Pill color="#58a6ff" title="Le patient voit déjà ce rapport dans son dossier">Partagé avec le patient</Pill>}
                         {iHaveCopy && <Pill color="#a371f7" title="Vous avez déjà récupéré une copie de ce rapport">Vous en avez une copie</Pill>}
+                        {isPublished && <Pill color="#58a6ff" title="Publié : tout le personnel du PHMC peut le consulter">Publié</Pill>}
                     </>
                 )}
                 actions={(
@@ -735,7 +780,26 @@ const SavedReportsModal = ({
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
                         )}
-                        {!(isCivilian && isAma) && !readOnlyOthers && <Button
+                        {isPublicDeath && viewerIsDmec && !isAttachMode && (isPublished ? (
+                            <Button
+                                size="sm" variant="outline-warning"
+                                title={locked ? lockTitle : 'Retirer la publication (un justificatif est demandé)'}
+                                disabled={locked || publishBusy}
+                                onClick={() => { setUnpublishReason(''); setUnpublishTarget(report); }}
+                            >
+                                <i className="fas fa-eye-slash me-1"></i>Dépublier
+                            </Button>
+                        ) : (
+                            <Button
+                                size="sm" variant="success"
+                                title={locked ? lockTitle : 'Rendre ce rapport consultable par tout le personnel du PHMC'}
+                                disabled={locked || publishBusy}
+                                onClick={() => handlePublish(report)}
+                            >
+                                <i className="fas fa-bullhorn me-1"></i>Publier
+                            </Button>
+                        ))}
+                        {!(isCivilian && isAma) && <Button
                             variant="outline-danger" size="sm" className="ms-auto"
                             onClick={async () => {
                                 const message = isAma
@@ -771,6 +835,20 @@ const SavedReportsModal = ({
         <div style={modalStyle} onClick={onHide}>
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 {forumNoticeModal}
+                <PublishedDeathReportsModal show={showPublished} onHide={() => setShowPublished(false)} showNotification={showNotification} />
+                <Modal show={!!unpublishTarget} onHide={() => { if (!publishBusy) setUnpublishTarget(null); }} centered style={{ zIndex: 1070 }}>
+                    <Modal.Header closeButton><Modal.Title>Dépublier ce rapport</Modal.Title></Modal.Header>
+                    <Modal.Body>
+                        <p className="mb-2">« {unpublishTarget ? (reportTitleOf(unpublishTarget) || unpublishTarget.originalKey) : ''} » ne sera plus consultable par le personnel. Indiquez le justificatif (il est consigné dans le journal d'activité et sur le rapport).</p>
+                        <Form.Control as="textarea" rows={3} maxLength={500} autoFocus value={unpublishReason} onChange={(event) => setUnpublishReason(event.target.value)} placeholder="Justificatif (obligatoire)" />
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setUnpublishTarget(null)} disabled={publishBusy}>Annuler</Button>
+                        <Button variant="warning" onClick={handleConfirmUnpublish} disabled={publishBusy || !unpublishReason.trim()}>
+                            <i className="fas fa-eye-slash me-1"></i>Dépublier
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 <div className="rpt-modal-head">
                     <h5><i className="fas fa-folder-open me-2"></i>Rapports enregistrés</h5>
@@ -781,7 +859,15 @@ const SavedReportsModal = ({
                     </span>
                 </div>
 
-                {isStaffViewer && (
+                {isStaffViewer && !isAttachMode && (
+                    <div className="mb-2" style={{ flexShrink: 0 }}>
+                        <Button size="sm" variant="outline-info" onClick={() => setShowPublished(true)} title="Rapports publics de décès publiés par le DMEC : consultables par tout le personnel">
+                            <i className="fas fa-bullhorn me-1"></i>Rapports publics de décès publiés
+                        </Button>
+                    </div>
+                )}
+
+                {isAdmin && (
                     <div className="d-flex flex-wrap align-items-end gap-2 mb-2" style={{ flexShrink: 0 }}>
                         <Form.Group controlId="employeeSelect" style={{ flex: '1 1 320px', maxWidth: '520px' }}>
                             <Form.Label className="mb-1">Employé dont on affiche les rapports</Form.Label>
@@ -877,7 +963,7 @@ const SavedReportsModal = ({
                         <p className="rpt-empty">
                             {!currentEmployee
                                 ? 'Vous devez être connecté pour consulter les rapports enregistrés.'
-                                : isStaffViewer
+                                : isAdmin
                                 ? 'Veuillez sélectionner un employé pour voir ses rapports enregistrés.'
                                 : 'Impossible de retrouver votre fiche employé associée à ce compte. Contactez un administrateur.'}
                         </p>
@@ -895,7 +981,7 @@ const SavedReportsModal = ({
                             checked={isAllCurrentPageSelected} onChange={(e) => handleSelectAllChange(e.target.checked)}
                             title="Sélectionner/Désélectionner tout sur cette page"
                         />
-                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0 || locked || readOnlyOthers} title={readOnlyOthers ? "Vous ne pouvez pas supprimer les rapports d'un autre employé" : (locked ? lockTitle : undefined)}>
+                        <Button variant="outline-danger" size="sm" onClick={handleDeleteSelected} disabled={selectedReportKeys.length === 0 || locked} title={locked ? lockTitle : undefined}>
                             <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>
                         <Dropdown drop="up">

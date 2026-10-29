@@ -255,6 +255,7 @@ export async function updateStaffMember(member, { firstName, middleName, address
         delete updated.serviceDirige;
     }
     await set(ref(database, `${cfg.path}/${key}`), updated);
+    await syncStaffUidsQuietly();
 
     if (rank && rank !== normalizeRank(current.rank)) {
         const label = rankLabel(member.service, rank);
@@ -402,27 +403,58 @@ async function removeStaffEntry(member) {
 
 // ───────────────────────────── Conversions ─────────────────────────────
 
-// Droits « personnel » : staffUIDs/{uid}: true pour tout compte qui a une fiche dans staff/phmc ou staff/coroner. Les règles Firebase
+// Droits « personnel » et famille : staffUIDs/{uid}: true pour tout compte qui a une fiche dans staff/phmc ou staff/coroner, plus
+// soignantUIDs / dmecUIDs (famille de la fiche, cumul de rôles = union) et noeudsRapports/{uid} (nom du nœud savedReports du compte :
+// les règles s'en servent pour que chacun ne lise que SA liste de rapports et que soignants / DMEC ne lisent que leurs rapports entre
+// eux, voir database.rules.json). Les règles Firebase
 // s'en servent pour distinguer le personnel d'un simple Civil (un Civil converti en Personnel garde son profil Civil : sans ce marqueur,
 // il restait traité comme un Civil et ne pouvait ni lire les rapports ni les dossiers patients). Reconstruit à partir des listes du
 // personnel : ajoute les manquants, retire ceux qui n'ont plus de fiche. Réservé aux admins (règle d'écriture).
 export async function syncStaffUids() {
-    const [phmcSnap, coronerSnap, currentSnap] = await Promise.all([
+    const [phmcSnap, coronerSnap, ...currentSnaps] = await Promise.all([
         get(ref(database, 'staff/phmc')),
         get(ref(database, 'staff/coroner')),
-        get(ref(database, 'staffUIDs')),
+        ...['staffUIDs', 'soignantUIDs', 'dmecUIDs', 'noeudsRapports', 'noeudsAnciens'].map((path) => get(ref(database, path)).catch(() => null)),
     ]);
     const asArray = (value) => (!value ? [] : Array.isArray(value) ? value : Object.values(value));
-    const wanted = new Set();
-    [...asArray(phmcSnap.val()), ...asArray(coronerSnap.val())].forEach((entry) => { if (entry && entry.uid) wanted.add(entry.uid); });
-    const current = currentSnap.exists() ? currentSnap.val() : {};
-    const updates = {};
+    const wanted = { staffUIDs: {}, soignantUIDs: {}, dmecUIDs: {}, noeudsRapports: {}, noeudsAnciens: {} };
+    [['phmc', phmcSnap], ['coroner', coronerSnap]].forEach(([service, snap]) => {
+        asArray(snap.val()).forEach((entry) => {
+            if (!entry || !entry.uid) return;
+            const families = familiesOfMember(entry, service);
+            wanted.staffUIDs[entry.uid] = true;
+            if (families.includes('soignant')) wanted.soignantUIDs[entry.uid] = true;
+            if (families.includes('dmec')) wanted.dmecUIDs[entry.uid] = true;
+            const node = sanitizeNode(entry.name || [entry.firstName, entry.lastName].filter(Boolean).join(' '));
+            if (node) wanted.noeudsRapports[entry.uid] = node;
+        });
+    });
+    const staffUpdates = {};
+    const familyUpdates = {};
     let added = 0;
     let removed = 0;
-    wanted.forEach((uid) => { if (current[uid] !== true) { updates[`staffUIDs/${uid}`] = true; added += 1; } });
-    Object.keys(current).forEach((uid) => { if (!wanted.has(uid)) { updates[`staffUIDs/${uid}`] = null; removed += 1; } });
-    if (added + removed > 0) await update(ref(database), updates);
-    return { added, removed, total: wanted.size };
+    Object.keys(wanted).forEach((path, index) => {
+        const snap = currentSnaps[index];
+        const current = snap && snap.exists() ? snap.val() : {};
+        const target = path === 'staffUIDs' ? staffUpdates : familyUpdates;
+        Object.entries(wanted[path]).forEach(([uid, value]) => {
+            if (current[uid] !== value) { target[`${path}/${uid}`] = value; if (path === 'staffUIDs') added += 1; }
+        });
+        Object.keys(current).forEach((uid) => {
+            if (!(uid in wanted[path])) { target[`${path}/${uid}`] = null; if (path === 'staffUIDs') removed += 1; }
+        });
+    });
+    if (Object.keys(staffUpdates).length > 0) await update(ref(database), staffUpdates);
+    // Familles et nœuds de rapports à part : tant que les nouvelles règles ne sont pas déployées, leur écriture est refusée, et ça ne doit
+    // pas empêcher la synchronisation de staffUIDs.
+    let familiesSynced = true;
+    if (Object.keys(familyUpdates).length > 0) {
+        try { await update(ref(database), familyUpdates); } catch (error) {
+            familiesSynced = false;
+            console.warn('Familles du personnel non synchronisées (règles Firebase à déployer ?) :', error?.message || error);
+        }
+    }
+    return { added, removed, total: Object.keys(wanted.staffUIDs).length, changes: Object.keys(familyUpdates).length, familiesSynced };
 }
 
 // Version « au mieux » pour les opérations d'administration : un échec ne doit jamais bloquer la conversion / l'ajout.
@@ -628,7 +660,29 @@ export async function updateOwnStaffName(uid, { firstName, lastName }) {
             const clash = everyone.find((m) => m.name.toLowerCase() === newName.toLowerCase()
                 && !(m.service === service.key && String(m.storageKey) === String(key)));
             if (clash) throw new Error(`Une fiche du personnel nommée "${newName}" existe déjà.`);
-            await renameReportOwner(previousName, newName);
+            // Le nœud de rapports suit le nom : on réclame d'abord le nouveau (les règles n'y autorisent que les noms LIBRES), puis on y
+            // déplace les rapports. Un refus (nom déjà utilisé par des rapports) arrête le renommage avant tout déplacement.
+            const oldNode = sanitizeNode(previousName);
+            const newNode = sanitizeNode(newName);
+            if (oldNode !== newNode) {
+                // L'ancien nœud reste reconnu comme le sien le temps du déplacement (il faut y supprimer les anciens rapports).
+                await set(ref(database, `noeudsAnciens/${uid}/${oldNode}`), true);
+                await set(ref(database, `noeudsRapports/${uid}`), newNode);
+            }
+            try {
+                await renameReportOwner(previousName, newName);
+            } catch (error) {
+                // Déplacement refusé ou interrompu : le nom ne change pas, la personne doit donc retrouver son ancien nœud (sinon elle ne
+                // relirait plus sa liste). L'ancien nœud n'a pas été vidé : les suppressions ne viennent qu'après toutes les écritures.
+                if (oldNode !== newNode) {
+                    await set(ref(database, `noeudsRapports/${uid}`), oldNode).catch(() => {});
+                    await set(ref(database, `noeudsAnciens/${uid}/${oldNode}`), null).catch(() => {});
+                }
+                throw error;
+            }
+            if (oldNode !== newNode) {
+                await set(ref(database, `noeudsAnciens/${uid}/${oldNode}`), null).catch(() => {}); // purgé de toute façon à la prochaine synchronisation admin
+            }
         }
 
         const patch = {

@@ -20,6 +20,8 @@ import { logActivity } from '../utils/activityLog';
 import { isCareStaff } from '../hooks/useBillingRole';
 import { isBillableVersion } from '../utils/patientBilling';
 import { getFormAccess } from '../utils/formAccess';
+import { readFamiliesOf, locksPatient } from '../utils/reportAccess';
+import { loadDeathLock, declareDeath, DEATH_LOCK_MESSAGE } from '../utils/deathReports';
 import {
     normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
@@ -225,6 +227,17 @@ export const useReportManagement = (
             return { success: false, error: message };
         }
 
+        // Patient déclaré décédé par le DMEC : le personnel non DMEC ne peut plus rien enregistrer sur son ID (les règles Firebase le
+        // refusent aussi ; ceci donne le message clair). Un admin peut toujours, et débloque la fiche si besoin.
+        const writerIsDmec = isAdmin || readFamiliesOf(staffProfile).dmec;
+        if (formData.patientID && !writerIsDmec && !isCivilian) {
+            const deathLock = await loadDeathLock(formData.patientID);
+            if (deathLock) {
+                showNotification(DEATH_LOCK_MESSAGE, 'warning', 10000);
+                return { success: false, error: DEATH_LOCK_MESSAGE };
+            }
+        }
+
         const sanitizedAuthorId = comprehensiveSanitize(currentAuthor);
 
         // Évite d'avoir plusieurs rapports affichés avec exactement le même nom
@@ -359,6 +372,18 @@ export const useReportManagement = (
                 }
             }
 
+            // Rapport de décès (« Services de Médecine Légale ») avec un ID patient : le patient est déclaré décédé, le personnel
+            // soignant ne peut plus rien enregistrer sur lui tant qu'un admin ne débloque pas la fiche (ou que ce rapport est supprimé).
+            if (formData.patientID && locksPatient(bbCodeVersion) && writerIsDmec) {
+                try {
+                    const declared = await declareDeath({ patientID: formData.patientID, reportPath, authorName: currentAuthor, title: pureTitle });
+                    if (declared) showNotification(`Patient ${normalizePatientId(formData.patientID)} déclaré décédé : le personnel soignant ne peut plus enregistrer sur son dossier.`, 'warning', 8000);
+                } catch (lockError) {
+                    console.warn('Could not declare the patient as deceased:', lockError);
+                    showNotification("Le rapport est enregistré, mais le blocage du dossier du patient n'a pas pu être posé : prévenez un administrateur.", 'warning', 9000);
+                }
+            }
+
             // Journal d'activité (le contenu médical n'y figure pas : seulement le type de formulaire et l'auteur).
             logActivity({
                 category: 'rapports',
@@ -436,6 +461,7 @@ Clé : ${sanitizedKey}`,
                         creatorName: report.creatorName || report.originalAuthorName || report.authorName,
                         isCopy: !!report.copiedFrom,
                         copiedFrom: report.copiedFrom || null,
+                        publie: report.publie === true,
                         kind: report.kind || null,
                         imageUrl: report.imageUrl || report.data?.imageUrl || null,
                         bbCodeVersion: report.bbCodeVersion,
@@ -1069,12 +1095,18 @@ Clé : ${sanitizedKey}`,
                 return;
             }
 
+            if (patientID && !isAdmin && !readFamiliesOf(staffProfile).dmec && await loadDeathLock(patientID)) {
+                showNotification(DEATH_LOCK_MESSAGE, 'warning', 10000);
+                return;
+            }
+
             const copyKey = sanitizeAuthorKey(original.originalKey || originalKeyInPath) + '_copie_' + Date.now();
             const copyPath = `savedReports/${sanitizedCopyAuthorId}/${copyKey}`;
             const creator = original.creatorName || original.originalAuthorName || original.authorName || '';
             const copyPayload = sanitizeForFirebase({
                 ...original,
                 ownerDeleted: null,
+                publie: null, publieLe: null, publiePar: null, depublication: null,
                 authorName: copyAuthorName,
                 creatorName: creator,
                 timestamp: Date.now(),
@@ -1131,7 +1163,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
             Sentry.captureException(error, { extra: { context: 'copyReportToOwnAccount', reportPath } });
             showNotification('Erreur lors de la copie du rapport.', 'error');
         }
-    }, [showNotification, selectedUserForSavedReports, loadUserSavedReports]);
+    }, [showNotification, selectedUserForSavedReports, loadUserSavedReports, isAdmin, staffProfile]);
 
     // Suppression d'un ou plusieurs rapports AVEC les règles du dossier patient
     // (voir deleteReportWithRules) : un médecin supprime ses rapports, un patient

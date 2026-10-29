@@ -41,6 +41,8 @@ import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentE
 import { loadDeletedMark } from '../utils/deletedAccounts';
 import { logActivity } from '../utils/activityLog';
 import useWriteLock from '../hooks/useWriteLock';
+import { readFamiliesOf, canViewOthersReport } from '../utils/reportAccess';
+import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathReports';
 
 // Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
 const recentlyViewed = new Map();
@@ -97,8 +99,9 @@ const PatientDossierModal = ({
     show, onHide, showNotification, copyReportToOwnAccount, shareReportWithPatient,
     loadReport, deleteReportsForUser, initialPatientId = '',
 }) => {
-    const { isAdmin, employeeProfile, staffName } = useEmployeeAuth();
+    const { isAdmin, employeeProfile, staffName, staffProfile } = useEmployeeAuth();
     const isStaffViewer = isAdmin || !!employeeProfile;
+    const viewerFamilies = readFamiliesOf(staffProfile);
     // Nom du médecin sous lequel ses rapports sont rangés (jamais l'e-mail).
     const staffAuthorNameForCopy = staffName || null;
     const myNodeKey = comprehensiveSanitize(staffAuthorNameForCopy);
@@ -109,6 +112,9 @@ const PatientDossierModal = ({
     const [searchedPatientId, setSearchedPatientId] = useState(null);
     // Marqueur « compte supprimé » du patient affiché (ancien membre du personnel ou compte Civil supprimé).
     const [deletedMark, setDeletedMark] = useState(null);
+    // Patient déclaré DÉCÉDÉ par le DMEC (patientsDecedes) : le dossier reste consultable, mais le personnel non DMEC n'y enregistre plus rien.
+    const [deathLock, setDeathLock] = useState(null);
+    const canWriteOnDeceased = isAdmin || viewerFamilies.dmec;
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState([]);
@@ -196,12 +202,21 @@ const PatientDossierModal = ({
         setSearchedPatientId(canonical);
         setDeletedMark(null);
         loadDeletedMark(canonical).then(setDeletedMark);
+        setDeathLock(null);
+        loadDeathLock(canonical).then(setDeathLock);
         setSelectedKeys([]);
         setStatusFilter('all');
         setSearchText('');
         setInvoiceRefresh((n) => n + 1);
         try {
-            const dossier = await loadPatientDossier(canonical);
+            // Soignants ↔ rapports soignants, DMEC ↔ rapports DMEC (un Rapport Public de Décès publié se lit partout) ; ses propres rapports
+            // restent toujours visibles. Voir reportAccess.js : mêmes règles que la base.
+            const viewer = { isAdmin, ...viewerFamilies };
+            const publishedKeys = await loadPublishedKeys();
+            const dossier = await loadPatientDossier(canonical, {
+                canRead: (entry) => (!!myNodeKey && comprehensiveSanitize(entry.authorName) === myNodeKey)
+                    || canViewOthersReport(entry, viewer, publishedKeys),
+            });
             setEntries(dossier);
             if (dossier.length === 0) {
                 showNotification(`Aucun rapport trouvé pour l'ID patient "${canonical}".`, 'info-circle');
@@ -248,9 +263,9 @@ const PatientDossierModal = ({
             iAmHolder,
             deleteTarget,
             canShare: !rootIsCopy && root.kind !== 'ama' && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
-            canCopy: !!staffAuthorNameForCopy && !rootIsCopy && !iAmHolder && !myCopy,
+            canCopy: !!staffAuthorNameForCopy && !rootIsCopy && !iAmHolder && !myCopy && (!deathLock || canWriteOnDeceased),
         };
-    }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy]); // eslint-disable-line react-hooks/exhaustive-deps
+    }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy, deathLock, canWriteOnDeceased]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Filtres : recherche par titre + pastilles (mes rapports, créés par le patient, partagés, personnel uniquement, copies, à payer).
     const matchesDossierFilter = (family, key) => {
@@ -563,6 +578,33 @@ const PatientDossierModal = ({
                 </div>
 
                 <div className="rpt-body">
+                    {searchedPatientId && deathLock && (
+                        <div className="rpt-banner warn">
+                            <i className="fas fa-lock me-2" style={{ color: '#f85149' }}></i>
+                            Patient déclaré décédé le {new Date(deathLock.depuis).toLocaleDateString('fr-FR')}{deathLock.par ? ` (rapport de ${deathLock.par})` : ''}.
+                            {' '}{canWriteOnDeceased
+                                ? 'Seul le DMEC et les administrateurs peuvent encore enregistrer sur ce dossier.'
+                                : "Le dossier reste consultable, mais plus aucun rapport ne peut y être enregistré. En cas d'erreur, demandez à un administrateur de débloquer l'enregistrement."}
+                            {isAdmin && (
+                                <Button
+                                    variant="outline-warning" size="sm" className="ms-2"
+                                    disabled={locked} title={locked ? lockTitle : undefined}
+                                    onClick={async () => {
+                                        if (!window.confirm(`Débloquer l'enregistrement pour ${searchedPatientId} ? Le personnel soignant pourra de nouveau enregistrer des rapports sur ce patient (à faire si le patient a été déclaré décédé par erreur, ou ramené à la vie).`)) return;
+                                        try {
+                                            await unlockPatient(searchedPatientId, staffName || 'admin');
+                                            setDeathLock(null);
+                                            showNotification('Enregistrement débloqué pour ce patient.', 'check-circle');
+                                        } catch (error) {
+                                            showNotification(`Déblocage impossible : ${error.message}`, 'error');
+                                        }
+                                    }}
+                                >
+                                    <i className="fas fa-unlock me-1"></i>Débloquer l'enregistrement
+                                </Button>
+                            )}
+                        </div>
+                    )}
                     {searchedPatientId && deletedMark && (
                         <div className="rpt-banner warn">
                             <i className="fas fa-user-slash me-2" style={{ color: '#d29922' }}></i>

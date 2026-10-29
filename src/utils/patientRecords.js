@@ -23,6 +23,7 @@
 import { ref, get, set, update, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity } from './activityLog';
+import { releaseDeathArtifacts } from './deathReports';
 import {
     canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId,
 } from './patientId';
@@ -111,7 +112,9 @@ export async function writeIndexEntry({ patientID, indexKey, entry }) {
 // Lit toutes les entrées du dossier d'un patient, quelle que soit la façon dont l'ID a
 // été saisi ou indexé, et les résout vers le rapport réel. Chaque résultat garde
 // `patientNode` (le nœud d'index où l'entrée vit réellement) pour pouvoir la modifier.
-export async function loadPatientDossier(inputId) {
+// `canRead(entry)` (facultatif) : ne résout pas les entrées que le lecteur n'a pas le droit d'ouvrir (soignants ↔ DMEC, voir
+// reportAccess.js) au lieu de les demander à la base, qui les refuserait.
+export async function loadPatientDossier(inputId, { canRead } = {}) {
     const nodes = await findPatientNodes(inputId);
     const entries = [];
     const seen = new Set();
@@ -131,6 +134,7 @@ export async function loadPatientDossier(inputId) {
         const rawEntries = Object.entries(indexSnap.val() || {});
         const resolved = await Promise.all(rawEntries.map(async ([indexKey, entry]) => {
             if (!entry?.reportPath || seen.has(entry.reportPath)) return null;
+            if (canRead && !canRead({ ...entry, indexKey })) return null;
             try {
                 const reportSnap = await get(ref(database, entry.reportPath));
                 if (!reportSnap.exists()) return null;
@@ -311,6 +315,10 @@ export async function deleteReportWithRules(report, viewer) {
     const hasCopies = !!indexEntry?.copiedBy && Object.keys(indexEntry.copiedBy).length > 0;
     const isCopy = !!indexEntry?.copiedFrom || !!report.isCopy;
 
+    // Rapport de décès supprimé : la fiche du patient est libérée ; Rapport Public de Décès supprimé : il est dépublié.
+    const releaseDeath = () => (viewer.role === 'civil' ? Promise.resolve() : releaseDeathArtifacts({
+        reportPath, patientID: report.patientID || (indexRef ? indexRef.parent.key : null),
+    }));
     const hardDelete = async () => {
         // Facture impayée d'un rapport supprimé (erreur de saisie : le patient peut le recréer) : retirée aussi, AVANT
         // l'index (les règles autorisent un patient à retirer sa facture tant que l'index prouve que le rapport est le sien).
@@ -318,12 +326,14 @@ export async function deleteReportWithRules(report, viewer) {
         if (indexRef) await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
         if (reportPath) await remove(ref(database, reportPath));
         if (indexRef) await removeIndexEntry(indexRef);
+        await releaseDeath();
     };
     // « Retiré » : le rapport reste en base pour les médecins qui en ont une copie.
     const hide = async () => {
         if (indexRef && viewer.role === 'civil') await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
         if (reportPath) await update(ref(database, reportPath), { ownerDeleted: true });
         if (indexRef) await update(indexRef, { ownerDeleted: true });
+        await releaseDeath();
     };
 
     const isAma = report.kind === 'ama' || indexEntry?.kind === 'ama';
