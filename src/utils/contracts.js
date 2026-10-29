@@ -23,6 +23,7 @@ import { database } from '../firebase';
 import { normalizeRank } from '../constants/ranks';
 import { releaseInternalStatusAfterContract } from './internalRecruitment';
 import { closeThreadsAfterContract } from './applicationThreads';
+import { requestRoleAfterContract } from './contractFollowUp';
 import { logActivity } from './activityLog';
 import { assertNotLocked } from './lockdownGuard';
 import {
@@ -312,9 +313,12 @@ export async function signContract(contract, { uid, name, signature }) {
         details: `Référence : ${contract.reference}\nFonction : ${contract.champs?.poste || '—'}\nGrade : ${contract.champs?.role || '—'}`, target: contract.employeNom || name,
     });
     // Seul un CONTRAT d'emploi signé met fin au statut « candidat accepté » et aux échanges de candidature (best-effort).
+    let followUp = { kind: 'none' };
     if (isEmploymentType(type)) {
         await releaseInternalStatusAfterContract(uid);
         await closeThreadsAfterContract(uid);
+        // L'administration doit poser le rôle : une demande lui est déposée automatiquement (compte du personnel ou modification de fiche).
+        if (accord) followUp = await requestRoleAfterContract(contract, { uid, name });
     }
-    return { ...contract, statut: 'signe', signeLe: now, signature: signatureRecord };
+    return { ...contract, statut: 'signe', signeLe: now, signature: signatureRecord, followUp };
 }

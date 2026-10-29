@@ -430,7 +430,12 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                 <tbody>
                     {pendingRequests.map((request, index) => (
                         <tr key={index}>
-                            <td>{request.originalName}</td>
+                            <td>
+                                {request.originalName}
+                                {request.source === 'contrat' && (
+                                    <div><small style={{ color: '#3fb950' }} title={request.contratReference || ''}><i className="fas fa-file-signature"></i> Contrat signé — grade à valider</small></div>
+                                )}
+                            </td>
                             <td>
                                 <Badge bg={request.isCoroner ? 'danger' : 'primary'}>
                                     {request.isCoroner ? 'Coroner' : 'PHMC'}

@@ -24,6 +24,7 @@ import GtawCharacterPicker from './GtawCharacterPicker';
 import DebugFillButton from '../DebugFillButton';
 import AuthEntryBlock from './AuthEntryBlock';
 
+import ZipCityField from '../ZipCityField';
 const emptyAccountData = {
     firstName: '',
     middleName: '',
@@ -295,8 +296,8 @@ const CivilianAuthPanel = ({
                         <Form.Control type="text" name="address" value={accountData.address} onChange={handleAccountChange} style={fieldBoxStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3" style={{ flex: 1 }}>
-                        <Form.Label>Code postal</Form.Label>
-                        <Form.Control type="text" name="zip" value={accountData.zip} onChange={handleAccountChange} style={fieldBoxStyle} />
+                        <Form.Label>Ville / code postal</Form.Label>
+                        <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountChange({ target: { name: 'zip', value: zip } })} style={fieldBoxStyle} placeholder="" />
                     </Form.Group>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>

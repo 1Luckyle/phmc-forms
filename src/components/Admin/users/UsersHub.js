@@ -30,6 +30,7 @@ import { loadInternalGrants, revokeInternalStatus } from '../../../utils/interna
 import { logActivity } from '../../../utils/activityLog';
 import { getEmployeeFullName } from '../../../utils/employeeName';
 
+import ZipCityField from '../../ZipCityField';
 const formatShortDate = (ts) => (ts ? new Date(ts).toLocaleDateString('fr-FR') : '');
 // Pastille « Recrutement interne » : la personne a le statut spécial qui lui permet de candidater.
 const InternalBadge = ({ grant }) => (grant ? (
@@ -270,7 +271,7 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group style={{ flex: 2 }}><Form.Label>Adresse</Form.Label><Form.Control value={form.address || ''} onChange={set('address')} /></Form.Group>
-                    <Form.Group style={{ flex: 1 }}><Form.Label>Code postal</Form.Label><Form.Control value={form.zip || ''} onChange={set('zip')} /></Form.Group>
+                    <Form.Group style={{ flex: 1 }}><Form.Label>Ville / code postal</Form.Label><ZipCityField zip={form.zip || ''} onZipChange={(zip) => set('zip')({ target: { value: zip } })} placeholder="" /></Form.Group>
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill"><Form.Label>Téléphone</Form.Label><Form.Control value={form.phone || ''} onChange={set('phone')} /></Form.Group>

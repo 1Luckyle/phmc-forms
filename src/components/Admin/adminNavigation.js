@@ -87,6 +87,11 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'prix tarif coût montant argent paiement fleeca facture dossier médical autopsie dollars',
             },
             {
+                key: 'cities', icon: 'fa-city', label: 'Villes & codes postaux',
+                description: 'La liste des villes proposées dans les formulaires : le code postal se remplit tout seul.',
+                keywords: 'ville adresse code postal zip quartier',
+            },
+            {
                 key: 'fireSafety', icon: 'fa-fire-extinguisher', label: 'Sécurité incendie',
                 description: "Registre des contrôles par étage, des non-conformités signalées et des exercices d'évacuation.",
                 keywords: 'incendie feu extincteur alarme issue de secours gicleur détecteur fumée évacuation exercice contrôle non-conformité sécurité',

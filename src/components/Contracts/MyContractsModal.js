@@ -69,7 +69,10 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
             const signed = await signContract(selected, { uid, name: signatureName, signature });
             setContracts((list) => list.map((c) => (c.id === signed.id ? signed : c)));
             setAgreed(false);
-            if (showNotification) showNotification(accord ? 'Document signé.' : 'Accusé de réception enregistré.', 'success');
+            const followUpNote = signed.followUp?.kind === 'account'
+                ? ' L\'administration a été prévenue : elle va créer votre compte du personnel et vous attribuer votre rôle.'
+                : (signed.followUp?.kind === 'modification' ? ' L\'administration a été prévenue : elle va mettre à jour votre grade.' : '');
+            if (showNotification) showNotification(accord ? `Document signé.${followUpNote}` : 'Accusé de réception enregistré.', 'success');
         } catch (err) {
             console.error('Signature impossible :', err);
             setError(err.message || String(err));

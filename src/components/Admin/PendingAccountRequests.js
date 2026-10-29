@@ -12,6 +12,7 @@ import { sendEyefindMail } from '../../utils/eyefindMail';
 import { logAdminAction } from '../../utils/activityLog';
 import { convertCivilianToStaff, badgeDigits, syncStaffUids } from '../../utils/staffAdmin';
 import { clearDeletedMark, staffPatientIdOf } from '../../utils/deletedAccounts';
+import { clearContractCandidate } from '../../utils/contractCandidates';
 
 // Envoi de mail Eyefind en best-effort : un échec (adresse invalide, limite de
 // débit...) ne doit jamais faire échouer l'action admin qui l'a déclenché.
@@ -138,8 +139,15 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 }
             }
 
+            if (request.civilUid && !badgeDigits(request.badge)) {
+                showNotification(`Renseignez d'abord le numéro de badge de ${request.name} (bouton « Modifier »), puis approuvez.`, 'warning');
+                return;
+            }
+
             const confirmApprove = window.confirm(
-                `Création du compte pour ${request.name}\n\nVoulez-vous confirmer l'approbation ?`
+                request.civilUid
+                    ? `Contrat signé par ${request.name}\n\nSon compte Civil sera converti en compte du personnel (${request.rank}, badge ${request.badge}). Confirmer ?`
+                    : `Création du compte pour ${request.name}\n\nVoulez-vous confirmer l'approbation ?`
             );
 
             if (!confirmApprove) {
@@ -148,10 +156,12 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
 
             // Le même personnage a déjà un compte Civil (créé en attendant cette validation) : on le CONVERTIT en compte du
             // personnel (même identifiant de connexion, profil et rapports conservés) au lieu d'en créer un second.
-            if (request.gtawCharacterId != null) {
+            if (request.civilUid || request.gtawCharacterId != null) {
                 const civiliansSnap = await get(ref(database, 'civilians'));
-                const civil = Object.values(civiliansSnap.val() || {}).find((entry) => entry && entry.uid && entry.gtawCharacterId != null
-                    && String(entry.gtawCharacterId) === String(request.gtawCharacterId));
+                const civilians = Object.values(civiliansSnap.val() || {});
+                const civil = (request.civilUid && civilians.find((entry) => entry && entry.uid === request.civilUid))
+                    || civilians.find((entry) => entry && entry.uid && entry.gtawCharacterId != null && request.gtawCharacterId != null
+                        && String(entry.gtawCharacterId) === String(request.gtawCharacterId));
                 if (civil) {
                     await convertCivilianToStaff(civil, {
                         service: request.isCoroner ? 'coroner' : 'phmc',
@@ -162,6 +172,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                         middleName: request.middleName, address: request.address, zip: request.zip,
                     });
                     await removeRequest(request.email);
+                    await clearContractCandidate(civil.uid).catch(() => {});
                     logAdminAction({ email: currentUser?.email, action: 'Compte du personnel approuvé (compte Civil converti)', details: `Membre : ${request.name}\nCompte : ${civil.email || request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' });
                     showNotification(`✅ Le compte Civil de ${request.name} a été converti en compte du personnel (dossiers conservés).`, 'success');
                     loadPendingRequests();
@@ -469,7 +480,12 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                 <tbody>
                     {pendingRequests.map((request, index) => (
                         <tr key={index}>
-                            <td>{request.name}</td>
+                            <td>
+                                {request.name}
+                                {request.source === 'contrat' && (
+                                    <div><small style={{ color: '#3fb950' }} title={request.contratReference || ''}><i className="fas fa-file-signature"></i> Contrat signé{request.badge ? '' : ' — badge à renseigner'}</small></div>
+                                )}
+                            </td>
                             <td>
                                 {request.gtawCharacterId != null ? (
                                     <span title={`Personnage GTA World #${request.gtawCharacterId}`} style={{ color: '#ff8c00' }}>

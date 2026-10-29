@@ -60,6 +60,16 @@ export const setPositionOpen = async (category, key, open, store) => {
     else await update(ref(database, path), { status: open ? 'OPEN' : 'CLOSED' });
 };
 
+// Supprime un poste du nœud actif ET de l'autre nœud (ancien/nouveau), pour qu'il ne « revienne » pas via la compatibilité.
+// Les candidatures déjà déposées gardent le libellé du poste : elles ne sont pas touchées.
+export const deletePosition = async (category, key, store) => {
+    assertNotLocked();
+    const activeStore = store || await getActiveStore(category);
+    await remove(ref(database, `${positionsPath(category, activeStore)}/${key}`));
+    const otherStore = activeStore === 'nouveau' ? 'ancien' : 'nouveau';
+    await remove(ref(database, `${positionsPath(category, otherStore)}/${key}`)).catch(() => {});
+};
+
 // ───────────────────────────── Candidatures ─────────────────────────────
 const NEW_NODE = 'candidatures';
 const OLD_NODE = 'jobApplications';

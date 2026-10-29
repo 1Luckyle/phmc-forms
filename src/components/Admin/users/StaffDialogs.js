@@ -16,6 +16,7 @@ import { sendAdminActionWebhook } from '../adminUtils';
 import { canonicalPatientId } from '../../../utils/patientId';
 import EmailChangeFlow from '../../EmailChangeFlow';
 
+import ZipCityField from '../../ZipCityField';
 const DigitsInput = ({ value, onChange, ...rest }) => (
     <Form.Control
         inputMode="numeric"
@@ -173,8 +174,8 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                         <Form.Control value={form.address} onChange={set('address')} placeholder="facultatif" />
                     </Form.Group>
                     <Form.Group style={{ flex: 1 }}>
-                        <Form.Label>Code postal</Form.Label>
-                        <Form.Control value={form.zip} onChange={set('zip')} placeholder="facultatif" />
+                        <Form.Label>Ville / code postal</Form.Label>
+                        <ZipCityField zip={form.zip} onZipChange={(zip) => set('zip')({ target: { value: zip } })} placeholder="facultatif" />
                     </Form.Group>
                 </div>
                 <Form.Group>

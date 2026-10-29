@@ -18,6 +18,7 @@ import DebugFillButton from './DebugFillButton';
 import PrivacyPolicyContent from './PrivacyPolicyContent';
 import AuthEntryBlock from './Auth/AuthEntryBlock';
 
+import ZipCityField from './ZipCityField';
 // Step definitions for the onboarding flow
 export const ONBOARDING_STEPS = {
     WELCOME: 'welcome',
@@ -1322,14 +1323,9 @@ const OnboardingModal = ({
                                     placeholder="Adresse (facultatif)"
                                     style={formInputStyle}
                                 />
-                                <Form.Control
-                                    type="text"
-                                    name="zip"
-                                    value={accountData.zip}
-                                    onChange={handleAccountDataChange}
-                                    placeholder="Code postal (facultatif)"
-                                    style={formInputStyle}
-                                />
+                                <div style={{ flex: 1 }}>
+                                    <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountDataChange({ target: { name: 'zip', value: zip } })} placeholder="Code postal (facultatif)" style={formInputStyle} />
+                                </div>
                             </div>
                             <div style={formRowStyle}>
                                 <Form.Control
@@ -1650,14 +1646,9 @@ const OnboardingModal = ({
                                     placeholder="Adresse (facultatif)"
                                     style={formInputStyle}
                                 />
-                                <Form.Control
-                                    type="text"
-                                    name="zip"
-                                    value={accountData.zip}
-                                    onChange={handleAccountDataChange}
-                                    placeholder="Code postal (facultatif)"
-                                    style={formInputStyle}
-                                />
+                                <div style={{ flex: 1 }}>
+                                    <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountDataChange({ target: { name: 'zip', value: zip } })} placeholder="Code postal (facultatif)" style={formInputStyle} />
+                                </div>
                             </div>
                             <div style={formRowStyle}>
                                 <Form.Control

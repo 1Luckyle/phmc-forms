@@ -28,6 +28,7 @@ import ActivityLog from './ActivityLog';
 import SiteRequests from './SiteRequests';
 import { logAdminAction } from '../../utils/activityLog';
 import PricingManager from './PricingManager';
+import CitiesManager from './CitiesManager';
 import TransparencyManager from './TransparencyManager';
 import FireSafetyManager from './FireSafetyManager';
 import { runRecruitmentMigrationOnce } from '../../utils/recruitmentMigration';
@@ -394,6 +395,14 @@ const AdminDashboard = ({
                     <PricingManager
                         showNotification={showInAppNotification}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Tarifs' })}
+                    />
+                );
+
+            case 'cities':
+                return (
+                    <CitiesManager
+                        showNotification={showInAppNotification}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Villes' })}
                     />
                 );
 

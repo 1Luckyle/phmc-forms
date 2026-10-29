@@ -97,24 +97,23 @@
     // presentation…) ; les anciens nœuds anglais (physicianRecruitmentDetails…) gardent les mêmes droits jusqu'à
     // leur nettoyage. Les postes de recrutement (statut OUVERT/FERMÉ, description…) sont aussi gérés
     // par les RECRUTEURS (recruiterUIDs, posé par un admin) : ils n'ont accès en écriture
-    // qu'à ces six nœuds, pas au reste de selectOptions, et peuvent AJOUTER ou MODIFIER un
-    // poste mais jamais en supprimer un (newData.exists()) : le renommage d'une clé de poste
-    // (= supprimer l'ancienne clé) reste donc réservé aux admins.
+    // qu'à ces nœuds, pas au reste de selectOptions, et peuvent AJOUTER, MODIFIER ou SUPPRIMER un
+    // poste. Le renommage d'une clé de poste reste réservé aux admins côté interface.
     "selectOptions": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
-      "physicianRecruitmentDetails": { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "psychPositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "adminPositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "nursePositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "emsPositionDetailsData":      { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "coronerPositionDetailsData":  { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "postesMedecine":                 { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "postesPsychologie":              { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "postesAdministration":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "postesSoinsInfirmiers":          { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "postesParamedical":              { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } },
-      "postesMedecineLegale":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.exists()" } }
+      "physicianRecruitmentDetails": { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "psychPositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "adminPositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "nursePositionDetailsData":    { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "emsPositionDetailsData":      { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "coronerPositionDetailsData":  { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "postesMedecine":                 { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "postesPsychologie":              { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "postesAdministration":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "postesSoinsInfirmiers":          { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "postesParamedical":              { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } },
+      "postesMedecineLegale":           { "$positionKey": { ".write": "auth != null && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) " } }
     },
 
     // ─── Droits « personnel » ─────────────────────────────────────────────────────

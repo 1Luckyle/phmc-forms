@@ -15,7 +15,8 @@ import ReactDOM from 'react-dom';
 import { Button, Spinner } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
 import { RECRUITMENT_CATEGORIES, CATEGORY_BY_KEY, STATUT_OUVERT, isPositionOpen } from '../../constants/recruitment';
-import { loadPositions as loadCategoryPositions, setPositionOpen } from '../../utils/recruitmentStore';
+import { loadPositions as loadCategoryPositions, setPositionOpen, deletePosition } from '../../utils/recruitmentStore';
+import { logActivity } from '../../utils/activityLog';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { copyToClipboard } from '../notificationService';
 import { generateAdminView } from '../../formDefinitions';
@@ -110,6 +111,28 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
             console.error(`Error updating status for ${positionKey}:`, error);
             Sentry.captureException(error, { extra: { context: 'RecruitmentManager toggle status', positionKey } });
             showNotification(`Échec de la mise à jour du statut pour ${name}.`, 'error');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleDeletePosition = async (positionKey) => {
+        const position = positions[positionKey];
+        if (!config || !position) return;
+        const name = position.nom || positionKey;
+        const ok = window.confirm(`Supprimer définitivement le poste « ${name} » (${config.label}) ?\n\nIl disparaît du formulaire de candidature. Les candidatures déjà déposées gardent son nom. Pour simplement arrêter de recevoir des candidatures, utilisez plutôt « Fermer ».`);
+        if (!ok) return;
+        setIsUpdating(true);
+        try {
+            await deletePosition(config, positionKey);
+            logActivity({ category: 'recrutement', action: 'position_deleted', summary: `Poste supprimé : ${name} (${config.label})`, severity: 'warning', target: name });
+            showNotification(`Le poste « ${name} » a été supprimé.`, 'check-circle');
+            sendAdminActionWebhook(actorEmail, 'Poste supprimé', `Poste : ${name}\nClé : ${positionKey}`, config.label, actorLabel);
+            await loadPositions();
+        } catch (error) {
+            console.error(`Error deleting position ${positionKey}:`, error);
+            Sentry.captureException(error, { extra: { context: 'RecruitmentManager delete position', positionKey } });
+            showNotification(`Échec de la suppression du poste « ${name} ».`, 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -270,6 +293,11 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
                                                         <Button variant={isPositionOpen(position) ? 'outline-danger' : 'outline-success'} size="sm" disabled={isUpdating}
                                                             onClick={() => handleToggleStatus(key)}>
                                                             {isPositionOpen(position) ? 'Fermer (FERMÉ)' : 'Ouvrir (OUVERT)'}
+                                                        </Button>
+                                                        <Button variant="outline-danger" size="sm" disabled={isUpdating}
+                                                            onClick={() => handleDeletePosition(key)}
+                                                            title="Supprimer définitivement ce poste">
+                                                            <i className="fas fa-trash"></i> Supprimer
                                                         </Button>
                                                     </div>
                                                 </div>
