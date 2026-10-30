@@ -73,6 +73,7 @@ import { logActivity } from './utils/activityLog';
 import CctvHubModal from './components/Cctv/CctvHubModal';
 import InternalRecruitmentRequest from './components/Recruitment/InternalRecruitmentRequest';
 import { useCctvManager } from './utils/cctvRequests';
+import { useAccountingAccess } from './utils/accountingAccess';
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -93,6 +94,7 @@ const MyProfileModal = lazy(() => import('./components/MyProfileModal'));
 const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendarModal'));
 const MyContractsModal = lazy(() => import('./components/Contracts/MyContractsModal'));
 const LawEnforcementModal = lazy(() => import('./components/LawEnforcement/LawEnforcementModal'));
+const AccountingModal = lazy(() => import('./components/Accounting/AccountingModal'));
 const FireReportModal = lazy(() => import('./components/FireSafety/FireReportModal'));
 const FireSafetyModal = lazy(() => import('./components/FireSafety/FireSafetyModal'));
 const DisciplineModal = lazy(() => import('./components/Contracts/DisciplineModal'));
@@ -169,6 +171,8 @@ function MainApp({
     const [cctvHubTab, setCctvHubTab] = useState('mine');
     // Traitement des demandes : l'administration du PHMC (Directeur(trice), Assistant(e) de Direction, Personnel Administratif) et les admins.
     const canManageCctv = useCctvManager(isAdmin);
+    // Comptabilité (tarifs des formulaires, page Transparence) : admins, Directrice et Assistante de Direction.
+    const canManageAccounting = useAccountingAccess(isAdmin);
     // Choix de rôle affiché par le bouton « Se connecter » de la page
     // principale : Personnel PHMC/DMEC ouvre EmployeeLoginModal (existant),
     // Civil ouvre le Guide de Configuration directement sur la connexion/
@@ -198,6 +202,7 @@ function MainApp({
     const [showMyContracts, setShowMyContracts] = useState(false);
     const [showLawEnforcement, setShowLawEnforcement] = useState(false);
     const [showFireReport, setShowFireReport] = useState(false);
+    const [showAccounting, setShowAccounting] = useState(false);
     const [showFireManage, setShowFireManage] = useState(false);
     const [showDiscipline, setShowDiscipline] = useState(false);
 
@@ -1788,6 +1793,8 @@ function MainApp({
                                                         toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
                                                         // Demandes de vidéosurveillance : réponse et suivi par l'administration du PHMC (et les admins).
                                                         canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
+                                                        // Comptabilité : tarifs des formulaires et page Transparence (admins, Directrice, Assistante de Direction).
+                                                        canManageAccounting && { key: 'accounting', icon: 'fas fa-calculator', label: 'Comptabilité', onClick: closeAnd(() => setShowAccounting(true)) },
                                                         toolAccess.lawEnforcement && { key: 'lawEnforcement', icon: 'fas fa-scale-balanced', label: "Demandes des forces de l'ordre", onClick: closeAnd(() => setShowLawEnforcement(true)) },
                                                         toolAccess.fireReport && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
                                                         toolAccess.disciplineManage && { key: 'disciplineManage', icon: 'fas fa-gavel', label: 'Documents disciplinaires', onClick: closeAnd(() => setShowDiscipline(true)) },
@@ -2630,6 +2637,13 @@ function MainApp({
                         )}
                         {toolAccess.fireManage && (
                             <FireSafetyModal show={showFireManage} onHide={() => setShowFireManage(false)} showNotification={showNotification} />
+                        )}
+                        {canManageAccounting && (
+                            <AccountingModal
+                                show={showAccounting}
+                                onHide={() => setShowAccounting(false)}
+                                showNotification={showNotification}
+                            />
                         )}
                         <FireReportModal
                             show={showFireReport}

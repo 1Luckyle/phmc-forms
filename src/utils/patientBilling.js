@@ -6,7 +6,7 @@ import { getPrice } from './pricing';
 // sauvegarde des rapports (création de la facture) et par les écrans patient / médecin.
 //
 //   Formulaires facturés : Dossier patient avancé (3), Dossier patient de base (25), Divulgation de dossier médical (24,
-//   par élément demandé), Mise à jour du dossier (26). Les montants se règlent dans le panneau admin → Tarifs (utils/pricing.js).
+//   par élément demandé), Mise à jour du dossier (26). Les montants se règlent dans la Boîte à outils → Comptabilité → Tarifs (utils/pricing.js).
 //
 //   Une facture vit sous facturesPatients/{ID patient}/{clé du rapport} avec un statut stocké :
 //     'a_payer' | 'paye' | 'sans_paiement'

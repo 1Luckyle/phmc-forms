@@ -2,7 +2,7 @@
 //
 // Grille des rémunérations du PHMC et du DMEC : pour chaque GRADE, une liste d'ÉCHELONS (libellé + montant). Un établissement public publie le salaire
 // de chaque échelon de ses services (Code du Gouvernement, art. 326) : la grille est donc PUBLIQUE (page « Transparence ») et sert aussi aux contrats
-// (le champ « échelon » propose ceux du grade choisi et préremplit la rémunération). L'admin la modifie dans le panneau admin → Transparence, sans
+// (le champ « échelon » propose ceux du grade choisi et préremplit la rémunération). Elle se modifie dans la Boîte à outils → Comptabilité → Transparence, sans
 // toucher au code.
 //
 // Stockage : adminSettings/grilleSalariale (lecture publique, écriture admin : voir database.rules.json)

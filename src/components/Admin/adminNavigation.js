@@ -82,11 +82,6 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'maintenance verrouillage blocage',
             },
             {
-                key: 'pricing', icon: 'fa-coins', label: 'Tarifs des formulaires',
-                description: "Les montants demandés aux patients et aux demandeurs (dossiers médicaux, divulgation, frais d'autopsie…).",
-                keywords: 'prix tarif coût montant argent paiement fleeca facture dossier médical autopsie dollars',
-            },
-            {
                 key: 'cities', icon: 'fa-city', label: 'Villes & codes postaux',
                 description: 'La liste des villes proposées dans les formulaires : le code postal se remplit tout seul.',
                 keywords: 'ville adresse code postal zip quartier',
@@ -100,11 +95,6 @@ export const ADMIN_SECTION_GROUPS = [
                 key: 'privacyPolicy', icon: 'fa-user-shield', label: 'Politique de confidentialité',
                 description: "Le texte de la politique, affiché dans le pied de page et dans le guide de configuration : une seule modification pour tous.",
                 keywords: 'confidentialité politique données personnelles rgpd vie privée mentions légales texte conditions',
-            },
-            {
-                key: 'transparency', icon: 'fa-scale-balanced', label: 'Transparence',
-                description: "La page publique de l'établissement : direction, grille des rémunérations et comptes trimestriels.",
-                keywords: 'transparence grille salariale salaire échelon comptes trimestre recettes dépenses direction publication',
             },
             {
                 key: 'display', icon: 'fa-sliders', label: 'Affichage & BBCode',

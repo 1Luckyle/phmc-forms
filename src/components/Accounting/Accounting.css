@@ -1,0 +1,11 @@
+/* Comptabilité (Boîte à outils) : choix de la rubrique, puis écran du panneau admin affiché à plat dans la fenêtre */
+.acc-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.acc-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px; text-align: left; color: #e6edf3; background: #161b22; border: 1px solid #30363d; border-radius: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.acc-choice:hover, .acc-choice:focus-visible { border-color: #58a6ff; background: rgba(88, 166, 255, 0.08); outline: none; }
+.acc-choice i { font-size: 1.5rem; color: #58a6ff; }
+.acc-choice strong { font-size: 1.05rem; color: #f0f6fc; }
+.acc-choice span { font-size: 0.85rem; color: #8b949e; }
+
+/* « admin-dashboard-container » apporte l'habillage des écrans admin ; ici il ne doit ni occuper toute la hauteur ni faire une colonne latérale */
+.acc-body.admin-dashboard-container { display: block; min-height: 0; background: transparent; }
+.acc-body .acc-content { min-width: 0; }

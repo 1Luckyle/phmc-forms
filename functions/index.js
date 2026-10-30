@@ -2407,6 +2407,30 @@ const hasCctvManagerRole = (member) => {
         .some((role) => CCTV_MANAGER_ROLES.has(String(role || '').trim().toLowerCase()));
 };
 
+// COMPTABILITÉ (outil « Comptabilité » de la Boîte à outils : tarifs des formulaires et page Transparence) : réservée aux admins, à la
+// Directrice et à l'Assistante de Direction (rôle principal OU supplémentaire) — PAS au Personnel Administratif. Même principe : cette fonction
+// tient à jour le drapeau comptabiliteGestionnaires/{uid}, que les règles testent pour autoriser l'écriture des tarifs et de la page Transparence.
+const ACCOUNTING_ROLES = new Set([
+    'directeur(trice)', 'directrice', 'directeur', 'director',
+    'assistant(e) de direction', 'assistante de direction', 'assistant de direction',
+]);
+
+const hasAccountingRole = (member) => {
+    const extra = member && member.extraRanks
+        ? (Array.isArray(member.extraRanks) ? member.extraRanks : Object.values(member.extraRanks))
+        : [];
+    return [member && member.rank, member && member.category, ...extra]
+        .some((role) => ACCOUNTING_ROLES.has(String(role || '').trim().toLowerCase()));
+};
+
+// Pose ou retire un drapeau booléen (true / absent) sans écriture inutile.
+const syncFlag = async (path, wanted) => {
+    const flagRef = db.ref(path);
+    const current = (await flagRef.once('value')).val() === true;
+    if (wanted && !current) await flagRef.set(true);
+    if (!wanted && current) await flagRef.remove();
+};
+
 export const syncCctvAccess = onRequest({}, async (req, res) => {
     await new Promise((resolve) => corsHandler(req, res, resolve));
     setJsonCors(req, res);
@@ -2418,20 +2442,22 @@ export const syncCctvAccess = onRequest({}, async (req, res) => {
 
     try {
         const adminSnap = await db.ref(`adminUIDs/${caller.uid}`).once('value');
-        let manager = adminSnap.val() === true;
-        if (!manager) {
+        const isAdmin = adminSnap.val() === true;
+        let manager = isAdmin;
+        let comptable = isAdmin;
+        if (!manager || !comptable) {
             // Seul le personnel PHMC (staff/phmc) compte : le DMEC n'a pas ce rôle d'administration… sauf rôle cumulé.
             for (const list of ['phmc', 'coroner']) {
                 const snap = await db.ref(`staff/${list}`).once('value');
-                const members = Object.values(snap.val() || {});
-                if (members.some((member) => member && member.uid === caller.uid && hasCctvManagerRole(member))) { manager = true; break; }
+                Object.values(snap.val() || {}).filter((member) => member && member.uid === caller.uid).forEach((member) => {
+                    if (hasCctvManagerRole(member)) manager = true;
+                    if (hasAccountingRole(member)) comptable = true;
+                });
             }
         }
-        const flagRef = db.ref(`cctvGestionnaires/${caller.uid}`);
-        const current = (await flagRef.once('value')).val() === true;
-        if (manager && !current) await flagRef.set(true);
-        if (!manager && current) await flagRef.remove();
-        res.status(200).json({ manager });
+        await syncFlag(`cctvGestionnaires/${caller.uid}`, manager);
+        await syncFlag(`comptabiliteGestionnaires/${caller.uid}`, comptable);
+        res.status(200).json({ manager, comptable });
     } catch (error) {
         console.error('Error syncing CCTV access:', error);
         res.status(500).json({ error: 'internal', message: 'Impossible de vérifier vos droits.' });

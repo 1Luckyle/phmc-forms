@@ -218,7 +218,7 @@ const Root = () => {
     );
 };
 
-startPriceSync(); // tarifs des formulaires (panneau admin → Tarifs)
+startPriceSync(); // tarifs des formulaires (Boîte à outils → Comptabilité → Tarifs des formulaires)
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(

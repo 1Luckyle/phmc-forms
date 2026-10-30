@@ -253,8 +253,8 @@
     // Brouillons des comptes trimestriels (page Transparence, src/utils/transparency.js) : brouillonsTransparence/{AAAA-Tn} (PHMC) ou {pharmacie_AAAA-Tn, pharmacie-urgences_AAAA-Tn}
     // (comptes à part de chaque entité) : { lignes: [{ type, libelle, montant }], notes, ouverture, majLe, majPar }. Lecture et écriture : admins seulement (le nœud public adminSettings/transparence ne peut pas porter un brouillon).
     "brouillonsTransparence": {
-      ".read":  "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
-      ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+      ".read":  "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('comptabiliteGestionnaires').child(auth.uid).val() === true)",
+      ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('comptabiliteGestionnaires').child(auth.uid).val() === true)",
       "$key": {
         ".validate": "$key.matches(/^((pharmacie|pharmacie-urgences)_)?[0-9]{4}-T[1-4]$/) && newData.hasChildren(['majLe']) && newData.child('majLe').isNumber() && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().length <= 1500)) && (!newData.child('ouverture').exists() || (newData.child('ouverture').isString() && newData.child('ouverture').val().length <= 30)) && (!newData.child('majPar').exists() || (newData.child('majPar').isString() && newData.child('majPar').val().length <= 120))",
         "lignes": {
@@ -449,6 +449,18 @@
     "adminSettings": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
+      // COMPTABILITÉ (outil de la Boîte à outils) : les tarifs des formulaires, la page Transparence et sa grille salariale se modifient aussi par la
+      // Directrice et l'Assistante de Direction (drapeau comptabiliteGestionnaires, posé par la fonction syncCctvAccess d'après le rôle), pas seulement
+      // par les admins. La lecture reste publique (ces valeurs s'affichent à tous).
+      "tarifs": {
+        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
+      },
+      "transparence": {
+        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
+      },
+      "grilleSalariale": {
+        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
+      },
       // Politique de confidentialité publiée depuis le panneau admin (lecture publique : elle se lit avant la connexion) : un texte borné et sa date.
       "politiqueConfidentialite": {
         ".validate": "newData.hasChildren(['texte', 'miseAJour', 'majLe']) && newData.child('texte').isString() && newData.child('texte').val().length <= 40000 && newData.child('miseAJour').isString() && newData.child('miseAJour').val().length <= 80 && newData.child('majLe').isNumber()"
@@ -632,6 +644,14 @@
     "cctvGestionnaires": {
       ".read":  "auth != null",
       ".write": false
+    },
+    // Droit « Comptabilité » (admins, Directeur(trice), Assistant(e) de Direction) : comptabiliteGestionnaires/{uid}: true, posé par la fonction serveur
+    // syncCctvAccess d'après le rôle de la fiche (jamais depuis le navigateur). Chacun ne lit que le sien ; les admins lisent tout.
+    "comptabiliteGestionnaires": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": false
+      }
     },
     "cctvParDemandeur": {
       "$uid": {

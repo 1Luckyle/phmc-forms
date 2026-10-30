@@ -1,6 +1,6 @@
 // src/components/Admin/TransparencyManager.js
 //
-// Panneau admin → « Transparence » : tout ce que l'établissement publie sur sa page publique « Transparence » (#/transparence), comme un établissement
+// Boîte à outils → Comptabilité → « Transparence » (admins, Directrice, Assistante de Direction) : tout ce que l'établissement publie sur sa page publique « Transparence » (#/transparence), comme un établissement
 // public doit le faire (Code du Gouvernement, art. 326 et 327) :
 //   • Direction & contact : nom de la personne qui dirige l'établissement et moyen de la joindre ;
 //   • Grille salariale   : le salaire de chaque échelon de chaque grade (ils alimentent aussi le champ « échelon » des contrats) ;

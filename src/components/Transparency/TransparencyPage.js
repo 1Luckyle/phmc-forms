@@ -3,7 +3,7 @@
 // Page publique « Transparence » (#/transparence), sans connexion : un établissement public publie le nom et le contact de sa direction, la grille des
 // rémunérations de ses services et ses comptes à la fin de chaque trimestre (Code du Gouvernement, art. 326 à 328) : ceux du PHMC, puis ceux de ses pharmacies
 // (chacune avec sa propre comptabilité). Tout vient d'adminSettings
-// (lecture publique) et se modifie dans le panneau admin → Transparence.
+// (lecture publique) et se modifie dans la Boîte à outils → Comptabilité → Transparence.
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Spinner } from 'react-bootstrap';

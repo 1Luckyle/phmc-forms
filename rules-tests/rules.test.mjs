@@ -307,6 +307,40 @@ await write('Politique sans texte refusée', false, 'A', PP, { miseAJour: 'x', m
 await write('Politique avec une date trop longue refusée', false, 'A', PP, policyDoc({ miseAJour: 'x'.repeat(81) }));
 await read('Anonyme lit la politique publiée', true, null, PP, (data) => { data.adminSettings = { politiqueConfidentialite: policyDoc() }; });
 
+console.log('--- comptabilité : tarifs et page Transparence ---');
+// G = Directrice ou Assistante de Direction (drapeau comptabiliteGestionnaires posé par la fonction serveur), sans être admin.
+const withG = (data) => { data.comptabiliteGestionnaires = { G: true }; data.staffUIDs.G = true; };
+const compte = { periode: '2026-T3', publieLe: 1, publiePar: 'G', soldeOuverture: 0, lignes: [{ type: 'recette', libelle: 'x', montant: 5 }], notes: '' };
+const BRG = 'brouillonsTransparence';
+const brouillonG = { lignes: [{ type: 'depense', libelle: 'Salaires', montant: '' }], notes: 'à finir', ouverture: '100', majLe: 5, majPar: 'G' };
+const withBrouillonG = (data) => { withG(data); data[BRG] = { '2026-T3': brouillonG }; };
+await write('G modifie les tarifs', true, 'G', 'adminSettings/tarifs/valeurs', { dossierMedical: 5000 }, withG);
+await write('G publie des comptes', true, 'G', 'adminSettings/transparence/comptes/2026-T3', compte, withG);
+await write('G publie les comptes d une pharmacie', true, 'G', 'adminSettings/transparence/comptesEntites/pharmacie/2026-T3', compte, withG);
+await write('G modifie la grille salariale', true, 'G', 'adminSettings/grilleSalariale', { unite: 'de l\'heure', majLe: 1, grades: {} }, withG);
+await write('G enregistre un brouillon de comptes', true, 'G', `${BRG}/2026-T3`, brouillonG, withG);
+await read('G lit les brouillons de comptes', true, 'G', `${BRG}/2026-T3`, withBrouillonG);
+await write('G ne modifie pas les autres réglages (confinement)', false, 'G', 'adminSettings/lockdown', { enabled: true }, withG);
+await write('G ne modifie pas la politique de confidentialité', false, 'G', PP, policyDoc(), withG);
+await write('G ne modifie pas les modèles de mails', false, 'G', 'adminSettings/mailTemplates/x', { subject: 's', body: 'b' }, withG);
+await write('G ne se donne pas les droits admin', false, 'G', 'adminUIDs/G', true, withG);
+await write('G ne pose pas son propre drapeau', false, 'G', 'comptabiliteGestionnaires/S1', true, withG);
+await write('S1 ne se donne pas le droit comptabilité', false, 'S1', 'comptabiliteGestionnaires/S1', true, withG);
+await write('A ne pose pas le drapeau depuis le navigateur', false, 'A', 'comptabiliteGestionnaires/S1', true, withG);
+await write('S1 (sans le droit) ne modifie pas les tarifs', false, 'S1', 'adminSettings/tarifs/valeurs', { dossierMedical: 1 }, withG);
+await write('S1 (sans le droit) ne publie pas de comptes', false, 'S1', 'adminSettings/transparence/comptes/2026-T3', compte, withG);
+await write('S1 (sans le droit) ne modifie pas la grille', false, 'S1', 'adminSettings/grilleSalariale', { unite: 'x', majLe: 1, grades: {} }, withG);
+await write('D1 (DMEC) ne publie pas de comptes', false, 'D1', 'adminSettings/transparence/comptes/2026-T3', compte, withG);
+await write('P (polyvalent) ne modifie pas les tarifs', false, 'P', 'adminSettings/tarifs/valeurs', { dossierMedical: 1 }, withG);
+await write('Civil C ne modifie pas les tarifs', false, 'C', 'adminSettings/tarifs/valeurs', { dossierMedical: 1 }, withG);
+await write('Anonyme ne publie pas de comptes', false, null, 'adminSettings/transparence/comptes/2026-T3', compte, withG);
+await write('A modifie toujours les tarifs', true, 'A', 'adminSettings/tarifs/valeurs', { dossierMedical: 5000 }, withG);
+await read('S1 (sans le droit) ne lit pas les brouillons de comptes', false, 'S1', `${BRG}/2026-T3`, withBrouillonG);
+await read('G lit son drapeau', true, 'G', 'comptabiliteGestionnaires/G', withG);
+await read('S1 ne lit pas le drapeau de G', false, 'S1', 'comptabiliteGestionnaires/G', withG);
+await read('A lit le drapeau de G', true, 'A', 'comptabiliteGestionnaires/G', withG);
+await read('Les tarifs restent lisibles par tous', true, null, 'adminSettings/tarifs', (data) => { data.adminSettings = { tarifs: { valeurs: { dossierMedical: 5000 } } }; });
+
 console.log('--- brouillons de la page Transparence ---');
 const BR = 'brouillonsTransparence';
 const brouillon = (extra = {}) => ({ lignes: [{ type: 'depense', libelle: 'Salaires des employés', montant: '' }, { type: 'recette', libelle: '', montant: '2500' }], notes: 'à finir', ouverture: '250000', majLe: 5, majPar: 'A', ...extra });

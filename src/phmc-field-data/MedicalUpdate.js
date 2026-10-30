@@ -101,7 +101,7 @@ const MedicalRelease = ({
 
     const calculateCost = () => {
     if (formData.UpdateMedicalFile && formData.UpdateMedicalFile.length > 0) {
-      return getPrice('miseAJourDossier'); // prix fixe du service « Mise à jour du dossier » (panneau admin → Tarifs)
+      return getPrice('miseAJourDossier'); // prix fixe du service « Mise à jour du dossier » (Boîte à outils → Comptabilité → Tarifs)
     }
     return 0;
   };

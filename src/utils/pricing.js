@@ -1,7 +1,7 @@
 // src/utils/pricing.js
 //
-// Tarifs des formulaires (tout ce pour quoi le site demande de l'argent), modifiables par un admin depuis le panneau
-// admin → « Tarifs des formulaires » SANS toucher au code. Les valeurs vivent dans adminSettings/tarifs (lecture
+// Tarifs des formulaires (tout ce pour quoi le site demande de l'argent), modifiables par un admin, la Directrice ou l'Assistante de Direction depuis
+// la Boîte à outils → Comptabilité → « Tarifs des formulaires » SANS toucher au code. Les valeurs vivent dans adminSettings/tarifs (lecture
 // publique, écriture admin) ; à défaut, ce sont les valeurs par défaut ci-dessous.
 //
 // getPrice(clé) est SYNCHRONE (les générateurs de BBCode et les calculs de facturation ne sont pas des composants) ;
