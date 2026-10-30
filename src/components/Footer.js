@@ -17,7 +17,6 @@ const Footer = () => {
                 <div>
                     <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">Voir la politique de confidentialité</button>
                     <a href="#/transparence" className="privacy-policy-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Transparence</a>
-                    <a href="#/plan" className="privacy-policy-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Plan de l'hôpital</a>
                 </div>
             </div>
             <PrivacyPolicyModal isOpen={isPrivacyPolicyModalOpen} onClose={togglePrivacyPolicyModal} />

@@ -98,13 +98,18 @@ const HospitalPlan = () => {
                                 <span className="hp-level"><i className="fas fa-chevron-up hp-level-arrow"></i>{floor.niveau}</span>
                                 <span className="hp-name"><i className={`fas ${floor.icon} me-2`}></i>{floor.titre}</span>
                                 <span className="hp-meta">
-                                    {floor.entree && <span className="hp-entry"><i className="fas fa-door-open me-1"></i>Entrée</span>}
+                                    {floor.entree && <span className="hp-entry"><i className="fas fa-door-open me-1"></i>{floor.entree.label}</span>}
                                     <span className="hp-total">{total} pièce{total > 1 ? 's' : ''}</span>
                                     <i className={`fas fa-chevron-${open ? 'up' : 'down'}`}></i>
                                 </span>
                             </button>
                             {open && (
                                 <div className="hp-body">
+                                    {floor.entree && (
+                                        <p className="hp-door">
+                                            <i className="fas fa-road me-2"></i><b>{floor.entree.label} — {floor.entree.rue}.</b> {floor.entree.detail}
+                                        </p>
+                                    )}
                                     {floor.resume && <p className="hp-resume">{floor.resume}</p>}
                                     {floor.sections.map((section) => (
                                         <div key={section.titre} className="hp-section">

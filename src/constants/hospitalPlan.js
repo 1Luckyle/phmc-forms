@@ -2,6 +2,7 @@
 //
 // Plan du Pillbox Hill Medical Center, étage par étage : sections (services ou fonctions) et pièces, avec leur niveau d'accès. Données statiques, lisibles par
 // n'importe qui (le plan est public : page #/plan et onglet « Plan de l'hôpital » de la Boîte à outils).
+// Un étage d'entrée porte `entree: { label, rue, detail }` : la porte, la rue sur laquelle elle donne et son usage.
 // Une pièce : { nom, acces, sous?: [{ nom, acces? }], note? } — les sous-pièces héritent de l'accès de leur pièce.
 
 export const ACCESS_LEVELS = {
@@ -127,8 +128,9 @@ export const HOSPITAL_FLOORS = [
         ],
     },
     {
-        niveau: '2', code: 'accueil', titre: 'Accueil', icon: 'fa-bell-concierge', entree: true,
-        resume: 'Étage d\'entrée : accueil du public, parking, pharmacie centrale et musée.',
+        niveau: '2', code: 'accueil', titre: 'Accueil', icon: 'fa-bell-concierge',
+        entree: { label: 'Entrée principale', rue: 'Elgin Avenue', detail: 'Réception, visiteurs, pharmacie, consultations, rendez-vous.' },
+        resume: 'Entrée principale donnant sur Elgin Avenue : accueil du public, parking, pharmacie centrale et musée.',
         sections: [
             {
                 titre: 'Réception',
@@ -146,7 +148,8 @@ export const HOSPITAL_FLOORS = [
     },
     {
         niveau: '1', code: 'urgences', titre: 'Urgences', icon: 'fa-heart-pulse',
-        resume: 'Urgences, EMS / EMT / Paramedic, radiologie et oncologie.',
+        entree: { label: 'Entrée des urgences', rue: 'Strawberry Avenue', detail: 'Réservée aux urgences : arrivées et prises en charge urgentes.' },
+        resume: 'Entrée des urgences donnant sur Strawberry Avenue ; EMS / EMT / Paramedic, radiologie et oncologie.',
         sections: [
             {
                 titre: 'Service des urgences',
@@ -168,6 +171,7 @@ export const HOSPITAL_FLOORS = [
                     room('Vestiaire hommes', 'reserve', { sous: [sub('Toilettes')] }),
                     room('Vestiaire femmes', 'reserve', { sous: [sub('Toilettes')] }),
                     room('Salle de repos, cinéma, détente, cuisine', 'reserve'),
+                    room('Salle de repos', 'reserve', { sous: [sub('Salle de détente'), sub('Vestiaire')] }),
                     room('Salle de musculation', 'reserve'),
                     room('Dortoir commun', 'reserve'),
                 ],
@@ -196,9 +200,7 @@ export const HOSPITAL_FLOORS = [
                 zones: [
                     room('Salle d\'attente', 'public'),
                     room('Bureau du directeur du service', 'reserve'),
-                    room('Open-space', 'reserve'),
-                    room('Salle de repos', 'reserve', { sous: [sub('Salle de détente'), sub('Vestiaire')] }),
-                ],
+                    room('Open-space', 'reserve'),                ],
             },
             {
                 titre: 'Zone de recueillement',

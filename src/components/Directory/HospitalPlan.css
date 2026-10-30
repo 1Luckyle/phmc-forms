@@ -31,6 +31,8 @@
 .hp-name { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .hp-meta { display: inline-flex; align-items: center; gap: 12px; font-size: 0.8rem; white-space: nowrap; }
 .hp-entry { padding: 1px 9px; font-weight: 700; color: #7a3a07; background: #fff; border-radius: 10px; }
+.hp-door { margin: 0 0 10px; padding: 8px 12px; color: #f0f6fc; background: rgba(224, 113, 26, 0.14); border: 1px solid rgba(224, 113, 26, 0.55); border-radius: 6px; font-size: 0.88rem; }
+.hp-door i { color: #e0711a; }
 .hp-total { opacity: 0.9; }
 
 .hp-body { padding: 12px 16px 16px; }
