@@ -17,6 +17,7 @@
 // de Los Angeles) ; pour le modifier, changer GAME_WEATHER_SHIFT_HOURS. Les températures sont interpolées entre deux heures de prévision.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import phmcLogo from '../assets/phmc.png';
+import { PHMC_PHONE, PHMC_DISCORD_URL } from '../constants/contact';
 import './ImmersiveHeader.css';
 
 const HOSPITAL_NAME = 'Pillbox Hill Medical Center';
@@ -222,6 +223,10 @@ const ImmersiveHeader = () => {
                     <div>
                         <div className="immersive-name">{HOSPITAL_NAME}</div>
                         <div className="immersive-address"><i className="fas fa-location-dot"></i> {HOSPITAL_ADDRESS}</div>
+                        <div className="immersive-contact">
+                            <span><i className="fas fa-phone"></i> {PHMC_PHONE}</span>
+                            <a href={PHMC_DISCORD_URL} target="_blank" rel="noopener noreferrer" title="Ouvrir le portail de contact du PHMC FR (Discord)"><i className="fab fa-discord"></i> Portail de contact</a>
+                        </div>
                     </div>
                 </div>
                 <ServerClock />

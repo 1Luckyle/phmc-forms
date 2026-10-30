@@ -38,6 +38,25 @@
     color: #8b949e;
 }
 
+/* Téléphone et portail de contact, sous l'adresse */
+.immersive-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 2px;
+    font-size: 0.82em;
+    color: #8b949e;
+}
+
+.immersive-contact a {
+    color: #58a6ff;
+    text-decoration: none;
+}
+
+.immersive-contact a:hover {
+    text-decoration: underline;
+}
+
 .immersive-clock {
     display: flex;
     align-items: center;

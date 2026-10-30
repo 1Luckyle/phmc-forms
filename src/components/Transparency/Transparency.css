@@ -12,6 +12,9 @@
 .tp-muted { color: #8b949e; font-size: 0.88rem; margin: 10px 0 0; }
 .tp-direction { display: flex; flex-direction: column; gap: 4px; }
 .tp-direction strong { font-size: 1.1rem; }
+.tp-contact { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 14px 0 4px; padding: 10px 14px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; }
+.tp-contact a { color: #58a6ff; text-decoration: none; }
+.tp-contact a:hover { text-decoration: underline; }
 .tp-table-scroll { overflow-x: auto; }
 .tp-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .tp-table th, .tp-table td { padding: 8px 10px; border-bottom: 1px solid #21262d; text-align: left; vertical-align: top; }

@@ -9,6 +9,7 @@ import { Alert, Spinner } from 'react-bootstrap';
 import { STAFF_FAMILIES, ROLES } from '../../constants/ranks';
 import { loadSalaryGrid, gradeKeyOf, formatAmount } from '../../utils/salaryGrid';
 import { loadTransparency, quarterLabel, totals, formatMoney } from '../../utils/transparency';
+import { PHMC_PHONE, PHMC_DISCORD_URL } from '../../constants/contact';
 import './Transparency.css';
 
 const TransparencyPage = () => {
@@ -66,6 +67,10 @@ const TransparencyPage = () => {
                                     ))}
                                 </div>
                             ) : <p className="tp-muted">Information non renseignée pour le moment.</p>}
+                            <div className="tp-contact">
+                                <span><i className="fas fa-phone me-2"></i>Standard du PHMC : <strong>{PHMC_PHONE}</strong></span>
+                                <a href={PHMC_DISCORD_URL} target="_blank" rel="noopener noreferrer"><i className="fab fa-discord me-2"></i>Portail de contact (Discord du PHMC FR)</a>
+                            </div>
                             <p className="tp-muted">
                                 Toute personne peut demander l'accès à une information détenue par l'établissement ; une réponse est apportée sous 7 jours (art. 328).
                                 {data.contactDemandes ? ` ${data.contactDemandes}` : ''}
