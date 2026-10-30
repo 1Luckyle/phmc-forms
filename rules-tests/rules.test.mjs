@@ -293,6 +293,20 @@ await read('Civil C ne lit pas le registre', false, 'C', FS, withNc);
 await read('X (sans profil) ne lit pas le registre', false, 'X', FS, withNc);
 await read('Anonyme ne lit pas le registre', false, null, FS, withNc);
 
+console.log('--- politique de confidentialité ---');
+const PP = 'adminSettings/politiqueConfidentialite';
+const policyDoc = (extra = {}) => ({ texte: 'Texte de la politique', miseAJour: '30 octobre 2026', majLe: 1, majPar: 'A', ...extra });
+await write('A publie la politique', true, 'A', PP, policyDoc());
+await write('A publie avec historique', true, 'A', PP, policyDoc({ historique: { v1_0: { texte: 'avant', miseAJour: 'x', majLe: 0, majPar: 'A' } } }));
+await write('S1 ne publie pas la politique', false, 'S1', PP, policyDoc());
+await write('Civil C ne publie pas la politique', false, 'C', PP, policyDoc());
+await write('Anonyme ne publie pas la politique', false, null, PP, policyDoc());
+await write('Politique trop longue refusée', false, 'A', PP, policyDoc({ texte: 'x'.repeat(40001) }));
+await write('Politique de 40000 caractères acceptée', true, 'A', PP, policyDoc({ texte: 'x'.repeat(40000) }));
+await write('Politique sans texte refusée', false, 'A', PP, { miseAJour: 'x', majLe: 1 });
+await write('Politique avec une date trop longue refusée', false, 'A', PP, policyDoc({ miseAJour: 'x'.repeat(81) }));
+await read('Anonyme lit la politique publiée', true, null, PP, (data) => { data.adminSettings = { politiqueConfidentialite: policyDoc() }; });
+
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);
 process.exit(failures === 0 ? 0 : 1);

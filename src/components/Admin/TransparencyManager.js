@@ -5,15 +5,15 @@
 //   • Direction & contact : nom de la personne qui dirige l'établissement et moyen de la joindre ;
 //   • Grille salariale   : le salaire de chaque échelon de chaque grade (ils alimentent aussi le champ « échelon » des contrats) ;
 //   • Comptes            : recettes et dépenses de chaque trimestre. Seuls les comptes PUBLIÉS sont enregistrés ; un brouillon reste dans ce navigateur.
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Form, Spinner } from 'react-bootstrap';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { Alert, Badge, Button, DropdownButton, Dropdown, Form, InputGroup, Spinner } from 'react-bootstrap';
 import { ROLES, STAFF_FAMILIES } from '../../constants/ranks';
 import {
     loadSalaryGrid, saveSalaryGrid, gradeKeyOf, formatAmount, DEFAULT_UNIT, emptyGrid,
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
-    isQuarterOver, totals, formatMoney, LINE_TYPES, quarterSchedule, MAX_MEMBERS, previousQuarterKey, OPENING_YEAR,
+    isQuarterOver, totals, formatMoney, LINE_TYPES, LINE_LABEL_SUGGESTIONS, quarterSchedule, MAX_MEMBERS, previousQuarterKey, OPENING_YEAR,
 } from '../../utils/transparency';
 import { loadStaffMembers } from '../../utils/staffAdmin';
 import { getEmployeeFullName } from '../../utils/employeeName';
@@ -360,6 +360,23 @@ const clearDraft = (key) => {
     try { localStorage.removeItem(DRAFT_KEY(key)); } catch (error) { /* rien à faire */ }
 };
 
+// Libellé d'une ligne de comptes : on écrit directement, ou on choisit un libellé par défaut dans la liste (le choix remplit le champ, qui reste modifiable).
+const LabelCombo = ({ value, options, placeholder, onChange }) => {
+    const id = useId();
+    return (
+        <InputGroup size="sm" className="tm-label-combo">
+            <Form.Control value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} aria-label="Libellé de la ligne" />
+            <DropdownButton variant="outline-secondary" align="end" title={<i className="fas fa-list" aria-hidden="true"></i>} id={`tm-label-menu-${id}`}
+                menuVariant="dark" popperConfig={{ strategy: 'fixed' }} aria-label="Libellés par défaut">
+                <Dropdown.Header>Libellés par défaut</Dropdown.Header>
+                {options.map((option) => (
+                    <Dropdown.Item key={option} active={option === value} onClick={() => onChange(option)}>{option}</Dropdown.Item>
+                ))}
+            </DropdownButton>
+        </InputGroup>
+    );
+};
+
 const longDate = (date) => date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -532,7 +549,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                         <Form.Select size="sm" value={line.type} onChange={(e) => changeLine(index, 'type', e.target.value)} style={{ maxWidth: 120 }}>
                             {Object.entries(LINE_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </Form.Select>
-                        <Form.Control size="sm" value={line.libelle} placeholder="Libellé (ex. Salaires du personnel soignant)" onChange={(e) => changeLine(index, 'libelle', e.target.value)} />
+                        <LabelCombo value={line.libelle} options={LINE_LABEL_SUGGESTIONS[line.type] || []} placeholder="Libellé : choisir dans la liste ou écrire" onChange={(next) => changeLine(index, 'libelle', next)} />
                         <Form.Control size="sm" style={{ maxWidth: 150 }} inputMode="decimal" value={line.montant} placeholder="Montant ($)" onChange={(e) => changeLine(index, 'montant', e.target.value.replace(/[^\d.,]/g, ''))} />
                         <Button size="sm" variant="outline-danger" onClick={() => removeLine(index)}><i className="fas fa-times"></i></Button>
                     </div>

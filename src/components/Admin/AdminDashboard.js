@@ -30,6 +30,7 @@ import { logAdminAction } from '../../utils/activityLog';
 import PricingManager from './PricingManager';
 import CitiesManager from './CitiesManager';
 import TransparencyManager from './TransparencyManager';
+import PrivacyPolicyManager from './PrivacyPolicyManager';
 import MailTemplatesManager from './MailTemplatesManager';
 import { runRecruitmentMigrationOnce } from '../../utils/recruitmentMigration';
 
@@ -412,6 +413,15 @@ const AdminDashboard = ({
                         showNotification={showInAppNotification}
                         adminName={currentUser?.displayName || currentUser?.email || ''}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'E-mails' })}
+                    />
+                );
+
+            case 'privacyPolicy':
+                return (
+                    <PrivacyPolicyManager
+                        showNotification={showInAppNotification}
+                        adminName={currentUser?.displayName || currentUser?.email || ''}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Politique de confidentialité' })}
                     />
                 );
 

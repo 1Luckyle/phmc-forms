@@ -434,6 +434,10 @@
     "adminSettings": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
+      // Politique de confidentialité publiée depuis le panneau admin (lecture publique : elle se lit avant la connexion) : un texte borné et sa date.
+      "politiqueConfidentialite": {
+        ".validate": "newData.hasChildren(['texte', 'miseAJour', 'majLe']) && newData.child('texte').isString() && newData.child('texte').val().length <= 40000 && newData.child('miseAJour').isString() && newData.child('miseAJour').val().length <= 80 && newData.child('majLe').isNumber()"
+      },
       // Modèles des mails du système (Panneau admin → E-mails, src/utils/mailTemplatesCore.js) : { subject, body, majLe, majPar }.
       "mailTemplates": {
         "$id": {

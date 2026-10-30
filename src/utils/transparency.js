@@ -19,6 +19,30 @@ const asArray = (value) => (!value ? [] : Array.isArray(value) ? value : Object.
 
 export const LINE_TYPES = { recette: 'Recette', depense: 'Dépense' };
 
+// Libellés proposés par défaut pour une ligne de comptes (l'admin peut aussi écrire le sien). Ils regroupent les « raisons » du relevé bancaire de
+// l'établissement ; jamais de nom de personne ni d'IBAN : une ligne de comptes est une catégorie, pas une opération.
+export const LINE_LABEL_SUGGESTIONS = {
+    recette: [
+        "Frais d'hospitalisation",
+        'Dossiers médicaux payés par les patients',
+        'Subvention',
+        'Dons reçus',
+        "Bénéfice d'un événement",
+        'Transferts de fonds reçus',
+    ],
+    depense: [
+        'Salaires des employés',
+        'Primes',
+        'Rattrapage de salaires',
+        'Stock de médicaments (pharmacie)',
+        'Alarme et sécurité',
+        'Remboursement de matériel',
+        'Dons reversés',
+        'Transferts de fonds vers un service',
+        "Dépenses d'enquête",
+    ],
+};
+
 // ───────────────────────────── Trimestres ─────────────────────────────
 
 export const quarterKey = (year, quarter) => `${year}-T${quarter}`;

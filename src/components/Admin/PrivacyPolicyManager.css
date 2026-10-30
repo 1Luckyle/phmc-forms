@@ -1,0 +1,15 @@
+/* Éditeur de la politique de confidentialité (admin) */
+.pp-status { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.pp-toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+.pp-count { margin-left: auto; font-size: 0.8rem; color: #8b949e; font-variant-numeric: tabular-nums; }
+.pp-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-bottom: 14px; }
+.pp-editor { min-height: 520px; height: 520px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85rem; line-height: 1.5; }
+.pp-preview { height: 520px; overflow-y: auto; padding: 4px 16px 16px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; }
+.pp-date { margin-bottom: 14px; }
+.pp-history { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.pp-history li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.04); font-size: 0.88rem; }
+
+@media (max-width: 991px) {
+    .pp-layout { grid-template-columns: 1fr; }
+    .pp-editor, .pp-preview { height: 380px; min-height: 380px; }
+}

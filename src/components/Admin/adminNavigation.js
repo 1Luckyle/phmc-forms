@@ -97,6 +97,11 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'mail e-mail email courrier eyefind message notification modèle texte aperçu envoi candidature compte facture code vérification',
             },
             {
+                key: 'privacyPolicy', icon: 'fa-user-shield', label: 'Politique de confidentialité',
+                description: "Le texte de la politique, affiché dans le pied de page et dans le guide de configuration : une seule modification pour tous.",
+                keywords: 'confidentialité politique données personnelles rgpd vie privée mentions légales texte conditions',
+            },
+            {
                 key: 'transparency', icon: 'fa-scale-balanced', label: 'Transparence',
                 description: "La page publique de l'établissement : direction, grille des rémunérations et comptes trimestriels.",
                 keywords: 'transparence grille salariale salaire échelon comptes trimestre recettes dépenses direction publication',
