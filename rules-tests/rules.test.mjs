@@ -307,6 +307,29 @@ await write('Politique sans texte refusée', false, 'A', PP, { miseAJour: 'x', m
 await write('Politique avec une date trop longue refusée', false, 'A', PP, policyDoc({ miseAJour: 'x'.repeat(81) }));
 await read('Anonyme lit la politique publiée', true, null, PP, (data) => { data.adminSettings = { politiqueConfidentialite: policyDoc() }; });
 
+console.log('--- brouillons de la page Transparence ---');
+const BR = 'brouillonsTransparence';
+const brouillon = (extra = {}) => ({ lignes: [{ type: 'depense', libelle: 'Salaires des employés', montant: '' }, { type: 'recette', libelle: '', montant: '2500' }], notes: 'à finir', ouverture: '250000', majLe: 5, majPar: 'A', ...extra });
+const withBrouillon = (data) => { data[BR] = { '2026-T3': brouillon() }; };
+await write('A enregistre un brouillon (montants vides permis)', true, 'A', `${BR}/2026-T3`, brouillon());
+await write('S1 n enregistre pas de brouillon', false, 'S1', `${BR}/2026-T3`, brouillon());
+await write('D1 n enregistre pas de brouillon', false, 'D1', `${BR}/2026-T3`, brouillon());
+await write('Civil C n enregistre pas de brouillon', false, 'C', `${BR}/2026-T3`, brouillon());
+await write('Anonyme n enregistre pas de brouillon', false, null, `${BR}/2026-T3`, brouillon());
+await write('Trimestre invalide refusé', false, 'A', `${BR}/2026-T5`, brouillon());
+await write('Clé quelconque refusée', false, 'A', `${BR}/n-importe-quoi`, brouillon());
+await write('Ligne de type inconnu refusée', false, 'A', `${BR}/2026-T3`, brouillon({ lignes: [{ type: 'cadeau', libelle: 'x', montant: '1' }] }));
+await write('Montant numérique refusé (le brouillon garde du texte)', false, 'A', `${BR}/2026-T3`, brouillon({ lignes: [{ type: 'recette', libelle: 'x', montant: 5 }] }));
+await write('Libellé trop long refusé', false, 'A', `${BR}/2026-T3`, brouillon({ lignes: [{ type: 'recette', libelle: 'x'.repeat(121), montant: '1' }] }));
+await write('Notes trop longues refusées', false, 'A', `${BR}/2026-T3`, brouillon({ notes: 'x'.repeat(1501) }));
+await write('Brouillon sans date refusé', false, 'A', `${BR}/2026-T3`, { lignes: [], notes: 'x' });
+await write('A supprime un brouillon', true, 'A', `${BR}/2026-T3`, null, withBrouillon);
+await write('S1 ne supprime pas un brouillon', false, 'S1', `${BR}/2026-T3`, null, withBrouillon);
+await read('A lit les brouillons', true, 'A', BR, withBrouillon);
+await read('S1 ne lit pas les brouillons', false, 'S1', `${BR}/2026-T3`, withBrouillon);
+await read('Civil C ne lit pas les brouillons', false, 'C', BR, withBrouillon);
+await read('Anonyme ne lit pas les brouillons', false, null, `${BR}/2026-T3`, withBrouillon);
+
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);
 process.exit(failures === 0 ? 0 : 1);

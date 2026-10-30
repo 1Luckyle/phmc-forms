@@ -250,6 +250,21 @@
       }
     },
 
+    // Brouillons des comptes trimestriels (page Transparence, src/utils/transparency.js) : brouillonsTransparence/{AAAA-Tn}: { lignes: [{ type, libelle, montant }],
+    // notes, ouverture, majLe, majPar }. Lecture et écriture : admins seulement (le nœud public adminSettings/transparence ne peut pas porter un brouillon).
+    "brouillonsTransparence": {
+      ".read":  "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+      "$key": {
+        ".validate": "$key.matches(/^[0-9]{4}-T[1-4]$/) && newData.hasChildren(['majLe']) && newData.child('majLe').isNumber() && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().length <= 1500)) && (!newData.child('ouverture').exists() || (newData.child('ouverture').isString() && newData.child('ouverture').val().length <= 30)) && (!newData.child('majPar').exists() || (newData.child('majPar').isString() && newData.child('majPar').val().length <= 120))",
+        "lignes": {
+          "$i": {
+            ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.hasChildren(['type', 'libelle', 'montant']) && (newData.child('type').val() === 'recette' || newData.child('type').val() === 'depense') && newData.child('libelle').isString() && newData.child('libelle').val().length <= 120 && newData.child('montant').isString() && newData.child('montant').val().length <= 30"
+          }
+        }
+      }
+    },
+
     // Registre des demandes des forces de l'ordre (secret médical, voir src/utils/lawEnforcement.js) : demandesAutorites/{id}: { auteurUid, auteurNom,
     // le, service, agent, type, baseLegale, decision, patientID?, reference?, note? }. AUCUN contenu médical. Création : un membre du personnel, à son
     // propre nom (jamais modifiée ensuite par lui). Lecture : les admins ; le personnel ne lit que SES fiches, par une requête filtrée sur auteurUid.

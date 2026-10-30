@@ -5,7 +5,7 @@
 //   • Direction & contact : nom de la personne qui dirige l'établissement et moyen de la joindre ;
 //   • Grille salariale   : le salaire de chaque échelon de chaque grade (ils alimentent aussi le champ « échelon » des contrats) ;
 //   • Comptes            : recettes et dépenses de chaque trimestre. Seuls les comptes PUBLIÉS sont enregistrés ; un brouillon reste dans ce navigateur.
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, DropdownButton, Dropdown, Form, InputGroup, Spinner } from 'react-bootstrap';
 import { ROLES, STAFF_FAMILIES } from '../../constants/ranks';
 import {
@@ -13,7 +13,7 @@ import {
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
-    isQuarterOver, totals, formatMoney, LINE_TYPES, LINE_LABEL_SUGGESTIONS, quarterSchedule, MAX_MEMBERS, previousQuarterKey, OPENING_YEAR,
+    isQuarterOver, totals, formatMoney, LINE_TYPES, LINE_LABEL_SUGGESTIONS, loadDraft, saveDraft, deleteDraft, MAX_DRAFT_LINES, quarterSchedule, MAX_MEMBERS, previousQuarterKey, OPENING_YEAR,
 } from '../../utils/transparency';
 import { loadStaffMembers } from '../../utils/staffAdmin';
 import { getEmployeeFullName } from '../../utils/employeeName';
@@ -348,17 +348,17 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
 };
 
 // ───────────────────────────── Comptes trimestriels ─────────────────────────────
+// Le brouillon vit désormais dans la base (nœud réservé aux admins). Les brouillons des versions précédentes étaient gardés dans le navigateur : on les
+// reprend une fois (ils partent alors dans la base) puis on les efface.
 const DRAFT_KEY = (key) => `transparenceBrouillon_${key}`;
 
-const readDraft = (key) => {
+const readLocalDraft = (key) => {
     try { return JSON.parse(localStorage.getItem(DRAFT_KEY(key)) || 'null'); } catch (error) { return null; }
 };
-const writeDraft = (key, value) => {
-    try { localStorage.setItem(DRAFT_KEY(key), JSON.stringify(value)); } catch (error) { /* stockage indisponible : le brouillon n'est pas gardé */ }
-};
-const clearDraft = (key) => {
+const clearLocalDraft = (key) => {
     try { localStorage.removeItem(DRAFT_KEY(key)); } catch (error) { /* rien à faire */ }
 };
+const SAVE_DELAY = 900;   // enregistrement du brouillon 0,9 s après la dernière frappe
 
 // Libellé d'une ligne de comptes : on écrit directement, ou on choisit un libellé par défaut dans la liste (le choix remplit le champ, qui reste modifiable).
 const LabelCombo = ({ value, options, placeholder, onChange }) => {
@@ -429,19 +429,122 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     const [notes, setNotes] = useState('');
     const [ouverture, setOuverture] = useState('');   // solde d'ouverture (texte saisi)
     const [busy, setBusy] = useState(false);
-    const [hasDraft, setHasDraft] = useState(false);
 
-    // Le brouillon du navigateur prime sur la version publiée.
+    // Brouillon persistant : enregistré dans la base (admins seulement) au fil de la saisie, partagé entre administrateurs et appareils.
+    const [draftMeta, setDraftMeta] = useState(null);       // { majLe, majPar } du brouillon enregistré
+    const [saveState, setSaveState] = useState('idle');     // idle | pending | saving | saved | error | conflict
+    const [conflict, setConflict] = useState(null);         // version d'un autre admin, en cas de conflit
+    const [loadingDraft, setLoadingDraft] = useState(true);
+    const keyRef = useRef(key);                              // trimestre affiché (un enregistrement tardif d'un autre trimestre ne touche pas l'écran)
+    const basesRef = useRef({});                             // par trimestre : majLe du brouillon tel que cette page l'a chargé ou enregistré en dernier
+    const timerRef = useRef(null);
+    const pendingRef = useRef(null);                         // { key, lignes, notes, ouverture } en attente d'enregistrement
+    const queueRef = useRef(Promise.resolve());              // un enregistrement à la fois (sinon le suivant se prendrait pour un conflit)
+
+    // Enregistre ce qui attend. L'attente est prise TOUT DE SUITE (changer de trimestre ne la perd pas) ; l'écriture, elle, se met en file.
+    const flush = useCallback(() => {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+        const pending = pendingRef.current;
+        if (!pending) return queueRef.current;
+        pendingRef.current = null;
+        queueRef.current = queueRef.current.then(async () => {
+            const onScreen = () => keyRef.current === pending.key;
+            if (onScreen()) setSaveState('saving');
+            try {
+                const saved = await saveDraft(pending.key, pending, adminName, basesRef.current[pending.key] ?? null);
+                basesRef.current[pending.key] = saved ? saved.majLe : null;
+                clearLocalDraft(pending.key);
+                if (onScreen()) {
+                    setDraftMeta(saved ? { majLe: saved.majLe, majPar: saved.majPar } : null);
+                    setSaveState(pendingRef.current ? 'pending' : 'saved');
+                }
+            } catch (error) {
+                if (!onScreen()) { console.warn('Brouillon non enregistré :', error?.message || error); return; }
+                pendingRef.current = pendingRef.current || pending;     // rien n'est perdu : la saisie reste à enregistrer
+                if (error.conflict) { setConflict(error.conflict); setSaveState('conflict'); } else { console.warn('Brouillon non enregistré :', error?.message || error); setSaveState('error'); }
+            }
+        });
+        return queueRef.current;
+    }, [adminName]);
+
+    const fromPublished = useCallback(() => {
+        setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) })));
+        setNotes(published?.notes || '');
+        setOuverture(published?.soldeOuverture ? String(published.soldeOuverture) : '');
+    }, [published]);
+
+    // Changement de trimestre : on enregistre d'abord ce qui attend, puis on charge le brouillon enregistré, sinon l'éventuel brouillon local d'avant, sinon le publié.
     useEffect(() => {
-        const draft = readDraft(key);
-        if (draft) { setLignes(draft.lignes || []); setNotes(draft.notes || ''); setOuverture(draft.ouverture || ''); setHasDraft(true); }
-        else { setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) }))); setNotes(published?.notes || ''); setOuverture(published?.soldeOuverture ? String(published.soldeOuverture) : ''); setHasDraft(false); }
-    }, [key, published]);
+        let cancelled = false;
+        keyRef.current = key;
+        pendingRef.current = null;
+        setLoadingDraft(true);
+        setConflict(null);
+        setSaveState('idle');
+        setDraftMeta(null);
+        // On attend la fin des enregistrements en cours (ceux du trimestre quitté) avant de lire : sinon on pourrait relire une version plus ancienne.
+        queueRef.current.then(() => loadDraft(key)).then((remote) => {
+            if (cancelled) return;
+            basesRef.current[key] = remote ? remote.majLe : null;
+            if (remote) {
+                setLignes(remote.lignes); setNotes(remote.notes); setOuverture(remote.ouverture);
+                setDraftMeta({ majLe: remote.majLe, majPar: remote.majPar });
+                return;
+            }
+            const local = readLocalDraft(key);
+            if (local) {
+                const next = { key, lignes: (local.lignes || []).slice(0, MAX_DRAFT_LINES), notes: local.notes || '', ouverture: local.ouverture || '' };
+                setLignes(next.lignes); setNotes(next.notes); setOuverture(next.ouverture);
+                pendingRef.current = next;
+                setSaveState('pending');
+                timerRef.current = setTimeout(flush, 300);
+                return;
+            }
+            fromPublished();
+        }).catch((error) => {
+            if (cancelled) return;
+            console.warn('Brouillon illisible :', error?.message || error);
+            fromPublished();
+            setSaveState('error');
+        }).finally(() => { if (!cancelled) setLoadingDraft(false); });
+        return () => { cancelled = true; flush(); };
+    }, [key, published, flush, fromPublished]);
+
+    // Fermeture de l'onglet : on tente d'enregistrer ce qui attend encore.
+    useEffect(() => {
+        const onLeave = () => { if (pendingRef.current) flush(); };
+        window.addEventListener('beforeunload', onLeave);
+        return () => window.removeEventListener('beforeunload', onLeave);
+    }, [flush]);
 
     const touch = (nextLignes, nextNotes, nextOuverture = ouverture) => {
-        setLignes(nextLignes); setNotes(nextNotes); setOuverture(nextOuverture);
-        writeDraft(key, { lignes: nextLignes, notes: nextNotes, ouverture: nextOuverture });
-        setHasDraft(true);
+        if (loadingDraft) return;
+        const lines = nextLignes.slice(0, MAX_DRAFT_LINES);
+        setLignes(lines); setNotes(nextNotes); setOuverture(nextOuverture);
+        pendingRef.current = { key, lignes: lines, notes: nextNotes, ouverture: nextOuverture };
+        clearTimeout(timerRef.current);
+        if (saveState === 'conflict') return;                // en attente de la décision de l'admin
+        setSaveState('pending');
+        timerRef.current = setTimeout(flush, SAVE_DELAY);
+    };
+    const hasDraft = !!draftMeta || saveState === 'pending' || saveState === 'saving';
+
+    // Conflit : reprendre la version de l'autre admin, ou garder la nôtre.
+    const takeTheirs = () => {
+        if (!conflict) return;
+        basesRef.current[key] = conflict.majLe;
+        pendingRef.current = null;
+        setLignes(conflict.lignes); setNotes(conflict.notes); setOuverture(conflict.ouverture);
+        setDraftMeta({ majLe: conflict.majLe, majPar: conflict.majPar });
+        setConflict(null);
+        setSaveState('saved');
+    };
+    const keepMine = () => {
+        if (!conflict) return;
+        basesRef.current[key] = conflict.majLe;
+        setConflict(null);
+        flush();
     };
 
     const sums = totals(lignes, ouverture);
@@ -471,8 +574,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         setBusy(true);
         try {
             await publishAccounts(key, { lignes, notes, soldeOuverture: ouverture }, adminName);
-            clearDraft(key);
-            setHasDraft(false);
+            await dropDraft();
             showNotification(`Comptes du ${quarterLabel(key)} publiés.`, 'check-circle');
             if (onLogAction) onLogAction('Comptes trimestriels publiés', `${quarterLabel(key)} · ouverture ${formatMoney(sums.ouverture)} · recettes ${formatMoney(sums.recettes)} · dépenses ${formatMoney(sums.depenses)} · clôture ${formatMoney(sums.cloture)}`);
             onSaved();
@@ -482,11 +584,15 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     };
 
     const unpublish = async () => {
-        if (!window.confirm(`Retirer les comptes du ${quarterLabel(key)} de la page publique ?`)) return;
+        if (!window.confirm(`Retirer les comptes du ${quarterLabel(key)} de la page publique ? Les chiffres ne sont pas supprimés : ils repassent en brouillon, que vous pourrez modifier puis republier.`)) return;
         setBusy(true);
         try {
+            // Les chiffres passent en brouillon AVANT d'être retirés de la page publique : si l'enregistrement du brouillon échoue, rien n'est retiré et rien ne se perd.
+            pendingRef.current = { key, lignes, notes, ouverture };
+            await flush();
+            if (pendingRef.current) throw new Error("Le brouillon n'a pas pu être enregistré : rien n'a été retiré de la page publique.");
             await unpublishAccounts(key);
-            showNotification('Comptes retirés de la page publique.', 'info');
+            showNotification('Comptes retirés de la page publique : ils sont repassés en brouillon.', 'info');
             if (onLogAction) onLogAction('Comptes trimestriels retirés', quarterLabel(key));
             onSaved();
         } catch (error) {
@@ -494,7 +600,24 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         } finally { setBusy(false); }
     };
 
-    const discardDraft = () => { clearDraft(key); setHasDraft(false); setLignes((published?.lignes || []).map((l) => ({ ...l, montant: String(l.montant) }))); setNotes(published?.notes || ''); setOuverture(published?.soldeOuverture ? String(published.soldeOuverture) : ''); };
+    // Le brouillon est supprimé de la base (après la fin d'un éventuel enregistrement en cours, pour ne pas le voir revenir).
+    async function dropDraft() {
+        pendingRef.current = null;
+        clearTimeout(timerRef.current);
+        await queueRef.current;
+        try { await deleteDraft(key); } catch (error) { console.warn('Brouillon non supprimé :', error?.message || error); }
+        clearLocalDraft(key);
+        basesRef.current[key] = null;
+        setDraftMeta(null);
+        setConflict(null);
+        setSaveState('idle');
+    }
+
+    const discardDraft = async () => {
+        if (!window.confirm('Abandonner le brouillon ? Il sera supprimé pour tous les administrateurs.')) return;
+        setBusy(true);
+        try { await dropDraft(); fromPublished(); } finally { setBusy(false); }
+    };
 
     const publishedKeys = Object.keys(data.comptes).sort().reverse();
 
@@ -502,7 +625,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         <>
             <p className="text-muted">
                 Un établissement public publie les éléments de sa comptabilité à la fin de chaque trimestre (Code du Gouvernement, art. 327). Les lignes liées à une enquête
-                pénale peuvent être anonymisées (regroupez-les sous un libellé générique comme « Dépenses d'enquête »). Le brouillon reste dans votre navigateur tant que vous ne publiez pas.
+                pénale peuvent être anonymisées (regroupez-les sous un libellé générique comme « Dépenses d'enquête »). Ce que vous saisissez est enregistré automatiquement comme <strong>brouillon</strong> (visible des seuls administrateurs, sur tous vos appareils) : rien n'est public tant que vous ne cliquez pas sur « Publier les comptes ».
             </p>
             <div className="d-flex flex-wrap gap-2 align-items-end mb-3">
                 <Form.Group><Form.Label>Année</Form.Label>
@@ -523,10 +646,30 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                     {published ? <Badge bg="success">Publié le {formatDate(published.publieLe)}</Badge> : <Badge bg="secondary">Non publié</Badge>}
                     {hasDraft && <Badge bg="warning" text="dark" className="ms-1">Brouillon non publié</Badge>}
                 </div>
+                <div className="pb-2">
+                    {loadingDraft && <span className="tm-draft-state"><Spinner as="span" animation="border" size="sm" />Chargement du brouillon…</span>}
+                    {!loadingDraft && (saveState === 'pending' || saveState === 'saving') && <span className="tm-draft-state"><Spinner as="span" animation="border" size="sm" />Enregistrement du brouillon…</span>}
+                    {!loadingDraft && saveState === 'saved' && draftMeta && <span className="tm-draft-state saved"><i className="fas fa-check"></i>Brouillon enregistré à {new Date(draftMeta.majLe).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>}
+                    {!loadingDraft && saveState === 'idle' && draftMeta && <span className="tm-draft-state">Brouillon de {draftMeta.majPar || 'un administrateur'}, enregistré le {formatDate(draftMeta.majLe)}</span>}
+                    {!loadingDraft && saveState === 'error' && (
+                        <span className="tm-draft-state error"><i className="fas fa-triangle-exclamation"></i>Brouillon non enregistré
+                            <Button size="sm" variant="outline-danger" onClick={() => { setSaveState('pending'); flush(); }}>Réessayer</Button></span>
+                    )}
+                </div>
             </div>
+            {saveState === 'conflict' && conflict && (
+                <Alert variant="warning" className="py-2">
+                    <strong>{conflict.majPar || 'Un autre administrateur'}</strong> a modifié ce brouillon le {formatDate(conflict.majLe)}. Vos dernières modifications ne sont pas encore enregistrées.
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                        <Button size="sm" variant="outline-secondary" onClick={takeTheirs}>Reprendre sa version</Button>
+                        <Button size="sm" variant="warning" onClick={keepMine}>Garder la mienne (écraser la sienne)</Button>
+                    </div>
+                </Alert>
+            )}
             <QuarterCalendar year={year} comptes={data.comptes} onPick={(q) => setQuarter(q)} selected={quarter} />
             {publishedKeys.length > 0 && <small className="text-muted d-block mb-2">Déjà publiés : {publishedKeys.map(quarterLabel).join(' · ')}.</small>}
 
+            <fieldset className="tm-fieldset" disabled={loadingDraft}>
             <div className="tm-opening">
                 <Form.Group>
                     <Form.Label>Solde d'ouverture <small className="text-muted">(solde au début du trimestre ; à renseigner au moins pour le premier, négatif possible)</small></Form.Label>
@@ -576,13 +719,14 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                 <Form.Label>Notes <small className="text-muted">(facultatif, publiées avec les comptes)</small></Form.Label>
                 <Form.Control as="textarea" rows={2} value={notes} onChange={(e) => touch(lignes, e.target.value)} placeholder="ex. Les dépenses liées à une enquête pénale sont regroupées sous « Dépenses d'enquête »." />
             </Form.Group>
+            </fieldset>
 
             {!isQuarterOver(key) && <Alert variant="info" className="py-2 small">Ce trimestre n'est pas terminé : les comptes se publient en principe à sa fin.</Alert>}
 
             <div className="d-flex flex-wrap gap-2">
-                <Button variant="primary" onClick={publish} disabled={busy || lignes.length === 0}>{busy ? <Spinner as="span" animation="border" size="sm" /> : (published ? 'Mettre à jour la publication' : 'Publier les comptes')}</Button>
+                <Button variant="primary" onClick={publish} disabled={busy || loadingDraft || lignes.length === 0}>{busy ? <Spinner as="span" animation="border" size="sm" /> : (published ? 'Mettre à jour la publication' : 'Publier les comptes')}</Button>
                 {hasDraft && <Button variant="outline-secondary" onClick={discardDraft} disabled={busy}>Abandonner le brouillon</Button>}
-                {published && <Button variant="outline-danger" onClick={unpublish} disabled={busy}>Retirer de la page publique</Button>}
+                {published && <Button variant="outline-danger" onClick={unpublish} disabled={busy || loadingDraft} title="Retire les comptes de la page publique et les remet en brouillon (rien n'est supprimé)">Retirer de la page publique</Button>}
             </div>
         </>
     );

@@ -6,9 +6,9 @@
 //
 // Stockage : adminSettings/transparence (lecture publique, écriture admin : voir database.rules.json)
 //   { direction: { nom, fonction, contact }, equipe: [{ nom, fonction, contact }], contactDemandes, comptes: { 'AAAA-Tn': { periode, publieLe, publiePar, soldeOuverture, lignes: [{ type, libelle, montant }], notes } } }
-// Seuls les comptes PUBLIÉS sont enregistrés (la lecture du nœud étant publique, un brouillon n'y serait pas privé) : le brouillon d'un trimestre reste
-// dans le navigateur de l'admin (voir TransparencyManager).
-import { ref, get, set, update, remove } from 'firebase/database';
+// Seuls les comptes PUBLIÉS sont enregistrés ici (la lecture du nœud étant publique, un brouillon n'y serait pas privé) : le brouillon d'un trimestre vit
+// dans un nœud réservé aux admins, brouillonsTransparence (voir plus bas).
+import { ref, get, set, update, remove, runTransaction } from 'firebase/database';
 import { database } from '../firebase';
 import { parseAmount } from './amounts';
 
@@ -221,6 +221,59 @@ export const publishAccounts = async (key, { lignes, notes, soldeOuverture }, by
 export const unpublishAccounts = async (key) => {
     if (!parseQuarterKey(key)) throw new Error('Trimestre invalide.');
     await remove(ref(database, `${TRANSPARENCY_PATH}/comptes/${key}`));
+};
+
+// ───────────────────────────── Brouillon des comptes (persistant, réservé aux admins) ─────────────────────────────
+// brouillonsTransparence/{AAAA-Tn}: { lignes: [{ type, libelle, montant }], notes, ouverture, majLe, majPar } : un brouillon par trimestre, enregistré au fil de
+// la saisie et visible des seuls admins (le nœud public adminSettings/transparence ne peut pas le porter). Les montants restent du TEXTE tant qu'on n'a pas
+// publié : une saisie à moitié finie (montant vide, libellé manquant) est permise dans un brouillon, jamais à la publication (validateLines).
+export const DRAFT_PATH = 'brouillonsTransparence';
+export const MAX_DRAFT_LINES = 100;
+
+const draftRef = (key) => ref(database, `${DRAFT_PATH}/${key}`);
+
+export const normalizeDraft = (raw) => ({
+    lignes: asArray(raw?.lignes).slice(0, MAX_DRAFT_LINES).map((line) => ({
+        type: line?.type === 'depense' ? 'depense' : 'recette',
+        libelle: String(line?.libelle ?? '').slice(0, 120),
+        montant: String(line?.montant ?? '').slice(0, 30),
+    })),
+    notes: String(raw?.notes ?? '').slice(0, 1500),
+    ouverture: String(raw?.ouverture ?? '').slice(0, 30),
+    majLe: Number(raw?.majLe) || 0,
+    majPar: String(raw?.majPar ?? ''),
+});
+
+export const isEmptyDraft = (draft) => (draft.lignes || []).length === 0 && !String(draft.notes || '').trim() && !String(draft.ouverture || '').trim();
+
+// Brouillon enregistré du trimestre, ou null.
+export const loadDraft = async (key) => {
+    if (!parseQuarterKey(key)) return null;
+    const snap = await get(draftRef(key));
+    return snap.exists() ? normalizeDraft(snap.val()) : null;
+};
+
+// Enregistre le brouillon du trimestre (un brouillon vide est supprimé). `baseMajLe` : date du brouillon tel que cette page l'a chargé ou enregistré en dernier ;
+// si quelqu'un d'autre l'a modifié depuis, rien n'est écrasé : l'erreur porte `conflict` (sa version). Retourne le brouillon enregistré, ou null s'il a été supprimé.
+export const saveDraft = async (key, draft, byName, baseMajLe = null) => {
+    if (!parseQuarterKey(key)) throw new Error('Trimestre invalide.');
+    const clean = normalizeDraft(draft);
+    const payload = isEmptyDraft(clean) ? null : { ...clean, majLe: Date.now(), majPar: String(byName || '').slice(0, 120) };
+    const result = await runTransaction(draftRef(key), (current) => {
+        if (current && (Number(current.majLe) || 0) > (Number(baseMajLe) || 0)) return undefined; // modifié par un autre depuis notre dernière lecture
+        return payload;
+    });
+    if (!result.committed) {
+        const error = new Error('Ce brouillon a été modifié par un autre administrateur.');
+        error.conflict = normalizeDraft(result.snapshot.val());
+        throw error;
+    }
+    return payload;
+};
+
+export const deleteDraft = async (key) => {
+    if (!parseQuarterKey(key)) return;
+    await remove(draftRef(key));
 };
 
 // Recettes tirées des factures payées dans le trimestre (admins : la lecture de tous les patients leur est ouverte). Retourne { montant, count }.

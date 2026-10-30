@@ -39,8 +39,20 @@
 .tm-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .tm-line { display: flex; flex-wrap: wrap; gap: 6px; }
 .tm-line > .form-control { flex: 1 1 200px; }
-.tm-label-combo { flex: 1 1 280px; width: auto; }
+/* Libellé d'une ligne : le champ et le bouton « liste » sur UNE seule ligne (le thème admin impose 100 % de large aux champs, ce qui les faisait passer à la ligne) */
+.tm-line .tm-label-combo { flex: 1 1 280px; width: auto; min-width: 0; display: flex; flex-wrap: nowrap; align-items: stretch; }
+.tm-line .tm-label-combo > .form-control { flex: 1 1 auto; width: 1% !important; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.tm-line .tm-label-combo > .dropdown { flex: 0 0 auto; display: flex; }
+.tm-line .tm-label-combo > .dropdown > .btn { margin-left: -1px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .tm-label-combo .dropdown-menu { max-height: 280px; overflow-y: auto; }
+
+/* Zone de saisie des comptes : désactivée pendant le chargement du brouillon, sans le cadre d'un fieldset */
+.tm-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+/* Brouillon des comptes : état de l'enregistrement */
+.tm-draft-state { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.82rem; color: #8b949e; }
+.tm-draft-state.saved { color: #3fb950; }
+.tm-draft-state.error { color: #f85149; }
 .tm-opening { margin-bottom: 14px; }
 .tm-totals { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 10px 12px; margin-bottom: 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
 
