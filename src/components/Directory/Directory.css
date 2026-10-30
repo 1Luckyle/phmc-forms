@@ -24,3 +24,4 @@
 .dir-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 0 100%; }
 .dir-chips:empty { display: none; }
 .dir-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 0 100%; }
+.dir-views { margin-bottom: 12px; }

@@ -19,6 +19,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { logClientError } from './utils/activityLog';
 import { startPriceSync } from './utils/pricing';
+import { startCustomRolesSync } from './utils/customRoles';
 import ExportProgressModal from './components/ExportProgressModal';
 
 // --- START: Fallback Error Reporting ---
@@ -219,6 +220,7 @@ const Root = () => {
 };
 
 startPriceSync(); // tarifs des formulaires (Boîte à outils → Comptabilité → Tarifs des formulaires)
+startCustomRolesSync(); // rôles du personnel créés dans l'interface (ajout d'un poste de recrutement) : ajoutés aux rôles d'origine
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(

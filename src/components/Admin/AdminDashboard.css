@@ -1018,7 +1018,10 @@
 .adm-price-info strong { color: #f0f6fc; }
 .adm-price-info small { color: #b1bac4; }
 .adm-price-input { display: flex; align-items: center; gap: 10px; }
-.adm-price-input .input-group { width: 190px; }
+/* Montant et devise sur la même ligne (le thème impose 100 % de large aux champs, ce qui renvoyait le « $ » sous le montant) */
+.adm-price-input .input-group { width: 190px; flex-wrap: nowrap; }
+.adm-price-input .input-group > .form-control { width: 1% !important; min-width: 0; flex: 1 1 auto; }
+.adm-price-input .input-group > .input-group-text { flex: 0 0 auto; }
 .adm-price-input .form-control, .adm-price-input .input-group-text { background: #161b22; color: #f0f6fc; border-color: #484f58; }
 .adm-price-input .form-control { text-align: right; font-weight: 600; }
 .adm-price-reset { padding: 3px 10px; font-size: 0.8rem; color: #79c0ff; background: none; border: 0; cursor: pointer; white-space: nowrap; }

@@ -31,7 +31,9 @@ import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 import InternalRecruitmentManager from './InternalRecruitmentManager';
+import { loadSalaryGrid, echelonsFor, formatEchelonRates } from '../../utils/salaryGrid';
 import '../Cctv/CctvRequests.css';
+import './Recruitment.css';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -67,6 +69,21 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     const config = category ? CATEGORY_BY_KEY[category] : null;
+
+    // Grille salariale : l'échelon d'un poste s'affiche avec ses montants, à côté du rôle.
+    const [grid, setGrid] = useState(null);
+    useEffect(() => {
+        if (!show) return undefined;
+        let cancelled = false;
+        loadSalaryGrid().then((loaded) => { if (!cancelled) setGrid(loaded); });
+        return () => { cancelled = true; };
+    }, [show, positions]);
+    const echelonLabelOf = (position) => {
+        if (!position.echelon) return null;
+        const found = echelonsFor(grid, position.role).find((e) => e.libelle === position.echelon);
+        const rates = found ? formatEchelonRates(found) : '';
+        return <> · Échelon : <strong style={{ color: '#c9d1d9' }}>{position.echelon}</strong>{rates ? ` (${rates})` : ''}</>;
+    };
 
     const loadPositions = useCallback(async () => {
         if (!config) { setPositions({}); return; }
@@ -267,17 +284,19 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
                                     {isLoading ? <Spinner animation="border" /> : Object.keys(positions).length > 0 ? (
                                         <div className="list-group mb-3">
                                             {Object.entries(positions).map(([key, position]) => (
-                                                <div key={key} className="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2"
+                                                <div key={key} className="list-group-item rm-position-row"
                                                     style={{ backgroundColor: '#161b22', color: '#c9d1d9', borderColor: '#30363d' }}>
-                                                    <div>
+                                                    <div className="rm-position-info">
                                                         {position.nom || key} :{' '}
                                                         <strong style={{ color: isPositionOpen(position) ? '#3fb950' : '#f85149' }}>{position.statut || 'N/A'}</strong>
                                                         <br />
                                                         <small style={{ color: '#8b949e' }}>
-                                                            Rôle du personnel : {position.role || <em>non défini</em>} · Clé BD : {key}
+                                                            Rôle du personnel : {position.role || <em>non défini</em>}
+                                                            {position.role && echelonLabelOf(position)}
+                                                            {' '}· Clé BD : {key}
                                                         </small>
                                                     </div>
-                                                    <div className="d-flex gap-2">
+                                                    <div className="rm-position-actions">
                                                         {/* Sensible (change l'identifiant du poste) : réservé aux admins. */}
                                                         {isAdmin && (
                                                             <Button variant="outline-warning" size="sm" disabled={isUpdating}

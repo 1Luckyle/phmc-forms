@@ -23,6 +23,7 @@ export const normalizeContractCandidate = (raw) => {
         candidatureId: source.candidatureId ?? source.applicationId ?? null,
         poste: source.poste ?? source.position ?? null,
         role: source.role ? normalizeRank(source.role) : null,
+        echelon: source.echelon ? String(source.echelon) : null,
     };
 };
 
@@ -35,7 +36,7 @@ export async function loadContractCandidates() {
     return merged;
 }
 
-export async function setContractCandidate(uid, { byUid, byName, applicationId = null, position = null, role = null }) {
+export async function setContractCandidate(uid, { byUid, byName, applicationId = null, position = null, role = null, echelon = null }) {
     await set(ref(database, `${NEW_NODE}/${uid}`), {
         definiPar: byUid || null,
         definiParNom: byName || null,
@@ -44,6 +45,8 @@ export async function setContractCandidate(uid, { byUid, byName, applicationId =
         poste: position,
         // Rôle du personnel relié au poste (référentiel ranks.js), pour pré-remplir contrat et fiche.
         role,
+        // Échelon de la grille relié au poste (libellé), pour pré-remplir le contrat.
+        echelon,
     });
 }
 

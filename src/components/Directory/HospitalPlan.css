@@ -1,0 +1,59 @@
+/* Plan de l'hôpital : bannières d'étage rouges comme sur la signalétique du PHMC (l'étage d'entrée est en orange), pièces classées par niveau d'accès */
+.hp { color: #c9d1d9; }
+.hp-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+.hp-search { flex: 1 1 260px; max-width: 460px; padding: 7px 12px; color: #f0f6fc; background: #161b22; border: 1px solid #30363d; border-radius: 6px; }
+.hp-search:focus { outline: none; border-color: #58a6ff; }
+.hp-link { color: #79c0ff; background: none; border: 0; cursor: pointer; white-space: nowrap; }
+.hp-link:disabled { color: #6e7681; cursor: default; }
+.hp-link:hover:not(:disabled) { text-decoration: underline; }
+.hp-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.hp-chip {
+    --c: #8b949e; padding: 4px 12px; font-size: 0.82rem; color: #c9d1d9; background: transparent; border: 1px solid #30363d; border-radius: 14px; cursor: pointer;
+}
+.hp-chip i { color: var(--c); }
+.hp-chip:hover { border-color: var(--c); }
+.hp-chip.on { color: #fff; background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); }
+.hp-count { margin-left: 4px; padding: 0 6px; font-size: 0.72rem; background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
+.hp-help { margin: 0 0 14px; color: #8b949e; font-size: 0.78rem; line-height: 1.5; }
+.hp-help span { display: inline-block; margin-right: 12px; }
+.hp-empty { color: #8b949e; }
+
+.hp-floors { display: flex; flex-direction: column; gap: 8px; }
+.hp-floor { --band: #c0222a; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; background: #0d1117; }
+.hp-floor.entree { --band: #e0711a; }
+.hp-banner {
+    display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; width: 100%; padding: 12px 16px; color: #fff; text-align: left;
+    background: var(--band); border: 0; cursor: pointer;
+}
+.hp-banner:hover { filter: brightness(1.08); }
+.hp-level { display: inline-flex; align-items: center; gap: 6px; font-size: 1.35rem; font-weight: 700; }
+.hp-level-arrow { font-size: 0.7rem; opacity: 0.85; }
+.hp-name { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.hp-meta { display: inline-flex; align-items: center; gap: 12px; font-size: 0.8rem; white-space: nowrap; }
+.hp-entry { padding: 1px 9px; font-weight: 700; color: #7a3a07; background: #fff; border-radius: 10px; }
+.hp-total { opacity: 0.9; }
+
+.hp-body { padding: 12px 16px 16px; }
+.hp-resume { margin: 0 0 12px; color: #8b949e; font-size: 0.88rem; }
+.hp-section + .hp-section { margin-top: 14px; }
+.hp-section h4 { margin: 0 0 6px; padding-bottom: 4px; font-size: 0.95rem; color: #f0f6fc; border-bottom: 1px solid #30363d; }
+.hp-note { margin: 0 0 8px; color: #e3b341; font-size: 0.82rem; }
+.hp-rooms, .hp-sub { margin: 0; padding: 0; list-style: none; }
+.hp-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 6px 14px; }
+.hp-rooms > li { --c: #8b949e; padding: 6px 10px; background: #161b22; border-left: 3px solid var(--c); border-radius: 4px; }
+.hp-room { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; }
+.hp-room-name { flex: 1 1 180px; min-width: 0; color: #e6edf3; overflow-wrap: anywhere; }
+.hp-room-note { display: block; margin-top: 2px; color: #8b949e; }
+.hp-sub { margin-top: 4px; padding-left: 12px; font-size: 0.84rem; color: #b1bac4; }
+.hp-sub li { display: flex; align-items: center; gap: 8px; }
+.hp-sub li::before { content: '↳'; color: #6e7681; }
+.hp-badge {
+    --c: #8b949e; display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px; font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+    color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); border-radius: 10px;
+}
+
+@media (max-width: 575px) {
+    .hp-banner { grid-template-columns: 52px 1fr; }
+    .hp-meta { grid-column: 1 / -1; justify-content: flex-end; }
+    .hp-rooms { grid-template-columns: minmax(0, 1fr); }
+}

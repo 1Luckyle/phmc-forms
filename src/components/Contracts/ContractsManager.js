@@ -23,7 +23,8 @@ import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, ran
 import { normalizeRank, getRoleInfo, canManageDiscipline } from '../../constants/ranks';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { loadUserCreations } from '../../utils/userCreations';
-import { loadSalaryGrid, echelonsFor, formatAmount } from '../../utils/salaryGrid';
+import { loadSalaryGrid, echelonsFor, rateOf, formatRate, formatEchelonRates } from '../../utils/salaryGrid';
+import { HOSPITAL_SERVICES, PRIME_CRITERIA, parseServices, joinServices } from '../../constants/contractOptions';
 import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import {
@@ -32,7 +33,7 @@ import {
 } from '../../utils/contracts';
 import {
     CONTRACT_TYPE_INFO, isEmploymentType, emptyContractFields, visibleFields, validateDocFields, buildContractBb, formatDateFr,
-    formatTimestampDateFr, acceptanceKind, SANCTIONS, FIN_MOTIFS, isDisciplinaryType,
+    formatTimestampDateFr, acceptanceKind, SANCTIONS, FIN_MOTIFS, isDisciplinaryType, RATE_MODE_LABELS, DEFAULT_RATE_MODE,
 } from '../../utils/contractDocs';
 
 const TYPE_GROUPS = [
@@ -227,39 +228,100 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
     });
 
     // Échelons publiés pour le grade choisi : choisir un échelon préremplit la rémunération (modifiable).
+    // Toute fonction a un échelon défini : il est sélectionné d'office (celui du poste de recrutement du candidat, sinon le premier), et fixe la rémunération
+    // dans le mode choisi (à l'heure ou à la semaine).
+    const payFields = employmentType && type !== 'stage';
     const gridEchelons = useMemo(() => echelonsFor(grid, fields.role), [grid, fields.role]);
+    const rateText = (echelon, mode) => (rateOf(echelon, mode) !== null ? formatRate(rateOf(echelon, mode), mode) : '');
+
+    useEffect(() => {
+        if (readOnly || !payFields || gridEchelons.length === 0) return;
+        setFields((prev) => {
+            if (gridEchelons.some((e) => e.libelle === prev.echelon)) return prev;
+            // Un brouillon enregistré avec un échelon hors grille garde sa valeur tant que son grade ne change pas.
+            if (prev.echelon && contract && prev.echelon === contract.champs?.echelon && prev.role === contract.champs?.role) return prev;
+            const wanted = employee?.echelon && prev.role === employee.role ? gridEchelons.find((e) => e.libelle === employee.echelon) : null;
+            const chosen = wanted || gridEchelons[0];
+            const mode = prev.modeRemuneration || DEFAULT_RATE_MODE;
+            return { ...prev, echelon: chosen.libelle, remuneration: rateText(chosen, mode) };
+        });
+    }, [readOnly, payFields, gridEchelons, contract, employee]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const pickEchelon = (libelle) => setFields((prev) => {
         const found = gridEchelons.find((e) => e.libelle === libelle);
-        return { ...prev, echelon: libelle, ...(found ? { remuneration: formatAmount(found.montant, grid.unite) } : {}) };
+        return { ...prev, echelon: libelle, ...(found ? { remuneration: rateText(found, prev.modeRemuneration || DEFAULT_RATE_MODE) } : {}) };
+    });
+    const pickRateMode = (mode) => setFields((prev) => {
+        const found = gridEchelons.find((e) => e.libelle === prev.echelon);
+        return { ...prev, modeRemuneration: mode, ...(found ? { remuneration: rateText(found, mode) } : {}) };
     });
     const gridWarning = useMemo(() => {
         const found = gridEchelons.find((e) => e.libelle === fields.echelon);
-        if (!found || !fields.remuneration) return '';
-        const expected = formatAmount(found.montant, grid.unite);
+        if (!found) return '';
+        const mode = fields.modeRemuneration || DEFAULT_RATE_MODE;
+        const amount = rateOf(found, mode);
+        if (amount === null) return `La grille publiée n'indique pas de montant ${mode === 'semaine' ? 'à la semaine' : 'à l\'heure'} pour cet échelon : saisissez la rémunération ou changez de mode.`;
+        if (!fields.remuneration) return '';
+        const expected = formatRate(amount, mode);
         return fields.remuneration.trim() === expected ? '' : `La grille publiée indique « ${expected} » pour cet échelon : la rémunération du contrat diffère.`;
-    }, [gridEchelons, grid, fields.echelon, fields.remuneration]);
+    }, [gridEchelons, fields.echelon, fields.modeRemuneration, fields.remuneration]);
+
+    const toggleService = (key, name, checked) => setFields((prev) => {
+        const current = parseServices(prev[key]);
+        return { ...prev, [key]: joinServices(checked ? [...current, name] : current.filter((s) => s !== name)) };
+    });
+    const addCriterion = (criterion) => setFields((prev) => {
+        const current = String(prev.primeCriteres || '').trim();
+        if (current.split('\n').map((line) => line.trim()).includes(criterion)) return prev;
+        return { ...prev, primeCriteres: current ? `${current}\n${criterion}` : criterion };
+    });
 
     const renderField = (field) => {
         const value = fields[field.key] ?? '';
         const common = { value, onChange: set(field.key) };
         let control;
-        if (field.key === 'echelon' && gridEchelons.length > 0) {
-            control = (
-                <Form.Select value={value} onChange={(e) => pickEchelon(e.target.value)}>
-                    <option value="">Aucun échelon</option>
-                    {gridEchelons.map((e) => <option key={e.libelle} value={e.libelle}>{e.libelle} — {formatAmount(e.montant, grid.unite)}</option>)}
-                    {value && !gridEchelons.some((e) => e.libelle === value) && <option value={value}>{value} (hors grille)</option>}
-                </Form.Select>
-            );
-            return (
-                <Form.Group key={field.key} className={field.half ? 'contract-field-half' : ''}>
-                    <Form.Label>{field.label}<small className="text-muted"> (facultatif)</small></Form.Label>
-                    {control}
-                    <Form.Text className="text-muted d-block">Échelons publiés pour ce grade : le choix préremplit la rémunération.</Form.Text>
-                </Form.Group>
-            );
-        }
         switch (field.type) {
+            case 'echelon':
+                control = gridEchelons.length > 0 ? (
+                    <Form.Select value={value} onChange={(e) => pickEchelon(e.target.value)}>
+                        {gridEchelons.map((e) => <option key={e.libelle} value={e.libelle}>{e.libelle} — {formatEchelonRates(e)}</option>)}
+                        {value && !gridEchelons.some((e) => e.libelle === value) && <option value={value}>{value} (hors grille)</option>}
+                    </Form.Select>
+                ) : <Form.Control {...common} placeholder={fields.role ? 'Aucun échelon publié pour ce grade' : 'Choisissez d\'abord le grade'} />;
+                break;
+            case 'rateMode':
+                control = (
+                    <Form.Select value={fields.modeRemuneration || DEFAULT_RATE_MODE} onChange={(e) => pickRateMode(e.target.value)}>
+                        {Object.entries(RATE_MODE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                    </Form.Select>
+                );
+                break;
+            case 'services': {
+                const selected = parseServices(value);
+                const extra = selected.filter((s) => !HOSPITAL_SERVICES.includes(s));   // texte libre d'un ancien document : conservé
+                control = (
+                    <div className="contract-services">
+                        {[...HOSPITAL_SERVICES, ...extra].map((name) => (
+                            <Form.Check
+                                key={name} type="checkbox" id={`service-${field.key}-${name}`} label={name}
+                                checked={selected.includes(name)} onChange={(e) => toggleService(field.key, name, e.target.checked)}
+                            />
+                        ))}
+                    </div>
+                );
+                break;
+            }
+            case 'criteres':
+                control = (
+                    <>
+                        <Form.Select className="mb-1" value="" onChange={(e) => { if (e.target.value) addCriterion(e.target.value); }}>
+                            <option value="">Ajouter un critère par défaut…</option>
+                            {PRIME_CRITERIA.map((criterion) => <option key={criterion} value={criterion}>{criterion}</option>)}
+                        </Form.Select>
+                        <Form.Control as="textarea" rows={3} {...common} placeholder={field.placeholder} />
+                    </>
+                );
+                break;
             case 'role':
                 control = (
                     <Form.Select {...common}>
@@ -513,6 +575,7 @@ const ContractsManager = ({ showNotification, scope = 'recruitment', initialQuer
                 badge: '',
                 poste: roleMap[c.uid].poste || '',
                 role: roleMap[c.uid].role || '',
+                echelon: roleMap[c.uid].echelon || '',
             })));
         } catch (err) {
             console.error('Chargement des contrats impossible :', err);

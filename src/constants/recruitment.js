@@ -97,6 +97,8 @@ export const normalizePosition = (raw, categoryKey, key = null) => {
         diplome: read('diplome', 'EduRequirement'),
         // Rôle du personnel obtenu à l'embauche (valeur du référentiel ranks.js) ; vide tant qu'aucun n'est choisi.
         role: pickText(source.role),
+        // Échelon de la grille salariale obtenu à l'embauche (libellé, ex. « Échelon 1 ») : se lit avec le rôle, pré-remplit le contrat.
+        echelon: pickText(source.echelon),
     };
 };
 
@@ -117,6 +119,7 @@ export const toLegacyPosition = (position, legacyGroup) => ({
     skill3: position.competence3,
     EduRequirement: position.diplome,
     ...(position.role ? { role: position.role } : {}),
+    ...(position.echelon ? { echelon: position.echelon } : {}),
 });
 
 // Poste à écrire dans un nœud FRANÇAIS (sans champ `cle`, qui n'est que la clé du nœud).

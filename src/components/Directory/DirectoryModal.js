@@ -1,6 +1,8 @@
 // src/components/Directory/DirectoryModal.js
 //
-// Annuaire du site, EN LECTURE SEULE, pour le personnel et les admins : la même vision que « Gestion des utilisateurs » du panneau
+// Onglet « Annuaire & plan de l'hôpital » de la Boîte à outils. Deux vues : l'annuaire du site, EN LECTURE SEULE, pour le personnel et les admins, et le plan de l'hôpital,
+// ouvert à tous (même sans connexion : sans droit sur l'annuaire, la fenêtre ne montre que le plan et ne lit aucune donnée de personne).
+// Annuaire du site : la même vision que « Gestion des utilisateurs » du panneau
 // admin, sans aucun outil de modification. Deux onglets : Personnel (rôle, ID employé, téléphone, Discord, droits) et Civils (nom et
 // ID patient seulement : e-mail, adresse et coordonnées des civils ne sont pas affichés).
 import React, { useEffect, useMemo, useState } from 'react';
@@ -17,6 +19,7 @@ import { STAFF_FAMILIES, familiesOfMember } from '../../constants/ranks';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { FilterChips, Pill } from '../Reports/ReportParts';
 import '../Cctv/CctvRequests.css';
+import HospitalPlan from './HospitalPlan';
 import './Directory.css';
 
 const FAMILY_COLORS = { soignant: '#3fb950', administration: '#58a6ff', polyvalent: '#d29922', dmec: '#a371f7' };
@@ -25,7 +28,7 @@ const nameOfCivilian = (civilian) => [civilian.firstName, civilian.middleName, c
 
 // Accès rapides (dont « Dossier disciplinaire » pour les admins, la Direction et le personnel administratif) : ouvrent l'outil correspondant déjà positionné sur la personne (comme si on ouvrait le menu et tapait son nom dans la
 // recherche). `access` dit lesquels l'utilisateur a le droit d'utiliser ; les callbacks viennent de la Boîte à outils.
-const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications, onOpenDiscipline }) => {
+const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'directory', access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications, onOpenDiscipline }) => {
     const { isAdmin, staffProfile } = useEmployeeAuth();
     // Coordonnées des civils (e-mail, téléphone, Discord, adresse) : admins, personnel soignant et personnel administratif seulement.
     const families = staffProfile ? familiesOfMember(staffProfile, staffProfile.type) : [];
@@ -33,6 +36,8 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
     // Adresse des membres du PERSONNEL : personnel administratif et admins seulement.
     const canSeeStaffAddress = !!isAdmin || families.includes('administration');
     const [tab, setTab] = useState('staff');
+    const [view, setView] = useState('directory');   // 'directory' | 'plan'
+    const showDirectoryView = canSeeDirectory && view === 'directory';
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [staff, setStaff] = useState([]);
@@ -46,8 +51,13 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
     const [family, setFamily] = useState('all');
     const [query, setQuery] = useState('');
 
+    // À l'ouverture : la vue demandée (le plan seul pour qui n'a pas accès à l'annuaire).
     useEffect(() => {
-        if (!show) return undefined;
+        if (show) setView(canSeeDirectory && initialView !== 'plan' ? 'directory' : 'plan');
+    }, [show, canSeeDirectory, initialView]);
+
+    useEffect(() => {
+        if (!show || !canSeeDirectory) return undefined;
         let cancelled = false;
         setLoading(true);
         setError('');
@@ -77,7 +87,7 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
             }
         })();
         return () => { cancelled = true; };
-    }, [show]);
+    }, [show, canSeeDirectory]);
 
     useEffect(() => {
         if (!show) return undefined;
@@ -112,7 +122,26 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
         <div className="dir-overlay" onClick={onHide}>
             <div className="dir-content" onClick={(event) => event.stopPropagation()}>
                 <button type="button" className="dir-close" onClick={onHide} aria-label="Fermer">&times;</button>
-                <h5 className="dir-title"><i className="fas fa-address-book me-2"></i>Annuaire</h5>
+                <h5 className="dir-title">
+                    <i className={`fas ${canSeeDirectory ? 'fa-address-book' : 'fa-map'} me-2`}></i>{canSeeDirectory ? 'Annuaire & plan de l\'hôpital' : 'Plan de l\'hôpital'}
+                </h5>
+                {canSeeDirectory && (
+                    <div className="cctv-tabs dir-views" role="tablist" aria-label="Vue">
+                        <button type="button" role="tab" aria-selected={view === 'directory'} className={view === 'directory' ? 'on' : ''} onClick={() => setView('directory')}>
+                            <i className="fas fa-address-book me-2"></i>Annuaire
+                        </button>
+                        <button type="button" role="tab" aria-selected={view === 'plan'} className={view === 'plan' ? 'on' : ''} onClick={() => setView('plan')}>
+                            <i className="fas fa-map me-2"></i>Plan de l'hôpital
+                        </button>
+                    </div>
+                )}
+                {!showDirectoryView && (
+                    <div className="dir-body">
+                        <p className="dir-sub">Ouvert à tous, même sans compte : étage par étage, les services, les pièces et qui peut y entrer.</p>
+                        <HospitalPlan />
+                    </div>
+                )}
+                {showDirectoryView && <>
                 <p className="dir-sub">
                     Consultation seule : personnel et comptes Civils du site. Aucune modification n'est possible ici.
                     {tab === 'civilians' && !canSeeContacts && " Les coordonnées des civils sont réservées au personnel soignant, au personnel administratif et aux admins."}
@@ -241,6 +270,7 @@ const DirectoryModal = ({ show, onHide, access = {}, onOpenSavedReports, onOpenP
                         )
                     )}
                 </div>
+                </>}
             </div>
         </div>,
         document.getElementById('modal-root')

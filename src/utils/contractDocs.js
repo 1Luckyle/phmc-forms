@@ -11,6 +11,7 @@
 //
 // Le contenu juridique (articles) est dans utils/contractClauses.js ; la mise en page BBCode dans phmc-bbcode-generators/generateContract.js.
 import { normalizeRank } from '../constants/ranks';
+import { joinServices } from '../constants/contractOptions';
 import generateContract from '../phmc-bbcode-generators/generateContract';
 import { composeContractBb } from './contractCompose';
 import { buildDocumentContent } from './contractClauses';
@@ -66,16 +67,33 @@ const f = (key, label, type = 'text', extra = {}) => ({ key, label, type, ...ext
 
 const isCdd = (champs, ctx) => (ctx?.refContract ? ctx.refContract.champs?.typeContrat === 'cdd' : false) || champs.typeContrat === 'cdd';
 
+// Modes de rémunération (mêmes clés que RATE_MODES de utils/salaryGrid.js, qui accède à Firebase et n'est donc pas importé ici).
+export const DEFAULT_RATE_MODE = 'heure';
+export const RATE_MODE_LABELS = { heure: 'À l\'heure', semaine: 'À la semaine' };
+
+// Service(s) d'affectation : facultatif, un ou plusieurs services de l'hôpital (sélecteur), stockés dans un seul texte séparé par « ; ».
+const SERVICES_FIELD = f('affectation', 'Service(s) / unité(s) d\'affectation', 'services', { help: 'Facultatif : laissez vide ou cochez un ou plusieurs services.' });
+
+// Rémunération d'un contrat de travail : l'échelon de la grille est OBLIGATOIRE (toute fonction a un échelon défini) ; il fixe le montant, à l'heure ou à la
+// semaine au choix. Deux primes facultatives (jamais pour une convention de stage, dont la gratification est à part).
+const PAY_FIELDS = [
+    f('echelon', 'Échelon de la grille salariale', 'echelon', { required: true, half: true, help: 'La grille est publiée par l\'employeur (Code du Gouvernement, art. 326).' }),
+    f('modeRemuneration', 'Rémunération', 'rateMode', { required: true, half: true }),
+    f('remuneration', 'Rémunération brute', 'text', { required: true, placeholder: 'ex. 4 500 $ de l\'heure', half: true, help: 'Préremplie par l\'échelon et le mode choisis ; modifiable.' }),
+    f('primeEmbauche', 'Prime à l\'embauche', 'text', { placeholder: 'ex. 5 000 $, versés en une fois à la prise de fonctions', half: true, help: 'Facultatif.' }),
+    f('primeObjectifs', 'Prime selon critères ou objectifs — montant', 'text', { placeholder: 'ex. 2 000 $ par trimestre', half: true, help: 'Facultatif.' }),
+    f('primeCriteres', 'Prime selon critères ou objectifs — critères', 'criteres', { placeholder: 'Critères ou objectifs fixés à l\'avance : choisissez-en dans la liste ou écrivez les vôtres', help: 'Obligatoire dès qu\'un montant est indiqué.' }),
+];
+
 const FIELDS = {
     cdi: [
         f('poste', 'Fonction exercée', 'text', { required: true, placeholder: 'ex. Médecin urgentiste', half: true }),
         f('role', 'Grade', 'role', { required: true, half: true }),
-        f('affectation', 'Service / unité d\'affectation', 'text', { placeholder: 'ex. Service des urgences', half: true }),
+        SERVICES_FIELD,
         f('responsable', 'Responsable hiérarchique', 'text', { half: true }),
         f('dateDebut', 'Date de prise d\'effet', 'date', { required: true, half: true }),
         f('essaiJours', 'Période d\'essai (jours)', 'number', { placeholder: '0 = aucune', help: 'Maximum 60 jours pour un CDI.', half: true }),
-        f('remuneration', 'Rémunération brute', 'text', { required: true, placeholder: 'ex. 85 $ de l\'heure', half: true }),
-        f('echelon', 'Échelon de la grille salariale', 'text', { placeholder: 'ex. Échelon 3', help: 'La grille est publiée par l\'employeur (Code du Gouvernement, art. 326).', half: true }),
+        ...PAY_FIELDS,
         f('horaires', 'Horaires / disponibilités', 'text', { placeholder: 'ex. 3 plages de 4 h par semaine, astreintes le week-end', half: true }),
         f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, help: 'Au-delà, l\'offre est caduque (Code Civil, art. 203).', half: true }),
         f('clausesParticulieres', 'Clauses particulières', 'textarea', { placeholder: 'Facultatif : mission spéciale, formation exigée, astreinte…' }),
@@ -83,14 +101,13 @@ const FIELDS = {
     cdd: [
         f('poste', 'Fonction exercée', 'text', { required: true, placeholder: 'ex. Infirmier(ère) de renfort', half: true }),
         f('role', 'Grade', 'role', { required: true, half: true }),
-        f('affectation', 'Service / unité d\'affectation', 'text', { half: true }),
+        SERVICES_FIELD,
         f('responsable', 'Responsable hiérarchique', 'text', { half: true }),
         f('dateDebut', 'Date de début', 'date', { required: true, half: true }),
         f('dateFin', 'Date de fin (terme)', 'date', { required: true, half: true }),
         f('motifCdd', 'Motif du recours au CDD', 'textarea', { required: true, placeholder: 'ex. Remplacement d\'un praticien absent ; renfort durant une campagne de vaccination' }),
         f('essaiJours', 'Période d\'essai (jours)', 'number', { placeholder: '0 = aucune', help: 'Maximum 30 jours et la moitié de la durée du contrat.', half: true }),
-        f('remuneration', 'Rémunération brute', 'text', { required: true, half: true }),
-        f('echelon', 'Échelon de la grille salariale', 'text', { half: true }),
+        ...PAY_FIELDS,
         f('horaires', 'Horaires / disponibilités', 'text', { half: true }),
         f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, half: true }),
         f('clausesParticulieres', 'Clauses particulières', 'textarea'),
@@ -98,7 +115,7 @@ const FIELDS = {
     stage: [
         f('poste', 'Intitulé du stage', 'text', { required: true, placeholder: 'ex. Stage d\'externat en médecine d\'urgence', half: true }),
         f('role', 'Grade du stagiaire', 'role', { required: true, half: true }),
-        f('affectation', 'Service d\'accueil', 'text', { half: true }),
+        { ...SERVICES_FIELD, label: 'Service(s) d\'accueil' },
         f('tuteur', 'Tuteur de stage', 'text', { required: true, placeholder: 'Nom et fonction du praticien qui encadre', half: true }),
         f('dateDebut', 'Date de début', 'date', { required: true, half: true }),
         f('dateFin', 'Date de fin', 'date', { required: true, half: true }),
@@ -115,7 +132,7 @@ const FIELDS = {
         f('motifAvenant', 'Raison de la modification', 'textarea', { required: true, placeholder: 'ex. Promotion au grade de Médecin Titulaire après évaluation favorable' }),
         f('nouveauPoste', 'Nouvelle fonction', 'text', { half: true }),
         f('nouveauRole', 'Nouveau grade', 'role', { half: true }),
-        f('nouvelleAffectation', 'Nouveau service d\'affectation', 'text', { half: true }),
+        f('nouvelleAffectation', 'Nouveau(x) service(s) d\'affectation', 'services', { half: true, help: 'Les services listés remplacent ceux du contrat.' }),
         f('nouvelleRemuneration', 'Nouvelle rémunération brute', 'text', { half: true }),
         f('nouveauxHoraires', 'Nouveaux horaires', 'text', { half: true }),
         f('nouveauResponsable', 'Nouveau responsable hiérarchique', 'text', { half: true }),
@@ -175,6 +192,7 @@ export const emptyContractFields = (typeKey = 'cdi') => {
     const champs = { typeContrat: CONTRACT_TYPES[typeKey] ? typeKey : 'cdi' };
     fieldsFor(champs.typeContrat).forEach((field) => { champs[field.key] = field.type === 'checkbox' ? false : ''; });
     if ('validiteOffreJours' in champs) champs.validiteOffreJours = '7';
+    if ('modeRemuneration' in champs) champs.modeRemuneration = DEFAULT_RATE_MODE;
     if (champs.typeContrat === 'fin') champs.preavisJours = '';
     if (champs.typeContrat === 'convocation') champs.lieuEntretien = 'Direction du Pillbox Hill Medical Center, Pillbox Hill';
     return champs;
@@ -229,6 +247,13 @@ export const validateDocFields = (typeKey, champsInput, ctx = {}, { forSend = fa
 
     if (typeKey === 'cdi' || typeKey === 'cdd' || typeKey === 'stage') {
         if (!champs.role) errors.push('Le grade est obligatoire.');
+        if (typeKey !== 'stage') {
+            if (!RATE_MODE_LABELS[champs.modeRemuneration]) errors.push('Choisissez une rémunération à l\'heure ou à la semaine.');
+            const hasPrimeAmount = String(champs.primeObjectifs || '').trim() !== '';
+            const hasPrimeCriteria = String(champs.primeCriteres || '').trim() !== '';
+            if (hasPrimeAmount && !hasPrimeCriteria) errors.push('Indiquez les critères ou objectifs de la prime : ils doivent être fixés à l\'avance.');
+            if (hasPrimeCriteria && !hasPrimeAmount) errors.push('Indiquez le montant de la prime selon critères ou objectifs, ou retirez ses critères.');
+        }
         if (typeKey === 'cdi') intField('essaiJours', 'Période d\'essai', { max: 60 });
         if (typeKey === 'cdd' || typeKey === 'stage') {
             const span = daysBetween(champs.dateDebut, champs.dateFin);
@@ -250,7 +275,7 @@ export const validateDocFields = (typeKey, champsInput, ctx = {}, { forSend = fa
         const changes = [];
         if (champs.nouveauPoste && champs.nouveauPoste.trim() !== (ref?.champs?.poste || '')) changes.push('fonction');
         if (champs.nouveauRole && normalizeRank(champs.nouveauRole) !== normalizeRank(ref?.champs?.role)) changes.push('grade');
-        if (champs.nouvelleAffectation && champs.nouvelleAffectation.trim() !== (ref?.champs?.affectation || '')) changes.push('affectation');
+        if (champs.nouvelleAffectation && joinServices(champs.nouvelleAffectation) !== joinServices(ref?.champs?.affectation)) changes.push('affectation');
         if (champs.nouvelleRemuneration && champs.nouvelleRemuneration.trim() !== (ref?.champs?.remuneration || '')) changes.push('rémunération');
         if (champs.nouveauxHoraires && champs.nouveauxHoraires.trim() !== (ref?.champs?.horaires || '')) changes.push('horaires');
         if (champs.nouveauResponsable && champs.nouveauResponsable.trim() !== (ref?.champs?.responsable || '')) changes.push('responsable');

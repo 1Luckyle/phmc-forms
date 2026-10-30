@@ -23,9 +23,10 @@
 .tp-num { text-align: right !important; white-space: nowrap; }
 /* Mêmes colonnes, aux mêmes largeurs, dans toutes les tables de la page (une table par famille de grades, une par trimestre) */
 .tp-table-grid, .tp-table-accounts { table-layout: fixed; min-width: 520px; }
-.tp-table-grid th:nth-child(1), .tp-table-grid td:nth-child(1) { width: 44%; }
-.tp-table-grid th:nth-child(2), .tp-table-grid td:nth-child(2) { width: 24%; }
-.tp-table-grid th:nth-child(3), .tp-table-grid td:nth-child(3) { width: 32%; }
+.tp-table-grid th:nth-child(1), .tp-table-grid td:nth-child(1) { width: 34%; }
+.tp-table-grid th:nth-child(2), .tp-table-grid td:nth-child(2) { width: 22%; }
+.tp-table-grid th:nth-child(3), .tp-table-grid td:nth-child(3) { width: 22%; }
+.tp-table-grid th:nth-child(4), .tp-table-grid td:nth-child(4) { width: 22%; }
 .tp-table-accounts th:nth-child(1), .tp-table-accounts td:nth-child(1) { width: 56%; }
 .tp-table-accounts th:nth-child(2), .tp-table-accounts td:nth-child(2) { width: 20%; }
 .tp-table-accounts th:nth-child(3), .tp-table-accounts td:nth-child(3) { width: 24%; }
@@ -38,7 +39,10 @@
 /* Éditeur admin */
 .tm-grade { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 0; }
 .tm-grade-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
-.tm-echelon { display: grid; grid-template-columns: 1fr 160px auto; gap: 6px; margin-bottom: 6px; }
+.tm-echelon { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(130px, 170px) minmax(140px, 180px) auto; gap: 6px; margin-bottom: 6px; align-items: center; }
+/* Montant et devise sur la même ligne (le thème impose 100 % de large aux champs, ce qui renvoyait l'unité sous le champ) */
+.tm-rate { flex-wrap: nowrap; }
+.tm-rate > .form-control { width: 1% !important; min-width: 0; flex: 1 1 auto; }
 .tm-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .tm-line { display: flex; flex-wrap: wrap; gap: 6px; }
 .tm-line > .form-control { flex: 1 1 200px; }
@@ -95,5 +99,6 @@
 }
 
 @media (max-width: 575px) {
-    .tm-echelon { grid-template-columns: 1fr 110px auto; }
+    .tm-echelon { grid-template-columns: 1fr 1fr; }
+    .tm-echelon > :first-child { grid-column: 1 / -1; }
 }

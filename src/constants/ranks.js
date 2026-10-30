@@ -120,12 +120,54 @@ Object.assign(LEGACY_RANK_MAP, {
 export const normalizeRank = (value) => LEGACY_RANK_MAP[value]?.to || value;
 
 export const ROLE_BY_VALUE = Object.fromEntries(ROLES.map((role) => [role.value, role]));
+// (ROLE_BY_VALUE, PHMC_RANKS, CORONER_RANKS et DOCTOR_RANKS sont tenus à jour EN PLACE par registerCustomRoles, plus bas.)
 export const getRoleInfo = (value) => ROLE_BY_VALUE[normalizeRank(value)] || null;
 
 // Listes à plat par liste du personnel (staff/phmc, staff/coroner), pour les sélecteurs existants.
 // Même forme qu'avant ({ label, value, badgePrefix }) + pole / filiere.
 export const PHMC_RANKS = ROLES.filter((role) => role.pole !== 'dmec');
 export const CORONER_RANKS = ROLES.filter((role) => role.pole === 'dmec');
+
+// ───────────────────────────── Rôles créés dans l'interface ─────────────────────────────
+// Un rôle peut être ajouté sans toucher au code (fenêtre d'ajout d'un poste de recrutement, voir utils/customRoles.js) : il vit dans la base
+// (adminSettings/rolesPersonnalises) et s'ajoute ICI, EN PLACE, aux listes ci-dessus (ROLES, ROLE_BY_VALUE, PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS) :
+// tout le reste de l'application, qui lit ces listes à l'affichage, le voit comme un rôle d'origine. Un rôle d'origine n'est jamais remplacé.
+const BUILT_IN_ROLES = [...ROLES];
+const BUILT_IN_ROLE_VALUES = new Set(BUILT_IN_ROLES.map((role) => role.value));
+
+const rebuildDerivedRoleLists = () => {
+    const replace = (target, values) => { target.length = 0; target.push(...values); };
+    replace(PHMC_RANKS, ROLES.filter((role) => role.pole !== 'dmec'));
+    replace(CORONER_RANKS, ROLES.filter((role) => role.pole === 'dmec'));
+    replace(DOCTOR_RANKS, ROLES.filter((role) => role.doctor).map((role) => role.value));
+    Object.keys(ROLE_BY_VALUE).forEach((key) => delete ROLE_BY_VALUE[key]);
+    ROLES.forEach((role) => { ROLE_BY_VALUE[role.value] = role; });
+};
+
+// `entries` : [{ value, pole, badgePrefix, filiere? }] (tout ce qui est en base). Remplace l'ensemble des rôles personnalisés précédemment enregistrés.
+// Chaque rôle est rangé après le dernier rôle de sa filière (à défaut, de sa famille), pour que listes et tris restent cohérents.
+export const registerCustomRoles = (entries = []) => {
+    ROLES.length = 0;
+    ROLES.push(...BUILT_IN_ROLES);        // on repart toujours des rôles d'origine : les personnalisés s'insèrent au milieu, une coupe à longueur fixe retirerait de vrais rôles
+    [...entries]
+        .filter((entry) => entry && entry.value && STAFF_FAMILIES[entry.pole] && !BUILT_IN_ROLE_VALUES.has(entry.value))
+        .sort((a, b) => String(a.value).localeCompare(String(b.value), 'fr'))
+        .forEach((entry) => {
+            if (ROLES.some((role) => role.value === entry.value)) return;
+            const filiere = String(entry.filiere || '').trim() || 'Autres';
+            const role = {
+                value: entry.value, label: entry.value, badgePrefix: String(entry.badgePrefix || '').toUpperCase(), pole: entry.pole, filiere, custom: true,
+                ...(entry.doctor ? { doctor: true } : {}),
+            };
+            let at = -1;
+            ROLES.forEach((existing, index) => { if (existing.pole === role.pole && existing.filiere === role.filiere) at = index; });
+            if (at === -1) ROLES.forEach((existing, index) => { if (existing.pole === role.pole) at = index; });
+            ROLES.splice(at === -1 ? ROLES.length : at + 1, 0, role);
+        });
+    rebuildDerivedRoleLists();
+};
+
+export const isCustomRole = (value) => !!ROLE_BY_VALUE[value]?.custom;
 
 // Rôle proposé par défaut à la création.
 export const DEFAULT_PHMC_RANK = 'Personnel Polyvalent';

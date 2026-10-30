@@ -10,15 +10,26 @@ import { database } from '../../firebase';
 import { ref, get } from "firebase/database";
 import ReactDOM from 'react-dom';
 import DebugFillButton from '../DebugFillButton';
-import { STAFF_FAMILIES, rolesByFiliere, normalizeRank } from '../../constants/ranks';
+import { STAFF_FAMILIES, ROLES, rolesByFiliere, normalizeRank } from '../../constants/ranks';
 import { STATUT_OUVERT, STATUT_FERME, makePositionKey } from '../../constants/recruitment';
 import { savePosition, positionsPath, getActiveStore } from '../../utils/recruitmentStore';
+import { loadSalaryGrid, echelonsFor, validateEchelons, addGradeIfMissing, formatEchelonRates } from '../../utils/salaryGrid';
+import { createCustomRole, validateNewRole, suggestBadgePrefix, DEFAULT_FILIERE } from '../../utils/customRoles';
+import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+
+// Valeur du sélecteur de rôle qui ouvre la création d'un nouveau rôle du personnel.
+const NEW_ROLE = '__nouveau__';
+const EMPTY_NEW_ROLE = { value: '', pole: 'soignant', badgePrefix: '', filiere: '' };
+const EMPTY_NEW_ECHELON = { libelle: 'Échelon 1', horaire: '', hebdo: '' };
+const cleanAmountInput = (value) => value.replace(/[^\d.,]/g, '');
+const snapshot = (roleData, newRole, newEchelon) => JSON.stringify({ roleData, newRole, newEchelon });
 
 const getInitialRoleState = (category) => ({
     nom: '',
     groupe: category?.key || '',
     statut: STATUT_OUVERT,
     role: '',
+    echelon: '',
     contact: '',
     codeCourt: '',
     presentation: '',
@@ -60,6 +71,14 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
     const [roleData, setRoleData] = useState(() => roleToEdit ? { ...initialRoleState, ...roleToEdit } : initialRoleState);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
+    const { staffName, currentEmployee } = useEmployeeAuth();
+    const actorName = staffName || currentEmployee?.email || '';
+
+    // Nouveau rôle du personnel (si « Créer un nouveau rôle… » est choisi) et définition de l'échelon d'un rôle qui n'est pas encore dans la grille salariale.
+    const [newRole, setNewRole] = useState(EMPTY_NEW_ROLE);
+    const [prefixTouched, setPrefixTouched] = useState(false);
+    const [newEchelon, setNewEchelon] = useState(EMPTY_NEW_ECHELON);
+    const [grid, setGrid] = useState(null);   // grille salariale publiée (échelons proposés pour le rôle choisi)
 
     // Valeurs à l'ouverture : sert à savoir si l'utilisateur a modifié quelque chose.
     const [baseline, setBaseline] = useState('');
@@ -70,10 +89,39 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                 ? { ...initialRoleState, ...roleToEdit, role: normalizeRank(roleToEdit.role || '') }
                 : initialRoleState;
             setRoleData(initial);
-            setBaseline(JSON.stringify(initial));
+            setNewRole(EMPTY_NEW_ROLE);
+            setPrefixTouched(false);
+            setNewEchelon(EMPTY_NEW_ECHELON);
+            setBaseline(snapshot(initial, EMPTY_NEW_ROLE, EMPTY_NEW_ECHELON));
             setError('');
+            let cancelled = false;
+            loadSalaryGrid().then((loaded) => { if (!cancelled) setGrid(loaded); });
+            return () => { cancelled = true; };
         }
+        return undefined;
     }, [show, roleToEdit, initialRoleState]);
+
+    // Rôle effectif du poste : celui qu'on crée, ou celui choisi dans la liste.
+    const creatingRole = roleData.role === NEW_ROLE;
+    const effectiveRole = creatingRole ? newRole.value.trim() : roleData.role;
+    const gridEchelons = useMemo(() => (effectiveRole ? echelonsFor(grid, effectiveRole) : []), [grid, effectiveRole]);
+    // Rôle sans échelon dans la grille : on peut (rôle existant) ou on doit (nouveau rôle) en définir un, qui s'y ajoutera.
+    const needsEchelonDefinition = !!effectiveRole && !!grid && gridEchelons.length === 0;
+    const filledEchelon = String(newEchelon.horaire).trim() !== '' || String(newEchelon.hebdo).trim() !== '';
+
+    // Échelon choisi par défaut : le premier du grade (une fonction exercée a toujours un échelon). La valeur initiale tient compte de ce défaut :
+    // il ne compte pas comme une modification faite par la personne.
+    useEffect(() => {
+        if (!show || !grid || creatingRole) return;
+        const valid = gridEchelons.some((e) => e.libelle === roleData.echelon);
+        let wanted = roleData.echelon;
+        if (gridEchelons.length > 0 && !valid) wanted = gridEchelons[0].libelle;
+        else if (gridEchelons.length === 0 && roleData.echelon) wanted = '';
+        if (wanted === roleData.echelon) return;
+        const next = { ...roleData, echelon: wanted };
+        if (baseline === snapshot(roleData, newRole, newEchelon)) setBaseline(snapshot(next, newRole, newEchelon));
+        setRoleData(next);
+    }, [show, grid, creatingRole, gridEchelons, roleData, baseline, newRole, newEchelon]);
 
     const requiredFields = useMemo(() => [
         'nom', 'codeCourt', 'contact', 'presentation', 'competence1', 'competence2', 'competence3', 'diplome',
@@ -83,15 +131,41 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
     // CRÉATION : tous les champs sont requis. MODIFICATION : le bouton s'active dès qu'un champ change
     // (un poste existant peut avoir des champs vides — anciens postes — sans qu'on puisse alors
     // enregistrer la moindre correction) ; seul le nom doit rester renseigné.
-    const isDirty = baseline !== '' && JSON.stringify(roleData) !== baseline;
-    const canSave = roleToEdit
+    const isDirty = baseline !== '' && snapshot(roleData, newRole, newEchelon) !== baseline;
+
+    // Rôle et échelon : un nouveau rôle doit être complet (nom, famille, préfixe, premier échelon avec ses DEUX montants) ; pour un rôle existant absent de la
+    // grille, définir un échelon est facultatif mais, s'il est commencé, il doit être complet.
+    const roleErrors = useMemo(() => (creatingRole ? validateNewRole({ ...newRole, value: newRole.value.trim() }) : []), [creatingRole, newRole]);
+    const echelonErrors = (() => {
+        if (!needsEchelonDefinition || (!creatingRole && !filledEchelon)) return creatingRole && !grid ? ['La grille salariale est en cours de chargement.'] : [];
+        const checked = validateEchelons([newEchelon], effectiveRole || 'Grade').errors;
+        if (checked.length > 0) return checked;
+        const bothRates = String(newEchelon.horaire).trim() !== '' && String(newEchelon.hebdo).trim() !== '';
+        return bothRates ? [] : ["Renseignez les deux montants de l'échelon : à l'heure et à la semaine."];
+    })();
+    const roleBlockValid = roleErrors.length === 0 && echelonErrors.length === 0;
+    const canSave = roleBlockValid && (roleToEdit
         ? isDirty && String(roleData.nom || '').trim() !== ''
-        : isFormValid;
+        : isFormValid);
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
         setRoleData((prev) => ({ ...prev, [name]: value }));
     }, []);
+
+    // Changer de rôle : l'échelon d'un autre grade n'a pas de sens (le défaut du nouveau grade est posé par l'effet ci-dessus).
+    const handleRoleChange = useCallback((e) => {
+        const { value } = e.target;
+        setRoleData((prev) => ({ ...prev, role: value, echelon: '' }));
+        setNewEchelon(EMPTY_NEW_ECHELON);
+    }, []);
+
+    const changeNewRole = (field, value) => setNewRole((prev) => {
+        const next = { ...prev, [field]: value };
+        if (field === 'value' && !prefixTouched) next.badgePrefix = suggestBadgePrefix(value);
+        if (field === 'pole') next.filiere = '';
+        return next;
+    });
 
     // Mode debug : remplit un poste de test (le nom d'un poste existant en modification n'est pas touché :
     // il détermine la clé Firebase).
@@ -121,9 +195,9 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
         setError('');
 
         if (!canSave) {
-            setError(roleToEdit
+            setError(roleErrors[0] || echelonErrors[0] || (roleToEdit
                 ? 'Modifiez au moins un champ (le nom ne peut pas être vide).'
-                : 'Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.');
+                : 'Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.'));
             if (showNotification) showNotification('Veuillez remplir tous les champs du formulaire.', 'warning');
             return;
         }
@@ -141,6 +215,19 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
 
         setIsSaving(true);
         try {
+            // 1) Nouveau rôle du personnel (ajouté aux rôles d'origine) ; 2) sa ligne dans la grille salariale, ou celle d'un rôle qui n'y figurait pas encore.
+            let roleValue = roleData.role === NEW_ROLE ? '' : roleData.role;
+            let echelonLabel = roleData.echelon || '';
+            if (roleData.role === NEW_ROLE) {
+                const created = await createCustomRole({ ...newRole, value: newRole.value.trim() }, actorName);
+                roleValue = created.value;
+            }
+            if (roleValue && needsEchelonDefinition && (roleData.role === NEW_ROLE || filledEchelon)) {
+                await addGradeIfMissing(roleValue, [newEchelon]);
+                echelonLabel = newEchelon.libelle.trim();
+            }
+            if (!roleValue) echelonLabel = '';
+
             const store = await getActiveStore(category);
             if (!roleToEdit) {
                 const snapshot = await get(ref(database, `${positionsPath(category, store)}/${key}`));
@@ -152,7 +239,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                 }
             }
 
-            const { cle, ...position } = roleData; // eslint-disable-line no-unused-vars
+            const { cle, ...position } = { ...roleData, role: roleValue, echelon: echelonLabel }; // eslint-disable-line no-unused-vars
             await savePosition(category, key, { ...position, groupe: category.key }, store);
 
             if (onRoleSaved) onRoleSaved({ ...position, groupe: category.key, cle: key }, roleToEdit ? 'edited' : 'added');
@@ -162,7 +249,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
             if (showNotification) showNotification(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du poste. ${dbError.message}`, "error");
         }
         setIsSaving(false);
-    }, [roleData, category, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
+    }, [roleData, newRole, newEchelon, needsEchelonDefinition, filledEchelon, roleErrors, echelonErrors, actorName, category, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
 
     useEffect(() => {
         const handleEsc = (event) => {
@@ -200,20 +287,95 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
 
                         <BootstrapForm.Group className="mb-3">
                             <BootstrapForm.Label>Rôle du personnel obtenu à l'embauche</BootstrapForm.Label>
-                            <BootstrapForm.Select name="role" value={roleData.role || ''} onChange={handleChange}>
+                            <BootstrapForm.Select name="role" value={roleData.role || ''} onChange={handleRoleChange}>
                                 <option value="">— Non défini —</option>
                                 {Object.values(STAFF_FAMILIES).map((family) => (
                                     <optgroup key={family.key} label={family.label}>
                                         {rolesByFiliere(family.key).flatMap((group) => group.roles).map((role) => (
-                                            <option key={role.value} value={role.value}>{role.label}</option>
+                                            <option key={role.value} value={role.value}>{role.label}{role.custom ? ' (ajouté)' : ''}</option>
                                         ))}
                                     </optgroup>
                                 ))}
+                                <option value={NEW_ROLE}>➕ Créer un nouveau rôle du personnel…</option>
                             </BootstrapForm.Select>
                             <BootstrapForm.Text className="text-muted">
                                 Sert à pré-remplir le rôle quand un candidat accepté devient membre du personnel, et son contrat.
                             </BootstrapForm.Text>
                         </BootstrapForm.Group>
+
+                        {creatingRole && (
+                            <div className="mb-3 p-3" style={{ border: '1px solid #3b82f6', borderRadius: '8px', background: 'rgba(59,130,246,0.07)' }}>
+                                <div style={{ fontWeight: 600, marginBottom: '10px' }}>Nouveau rôle du personnel</div>
+                                <BootstrapForm.Group className="mb-2">
+                                    <BootstrapForm.Label>Nom du rôle *</BootstrapForm.Label>
+                                    <BootstrapForm.Control type="text" value={newRole.value} maxLength={60} placeholder="ex. Technicien(ne) de laboratoire" onChange={(e) => changeNewRole('value', e.target.value)} />
+                                </BootstrapForm.Group>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
+                                    <BootstrapForm.Group>
+                                        <BootstrapForm.Label>Famille *</BootstrapForm.Label>
+                                        <BootstrapForm.Select value={newRole.pole} onChange={(e) => changeNewRole('pole', e.target.value)}>
+                                            {Object.values(STAFF_FAMILIES).map((family) => <option key={family.key} value={family.key}>{family.label}</option>)}
+                                        </BootstrapForm.Select>
+                                    </BootstrapForm.Group>
+                                    <BootstrapForm.Group>
+                                        <BootstrapForm.Label>Préfixe de badge *</BootstrapForm.Label>
+                                        <BootstrapForm.Control type="text" value={newRole.badgePrefix} maxLength={4} placeholder="ex. TL"
+                                            onChange={(e) => { setPrefixTouched(true); changeNewRole('badgePrefix', e.target.value.toUpperCase().replace(/[^A-Z]/g, '')); }} />
+                                    </BootstrapForm.Group>
+                                    <BootstrapForm.Group>
+                                        <BootstrapForm.Label>Filière <small className="text-muted">(facultatif)</small></BootstrapForm.Label>
+                                        <BootstrapForm.Control type="text" list="role-modal-filieres" value={newRole.filiere} placeholder={DEFAULT_FILIERE[newRole.pole]} maxLength={60}
+                                            onChange={(e) => changeNewRole('filiere', e.target.value)} />
+                                        <datalist id="role-modal-filieres">
+                                            {[...new Set(ROLES.filter((role) => role.pole === newRole.pole).map((role) => role.filiere))].map((name) => <option key={name} value={name} />)}
+                                        </datalist>
+                                    </BootstrapForm.Group>
+                                </div>
+                                <BootstrapForm.Text className="text-muted d-block mt-2">
+                                    Le rôle s'ajoute à ceux d'origine : il se choisit ensuite partout (fiche du personnel, contrat). Son préfixe commence les badges (ex. TL-123). La famille décide de ses accès.
+                                </BootstrapForm.Text>
+                                {roleErrors.length > 0 && newRole.value.trim() !== '' && <p className="text-warning small mb-0 mt-2">{roleErrors[0]}</p>}
+                            </div>
+                        )}
+
+                        {effectiveRole && grid && (
+                            <BootstrapForm.Group className="mb-3">
+                                <BootstrapForm.Label>Échelon de la grille salariale{creatingRole ? ' *' : ''}</BootstrapForm.Label>
+                                {gridEchelons.length > 0 ? (
+                                    <>
+                                        <BootstrapForm.Select name="echelon" value={roleData.echelon || ''} onChange={handleChange}>
+                                            {gridEchelons.map((e) => <option key={e.libelle} value={e.libelle}>{e.libelle} — {formatEchelonRates(e)}</option>)}
+                                        </BootstrapForm.Select>
+                                        <BootstrapForm.Text className="text-muted">
+                                            Échelon obtenu à l'embauche : il s'affiche à côté du rôle et pré-remplit le contrat. La grille se modifie dans Comptabilité → Transparence.
+                                        </BootstrapForm.Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
+                                            <BootstrapForm.Control type="text" value={newEchelon.libelle} maxLength={60} aria-label="Nom de l'échelon" placeholder="Échelon 1"
+                                                onChange={(e) => setNewEchelon((prev) => ({ ...prev, libelle: e.target.value }))} />
+                                            <div className="input-group" style={{ flexWrap: 'nowrap' }}>
+                                                <BootstrapForm.Control type="text" inputMode="decimal" value={newEchelon.horaire} aria-label="Montant à l'heure" placeholder="À l'heure"
+                                                    onChange={(e) => setNewEchelon((prev) => ({ ...prev, horaire: cleanAmountInput(e.target.value) }))} />
+                                                <span className="input-group-text">$ / h</span>
+                                            </div>
+                                            <div className="input-group" style={{ flexWrap: 'nowrap' }}>
+                                                <BootstrapForm.Control type="text" inputMode="decimal" value={newEchelon.hebdo} aria-label="Montant à la semaine" placeholder="À la semaine"
+                                                    onChange={(e) => setNewEchelon((prev) => ({ ...prev, hebdo: cleanAmountInput(e.target.value) }))} />
+                                                <span className="input-group-text">$ / sem.</span>
+                                            </div>
+                                        </div>
+                                        <BootstrapForm.Text className="text-muted">
+                                            {creatingRole
+                                                ? "Ce rôle n'est pas encore dans la grille salariale : définissez son premier échelon, il y sera ajouté (page Transparence, contrats)."
+                                                : "Ce rôle n'a pas encore d'échelon dans la grille salariale. Renseigner ses montants l'y ajoute (facultatif ici)."}
+                                        </BootstrapForm.Text>
+                                        {echelonErrors.length > 0 && (creatingRole || filledEchelon) && <p className="text-warning small mb-0 mt-1">{echelonErrors[0]}</p>}
+                                    </>
+                                )}
+                            </BootstrapForm.Group>
+                        )}
 
                         <BootstrapForm.Group className="mb-3">
                             <BootstrapForm.Label>Statut *</BootstrapForm.Label>

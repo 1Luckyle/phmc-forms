@@ -93,15 +93,17 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
         poste: positionLabelFor(selectOptions, application.versionBBCode, application.posteCle || application.poste),
     })), [applications, selectOptions]);
 
-    // Rôle du personnel relié au poste de la candidature (champ `role` du poste), s'il est défini.
-    const roleOfPosition = (poste) => {
+    // Poste de la candidature (retrouvé par sa clé ou son nom) : porte le rôle du personnel (`role`) et l'échelon (`echelon`) obtenus à l'embauche.
+    const findPosition = (poste) => {
         const categories = positionsFromSelectOptions(selectOptions);
         for (const positions of Object.values(categories)) {
             const match = Object.values(positions).find((position) => position.cle === poste || position.nom === poste);
-            if (match) return match.role || null;
+            if (match) return match;
         }
         return null;
     };
+    const roleOfPosition = (poste) => findPosition(poste)?.role || null;
+    const echelonOfPosition = (poste) => findPosition(poste)?.echelon || null;
     // Rôle facultatif « en attente de contrat » : uid -> infos (voir utils/contractCandidates.js).
     const [contractCandidates, setContractCandidates] = useState({});
 
@@ -332,6 +334,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
             await setContractCandidate(application.candidatUid, {
                 byUid: currentEmployee?.uid, byName: actorName, applicationId: application.id, position: application.poste || null,
                 role: roleOfPosition(application.poste),
+                echelon: echelonOfPosition(application.poste),
             });
             setContractCandidates((current) => ({ ...current, [application.candidatUid]: { definiParNom: actorName, definiLe: Date.now() } }));
             journal('contract_role_set', `Rôle « en attente de contrat » posé : ${application.nomCandidat}`, application, 'success');

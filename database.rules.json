@@ -459,7 +459,42 @@
         ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
       },
       "grilleSalariale": {
-        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
+        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true",
+        // Un RECRUTEUR peut seulement CRÉER la ligne d'un grade absent de la grille (nouveau rôle ajouté avec un poste de recrutement) : jamais modifier ni supprimer
+        // un salaire. Forme d'une ligne : { grade, echelons: [{ libelle, horaire?, hebdo? }] } (l'ancien format { libelle, montant } reste admis en lecture).
+        "grades": {
+          "$grade": {
+            ".write": "auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+            ".validate": "newData.hasChildren(['grade', 'echelons']) && newData.child('grade').isString() && newData.child('grade').val().length <= 80 && newData.child('echelons').hasChildren()",
+            "grade": { ".validate": true },
+            "echelons": {
+              "$index": {
+                ".validate": "newData.hasChild('libelle') && newData.child('libelle').isString() && newData.child('libelle').val().length >= 1 && newData.child('libelle').val().length <= 60 && (newData.hasChild('horaire') || newData.hasChild('hebdo') || newData.hasChild('montant'))",
+                "libelle": { ".validate": true },
+                "horaire": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
+                "hebdo": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
+                "montant": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          }
+        }
+      },
+      // Rôles du personnel créés dans l'interface (src/utils/customRoles.js) : lecture publique ; création par un admin (règle du dessus) ou un recruteur ;
+      // modification et suppression : admins seulement. La clé est le nom du rôle sans accent ni caractère interdit.
+      "rolesPersonnalises": {
+        "$key": {
+          ".write": "auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+          ".validate": "$key.matches(/^[a-z0-9_]{1,60}$/) && newData.hasChildren(['value', 'pole', 'badgePrefix', 'filiere', 'creeLe']) && newData.child('value').isString() && newData.child('value').val().length >= 2 && newData.child('value').val().length <= 60 && (newData.child('pole').val() === 'soignant' || newData.child('pole').val() === 'administration' || newData.child('pole').val() === 'polyvalent' || newData.child('pole').val() === 'dmec') && newData.child('badgePrefix').isString() && newData.child('badgePrefix').val().matches(/^[A-Z]{1,4}$/) && newData.child('filiere').isString() && newData.child('filiere').val().length <= 60 && newData.child('creeLe').isNumber() && (!newData.child('creePar').exists() || (newData.child('creePar').isString() && newData.child('creePar').val().length <= 120))",
+          "value": { ".validate": true },
+          "pole": { ".validate": true },
+          "badgePrefix": { ".validate": true },
+          "filiere": { ".validate": true },
+          "creeLe": { ".validate": true },
+          "creePar": { ".validate": true },
+          "$other": { ".validate": false }
+        }
       },
       // Politique de confidentialité publiée depuis le panneau admin (lecture publique : elle se lit avant la connexion) : un texte borné et sa date.
       "politiqueConfidentialite": {

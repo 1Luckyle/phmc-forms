@@ -12,6 +12,7 @@
 // Chaque renvoi à un article a été vérifié sur les textes du forum (Constitution au 1er janvier 2026, Code Civil, Code du Gouvernement, Code
 // Pénal, Code de Procédure Judiciaire, Code du Feu). À RE-VÉRIFIER si un de ces codes est modifié : voir LAW_VERSION.
 import { getRoleInfo, normalizeRank } from '../constants/ranks';
+import { parseServices } from '../constants/contractOptions';
 import { bbSafe, SIGNATURE_MARKER, SIGNATURE_DATE_MARKER } from '../phmc-bbcode-generators/generateContract';
 import {
     CONTRACT_TYPES, FIN_MOTIFS, FIN_BASES_LEGALES, SANCTIONS, MODEL_VERSION, CONVOCATION_DELAI_HEURES, DECISION_DELAI_JOURS,
@@ -314,20 +315,44 @@ const specificArticle = (ctx) => {
     };
 };
 
+// « , calculée à l'heure » / « , calculée à la semaine » : seulement si le montant saisi ne le dit pas déjà (« 4 500 $ de l'heure »).
+const rateModePhrase = (champs) => {
+    if (/heure|semaine|hebdo/i.test(String(champs.remuneration || ''))) return '';
+    return champs.modeRemuneration === 'semaine' ? ', calculée à la semaine' : champs.modeRemuneration === 'heure' ? ', calculée à l\'heure' : '';
+};
+
+// Primes facultatives d'un contrat de travail (jamais d'une convention de stage). Elles sont fixées d'avance par le contrat : aucune somme n'est accordée
+// après service rendu (Constitution, art. IX, section 8).
+const primeBlocs = (champs) => {
+    const blocs = [];
+    const embauche = clean(champs.primeEmbauche);
+    const objectifs = clean(champs.primeObjectifs);
+    const criteres = clean(champs.primeCriteres);
+    if (embauche) blocs.push(`${b('Prime à l\'embauche :')} ${embauche}. Elle est versée une seule fois, à la prise de fonctions, selon les modalités de paie de l'Employeur.`);
+    if (objectifs && criteres) {
+        blocs.push(`${b('Prime de rémunération selon critères ou objectifs :')} ${objectifs}, attribuée selon les critères ou objectifs suivants, fixés d'avance par le présent contrat : ${criteres}. L'Employeur constate leur réalisation, motive sa décision par écrit sur demande de l'Employé(e), et n'attribue aucune prime en dehors de ces critères.`);
+    }
+    return blocs;
+};
+
 const employmentContent = (ctx) => {
     const { champs, service } = ctx;
     const cdd = champs.typeContrat === 'cdd';
     const employer = EMPLOYERS[service] || EMPLOYERS.phmc;
     const role = normalizeRank(champs.role) || '—';
     const essai = Number(champs.essaiJours) || 0;
-    const affectation = clean(champs.affectation);
+    const services = parseServices(champs.affectation);
+    const affectation = services.map(clean);
+    const affectationText = affectation.length > 1
+        ? `, au sein des services « ${affectation.slice(0, -1).join(' », « ')} » et « ${affectation[affectation.length - 1]} »`
+        : (affectation.length === 1 ? `, au sein du service « ${affectation[0]} »` : '');
 
     const definitions = [
         {
             id: 'objet',
             titre: 'Objet du contrat',
             blocs: () => [
-                `L'Employeur engage l'Employé(e) en qualité de ${b(clean(champs.poste))}, au grade de ${b(role)}${affectation ? `, au sein du service « ${affectation} »` : ''}, qui accepte, aux conditions du présent contrat.`,
+                `L'Employeur engage l'Employé(e) en qualité de ${b(clean(champs.poste))}, au grade de ${b(role)}${affectationText}, qui accepte, aux conditions du présent contrat.`,
                 `À compter de la prise d'effet du contrat et sous réserve des articles 2 et 3, l'Employé(e) est un ${b('employé public')} au sens de l'article 218 du Code du Gouvernement : il/elle est lié(e) à une autorité publique par un contrat d'embauche.`,
             ],
         },
@@ -384,9 +409,10 @@ const employmentContent = (ctx) => {
             id: 'remuneration',
             titre: 'Rémunération',
             blocs: () => [
-                `En contrepartie de son travail (Code Civil, art. 205), l'Employé(e) perçoit la rémunération brute suivante : ${b(clean(champs.remuneration))}${clean(champs.echelon) ? `, correspondant à l'${clean(champs.echelon)} de la grille de rémunération` : ''}. Elle est versée selon les modalités de paie de l'Employeur et soumise aux prélèvements prévus par la Loi.`,
+                `En contrepartie de son travail (Code Civil, art. 205), l'Employé(e) perçoit la rémunération brute suivante${rateModePhrase(champs)} : ${b(clean(champs.remuneration))}${clean(champs.echelon) ? `, correspondant à l'${clean(champs.echelon)} de la grille de rémunération` : ''}. Elle est versée selon les modalités de paie de l'Employeur et soumise aux prélèvements prévus par la Loi.`,
                 'L\'Employeur publie sur son site la grille des rémunérations par échelon (Code du Gouvernement, art. 326) ; elle fait foi pour le niveau d\'échelon.',
-                'Aucune prime, indemnité ou avantage n\'est dû en dehors de ceux prévus par le présent contrat, ses avenants ou la grille publiée, et aucune somme ne peut être accordée après service rendu, l\'État et ses subdivisions ne pouvant faire don de fonds ou de biens publics (Constitution, art. IX, section 8). Les frais professionnels préalablement autorisés sont remboursés sur justificatifs.',
+                ...primeBlocs(champs),
+                (primeBlocs(champs).length ? 'Aucune autre' : 'Aucune') + ' prime, indemnité ou avantage n\'est dû en dehors de ceux prévus par le présent contrat, ses avenants ou la grille publiée, et aucune somme ne peut être accordée après service rendu, l\'État et ses subdivisions ne pouvant faire don de fonds ou de biens publics (Constitution, art. IX, section 8). Les frais professionnels préalablement autorisés sont remboursés sur justificatifs.',
             ],
         },
         deontologieArticle(ctx),
@@ -436,7 +462,7 @@ const stageContent = (ctx) => {
             id: 'objet',
             titre: 'Objet de la convention',
             blocs: () => [
-                `La présente convention organise l'accueil de ${b(clean(ctx.employeeName))} en stage au sein ${employer.du}, sur le thème : ${b(clean(champs.poste))}${clean(champs.affectation) ? `, au service « ${clean(champs.affectation)} »` : ''}. Le stagiaire est accueilli avec le grade de ${b(role)}.`,
+                `La présente convention organise l'accueil de ${b(clean(ctx.employeeName))} en stage au sein ${employer.du}, sur le thème : ${b(clean(champs.poste))}${clean(champs.affectation) ? `, ${parseServices(champs.affectation).length > 1 ? 'aux services' : 'au service'} « ${parseServices(champs.affectation).map(clean).join(' », « ')} »` : ''}. Le stagiaire est accueilli avec le grade de ${b(role)}.`,
             ],
         },
         {

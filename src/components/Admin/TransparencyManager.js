@@ -5,11 +5,11 @@
 //   • Direction & contact : nom de la personne qui dirige l'établissement et moyen de la joindre ;
 //   • Grille salariale   : le salaire de chaque échelon de chaque grade (ils alimentent aussi le champ « échelon » des contrats) ;
 //   • Comptes            : recettes et dépenses de chaque trimestre. Seuls les comptes PUBLIÉS sont enregistrés ; un brouillon reste dans ce navigateur.
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Alert, Badge, Button, DropdownButton, Dropdown, Form, InputGroup, Spinner } from 'react-bootstrap';
 import { ROLES, STAFF_FAMILIES } from '../../constants/ranks';
 import {
-    loadSalaryGrid, saveSalaryGrid, gradeKeyOf, formatAmount, DEFAULT_UNIT, emptyGrid,
+    loadSalaryGrid, saveSalaryGrid, gradeKeyOf, emptyGrid,
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
@@ -187,8 +187,8 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
 };
 
 // ───────────────────────────── Grille salariale ─────────────────────────────
-// Grille de référence du PHMC (« Rangs et Salaires ») : sert d'aide à la saisie, à côté de l'éditeur. Les deux montants sont repris tels que fournis ;
-// un clic sur l'un d'eux ajoute un échelon de ce montant au(x) grade(s) correspondant(s).
+// Grille de référence du PHMC (« Rangs et Salaires ») : sert d'aide à la saisie, à côté de l'éditeur. Les deux montants d'un grade sont, dans l'ordre, le taux
+// À L'HEURE et le total À LA SEMAINE d'un même échelon (20 h) : un clic ajoute un échelon avec ces deux montants au(x) grade(s) correspondant(s).
 const REFERENCE_GRID = [
     { rang: 15, label: 'Directrice', grades: ['Directeur(trice)'], montants: [4500, 90000] },
     { rang: 14, label: 'Assistante de Direction', grades: ['Assistant(e) de Direction'], montants: [4250, 85000] },
@@ -211,7 +211,7 @@ const money = (value) => `${Number(value).toLocaleString('fr-FR')} $`;
 const ReferenceGrid = ({ roleByValue, hasEchelons, onAdd }) => (
     <aside className="tm-ref" aria-label="Grille de référence">
         <div className="tm-ref-title"><i className="fas fa-list-ol me-2"></i>Rangs et salaires — PHMC</div>
-        <p className="tm-ref-help">Grille de référence. Cliquez un montant pour l'ajouter comme échelon au grade correspondant.</p>
+        <p className="tm-ref-help">Grille de référence (à l'heure · à la semaine). Cliquez un grade pour lui ajouter un échelon avec ces deux montants.</p>
         <div className="tm-ref-list">
             {REFERENCE_GRID.map((row) => {
                 const done = row.grades.every((grade) => hasEchelons(roleByValue[grade]));
@@ -220,13 +220,17 @@ const ReferenceGrid = ({ roleByValue, hasEchelons, onAdd }) => (
                         <span className="tm-ref-rang">{row.rang}</span>
                         <span className="tm-ref-label">{row.label}{done && <i className="fas fa-check ms-1" title="Échelons déjà saisis"></i>}</span>
                         <span className="tm-ref-amounts">
-                            {row.montants.map((montant, index) => (
-                                <React.Fragment key={montant}>
-                                    {index > 0 && <span className="tm-ref-sep">–</span>}
-                                    <button type="button" className="tm-ref-amount" title={`Ajouter un échelon de ${money(montant)} à ${row.grades.length > 1 ? 'ces grades' : 'ce grade'}`}
-                                        onClick={() => onAdd(row.grades.map((grade) => roleByValue[grade]).filter(Boolean), montant)}>{money(montant)}</button>
-                                </React.Fragment>
-                            ))}
+                            <button type="button" className="tm-ref-amount"
+                                title={`Ajouter un échelon (${money(row.montants[0])} de l'heure, ${money(row.montants[1])} par semaine) à ${row.grades.length > 1 ? 'ces grades' : 'ce grade'}`}
+                                onClick={() => onAdd(row.grades.map((grade) => roleByValue[grade]).filter(Boolean), row.montants[0], row.montants[1])}>
+                                {money(row.montants[0])}<span className="tm-ref-sep">/h</span>
+                            </button>
+                            <span className="tm-ref-sep">·</span>
+                            <button type="button" className="tm-ref-amount"
+                                title={`Ajouter un échelon (${money(row.montants[0])} de l'heure, ${money(row.montants[1])} par semaine) à ${row.grades.length > 1 ? 'ces grades' : 'ce grade'}`}
+                                onClick={() => onAdd(row.grades.map((grade) => roleByValue[grade]).filter(Boolean), row.montants[0], row.montants[1])}>
+                                {money(row.montants[1])}<span className="tm-ref-sep">/sem.</span>
+                            </button>
                         </span>
                     </div>
                 );
@@ -243,10 +247,11 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
     const load = useCallback(async () => { setGrid(await loadSalaryGrid()); setDirty(false); }, []);
     useEffect(() => { load(); }, [load]);
 
-    const groups = useMemo(() => Object.values(STAFF_FAMILIES).map((family) => ({
+    // Calculé à chaque rendu : les rôles ajoutés dans l'interface rejoignent ROLES après le démarrage.
+    const groups = Object.values(STAFF_FAMILIES).map((family) => ({
         family,
         roles: ROLES.filter((role) => role.pole === family.key),
-    })), []);
+    }));
 
     const update = (updater) => { setGrid((prev) => updater(prev || emptyGrid())); setDirty(true); };
 
@@ -259,18 +264,19 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
         return { ...prev, grades };
     });
 
-    const addEchelon = (role, montant = '') => {
+    const addEchelon = (role, horaire = '', hebdo = '') => {
         const current = echelonsOf(role);
-        setEchelons(role, [...current, { libelle: `Échelon ${current.length + 1}`, montant: montant === '' ? '' : String(montant) }]);
+        setEchelons(role, [...current, { libelle: `Échelon ${current.length + 1}`, horaire: horaire === '' ? '' : String(horaire), hebdo: hebdo === '' ? '' : String(hebdo) }]);
     };
-    const roleByValue = useMemo(() => Object.fromEntries(ROLES.map((role) => [role.value, role])), []);
+    // Calculé à chaque rendu (et non mémorisé) : les rôles ajoutés dans l'interface arrivent dans ROLES après le démarrage.
+    const roleByValue = Object.fromEntries(ROLES.map((role) => [role.value, role]));
     // Ajout d'un échelon depuis la grille de référence : un seul passage d'état pour plusieurs grades (ex. les trois « Externe »).
-    const addReferenceEchelon = (roles, montant) => update((prev) => {
+    const addReferenceEchelon = (roles, horaire, hebdo) => update((prev) => {
         const grades = { ...prev.grades };
         roles.forEach((role) => {
             const key = gradeKeyOf(role.value);
             const current = grades[key]?.echelons || [];
-            grades[key] = { grade: role.value, echelons: [...current, { libelle: `Échelon ${current.length + 1}`, montant: String(montant) }] };
+            grades[key] = { grade: role.value, echelons: [...current, { libelle: `Échelon ${current.length + 1}`, horaire: String(horaire), hebdo: String(hebdo) }] };
         });
         return { ...prev, grades };
     });
@@ -285,7 +291,7 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
             setDirty(false);
             const gradeCount = Object.keys(saved.grades).length;
             showNotification(`Grille publiée (${gradeCount} grade${gradeCount > 1 ? 's' : ''}).`, 'check-circle');
-            if (onLogAction) onLogAction('Grille salariale publiée', `${gradeCount} grade(s) · unité : ${saved.unite}`);
+            if (onLogAction) onLogAction('Grille salariale publiée', `${gradeCount} grade(s)`);
         } catch (error) {
             showNotification(error.message, 'error');
         } finally {
@@ -304,11 +310,6 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
                 propose ceux du grade choisi et préremplit la rémunération. Un grade sans échelon n'apparaît pas sur la page publique.
             </p>
             <div className="d-flex flex-wrap align-items-end gap-3 mb-3">
-                <Form.Group style={{ maxWidth: 260 }}>
-                    <Form.Label>Unité affichée après le montant</Form.Label>
-                    <Form.Control value={grid.unite} onChange={(e) => update((prev) => ({ ...prev, unite: e.target.value }))} placeholder={DEFAULT_UNIT} />
-                    <Form.Text className="text-muted">Rendu : « {formatAmount(85, grid.unite)} ».</Form.Text>
-                </Form.Group>
                 <div className="text-muted small">
                     {publishedCount} grade{publishedCount > 1 ? 's' : ''} avec échelons · dernière publication : {formatDate(grid.majLe)}{grid.majPar ? ` par ${grid.majPar}` : ''}
                 </div>
@@ -328,7 +329,14 @@ const GrilleTab = ({ showNotification, onLogAction, adminName }) => {
                                 {echelons.map((e, index) => (
                                     <div key={index} className="tm-echelon">
                                         <Form.Control size="sm" value={e.libelle} onChange={(ev) => changeEchelon(role, index, 'libelle', ev.target.value)} aria-label="Nom de l'échelon" />
-                                        <Form.Control size="sm" inputMode="decimal" value={e.montant} placeholder="Montant ($)" onChange={(ev) => changeEchelon(role, index, 'montant', ev.target.value.replace(/[^\d.,]/g, ''))} aria-label="Montant" />
+                                        <InputGroup size="sm" className="tm-rate">
+                                            <Form.Control inputMode="decimal" value={e.horaire ?? ''} placeholder="À l'heure" onChange={(ev) => changeEchelon(role, index, 'horaire', ev.target.value.replace(/[^\d.,]/g, ''))} aria-label="Montant à l'heure" />
+                                            <InputGroup.Text>$ / h</InputGroup.Text>
+                                        </InputGroup>
+                                        <InputGroup size="sm" className="tm-rate">
+                                            <Form.Control inputMode="decimal" value={e.hebdo ?? ''} placeholder="À la semaine" onChange={(ev) => changeEchelon(role, index, 'hebdo', ev.target.value.replace(/[^\d.,]/g, ''))} aria-label="Montant à la semaine" />
+                                            <InputGroup.Text>$ / sem.</InputGroup.Text>
+                                        </InputGroup>
                                         <Button size="sm" variant="outline-danger" onClick={() => removeEchelon(role, index)} title="Retirer cet échelon"><i className="fas fa-times"></i></Button>
                                     </div>
                                 ))}

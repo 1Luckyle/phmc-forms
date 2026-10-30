@@ -1789,7 +1789,7 @@ function MainApp({
                                                 {
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
-                                                        toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: 'Annuaire', onClick: closeAnd(() => setShowDirectory(true)) },
+                                                        toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: "Annuaire & plan de l'hôpital", onClick: closeAnd(() => setShowDirectory(true)) },
                                                         toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
                                                         // Demandes de vidéosurveillance : réponse et suivi par l'administration du PHMC (et les admins).
                                                         canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
@@ -1805,6 +1805,8 @@ function MainApp({
                                                 {
                                                     key: 'info', label: 'Santé & informations', items: [
                                                         { key: 'calendar', icon: 'fas fa-calendar-alt', label: 'Calendrier de la santé', onClick: closeAnd(() => setShowAwarenessCalendar(true)) },
+                                                        // Plan de l'hôpital : public, même sans compte (ceux qui ont l'annuaire le trouvent dans le même onglet, ci-dessus).
+                                                        !toolAccess.directory && { key: 'hospitalPlan', icon: 'fas fa-map', label: "Plan de l'hôpital", onClick: closeAnd(() => setShowDirectory(true)) },
                                                     ],
                                                 },
                                                 {
@@ -2605,6 +2607,7 @@ function MainApp({
                         />
                         <DirectoryModal
                             show={showDirectory}
+                            canSeeDirectory={!!toolAccess.directory}
                             onHide={() => setShowDirectory(false)}
                             access={{ savedReports: !!isAdmin && toolAccess.savedReports, patientDossier: !!toolAccess.patientDossier, applications: !!toolAccess.recruitment, discipline: !!toolAccess.disciplineManage }}
                             onOpenSavedReports={(employeeName) => { setShowDirectory(false); setDirectoryEmployeeReports(employeeName); if (!showSavedReports) toggleSavedReports(); }}

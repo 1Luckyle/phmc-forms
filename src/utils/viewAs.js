@@ -214,7 +214,7 @@ export const TOOL_ACCESS_LABELS = {
     savedReports: 'Rapports enregistrés',
     patientDossier: 'Dossier Patient',
     recruitment: 'Gestion du recrutement',
-    directory: 'Annuaire (consultation seule)',
+    directory: "Annuaire & plan de l'hôpital (consultation seule)",
     lawEnforcement: "Demandes des forces de l'ordre",
     fireReport: 'Signaler un problème incendie',
     fireManage: 'Gestion de la sécurité incendie',

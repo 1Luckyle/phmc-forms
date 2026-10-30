@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Spinner } from 'react-bootstrap';
 import { STAFF_FAMILIES, ROLES } from '../../constants/ranks';
-import { loadSalaryGrid, gradeKeyOf, formatAmount } from '../../utils/salaryGrid';
+import { loadSalaryGrid, gradeKeyOf } from '../../utils/salaryGrid';
 import { loadTransparency, quarterLabel, totals, formatMoney, ENTITIES, MAIN_ENTITY } from '../../utils/transparency';
 import { PHMC_PHONE, PHMC_DISCORD_URL } from '../../constants/contact';
 import './Transparency.css';
@@ -91,13 +91,14 @@ const TransparencyPage = () => {
                                             <h3>{family.label}</h3>
                                             <div className="tp-table-scroll">
                                                 <table className="tp-table tp-table-grid">
-                                                    <thead><tr><th>Grade</th><th>Échelon</th><th>Rémunération</th></tr></thead>
+                                                    <thead><tr><th>Grade</th><th>Échelon</th><th className="tp-num">À l'heure</th><th className="tp-num">À la semaine</th></tr></thead>
                                                     <tbody>
                                                         {grades.map(({ role, echelons }) => echelons.map((echelon, index) => (
                                                             <tr key={`${role.value}-${echelon.libelle}`}>
                                                                 {index === 0 && <th rowSpan={echelons.length} scope="rowgroup">{role.value}</th>}
                                                                 <td>{echelon.libelle}</td>
-                                                                <td>{formatAmount(echelon.montant, grid.unite)}</td>
+                                                                <td className="tp-num">{echelon.horaire !== null ? formatMoney(echelon.horaire) : '—'}</td>
+                                                                <td className="tp-num">{echelon.hebdo !== null ? formatMoney(echelon.hebdo) : '—'}</td>
                                                             </tr>
                                                         )))}
                                                     </tbody>
