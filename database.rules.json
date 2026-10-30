@@ -460,23 +460,24 @@
       },
       "grilleSalariale": {
         ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true",
-        // Un RECRUTEUR peut seulement CRÉER la ligne d'un grade absent de la grille (nouveau rôle ajouté avec un poste de recrutement) : jamais modifier ni supprimer
-        // un salaire. Forme d'une ligne : { grade, echelons: [{ libelle, horaire?, hebdo? }] } (l'ancien format { libelle, montant } reste admis en lecture).
+        // 15 ÉCHELONS fixes, chacun avec son salaire à l'heure et à la semaine : { "1": { horaire, hebdo }, … "15": … }. Modifiés par les admins, la Directrice et
+        // l'Assistante de Direction seulement (règle du dessus) : le salaire d'un échelon vaut pour tous les grades qui s'y trouvent.
+        "echelons": {
+          "$numero": {
+            ".validate": "$numero.matches(/^([1-9]|1[0-5])$/) && newData.hasChildren(['horaire', 'hebdo'])",
+            "horaire": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
+            "hebdo": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
+            "$other": { ".validate": false }
+          }
+        },
+        // Un grade (rôle du personnel) a UN échelon : { grade, echelon (1 à 15) }. Un RECRUTEUR peut seulement CRÉER la ligne d'un grade absent de la grille (nouveau rôle
+        // ajouté avec un poste de recrutement) : jamais modifier ni supprimer l'échelon d'un grade, ni un salaire.
         "grades": {
           "$grade": {
             ".write": "auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
-            ".validate": "newData.hasChildren(['grade', 'echelons']) && newData.child('grade').isString() && newData.child('grade').val().length <= 80 && newData.child('echelons').hasChildren()",
+            ".validate": "newData.hasChildren(['grade', 'echelon']) && newData.child('grade').isString() && newData.child('grade').val().length <= 80 && newData.child('echelon').isNumber() && newData.child('echelon').val() >= 1 && newData.child('echelon').val() <= 15 && newData.child('echelon').val() % 1 === 0",
             "grade": { ".validate": true },
-            "echelons": {
-              "$index": {
-                ".validate": "newData.hasChild('libelle') && newData.child('libelle').isString() && newData.child('libelle').val().length >= 1 && newData.child('libelle').val().length <= 60 && (newData.hasChild('horaire') || newData.hasChild('hebdo') || newData.hasChild('montant'))",
-                "libelle": { ".validate": true },
-                "horaire": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
-                "hebdo": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
-                "montant": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
-                "$other": { ".validate": false }
-              }
-            },
+            "echelon": { ".validate": true },
             "$other": { ".validate": false }
           }
         }

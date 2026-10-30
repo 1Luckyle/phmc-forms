@@ -1,6 +1,7 @@
 // src/components/RecruitmentStatusDisplay.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CATEGORY_BY_KEY, isPositionOpen, isPositionClosed } from '../constants/recruitment';
+import { loadSalaryGrid, echelonOf, formatEchelonRates } from '../utils/salaryGrid';
 
 const RecruitmentStatusDisplay = ({
     selectedAgencyGroup,
@@ -14,6 +15,18 @@ const RecruitmentStatusDisplay = ({
 }) => {
     useEffect(() => {
     }, [selectedAgencyGroup, bbCodeVersion]);
+
+    // Rémunération de chaque poste : l'échelon de son rôle dans la grille publiée (un rôle n'a qu'un échelon, qui fixe son salaire).
+    const [grid, setGrid] = useState(null);
+    useEffect(() => {
+        let cancelled = false;
+        loadSalaryGrid().then((loaded) => { if (!cancelled) setGrid(loaded); });
+        return () => { cancelled = true; };
+    }, []);
+    const payOf = (position) => {
+        const echelon = echelonOf(grid, position.role);
+        return echelon ? <span style={styles.paySpan}> — {echelon.libelle} : {formatEchelonRates(echelon)}</span> : null;
+    };
 
     let mainTitle = "Aperçu du recrutement";
     let sectionsToShow = [];
@@ -114,7 +127,7 @@ const RecruitmentStatusDisplay = ({
                                 <ul style={styles.listStyle}>
                                     {openPositions.map(pos => (
                                         <li key={`${section.title}-open-${pos.nom}`} style={styles.listItemStyle}>
-                                            <span style={styles.openSpan}>{pos.nom}</span>
+                                            <span style={styles.openSpan}>{pos.nom}</span>{payOf(pos)}
                                         </li>
                                     ))}
                                 </ul>
@@ -126,7 +139,7 @@ const RecruitmentStatusDisplay = ({
                                 <ul style={styles.listStyle}>
                                     {closedPositions.map(pos => (
                                         <li key={`${section.title}-closed-${pos.nom}`} style={{ ...styles.listItemStyle, color: '#dc3545' }}>
-                                            {pos.nom} (Candidatures Fermées)
+                                            {pos.nom} (Candidatures Fermées){payOf(pos)}
                                         </li>
                                     ))}
                                 </ul>
@@ -172,6 +185,7 @@ const styles = {
     },
     openStrong: { color: '#28a745' },
     openSpan: { color: '#28a745' },
+    paySpan: { color: '#9aa7b4' },
     closedStrong: { color: '#dc3545' },
     noDataText: {
         color: '#9aa7b4',

@@ -38,11 +38,6 @@
 
 /* Éditeur admin */
 .tm-grade { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 0; }
-.tm-grade-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
-.tm-echelon { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(130px, 170px) minmax(140px, 180px) auto; gap: 6px; margin-bottom: 6px; align-items: center; }
-/* Montant et devise sur la même ligne (le thème impose 100 % de large aux champs, ce qui renvoyait l'unité sous le champ) */
-.tm-rate { flex-wrap: nowrap; }
-.tm-rate > .form-control { width: 1% !important; min-width: 0; flex: 1 1 auto; }
 .tm-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .tm-line { display: flex; flex-wrap: wrap; gap: 6px; }
 .tm-line > .form-control { flex: 1 1 200px; }
@@ -79,26 +74,18 @@
 .tm-wide-field textarea { width: 100%; }
 
 /* Grille salariale : l'éditeur et, sur le côté, la grille de référence */
-.tm-grille-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
-.tm-ref { position: sticky; top: 12px; border: 1px solid rgba(88, 166, 255, 0.35); border-radius: 10px; padding: 12px; background: rgba(88, 166, 255, 0.05); }
-.tm-ref-title { font-weight: 700; margin-bottom: 4px; }
-.tm-ref-help { font-size: 0.78rem; color: #8b949e; margin: 0 0 10px; }
-.tm-ref-list { display: flex; flex-direction: column; }
-.tm-ref-row { display: grid; grid-template-columns: 22px 1fr; gap: 0 8px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
-.tm-ref-row.done .tm-ref-label { color: #3fb950; }
-.tm-ref-rang { grid-row: span 2; color: #6e7681; font-size: 0.8rem; font-variant-numeric: tabular-nums; padding-top: 1px; }
-.tm-ref-label { font-size: 0.88rem; font-weight: 600; }
-.tm-ref-amounts { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.tm-ref-sep { color: #6e7681; }
-.tm-ref-amount { border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.05); color: #e6edf3; border-radius: 6px; padding: 1px 8px; font-size: 0.8rem; font-variant-numeric: tabular-nums; cursor: pointer; }
-.tm-ref-amount:hover { border-color: #58a6ff; background: rgba(88, 166, 255, 0.18); }
+.tm-grille-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 20px; align-items: start; }
+.tm-grille-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+/* Un grade : son nom, son échelon (sélecteur) et le salaire qui en découle, sur une seule ligne */
+.tm-grade-row { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(170px, 210px) minmax(150px, 1.2fr); gap: 6px 12px; align-items: center; }
+.tm-grade-name { min-width: 0; overflow-wrap: anywhere; }
+.tm-grade-rates { font-size: 0.85rem; color: #c9d1d9; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 991px) {
     .tm-grille-layout { grid-template-columns: 1fr; }
-    .tm-ref { position: static; }
+    .tm-grille-side { position: static; max-height: none; }
 }
 
 @media (max-width: 575px) {
-    .tm-echelon { grid-template-columns: 1fr 1fr; }
-    .tm-echelon > :first-child { grid-column: 1 / -1; }
+    .tm-grade-row { grid-template-columns: 1fr; }
 }

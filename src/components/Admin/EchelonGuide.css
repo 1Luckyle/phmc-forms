@@ -1,0 +1,21 @@
+/* Grille des 15 échelons : éditeur de la page Transparence et aide du chargé de recrutement */
+.eg { border: 1px solid rgba(88, 166, 255, 0.35); border-radius: 10px; padding: 12px; background: rgba(88, 166, 255, 0.05); color: #e6edf3; }
+.eg-title { font-weight: 700; margin-bottom: 4px; }
+.eg-help { font-size: 0.78rem; color: #8b949e; margin: 0 0 10px; }
+.eg-list { display: flex; flex-direction: column; }
+.eg-row {
+    display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; padding: 7px 6px; width: 100%; text-align: left; color: inherit;
+    background: none; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.eg-pick { cursor: pointer; }
+.eg-pick:hover { background: rgba(88, 166, 255, 0.14); }
+.eg-row.on { background: rgba(88, 166, 255, 0.22); box-shadow: inset 3px 0 0 #58a6ff; }
+.eg-rang { grid-row: span 3; color: #8b949e; font-size: 0.85rem; font-variant-numeric: tabular-nums; padding-top: 2px; }
+.eg-label { font-size: 0.9rem; font-weight: 600; }
+.eg-example { font-weight: 400; color: #8b949e; }
+.eg-amounts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.eg-fixed { font-size: 0.82rem; color: #c9d1d9; font-variant-numeric: tabular-nums; }
+.eg-grades { font-size: 0.75rem; color: #3fb950; overflow-wrap: anywhere; }
+/* Montant et devise sur la même ligne (le thème impose 100 % de large aux champs) */
+.eg-rate { flex: 1 1 120px; flex-wrap: nowrap; }
+.eg-rate > .form-control { width: 1% !important; min-width: 0; flex: 1 1 auto; }

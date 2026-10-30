@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Spinner } from 'react-bootstrap';
 import { STAFF_FAMILIES, ROLES } from '../../constants/ranks';
-import { loadSalaryGrid, gradeKeyOf } from '../../utils/salaryGrid';
+import { loadSalaryGrid, gradeKeyOf, echelonOf } from '../../utils/salaryGrid';
 import { loadTransparency, quarterLabel, totals, formatMoney, ENTITIES, MAIN_ENTITY } from '../../utils/transparency';
 import { PHMC_PHONE, PHMC_DISCORD_URL } from '../../constants/contact';
 import './Transparency.css';
@@ -31,7 +31,7 @@ const TransparencyPage = () => {
         return Object.values(STAFF_FAMILIES)
             .map((family) => ({
                 family,
-                grades: ROLES.filter((role) => role.pole === family.key && grid.grades[gradeKeyOf(role.value)]).map((role) => ({ role, echelons: grid.grades[gradeKeyOf(role.value)].echelons })),
+                grades: ROLES.filter((role) => role.pole === family.key && grid.grades[gradeKeyOf(role.value)]).map((role) => ({ role, echelon: echelonOf(grid, role.value) })).filter((entry) => entry.echelon),
             }))
             .filter((entry) => entry.grades.length > 0);
     }, [grid]);
@@ -93,14 +93,14 @@ const TransparencyPage = () => {
                                                 <table className="tp-table tp-table-grid">
                                                     <thead><tr><th>Grade</th><th>Échelon</th><th className="tp-num">À l'heure</th><th className="tp-num">À la semaine</th></tr></thead>
                                                     <tbody>
-                                                        {grades.map(({ role, echelons }) => echelons.map((echelon, index) => (
-                                                            <tr key={`${role.value}-${echelon.libelle}`}>
-                                                                {index === 0 && <th rowSpan={echelons.length} scope="rowgroup">{role.value}</th>}
+                                                        {grades.map(({ role, echelon }) => (
+                                                            <tr key={role.value}>
+                                                                <th scope="row">{role.value}</th>
                                                                 <td>{echelon.libelle}</td>
-                                                                <td className="tp-num">{echelon.horaire !== null ? formatMoney(echelon.horaire) : '—'}</td>
-                                                                <td className="tp-num">{echelon.hebdo !== null ? formatMoney(echelon.hebdo) : '—'}</td>
+                                                                <td className="tp-num">{formatMoney(echelon.horaire)}</td>
+                                                                <td className="tp-num">{formatMoney(echelon.hebdo)}</td>
                                                             </tr>
-                                                        )))}
+                                                        ))}
                                                     </tbody>
                                                 </table>
                                             </div>

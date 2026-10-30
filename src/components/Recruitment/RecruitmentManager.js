@@ -31,7 +31,7 @@ import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 import InternalRecruitmentManager from './InternalRecruitmentManager';
-import { loadSalaryGrid, echelonsFor, formatEchelonRates } from '../../utils/salaryGrid';
+import { loadSalaryGrid, echelonOf, formatEchelonRates } from '../../utils/salaryGrid';
 import '../Cctv/CctvRequests.css';
 import './Recruitment.css';
 
@@ -79,10 +79,10 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
         return () => { cancelled = true; };
     }, [show, positions]);
     const echelonLabelOf = (position) => {
-        if (!position.echelon) return null;
-        const found = echelonsFor(grid, position.role).find((e) => e.libelle === position.echelon);
-        const rates = found ? formatEchelonRates(found) : '';
-        return <> · Échelon : <strong style={{ color: '#c9d1d9' }}>{position.echelon}</strong>{rates ? ` (${rates})` : ''}</>;
+        // L'échelon vient de la grille, d'après le rôle (un rôle n'a qu'un échelon) : il suit toute modification de la grille.
+        const found = echelonOf(grid, position.role);
+        if (!found) return null;
+        return <> · <strong style={{ color: '#c9d1d9' }}>{found.libelle}</strong> ({formatEchelonRates(found)})</>;
     };
 
     const loadPositions = useCallback(async () => {
