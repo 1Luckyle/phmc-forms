@@ -13,7 +13,8 @@ import {
 } from '../../utils/salaryGrid';
 import {
     loadTransparency, saveDirection, publishAccounts, unpublishAccounts, suggestQuarterRevenue, quarterKey, quarterLabel, currentQuarterKey, parseQuarterKey,
-    isQuarterOver, totals, formatMoney, LINE_TYPES, LINE_LABEL_SUGGESTIONS, loadDraft, saveDraft, deleteDraft, MAX_DRAFT_LINES, quarterSchedule, MAX_MEMBERS, previousQuarterKey, OPENING_YEAR,
+    isQuarterOver, totals, formatMoney, LINE_TYPES, labelSuggestionsFor, loadDraft, saveDraft, deleteDraft, MAX_DRAFT_LINES, quarterSchedule, MAX_MEMBERS, previousQuarterKey,
+    ENTITIES, MAIN_ENTITY, entityOf, entityStartLabel, entityStartYear, firstQuarterOf, isBeforeOpening, draftKeyOf,
 } from '../../utils/transparency';
 import { loadStaffMembers } from '../../utils/staffAdmin';
 import { getEmployeeFullName } from '../../utils/employeeName';
@@ -381,7 +382,7 @@ const longDate = (date) => date.toLocaleDateString('fr-FR', { day: 'numeric', mo
 const DAY = 24 * 60 * 60 * 1000;
 
 // Quand publier : chaque trimestre se termine à une date fixe et ses comptes se publient dès le lendemain (art. 327 : « à la fin de chaque trimestre »).
-const QuarterCalendar = ({ year, comptes, onPick, selected }) => {
+const QuarterCalendar = ({ year, comptes, onPick, selected, entity }) => {
     const now = Date.now();
     return (
         <div className="mb-3">
@@ -389,7 +390,7 @@ const QuarterCalendar = ({ year, comptes, onPick, selected }) => {
                 <table className="table table-sm mb-1" style={{ color: 'inherit' }}>
                     <thead><tr><th>Trimestre {year}</th><th>Période</th><th>À publier à partir du</th><th>État</th></tr></thead>
                     <tbody>
-                        {quarterSchedule(year).map((entry) => {
+                        {quarterSchedule(year, entity).map((entry) => {
                             const published = comptes[entry.key];
                             const over = now >= entry.publishFrom.getTime();
                             const lateDays = Math.floor((now - entry.publishFrom.getTime()) / DAY);
@@ -414,17 +415,26 @@ const QuarterCalendar = ({ year, comptes, onPick, selected }) => {
     );
 };
 
+// Trimestre proposé par défaut : le dernier trimestre TERMINÉ (au 1er trimestre : le 4e de l'année précédente), ramené au premier trimestre de l'entité
+// si celle-ci n'existait pas encore.
+const defaultQuarterFor = (entityKey) => {
+    const current = parseQuarterKey(currentQuarterKey());
+    const last = current.quarter === 1 ? { year: current.year - 1, quarter: 4 } : { year: current.year, quarter: current.quarter - 1 };
+    const first = firstQuarterOf(entityKey);
+    return last.year * 4 + last.quarter < first.year * 4 + first.quarter ? first : last;
+};
+
 const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName }) => {
     const nowYear = new Date().getFullYear();
-    // Par défaut, le dernier trimestre TERMINÉ (au 1er trimestre : le 4e de l'année précédente).
-    const [previous] = useState(() => {
-        const current = parseQuarterKey(currentQuarterKey());
-        return current.quarter === 1 ? { year: current.year - 1, quarter: 4 } : { year: current.year, quarter: current.quarter - 1 };
-    });
+    const [entity, setEntity] = useState(MAIN_ENTITY);          // PHMC, pharmacie du PHMC, pharmacie du Service des Urgences : trois comptes indépendants
+    const [previous] = useState(() => defaultQuarterFor(MAIN_ENTITY));
     const [year, setYear] = useState(previous.year);
     const [quarter, setQuarter] = useState(previous.quarter);
     const key = quarterKey(year, quarter);
-    const published = data.comptes[key] || null;
+    const entityInfo = entityOf(entity);
+    const accounts = data.comptesParEntite?.[entity] || {};
+    const dKey = draftKeyOf(entity, key);                       // clé du brouillon : un brouillon par entité et par trimestre
+    const published = accounts[key] || null;
     const [lignes, setLignes] = useState([]);
     const [notes, setNotes] = useState('');
     const [ouverture, setOuverture] = useState('');   // solde d'ouverture (texte saisi)
@@ -435,8 +445,8 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     const [saveState, setSaveState] = useState('idle');     // idle | pending | saving | saved | error | conflict
     const [conflict, setConflict] = useState(null);         // version d'un autre admin, en cas de conflit
     const [loadingDraft, setLoadingDraft] = useState(true);
-    const keyRef = useRef(key);                              // trimestre affiché (un enregistrement tardif d'un autre trimestre ne touche pas l'écran)
-    const basesRef = useRef({});                             // par trimestre : majLe du brouillon tel que cette page l'a chargé ou enregistré en dernier
+    const keyRef = useRef(dKey);                             // brouillon affiché (un enregistrement tardif d'un autre trimestre ou d'une autre entité ne touche pas l'écran)
+    const basesRef = useRef({});                             // par brouillon : majLe du brouillon tel que cette page l'a chargé ou enregistré en dernier
     const timerRef = useRef(null);
     const pendingRef = useRef(null);                         // { key, lignes, notes, ouverture } en attente d'enregistrement
     const queueRef = useRef(Promise.resolve());              // un enregistrement à la fois (sinon le suivant se prendrait pour un conflit)
@@ -477,24 +487,24 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     // Changement de trimestre : on enregistre d'abord ce qui attend, puis on charge le brouillon enregistré, sinon l'éventuel brouillon local d'avant, sinon le publié.
     useEffect(() => {
         let cancelled = false;
-        keyRef.current = key;
+        keyRef.current = dKey;
         pendingRef.current = null;
         setLoadingDraft(true);
         setConflict(null);
         setSaveState('idle');
         setDraftMeta(null);
         // On attend la fin des enregistrements en cours (ceux du trimestre quitté) avant de lire : sinon on pourrait relire une version plus ancienne.
-        queueRef.current.then(() => loadDraft(key)).then((remote) => {
+        queueRef.current.then(() => loadDraft(dKey)).then((remote) => {
             if (cancelled) return;
-            basesRef.current[key] = remote ? remote.majLe : null;
+            basesRef.current[dKey] = remote ? remote.majLe : null;
             if (remote) {
                 setLignes(remote.lignes); setNotes(remote.notes); setOuverture(remote.ouverture);
                 setDraftMeta({ majLe: remote.majLe, majPar: remote.majPar });
                 return;
             }
-            const local = readLocalDraft(key);
+            const local = readLocalDraft(dKey);
             if (local) {
-                const next = { key, lignes: (local.lignes || []).slice(0, MAX_DRAFT_LINES), notes: local.notes || '', ouverture: local.ouverture || '' };
+                const next = { key: dKey, lignes: (local.lignes || []).slice(0, MAX_DRAFT_LINES), notes: local.notes || '', ouverture: local.ouverture || '' };
                 setLignes(next.lignes); setNotes(next.notes); setOuverture(next.ouverture);
                 pendingRef.current = next;
                 setSaveState('pending');
@@ -509,7 +519,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             setSaveState('error');
         }).finally(() => { if (!cancelled) setLoadingDraft(false); });
         return () => { cancelled = true; flush(); };
-    }, [key, published, flush, fromPublished]);
+    }, [dKey, published, flush, fromPublished]);
 
     // Fermeture de l'onglet : on tente d'enregistrer ce qui attend encore.
     useEffect(() => {
@@ -522,7 +532,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         if (loadingDraft) return;
         const lines = nextLignes.slice(0, MAX_DRAFT_LINES);
         setLignes(lines); setNotes(nextNotes); setOuverture(nextOuverture);
-        pendingRef.current = { key, lignes: lines, notes: nextNotes, ouverture: nextOuverture };
+        pendingRef.current = { key: dKey, lignes: lines, notes: nextNotes, ouverture: nextOuverture };
         clearTimeout(timerRef.current);
         if (saveState === 'conflict') return;                // en attente de la décision de l'admin
         setSaveState('pending');
@@ -533,7 +543,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     // Conflit : reprendre la version de l'autre admin, ou garder la nôtre.
     const takeTheirs = () => {
         if (!conflict) return;
-        basesRef.current[key] = conflict.majLe;
+        basesRef.current[dKey] = conflict.majLe;
         pendingRef.current = null;
         setLignes(conflict.lignes); setNotes(conflict.notes); setOuverture(conflict.ouverture);
         setDraftMeta({ majLe: conflict.majLe, majPar: conflict.majPar });
@@ -542,7 +552,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     };
     const keepMine = () => {
         if (!conflict) return;
-        basesRef.current[key] = conflict.majLe;
+        basesRef.current[dKey] = conflict.majLe;
         setConflict(null);
         flush();
     };
@@ -550,7 +560,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     const sums = totals(lignes, ouverture);
     // Solde de clôture du trimestre précédent, s'il est publié : proposé comme solde d'ouverture de celui-ci.
     const previousKey = previousQuarterKey(key);
-    const previousAccount = previousKey ? data.comptes[previousKey] : null;
+    const previousAccount = previousKey ? accounts[previousKey] : null;     // la clôture reportée est celle de la MÊME entité
     const previousClosing = previousAccount ? totals(previousAccount.lignes, previousAccount.soldeOuverture).cloture : null;
 
     const addLine = (type) => touch([...lignes, { type, libelle: '', montant: '' }], notes);
@@ -573,10 +583,10 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         if (!isQuarterOver(key) && !window.confirm(`Le ${quarterLabel(key)} n'est pas terminé. Publier quand même des comptes provisoires ?`)) return;
         setBusy(true);
         try {
-            await publishAccounts(key, { lignes, notes, soldeOuverture: ouverture }, adminName);
+            await publishAccounts(key, { lignes, notes, soldeOuverture: ouverture }, adminName, entity);
             await dropDraft();
-            showNotification(`Comptes du ${quarterLabel(key)} publiés.`, 'check-circle');
-            if (onLogAction) onLogAction('Comptes trimestriels publiés', `${quarterLabel(key)} · ouverture ${formatMoney(sums.ouverture)} · recettes ${formatMoney(sums.recettes)} · dépenses ${formatMoney(sums.depenses)} · clôture ${formatMoney(sums.cloture)}`);
+            showNotification(`Comptes de « ${entityInfo.label} » : ${quarterLabel(key)} publié.`, 'check-circle');
+            if (onLogAction) onLogAction('Comptes trimestriels publiés', `${entityInfo.label} · ${quarterLabel(key)} · ouverture ${formatMoney(sums.ouverture)} · recettes ${formatMoney(sums.recettes)} · dépenses ${formatMoney(sums.depenses)} · clôture ${formatMoney(sums.cloture)}`);
             onSaved();
         } catch (error) {
             showNotification(error.message, 'error');
@@ -584,16 +594,16 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
     };
 
     const unpublish = async () => {
-        if (!window.confirm(`Retirer les comptes du ${quarterLabel(key)} de la page publique ? Les chiffres ne sont pas supprimés : ils repassent en brouillon, que vous pourrez modifier puis republier.`)) return;
+        if (!window.confirm(`Retirer les comptes de « ${entityInfo.label} » (${quarterLabel(key)}) de la page publique ? Les chiffres ne sont pas supprimés : ils repassent en brouillon, que vous pourrez modifier puis republier.`)) return;
         setBusy(true);
         try {
             // Les chiffres passent en brouillon AVANT d'être retirés de la page publique : si l'enregistrement du brouillon échoue, rien n'est retiré et rien ne se perd.
-            pendingRef.current = { key, lignes, notes, ouverture };
+            pendingRef.current = { key: dKey, lignes, notes, ouverture };
             await flush();
             if (pendingRef.current) throw new Error("Le brouillon n'a pas pu être enregistré : rien n'a été retiré de la page publique.");
-            await unpublishAccounts(key);
+            await unpublishAccounts(key, entity);
             showNotification('Comptes retirés de la page publique : ils sont repassés en brouillon.', 'info');
-            if (onLogAction) onLogAction('Comptes trimestriels retirés', quarterLabel(key));
+            if (onLogAction) onLogAction('Comptes trimestriels retirés', `${entityInfo.label} · ${quarterLabel(key)}`);
             onSaved();
         } catch (error) {
             showNotification(error.message, 'error');
@@ -605,9 +615,9 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         pendingRef.current = null;
         clearTimeout(timerRef.current);
         await queueRef.current;
-        try { await deleteDraft(key); } catch (error) { console.warn('Brouillon non supprimé :', error?.message || error); }
-        clearLocalDraft(key);
-        basesRef.current[key] = null;
+        try { await deleteDraft(dKey); } catch (error) { console.warn('Brouillon non supprimé :', error?.message || error); }
+        clearLocalDraft(dKey);
+        basesRef.current[dKey] = null;
         setDraftMeta(null);
         setConflict(null);
         setSaveState('idle');
@@ -619,10 +629,38 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
         try { await dropDraft(); fromPublished(); } finally { setBusy(false); }
     };
 
-    const publishedKeys = Object.keys(data.comptes).sort().reverse();
+    const publishedKeys = Object.keys(accounts).sort().reverse();
+
+    // Changer d'entité : on garde le trimestre affiché s'il existe pour elle, sinon on propose le dernier trimestre terminé (au plus tôt son premier trimestre).
+    const switchEntity = (next) => {
+        if (next === entity) return;
+        setEntity(next);
+        if (isBeforeOpening(key, next)) {
+            const fallback = defaultQuarterFor(next);
+            setYear(fallback.year);
+            setQuarter(fallback.quarter);
+        }
+    };
 
     return (
         <>
+            <ul className="nav nav-pills tm-entities" role="tablist" aria-label="Comptes de l'entité">
+                {ENTITIES.map((candidate) => {
+                    const count = Object.keys(data.comptesParEntite?.[candidate.key] || {}).length;
+                    return (
+                        <li className="nav-item" key={candidate.key}>
+                            <button type="button" role="tab" aria-selected={candidate.key === entity} className={`nav-link ${candidate.key === entity ? 'active' : ''}`} onClick={() => switchEntity(candidate.key)}>
+                                {candidate.label}{count > 0 && <Badge bg="success" className="ms-2">{count}</Badge>}
+                            </button>
+                        </li>
+                    );
+                })}
+            </ul>
+            <p className="text-muted small tm-entity-note">
+                {entity === MAIN_ENTITY
+                    ? "Comptes du Pillbox Hill Medical Center. Les pharmacies ont chacune les leurs (onglets voisins) : elles s'affichent à la suite sur la page publique, sans jamais être additionnées."
+                    : `Comptes de « ${entityInfo.title} » : une comptabilité à part, avec son propre solde d'ouverture, ses recettes et ses dépenses (relevé bancaire de cette entité), jamais mêlée à celle du PHMC. Ses comptes commencent le ${entityStartLabel(entity)}.`}
+            </p>
             <p className="text-muted">
                 Un établissement public publie les éléments de sa comptabilité à la fin de chaque trimestre (Code du Gouvernement, art. 327). Les lignes liées à une enquête
                 pénale peuvent être anonymisées (regroupez-les sous un libellé générique comme « Dépenses d'enquête »). Ce que vous saisissez est enregistré automatiquement comme <strong>brouillon</strong> (visible des seuls administrateurs, sur tous vos appareils) : rien n'est public tant que vous ne cliquez pas sur « Publier les comptes ».
@@ -632,15 +670,15 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                     <Form.Select value={year} onChange={(e) => {
                         const nextYear = Number(e.target.value);
                         setYear(nextYear);
-                        // Premier trimestre existant de l'année (l'établissement a ouvert le 8 septembre 2024) si le trimestre choisi n'existe pas.
-                        const available = quarterSchedule(nextYear).map((entry) => entry.quarter);
+                        // Premier trimestre existant de l'année (la comptabilité de l'entité a un début) si le trimestre choisi n'existe pas.
+                        const available = quarterSchedule(nextYear, entity).map((entry) => entry.quarter);
                         if (!available.includes(quarter)) setQuarter(available[0]);
                     }}>
-                        {Array.from({ length: Math.max(nowYear + 1, year) - OPENING_YEAR + 1 }, (_, i) => Math.max(nowYear + 1, year) - i).map((y) => <option key={y} value={y}>{y}</option>)}
+                        {Array.from({ length: Math.max(nowYear + 1, year) - entityStartYear(entity) + 1 }, (_, i) => Math.max(nowYear + 1, year) - i).map((y) => <option key={y} value={y}>{y}</option>)}
                     </Form.Select></Form.Group>
                 <Form.Group><Form.Label>Trimestre</Form.Label>
                     <Form.Select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))}>
-                        {quarterSchedule(year).map((entry) => <option key={entry.quarter} value={entry.quarter}>T{entry.quarter}</option>)}
+                        {quarterSchedule(year, entity).map((entry) => <option key={entry.quarter} value={entry.quarter}>T{entry.quarter}</option>)}
                     </Form.Select></Form.Group>
                 <div className="pb-2">
                     {published ? <Badge bg="success">Publié le {formatDate(published.publieLe)}</Badge> : <Badge bg="secondary">Non publié</Badge>}
@@ -666,7 +704,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                     </div>
                 </Alert>
             )}
-            <QuarterCalendar year={year} comptes={data.comptes} onPick={(q) => setQuarter(q)} selected={quarter} />
+            <QuarterCalendar year={year} comptes={accounts} onPick={(q) => setQuarter(q)} selected={quarter} entity={entity} />
             {publishedKeys.length > 0 && <small className="text-muted d-block mb-2">Déjà publiés : {publishedKeys.map(quarterLabel).join(' · ')}.</small>}
 
             <fieldset className="tm-fieldset" disabled={loadingDraft}>
@@ -692,7 +730,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                         <Form.Select size="sm" value={line.type} onChange={(e) => changeLine(index, 'type', e.target.value)} style={{ maxWidth: 120 }}>
                             {Object.entries(LINE_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </Form.Select>
-                        <LabelCombo value={line.libelle} options={LINE_LABEL_SUGGESTIONS[line.type] || []} placeholder="Libellé : choisir dans la liste ou écrire" onChange={(next) => changeLine(index, 'libelle', next)} />
+                        <LabelCombo value={line.libelle} options={labelSuggestionsFor(entity, line.type)} placeholder="Libellé : choisir dans la liste ou écrire" onChange={(next) => changeLine(index, 'libelle', next)} />
                         <Form.Control size="sm" style={{ maxWidth: 150 }} inputMode="decimal" value={line.montant} placeholder="Montant ($)" onChange={(e) => changeLine(index, 'montant', e.target.value.replace(/[^\d.,]/g, ''))} />
                         <Button size="sm" variant="outline-danger" onClick={() => removeLine(index)}><i className="fas fa-times"></i></Button>
                     </div>
@@ -702,9 +740,11 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             <div className="d-flex flex-wrap gap-2 mb-3">
                 <Button size="sm" variant="outline-success" onClick={() => addLine('recette')}><i className="fas fa-plus me-1"></i>Recette</Button>
                 <Button size="sm" variant="outline-warning" onClick={() => addLine('depense')}><i className="fas fa-plus me-1"></i>Dépense</Button>
-                <Button size="sm" variant="outline-info" onClick={prefill} disabled={busy} title="Additionne les factures de dossiers médicaux payées pendant ce trimestre">
-                    <i className="fas fa-wand-magic-sparkles me-1"></i>Préremplir les recettes (factures payées)
-                </Button>
+                {entity === MAIN_ENTITY && (
+                    <Button size="sm" variant="outline-info" onClick={prefill} disabled={busy} title="Additionne les factures de dossiers médicaux payées pendant ce trimestre">
+                        <i className="fas fa-wand-magic-sparkles me-1"></i>Préremplir les recettes (factures payées)
+                    </Button>
+                )}
             </div>
 
             <div className="tm-totals">

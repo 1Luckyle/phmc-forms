@@ -49,6 +49,12 @@
 .tm-line .tm-label-combo > .dropdown > .btn { margin-left: -1px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .tm-label-combo .dropdown-menu { max-height: 280px; overflow-y: auto; }
 
+/* Choix de l'entité dont on saisit les comptes (PHMC, pharmacies) */
+.tm-entities { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.tm-entities .nav-link { border: 1px solid rgba(255, 255, 255, 0.14); color: #c9d1d9; padding: 6px 14px; }
+.tm-entities .nav-link.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.tm-entity-note { margin-bottom: 12px; }
+
 /* Zone de saisie des comptes : désactivée pendant le chargement du brouillon, sans le cadre d'un fieldset */
 .tm-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 

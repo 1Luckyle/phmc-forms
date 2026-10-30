@@ -318,6 +318,11 @@ await write('Civil C n enregistre pas de brouillon', false, 'C', `${BR}/2026-T3`
 await write('Anonyme n enregistre pas de brouillon', false, null, `${BR}/2026-T3`, brouillon());
 await write('Trimestre invalide refusé', false, 'A', `${BR}/2026-T5`, brouillon());
 await write('Clé quelconque refusée', false, 'A', `${BR}/n-importe-quoi`, brouillon());
+await write('Brouillon de la pharmacie du PHMC accepté', true, 'A', `${BR}/pharmacie_2024-T3`, brouillon());
+await write('Brouillon de la pharmacie des Urgences accepté', true, 'A', `${BR}/pharmacie-urgences_2025-T4`, brouillon());
+await write('Brouillon d une entité inconnue refusé', false, 'A', `${BR}/boulangerie_2025-T4`, brouillon());
+await write('S1 n enregistre pas de brouillon de pharmacie', false, 'S1', `${BR}/pharmacie_2024-T3`, brouillon());
+await write('Clé de pharmacie sans trimestre valide refusée', false, 'A', `${BR}/pharmacie_2024-T7`, brouillon());
 await write('Ligne de type inconnu refusée', false, 'A', `${BR}/2026-T3`, brouillon({ lignes: [{ type: 'cadeau', libelle: 'x', montant: '1' }] }));
 await write('Montant numérique refusé (le brouillon garde du texte)', false, 'A', `${BR}/2026-T3`, brouillon({ lignes: [{ type: 'recette', libelle: 'x', montant: 5 }] }));
 await write('Libellé trop long refusé', false, 'A', `${BR}/2026-T3`, brouillon({ lignes: [{ type: 'recette', libelle: 'x'.repeat(121), montant: '1' }] }));
