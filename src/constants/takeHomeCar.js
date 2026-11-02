@@ -35,22 +35,45 @@ export const MOTIF_MAX = 500;
 // Règlement affiché dans l'outil. `intro` : paragraphe ; `sections` : titre + puces ; `hrp` : remarque hors personnage ; `closing` : conclusion.
 export const TAKE_HOME_RULES = {
     title: 'Programme Take Home Car',
-    intro: "Les membres du personnel du PHMC peuvent bénéficier du privilège de garder à leur domicile un véhicule de l'établissement. L'utilité première de ces véhicules est de permettre et de faciliter la réponse sur les scènes depuis chez eux. L'obtention d'un Take Home Car est un privilège, non un droit : il s'obtient sur demande, après accord de la Direction, et peut être retiré à tout moment.",
-    hrp: "(( Le programme vous accorde le droit de faire un /fspawn d'un véhicule spécifique chez vous, et de l'employer librement selon les circonstances accordées. ))",
+    intro: "Le programme Take Home Car permet à un membre du personnel du PHMC de garder à son domicile un véhicule de l'établissement, afin de rejoindre plus vite un lieu d'intervention ou l'hôpital lorsqu'il est mobilisé (renfort, afflux de victimes, urgence sur scène). C'est un privilège, non un droit : il s'obtient sur demande, après accord de la Direction, et peut être retiré à tout moment.",
+    hrp: "(( Le programme vous accorde le droit de faire un /fspawn d'un véhicule spécifique chez vous, et de l'employer selon les conditions ci-dessous. ))",
     sections: [
         {
             title: 'Véhicules éligibles',
             items: TAKE_HOME_VEHICLES.map((vehicle) => `${vehicle.plate} — ${vehicle.model}`),
-            note: "Un véhicule n'est attribué qu'à un seul agent à la fois. L'éligibilité d'un véhicule peut évoluer selon les besoins de la flotte.",
+            note: "Un véhicule n'est attribué qu'à un seul membre du personnel à la fois. La liste peut évoluer selon les besoins de la flotte.",
         },
         {
-            title: 'Prérequis fixés par la Direction',
+            title: "Conditions d'attribution",
             items: [
-                "Une disponibilité accrue : il est nécessaire d'être joignable et déployable lorsque les situations l'exigent, notamment par le biais de mobilisations.",
-                "Une intégrité sans failles lors de l'usage d'un véhicule du PHMC : il est utilisé strictement pour les trajets vers son service ou pour quitter son affectation, ou pour répondre à une scène.",
-                "Le véhicule ne dispose pas de matériel lourd : le coffre est systématiquement vide de contenu lorsque le véhicule n'est pas sous sa garde. Unique exception : le matériel de secours nécessaire à un déploiement rapide.",
-                "Le membre du personnel ne doit pas vivre dans une zone géographique hostile à l'établissement.",
-                "Le membre du personnel revêt systématiquement sa tenue de service lorsqu'il utilise son véhicule, sauf exception autorisée par la Direction.",
+                "Être en mesure d'intervenir : le véhicule est accordé à un membre du personnel dont la fonction justifie de se déplacer rapidement vers une scène ou vers l'hôpital.",
+                "Une disponibilité accrue : être joignable et mobilisable lorsque la situation l'exige, notamment par le biais des mobilisations du PHMC.",
+                "Avoir un comportement irréprochable : aucun manquement grave ou répété au règlement de l'établissement ni à la conduite.",
+            ],
+        },
+        {
+            title: "Règles d'utilisation",
+            items: [
+                "Le véhicule sert uniquement au service : trajets entre le domicile et le PHMC, et déplacements pour répondre à une mobilisation ou à une intervention. Aucun usage personnel ou de loisir.",
+                "Il est strictement personnel : il n'est ni prêté, ni confié à un tiers, ni utilisé pour transporter des personnes étrangères au service, hors secours d'une personne en détresse.",
+                "Lors d'une intervention, le membre se présente comme personnel du PHMC (badge visible) et respecte les protocoles de l'établissement ainsi que le code de la route.",
+                "Le véhicule est stationné de façon sécurisée, verrouillé, et jamais laissé en évidence avec un équipement ou des documents visibles à l'intérieur.",
+            ],
+        },
+        {
+            title: 'Contenu du véhicule',
+            items: [
+                "Le véhicule n'est pas un lieu de stockage : médicaments, stupéfiants, matériel de l'établissement et dossiers de patients restent au PHMC.",
+                "Seul le matériel de première urgence nécessaire à une intervention rapide peut rester à bord, sous la responsabilité du titulaire.",
+                "Le secret médical s'applique aussi dans le véhicule : aucune information sur un patient n'y est conservée ni laissée visible.",
+            ],
+        },
+        {
+            title: "Fin de l'attribution",
+            items: [
+                "Le véhicule est rendu en cas de changement de poste ou d'affectation, d'absence prolongée, de sanction ou de fin de contrat.",
+                "Tout accident, dégât ou panne est signalé sans délai à la Direction.",
+                "La Direction peut retirer le véhicule à tout moment, avec ou sans motif détaillé.",
             ],
         },
         {
@@ -62,6 +85,6 @@ export const TAKE_HOME_RULES = {
             ],
         },
     ],
-    closing: "Prière de prévenir la Direction au moindre incident impliquant un véhicule du programme. Le moindre abus justifiera le retrait du Take Home Car sans appel.",
+    closing: "Prière de prévenir la Direction au moindre incident impliquant un véhicule du programme. Le moindre abus (usage personnel, prêt du véhicule, matériel ou informations de patients laissés à bord) justifiera le retrait du Take Home Car sans appel.",
     closingHrp: "(( Tout abus sera sévèrement puni en interne par la Direction. ))",
 };
