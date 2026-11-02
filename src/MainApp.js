@@ -100,6 +100,7 @@ const FireSafetyModal = lazy(() => import('./components/FireSafety/FireSafetyMod
 const DisciplineModal = lazy(() => import('./components/Contracts/DisciplineModal'));
 const CommercialAgreementsModal = lazy(() => import('./components/Commercial/CommercialAgreementsModal'));
 const AdministrativeHub = lazy(() => import('./components/Administrative/AdministrativeHub'));
+const FireSafetyHub = lazy(() => import('./components/FireSafety/FireSafetyHub'));
 const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
@@ -206,6 +207,8 @@ function MainApp({
     const [showFireReport, setShowFireReport] = useState(false);
     const [showAccounting, setShowAccounting] = useState(false);
     const [showFireManage, setShowFireManage] = useState(false);
+    // « Sécurité incendie » : menu qui regroupe signalement et gestion pour qui a les deux droits.
+    const [showFireHub, setShowFireHub] = useState(false);
     const [showDiscipline, setShowDiscipline] = useState(false);
     // « Administratif » : menu qui regroupe recrutement, sanctions et contrats commerciaux.
     const [showAdminHub, setShowAdminHub] = useState(false);
@@ -1802,8 +1805,10 @@ function MainApp({
                                                         // Comptabilité : tarifs des formulaires et page Transparence (admins, Directrice, Assistante de Direction).
                                                         canManageAccounting && { key: 'accounting', icon: 'fas fa-calculator', label: 'Comptabilité', onClick: closeAnd(() => setShowAccounting(true)) },
                                                         toolAccess.lawEnforcement && { key: 'lawEnforcement', icon: 'fas fa-scale-balanced', label: "Demandes des forces de l'ordre", onClick: closeAnd(() => setShowLawEnforcement(true)) },
-                                                        toolAccess.fireReport && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
-                                                        toolAccess.fireManage && { key: 'fireManage', icon: 'fas fa-fire-extinguisher', label: 'Gestion de la sécurité incendie', onClick: closeAnd(() => setShowFireManage(true)) },
+                                                        // Sécurité incendie : une seule entrée si on a les deux droits (choix entre signaler et gérer), sinon l'outil auquel on a droit s'ouvre directement.
+                                                        toolAccess.fireReport && toolAccess.fireManage && { key: 'fireHub', icon: 'fas fa-fire-extinguisher', label: 'Sécurité incendie', onClick: closeAnd(() => setShowFireHub(true)) },
+                                                        toolAccess.fireReport && !toolAccess.fireManage && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
+                                                        !toolAccess.fireReport && toolAccess.fireManage && { key: 'fireManage', icon: 'fas fa-fire-extinguisher', label: 'Gestion de la sécurité incendie', onClick: closeAnd(() => setShowFireManage(true)) },
                                                         toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
                                                 },
@@ -2657,6 +2662,18 @@ function MainApp({
                         )}
                         {toolAccess.disciplineManage && (
                             <DisciplineModal show={showDiscipline} initialSearch={directoryDisciplineSearch} onHide={() => { setShowDiscipline(false); setDirectoryDisciplineSearch(''); }} showNotification={showNotification} />
+                        )}
+                        {toolAccess.fireReport && toolAccess.fireManage && (
+                            <FireSafetyHub
+                                show={showFireHub}
+                                onHide={() => setShowFireHub(false)}
+                                access={{ report: toolAccess.fireReport, manage: toolAccess.fireManage }}
+                                onOpen={(key) => {
+                                    setShowFireHub(false);
+                                    if (key === 'report') setShowFireReport(true);
+                                    else if (key === 'manage') setShowFireManage(true);
+                                }}
+                            />
                         )}
                         {toolAccess.fireManage && (
                             <FireSafetyModal show={showFireManage} onHide={() => setShowFireManage(false)} showNotification={showNotification} />
