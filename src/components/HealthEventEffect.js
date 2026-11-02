@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import Snowfall from 'react-snowfall';
-import { getEventEffectEmoji } from '../data/awarenessEvents';
+import { getEventEffectEmoji, getEventEffectImage } from '../data/awarenessEvents';
 import { makeEmojiImage } from './AmbientSeasonalEffect';
 
 // Effet de saison piloté par le calendrier de la santé : pour chaque événement en cours, une
@@ -31,10 +31,27 @@ const makeRibbonImage = (colors, size) => {
     return img;
 };
 
+// Moustache de Movember (à guidon) : dessinée en SVG car il n'existe pas d'emoji de moustache. Brun clair cerné de brun foncé pour rester lisible sur fond clair
+// comme sur fond sombre.
+const MOUSTACHE_PATH = 'M256 236 C 232 206, 190 196, 148 214 C 112 230, 92 258, 62 250 C 36 243, 24 214, 40 188 C 36 226, 62 262, 108 270 C 160 280, 212 262, 256 272 C 300 262, 352 280, 404 270 C 450 262, 476 226, 472 188 C 488 214, 476 243, 450 250 C 420 258, 400 230, 364 214 C 322 196, 280 206, 256 236 Z';
+const MOUSTACHE_HAIR = 'M150 224 C 190 210, 226 220, 246 246 M362 224 C 322 210, 286 220, 266 246 M120 246 C 160 252, 200 252, 236 262 M392 246 C 352 252, 312 252, 276 262';
+
+const makeMoustacheImage = (size) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">`
+        + `<path d="${MOUSTACHE_PATH}" fill="#5a3820" stroke="#1d0f07" stroke-width="8" stroke-linejoin="round"/>`
+        + `<path d="${MOUSTACHE_HAIR}" fill="none" stroke="#8a5a38" stroke-width="7" stroke-linecap="round" opacity="0.85"/></svg>`;
+    const img = document.createElement('img');
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    img.width = size;
+    img.height = size;
+    return img;
+};
+
 const HealthEventEffect = ({ events }) => {
     // Clé stable : MainApp se re-rend chaque seconde et passe un nouveau tableau à chaque fois.
     const key = events.map((event) => event.id).join('|');
     const images = useMemo(() => events.map((event) => {
+        if (getEventEffectImage(event) === 'moustache') return makeMoustacheImage(40);
         const emoji = getEventEffectEmoji(event);
         return emoji ? makeEmojiImage(emoji, 30) : makeRibbonImage(event.ribbon, 34);
     }), [key]); // eslint-disable-line react-hooks/exhaustive-deps

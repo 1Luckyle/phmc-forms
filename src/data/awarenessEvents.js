@@ -473,8 +473,12 @@ const EFFECT_EMOJI = {
     'polio': '💉',
     'maladies-rares': '🦓',
     'trisomie-21': '🧦',
-    'movember': '🧔',
 };
+
+// Événements dont l'emblème est une IMAGE dessinée (aucun emoji ne convient) : l'effet de saison la crée lui-même (voir HealthEventEffect).
+// Movember : la moustache n'existe pas en emoji (🧔 est une barbe), on en dessine une.
+const EFFECT_IMAGE = { movember: 'moustache' };
+export const getEventEffectImage = (event) => EFFECT_IMAGE[event.id] || null;
 
 // Emoji de l'effet pour cet événement, ou null s'il doit utiliser son ruban coloré.
 export const getEventEffectEmoji = (event) => {
