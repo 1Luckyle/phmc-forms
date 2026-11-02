@@ -2,11 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebase';
 import { ref, onValue } from 'firebase/database';
 import { setLockdownActive } from '../utils/lockdownGuard';
+import { isLocalHostname } from '../utils/siteUrl';
 
 const LockdownContext = createContext();
 
-const FORM_GENERATOR_URL = "https://1luckyle.github.io";
-const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
 
 export const useLockdown = () => {
     const context = useContext(LockdownContext);
@@ -28,14 +27,9 @@ export const LockdownProvider = ({ children }) => {
 
     // Detect current deployment
     useEffect(() => {
-        const currentUrl = window.location.href;
-        if (currentUrl.startsWith(FORM_GENERATOR_URL)) {
-            setCurrentDeployment('github-pages');
-        } else if (currentUrl.startsWith(ALTERNATIVE_FORM_GENERATOR_URL)) {
-            setCurrentDeployment('github-pages');
-        } else {
-            setCurrentDeployment('local');
-        }
+        // « Site en ligne » (domaine personnalisé ou ancienne adresse GitHub Pages) ou « local » (serveur de développement) : on se fie au nom d'hôte,
+        // pas à l'adresse complète, sinon un changement de domaine ferait passer le site en ligne pour du local (et le confinement ne s'y appliquerait plus).
+        setCurrentDeployment(isLocalHostname() ? 'local' : 'github-pages');
     }, []);
 
     // Subscribe to lockdown config changes

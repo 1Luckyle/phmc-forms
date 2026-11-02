@@ -212,9 +212,9 @@ export const dailyTaskHandler = onSchedule({
 const corsHandler = cors({
     origin: [
         'http://localhost:3000',
-        'http://localhost:3000/phmc-forms',
+        'https://phmc-tools.com',
+        'https://www.phmc-tools.com',
         'https://1luckyle.github.io',
-        'https://1luckyle.github.io/phmc-forms',
     ],
     methods: ['POST', 'OPTIONS'],
     credentials: true

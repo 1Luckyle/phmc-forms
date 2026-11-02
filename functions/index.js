@@ -288,13 +288,15 @@ export const dailyTaskHandler = onSchedule({
 
 // --- OAuth Token Exchange Function ---
 
+// Origines autorisées à appeler les fonctions (seul le domaine compte, pas le chemin) : le site en ligne (domaine personnalisé), l'ancienne
+// adresse GitHub Pages (qui redirige vers lui) et le serveur de développement.
 const ALLOWED_CORS_ORIGINS = [
     'http://localhost:3000',
-    'http://localhost:3000/phmc-forms',
+    'https://phmc-tools.com',
+    'https://www.phmc-tools.com',
     'https://1luckyle.github.io',
-    'https://1luckyle.github.io/phmc-forms',
 ];
-const DEFAULT_CORS_ORIGIN = 'https://1luckyle.github.io';
+const DEFAULT_CORS_ORIGIN = 'https://phmc-tools.com';
 
 const corsHandler = cors({
     origin: ALLOWED_CORS_ORIGINS,

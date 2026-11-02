@@ -95,13 +95,13 @@ export const WebhookProvider = ({ children, commitInfo }) => {
             return null;
         }
         const embedFields = [
-            { name: "Lien du générateur de formulaire", value: "https://1luckyle.github.io", inline: false },
+            { name: "Lien du générateur de formulaire", value: "https://phmc-tools.com", inline: false },
             { name: "Lien alternatif du générateur de formulaires", value: "https://1luckyle.github.io/phmc-forms/", inline: false }
         ];
 
         const embed = {
             title: title || "PHMC Notification du Générateur de Formulaires",
-            url: "https://1luckyle.github.io/phmc-forms/",
+            url: "https://phmc-tools.com/",
             description: description.trim() || undefined,
             color: 0x7289DA,
             timestamp: new Date().toISOString(),

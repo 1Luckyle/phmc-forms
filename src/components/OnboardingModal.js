@@ -19,6 +19,7 @@ import PrivacyPolicyContent from './PrivacyPolicyContent';
 import AuthEntryBlock from './Auth/AuthEntryBlock';
 
 import ZipCityField from './ZipCityField';
+import { getAppBase } from '../utils/siteUrl';
 // Step definitions for the onboarding flow
 export const ONBOARDING_STEPS = {
     WELCOME: 'welcome',
@@ -837,10 +838,7 @@ const OnboardingModal = ({
         setIsResettingPassword(true);
         setResetEmailSent(false);
         try {
-            const isProd = window.location.hostname !== 'localhost';
-            const appBase = isProd
-                ? 'https://1luckyle.github.io/phmc-forms/'
-                : `${window.location.origin}/phmc-forms/`;
+            const appBase = getAppBase();
             const actionCodeSettings = {
                 url: `${appBase}#/reset-password`,
                 handleCodeInApp: false,

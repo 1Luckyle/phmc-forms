@@ -8,7 +8,7 @@ export const LEGAL_NOTICE_UPDATE = '2 novembre 2026';
 
 export const LEGAL_NOTICE_TEXT = `## Services concernés
 
-Les présentes mentions s'appliquent à l'outil **PHMC-FR** : générateur de formulaires et de BBCode du Pillbox Hill Medical Center, rapports et dossiers patients, recrutement, annuaire et plan de l'hôpital. Il est accessible à l'adresse [1luckyle.github.io/phmc-forms](https://1luckyle.github.io/phmc-forms/).
+Les présentes mentions s'appliquent à l'outil **PHMC-FR** : générateur de formulaires et de BBCode du Pillbox Hill Medical Center, rapports et dossiers patients, recrutement, annuaire et plan de l'hôpital. Il est accessible à l'adresse [phmc-tools.com](https://phmc-tools.com).
 
 ## Éditeur
 

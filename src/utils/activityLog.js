@@ -25,6 +25,7 @@ export const getActivityActorName = () => currentActor?.name || '';
 const hostLabel = () => {
     const host = window.location.hostname;
     if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) return 'local';
+    if (host === 'phmc-tools.com' || host.endsWith('.phmc-tools.com')) return 'phmc-tools';
     if (host.endsWith('github.io')) return 'github-pages';
     return host.slice(0, 40);
 };

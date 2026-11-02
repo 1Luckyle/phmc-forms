@@ -11,6 +11,7 @@ import { PHMC_RANKS, CORONER_RANKS, normalizeRank, familyOfRank } from '../../co
 import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { logAdminAction } from '../../utils/activityLog';
 import { convertCivilianToStaff, badgeDigits, syncStaffUids } from '../../utils/staffAdmin';
+import { getAppBase } from '../../utils/siteUrl';
 import { clearDeletedMark, staffPatientIdOf } from '../../utils/deletedAccounts';
 import { clearContractCandidate } from '../../utils/contractCandidates';
 
@@ -228,7 +229,7 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
             // Ancienne voie « mot de passe » : la personne définit son mot de passe via l'e-mail de réinitialisation (jamais enregistré chez nous).
             if (needsPasswordEmail) {
                 try {
-                    const appBase = window.location.hostname !== 'localhost' ? 'https://1luckyle.github.io/phmc-forms/' : `${window.location.origin}/phmc-forms/`;
+                    const appBase = getAppBase();
                     await sendPasswordResetEmail(auth, request.email, { url: `${appBase}#/reset-password`, handleCodeInApp: false });
                 } catch (resetError) {
                     console.warn('Mail de définition du mot de passe non envoyé :', resetError);

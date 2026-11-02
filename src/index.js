@@ -113,7 +113,7 @@ init({
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  tracePropagationTargets: ["localhost", "https://1luckyle.github.io/", /^\//],
+  tracePropagationTargets: ["localhost", "https://phmc-tools.com/", "https://1luckyle.github.io/", /^\//],
 });
 console.log("Sentry has been initialized.");
 window.Sentry = Sentry;

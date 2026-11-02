@@ -4,7 +4,8 @@ import { ref, get, set, push } from 'firebase/database';
 import { database } from '../firebase';
 import getRelevantFields from './RevelantFields';
 
-const FORM_GENERATOR_URL = "https://1luckyle.github.io";
+// Adresse du site (domaine personnalisé) ; l'ancienne adresse GitHub Pages redirige vers lui.
+const FORM_GENERATOR_URL = "https://phmc-tools.com";
 const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
 const comprehensiveSanitize = (str) => {
     if (!str) return '';

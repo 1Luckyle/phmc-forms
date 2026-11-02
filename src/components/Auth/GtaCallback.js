@@ -1,7 +1,7 @@
 // src/components/Auth/GtaCallback.js
 //
 // Callback OAuth GTA World UNIQUE. Le client OAuth GTA World n'autorise qu'une
-// seule URL de callback (https://1luckyle.github.io/phmc-forms/#/auth/gta/callback),
+// seule URL de callback (https://phmc-tools.com/#/auth/gta/callback),
 // donc TOUS les flux GTAW (onboarding, connexion employé, connexion admin)
 // passent par ce composant, qui lit le flux mémorisé dans sessionStorage (voir
 // utils/gtawOAuth.js) avant la redirection pour savoir quoi faire du code

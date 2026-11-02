@@ -6,9 +6,12 @@
 // enregistrée : on doit donc toujours rediriger vers cette même URL, et
 // mémoriser le flux en cours dans sessionStorage pour que GtaCallback.js
 // sache quoi en faire au retour.
+import { getAppBase } from './siteUrl';
+
 export const GTAW_OAUTH_FLOW_KEY = 'gtaw-oauth-flow';
 
-export const getGtawRedirectUri = () => window.location.origin + '/phmc-forms/#/auth/gta/callback';
+// Doit être EXACTEMENT l'URL de rappel enregistrée dans l'application OAuth de GTA World (une seule autorisée) : https://phmc-tools.com/#/auth/gta/callback
+export const getGtawRedirectUri = () => `${getAppBase()}#/auth/gta/callback`;
 
 /**
  * Mémorise le flux en cours puis renvoie l'URL d'autorisation GTA World vers

@@ -5,6 +5,7 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { buildGtawAuthUrl } from '../../utils/gtawOAuth';
+import { getAppBase } from '../../utils/siteUrl';
 import { useAuthMethodsConfig } from '../../hooks/useAuthMethodsConfig';
 
 const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
@@ -99,10 +100,7 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
         setError('');
 
         try {
-            const isProd = window.location.hostname !== 'localhost';
-            const appBase = isProd
-                ? 'https://1luckyle.github.io/phmc-forms/'
-                : `${window.location.origin}/phmc-forms/`;
+            const appBase = getAppBase();
             const actionCodeSettings = {
                 url: `${appBase}#/reset-password`,
                 handleCodeInApp: false,

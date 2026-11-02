@@ -1253,7 +1253,7 @@ Clé : ${savedRoleData.cle}`,
 
     // Helper to build rich Discord embed payload with PHMC branding
     const buildWebhookPayload = (title, message, customUrl = '') => {
-        const FORM_GENERATOR_URL = "https://1luckyle.github.io";
+        const FORM_GENERATOR_URL = "https://phmc-tools.com";
         const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
         const phmcLogoUrl = 'https://i.ibb.co/0pgw9hHm/phmc.png';
         

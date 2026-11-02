@@ -282,7 +282,7 @@ export const MAIL_TEMPLATE_IDS = Object.keys(MAIL_TEMPLATES);
 // ICI pour que l'aperçu de Panneau admin → E-mails montre exactement ce que reçoit le destinataire. Styles en ligne : la plupart des clients mail
 // ignorent les feuilles de style. i.imgur.com fait partie des domaines d'images acceptés par le nettoyeur HTML d'Eyefind Mail.
 export const PHMC_LOGO_URL = 'https://i.imgur.com/oB47nCI.png';
-export const PHMC_SITE_URL = 'https://1luckyle.github.io/phmc-forms/';
+export const PHMC_SITE_URL = 'https://phmc-tools.com/';
 
 // Les liens du contenu prennent la couleur du thème (le bleu par défaut des clients mail est illisible sur fond sombre).
 export const styleMailLinks = (html) => String(html).replace(/<a\s+(?![^>]*\bstyle=)/gi, '<a style="color:#58a6ff;text-decoration:underline;" ');
