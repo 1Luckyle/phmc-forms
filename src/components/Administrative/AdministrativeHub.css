@@ -1,0 +1,10 @@
+/* « Administratif » : cartes de choix entre recrutement, sanctions et contrats commerciaux */
+.admin-hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.admin-hub-card {
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; padding: 16px;
+    border: 1px solid #30363d; border-radius: 10px; background: #161b22; color: #e6edf3; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.admin-hub-card:hover, .admin-hub-card:focus-visible { border-color: #1f6feb; background: #1c2431; transform: translateY(-2px); outline: none; }
+.admin-hub-card i { font-size: 1.6rem; color: #58a6ff; }
+.admin-hub-card span { font-size: 0.85rem; color: #9da7b3; }

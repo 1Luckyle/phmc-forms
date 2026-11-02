@@ -15,6 +15,7 @@ import {
     CONTRACT_STATUS, loadMyContracts, signContract, contractLabel, contractStatusLabel, contractTypeOf, acceptanceKind, isOfferExpired,
 } from '../../utils/contracts';
 import { CONTRACT_TYPE_INFO } from '../../utils/contractDocs';
+import MyAgreementsSection from '../Commercial/MyAgreementsSection';
 
 const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
 
@@ -87,7 +88,7 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 
             {!loading && contracts.length === 0 && !error && (
-                <p className="text-muted mb-0">Aucun document ne vous a été envoyé pour le moment.</p>
+                <p className="text-muted mb-0">Aucun contrat ni notification ne vous a été envoyé pour le moment.</p>
             )}
 
             {contracts.length > 0 && (
@@ -193,6 +194,19 @@ const MyContractsModal = ({ show, onHide, showNotification, uploadImageDetailed 
                     )}
                 </>
             )}
+
+            {/* Accords commerciaux envoyés à une personne qui représente une entreprise ou un partenaire du PHMC. */}
+            <MyAgreementsSection
+                show={show}
+                uid={uid}
+                signature={signature}
+                onSignatureChange={setSignature}
+                signatureName={signatureName}
+                isCivilSigner={isCivilSigner}
+                patientID={civilianProfile?.patientID || ''}
+                uploadImageDetailed={uploadImageDetailed}
+                showNotification={showNotification}
+            />
         </BaseModal>
     );
 };

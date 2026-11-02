@@ -38,3 +38,6 @@ src/OLD-GYNE-OBY.js
 
 # firebase
 firebase-admin-key.json
+
+# lois (documents de travail locaux, ne pas pousser)
+src/data/law/

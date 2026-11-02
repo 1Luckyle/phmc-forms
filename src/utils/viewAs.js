@@ -198,6 +198,10 @@ export const getToolAccess = (identity) => {
         fireManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
         // Documents disciplinaires (convocations, sanctions, fins de contrat) : admins, Direction et personnel administratif, pas les recruteurs.
         disciplineManage: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
+        // Contrats commerciaux (accords avec des entreprises, fournisseurs…) : mêmes personnes que les documents disciplinaires.
+        commercial: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
+        // « Administratif » : regroupe le recrutement, les sanctions et les contrats commerciaux (visible si l'un des trois est accessible).
+        administratif: !!canManageRecruitment || !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
         ama: !!canUseAma,
         // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
         // (depuis « Mes documents administratifs ») mais pas sa carte de visite.
@@ -219,6 +223,8 @@ export const TOOL_ACCESS_LABELS = {
     fireReport: 'Signaler un problème incendie',
     fireManage: 'Gestion de la sécurité incendie',
     disciplineManage: 'Documents disciplinaires',
+    commercial: 'Contrats commerciaux',
+    administratif: 'Administratif (recrutement, sanctions, contrats commerciaux)',
     ama: 'EMS Contre Avis Médical',
     businessCard: 'Créer sa carte de visite',
     signature: 'Créer sa signature',

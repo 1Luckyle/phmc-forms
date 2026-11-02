@@ -379,11 +379,19 @@ export const EmployeeAuthProvider = ({ children }) => {
     const [isContractCandidate, setIsContractCandidate] = useState(false);
     // Documents administratifs déjà envoyés à la personne (contratsParEmploye/{uid}, lisible par elle) : un ancien membre du personnel, redevenu
     // Civil, garde ainsi « Mes documents administratifs » pour retrouver ses contrats et notifications (archive en lecture seule côté PHMC).
-    const [hasAdminDocuments, setHasAdminDocuments] = useState(false);
+    const [hasContractDocuments, setHasContractDocuments] = useState(false);
     useEffect(() => {
-        if (!uid) { setHasAdminDocuments(false); return undefined; }
-        return onValue(ref(database, `contratsParEmploye/${uid}`), (snapshot) => setHasAdminDocuments(snapshot.exists()), () => setHasAdminDocuments(false));
+        if (!uid) { setHasContractDocuments(false); return undefined; }
+        return onValue(ref(database, `contratsParEmploye/${uid}`), (snapshot) => setHasContractDocuments(snapshot.exists()), () => setHasContractDocuments(false));
     }, [uid]);
+    // Accords commerciaux envoyés à la personne (accordsParPartie/{uid}) : elle représente une entreprise ou un partenaire du PHMC et les signe depuis
+    // « Mes documents administratifs », même sans contrat de travail.
+    const [hasAgreements, setHasAgreements] = useState(false);
+    useEffect(() => {
+        if (!uid) { setHasAgreements(false); return undefined; }
+        return onValue(ref(database, `accordsParPartie/${uid}`), (snapshot) => setHasAgreements(snapshot.exists()), () => setHasAgreements(false));
+    }, [uid]);
+    const hasAdminDocuments = hasContractDocuments || hasAgreements;
     // Statut de recrutement interne (évolution interne) : accordé par le recrutement, il rouvre les candidatures à un employé.
     const [hasInternalRecruitment, setHasInternalRecruitment] = useState(false);
     useEffect(() => {

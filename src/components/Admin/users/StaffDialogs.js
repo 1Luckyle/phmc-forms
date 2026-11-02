@@ -168,13 +168,14 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     </Form.Group>
                 </div>
                 {isEdit ? <Form.Text className="text-muted d-block mb-3">ID patient : PHMC-{form.badge}</Form.Text> : <div className="mb-2"></div>}
-                <div className="d-flex gap-2 mb-3 align-items-end">
-                    <Form.Group style={{ flex: 2 }}>
-                        <Form.Label>Adresse</Form.Label>
+                {/* align-items-start : le « Code postal : … » sous le menu de ville rallonge sa colonne ; avec align-items-end il poussait le champ Adresse vers le bas. */}
+                <div className="d-flex gap-2 mb-3 align-items-start">
+                    <Form.Group style={{ flex: '2 1 0' }}>
+                        <Form.Label className="text-nowrap">Adresse</Form.Label>
                         <Form.Control value={form.address} onChange={set('address')} placeholder="facultatif" />
                     </Form.Group>
-                    <Form.Group style={{ flex: 1 }}>
-                        <Form.Label>Ville / code postal</Form.Label>
+                    <Form.Group style={{ flex: '1 1 210px' }}>
+                        <Form.Label className="text-nowrap">Ville / code postal</Form.Label>
                         <ZipCityField zip={form.zip} onZipChange={(zip) => set('zip')({ target: { value: zip } })} placeholder="facultatif" />
                     </Form.Group>
                 </div>

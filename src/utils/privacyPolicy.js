@@ -14,17 +14,22 @@
 //   **gras**   *italique*   [texte du lien](https://adresse)   (seuls les liens http et https sont acceptés)
 import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
+import { LEGAL_NOTICE_TEXT } from './legalNotice';
 
 export const POLICY_PATH = 'adminSettings/politiqueConfidentialite';
 export const MAX_POLICY_LENGTH = 40000;
 export const MAX_HISTORY = 10;
-export const DEFAULT_UPDATE = '25 octobre 2026';
+export const DEFAULT_UPDATE = '2 novembre 2026';
 
 export const DEFAULT_POLICY_TEXT = `Cette politique couvre l'utilisation des outils PHMC-FR et est conforme aux [GTA World Privacy Policy](https://gta.world/terms/).
 
 Ce site Web traite des informations **IN CHARACTER** relatives à l'utilisation du Pillbox Hill Medical Center (une faction de GTA World), ainsi que quelques informations **HORS PERSONNAGE** (nom d'utilisateur UCP, nom du forum, Discord, fuseau horaire) nécessaires aux comptes et aux candidatures.
 
 Nous sommes en pleine conformité avec les [Règlements de GTA World](https://forum.gta.world/en/topic/141256-gta-world-website-regulations-last-update-march-1st-2025/) en hébergeant ce site Web sur un nom de domaine autorisé par GTA World.
+
+## Qui est responsable de vos données ?
+
+L'éditeur du site (voir la section « Mentions légales » plus bas) est responsable du traitement. Le site ne contient **aucune publicité** et **vos données ne sont jamais vendues**.
 
 ## Données que nous enregistrons
 
@@ -34,7 +39,8 @@ Nous sommes en pleine conformité avec les [Règlements de GTA World](https://fo
 - **Rapports et dossiers médicaux (IC) :** les rapports sauvegardés, leur index par ID patient, les rapports que le personnel partage avec un patient, et les copies que des médecins en font.
 - **Factures et paiements :** pour les dossiers médicaux payants, une facture par rapport (montant, état à payer / payé / sans paiement, titre du rapport, nom et adresse e-mail du patient indiqués dans le formulaire). Les paiements passent par Fleeca : nous gardons l'état du paiement, le montant, la date et le nom du payeur renvoyés par Fleeca, jamais de numéro de compte ni de code.
 - **Candidatures et contrats :** vos réponses, leur historique de statuts, les entretiens, le rôle « en attente de contrat », les contrats (texte figé, signature électronique, date de signature) et l'image de votre signature. Pour un employé, la demande de statut de recrutement interne (nom, rôle, badge, motivation et décision du recrutement).
-- **Images :** carte de visite, signature et autres images que vous téléversez (connexion requise) transitent par nos serveurs, qui les transmettent à ImgBB ; elles y sont hébergées et accessibles par leur lien.
+- **Images :** carte de visite, signature et autres images que vous téléversez (connexion requise) transitent par nos serveurs, qui les transmettent à ImgBB ; elles y sont hébergées et accessibles par leur lien. Les images que vous insérez à partir de liens externes sont chargées depuis leur hébergeur d'origine, qui peut alors voir votre adresse IP.
+- **Retours d'expérience :** les rapports de bug, demandes de fonctionnalité et propositions de formulaire que vous envoyez (texte, nom Discord indiqué, informations techniques sur votre appareil).
 - **Préférences :** options d'affichage (effets de saison, en-tête immersif), formulaire en cours de saisie et listes mises en cache sont gardés dans votre navigateur (stockage local) et peuvent être vidés avec « Vider le Cache & Actualiser ».
 - **Journaux techniques :** informations sur l'appareil (mobile / bureau / tablette), fichier d'erreur lié et bouton pressé en cas d'erreur ; événements d'utilisation anonymes (par exemple l'envoi d'une demande de vidéosurveillance).
 
@@ -47,12 +53,25 @@ Nous sommes en pleine conformité avec les [Règlements de GTA World](https://fo
 
 Nous utilisons les services suivants, qui reçoivent les données nécessaires à leur fonction :
 
-- [Google Firebase](https://policies.google.com/privacy) : comptes, base de données (rapports, profils, factures, candidatures, contrats), fonctions serveur et statistiques d'utilisation.
+- [GitHub Pages](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) : hébergement des pages du site (GitHub voit l'adresse IP de vos requêtes, comme tout hébergeur web).
+- [Google Firebase](https://policies.google.com/privacy) : comptes, base de données (rapports, profils, factures, candidatures, contrats), fonctions serveur et statistiques d'utilisation (Firebase Analytics).
+- [Google reCAPTCHA Enterprise / Firebase App Check](https://policies.google.com/privacy) : protection contre les abus. Il vérifie que les requêtes viennent bien du site et reçoit pour cela des informations techniques sur votre navigateur.
 - [Sentry](https://sentry.io/privacy/) : suivi des erreurs.
 - [ImgBB](https://imgbb.com/privacy) : hébergement des images téléversées.
 - **Fleeca (GTA World)** : paiement des factures ; **Eyefind Mail (GTA World)** : messagerie ; **GTA World** : connexion avec votre compte.
 - [Open-Meteo](https://open-meteo.com/en/terms) : météo de l'en-tête immersif (uniquement si vous l'activez). Votre navigateur interroge directement ce service, qui voit donc votre adresse IP ; aucune donnée personnelle ne lui est envoyée.
 - [Discord](https://discord.com/privacy) : éventuelles notifications de l'équipe, uniquement si elles sont activées.
+
+## Cookies, stockage local et mesure d'audience
+
+- Aucun cookie ni traceur **publicitaire**. Les outils ci-dessus (Firebase Analytics, reCAPTCHA / App Check, Sentry) servent uniquement aux statistiques d'usage, à la sécurité et au suivi des erreurs ; Google peut y déposer ou lire des identifiants techniques.
+- Le **stockage local** de votre navigateur sert à garder votre session de connexion, le formulaire en cours de saisie, vos préférences d'affichage et des listes en cache. Vous pouvez l'effacer à tout moment depuis les paramètres de votre navigateur ou avec « Vider le Cache & Actualiser ».
+
+## Pourquoi ces données ? (bases légales)
+
+- Fournir le service que vous demandez : connexion, rapports, dossiers, candidatures, contrats, paiement des factures (article 6.1.b du RGPD).
+- Sécurité, prévention des abus, journalisation, suivi des erreurs et statistiques d'usage (intérêt légitime, article 6.1.f du RGPD).
+- Fonctions facultatives que vous activez vous-même, comme la météo de l'en-tête immersif.
 
 ## Qui peut voir quoi
 
@@ -61,10 +80,29 @@ Nous utilisons les services suivants, qui reçoivent les données nécessaires �
 - Le personnel de soins et du DMEC consulte les dossiers des patients qu'il prend en charge ; chaque médecin ne supprime que ses propres rapports.
 - Les recruteurs et les administrateurs voient les candidatures, les demandes de recrutement interne et les contrats ; les administrateurs gèrent aussi les comptes, les rôles et la base de données.
 - Les journaux d'erreurs sont accessibles à l'administrateur du site uniquement.
+- Nous ne partageons pas vos données avec des tiers, sauf les prestataires mentionnés ci-dessus et dans la mesure de leur fonction.
 
-## Partage, conservation et suppression
+## Combien de temps ?
 
-Nous ne partageons pas vos données avec des tiers, sauf les prestataires mentionnés ci-dessus et dans la mesure de leur fonction. Les données sont conservées tant que le compte existe ; un administrateur peut supprimer un compte ou des rapports, et vous pouvez demander la suppression ou la correction de vos données sur le Discord du PHMC.
+- Les données sont conservées **tant que le compte existe**.
+- Lorsqu'un compte est supprimé, vos informations personnelles sont supprimées ; les **rapports et dossiers (IC), candidatures et contrats restent archivés** et vous les retrouvez si vous recréez un compte. Un administrateur peut aussi supprimer des rapports précis.
+- Les données du navigateur (stockage local) restent sur votre appareil jusqu'à ce que vous les effaciez.
+
+## Vos droits
+
+Vous pouvez demander l'accès à vos données, leur rectification, leur effacement, la limitation ou l'opposition à leur traitement, ainsi que leur portabilité. Pour cela, écrivez sur le [serveur Discord du PHMC](https://discord.gg/Qupn5tWc6H). Une grande partie de vos informations se modifie directement depuis « Mon profil ».
+
+Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la CNIL ([www.cnil.fr](https://www.cnil.fr)).
+
+## Sécurité
+
+Les échanges sont chiffrés (HTTPS). L'accès aux données est limité par des règles de la base de données, selon le rôle de chacun (patient, personnel, recruteur, administrateur), et la connexion passe par votre compte GTA World ou Eyefind Mail : aucun mot de passe GTA World n'est saisi ni stocké sur ce site.
+
+## Mentions légales
+
+L'éditeur, les hébergeurs et la nature du site sont aussi indiqués dans la fenêtre « Mentions légales » du pied de page. Les voici :
+
+${LEGAL_NOTICE_TEXT}
 
 Questions : posez-les sur le [serveur Discord du PHMC](https://discord.gg/Qupn5tWc6H).`;
 

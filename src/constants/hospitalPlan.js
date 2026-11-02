@@ -81,7 +81,13 @@ export const HOSPITAL_FLOORS = [
         niveau: '4', code: 'chirurgie', titre: 'Chirurgie générale et dentaire', icon: 'fa-tooth',
         resume: 'Blocs opératoires, soins ambulatoires et chirurgie dentaire.',
         sections: [
-            { titre: 'Réception', zones: [room('Salle d\'attente avec accès escaliers et ascenseurs', 'public')] },
+            {
+                titre: 'Réception',
+                zones: [
+                    room('Réception avec accès escaliers et ascenseurs', 'public'),
+                    room('Salle d\'attente avec accès escaliers et ascenseurs', 'public'),
+                ],
+            },
             {
                 titre: 'Service de chirurgie générale',
                 zones: [
@@ -91,6 +97,7 @@ export const HOSPITAL_FLOORS = [
                     room('Salle 1 : imagerie lourde', 'consultation'),
                     room('Salle 2 : bloc opératoire', 'secure'),
                     room('Salle 3 : bloc opératoire d\'enseignement', 'secure'),
+                    room('Box de réanimation', 'secure'),
                     room('Salle de travaux anatomiques et d\'enseignement chirurgical', 'secure'),
                 ],
             },
@@ -115,7 +122,6 @@ export const HOSPITAL_FLOORS = [
                     room('Réception avec accès escaliers et ascenseurs', 'public'),
                     room('Salle d\'attente', 'public'),
                     room('Open-space', 'reserve'),
-                    room('Bureau', 'reserve'),
                     room('Bureau de chef de service ou médecin senior (1)', 'reserve'),
                     room('Bureau de chef de service ou médecin senior (2)', 'reserve'),
                     room('Cabinet médical / salle de consultation (1)', 'consultation'),
@@ -140,7 +146,6 @@ export const HOSPITAL_FLOORS = [
                     room('Boutique de souvenirs', 'public'),
                     room('Zone de restauration', 'public', { sous: [sub('Cuisine', 'reserve')] }),
                     room('Pharmacie centrale', 'consultation', { note: 'Délivrance sur ordonnance ou après avis du personnel.' }),
-                    room('Accès escalier vers l\'Atrium', 'public'),
                 ],
             },
             { titre: 'Musée du Pillbox Hill Medical Center', zones: [room('Musée', 'public')] },
@@ -158,6 +163,7 @@ export const HOSPITAL_FLOORS = [
                     room('Salle de triage', 'consultation'),
                     room('Box de soins d\'urgence', 'consultation'),
                     room('Box de déchocage', 'secure'),
+                    room('Pharmacie centrale du service des urgences', 'reserve'),
                     room('Chambre personnel sécurisée', 'reserve'),
                     room('Chambre collocation sécurisée', 'reserve'),
                     room('Vestiaire', 'reserve'),
@@ -167,6 +173,7 @@ export const HOSPITAL_FLOORS = [
                 titre: 'Service des EMS / EMT / Paramedic',
                 zones: [
                     room('Garage avec accès parking', 'reserve'),
+                    room('Salle de stockage du matériel médical', 'reserve'),
                     room('Salle de formation aux gestes de premiers secours', 'consultation', { note: 'Pendant les sessions de formation.' }),
                     room('Vestiaire hommes', 'reserve', { sous: [sub('Toilettes')] }),
                     room('Vestiaire femmes', 'reserve', { sous: [sub('Toilettes')] }),
@@ -185,6 +192,7 @@ export const HOSPITAL_FLOORS = [
                     room('Salle 4 : imagerie lourde + salle de contrôle', 'consultation'),
                     room('Salle 5 : réception + salle ambulatoire de chimiothérapie', 'consultation'),
                     room('Salle 6 : salle d\'attente', 'public'),
+                    room('Salle d\'attente du service d\'imagerie', 'public'),
                     room('Salle de radiothérapie + salle de contrôle', 'consultation'),
                 ],
             },

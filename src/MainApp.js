@@ -98,6 +98,8 @@ const AccountingModal = lazy(() => import('./components/Accounting/AccountingMod
 const FireReportModal = lazy(() => import('./components/FireSafety/FireReportModal'));
 const FireSafetyModal = lazy(() => import('./components/FireSafety/FireSafetyModal'));
 const DisciplineModal = lazy(() => import('./components/Contracts/DisciplineModal'));
+const CommercialAgreementsModal = lazy(() => import('./components/Commercial/CommercialAgreementsModal'));
+const AdministrativeHub = lazy(() => import('./components/Administrative/AdministrativeHub'));
 const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
 const RecruitmentStatusDisplay = lazy(() => import('./components/RecruitmentStatusDisplay'));
@@ -205,6 +207,9 @@ function MainApp({
     const [showAccounting, setShowAccounting] = useState(false);
     const [showFireManage, setShowFireManage] = useState(false);
     const [showDiscipline, setShowDiscipline] = useState(false);
+    // « Administratif » : menu qui regroupe recrutement, sanctions et contrats commerciaux.
+    const [showAdminHub, setShowAdminHub] = useState(false);
+    const [showCommercial, setShowCommercial] = useState(false);
 
     // Central de notifications : où mène un clic sur une notification (le lien est posé à l'envoi, voir utils/notifications.js).
     const handleNotificationNavigate = (lien) => {
@@ -1790,14 +1795,14 @@ function MainApp({
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
                                                         toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: "Annuaire & plan de l'hôpital", onClick: closeAnd(() => setShowDirectory(true)) },
-                                                        toolAccess.recruitment && { key: 'recruitment', icon: 'fas fa-user-plus', label: 'Gestion du recrutement', onClick: closeAnd(() => setShowRecruitmentManager(true)) },
+                                                        // Administratif : un seul accès pour le recrutement, les sanctions et les contrats commerciaux (chacun selon ses droits).
+                                                        toolAccess.administratif && { key: 'administratif', icon: 'fas fa-briefcase', label: 'Administratif', onClick: closeAnd(() => setShowAdminHub(true)) },
                                                         // Demandes de vidéosurveillance : réponse et suivi par l'administration du PHMC (et les admins).
                                                         canManageCctv && { key: 'cctv', icon: 'fas fa-video', label: 'Gestion de la vidéosurveillance', onClick: closeAnd(() => { setCctvHubTab('manage'); setShowCctvHub(true); }) },
                                                         // Comptabilité : tarifs des formulaires et page Transparence (admins, Directrice, Assistante de Direction).
                                                         canManageAccounting && { key: 'accounting', icon: 'fas fa-calculator', label: 'Comptabilité', onClick: closeAnd(() => setShowAccounting(true)) },
                                                         toolAccess.lawEnforcement && { key: 'lawEnforcement', icon: 'fas fa-scale-balanced', label: "Demandes des forces de l'ordre", onClick: closeAnd(() => setShowLawEnforcement(true)) },
                                                         toolAccess.fireReport && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
-                                                        toolAccess.disciplineManage && { key: 'disciplineManage', icon: 'fas fa-gavel', label: 'Documents disciplinaires', onClick: closeAnd(() => setShowDiscipline(true)) },
                                                         toolAccess.fireManage && { key: 'fireManage', icon: 'fas fa-fire-extinguisher', label: 'Gestion de la sécurité incendie', onClick: closeAnd(() => setShowFireManage(true)) },
                                                         toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
@@ -1814,10 +1819,8 @@ function MainApp({
                                                         { key: 'season', icon: `fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`, label: `${seasonalEffectsEnabled ? 'Désactiver' : 'Activer'} Effet de Saison`, onClick: closeAnd(toggleSeasonalEffects) },
                                                         { key: 'guide', icon: 'fas fa-play-circle', label: 'Guide de Configuration', onClick: closeAnd(restartOnboarding) },
                                                         { key: 'header', icon: immersiveHeaderEnabled ? 'fas fa-heart' : 'fas fa-city', label: immersiveHeaderEnabled ? 'Header des remerciements' : 'Header immersif (heure & météo)', onClick: closeAnd(toggleImmersiveHeader) },
-                                                        // Bugs et demandes de fonctionnalité sont réservés aux comptes connectés (tous rôles) : la demande est enregistrée à leur nom.
-                                                        currentEmployee && { key: 'bug', icon: 'fas fa-bug', label: 'Rapport de Bug', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
-                                                        // La demande de fonctionnalité est réservée aux comptes connectés (tous rôles).
-                                                        currentEmployee && { key: 'feature', icon: 'fas fa-lightbulb', label: 'Demande de Fonctionnalité', onClick: closeAnd(() => { setFeatureModalMode('feature'); setShowFeatureRequestModal(true); }) },
+                                                        // Feedback : bug, idée de fonctionnalité ou nouveau formulaire, au choix dans un menu déroulant. Réservé aux comptes connectés (tous rôles) : le retour est enregistré à leur nom.
+                                                        currentEmployee && { key: 'feedback', icon: 'fas fa-comment-dots', label: 'Feedback', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
                                                         {
                                                             key: 'agency', icon: 'fas fa-users', label: 'Changer de Formulaire', onClick: closeAnd(() => {
                                                                 localStorage.removeItem('selectedAgencyGroup');
@@ -1845,6 +1848,7 @@ function MainApp({
 
                             <FeatureRequestModal
                                 mode={currentEmployee ? featureModalMode : 'bug'}
+                                onModeChange={setFeatureModalMode}
                                 show={showFeatureRequestModal}
                                 onClose={() => setShowFeatureRequestModal(false)}
                                 featureRequest={featureRequest}
@@ -2635,6 +2639,22 @@ function MainApp({
                             show={showAwarenessCalendar}
                             onHide={() => setShowAwarenessCalendar(false)}
                         />
+                        {toolAccess.administratif && (
+                            <AdministrativeHub
+                                show={showAdminHub}
+                                onHide={() => setShowAdminHub(false)}
+                                access={{ recruitment: toolAccess.recruitment, discipline: toolAccess.disciplineManage, commercial: toolAccess.commercial }}
+                                onOpen={(key) => {
+                                    setShowAdminHub(false);
+                                    if (key === 'recruitment') setShowRecruitmentManager(true);
+                                    else if (key === 'discipline') setShowDiscipline(true);
+                                    else if (key === 'commercial') setShowCommercial(true);
+                                }}
+                            />
+                        )}
+                        {toolAccess.commercial && (
+                            <CommercialAgreementsModal show={showCommercial} onHide={() => setShowCommercial(false)} showNotification={showNotification} />
+                        )}
                         {toolAccess.disciplineManage && (
                             <DisciplineModal show={showDiscipline} initialSearch={directoryDisciplineSearch} onHide={() => { setShowDiscipline(false); setDirectoryDisciplineSearch(''); }} showNotification={showNotification} />
                         )}

@@ -1001,6 +1001,38 @@
       ".write": false
     },
 
+    // ─── Accords commerciaux (contrats avec des entreprises, fournisseurs, partenaires…) ───────────────────────────
+    // accordsCommerciaux/{id} : l'accord (type, champs, statut brouillon | envoye | signe | termine, texte figé, signature de la Partie). Lecture :
+    // admins et Direction / administratif (disciplineUIDs) ; la Partie la lit si elle a un compte (partieUid) et que l'accord n'est plus un brouillon.
+    // Écriture : admins et Direction / administratif. La Partie ne peut que SIGNER (signature, signeLe, statut envoye -> signe), avec SA signature
+    // enregistrée (userCreations) ; une signature consignée à la main (mode « manuel ») ne peut être écrite que par la Direction.
+    "accordsCommerciaux": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)",
+      "$accordId": {
+        ".read": "auth != null && data.child('partieUid').val() === auth.uid && data.child('statut').val() !== 'brouillon'",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)",
+        ".validate": "newData.hasChildren(['type', 'statut']) && (newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'envoye' || newData.child('statut').val() === 'signe' || newData.child('statut').val() === 'termine')",
+        "statut": {
+          ".write": "auth != null && data.parent().child('partieUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()"
+        },
+        "signature": {
+          ".write": "auth != null && data.parent().child('partieUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists() && newData.child('signeParUid').val() === auth.uid",
+          ".validate": "(newData.child('mode').val() === 'compte' && newData.child('signeParUid').val() === auth.uid && newData.parent().child('partieUid').val() === auth.uid && newData.child('url').val() === root.child('userCreations').child(auth.uid).child('signature').child('url').val() && (!newData.child('imageData').exists() || (newData.child('imageData').isString() && newData.child('imageData').val().length <= 300000))) || (newData.child('mode').val() === 'manuel' && newData.child('signeParNom').isString() && newData.child('preuve').isString())"
+        },
+        "signeLe": {
+          ".write": "auth != null && data.parent().child('partieUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists()"
+        }
+      }
+    },
+    // accordsParPartie/{uid}/{id} : index des accords envoyés à une Partie qui a un compte (lisible par elle ; n'existe qu'une fois envoyé).
+    "accordsParPartie": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)"
+      }
+    },
+
+
     // ─── Contrats de travail (FRANÇAIS) ───────────────────────────────────────
     // contrats/{id} : contrat rattaché à un membre du personnel, un recruteur ou un candidat accepté
     // (employeUid), statut brouillon -> envoye -> signe (voir src/utils/contracts.js).

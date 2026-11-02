@@ -18,6 +18,7 @@ const FeatureRequestModal = ({
     show,
     onClose,
     mode = 'bug',
+    onModeChange,
     featureRequest,
     setFeatureRequest,
     discordName,
@@ -107,8 +108,8 @@ const FeatureRequestModal = ({
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h5 className="modal-title">
-                        <i className={`fas ${isFeature ? 'fa-lightbulb' : 'fa-bug'}`} style={{ marginRight: '8px' }}></i>
-                        {isFeature ? 'Demande de fonctionnalité' : 'Rapport de bug'}
+                        <i className="fas fa-comment-dots" style={{ marginRight: '8px' }}></i>
+                        Feedback
                     </h5>
                     <button type="button" className="close" onClick={onClose}>
                         <span>&times;</span>
@@ -116,17 +117,23 @@ const FeatureRequestModal = ({
                 </div>
                 <div className="modal-body">
                     <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Sur quoi porte votre retour ?</Form.Label>
+                            <Form.Select
+                                value={isFormRequest ? 'form' : isFeature ? 'feature' : 'bug'}
+                                onChange={(e) => {
+                                    const type = e.target.value;
+                                    if (onModeChange) onModeChange(type === 'bug' ? 'bug' : 'feature');
+                                    setIsBbcodeRequest(type === 'form');
+                                }}
+                            >
+                                <option value="bug">Rapport de bug : quelque chose ne fonctionne pas</option>
+                                <option value="feature">Demande de fonctionnalité : une idée ou une amélioration</option>
+                                <option value="form">Nouveau formulaire : proposer un formulaire à ajouter</option>
+                            </Form.Select>
+                        </Form.Group>
                         {isFeature && (
                             <>
-                                <Form.Group className="mb-3">
-                                    <Form.Check
-                                        type="checkbox"
-                                        id="isBbcodeRequestCheckbox"
-                                        label="Demandez-vous qu'un nouveau formulaire soit ajouté ?"
-                                        checked={isBbcodeRequest}
-                                        onChange={(e) => setIsBbcodeRequest(e.target.checked)}
-                                    />
-                                </Form.Group>
                                 {isBbcodeRequest && (
                                     <>
                                         <Form.Group className="mb-3">
