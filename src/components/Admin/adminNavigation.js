@@ -92,8 +92,8 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'mail e-mail email courrier eyefind message notification modèle texte aperçu envoi candidature compte facture code vérification',
             },
             {
-                key: 'privacyPolicy', icon: 'fa-user-shield', label: 'Politique de confidentialité',
-                description: "Le texte de la politique, affiché dans le pied de page et dans le guide de configuration : une seule modification pour tous.",
+                key: 'privacyPolicy', icon: 'fa-user-shield', label: 'Confidentialité & mentions légales',
+                description: "Les textes de la politique de confidentialité (pied de page et guide de configuration) et des mentions légales : une seule modification pour tous.",
                 keywords: 'confidentialité politique données personnelles rgpd vie privée mentions légales texte conditions',
             },
             {

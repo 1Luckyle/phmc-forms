@@ -41,3 +41,7 @@ firebase-admin-key.json
 
 # lois (documents de travail locaux, ne pas pousser)
 src/data/law/
+
+# plans de l'hôpital (images de travail, ne pas pousser)
+src/assets/Plan Hopital/
+src/assets/Plan Hopital - Aide*/

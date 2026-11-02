@@ -6,13 +6,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Badge, Button, Form, Spinner } from 'react-bootstrap';
 import { PolicyView } from '../PrivacyPolicyContent';
 import {
-    DEFAULT_POLICY_TEXT, DEFAULT_UPDATE, MAX_POLICY_LENGTH, loadPolicy, savePolicy, todayLabel, validatePolicy,
+    DOCUMENTS, documentInfo, MAX_POLICY_LENGTH, loadPolicy, savePolicy, todayLabel, validatePolicy,
 } from '../../utils/privacyPolicy';
 import './PrivacyPolicyManager.css';
 
 const formatDate = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString('fr-FR') : '—');
 
 const PrivacyPolicyManager = ({ showNotification, onLogAction, adminName }) => {
+    // Deux documents, un seul éditeur : la politique de confidentialité et les mentions légales.
+    const [kind, setKind] = useState('politique');
+    const info = documentInfo(kind);
     const [policy, setPolicy] = useState(null);       // version publiée (ou texte d'origine)
     const [texte, setTexte] = useState('');
     const [miseAJour, setMiseAJour] = useState('');
@@ -23,16 +26,17 @@ const PrivacyPolicyManager = ({ showNotification, onLogAction, adminName }) => {
 
     const load = useCallback(async () => {
         try {
-            const loaded = await loadPolicy();
+            setPolicy(null);
+            const loaded = await loadPolicy(kind);
             setPolicy(loaded);
             setTexte(loaded.texte);
             setMiseAJour(loaded.miseAJour);
             setError('');
         } catch (err) {
             console.error(err);
-            setError('Impossible de charger la politique de confidentialité.');
+            setError(`Impossible de charger : ${documentInfo(kind).label}.`);
         }
-    }, []);
+    }, [kind]);
     useEffect(() => { load(); }, [load]);
 
     const effectiveDate = autoDate ? todayLabel() : miseAJour;
@@ -73,12 +77,12 @@ const PrivacyPolicyManager = ({ showNotification, onLogAction, adminName }) => {
     const publish = async () => {
         setSaving(true);
         try {
-            const saved = await savePolicy({ texte, miseAJour: effectiveDate }, adminName);
+            const saved = await savePolicy({ texte, miseAJour: effectiveDate }, adminName, kind);
             setPolicy(saved);
             setTexte(saved.texte);
             setMiseAJour(saved.miseAJour);
-            showNotification('Politique de confidentialité publiée : elle est à jour partout.', 'check-circle');
-            if (onLogAction) onLogAction('Politique de confidentialité publiée', `Mise à jour : ${saved.miseAJour} · ${saved.texte.length} caractères`);
+            showNotification(`${info.label} : publié, à jour partout.`, 'check-circle');
+            if (onLogAction) onLogAction(`${info.label} publié(e)`, `Mise à jour : ${saved.miseAJour} · ${saved.texte.length} caractères`);
         } catch (err) {
             showNotification(`Publication impossible : ${err.message}`, 'error');
         } finally {
@@ -87,9 +91,9 @@ const PrivacyPolicyManager = ({ showNotification, onLogAction, adminName }) => {
     };
 
     const restoreDefault = () => {
-        if (texte !== DEFAULT_POLICY_TEXT && !window.confirm("Remplacer le texte de l'éditeur par le texte d'origine ? (Rien n'est publié tant que vous ne cliquez pas sur « Publier ».)")) return;
-        setTexte(DEFAULT_POLICY_TEXT);
-        setMiseAJour(DEFAULT_UPDATE);
+        if (texte !== info.texte && !window.confirm("Remplacer le texte de l'éditeur par le texte d'origine ? (Rien n'est publié tant que vous ne cliquez pas sur « Publier ».)")) return;
+        setTexte(info.texte);
+        setMiseAJour(info.miseAJour);
         setAutoDate(true);
     };
 
@@ -104,11 +108,21 @@ const PrivacyPolicyManager = ({ showNotification, onLogAction, adminName }) => {
         <div className="adm-card">
             <div className="adm-card-head">
                 <div>
-                    <h4><i className="fas fa-user-shield"></i> Politique de confidentialité</h4>
-                    <p>Un seul texte, affiché dans la fenêtre du pied de page et dans le guide de configuration. Publier le met à jour partout.</p>
+                    <h4><i className={`fas ${info.icon}`}></i> {info.label}</h4>
+                    <p>{kind === 'mentions'
+                        ? 'Éditeur, hébergeurs et nature du site : affichés dans la fenêtre « Mentions légales » du pied de page. Publier les met à jour partout.'
+                        : 'Un seul texte, affiché dans la fenêtre du pied de page et dans le guide de configuration. Publier le met à jour partout.'}</p>
                 </div>
             </div>
             <div className="adm-card-body">
+                <div className="d-flex gap-2 mb-3 flex-wrap" role="tablist" aria-label="Document à modifier">
+                    {Object.entries(DOCUMENTS).map(([key, doc]) => (
+                        <Button key={key} size="sm" variant={kind === key ? 'primary' : 'outline-secondary'} role="tab" aria-selected={kind === key} disabled={saving}
+                            onClick={() => { if (key !== kind && (!dirty || window.confirm('Abandonner les modifications non publiées ?'))) setKind(key); }}>
+                            <i className={`fas ${doc.icon} me-1`}></i>{doc.label}
+                        </Button>
+                    ))}
+                </div>
                 {error && <Alert variant="danger" className="py-2">{error}</Alert>}
                 {!policy && !error && <Spinner animation="border" size="sm" />}
                 {policy && (

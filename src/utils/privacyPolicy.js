@@ -14,7 +14,7 @@
 //   **gras**   *italique*   [texte du lien](https://adresse)   (seuls les liens http et https sont acceptés)
 import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
-import { LEGAL_NOTICE_TEXT } from './legalNotice';
+import { LEGAL_NOTICE_TEXT, LEGAL_NOTICE_UPDATE } from './legalNotice';
 
 export const POLICY_PATH = 'adminSettings/politiqueConfidentialite';
 export const MAX_POLICY_LENGTH = 40000;
@@ -145,7 +145,7 @@ export const parsePolicy = (value) => {
 export const validatePolicy = ({ texte, miseAJour }) => {
     const errors = [];
     const text = String(texte ?? '');
-    if (text.trim().length < 50) errors.push('Le texte est trop court pour être une politique de confidentialité.');
+    if (text.trim().length < 50) errors.push('Le texte est trop court pour être publié.');
     if (text.length > MAX_POLICY_LENGTH) errors.push(`Le texte dépasse ${MAX_POLICY_LENGTH.toLocaleString('fr-FR')} caractères.`);
     if (!String(miseAJour ?? '').trim()) errors.push('Indiquez la date de dernière mise à jour.');
     if (String(miseAJour ?? '').length > 80) errors.push('La date de mise à jour est trop longue.');
@@ -156,10 +156,19 @@ export const todayLabel = (now = Date.now()) => new Date(now).toLocaleDateString
 
 // ───────────────────────────── Lecture / écriture ─────────────────────────────
 
-export const defaultPolicy = () => ({ texte: DEFAULT_POLICY_TEXT, miseAJour: DEFAULT_UPDATE, majLe: null, majPar: '', historique: [], personnalisee: false });
+// Deux documents se modifient depuis le panneau admin avec le même éditeur : la politique de confidentialité et les mentions légales (chacun son nœud,
+// son texte d'origine et son historique). Les mentions légales sont affichées par la fenêtre « Mentions légales » du pied de page.
+export const LEGAL_PATH = 'adminSettings/mentionsLegales';
+export const DOCUMENTS = {
+    politique: { path: POLICY_PATH, texte: DEFAULT_POLICY_TEXT, miseAJour: DEFAULT_UPDATE, label: 'Politique de confidentialité', icon: 'fa-user-shield' },
+    mentions: { path: LEGAL_PATH, texte: LEGAL_NOTICE_TEXT, miseAJour: LEGAL_NOTICE_UPDATE, label: 'Mentions légales', icon: 'fa-scale-balanced' },
+};
+export const documentInfo = (kind) => DOCUMENTS[kind] || DOCUMENTS.politique;
 
-export const normalizePolicy = (raw) => {
-    if (!raw || typeof raw.texte !== 'string' || !raw.texte.trim()) return defaultPolicy();
+export const defaultPolicy = (kind = 'politique') => ({ texte: documentInfo(kind).texte, miseAJour: documentInfo(kind).miseAJour, majLe: null, majPar: '', historique: [], personnalisee: false });
+
+export const normalizePolicy = (raw, kind = 'politique') => {
+    if (!raw || typeof raw.texte !== 'string' || !raw.texte.trim()) return defaultPolicy(kind);
     const historique = Object.values(raw.historique || {})
         .filter((entry) => entry && typeof entry.texte === 'string')
         .map((entry) => ({ texte: entry.texte, miseAJour: String(entry.miseAJour || ''), majLe: entry.majLe || 0, majPar: String(entry.majPar || '') }))
@@ -168,22 +177,23 @@ export const normalizePolicy = (raw) => {
 };
 
 // Version publiée, ou le texte d'origine (aucune publication, ou lecture impossible : la politique ne doit jamais disparaître).
-export const loadPolicy = async () => {
+export const loadPolicy = async (kind = 'politique') => {
     try {
-        const snap = await get(ref(database, POLICY_PATH));
-        return normalizePolicy(snap.exists() ? snap.val() : null);
+        const snap = await get(ref(database, documentInfo(kind).path));
+        return normalizePolicy(snap.exists() ? snap.val() : null, kind);
     } catch (error) {
-        console.warn('Politique de confidentialité illisible, texte d\'origine affiché :', error?.message || error);
-        return defaultPolicy();
+        console.warn(`${documentInfo(kind).label} illisible, texte d'origine affiché :`, error?.message || error);
+        return defaultPolicy(kind);
     }
 };
 
 // Publie une nouvelle version. L'ancienne version personnalisée est gardée dans l'historique (les MAX_HISTORY dernières).
-export const savePolicy = async ({ texte, miseAJour }, byName) => {
+export const savePolicy = async ({ texte, miseAJour }, byName, kind = 'politique') => {
     const errors = validatePolicy({ texte, miseAJour });
     if (errors.length) throw new Error(errors[0]);
-    const snap = await get(ref(database, POLICY_PATH));
-    const current = snap.exists() ? normalizePolicy(snap.val()) : null;
+    const path = documentInfo(kind).path;
+    const snap = await get(ref(database, path));
+    const current = snap.exists() ? normalizePolicy(snap.val(), kind) : null;
     const now = Date.now();
     const historique = {};
     if (current && current.personnalisee) {
@@ -192,6 +202,6 @@ export const savePolicy = async ({ texte, miseAJour }, byName) => {
             .forEach((entry) => { historique[`v${entry.majLe || 0}_${Object.keys(historique).length}`] = entry; });
     }
     const document = { texte: String(texte), miseAJour: String(miseAJour).trim(), majLe: now, majPar: String(byName || '').slice(0, 120), historique };
-    await set(ref(database, POLICY_PATH), document);
-    return normalizePolicy(document);
+    await set(ref(database, path), document);
+    return normalizePolicy(document, kind);
 };

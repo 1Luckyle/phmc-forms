@@ -1,18 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './PrivacyPolicyModal.css';
 import { PolicyView } from './PrivacyPolicyContent';
-import { LEGAL_NOTICE_TEXT, LEGAL_NOTICE_UPDATE } from '../utils/legalNotice';
+import { loadPolicy } from '../utils/privacyPolicy';
 
-// Fenêtre « Mentions légales » du pied de page (éditeur, hébergeurs, nature du site). Le texte vit dans utils/legalNotice.js ;
-// il est aussi repris dans la politique de confidentialité (section « Mentions légales »).
+// Fenêtre « Mentions légales » du pied de page (éditeur, hébergeurs, nature du site). Affiche la version publiée depuis le panneau admin
+// (Confidentialité & mentions légales) ou, à défaut, le texte d'origine de utils/legalNotice.js.
 const LegalNoticeModal = ({ isOpen, onClose }) => {
+    const [notice, setNotice] = useState(null);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        let cancelled = false;
+        loadPolicy('mentions').then((loaded) => { if (!cancelled) setNotice(loaded); });
+        return () => { cancelled = true; };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
         <div className="modal-overlay privacy-policy-modal">
             <div className="modal-content">
                 <h2>Mentions légales</h2>
-                <PolicyView text={LEGAL_NOTICE_TEXT} miseAJour={LEGAL_NOTICE_UPDATE} />
+                {notice
+                    ? <PolicyView text={notice.texte} miseAJour={notice.miseAJour} />
+                    : <div className="privacy-policy-content"><p>Chargement…</p></div>}
                 <button onClick={onClose} className="close-button">Fermer</button>
             </div>
         </div>
