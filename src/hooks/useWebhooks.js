@@ -1,7 +1,5 @@
 import { useCallback } from 'react';
 import * as Sentry from "@sentry/react";
-import { analytics } from '../firebase';
-import { logEvent } from 'firebase/analytics';
 import { database } from '../firebase';
 import { ref, set, push } from 'firebase/database';
 import { submitCctvRequest } from '../utils/cctvRequests';
@@ -98,14 +96,6 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
                 webhook_type: 'cctv_request',
                 environment: process.env.NODE_ENV
             }
-        });
-        logEvent(analytics, 'cctv_request', {
-            officer: cctvData.officer,
-            department: cctvData.department,
-            location: cctvData.location,
-            reason: cctvData.requestReason,
-            submitter: formData.coronerEmployee || formData.phmcEmployee || 'Utilisateur d\'application inconnu',
-            environment: process.env.NODE_ENV
         });
 
         // La demande est enregistrée dans le site (cctvRequests) : l'administration du PHMC la traite depuis le menu

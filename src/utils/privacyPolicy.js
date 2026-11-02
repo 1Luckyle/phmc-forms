@@ -42,7 +42,7 @@ L'éditeur du site (voir la section « Mentions légales » plus bas) est respon
 - **Images :** carte de visite, signature et autres images que vous téléversez (connexion requise) transitent par nos serveurs, qui les transmettent à ImgBB ; elles y sont hébergées et accessibles par leur lien. Les images que vous insérez à partir de liens externes sont chargées depuis leur hébergeur d'origine, qui peut alors voir votre adresse IP.
 - **Retours d'expérience :** les rapports de bug, demandes de fonctionnalité et propositions de formulaire que vous envoyez (texte, nom Discord indiqué, informations techniques sur votre appareil).
 - **Préférences :** options d'affichage (effets de saison, en-tête immersif), formulaire en cours de saisie et listes mises en cache sont gardés dans votre navigateur (stockage local) et peuvent être vidés avec « Vider le Cache & Actualiser ».
-- **Journaux techniques :** informations sur l'appareil (mobile / bureau / tablette), fichier d'erreur lié et bouton pressé en cas d'erreur ; événements d'utilisation anonymes (par exemple l'envoi d'une demande de vidéosurveillance).
+- **Journaux techniques :** informations sur l'appareil (mobile / bureau / tablette), fichier d'erreur lié et bouton pressé en cas d'erreur.
 
 ## Messages envoyés automatiquement
 
@@ -54,7 +54,7 @@ L'éditeur du site (voir la section « Mentions légales » plus bas) est respon
 Nous utilisons les services suivants, qui reçoivent les données nécessaires à leur fonction :
 
 - [GitHub Pages](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) : hébergement des pages du site (GitHub voit l'adresse IP de vos requêtes, comme tout hébergeur web).
-- [Google Firebase](https://policies.google.com/privacy) : comptes, base de données (rapports, profils, factures, candidatures, contrats), fonctions serveur et statistiques d'utilisation (Firebase Analytics).
+- [Google Firebase](https://policies.google.com/privacy) : comptes, base de données (rapports, profils, factures, candidatures, contrats), fonctions serveur.
 - [Google reCAPTCHA Enterprise / Firebase App Check](https://policies.google.com/privacy) : protection contre les abus. Il vérifie que les requêtes viennent bien du site et reçoit pour cela des informations techniques sur votre navigateur.
 - [Sentry](https://sentry.io/privacy/) : suivi des erreurs.
 - [ImgBB](https://imgbb.com/privacy) : hébergement des images téléversées.
@@ -62,15 +62,15 @@ Nous utilisons les services suivants, qui reçoivent les données nécessaires �
 - [Open-Meteo](https://open-meteo.com/en/terms) : météo de l'en-tête immersif (uniquement si vous l'activez). Votre navigateur interroge directement ce service, qui voit donc votre adresse IP ; aucune donnée personnelle ne lui est envoyée.
 - [Discord](https://discord.com/privacy) : éventuelles notifications de l'équipe, uniquement si elles sont activées.
 
-## Cookies, stockage local et mesure d'audience
+## Cookies et stockage local
 
-- Aucun cookie ni traceur **publicitaire**. Les outils ci-dessus (Firebase Analytics, reCAPTCHA / App Check, Sentry) servent uniquement aux statistiques d'usage, à la sécurité et au suivi des erreurs ; Google peut y déposer ou lire des identifiants techniques.
+- Aucun cookie ni traceur **publicitaire**, et **aucun outil de mesure d'audience**. Les outils ci-dessus (reCAPTCHA / App Check, Sentry) servent uniquement à la sécurité et au suivi des erreurs ; Google peut y déposer ou lire des identifiants techniques.
 - Le **stockage local** de votre navigateur sert à garder votre session de connexion, le formulaire en cours de saisie, vos préférences d'affichage et des listes en cache. Vous pouvez l'effacer à tout moment depuis les paramètres de votre navigateur ou avec « Vider le Cache & Actualiser ».
 
 ## Pourquoi ces données ? (bases légales)
 
 - Fournir le service que vous demandez : connexion, rapports, dossiers, candidatures, contrats, paiement des factures (article 6.1.b du RGPD).
-- Sécurité, prévention des abus, journalisation, suivi des erreurs et statistiques d'usage (intérêt légitime, article 6.1.f du RGPD).
+- Sécurité, prévention des abus, journalisation et suivi des erreurs (intérêt légitime, article 6.1.f du RGPD).
 - Fonctions facultatives que vous activez vous-même, comme la météo de l'en-tête immersif.
 
 ## Qui peut voir quoi

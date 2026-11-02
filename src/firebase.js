@@ -3,7 +3,6 @@ import { initializeApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getDatabase } from "firebase/database";
 import { getAuth } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
 import { getFunctions } from "firebase/functions";
 
 // Your web app's Firebase configuration using environment variables
@@ -41,7 +40,6 @@ if (appCheckSiteKey) {
 
 const database = getDatabase(app);
 const auth = getAuth(app);
-const analytics = getAnalytics(app);
 const functions = getFunctions(app, 'europe-west1');
 
-export { database, auth, app, analytics, functions };
+export { database, auth, app, functions };

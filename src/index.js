@@ -13,8 +13,6 @@ import { DebugProvider } from './contexts/DebugContext';
 import { EmployeeAuthProvider } from './contexts/EmployeeAuthContext';
 import { useNotification } from './contexts/NotificationContext';
 import * as Sentry from "@sentry/react";
-import { analytics } from './firebase';
-import { logEvent } from "firebase/analytics";
 import ErrorBoundary from './components/ErrorBoundary';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { logClientError } from './utils/activityLog';
@@ -137,18 +135,6 @@ window.onerror = (message, source, lineno, colno, errorObject) => {
         }
     }
     // --- End Button Error Detection ---
-
-    // Log the error to Firebase Analytics
-    logEvent(analytics, 'exception', {
-        description: message,
-        fatal: true,
-        is_button_error: isButtonClickError,
-        error_message: String(message).substring(0, 100),
-        stack: errorObject && errorObject.stack ? String(errorObject.stack).substring(0, 100) : undefined,
-        source: source || undefined,
-        lineno: lineno || undefined,
-        colno: colno || undefined
-    });
 
     // Queue the error for reporting to Discord.
     const errorDetails = {
