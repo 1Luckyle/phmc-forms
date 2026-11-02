@@ -1,0 +1,9 @@
+/* Take Home Car */
+.thc-card { padding: 12px 14px; margin-bottom: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.04); }
+.thc-rules h6 { margin-top: 18px; font-weight: 700; }
+.thc-rules ul { padding-left: 1.2rem; }
+.thc-rules li { margin-bottom: 6px; }
+.thc-hrp { color: #aab6c3; font-style: italic; }
+.thc-scroll { max-height: 320px; overflow: auto; }
+.thc-table { font-size: 0.88rem; --bs-table-bg: transparent; --bs-table-color: #e6edf3; --bs-table-border-color: rgba(255, 255, 255, 0.12); }
+.thc-table td, .thc-table th { vertical-align: middle; }

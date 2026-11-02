@@ -196,6 +196,9 @@ export const getToolAccess = (identity) => {
         fireReport: isStaffMember || !!isAdmin,
         // Gestion de la sécurité incendie (registre, non-conformités, exercices) : admins, Direction et personnel administratif.
         fireManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
+        // Take Home Car : tout le personnel demande un véhicule et lit le règlement ; la Direction, l'administration et les admins accordent ou retirent.
+        takeHome: isStaffMember || !!isAdmin,
+        takeHomeManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
         // Documents disciplinaires (convocations, sanctions, fins de contrat) : admins, Direction et personnel administratif, pas les recruteurs.
         disciplineManage: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
         // Contrats commerciaux (accords avec des entreprises, fournisseurs…) : mêmes personnes que les documents disciplinaires.
@@ -222,6 +225,8 @@ export const TOOL_ACCESS_LABELS = {
     lawEnforcement: "Demandes des forces de l'ordre",
     fireReport: 'Signaler un problème incendie',
     fireManage: 'Gestion de la sécurité incendie',
+    takeHome: 'Take Home Car (demande et règlement)',
+    takeHomeManage: 'Take Home Car (gestion des attributions)',
     disciplineManage: 'Documents disciplinaires',
     commercial: 'Contrats commerciaux',
     administratif: 'Administratif (recrutement, sanctions, contrats commerciaux)',

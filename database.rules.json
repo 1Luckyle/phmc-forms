@@ -385,6 +385,34 @@
       }
     },
 
+    // Programme « Take Home Car » (src/utils/takeHomeCars.js, règlement : src/constants/takeHomeCar.js).
+    //   demandes/{uid}/{id} : lecture par le demandeur et par la Direction/les admins (gestionIncendieUIDs = Directeur(trice), Assistant(e) de Direction,
+    //     Personnel Administratif). Le membre du personnel CRÉE sa demande (en attente, à son nom), l'ANNULE tant qu'elle est en attente et RENDU le véhicule
+    //     une fois accordé (sans changer la plaque) ; la Direction/les admins font tout le reste (accorder, refuser, retirer).
+    //   attributions/{plaque} : qui a le véhicule. Lecture : le personnel ; écriture : Direction/admins, ou le titulaire qui rend son véhicule.
+    "takeHomeCars": {
+      "attributions": {
+        ".read": "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+        "$plaque": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true || (data.child('uid').val() === auth.uid && !newData.exists()))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['uid', 'nom', 'depuis', 'demandeId']) && newData.child('uid').isString() && newData.child('nom').isString() && newData.child('nom').val().length <= 120 && newData.child('depuis').isNumber() && newData.child('demandeId').isString() && newData.child('demandeId').val().length <= 60)"
+        }
+      },
+      "demandes": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$id": {
+            ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true || (auth.uid === $uid && root.child('staffUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('statut').val() === 'en_attente') || (data.child('statut').val() === 'en_attente' && newData.child('statut').val() === 'annule' && newData.child('plaque').val() === data.child('plaque').val()) || (data.child('statut').val() === 'accepte' && newData.child('statut').val() === 'rendu' && newData.child('plaque').val() === data.child('plaque').val()))))",
+            ".validate": "!newData.exists() || (newData.hasChildren(['demandeLe', 'demandeurUid', 'demandeurNom', 'plaque', 'motif', 'statut']) && newData.child('demandeurUid').val() === $uid && newData.child('demandeLe').isNumber() && newData.child('demandeurNom').isString() && newData.child('demandeurNom').val().length <= 120 && newData.child('plaque').isString() && newData.child('plaque').val().length > 0 && newData.child('plaque').val().length <= 20 && newData.child('motif').isString() && newData.child('motif').val().length >= 10 && newData.child('motif').val().length <= 500 && (newData.child('statut').val() === 'en_attente' || newData.child('statut').val() === 'accepte' || newData.child('statut').val() === 'refuse' || newData.child('statut').val() === 'annule' || newData.child('statut').val() === 'rendu' || newData.child('statut').val() === 'retire') && (!newData.child('lieu').exists() || (newData.child('lieu').isString() && newData.child('lieu').val().length <= 120)) && (!newData.child('decisionNote').exists() || (newData.child('decisionNote').isString() && newData.child('decisionNote').val().length <= 300)) && (!newData.child('finNote').exists() || (newData.child('finNote').isString() && newData.child('finNote').val().length <= 300)))",
+            "demandeLe": {}, "demandeurUid": {}, "demandeurNom": {}, "plaque": {}, "motif": {}, "lieu": {}, "statut": {},
+            "decisionLe": {}, "decisionParNom": {}, "decisionNote": {}, "finLe": {}, "finPar": {}, "finParNom": {}, "finNote": {},
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    },
+
     // ─── Rôle « recruteur » ───────────────────────────────────────────────────
     // recruiterUIDs/{uid}: true — posé/retiré par un admin (menu de gestion des
     // utilisateurs). Un recruteur reste un compte Civil ; ce drapeau lui ajoute l'onglet

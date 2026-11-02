@@ -100,6 +100,7 @@ const FireSafetyModal = lazy(() => import('./components/FireSafety/FireSafetyMod
 const DisciplineModal = lazy(() => import('./components/Contracts/DisciplineModal'));
 const CommercialAgreementsModal = lazy(() => import('./components/Commercial/CommercialAgreementsModal'));
 const AdministrativeHub = lazy(() => import('./components/Administrative/AdministrativeHub'));
+const TakeHomeCarModal = lazy(() => import('./components/TakeHome/TakeHomeCarModal'));
 const FireSafetyHub = lazy(() => import('./components/FireSafety/FireSafetyHub'));
 const RecruitmentManager = lazy(() => import('./components/Recruitment/RecruitmentManager'));
 const MyJobApplicationsModal = lazy(() => import('./components/MyJobApplicationsModal'));
@@ -209,6 +210,9 @@ function MainApp({
     const [showFireManage, setShowFireManage] = useState(false);
     // « Sécurité incendie » : menu qui regroupe signalement et gestion pour qui a les deux droits.
     const [showFireHub, setShowFireHub] = useState(false);
+    // « Take Home Car » : règlement, demande de véhicule et gestion des attributions (onglet ouvert selon l'origine : menu ou notification).
+    const [showTakeHome, setShowTakeHome] = useState(false);
+    const [takeHomeTab, setTakeHomeTab] = useState('');
     const [showDiscipline, setShowDiscipline] = useState(false);
     // « Administratif » : menu qui regroupe recrutement, sanctions et contrats commerciaux.
     const [showAdminHub, setShowAdminHub] = useState(false);
@@ -224,6 +228,7 @@ function MainApp({
             case 'dossierPatient': setShowMyPatientFile(true); break;
             case 'rapports': setShowSavedReports(true); break;
             case 'incendie': if (toolAccess.fireManage) setShowFireManage(true); break;
+            case 'takehome': if (toolAccess.takeHome) { setTakeHomeTab(lien.section === 'manage' && toolAccess.takeHomeManage ? 'manage' : 'mine'); setShowTakeHome(true); } break;
             case 'admin': navigate('/admin', { state: { section: lien.section } }); break;
             default: break;
         }
@@ -1809,6 +1814,7 @@ function MainApp({
                                                         toolAccess.fireReport && toolAccess.fireManage && { key: 'fireHub', icon: 'fas fa-fire-extinguisher', label: 'Sécurité incendie', onClick: closeAnd(() => setShowFireHub(true)) },
                                                         toolAccess.fireReport && !toolAccess.fireManage && { key: 'fireReport', icon: 'fas fa-fire-extinguisher', label: 'Signaler un problème incendie', onClick: closeAnd(() => setShowFireReport(true)) },
                                                         !toolAccess.fireReport && toolAccess.fireManage && { key: 'fireManage', icon: 'fas fa-fire-extinguisher', label: 'Gestion de la sécurité incendie', onClick: closeAnd(() => setShowFireManage(true)) },
+                                                        toolAccess.takeHome && { key: 'takeHome', icon: 'fas fa-car-side', label: 'Take Home Car', onClick: closeAnd(() => { setTakeHomeTab(''); setShowTakeHome(true); }) },
                                                         toolAccess.ama && { key: 'ama', icon: 'fa-solid fa-truck-medical', label: 'EMS Contre Avis Médical', onClick: closeAnd(() => setShowEmsAmaModal(prev => !prev)) },
                                                     ],
                                                 },
@@ -2662,6 +2668,9 @@ function MainApp({
                         )}
                         {toolAccess.disciplineManage && (
                             <DisciplineModal show={showDiscipline} initialSearch={directoryDisciplineSearch} onHide={() => { setShowDiscipline(false); setDirectoryDisciplineSearch(''); }} showNotification={showNotification} />
+                        )}
+                        {toolAccess.takeHome && (
+                            <TakeHomeCarModal show={showTakeHome} onHide={() => setShowTakeHome(false)} canManage={!!toolAccess.takeHomeManage} initialTab={takeHomeTab} showNotification={showNotification} />
                         )}
                         {toolAccess.fireReport && toolAccess.fireManage && (
                             <FireSafetyHub
