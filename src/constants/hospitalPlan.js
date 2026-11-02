@@ -85,7 +85,7 @@ export const HOSPITAL_FLOORS = [
                 titre: 'Réception',
                 zones: [
                     room('Réception avec accès escaliers et ascenseurs', 'public'),
-                    room('Salle d\'attente avec accès escaliers et ascenseurs', 'public'),
+                    room('Salle d\'attente', 'public'),
                 ],
             },
             {

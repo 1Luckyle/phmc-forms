@@ -30,7 +30,7 @@ export const BUILDING_FLOORS = [
         'Salle d\'épreuve d\'effort / de rééducation cardio-respiratoire', 'Bureau de consultation de spécialiste',
     ]),
     floor('4', 'Chirurgie Générale et Dentaire', [
-        'Réception avec accès escaliers et ascenseurs', 'Salle d\'attente avec accès escaliers et ascenseurs', 'Réception', 'Service de Chirurgie Générale', 'Salle de réunion',
+        'Réception avec accès escaliers et ascenseurs', 'Salle d\'attente', 'Réception', 'Service de Chirurgie Générale', 'Salle de réunion',
         'Salle de repos et détente', 'Salle 1 : Salle d\'imagerie lourde', 'Salle 2 : Bloc opératoire', 'Salle 3 : Bloc opératoire d\'enseignement', 'Box de réanimation',
         'Salle de travaux anatomiques et d\'enseignement chirurgical', 'Soins Ambulatoires', 'Salle d\'attente', 'Salle de soins ambulatoires',
         'Service de Chirurgie Dentaire', 'Salle de soins dentaires', 'Salle de radiologie dentaire',
