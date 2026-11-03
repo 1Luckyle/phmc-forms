@@ -25,3 +25,22 @@ input[data-req-empty], textarea[data-req-empty], select[data-req-empty] {
 }
 textarea[data-req-empty] { background-position: top calc(0.375em + 0.1875rem) right calc(0.375em + 0.1875rem); }
 [data-req-empty]:not(input):not(textarea):not(select) { border-color: #dc3545 !important; box-shadow: 0 0 0 1px #dc3545 !important; }
+
+/* Champ FACULTATIF pas encore rempli : bleu, avec un cercle vide (le rouge et son point d'exclamation sont réservés aux champs obligatoires). */
+input[data-opt-empty], textarea[data-opt-empty], select[data-opt-empty] {
+    border-color: #58a6ff !important;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%2358a6ff'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+textarea[data-opt-empty] { background-position: top calc(0.375em + 0.1875rem) right calc(0.375em + 0.1875rem); }
+[data-opt-empty]:not(input):not(textarea):not(select) { border-color: #58a6ff !important; box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.7) !important; }
+
+/* Légende des deux codes couleur, au-dessus d'un formulaire de rapport. */
+.field-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 10px; font-size: 0.82rem; color: #8b98a5; }
+.field-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.field-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid; }
+.field-legend .req i { border-color: #dc3545; }
+.field-legend .opt i { border-color: #58a6ff; }

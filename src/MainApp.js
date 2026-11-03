@@ -2000,6 +2000,13 @@ function MainApp({
                                 }
                             }
                         }}> 
+                            {/* Légende des deux codes couleur des champs vides (voir components/FieldGuide.js) : rouge = obligatoire, bleu = facultatif. */}
+                            {FieldComponent && currentEmployee && bbCodeVersion < 50 && (
+                                <div className="field-legend" data-no-tip>
+                                    <span className="req"><i></i>Rouge : champ obligatoire à remplir</span>
+                                    <span className="opt"><i></i>Bleu : champ facultatif pas encore rempli</span>
+                                </div>
+                            )}
                             <Suspense fallback={<LoadingSpinner />}>
                                 {FieldComponent && currentEmployee ? (
                                     <FieldComponent

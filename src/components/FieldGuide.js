@@ -2,8 +2,9 @@
 //
 // Moteur des infobulles et des marques « à remplir » de TOUS les champs du site, monté une seule fois (App.js), sans rien à écrire dans chaque formulaire :
 //   • au survol (ou au clavier) d'un champ, une infobulle dit exactement ce qu'il faut renseigner et si le champ est obligatoire ;
-//   • dans un formulaire de rapport (zone `data-form-zone="{version}"`, voir MainApp), un champ OBLIGATOIRE encore vide est entouré de rouge,
-//     d'après les règles du back-office (utils/formRulesCore.js) : plus de rouge posé à la main champ par champ.
+//   • dans un formulaire de rapport (zone `data-form-zone="{version}"`, voir MainApp), deux codes couleur sur les champs encore vides, d'après les règles
+//     du back-office (utils/formRulesCore.js) : ROUGE (data-req-empty) = obligatoire à remplir ; BLEU (data-opt-empty) = facultatif pas encore rempli, pour voir
+//     d'un coup d'œil ce qu'il reste à compléter sans le confondre avec une erreur. Plus de rouge posé à la main champ par champ.
 // Les textes viennent de constants/fieldInfo.js (champs des formulaires) ; ailleurs, l'infobulle reprend le libellé ou l'indication du champ.
 // Ajouter `data-no-tip` sur un champ (ou un de ses parents) supprime son infobulle.
 import { useEffect } from 'react';
@@ -144,6 +145,34 @@ const FieldGuide = () => {
                 });
                 zone.querySelectorAll('[data-req-empty]').forEach((el) => { if (!marked.has(el)) el.removeAttribute('data-req-empty'); });
                 marked.forEach((el) => { if (el.getAttribute('data-req-empty') !== '1') el.setAttribute('data-req-empty', '1'); });
+
+                // Champs FACULTATIFS encore vides (formulaires de rapport seulement : dans une candidature, l'exigence dépend du poste). Seuls les champs du
+                // catalogue sont concernés ; ceux en lecture seule ou déjà marqués en rouge sont ignorés.
+                const known = version < 50 ? VERSION_FIELDS[version] : null;
+                const optionalMarked = new Set();
+                if (known) {
+                    const optionalGroups = new Map();
+                    zone.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
+                        if (!known[field.name] || required.has(field.name) || (SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.readOnly || field.disabled) return;
+                        const entry = optionalGroups.get(field.name) || { fields: [], filled: false };
+                        entry.fields.push(field);
+                        if (String(field.value || '').trim() !== '') entry.filled = true;
+                        optionalGroups.set(field.name, entry);
+                    });
+                    optionalGroups.forEach((entry) => {
+                        if (entry.filled) return;
+                        entry.fields.forEach((field) => {
+                            let target = field;
+                            if (field.type === 'hidden') {
+                                const container = field.closest('[class*="-container"]');
+                                target = container ? (container.querySelector('[class*="-control"]') || container) : null;
+                            }
+                            if (target && !marked.has(target)) optionalMarked.add(target);
+                        });
+                    });
+                }
+                zone.querySelectorAll('[data-opt-empty]').forEach((el) => { if (!optionalMarked.has(el)) el.removeAttribute('data-opt-empty'); });
+                optionalMarked.forEach((el) => { if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
             });
         };
         const scheduleMarks = () => { if (!raf) raf = requestAnimationFrame(refreshMarks); };
