@@ -55,7 +55,10 @@ const baseAmountOf = (bbCodeVersion, formData) => {
 export const computeBilling = (bbCodeVersion, formData = {}) => {
     const baseAmount = baseAmountOf(bbCodeVersion, formData);
     const exempt = EXEMPTABLE_VERSIONS.includes(Number(bbCodeVersion)) && isTrue(formData.isExempt);
-    return { baseAmount, exempt, amount: exempt ? 0 : baseAmount };
+    // Exemption DEMANDÉE mais pas encore enregistrée sur le dossier du patient (ni mineur) : la facture reste due, « en attente de traitement pour
+    // l'exemption », jusqu'à la décision du personnel administratif (voir utils/exemptions.js).
+    const exemptPending = exempt && formData.exemptSource === 'demande';
+    return { baseAmount, exempt, exemptPending, amount: exempt ? 0 : baseAmount };
 };
 
 export const formatMoney = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} $`;
@@ -63,7 +66,8 @@ export const formatMoney = (amount) => `${Number(amount || 0).toLocaleString('fr
 // Ligne de paiement du BBCode d'un formulaire rempli par le personnel (à la place de l'ancien
 // « le paiement ne se fait pas via cet outil »).
 export const staffPaymentLine = (bbCodeVersion, formData = {}) => {
-    const { baseAmount, exempt, amount } = computeBilling(bbCodeVersion, formData);
+    const { baseAmount, exempt, exemptPending, amount } = computeBilling(bbCodeVersion, formData);
+    if (exemptPending) return 'Rempli par le personnel PHMC — exemption de paiement demandée, en attente de traitement.';
     if (exempt) return 'Rempli par le personnel PHMC — patient exempté de paiement.';
     if (baseAmount <= 0) return 'Rempli par le personnel PHMC — aucun paiement à régler.';
     return `Rempli par le personnel PHMC — montant à régler par le patient : ${formatMoney(amount)} (paiement via Fleeca, depuis son dossier patient).`;
@@ -85,5 +89,5 @@ export const invoiceStatusLabel = (status) => INVOICE_STATUS_LABELS[status] || s
 
 // Total à payer d'une liste de factures déjà résolues ({ ...facture, statutEffectif }).
 export const totalDue = (invoices) => invoices
-    .filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER)
+    .filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER && !invoice.exemptionEnAttente)
     .reduce((sum, invoice) => sum + Number(invoice.montant || 0), 0);

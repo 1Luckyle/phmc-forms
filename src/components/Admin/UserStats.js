@@ -6,7 +6,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ref, get } from 'firebase/database';
 import { database } from '../../firebase';
-import { getFormDefinition } from '../../formDefinitions';
+import { renameReportOwner } from '../../utils/staffAdmin';
+import { getFormLabel } from '../../formDefinitions';
 import './UserStats.css';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -29,7 +30,7 @@ const displayNameOf = (node, reports) => {
     return best ? best[0] : node.replace(/_/g, ' ');
 };
 
-const formNameOf = (version) => getFormDefinition(version)?.name || (version != null ? `Formulaire ${version}` : 'Autre');
+const formNameOf = (version) => getFormLabel(version);
 
 // Tranches de temps de l'histogramme : jours (7 / 30 j), semaines (3 mois) ou mois (tout, 24 mois au plus).
 const buildBuckets = (period, firstTs) => {
@@ -71,6 +72,9 @@ const UserStats = () => {
     const [error, setError] = useState('');
     const [periodKey, setPeriodKey] = useState('30');
     const [selected, setSelected] = useState('');
+    const [merging, setMerging] = useState(false);
+    const [mergeNote, setMergeNote] = useState('');
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
         let cancelled = false;
@@ -91,7 +95,7 @@ const UserStats = () => {
             }
         })();
         return () => { cancelled = true; };
-    }, []);
+    }, [reloadKey]);
 
     const period = PERIODS.find((p) => p.key === periodKey);
 
@@ -132,6 +136,24 @@ const UserStats = () => {
     const maxForm = stats.forms[0]?.[1] || 1;
     const top = stats.ranking.slice(0, 10);
     const chosen = selected ? stats.perNode.find((entry) => entry.node === selected) : null;
+    // Un dossier « Nom [PHMC-id] » (écrit en tant que Civil) dont le même « Nom » a un dossier de personnel : doublon à fusionner.
+    const civilSuffix = chosen ? chosen.name.match(/^(.*\S)\s*\[(PHMC-[^\]]+)\]$/) : null;
+    const staffTwin = civilSuffix ? stats.perNode.find((entry) => entry.node !== chosen.node && entry.name === civilSuffix[1]) : null;
+    const mergeInto = async () => {
+        if (!window.confirm(`Fusionner les ${chosen.total} rapports de « ${chosen.name} » (Civil) dans le dossier « ${staffTwin.name} » (personnel) ?\n\nLes rapports sont déplacés, rien n'est écrasé.`)) return;
+        setMerging(true);
+        setMergeNote('');
+        try {
+            const { moved } = await renameReportOwner(chosen.name, staffTwin.name, { merge: true });
+            setMergeNote(`${moved} rapport(s) fusionné(s).`);
+            setSelected(staffTwin.node);
+            setReloadKey((key) => key + 1);
+        } catch (err) {
+            setMergeNote(err?.message || 'Fusion impossible.');
+        } finally {
+            setMerging(false);
+        }
+    };
     const chosenForms = (() => {
         if (!chosen) return [];
         const since = period.days ? startOfDay(Date.now()).getTime() - (period.days - 1) * DAY : 0;
@@ -224,6 +246,13 @@ const UserStats = () => {
                     <option value="">Choisir un rédacteur…</option>
                     {[...stats.perNode].sort((a, b) => a.name.localeCompare(b.name)).map((entry) => <option key={entry.node} value={entry.node}>{entry.name} ({entry.total})</option>)}
                 </select>
+                {chosen && staffTwin && (
+                    <div className="alert alert-warning py-2 small mt-2 mb-0 d-flex flex-wrap align-items-center gap-2">
+                        <span><i className="fas fa-clone me-1"></i><strong>{civilSuffix[1]}</strong> a deux dossiers : ce dossier Civil ({chosen.total}) et son dossier de personnel ({staffTwin.total}).</span>
+                        <button type="button" className="btn btn-sm btn-warning" onClick={mergeInto} disabled={merging}>{merging ? 'Fusion…' : 'Fusionner dans le dossier du personnel'}</button>
+                    </div>
+                )}
+                {mergeNote && <div className="small text-muted mt-2">{mergeNote}</div>}
                 {chosen ? (
                     <div className="us-detail-body">
                         <div className="us-detail-figures">

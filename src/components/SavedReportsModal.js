@@ -8,7 +8,7 @@ import { reportTitleOf, reportCreatorOf, comprehensiveSanitize } from '../utils/
 import useReportIndexStatus from '../hooks/useReportIndexStatus';
 import { logActivity } from '../utils/activityLog';
 import { ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
-import { getFormDefinition } from '../formDefinitions';
+import { getFormDefinition, getFormLabel } from '../formDefinitions';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
 import useReportInvoices from '../hooks/useReportInvoices';
 import { INVOICE_STATUS_COLORS } from '../utils/patientBilling';
@@ -356,7 +356,7 @@ const SavedReportsModal = ({
     // Libellé du type de rapport (formulaire).
     const typeLabelOf = (report) => (report.kind === 'ama'
         ? 'Formulaire AMA'
-        : (getFormDefinition(report.bbCodeVersion)?.name || `Formulaire ${report.bbCodeVersion}`));
+        : getFormLabel(report.bbCodeVersion));
 
     // Recherche par titre (et rapports joignables seulement en mode « joindre »).
     const baseReports = useMemo(() => {

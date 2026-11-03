@@ -74,8 +74,9 @@ const PatientInvoicesPanel = ({ patientID, showNotification, onInvoices, showPai
 
     if (invoices === null) return <p style={{ color: '#8b949e' }}>Chargement des factures…</p>;
 
-    const due = invoices.filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER);
-    const shown = showPaidHistory ? invoices : due;
+    const due = invoices.filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER && !invoice.exemptionEnAttente);
+    const awaitingExemption = invoices.filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER && invoice.exemptionEnAttente);
+    const shown = showPaidHistory ? invoices : [...due, ...awaitingExemption];
     if (shown.length === 0) {
         return <p style={{ color: '#8b949e', margin: 0 }}>Aucune facture{showPaidHistory ? '' : ' à payer'}.</p>;
     }
@@ -90,8 +91,10 @@ const PatientInvoicesPanel = ({ patientID, showNotification, onInvoices, showPai
                             <small>{invoice.creeLe ? new Date(invoice.creeLe).toLocaleDateString('fr-FR') : '—'}</small>
                         </span>
                         <span className="inv-amount">{invoice.statutEffectif === INVOICE_STATUS.SANS_PAIEMENT ? '—' : formatMoney(invoice.montant)}</span>
-                        <InvoiceStatusBadge status={invoice.statutEffectif} />
-                        {invoice.statutEffectif === INVOICE_STATUS.A_PAYER && (
+                        {invoice.exemptionEnAttente
+                            ? <span style={{ display: 'inline-block', padding: '1px 9px', borderRadius: '10px', fontSize: '0.8em', color: '#58a6ff', border: '1px solid #58a6ff' }} title="Votre demande d'exemption est examinée par le personnel administratif.">En attente de traitement pour l'exemption</span>
+                            : <InvoiceStatusBadge status={invoice.statutEffectif} />}
+                        {invoice.statutEffectif === INVOICE_STATUS.A_PAYER && !invoice.exemptionEnAttente && (
                             <Button size="sm" variant="success" disabled={!!busy} onClick={() => pay([invoice.id], invoice.id)}>
                                 {busy === invoice.id ? 'Création…' : 'Payer'}
                             </Button>

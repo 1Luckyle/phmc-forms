@@ -12,6 +12,8 @@ import './TakeHome.css';
 import { auth } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { TAKE_HOME_RULES, TAKE_HOME_VEHICLES, MOTIF_MIN, MOTIF_MAX, MOTIF_PRESETS, DECISION_PRESETS, vehicleByPlate, vehicleLabel } from '../../constants/takeHomeCar';
+import useDebugDelete from '../../hooks/useDebugDelete';
+import { removeTakeHomeRequest } from '../../utils/debugDelete';
 import {
     subscribeMyRequests, subscribeAllRequests, subscribeAssignments, submitRequest, cancelRequest, returnVehicle, decideRequest, withdrawVehicle,
     isActive, statusInfo,
@@ -58,6 +60,7 @@ const Rules = () => (
 
 const MyRequest = ({ requests, assignments, name, run, busy }) => {
     const { staffProfile } = useEmployeeAuth();
+    const debugDelete = useDebugDelete();
     // Zone de stationnement : par défaut l'adresse de la fiche du personnel (vide s'il n'y en a pas) ; `lieu: null` = non modifié par l'utilisateur.
     const address = String(staffProfile?.address || '').trim();
     const [form, setForm] = useState({ plate: '', lieu: null, motif: '' });
@@ -125,9 +128,9 @@ const MyRequest = ({ requests, assignments, name, run, busy }) => {
                 <>
                     <h6 className="mt-4">Historique</h6>
                     <Table size="sm" className="thc-table">
-                        <thead><tr><th>Date</th><th>Véhicule</th><th>État</th><th>Remarque</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Véhicule</th><th>État</th><th>Remarque</th>{debugDelete && <th></th>}</tr></thead>
                         <tbody>{history.map((request) => (
-                            <tr key={request.id}><td>{formatDate(request.demandeLe)}</td><td>{request.plaque}</td><td><StatusBadge statut={request.statut} /></td><td>{request.finNote || request.decisionNote || ''}</td></tr>
+                            <tr key={request.id}><td>{formatDate(request.demandeLe)}</td><td>{request.plaque}</td><td><StatusBadge statut={request.statut} /></td><td>{request.finNote || request.decisionNote || ''}</td>{debugDelete && <td className="text-end"><Button size="sm" variant="outline-danger" className="ms-1" title="Supprimer (debug)" onClick={() => { if (window.confirm('Supprimer définitivement cette demande (debug) ?')) run(() => removeTakeHomeRequest(request), 'Demande supprimée.'); }}><i className="fas fa-trash"></i></Button></td>}</tr>
                         ))}</tbody>
                     </Table>
                 </>
@@ -137,6 +140,7 @@ const MyRequest = ({ requests, assignments, name, run, busy }) => {
 };
 
 const Management = ({ requests, assignments, name, run, busy }) => {
+    const debugDelete = useDebugDelete();
     const [notes, setNotes] = useState({});
     const [withdrawing, setWithdrawing] = useState('');
     const pending = requests.filter((request) => request.statut === 'en_attente');
@@ -199,9 +203,9 @@ const Management = ({ requests, assignments, name, run, busy }) => {
                     <h6 className="mt-4">Historique</h6>
                     <div className="thc-scroll">
                         <Table size="sm" className="thc-table">
-                            <thead><tr><th>Date</th><th>Membre</th><th>Véhicule</th><th>État</th><th>Remarque</th></tr></thead>
+                            <thead><tr><th>Date</th><th>Membre</th><th>Véhicule</th><th>État</th><th>Remarque</th>{debugDelete && <th></th>}</tr></thead>
                             <tbody>{history.map((request) => (
-                                <tr key={`${request.uid}-${request.id}`}><td>{formatDate(request.demandeLe)}</td><td>{request.demandeurNom}</td><td>{request.plaque}</td><td><StatusBadge statut={request.statut} /></td><td>{request.finNote || request.decisionNote || ''}</td></tr>
+                                <tr key={`${request.uid}-${request.id}`}><td>{formatDate(request.demandeLe)}</td><td>{request.demandeurNom}</td><td>{request.plaque}</td><td><StatusBadge statut={request.statut} /></td><td>{request.finNote || request.decisionNote || ''}</td>{debugDelete && <td className="text-end"><Button size="sm" variant="outline-danger" className="ms-1" title="Supprimer (debug)" onClick={() => { if (window.confirm('Supprimer définitivement cette demande (debug) ?')) run(() => removeTakeHomeRequest(request), 'Demande supprimée.'); }}><i className="fas fa-trash"></i></Button></td>}</tr>
                             ))}</tbody>
                         </Table>
                     </div>

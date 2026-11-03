@@ -16,6 +16,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import PasswordResetHandler from './components/Auth/PasswordResetHandler';
 import FleecaPaymentSuccess from './components/FleecaPaymentSuccess';
 import TransparencyPage from './components/Transparency/TransparencyPage';
+import MemorialPage from './components/Memorial/MemorialPage';
 import HospitalPlanPage from './components/Directory/HospitalPlanPage';
 
 function App() {
@@ -305,6 +306,7 @@ const initialFormData = {
                                     <Route path="/reset-password" element={<PasswordResetHandler />} />
                                     <Route path="/payment/success" element={<FleecaPaymentSuccess />} />
                                     <Route path="/transparence" element={<TransparencyPage />} />
+                                    <Route path="/hommage" element={<MemorialPage />} />
                                     <Route path="/plan" element={<HospitalPlanPage />} />
                                     <Route path="/login" element={<GtaLogin />} />
                                     <Route path="/auth/gta/callback" element={<GtaCallback />} />

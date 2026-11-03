@@ -9,10 +9,22 @@ import { ref, get, set, push, update, onValue } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { logActivity } from './activityLog';
 import { notifyGroup, notifyUser } from './notifications';
+import { sendTemplatedMail } from './mailTemplates';
+import { loadStaffMembers } from './staffAdmin';
 import { TAKE_HOME_STATUS, MOTIF_MIN, MOTIF_MAX, vehicleByPlate, vehicleLabel } from '../constants/takeHomeCar';
 
 const clean = (text, max) => String(text || '').trim().slice(0, max);
 const ACTIVE = ['en_attente', 'accepte'];
+
+// Mail au membre du personnel (adresse de sa fiche). Au mieux : un mail manquant ou raté ne fait jamais échouer l'action.
+const mailTo = async (uid, templateId, vars) => {
+    try {
+        const member = (await loadStaffMembers()).find((entry) => entry.uid === uid);
+        if (member?.email) await sendTemplatedMail(templateId, { to: member.email, vars: { nom: member.displayName || member.name || '', ...vars } });
+    } catch (error) {
+        console.warn('Take Home Car : mail non envoyé', error?.message || error);
+    }
+};
 
 // demandes/{uid}/{id} → liste à plat [{ id, uid, ...demande }], les plus récentes d'abord.
 export const flattenRequests = (value) => Object.entries(value || {})
@@ -50,6 +62,7 @@ export async function submitRequest({ plate, motif, lieu, name }) {
     };
     await set(push(ref(database, `takeHomeCars/demandes/${user.uid}`)), entry);
     notifyGroup('administration', { type: 'demande', titre: 'Demande de Take Home Car', texte: `${entry.demandeurNom || 'Un membre du personnel'} — ${vehicleLabel(plate)}`, lien: { cible: 'takehome', section: 'manage' } });
+    mailTo(user.uid, 'take_home_demande_recue', { vehicule: vehicleLabel(plate) });
     logActivity({ category: 'demandes', action: 'take_home_requested', severity: 'info', summary: `Demande de Take Home Car : ${plate}`, details: `Par : ${entry.demandeurNom || '—'}\n${reason}` });
     return entry;
 }
@@ -95,6 +108,7 @@ export async function decideRequest(request, { accept, note, name }) {
         texte: clean(note, 300) || undefined,
         lien: { cible: 'takehome' },
     });
+    mailTo(request.uid, accept ? 'take_home_accorde' : 'take_home_refuse', { vehicule: vehicleLabel(request.plaque), note: clean(note, 300) });
     logActivity({
         category: 'demandes', action: accept ? 'take_home_accepted' : 'take_home_refused', severity: 'info',
         summary: `Take Home Car ${accept ? 'accordé' : 'refusé'} : ${request.plaque}`, details: `Demandeur : ${request.demandeurNom || '—'}\nPar : ${clean(name, 120) || '—'}`,
@@ -114,5 +128,6 @@ export async function withdrawVehicle(request, { note, name }) {
         [`attributions/${request.plaque}`]: null,
     });
     notifyUser(request.uid, { type: 'statut', titre: `Take Home Car retiré : ${request.plaque}`, texte: clean(note, 300) || undefined, lien: { cible: 'takehome' } });
+    mailTo(request.uid, 'take_home_retire', { vehicule: vehicleLabel(request.plaque), note: clean(note, 300) });
     logActivity({ category: 'demandes', action: 'take_home_withdrawn', severity: 'warning', summary: `Take Home Car retiré : ${request.plaque}`, details: `Membre : ${request.demandeurNom || '—'}\nPar : ${clean(name, 120) || '—'}\n${clean(note, 300)}` });
 }

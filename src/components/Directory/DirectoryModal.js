@@ -15,6 +15,9 @@ import {
 } from '../../utils/staffAdmin';
 import { loadInternalGrants } from '../../utils/internalRecruitment';
 import { vehicleLabel } from '../../constants/takeHomeCar';
+import { loadExemptIds } from '../../utils/exemptions';
+import { staffPatientIdOf } from '../../utils/deletedAccounts';
+import { canonicalPatientId } from '../../utils/patientId';
 import { getEmployeeFullName } from '../../utils/employeeName';
 import { STAFF_FAMILIES, familiesOfMember } from '../../constants/ranks';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
@@ -47,6 +50,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
     const [admins, setAdmins] = useState({});
     const [internalGrants, setInternalGrants] = useState({});
     const [creationFlags, setCreationFlags] = useState({});   // { uid: { signature, carte } }
+    const [exemptIds, setExemptIds] = useState(new Set());   // ID patient exemptés de paiement
     const [takeHomePlates, setTakeHomePlates] = useState({});   // { uid: [plaque, …] } d'après takeHomeCars/attributions
     // Faux si la lecture des drapeaux est refusée : on n'affiche alors AUCUNE pastille « Sans signature / Sans carte » (sinon tout le monde semble n'avoir rien créé).
     const [flagsReadable, setFlagsReadable] = useState(false);
@@ -66,7 +70,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
         (async () => {
             try {
                 // Les civils et le recrutement interne ne sont lisibles que selon le rôle : un refus n'empêche pas le reste de s'afficher.
-                const [staffList, civilList, recruiterUids, adminUids, grants, flagsSnap, platesSnap] = await Promise.all([
+                const [staffList, civilList, recruiterUids, adminUids, grants, flagsSnap, platesSnap, exempted] = await Promise.all([
                     loadStaffMembers(),
                     loadCivilians().catch(() => []),
                     loadRecruiterUids().catch(() => ({})),
@@ -74,6 +78,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                     loadInternalGrants().catch(() => ({})),
                     get(ref(database, 'creationsFlags')).catch(() => null),
                     get(ref(database, 'takeHomeCars/attributions')).catch(() => null),
+                    loadExemptIds(),
                 ]);
                 if (cancelled) return;
                 setStaff(staffList);
@@ -90,6 +95,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                     });
                 }
                 setTakeHomePlates(plates);
+                setExemptIds(exempted);
             } catch (err) {
                 if (!cancelled) setError(err?.message || 'Annuaire illisible.');
             } finally {
@@ -203,6 +209,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                                             {member.uid && recruiters[member.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {member.uid && admins[member.uid] === true && <Pill color="#f85149">Admin</Pill>}
                                             {member.uid && internalGrants[member.uid] && <Pill color="#79c0ff" title="Statut de recrutement interne accordé">Recrutement interne</Pill>}
+                                            {exemptIds.has(staffPatientIdOf(member)) && <Pill color="#3fb950" title="Exempté(e) du paiement des dossiers médicaux"><i className="fas fa-hand-holding-heart me-1"></i>Exempté(e)</Pill>}
                                             {member.uid && (takeHomePlates[member.uid] || []).map((plate) => <Pill key={plate} color="#d29922" title={`Take Home Car : ${vehicleLabel(plate)}`}><i className="fas fa-car me-1"></i>{plate}</Pill>)}
                                         </div>
                                         <div className="dir-actions">
@@ -262,6 +269,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                                             {flagsReadable && <Pill color={creationFlags[civilian.uid]?.signature ? '#3fb950' : '#6e7681'} title="A créé sa signature (utilisée pour ses documents, ex. AMA)">{creationFlags[civilian.uid]?.signature ? 'Signature' : 'Sans signature'}</Pill>}
                                             {recruiters[civilian.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {internalGrants[civilian.uid] && <Pill color="#79c0ff" title="Statut de recrutement interne accordé">Recrutement interne</Pill>}
+                                            {exemptIds.has(canonicalPatientId(civilian.patientID)) && <Pill color="#3fb950" title="Exempté(e) du paiement des dossiers médicaux"><i className="fas fa-hand-holding-heart me-1"></i>Exempté(e)</Pill>}
                                         </div>
                                         <div className="dir-actions">
                                             {access.patientDossier && onOpenPatientDossier && civilian.patientID && (

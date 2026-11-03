@@ -236,6 +236,19 @@
       }
     },
 
+    // Page publique « Hommage » (#/hommage) : hommages/{clé du rapport}: { titre, par?, publieLe, bbCode } — COPIE publique d'un Rapport Public de Décès publié
+    // (sans uid ni ID patient : rapportsPublics, lui, reste réservé au personnel). Lecture : tout le monde, même sans connexion. Écriture : comme
+    // rapportsPublics (DMEC auteur de la publication, ou admin), sauf gel judiciaire ; la copie est posée à la publication et retirée à la dépublication.
+    "hommages": {
+      ".read": true,
+      "$reportKey": {
+        ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && root.child('rapportsPublics').child($reportKey).child('uid').val() === auth.uid))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['titre', 'publieLe', 'bbCode']) && newData.child('titre').isString() && newData.child('titre').val().length <= 200 && newData.child('publieLe').isNumber() && newData.child('bbCode').isString() && newData.child('bbCode').val().length <= 100000 && (!newData.child('par').exists() || (newData.child('par').isString() && newData.child('par').val().length <= 120)))",
+        "titre": {}, "publieLe": {}, "bbCode": {}, "par": {},
+        "$other": { ".validate": false }
+      }
+    },
+
     // GEL JUDICIAIRE d'un rapport (procédure en cours : mandat, réquisition, enquête) : gelsJudiciaires/{clé du rapport}: { reportPath, uid, par,
     // depuis, actif, patientID?, autorite, reference, motif, levee?: { motif, par, le } }. Posé par le DMEC (ou un admin) ; tant que actif vaut true,
     // le rapport ne peut être ni modifié ni supprimé ni (dé)publié (voir savedReports et rapportsPublics). Seul un ADMIN lève le gel, avec un
@@ -697,6 +710,42 @@
         ".validate": "!newData.exists() || (newData.hasChildren(['demandeLe', 'nom', 'statut']) && newData.child('demandeLe').isNumber() && newData.child('nom').isString() && newData.child('nom').val().length <= 120 && newData.child('statut').val() === 'en_attente' && (!newData.child('motif').exists() || (newData.child('motif').isString() && newData.child('motif').val().length <= 500)) && (!newData.child('email').exists() || (newData.child('email').isString() && newData.child('email').val().length <= 200)) && (!newData.child('rang').exists() || (newData.child('rang').isString() && newData.child('rang').val().length <= 120)))",
         "demandeLe": {}, "nom": {}, "email": {}, "rang": {}, "motif": {}, "statut": {},
         "$other": { ".validate": false }
+      }
+    },
+
+    // ─── Exemption de paiement des dossiers médicaux (mineurs, faible revenu) ─────────────────────────────────────────
+    // Voir src/utils/exemptions.js. L'ADMINISTRATION = les admins et gestionIncendieUIDs (Direction, assistance, personnel administratif).
+    //   exemptions/{ID patient} : le drapeau « exempté ». Lecture : le personnel, les admins, et le Civil titulaire de cet ID. Écriture : l'administration ;
+    //     un Civil ne peut que poser (ou retirer) SON drapeau « mineur » (profil mineur, voir syncMinorFlag).
+    //   demandesExemption/{ID patient} : une demande en attente. Créée UNE fois (par le patient ou un soignant), traitée par l'administration ; l'auteur peut la retirer.
+    //   exemptionsHistorique/{ID patient}/{id} : trace des décisions (accordée, refusée, retirée avec son motif). Administration seule.
+    "exemptions": {
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+      "$patientId": {
+        ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && ((!data.exists() && newData.child('source').val() === 'mineur') || (data.child('source').val() === 'mineur' && !newData.exists()))))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['statut', 'source', 'depuisLe']) && newData.child('statut').val() === 'active' && (newData.child('source').val() === 'mineur' || newData.child('source').val() === 'demande' || newData.child('source').val() === 'manuel') && newData.child('depuisLe').isNumber() && (!newData.child('parNom').exists() || (newData.child('parNom').isString() && newData.child('parNom').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))",
+        "statut": {}, "source": {}, "depuisLe": {}, "parNom": {}, "note": {},
+        "$other": { ".validate": false }
+      }
+    },
+    "demandesExemption": {
+      ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+      "$patientId": {
+        ".read": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || data.child('demandeurUid').val() === auth.uid || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.child('demandeurUid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('staffUIDs').child(auth.uid).val() === true)) || (data.child('demandeurUid').val() === auth.uid && !newData.exists()))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['patientID', 'patientNom', 'motif', 'demandeLe', 'demandeurUid', 'statut']) && newData.child('patientID').val() === $patientId && newData.child('patientNom').isString() && newData.child('patientNom').val().length <= 120 && (newData.child('motif').val() === 'faible_revenu' || newData.child('motif').val() === 'mineur' || newData.child('motif').val() === 'autre') && newData.child('demandeLe').isNumber() && newData.child('demandeurUid').isString() && newData.child('statut').val() === 'en_attente' && (!newData.child('demandeurNom').exists() || (newData.child('demandeurNom').isString() && newData.child('demandeurNom').val().length <= 120)) && (!newData.child('details').exists() || (newData.child('details').isString() && newData.child('details').val().length <= 500)) && (!newData.child('parSoignant').exists() || (newData.child('parSoignant').isString() && newData.child('parSoignant').val().length <= 120)) && (!newData.child('patientEmail').exists() || (newData.child('patientEmail').isString() && newData.child('patientEmail').val().length <= 200)))",
+        "patientID": {}, "patientNom": {}, "motif": {}, "demandeLe": {}, "demandeurUid": {}, "demandeurNom": {}, "statut": {}, "details": {}, "parSoignant": {}, "patientEmail": {},
+        "$other": { ".validate": false }
+      }
+    },
+    "exemptionsHistorique": {
+      "$patientId": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+        "$id": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+          ".validate": "newData.hasChildren(['type', 'parNom', 'le']) && (newData.child('type').val() === 'accordee' || newData.child('type').val() === 'refusee' || newData.child('type').val() === 'retiree') && newData.child('le').isNumber() && newData.child('parNom').isString() && (!newData.child('commentaire').exists() || (newData.child('commentaire').isString() && newData.child('commentaire').val().length <= 300))"
+        }
       }
     },
 

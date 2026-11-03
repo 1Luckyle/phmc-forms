@@ -108,7 +108,8 @@ export const staffNameParts = (member) => {
 // des dossiers patients, marqueurs « copié par » et chemins des copies). Sans cela, un renommage
 // ferait disparaître les rapports de la liste de leur auteur (le nom EST la clé des rapports).
 // Les rapports sont d'abord copiés à la nouvelle adresse, puis les anciens supprimés.
-export async function renameReportOwner(oldAuthorName, newAuthorName) {
+// `merge` : le nouveau nom a déjà des rapports (ex. un Civil devenu Personnel : « Nom [PHMC-id] » → « Nom ») ; on les AJOUTE sans rien écraser.
+export async function renameReportOwner(oldAuthorName, newAuthorName, { merge = false } = {}) {
     const oldNode = sanitizeNode(oldAuthorName);
     const newNode = sanitizeNode(newAuthorName);
     const result = { moved: 0 };
@@ -117,8 +118,12 @@ export async function renameReportOwner(oldAuthorName, newAuthorName) {
     if (!sourceSnap.exists()) return result;
     if (oldNode !== newNode) {
         const destinationSnap = await get(ref(database, `savedReports/${newNode}`));
-        if (destinationSnap.exists()) {
+        if (destinationSnap.exists() && !merge) {
             throw new Error(`Des rapports existent déjà sous « ${newNode} » : renommage refusé pour ne rien écraser. Utilisez l'outil de migration.`);
+        }
+        if (destinationSnap.exists()) {
+            const taken = Object.keys(sourceSnap.val()).filter((key) => destinationSnap.val()[key] !== undefined);
+            if (taken.length) throw new Error(`Fusion refusée : ${taken.length} rapport(s) ont la même référence sous « ${newNode} » (${taken[0]}).`);
         }
     }
 
@@ -501,6 +506,10 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
     await set(push(ref(database, cfg.path)), entry);
     await clearDeletedMark(staffPatientIdOf(entry, civilian.patientID));
     await syncStaffUidsQuietly();
+    // Un Civil enregistre ses rapports sous « Nom [ID patient] », le personnel sous « Nom » : sans fusion, la personne aurait deux dossiers de rapports.
+    if (civilian.patientID) {
+        try { await renameReportOwner(`${name} [${civilian.patientID}]`, name, { merge: true }); } catch (error) { console.warn('Rapports Civil non fusionnés :', error?.message || error); }
+    }
         sendTemplatedMail('compte_converti_personnel', { to: civilian.email, vars: { nom: name, grade: rankLabel(service, rank), badge: entry.badge } });
     return entry;
 }

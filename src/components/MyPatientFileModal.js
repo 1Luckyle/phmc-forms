@@ -15,6 +15,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
 import { loadPatientDossier, reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
+import ExemptionStatusCard from './ExemptionStatusCard';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -91,6 +92,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                     les rapports que vos soignants ont partagés avec vous.
                 </p>
 
+                <ExemptionStatusCard showNotification={showNotification} />
                 {myPatientID ? (
                     <p>
                         ID patient : <strong>{myPatientID}</strong>

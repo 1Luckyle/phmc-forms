@@ -1,0 +1,77 @@
+/* Page publique « Hommage » : un cadre apaisé (nuit bleutée, lumière chaude, empattements) plutôt que le style rapport / fichier du reste du site. */
+.mem-page {
+    --mem-ink: #e9e3d6;
+    --mem-soft: #b9b2a3;
+    --mem-gold: #d8c79e;
+    --mem-line: rgba(216, 199, 158, 0.22);
+    min-height: 100vh;
+    padding: 40px 16px 80px;
+    color: var(--mem-ink);
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(216, 199, 158, 0.16), transparent 55%),
+        linear-gradient(180deg, #171a2b 0%, #1d1f33 45%, #262236 100%);
+}
+
+.mem-wrap { max-width: 760px; margin: 0 auto; }
+
+.mem-back { display: inline-block; margin-bottom: 28px; color: var(--mem-soft); text-decoration: none; font-size: 0.9rem; }
+.mem-back:hover { color: var(--mem-gold); }
+
+.mem-head { text-align: center; margin-bottom: 30px; }
+.mem-head h1 { font-weight: 400; font-size: 2.4rem; letter-spacing: 0.18em; text-transform: uppercase; margin: 14px 0 16px; color: var(--mem-gold); }
+.mem-intro { max-width: 600px; margin: 0 auto; line-height: 1.75; color: var(--mem-soft); font-size: 1.05rem; font-style: italic; }
+
+/* Bougie */
+.mem-candle { position: relative; display: inline-block; width: 22px; height: 70px; }
+.mem-wax { position: absolute; bottom: 0; left: 3px; width: 16px; height: 42px; border-radius: 4px 4px 3px 3px; background: linear-gradient(90deg, #cfc7b3, #f1ebdb 45%, #cfc7b3); box-shadow: 0 0 22px rgba(255, 214, 140, 0.25); }
+.mem-flame {
+    position: absolute; bottom: 40px; left: 6px; width: 10px; height: 22px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+    background: radial-gradient(circle at 50% 70%, #fff4cf 0%, #ffcf6b 45%, rgba(255, 150, 40, 0.1) 100%);
+    box-shadow: 0 0 18px 6px rgba(255, 190, 90, 0.38);
+    transform-origin: 50% 100%;
+    animation: mem-flicker 3.4s ease-in-out infinite;
+}
+@keyframes mem-flicker {
+    0%, 100% { transform: rotate(-1.5deg) scaleY(1); opacity: 0.95; }
+    30% { transform: rotate(1.5deg) scaleY(1.06); opacity: 1; }
+    60% { transform: rotate(-0.5deg) scaleY(0.96); opacity: 0.9; }
+}
+
+.mem-rule { margin: 26px auto 0; width: 120px; height: 1px; background: linear-gradient(90deg, transparent, var(--mem-line), transparent); position: relative; }
+.mem-rule span { position: absolute; left: 50%; top: -3px; width: 7px; height: 7px; margin-left: -3px; transform: rotate(45deg); background: var(--mem-gold); opacity: 0.6; }
+
+.mem-search { margin: 0 auto 22px; max-width: 360px; }
+.mem-search input {
+    width: 100%; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--mem-line); background: rgba(255, 255, 255, 0.04);
+    color: var(--mem-ink); font-family: inherit; text-align: center; outline: none;
+}
+.mem-search input::placeholder { color: var(--mem-soft); opacity: 0.7; }
+.mem-search input:focus { border-color: var(--mem-gold); background: rgba(255, 255, 255, 0.07); }
+
+.mem-note { text-align: center; color: var(--mem-soft); font-style: italic; margin: 28px 0; }
+
+.mem-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.mem-card { border: 1px solid var(--mem-line); border-radius: 14px; background: rgba(255, 255, 255, 0.035); transition: background 0.25s, border-color 0.25s; }
+.mem-card:hover, .mem-card.open { background: rgba(255, 255, 255, 0.06); border-color: rgba(216, 199, 158, 0.4); }
+.mem-card-head {
+    width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.mem-card-flame { flex: none; width: 8px; height: 14px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: #ffcf6b; box-shadow: 0 0 10px 3px rgba(255, 190, 90, 0.4); }
+.mem-card-title { flex: 1; min-width: 0; font-size: 1.12rem; color: var(--mem-ink); }
+.mem-card-date { flex: none; font-size: 0.85rem; color: var(--mem-soft); font-style: italic; }
+.mem-card-head i { flex: none; color: var(--mem-soft); font-size: 0.8rem; }
+.mem-card-body { padding: 4px 20px 20px; }
+.mem-sign { text-align: right; margin: 10px 4px 0; color: var(--mem-soft); font-size: 0.88rem; font-style: italic; }
+
+.mem-foot { text-align: center; margin-top: 54px; color: var(--mem-soft); font-style: italic; }
+
+@media (max-width: 575px) {
+    .mem-head h1 { font-size: 1.8rem; }
+    .mem-card-head { flex-wrap: wrap; }
+    .mem-card-date { width: 100%; padding-left: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mem-flame { animation: none; }
+}

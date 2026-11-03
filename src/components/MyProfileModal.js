@@ -13,6 +13,7 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { updateOwnStaffContact, updateOwnStaffName, rankLabel, staffNameParts } from '../utils/staffAdmin';
 import { extraRanksOf, DOCTOR_RANKS } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
+import ExemptionStatusCard from './ExemptionStatusCard';
 import ZipCityField from './ZipCityField';
 
 const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) => {
@@ -170,6 +171,11 @@ const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) =
                             currentEmail={staffProfile.email || currentEmployee.email}
                             onChanged={(email) => updateLocalStaffProfile({ email })}
                         />
+                    </div>
+
+                    <div data-no-mark>
+                        <hr />
+                        <ExemptionStatusCard showNotification={showNotification} />
                     </div>
 
                     {onRequestDeletion && (

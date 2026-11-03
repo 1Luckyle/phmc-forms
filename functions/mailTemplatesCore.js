@@ -264,6 +264,74 @@ export const MAIL_TEMPLATES = {
         body: `L'adresse de votre compte PHMC-FR a été remplacée par **{{nouvelle_adresse}}**.\n\nSi vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.`,
     },
 
+    // ───────────── Take Home Car ─────────────
+    take_home_demande_recue: {
+        category: 'general', label: 'Take Home Car : demande reçue',
+        quand: 'Quand un membre du personnel ENVOIE une demande de Take Home Car (accusé de réception).',
+        destinataire: 'Le demandeur', canal: 'Application (action du demandeur)',
+        vars: [NOM, v('vehicule', 'Véhicule demandé', 'PHMC04 — Declasse Alamo Unmarked')], required: [],
+        subject: 'Votre demande de Take Home Car a bien été reçue - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre demande de **Take Home Car** pour le véhicule **{{vehicule}}** a bien été transmise à la Direction. Vous serez prévenu(e) de sa décision par notification et par mail.\n\n${SIG}`,
+    },
+    take_home_accorde: {
+        category: 'general', label: 'Take Home Car : demande acceptée',
+        quand: 'Quand la Direction ACCORDE un véhicule.',
+        destinataire: 'Le demandeur', canal: 'Application (action de la Direction)',
+        vars: [NOM, v('vehicule', 'Véhicule accordé', 'PHMC04 — Declasse Alamo Unmarked'), v('note', 'Message de la Direction (facultatif)', 'Pensez à signaler tout dommage.')], required: [],
+        subject: 'Take Home Car accordé - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre demande de **Take Home Car** est **acceptée** : le véhicule **{{vehicule}}** vous est attribué.{{?note}}\n\nMessage de la Direction : {{note}}{{/note}}\n\nLe règlement du programme s'applique ; il est consultable dans la **Boîte à outils → Take Home Car**.\n\n${SIG}`,
+    },
+    take_home_refuse: {
+        category: 'general', label: 'Take Home Car : demande refusée',
+        quand: 'Quand la Direction REFUSE une demande.',
+        destinataire: 'Le demandeur', canal: 'Application (action de la Direction)',
+        vars: [NOM, v('vehicule', 'Véhicule demandé', 'PHMC04 — Declasse Alamo Unmarked'), v('note', 'Motif (facultatif)', 'Véhicule réservé à un autre service.')], required: [],
+        subject: 'Votre demande de Take Home Car - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre demande de **Take Home Car** pour le véhicule **{{vehicule}}** n'a malheureusement pas été retenue.{{?note}}\n\nMotif : {{note}}{{/note}}\n\n${SIG}`,
+    },
+    take_home_retire: {
+        category: 'general', label: 'Take Home Car : véhicule retiré',
+        quand: 'Quand la Direction RETIRE un véhicule accordé.',
+        destinataire: 'Le titulaire du véhicule', canal: 'Application (action de la Direction)',
+        vars: [NOM, v('vehicule', 'Véhicule retiré', 'PHMC04 — Declasse Alamo Unmarked'), v('note', 'Motif (facultatif)', 'Manquement au règlement.')], required: [],
+        subject: 'Take Home Car retiré - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nLe véhicule **{{vehicule}}** ne vous est plus attribué dans le cadre du programme **Take Home Car**.{{?note}}\n\nMotif : {{note}}{{/note}}\n\n${SIG}`,
+    },
+
+    // ───────────── Exemption de paiement ─────────────
+    exemption_demande_recue: {
+        category: 'rapports', label: 'Exemption de paiement : demande reçue',
+        quand: 'Quand une demande d\'exemption de paiement est ENVOYÉE (par le patient, ou par un soignant qui s\'engage pour lui).',
+        destinataire: 'Le demandeur', canal: 'Application (action du demandeur)',
+        vars: [NOM, v('patient', 'Patient concerné', 'Jean Testard')], required: [],
+        subject: 'Votre demande d\'exemption a bien été reçue - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre demande d'**exemption de paiement** pour **{{patient}}** a bien été transmise au personnel administratif. Tant qu'elle n'est pas traitée, la facture concernée apparaît « en attente de traitement pour l'exemption » : rien n'est à payer pour l'instant. Vous serez prévenu(e) de la décision.\n\n${SIG}`,
+    },
+    exemption_accordee: {
+        category: 'rapports', label: 'Exemption de paiement : accordée',
+        quand: 'Quand le personnel administratif ACCORDE une exemption (le patient est alors repéré comme exempté).',
+        destinataire: 'Le patient', canal: 'Application (action du personnel administratif)',
+        vars: [NOM, v('note', 'Message (facultatif)', 'Exemption pour faible revenu.')], required: [],
+        subject: 'Votre exemption de paiement est enregistrée - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre **exemption de paiement** est enregistrée : vos dossiers médicaux ne vous seront plus facturés.{{?note}}\n\nMessage : {{note}}{{/note}}\n\n${SIG}`,
+    },
+    exemption_refusee: {
+        category: 'rapports', label: 'Exemption de paiement : refusée',
+        quand: 'Quand le personnel administratif REFUSE une demande d\'exemption.',
+        destinataire: 'Le patient', canal: 'Application (action du personnel administratif)',
+        vars: [NOM, v('note', 'Motif (facultatif)', 'Justificatif insuffisant.')], required: [],
+        subject: 'Votre demande d\'exemption - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre demande d'**exemption de paiement** n'a pas été retenue : les factures concernées redeviennent à payer depuis votre dossier patient.{{?note}}\n\nMotif : {{note}}{{/note}}\n\n${SIG}`,
+    },
+    exemption_retiree: {
+        category: 'rapports', label: 'Exemption de paiement : retirée',
+        quand: 'Quand le personnel administratif RETIRE une exemption (le motif est obligatoire).',
+        destinataire: 'Le patient', canal: 'Application (action du personnel administratif)',
+        vars: [NOM, v('motif', 'Motif du retrait', 'Situation ne répondant plus aux critères.')], required: ['motif'],
+        subject: 'Votre exemption de paiement a été retirée - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVotre **exemption de paiement** a été retirée.\n\nMotif : {{motif}}\n\nVos prochains dossiers médicaux seront facturés. Pour toute question, rapprochez-vous du personnel administratif.\n\n${SIG}`,
+    },
+
     // ───────────── Général ─────────────
     signature: {
         category: 'general', label: 'Formule de politesse commune ({{signature}})',

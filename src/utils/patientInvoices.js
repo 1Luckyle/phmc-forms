@@ -27,8 +27,10 @@ export async function recordInvoiceForReport({
     const node = canonicalPatientId(patientID);
     if (!node || !indexKey) return null;
 
-    const { baseAmount, amount } = computeBilling(bbCodeVersion, formData);
+    const { baseAmount, amount, exemptPending } = computeBilling(bbCodeVersion, formData);
     if (baseAmount <= 0) return null;
+    // Exemption en attente de traitement : facture due mais sans rappel ni paiement proposé tant que le personnel administratif n'a pas statué.
+    const owes = amount > 0 || exemptPending;
 
     const now = Date.now();
     const patientName = formData.patientName
@@ -39,7 +41,8 @@ export async function recordInvoiceForReport({
         bbCodeVersion: Number(bbCodeVersion),
         titre: title || '',
         montant: amount > 0 ? amount : baseAmount,
-        statut: amount > 0 ? INVOICE_STATUS.A_PAYER : INVOICE_STATUS.SANS_PAIEMENT,
+        statut: owes ? INVOICE_STATUS.A_PAYER : INVOICE_STATUS.SANS_PAIEMENT,
+        ...(exemptPending ? { exemptionEnAttente: true } : {}),
         creePar: createdBy || null,
         creeLe: now,
         patientNom: patientName,

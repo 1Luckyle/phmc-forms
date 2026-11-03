@@ -15,6 +15,9 @@
 .phmc-fieldtip.below::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #111; }
 
 /* Champ obligatoire encore vide (même rendu que .is-invalid de Bootstrap) */
+/* Champ d'identité verrouillé (tiré du profil) : discret, et le curseur indique qu'on ne peut pas le modifier. */
+[data-self-locked] { opacity: 0.8; cursor: not-allowed !important; background-image: none !important; }
+
 input[data-req-empty], textarea[data-req-empty], select[data-req-empty] {
     border-color: #dc3545 !important;
     padding-right: calc(1.5em + 0.75rem);

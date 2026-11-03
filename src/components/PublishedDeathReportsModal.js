@@ -10,7 +10,9 @@ import { copyToClipboard } from './notificationService';
 import { ReportCard, Pill } from './Reports/ReportParts';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { loadPublishedList } from '../utils/deathReports';
+import { loadPublishedList, writePublicCopy } from '../utils/deathReports';
+import { auth } from '../firebase';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { Button } from 'react-bootstrap';
 
 const modalStyle = {
@@ -38,6 +40,7 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
     // Contenu lu à la demande : { [clé]: { bbCode } | { error } }.
     const [contents, setContents] = useState({});
     const { bbcodeEnabled } = useSiteConfig();
+    const { isAdmin } = useEmployeeAuth();
     const { open, toggle, setTab } = useExpansions();
 
     useEffect(() => {
@@ -46,7 +49,16 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
         setIsLoading(true);
         setContents({});
         loadPublishedList()
-            .then((list) => { if (!cancelled) setItems(list); })
+            .then((list) => {
+                if (cancelled) return;
+                setItems(list);
+                // Publié avant la page « Hommage » : l'admin, ou le DMEC auteur de la publication, pose la copie publique manquante.
+                list.filter((item) => isAdmin || item.uid === auth.currentUser?.uid).forEach((item) => {
+                    get(ref(database, `hommages/${item.key}`)).then((snap) => {
+                        if (!snap.exists()) writePublicCopy({ reportPath: item.reportPath, title: item.titre, byName: item.par, publieLe: item.publieLe }).catch(() => {});
+                    }).catch(() => {});
+                });
+            })
             .catch((error) => {
                 console.error('Could not load published death reports:', error);
                 if (!cancelled) {

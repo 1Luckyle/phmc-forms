@@ -21,9 +21,13 @@ const CARDS = [
         key: 'commercial', icon: 'fa-handshake', title: 'Contrats commerciaux',
         description: 'Accords avec des entreprises, fournisseurs, prestataires ou partenaires, en lien avec le Code Civil et le Code Pénal.',
     },
+    {
+        key: 'exemptions', icon: 'fa-hand-holding-heart', title: 'Exemptions de paiement',
+        description: 'Demandes d\'exemption (mineurs, faible revenu), personnes exemptées et retraits motivés.',
+    },
 ];
 
-// `access` : { recruitment, discipline, commercial } (booléens) ; `onOpen(key)` ouvre l'outil choisi.
+// `access` : { recruitment, discipline, commercial, exemptions } (booléens) ; `onOpen(key)` ouvre l'outil choisi.
 const AdministrativeHub = ({ show, onHide, access, onOpen }) => (
     <BaseModal isOpen={show} onClose={onHide} title="Administratif" modalSize="large" zIndex={1090} className="dark-ui">
         <p className="text-muted">Choisissez l'espace de gestion à ouvrir.</p>

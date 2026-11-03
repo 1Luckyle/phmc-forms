@@ -24,6 +24,8 @@ import { copyToClipboard } from '../notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 import { composeContractBb } from '../../utils/contractCompose';
+import useDebugDelete from '../../hooks/useDebugDelete';
+import { removeAgreementAnyStatus } from '../../utils/debugDelete';
 import { formatDateFr } from '../../utils/contractConstants';
 import {
     AGREEMENT_TYPES, AGREEMENT_STATUS, loadAllAgreements, saveAgreementDraft, sendAgreement, retractAgreement, deleteAgreement, recordPartnerSignature,
@@ -163,6 +165,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
 // ───────────────────────────── Fiche d'un accord ─────────────────────────────
 
 const AgreementView = ({ agreement, issuer, showNotification, onBack, onEdit, onChanged }) => {
+    const debugDelete = useDebugDelete();
     const { bbcodeEnabled } = useSiteConfig();
     const [busy, setBusy] = useState(false);
     const [proof, setProof] = useState({ nom: '', fonction: '', preuve: '', imageUrl: '' });
@@ -217,6 +220,9 @@ const AgreementView = ({ agreement, issuer, showNotification, onBack, onEdit, on
                 )}
                 {agreement.statut === 'envoye' && (
                     <Button variant="outline-warning" disabled={busy} onClick={() => { if (window.confirm('Retirer cet accord ? Il repasse en brouillon.')) run(() => retractAgreement(agreement.id), 'Accord retiré (brouillon).'); }}><i className="fas fa-rotate-left me-1"></i>Retirer (repasser en brouillon)</Button>
+                )}
+                {debugDelete && (agreement.statut === 'signe' || agreement.statut === 'termine') && (
+                    <Button variant="outline-danger" disabled={busy} onClick={() => { if (window.confirm('Supprimer définitivement cet accord SIGNÉ (debug) ?')) run(async () => { await removeAgreementAnyStatus(agreement); onBack(); }, 'Accord supprimé.'); }}><i className="fas fa-trash me-1"></i>Supprimer (debug)</Button>
                 )}
                 {(agreement.statut === 'brouillon' || agreement.statut === 'envoye') && (
                     <Button variant="outline-danger" disabled={busy} onClick={() => { if (window.confirm('Supprimer définitivement cet accord ?')) run(async () => { await deleteAgreement(agreement.id); onBack(); }, 'Accord supprimé.'); }}><i className="fas fa-trash me-1"></i>Supprimer</Button>

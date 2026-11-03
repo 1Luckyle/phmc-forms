@@ -12,6 +12,8 @@ import {
 } from '../../utils/cctvRequests';
 import './CctvRequests.css';
 import useWriteLock from '../../hooks/useWriteLock';
+import useDebugDelete from '../../hooks/useDebugDelete';
+import { removeCctvRequest } from '../../utils/debugDelete';
 
 const pad = (n) => String(n).padStart(2, '0');
 const formatDate = (ts) => {
@@ -34,6 +36,7 @@ const StatusChip = ({ status }) => {
 
 const RequestCard = ({ request, manage, author, defaultOpen }) => {
     const { locked, lockTitle } = useWriteLock();
+    const debugDelete = useDebugDelete();
     const [open, setOpen] = useState(defaultOpen);
     const [text, setText] = useState('');
     const [nextStatus, setNextStatus] = useState('');
@@ -244,6 +247,15 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                             {Object.entries(CCTV_STATUSES).filter(([key]) => key !== 'nouvelle').map(([key, info]) => (
                                 <button key={key} type="button" disabled={busy || locked || request.statut === key} style={{ '--c': info.color }} onClick={() => changeStatus(key)}>{info.label}</button>
                             ))}
+                        </div>
+                    )}
+                    {debugDelete && (
+                        <div className="mt-2">
+                            <Button size="sm" variant="outline-danger" disabled={busy} onClick={async () => {
+                                if (!window.confirm('Supprimer définitivement cette demande (debug) ?')) return;
+                                setBusy(true);
+                                try { await removeCctvRequest(request); } catch (err) { setError(err?.message || 'Suppression impossible.'); setBusy(false); }
+                            }}><i className="fas fa-trash me-1"></i>Supprimer (debug)</Button>
                         </div>
                     )}
                     {error && <div className="cctv-error">{error}</div>}

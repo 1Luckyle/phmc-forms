@@ -199,12 +199,14 @@ export const getToolAccess = (identity) => {
         // Take Home Car : tout le personnel demande un véhicule et lit le règlement ; la Direction, l'administration et les admins accordent ou retirent.
         takeHome: isStaffMember || !!isAdmin,
         takeHomeManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
+        // Exemptions de paiement (demandes, exemptés, retraits) : l'administration, comme Take Home Car.
+        exemptionsManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
         // Documents disciplinaires (convocations, sanctions, fins de contrat) : admins, Direction et personnel administratif, pas les recruteurs.
         disciplineManage: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
         // Contrats commerciaux (accords avec des entreprises, fournisseurs…) : mêmes personnes que les documents disciplinaires.
         commercial: !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
         // « Administratif » : regroupe le recrutement, les sanctions et les contrats commerciaux (visible si l'un des trois est accessible).
-        administratif: !!canManageRecruitment || !!isAdmin || (isStaffMember && canManageDiscipline(staffProfile)),
+        administratif: !!canManageRecruitment || !!isAdmin || (isStaffMember && (canManageDiscipline(staffProfile) || canManageFireSafety(staffProfile))),
         ama: !!canUseAma,
         // Carte de visite : personnel, admins et recruteurs. Un candidat en attente de contrat peut créer sa SIGNATURE
         // (depuis « Mes documents administratifs ») mais pas sa carte de visite.
@@ -227,6 +229,7 @@ export const TOOL_ACCESS_LABELS = {
     fireManage: 'Gestion de la sécurité incendie',
     takeHome: 'Take Home Car (demande et règlement)',
     takeHomeManage: 'Take Home Car (gestion des attributions)',
+    exemptionsManage: 'Exemptions de paiement (gestion)',
     disciplineManage: 'Documents disciplinaires',
     commercial: 'Contrats commerciaux',
     administratif: 'Administratif (recrutement, sanctions, contrats commerciaux)',

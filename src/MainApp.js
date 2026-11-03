@@ -22,6 +22,8 @@ import { useSettings } from './contexts/SettingsProvider';
 import { useWebhooks } from './hooks/useWebhooks';
 import { useImageUpload } from './hooks/useImageUpload';
 import { loadUserCreations } from './utils/userCreations';
+import { syncMinorFlag } from './utils/exemptions';
+import ExemptionStatusCard from './components/ExemptionStatusCard';
 import { syncStaffUids } from './utils/staffAdmin';
 import { normalizeBBCodeLineBreaks } from './utils/bbcodeLineBreaks';
 import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './utils/bbcodeToHtml';
@@ -82,6 +84,7 @@ const AgencySelector = lazy(() => import('./components/AgencySelector'));
 const OnboardingModal = lazy(() => import('./components/OnboardingModal'));
 const InheritanceNotice = lazy(() => import('./components/InheritanceNotice'));
 const DeleteAccountModal = lazy(() => import('./components/DeleteAccountModal'));
+const ExemptionsModal = lazy(() => import('./components/Administrative/ExemptionsModal'));
 const Footer = lazy(() => import('./components/Footer'));
 const CoronerTipsModal = lazy(() => import('./components/CoronerTipsModal'));
 const BusinessCardModal = lazy(() => import('./components/BusinessCardModal'));
@@ -205,6 +208,8 @@ function MainApp({
     // « Supprimer mon compte » : suppression directe pour un Civil, demande aux admins pour le personnel.
     const [showDeleteAccount, setShowDeleteAccount] = useState(false);
     const [deleteAccountMode, setDeleteAccountMode] = useState('civil');
+    // Exemptions de paiement (Administratif).
+    const [showExemptions, setShowExemptions] = useState(false);
     // Calendrier des événements de sensibilisation médicale (Octobre Rose, Movember...).
     const [showAwarenessCalendar, setShowAwarenessCalendar] = useState(false);
     // « Mes documents administratifs » : le personnel lit et signe les contrats envoyés par les recruteurs.
@@ -235,6 +240,7 @@ function MainApp({
             case 'incendie': if (toolAccess.fireManage) setShowFireManage(true); break;
             case 'takehome': if (toolAccess.takeHome) { setTakeHomeTab(lien.section === 'manage' && toolAccess.takeHomeManage ? 'manage' : 'mine'); setShowTakeHome(true); } break;
             case 'admin': navigate('/admin', { state: { section: lien.section } }); break;
+            case 'exemptions': if (toolAccess.exemptionsManage) setShowExemptions(true); break;
             default: break;
         }
     };
@@ -442,6 +448,13 @@ function MainApp({
         if (myCreationsUid) loadUserCreations(myCreationsUid, { patientID: isCivilian ? (civilianProfile?.patientID || '') : '' }).catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [myCreationsUid, isCivilian, civilianProfile?.patientID]);
+    // Profil mineur : le drapeau d'exemption de paiement est posé automatiquement (et retiré à la majorité).
+    const { myPatientID: ownPatientID } = useEmployeeAuth();
+    const ownBirthDate = isCivilian ? civilianProfile?.dateOfBirth : staffProfile?.dateOfBirth;
+    useEffect(() => {
+        if (myCreationsUid && ownPatientID && ownBirthDate) syncMinorFlag(ownPatientID, ownBirthDate, staffName || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ')).catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [myCreationsUid, ownPatientID, ownBirthDate]);
     // All references to bbCodeVersion now occur after its initialization
     const handleSelectAgencyGroup = (group) => {
         setSelectedAgencyGroup(group);
@@ -1712,6 +1725,7 @@ function MainApp({
                                     : (civilianProfile.email || '')
                             } (ID patient : <strong>{civilianProfile.patientID}</strong>).
                             Vous pouvez sauvegarder et retrouver vos propres dossiers médicaux et candidatures.
+                            <div className="mt-2"><ExemptionStatusCard compact showNotification={showNotification} /></div>
                             {isRecruiter && (
                                 <> <strong style={{ color: '#b392f0' }}>En tant que recruteur</strong>, vous gérez en plus les postes et les candidatures depuis la Boîte à Outils (« Gestion du recrutement ») et pouvez créer votre carte de visite.</>
                             )}
@@ -2677,14 +2691,18 @@ function MainApp({
                             <AdministrativeHub
                                 show={showAdminHub}
                                 onHide={() => setShowAdminHub(false)}
-                                access={{ recruitment: toolAccess.recruitment, discipline: toolAccess.disciplineManage, commercial: toolAccess.commercial }}
+                                access={{ recruitment: toolAccess.recruitment, discipline: toolAccess.disciplineManage, commercial: toolAccess.commercial, exemptions: toolAccess.exemptionsManage }}
                                 onOpen={(key) => {
                                     setShowAdminHub(false);
+                                    if (key === 'exemptions') { setShowExemptions(true); return; }
                                     if (key === 'recruitment') setShowRecruitmentManager(true);
                                     else if (key === 'discipline') setShowDiscipline(true);
                                     else if (key === 'commercial') setShowCommercial(true);
                                 }}
                             />
+                        )}
+                        {toolAccess.exemptionsManage && (
+                            <ExemptionsModal show={showExemptions} onHide={() => setShowExemptions(false)} showNotification={showNotification} />
                         )}
                         {toolAccess.commercial && (
                             <CommercialAgreementsModal show={showCommercial} onHide={() => setShowCommercial(false)} showNotification={showNotification} />

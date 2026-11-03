@@ -248,6 +248,11 @@ userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']
 // Helper to get form definition by version
 export const getFormDefinition = (version) => formDefinitions.find(form => form.version === version);
 
+// Formulaires enregistrés qui ne figurent pas dans le sélecteur (ils ont leur propre fenêtre) : sans cette table ils s'afficheraient « Formulaire 40 ».
+const SPECIAL_FORM_NAMES = { 40: 'EMS Contre Avis Médical (AMA)' };
+// Nom à afficher pour une version enregistrée : le formulaire du catalogue, sinon un nom spécial, sinon un libellé d'ancien formulaire.
+export const getFormLabel = (version) => getFormDefinition(version)?.name || SPECIAL_FORM_NAMES[version] || (version != null ? `Ancien formulaire (n° ${version})` : 'Autre');
+
 // Helper to filter forms by user type
 export const getFormsByUserType = (userType) => {
     return formDefinitions.filter(form => 

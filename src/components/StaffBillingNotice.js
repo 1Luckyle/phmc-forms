@@ -8,9 +8,10 @@ import React from 'react';
 import { Form } from 'react-bootstrap';
 import FleecaPaymentPanel from './FleecaPaymentPanel';
 import { computeBilling, EXEMPTABLE_VERSIONS, formatMoney } from '../utils/patientBilling';
+import ExemptionNote from './ExemptionNote';
 
-const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description }) => {
-    const { baseAmount, exempt, amount } = computeBilling(bbCodeVersion, formData);
+const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description, exemption }) => {
+    const { baseAmount, exempt, exemptPending, amount } = computeBilling(bbCodeVersion, formData);
     const canExempt = EXEMPTABLE_VERSIONS.includes(Number(bbCodeVersion));
 
     if (baseAmount <= 0) return null;
@@ -20,6 +21,9 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description 
             ...prev,
             isExempt: checked,
             payNow: false,
+            // Cochée : exemption établie (drapeau, mineur) ou DEMANDE ; décochée : on ne la repose plus d'office.
+            exemptSource: checked ? (exemption?.reason || 'demande') : null,
+            exemptOptOut: !checked,
             ...(checked ? { fleecaPaymentId: null, paymentProofPhotos: '' } : {}),
         }));
     };
@@ -28,7 +32,7 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description 
         <div style={{ marginTop: '5px' }}>
             {exempt ? (
                 <Form.Label style={{ color: '#8b949e', fontWeight: 'bold' }}>
-                    Patient exempté — aucun paiement à demander ({formatMoney(baseAmount)} non facturés).
+                    {exemptPending ? `Exemption demandée — paiement suspendu en attendant la décision (${formatMoney(baseAmount)}).` : `Patient exempté — aucun paiement à demander (${formatMoney(baseAmount)} non facturés).`}
                 </Form.Label>
             ) : (
                 <Form.Label style={{ color: '#28a745', fontWeight: 'bold' }}>
@@ -37,7 +41,7 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description 
             )}
             <span className="helper-text">
                 {exempt
-                    ? 'Aucune facture à payer ne sera créée pour ce rapport.'
+                    ? (exemptPending ? 'Une facture « en attente de traitement pour l\'exemption » sera créée : elle ne sera à payer que si l\'exemption est refusée.' : 'Aucune facture à payer ne sera créée pour ce rapport.')
                     : "Demandez au patient de payer maintenant via Fleeca (lien ci-dessous). S'il n'a pas payé à l'enregistrement, une facture est créée à son nom : il en est notifié à sa connexion, relancé par mail, et la règle depuis son dossier patient. Son état (à payer / payé) est visible dans les rapports."}
             </span>
 
@@ -50,6 +54,7 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description 
                         checked={exempt}
                         onChange={(e) => setExempt(e.target.checked)}
                     />
+                    {exempt && <ExemptionNote exemption={exemption} formData={formData} setFormData={setFormData} staffFill />}
                 </Form.Group>
             )}
 

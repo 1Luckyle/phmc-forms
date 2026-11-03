@@ -18,6 +18,7 @@ export const Pill = ({ color = '#8b949e', title, children }) => (
 export const PaymentPill = ({ invoice }) => {
     if (!invoice) return null;
     const status = invoice.statutEffectif;
+    if (invoice.exemptionEnAttente) return <Pill color="#58a6ff" title="L'exemption demandée est examinée par le personnel administratif">Exemption en attente</Pill>;
     return (
         <Pill color={INVOICE_STATUS_COLORS[status] || '#8b949e'} title="État de paiement du rapport">
             {invoiceStatusLabel(status)}

@@ -24,7 +24,7 @@ import { database } from '../firebase';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import DebugFillButton from './DebugFillButton';
-import { getFormDefinition } from '../formDefinitions';
+import { getFormDefinition, getFormLabel } from '../formDefinitions';
 import {
     loadPatientDossier, listIndexedPatientIds, groupDossierEntries, canonicalPatientId,
     reportTitleOf, reportCreatorOf, comprehensiveSanitize,
@@ -451,7 +451,7 @@ const PatientDossierModal = ({
 
     const typeLabelOf = (entry) => (entry.kind === 'ama'
         ? 'Formulaire AMA'
-        : (getFormDefinition(entry.bbCodeVersion)?.name || `Formulaire ${entry.bbCodeVersion}`));
+        : getFormLabel(entry.bbCodeVersion));
 
     // Une carte par rapport d'origine (ses copies sont résumées dessus).
     const renderFamilyCard = (family) => {

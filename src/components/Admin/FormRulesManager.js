@@ -5,7 +5,7 @@
 // infobulles des champs). Les champs qui composent le titre du rapport ou servent à la facturation sont verrouillés. Logique : utils/formRulesCore.js.
 import React, { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form } from 'react-bootstrap';
-import { formDefinitions } from '../../formDefinitions';
+import { formDefinitions, getFormLabel } from '../../formDefinitions';
 import { VERSION_FIELDS } from '../../constants/formFieldCatalog';
 import { getFieldInfo } from '../../constants/fieldInfo';
 import { buildReportTitle } from '../../utils/reportTitle';
@@ -42,7 +42,7 @@ const FormRulesManager = ({ showNotification, onLogAction }) => {
     const [busy, setBusy] = useState(false);
 
     const definitions = useMemo(() => Object.fromEntries(formDefinitions.map((definition) => [definition.version, definition])), []);
-    const nameOf = (v) => (definitions[v]?.name || `Formulaire ${v}`).replace(/^\[Civil\]\s*/i, '');
+    const nameOf = (v) => (definitions[v]?.name || getFormLabel(v)).replace(/^\[Civil\]\s*/i, '');
     const keys = useMemo(() => fieldKeysOf(version), [version]);
     const modifiedCount = (v) => Object.keys(overrides[v] || {}).length;
     const requiredCount = (v) => fieldKeysOf(v).filter((key) => isFieldRequired(v, key, overrides)).length;

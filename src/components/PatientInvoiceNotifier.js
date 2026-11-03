@@ -43,7 +43,7 @@ const PatientInvoiceNotifier = ({ showNotification }) => {
     }, [myPatientID]);
 
     const handleInvoices = useCallback((invoices) => {
-        const due = invoices.filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER);
+        const due = invoices.filter((invoice) => invoice.statutEffectif === INVOICE_STATUS.A_PAYER && !invoice.exemptionEnAttente);
         setDueCount(due.length);
         setTotal(totalDue(invoices));
     }, []);

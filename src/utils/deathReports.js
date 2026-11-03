@@ -76,7 +76,20 @@ export async function loadPublishedList() {
         .sort((a, b) => (b.publieLe || 0) - (a.publieLe || 0));
 }
 
-// Publie un Rapport Public de Décès : le rapport garde un marqueur (affichage), l'index rapportsPublics l'ouvre à tout le personnel.
+// Copie PUBLIQUE d'un rapport publié (hommages/{clé}, page #/hommage, lisible par tous, même sans compte) : titre sans ID patient, texte du rapport, auteur.
+const publicTitle = (title) => String(title || '').replace(/\[?\s*PHMC-\d+\s*\]?/gi, '').replace(/\s{2,}/g, ' ').replace(/[\s\-–—:]+$/, '').trim().slice(0, 200) || 'Rapport public de décès';
+export async function writePublicCopy({ reportPath, title, byName, publieLe }) {
+    const key = keyOfPath(reportPath);
+    const snap = await get(ref(database, reportPath));
+    const bbCode = snap.exists() ? String(snap.val().bbCode || '') : '';
+    if (!bbCode) return false;
+    await set(ref(database, `hommages/${key}`), { titre: publicTitle(title), publieLe: publieLe || Date.now(), bbCode: bbCode.slice(0, 100000), ...(byName ? { par: String(byName).slice(0, 120) } : {}) });
+    return true;
+}
+
+// Publie un Rapport Public de Décès : le rapport garde un marqueur (affichage), l'index rapportsPublics l'ouvre à tout le personnel, et sa copie
+// publique (hommages) l'ouvre à tout le monde.
+
 export async function publishReport({ reportPath, title, patientID, byName }) {
     if (!auth.currentUser) throw new Error('Connexion requise.');
     const key = keyOfPath(reportPath);
@@ -87,6 +100,8 @@ export async function publishReport({ reportPath, title, patientID, byName }) {
         publieLe: now,
     });
     await update(ref(database, reportPath), { publie: true, publieLe: now, publiePar: byName || null, depublication: null });
+    // Au mieux : la publication au personnel est acquise même si la copie publique échoue (elle est reposée à la prochaine ouverture de la liste).
+    await writePublicCopy({ reportPath, title, byName, publieLe: now }).catch((error) => console.warn('Copie publique non écrite :', error?.message || error));
     logActivity({
         category: 'rapports', action: 'death_report_published', severity: 'info',
         summary: `Rapport public de décès publié : ${title || key}`, details: `Par : ${byName || '—'}${patientID ? `\nPatient : ${canonicalPatientId(patientID)}` : ''}`,
@@ -99,6 +114,8 @@ export async function unpublishReport({ reportPath, title, patientID, byName, re
     const motif = String(reason || '').trim();
     if (!motif) throw new Error('Un justificatif est obligatoire pour dépublier un rapport.');
     const key = keyOfPath(reportPath);
+    // La copie publique d'abord : sa règle d'écriture s'appuie sur rapportsPublics/{clé}, retiré ensuite.
+    await remove(ref(database, `hommages/${key}`)).catch(() => {});
     await remove(ref(database, `rapportsPublics/${key}`));
     await update(ref(database, reportPath), {
         publie: false, publieLe: null, publiePar: null, depublication: { motif, par: byName || '', le: Date.now() },

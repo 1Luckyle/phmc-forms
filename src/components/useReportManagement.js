@@ -14,6 +14,7 @@ import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
 import { recordInvoiceForReport } from '../utils/patientInvoices';
+import { requestExemption } from '../utils/exemptions';
 import { validateReport, validateApplication, formatIssues } from '../utils/formValidation';
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import { logActivity } from '../utils/activityLog';
@@ -370,6 +371,23 @@ export const useReportManagement = (
                     });
                 } catch (invoiceError) {
                     console.warn('Could not record patient invoice:', invoiceError);
+                }
+                // Exemption cochée sans être établie (ni drapeau, ni mineur) : la demande part avec le rapport, au nom du patient ou du soignant qui s'engage.
+                if ((Number(bbCodeVersion) === 3 || Number(bbCodeVersion) === 25) && (formData.isExempt === true || formData.isExempt === 'true') && formData.exemptSource === 'demande') {
+                    try {
+                        const own = normalizePatientId(formData.patientID) === normalizePatientId(isCivilian ? civilianProfile?.patientID : myPatientID);
+                        const outcome = await requestExemption({
+                            patientID: formData.patientID,
+                            patientName: formData.patientName || [formData.patientFirstName, formData.patientLastName].filter(Boolean).join(' '),
+                            motif: formData.exemptMotif || 'faible_revenu',
+                            byStaff: !isCivilian && !own && staffName ? { uid: currentEmployee?.uid, nom: staffName } : null,
+                            patientEmail: formData.patientEmail || '',
+                            requesterEmail: currentEmployee?.email || '',
+                        });
+                        if (outcome.status === 'demandee') showNotification('Demande d\'exemption transmise au personnel administratif.', 'info-circle', 6000);
+                    } catch (exemptionError) {
+                        console.warn('Could not request exemption:', exemptionError);
+                    }
                 }
             }
 

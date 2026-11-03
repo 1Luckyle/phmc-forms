@@ -50,6 +50,11 @@ const labelOf = (field, anchor) => {
 
 // Contenu de l'infobulle : { text, requirement: 'required' | 'optional' | '', reason }.
 const describe = ({ field, anchor, name, type }) => {
+    // Champ d'identité verrouillé (tiré du profil, voir ForMyselfBanner) : l'infobulle dit comment le modifier.
+    if (field.getAttribute('data-self-locked') === '1') {
+        const host = field.closest('[data-self-lock-hint]');
+        return { text: (host && host.getAttribute('data-self-lock-hint')) || 'Information tirée de votre profil : elle ne se modifie pas ici.', requirement: '', reason: '' };
+    }
     const zone = field.closest('[data-form-zone]');
     if (zone) {
         const version = Number(zone.getAttribute('data-form-zone'));
@@ -218,7 +223,26 @@ const FieldGuide = () => {
                 blue.forEach((el) => { if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
             });
         };
-        const scheduleMarks = () => { if (!raf) raf = requestAnimationFrame(() => { refreshMarks(); refreshGuideZones(); }); };
+        // ── Champs d'identité verrouillés (`data-self-lock="champ1,champ2"` posé sur le formulaire par ForMyselfBanner) ──
+        // Texte : lecture seule ; listes et cases : désactivées. Le verrou est retiré dès que l'attribut disparaît.
+        const refreshSelfLocks = () => {
+            document.querySelectorAll('[data-form-zone]').forEach((zone) => {
+                const names = new Set((zone.getAttribute('data-self-lock') || '').split(',').filter(Boolean));
+                zone.querySelectorAll('input, select, textarea').forEach((field) => {
+                    const shouldLock = !!field.name && names.has(field.name);
+                    const locked = field.getAttribute('data-self-locked') === '1';
+                    const needsDisable = field.tagName === 'SELECT' || field.type === 'radio' || field.type === 'checkbox';
+                    if (shouldLock && !locked) {
+                        field.setAttribute('data-self-locked', '1');
+                        if (needsDisable) { field.setAttribute('data-self-disabled', '1'); field.disabled = true; } else field.readOnly = true;
+                    } else if (!shouldLock && locked) {
+                        field.removeAttribute('data-self-locked');
+                        if (field.hasAttribute('data-self-disabled')) { field.removeAttribute('data-self-disabled'); field.disabled = false; } else field.readOnly = false;
+                    }
+                });
+            });
+        };
+        const scheduleMarks = () => { if (!raf) raf = requestAnimationFrame(() => { refreshSelfLocks(); refreshMarks(); refreshGuideZones(); }); };
 
         document.addEventListener('mouseover', onOver);
         document.addEventListener('mouseout', onOut);

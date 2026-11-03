@@ -8,6 +8,8 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import useExemption from '../hooks/useExemption';
+import ExemptionNote from '../components/ExemptionNote';
 import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 // Helper component for collapsible section headers - Copied from Nursing.js
@@ -75,6 +77,7 @@ const [activeSection, setActiveSection] = useState('general-info');
         // pas avoir lieu.
         const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
         const { filledByStaff } = useBillingRole(formData, setFormData);
+        const exemption = useExemption(formData, setFormData);
     const minorGuard = useMinorTitleGuard(formData, setFormData);
         // Répercuté dans formData car le générateur BBCode (fonction pure, sans
         // accès au contexte React) en a besoin pour afficher le bon texte.
@@ -709,6 +712,7 @@ const [activeSection, setActiveSection] = useState('general-info');
             {filledByStaff ? (
                 <StaffBillingNotice
                     bbCodeVersion={3}
+                    exemption={exemption}
                     formData={formData}
                     setFormData={setFormData}
                     description={`Dossier patient avancé${formData.patientName ? ' - ' + formData.patientName : ''}`}
@@ -730,6 +734,8 @@ const [activeSection, setActiveSection] = useState('general-info');
                                     ...prev,
                                     payNow: true,
                                     isExempt: false,
+                                    exemptSource: null,
+                                    exemptOptOut: true,
                                 }));
                             }}
                             style={{ marginRight: '1rem' }}
@@ -745,15 +751,15 @@ const [activeSection, setActiveSection] = useState('general-info');
                                     ...prev,
                                     payNow: false,
                                     isExempt: true,
+                                    exemptSource: exemption.reason || 'demande',
+                                    exemptOptOut: false,
                                     paymentProofPhotos: '',
                                 }));
                             }}
                         />
                     </Form.Group>
                     {isExempt && (
-                        <span className="helper-text">
-                            Informations sur l'exemption: Les citoyens qui sont soit mineurs (moins de 18 ans), soit des citoyens de l'État à faible revenu sont exemptés du paiement de ce service.
-                        </span>
+                        <ExemptionNote exemption={exemption} formData={formData} setFormData={setFormData} />
                     )}
 
                     {(formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (

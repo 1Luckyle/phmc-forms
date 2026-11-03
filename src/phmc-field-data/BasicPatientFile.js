@@ -7,6 +7,8 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
 import { getPrice, usePrices } from '../utils/pricing';
 import useBillingRole from '../hooks/useBillingRole';
+import useExemption from '../hooks/useExemption';
+import ExemptionNote from '../components/ExemptionNote';
 import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 
@@ -58,6 +60,7 @@ const BasicPatientFile = ({
         // pas avoir lieu.
         const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
         const { filledByStaff } = useBillingRole(formData, setFormData);
+        const exemption = useExemption(formData, setFormData);
     const minorGuard = useMinorTitleGuard(formData, setFormData);
         // Répercuté dans formData car le générateur BBCode (fonction pure, sans
         // accès au contexte React) en a besoin pour afficher le bon texte.
@@ -324,6 +327,7 @@ const BasicPatientFile = ({
             {filledByStaff ? (
                 <StaffBillingNotice
                     bbCodeVersion={25}
+                    exemption={exemption}
                     formData={formData}
                     setFormData={setFormData}
                     description={`Dossier patient de base${formData.patientName ? ' - ' + formData.patientName : ''}`}
@@ -345,6 +349,8 @@ const BasicPatientFile = ({
                                     ...prev,
                                     payNow: true,
                                     isExempt: false,
+                                    exemptSource: null,
+                                    exemptOptOut: true,
                                 }));
                             }}
                             style={{ marginRight: '1rem' }}
@@ -360,15 +366,15 @@ const BasicPatientFile = ({
                                     ...prev,
                                     payNow: false,
                                     isExempt: true,
+                                    exemptSource: exemption.reason || 'demande',
+                                    exemptOptOut: false,
                                     paymentProofPhotos: '',
                                 }));
                             }}
                         />
                     </Form.Group>
                     {isExempt && (
-                        <span className="helper-text">
-                            Informations sur l'exemption: Les citoyens qui sont soit mineurs (moins de 18 ans), soit des citoyens de l'État à faible revenu sont exemptés du paiement de ce service.
-                        </span>
+                        <ExemptionNote exemption={exemption} formData={formData} setFormData={setFormData} />
                     )}
 
                     {isPayNow && approximateCost > 0 && (

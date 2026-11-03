@@ -11,6 +11,8 @@ import {
     CHECKLIST, ITEM_STATUS, ARTICLES, NC_STATUS, ETAGE_SUGGESTIONS, REMINDER_DAYS, emptyItems, failedItems, floorStatus, isOverdue, summary,
     loadFireSafety, saveControl, addNonConformity, assignNonConformity, resolveNonConformity, reopenNonConformity, saveDrill,
 } from '../../utils/fireSafety';
+import useDebugDelete from '../../hooks/useDebugDelete';
+import { removeFireRecord } from '../../utils/debugDelete';
 import './FireSafety.css';
 
 const TABS = [
@@ -142,6 +144,11 @@ const Overview = ({ data }) => {
 
 // ───────────────────────────── Contrôles ─────────────────────────────
 const Controls = ({ data, onSaved, showNotification, adminName }) => {
+    const debugDelete = useDebugDelete();
+    const deleteRecord = async (kind, id) => {
+        if (!window.confirm('Supprimer définitivement cette entrée (debug) ?')) return;
+        try { await removeFireRecord(kind, id); showNotification('Entrée supprimée.', 'info'); onSaved(); } catch (error) { showNotification(error.message, 'error'); }
+    };
     const [etage, setEtage] = useState('');
     const [items, setItems] = useState(emptyItems());
     const [notes, setNotes] = useState('');
@@ -196,7 +203,7 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
             <h6 className="mt-4">Historique des contrôles</h6>
             {data.controles.length === 0 ? <p className="text-muted">Aucun contrôle.</p> : (
                 <Table size="sm" className="fs-table">
-                    <thead><tr><th>Date</th><th>Étage</th><th>Par</th><th>Résultat</th><th>Notes</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Étage</th><th>Par</th><th>Résultat</th><th>Notes</th>{debugDelete && <th></th>}</tr></thead>
                     <tbody>
                         {data.controles.slice(0, 30).map((controle) => {
                             const failedCount = failedItems(controle.items).length;
@@ -205,6 +212,7 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
                                     <td>{formatDate(controle.le)}</td><td>{controle.etage}</td><td>{controle.parNom}</td>
                                     <td>{failedCount ? <Badge bg="warning" text="dark">{failedCount} non conforme{failedCount > 1 ? 's' : ''}</Badge> : <Badge bg="success">Conforme</Badge>}</td>
                                     <td className="text-muted">{controle.notes || ''}</td>
+                                    {debugDelete && <td className="text-end"><Button size="sm" variant="outline-danger" className="ms-1" title="Supprimer (debug)" onClick={() => deleteRecord('controles', controle.id)}><i className="fas fa-trash"></i></Button></td>}
                                 </tr>
                             );
                         })}
@@ -217,6 +225,7 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
 
 // ───────────────────────────── Non-conformités ─────────────────────────────
 const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
+    const debugDelete = useDebugDelete();
     const [filter, setFilter] = useState('ouverte');
     const [form, setForm] = useState({ etage: '', article: '202', description: '', responsable: '', echeance: '' });
     const [busy, setBusy] = useState(false);
@@ -308,6 +317,7 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
                                         ) : (
                                             <Button size="sm" variant="outline-warning" disabled={busy} onClick={() => run(() => reopenNonConformity(nc.id), 'Non-conformité rouverte.')} title="Rouvrir"><i className="fas fa-rotate-left"></i></Button>
                                         )}
+                                        {debugDelete && <Button size="sm" variant="outline-danger" className="ms-1" title="Supprimer (debug)" onClick={() => { if (window.confirm('Supprimer définitivement cette non-conformité (debug) ?')) run(() => removeFireRecord('nonConformites', nc.id), 'Non-conformité supprimée.'); }}><i className="fas fa-trash"></i></Button>}
                                     </td>
                                 </tr>
                             ))}
@@ -322,6 +332,11 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
 // ───────────────────────────── Exercices ─────────────────────────────
 const EMPTY_DRILL = { etage: '', participants: [], autres: '', duree: '', observations: '' };
 const Drills = ({ data, onSaved, showNotification, adminName }) => {
+    const debugDelete = useDebugDelete();
+    const deleteDrill = async (id) => {
+        if (!window.confirm('Supprimer définitivement cet exercice (debug) ?')) return;
+        try { await removeFireRecord('exercices', id); showNotification('Exercice supprimé.', 'info'); onSaved(); } catch (error) { showNotification(error.message, 'error'); }
+    };
     const [form, setForm] = useState(EMPTY_DRILL);
     const [busy, setBusy] = useState(false);
     const total = form.participants.length + (Number(form.autres) || 0);
@@ -349,8 +364,8 @@ const Drills = ({ data, onSaved, showNotification, adminName }) => {
             <h6 className="mt-4">Exercices réalisés</h6>
             {data.exercices.length === 0 ? <p className="text-muted">Aucun exercice enregistré.</p> : (
                 <Table size="sm" className="fs-table">
-                    <thead><tr><th>Date</th><th>Zone</th><th>Participants</th><th>Durée</th><th>Observations</th></tr></thead>
-                    <tbody>{data.exercices.map((e) => <tr key={e.id}><td>{formatDate(e.le)}</td><td>{e.etage}</td><td>{e.participants}{e.participantsNoms?.length > 0 && <small className="d-block text-muted">{Object.values(e.participantsNoms).join(', ')}</small>}</td><td>{e.duree} min</td><td className="text-muted">{e.observations || ''}</td></tr>)}</tbody>
+                    <thead><tr><th>Date</th><th>Zone</th><th>Participants</th><th>Durée</th><th>Observations</th>{debugDelete && <th></th>}</tr></thead>
+                    <tbody>{data.exercices.map((e) => <tr key={e.id}><td>{formatDate(e.le)}</td><td>{e.etage}</td><td>{e.participants}{e.participantsNoms?.length > 0 && <small className="d-block text-muted">{Object.values(e.participantsNoms).join(', ')}</small>}</td><td>{e.duree} min</td><td className="text-muted">{e.observations || ''}</td>{debugDelete && <td className="text-end"><Button size="sm" variant="outline-danger" className="ms-1" title="Supprimer (debug)" onClick={() => deleteDrill(e.id)}><i className="fas fa-trash"></i></Button></td>}</tr>)}</tbody>
                 </Table>
             )}
         </>
