@@ -4,13 +4,47 @@
 // pour répondre plus vite aux scènes depuis chez lui. Ce fichier contient la liste des véhicules éligibles et le texte du règlement (inspiré du
 // programme du LSSD, adapté au PHMC) : pour changer un véhicule ou une phrase, c'est ici, sans toucher au reste de l'application.
 
-// Véhicules éligibles (plaque = clé d'attribution). Un seul agent à la fois par véhicule.
+import alamoImage from '../assets/vehicles/Declasse Alamo Unmarked.jpg';
+import rumpoImage from '../assets/vehicles/Bravado Rumpo (Deludamol).jpg';
+import buffaloImage from '../assets/vehicles/Bravado Buffalo AC Police 2023.jpg';
+
+// Véhicules éligibles (plaque = clé d'attribution) avec leur photo d'aperçu. Un seul agent à la fois par véhicule.
 export const TAKE_HOME_VEHICLES = [
-    { plate: 'PHMC04', model: 'Declasse Alamo Unmarked' },
-    { plate: 'PHMC05', model: 'Declasse Alamo Unmarked' },
-    { plate: 'PHMC15', model: 'Bravado Rumpo (Deludamol)' },
-    { plate: 'PHMC16', model: 'Bravado Buffalo A/C Police 2023' },
+    { plate: 'PHMC04', model: 'Declasse Alamo Unmarked', image: alamoImage },
+    { plate: 'PHMC05', model: 'Declasse Alamo Unmarked', image: alamoImage },
+    { plate: 'PHMC15', model: 'Bravado Rumpo (Deludamol)', image: rumpoImage },
+    { plate: 'PHMC16', model: 'Bravado Buffalo A/C Police 2023', image: buffaloImage },
 ];
+
+// Réponses toutes faites (menus déroulants) : elles remplissent le champ, qu'on peut ensuite modifier ou remplacer par un texte libre.
+export const MOTIF_PRESETS = [
+    "Je suis régulièrement mobilisé(e) en dehors de mes heures de service et je souhaite rejoindre plus vite les scènes et l'hôpital.",
+    "Mon domicile est éloigné du PHMC : un véhicule me permettrait de répondre plus rapidement aux mobilisations.",
+    "Je fais partie des équipes d'urgence (EMS / EMT / Paramedic) et dois pouvoir intervenir rapidement en renfort.",
+    "Je suis de garde ou d'astreinte et dois pouvoir être déployé(e) rapidement.",
+    "Je participe souvent aux interventions sur scène et je souhaite disposer d'un véhicule adapté.",
+];
+export const DECISION_PRESETS = {
+    accord: [
+        "Demande acceptée : merci de respecter le règlement du programme.",
+        "Accordé : une disponibilité est attendue lors des mobilisations.",
+        "Accordé, sous réserve d'une utilisation strictement professionnelle.",
+    ],
+    refus: [
+        "Refusé : le véhicule demandé n'est pas disponible pour le moment.",
+        "Refusé : la fonction occupée ne justifie pas un Take Home Car pour l'instant.",
+        "Refusé : la disponibilité lors des mobilisations est insuffisante.",
+        "Refusé : motif insuffisant, merci de préciser votre demande.",
+        "Refusé : un manquement récent au règlement ne permet pas l'attribution.",
+    ],
+    retrait: [
+        "Retrait : usage non conforme au règlement.",
+        "Retrait : changement de poste ou d'affectation.",
+        "Retrait : absence prolongée.",
+        "Retrait : le véhicule est nécessaire au service.",
+        "Retrait : fin de contrat ou départ du PHMC.",
+    ],
+};
 
 export const vehicleByPlate = (plate) => TAKE_HOME_VEHICLES.find((vehicle) => vehicle.plate === plate) || null;
 

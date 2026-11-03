@@ -11,7 +11,7 @@ import '../DarkUi.css';
 import './TakeHome.css';
 import { auth } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
-import { TAKE_HOME_RULES, TAKE_HOME_VEHICLES, MOTIF_MIN, MOTIF_MAX, vehicleLabel } from '../../constants/takeHomeCar';
+import { TAKE_HOME_RULES, TAKE_HOME_VEHICLES, MOTIF_MIN, MOTIF_MAX, MOTIF_PRESETS, DECISION_PRESETS, vehicleByPlate, vehicleLabel } from '../../constants/takeHomeCar';
 import {
     subscribeMyRequests, subscribeAllRequests, subscribeAssignments, submitRequest, cancelRequest, returnVehicle, decideRequest, withdrawVehicle,
     isActive, statusInfo,
@@ -19,6 +19,24 @@ import {
 
 const formatDate = (ms) => (ms ? new Date(ms).toLocaleDateString('fr-FR') : '—');
 const StatusBadge = ({ statut }) => { const info = statusInfo(statut); return <Badge bg={info.bg} text={info.text}>{info.label}</Badge>; };
+
+// Photo d'aperçu d'un véhicule éligible (rien si la plaque est inconnue).
+const VehiclePhoto = ({ plate, thumb }) => {
+    const vehicle = vehicleByPlate(plate);
+    return vehicle?.image ? <img className={thumb ? 'thc-thumb' : 'thc-photo'} src={vehicle.image} alt={vehicleLabel(plate)} loading="lazy" /> : null;
+};
+
+// Menu de réponses toutes faites : en choisir une remplit le champ (qu'on peut ensuite modifier), « Écrire librement » le vide.
+// `groups` : [{ label?, items: [texte] }] ; `onPick(texte)`.
+const PresetSelect = ({ groups, onPick, placeholder }) => (
+    <Form.Select size="sm" className="mb-2" value="" aria-label={placeholder} onChange={(e) => { if (e.target.value) onPick(e.target.value === '__free' ? '' : e.target.value); }}>
+        <option value="">{placeholder}</option>
+        {groups.map((group) => (group.label
+            ? <optgroup key={group.label} label={group.label}>{group.items.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>
+            : group.items.map((item) => <option key={item} value={item}>{item}</option>)))}
+        <option value="__free">✏️ Écrire librement</option>
+    </Form.Select>
+);
 
 const Rules = () => (
     <div className="thc-rules">
@@ -37,7 +55,11 @@ const Rules = () => (
 );
 
 const MyRequest = ({ requests, assignments, name, run, busy }) => {
-    const [form, setForm] = useState({ plate: '', lieu: '', motif: '' });
+    const { staffProfile } = useEmployeeAuth();
+    // Zone de stationnement : par défaut l'adresse de la fiche du personnel (vide s'il n'y en a pas) ; `lieu: null` = non modifié par l'utilisateur.
+    const address = String(staffProfile?.address || '').trim();
+    const [form, setForm] = useState({ plate: '', lieu: null, motif: '' });
+    const lieu = form.lieu ?? address;
     const uid = auth.currentUser?.uid;
     const current = requests.find(isActive);
     const history = requests.filter((request) => !isActive(request));
@@ -51,7 +73,8 @@ const MyRequest = ({ requests, assignments, name, run, busy }) => {
                         <strong>{vehicleLabel(current.plaque)}</strong>
                         <StatusBadge statut={current.statut} />
                     </div>
-                    <div className="text-muted small">Demande du {formatDate(current.demandeLe)}{current.lieu ? ` · ${current.lieu}` : ''}</div>
+                    <VehiclePhoto plate={current.plaque} />
+                    <div className="text-muted small mt-2">Demande du {formatDate(current.demandeLe)}{current.lieu ? ` · ${current.lieu}` : ''}</div>
                     <p className="mb-2 mt-2">{current.motif}</p>
                     {current.statut === 'en_attente' && (
                         <>
@@ -80,16 +103,18 @@ const MyRequest = ({ requests, assignments, name, run, busy }) => {
                                 return <option key={vehicle.plate} value={vehicle.plate} disabled={!!taken}>{vehicleLabel(vehicle.plate)}{taken ? ` — attribué à ${taken.uid === uid ? 'vous' : taken.nom}` : ''}</option>;
                             })}
                         </Form.Select>
+                        {form.plate && <div className="mt-2"><VehiclePhoto plate={form.plate} /></div>}
                     </Form.Group>
                     <Form.Group className="mb-2">
-                        <Form.Label>Zone de stationnement <small className="text-muted">(facultatif)</small></Form.Label>
-                        <Form.Control maxLength={120} value={form.lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} placeholder="ex. quartier de résidence" />
+                        <Form.Label>Zone de stationnement <small className="text-muted">(facultatif{address ? ' · votre adresse par défaut' : ''})</small></Form.Label>
+                        <Form.Control maxLength={120} value={lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} placeholder="ex. quartier de résidence" />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Motif de la demande</Form.Label>
-                        <Form.Control as="textarea" rows={3} maxLength={MOTIF_MAX} value={form.motif} onChange={(e) => setForm({ ...form, motif: e.target.value })} placeholder="Pourquoi un Take Home Car, et comment vous restez disponible" />
+                        <PresetSelect groups={[{ items: MOTIF_PRESETS }]} placeholder="Choisir une réponse toute faite…" onPick={(text) => setForm({ ...form, motif: text })} />
+                        <Form.Control as="textarea" rows={3} maxLength={MOTIF_MAX} value={form.motif} onChange={(e) => setForm({ ...form, motif: e.target.value })} placeholder="Ou écrivez librement : pourquoi un Take Home Car, et comment vous restez disponible" />
                     </Form.Group>
-                    <Button disabled={busy || !form.plate || form.motif.trim().length < MOTIF_MIN} onClick={() => run(async () => { await submitRequest({ ...form, name }); setForm({ plate: '', lieu: '', motif: '' }); }, 'Demande envoyée à la Direction.')}>
+                    <Button disabled={busy || !form.plate || form.motif.trim().length < MOTIF_MIN} onClick={() => run(async () => { await submitRequest({ ...form, lieu, name }); setForm({ plate: '', lieu: null, motif: '' }); }, 'Demande envoyée à la Direction.')}>
                         {busy ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-paper-plane me-1"></i>Envoyer la demande</>}
                     </Button>
                 </>
@@ -124,9 +149,14 @@ const Management = ({ requests, assignments, name, run, busy }) => {
             {pending.length === 0 ? <p className="text-muted small">Aucune demande en attente.</p> : pending.map((request) => (
                 <div className="thc-card" key={request.id}>
                     <div className="d-flex justify-content-between gap-2"><strong>{request.demandeurNom || 'Membre du personnel'}</strong><span>{vehicleLabel(request.plaque)}</span></div>
+                    <VehiclePhoto plate={request.plaque} thumb />
                     <div className="text-muted small">Demande du {formatDate(request.demandeLe)}{request.lieu ? ` · ${request.lieu}` : ''}{assignments[request.plaque] ? ` · déjà attribué à ${assignments[request.plaque].nom}` : ''}</div>
                     <p className="my-2">{request.motif}</p>
-                    <Form.Control size="sm" className="mb-2" maxLength={300} placeholder="Remarque pour le demandeur (facultatif)" value={noteOf(request.id)} onChange={(e) => setNote(request.id, e.target.value)} />
+                    <PresetSelect
+                        groups={[{ label: 'Pour un accord', items: DECISION_PRESETS.accord }, { label: 'Pour un refus', items: DECISION_PRESETS.refus }]}
+                        placeholder="Réponse toute faite pour le demandeur…" onPick={(text) => setNote(request.id, text)}
+                    />
+                    <Form.Control size="sm" className="mb-2" maxLength={300} placeholder="Ou écrivez librement une remarque pour le demandeur (facultatif)" value={noteOf(request.id)} onChange={(e) => setNote(request.id, e.target.value)} />
                     <div className="d-flex gap-2">
                         <Button size="sm" variant="success" disabled={busy || !!assignments[request.plaque]} onClick={() => run(() => decideRequest(request, { accept: true, note: noteOf(request.id), name }), 'Take Home Car accordé.')}>Accorder</Button>
                         <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => run(() => decideRequest(request, { accept: false, note: noteOf(request.id), name }), 'Demande refusée.')}>Refuser</Button>
@@ -143,15 +173,16 @@ const Management = ({ requests, assignments, name, run, busy }) => {
                     return (
                         <React.Fragment key={vehicle.plate}>
                             <tr>
-                                <td>{vehicleLabel(vehicle.plate)}</td>
+                                <td><div className="d-flex align-items-center gap-2"><VehiclePhoto plate={vehicle.plate} thumb />{vehicleLabel(vehicle.plate)}</div></td>
                                 <td>{taken ? taken.nom : <span className="text-muted">Libre</span>}</td>
                                 <td>{taken ? formatDate(taken.depuis) : '—'}</td>
                                 <td className="text-end">{taken && request && <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => setWithdrawing(withdrawing === vehicle.plate ? '' : vehicle.plate)}>Retirer</Button>}</td>
                             </tr>
                             {withdrawing === vehicle.plate && request && (
                                 <tr><td colSpan={4}>
+                                    <PresetSelect groups={[{ items: DECISION_PRESETS.retrait }]} placeholder="Motif de retrait tout fait…" onPick={(text) => setNote(`w${vehicle.plate}`, text)} />
                                     <div className="d-flex gap-2">
-                                        <Form.Control size="sm" maxLength={300} placeholder="Motif du retrait (facultatif, transmis au membre)" value={noteOf(`w${vehicle.plate}`)} onChange={(e) => setNote(`w${vehicle.plate}`, e.target.value)} />
+                                        <Form.Control size="sm" maxLength={300} placeholder="Ou écrivez librement le motif du retrait (facultatif, transmis au membre)" value={noteOf(`w${vehicle.plate}`)} onChange={(e) => setNote(`w${vehicle.plate}`, e.target.value)} />
                                         <Button size="sm" variant="danger" disabled={busy} onClick={() => run(async () => { await withdrawVehicle(request, { note: noteOf(`w${vehicle.plate}`), name }); setWithdrawing(''); }, 'Véhicule retiré.')}>Confirmer</Button>
                                     </div>
                                 </td></tr>
