@@ -35,7 +35,6 @@ const PhysEval = ({
                                     value={formData.patientName}
                                     onChange={handleChange}
                                     placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                                    required
                                     className="form-control"
                                 />
 
@@ -53,7 +52,6 @@ const PhysEval = ({
                                     name="date"
                                     value={formData.date}
                                     onChange={handleChange}
-                                    required
                                     className="form-control"
                                     
                                 /> </div>
@@ -62,8 +60,7 @@ const PhysEval = ({
                                             name="phmcRank"
                                             value={formData.phmcRank}
                                             onChange={handleChange}
-                                            required
-                                            className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
+                                            className="form-control"
                                         >
                                             <option value="" disabled>Fonction au sein du PHMC</option>
                                             {phmcRank.map((option) => (
@@ -293,7 +290,6 @@ onChange={(selectedOption) => {
                                     value={formData.patientCareer}
                                     onChange={handleChange}
                                     placeholder="Emploi du patient"
-                                    required
                                     className="form-control"
                                     />
                                 )}
@@ -305,7 +301,6 @@ onChange={(selectedOption) => {
                                     value={formData.patientcareerNo}
                                     onChange={handleChange}
                                     placeholder="Description de l'activité sans emploi"
-                                    required
                                     className="form-control"
                                     />
                                 )} 
@@ -317,7 +312,6 @@ onChange={(selectedOption) => {
                                     value={formData.careerRisks}
                                     onChange={handleChange}
                                     placeholder="Risques professionnels du patient"
-                                    required
                                     className="form-control"
                                     />
                                 )} 
@@ -329,7 +323,6 @@ onChange={(selectedOption) => {
                                     value={formData.patientAllergies}
                                     onChange={handleChange}
                                     placeholder="Risques d'allergies du patient"
-                                    required
                                     className="form-control"
                                     />
                                 )} 
@@ -396,7 +389,6 @@ onChange={(selectedOption) => {
                                     value={formData.patientMedicine}
                                     onChange={handleChange}
                                     placeholder="Quel(s) médicament(s) le patient prend-il actuellement?"
-                                    required
                                     className="form-control"
                                     />
                                 )} 
@@ -408,7 +400,6 @@ onChange={(selectedOption) => {
                                     value={formData.patientImpairments}
                                     onChange={handleChange}
                                     placeholder="Déficiences du patient"
-                                    required
                                     className="form-control"
                                     />
                                 )} </div>
@@ -418,8 +409,7 @@ onChange={(selectedOption) => {
                                         value={formData.patientSummary}
                                         onChange={handleChange}
                                         rows="4"
-                                        required
-                                        className={`form-control ${!formData.patientSummary ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                         placeholder="Déclaration d'évaluation"
                                     />
                                 </Form.Group>

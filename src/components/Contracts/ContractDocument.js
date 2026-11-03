@@ -55,7 +55,7 @@ const ContractDocument = ({ contract, bbCode, title, children }) => {
     );
 };
 
-// Boutons d'export d'un document figé : texte, BBCode, HTML (forum GTA World), PDF.
+// Boutons d'export d'un document figé : texte, BBCode, HTML, PDF.
 export const ContractExportBar = ({ contract, showNotification, className = 'd-flex flex-wrap justify-content-end gap-2 mt-2' }) => {
     const { bbcodeEnabled } = useSiteConfig();
     const bb = contractToBbCode(contract);

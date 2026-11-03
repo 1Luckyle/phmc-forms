@@ -52,8 +52,7 @@ const GeneralConsult = ({
                                     value={formData.patientName}
                                     onChange={handleChange}
                                     placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                                    required
-                                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
                                 <Form.Control
                                     type="text"
@@ -71,16 +70,14 @@ const GeneralConsult = ({
                                     name="date"
                                     value={formData.date}
                                     onChange={handleChange}
-                                    required
-                                    className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
 
 <Form.Select
                                             name="phmcRank"
                                             value={formData.phmcRank}
                                             onChange={handleChange}
-                                            required
-                                            className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
+                                            className="form-control"
                                         >
                                             <option value="" disabled>Fonction au sein du PHMC</option>
                                             {phmcRank.map((option) => (
@@ -154,16 +151,14 @@ onChange={(selectedOption) => {
                                     value={formData.patientChiefComplaint || ''}
                                     onChange={handleChange}
                                     placeholder="Motif de la visite / plainte principale du patient"
-                                    required
-                                    className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
                                 {bbCodeVersion === 21 ? (
                                     <Form.Select
                                         name="paletoClinicDepartment"
                                         value={formData.paletoClinicDepartment || ''}
                                         onChange={handleChange}
-                                        required
-                                        className={`form-control ${!formData.paletoClinicDepartment ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                     >
                                         <option value="" disabled>Département assigné</option>
                                         <option value="InternalMedicine">Médecine interne</option>
@@ -174,8 +169,7 @@ onChange={(selectedOption) => {
                                         name="assignedDepartment"
                                         value={formData.assignedDepartment}
                                         onChange={handleChange}
-                                        required
-                                        className={`form-control ${!formData.assignedDepartment ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                     >
                                         <option value="" disabled>Département assigné</option>
                                         {assignedDepartment.map((option) => (
@@ -190,8 +184,7 @@ onChange={(selectedOption) => {
                                                 name="temperature"
                                                 value={formData.temperature}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.temperature ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Température</option>
                                                 {temperature.map((option) => (
@@ -202,8 +195,7 @@ onChange={(selectedOption) => {
                                                 name="heartRate"
                                                 value={formData.heartRate}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.heartRate ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Fréquence cardiaque</option>
                                                 {heartRate.map((option) => (
@@ -214,8 +206,7 @@ onChange={(selectedOption) => {
                                                 name="breathing"
                                                 value={formData.breathing}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.breathing ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Respiration</option>
                                                 {breathing.map((option) => (
@@ -226,8 +217,7 @@ onChange={(selectedOption) => {
                                                 name="bloodPressure"
                                                 value={formData.bloodPressure}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.bloodPressure ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Tension artérielle</option>
                                                 {bloodPressure.map((option) => (
@@ -238,8 +228,7 @@ onChange={(selectedOption) => {
                                             name="bloodOxy"
                                             value={formData.bloodOxy}
                                             onChange={handleChange}
-                                            required
-                                            className={`form-control ${!formData.bloodOxy ? 'is-invalid' : ''}`}
+                                            className="form-control"
                                         >
                                             <option value="" disabled>Oxygène sanguin</option>
                                             {bloodOxy.map((option) => (
@@ -270,8 +259,7 @@ onChange={(selectedOption) => {
                                                 name="findings"
                                                 value={formData.findings}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.findings ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>État de santé général</option>
                                                 {findings.map((option) => (
@@ -282,8 +270,7 @@ onChange={(selectedOption) => {
                                                 name="lungs"
                                                 value={formData.lungs}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.lungs ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Poumons du patient</option>
                                                 {lungs.map((option) => (
@@ -294,8 +281,7 @@ onChange={(selectedOption) => {
                                                 name="pupils"
                                                 value={formData.pupils}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.pupils ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Pupilles du patient</option>
                                                 {pupils.map((option) => (
@@ -309,8 +295,7 @@ onChange={(selectedOption) => {
                                                 name="wounds"
                                                 value={formData.wounds}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.wounds ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Blessures du patient</option>
                                                 {wounds.map((option) => (
@@ -321,8 +306,7 @@ onChange={(selectedOption) => {
                                                 name="ecg"
                                                 value={formData.ecg}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.ecg ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Résultats ECG</option>
                                                 {ecg.map((option) => (
@@ -333,8 +317,7 @@ onChange={(selectedOption) => {
                                                 name="sono"
                                                 value={formData.sono}
                                                 onChange={handleChange}
-                                                required
-                                                className={`form-control ${!formData.sono ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                             >
                                                 <option value="" disabled>Résultats échographie</option>
                                                 {sono.map((option) => (
@@ -420,8 +403,7 @@ onChange={(selectedOption) => {
                                     onChange={handleChange}
                                     rows="2"
                                     placeholder="Diagnostic principal du patient"
-                                    required
-                                    className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
                                 <Form.Control
                                     as="textarea"
@@ -430,16 +412,14 @@ onChange={(selectedOption) => {
                                     onChange={handleChange}
                                     rows="2"
                                     placeholder="Diagnostic secondaire du patient (écrire « Aucun » si aucun)"
-                                    required
-                                    className={`form-control ${!formData.patientSecondaryDiagnosis ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
                                 <Form.Label className="form-section-title">Thérapie et suivi</Form.Label>
                                 <Form.Select
                                 name="admission"
                                 value={formData.admission}
                                 onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.admission ? 'is-invalid' : ''}`}
+                                className="form-control"
                             >
                                 <option value="" disabled>Admission</option>
                                 {admission.map((option) => (
@@ -453,8 +433,7 @@ onChange={(selectedOption) => {
                                     onChange={handleChange}
                                     rows="3"
                                     placeholder="Plan de traitement (conseils verbaux, recommandations, notes additionnelles)"
-                                    required
-                                    className={`form-control ${!formData.patientProcedure ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
                                 <Form.Control
                                     as="textarea"
@@ -543,8 +522,7 @@ onChange={(selectedOption) => {
                                 name="followup"
                                 value={formData.followup}
                                 onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.followup ? 'is-invalid' : ''}`}
+                                className="form-control"
                             >
                                 <option value="" disabled>Suivi requis?</option>
                                 {followup.map((option) => (

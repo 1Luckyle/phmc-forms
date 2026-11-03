@@ -54,14 +54,11 @@ const generateCoroner = (formData) => {
     const positionDetailsMap = positionDetailsData || {}; // MODIFIED: Use the corrected variable
 
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
-    // Default Coroner employment forum URL
-    let dynamicJobPostingUrl = "";
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             // Corrected console.warn to use coronerPositionDetailsData

@@ -6,7 +6,7 @@
 //
 // Cycle de vie :  brouillon -> envoyé (offre signée par le PHMC) -> signé (la Partie accepte) -> terminé.
 //   • La Partie a un compte (partieUid) : elle signe elle-même depuis « Mes documents administratifs » avec sa signature de « Mes créations ».
-//   • La Partie n'a pas de compte : le PHMC consigne sa signature à la main (nom, qualité, date, preuve : lien du message de forum ou de l'image).
+//   • La Partie n'a pas de compte : le PHMC consigne sa signature à la main (nom, qualité, date, preuve : lien de l'image ou du document).
 //   • Écrit obligatoire à partir de 100 000 $ ou pour une location immobilière (Code Civil, art. 206) : le document généré y satisfait.
 //
 // Stockage (règles : database.rules.json) :
@@ -348,7 +348,7 @@ export async function recordPartnerSignature(id, proof, recorder) {
     if (agreement.statut !== 'envoye') throw new Error('Seul un accord envoyé peut être signé.');
     if (agreement.partieUid) throw new Error('La Partie a un compte : c\'est elle qui signe, depuis « Mes documents administratifs ».');
     if (!String(proof.nom || '').trim()) throw new Error('Indiquez le nom du signataire.');
-    if (!String(proof.preuve || '').trim()) throw new Error('Indiquez la preuve de la signature (lien du message de forum, de l\'image ou du document).');
+    if (!String(proof.preuve || '').trim()) throw new Error('Indiquez la preuve de la signature (lien de l\'image ou du document).');
     const now = Date.now();
     const signature = {
         mode: 'manuel',

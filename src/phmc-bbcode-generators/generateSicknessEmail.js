@@ -78,8 +78,8 @@ ${signatureBBCode}
 [b]Pillbox Hill Medical Center[/b]
 [size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
 Téléphone: 50056
-Courriel: [url=https://phmc.gta.world/ucp.php?i=pm&mode=compose&g=40]info@phmc.health[/url]
-Site web: [url=https://phmcfr.com/index.php]www.phmcfr.com[/url]
+Courriel: info@phmc.health
+Site web: [url=https://phmc-tools.com]phmc-tools.com[/url]
 
 Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hill.Medical.Center?ref=qs]Pillbox Hill Medical Center[/url][/size]
 

@@ -53,13 +53,11 @@ const generateAdmin = (formData) => {
     const positionDetailsMap = positionDetailsData || {}; // MODIFIED: Use the corrected variable
 
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)"; // Default/fallback position name
-    let dynamicJobPostingUrl = ""; // Default/fallback employment forum
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             console.warn(`Admin Position "${selectedPositionKey}" not found in adminPositionDetailsData. Using default URL and position key as display name.`);

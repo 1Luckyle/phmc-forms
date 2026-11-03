@@ -152,8 +152,7 @@ const Autopsy = ({
                     value={formData.decedentName || ''}
                     onChange={handleChange}
                     placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)"
-                    required
-                    className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                     type="text"
@@ -161,8 +160,7 @@ const Autopsy = ({
                     value={formData.decedentOOC || ''}
                     onChange={handleChange}
                     placeholder="(( Nom du défunt (HRP) ))"
-                    required
-                    className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                     type="text"
@@ -183,8 +181,7 @@ const Autopsy = ({
                     value={formData.autopsyDate || ''}
                     onChange={handleChange}
                     placeholder="Date de l'autopsie"
-                    required
-                    className={`form-control ${!formData.autopsyDate ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                     type="time"
@@ -192,8 +189,7 @@ const Autopsy = ({
                     value={formData.autopsyTime || ''}
                     onChange={handleChange}
                     placeholder="Heure de l'autopsie"
-                    required
-                    className={`form-control ${!formData.autopsyTime ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </div>
 
@@ -217,8 +213,7 @@ const Autopsy = ({
                         rows={2}
                         onChange={(e) => handleDeathCauseChange(index, e.target.value)}
                         placeholder={`Cause du décès ${index + 1}`}
-                        required={index === 0 && !cause.trim()}
-                        className={`form-control ${index === 0 && !cause.trim() && (formData.autopsyDeathCauses?.length > 0) ? 'is-invalid' : ''}`}
+                        className="form-control"
                     />
                     {formData.autopsyDeathCauses && formData.autopsyDeathCauses.length > 0 && (
                         <Button
@@ -244,7 +239,7 @@ const Autopsy = ({
                 value={formData.deathType || ''}
                 onChange={handleChange}
                 placeholder="ex: Homicide, Accident, Naturel"
-                className={`form-control mb-2 ${!formData.deathType ? 'is-invalid' : ''}`}
+                className={`form-control mb-2 `}
             />
 
             <Form.Label>Comment la blessure s'est produite:</Form.Label>
@@ -254,7 +249,7 @@ const Autopsy = ({
                 value={formData.causeOfDeath || ''}
                 onChange={handleChange}
                 placeholder="ex: Multiples blessures par balle"
-                className={`form-control mb-2 ${!formData.causeOfDeath ? 'is-invalid' : ''}`}
+                className={`form-control mb-2 `}
             />
             <Form.Label>Examen externe:</Form.Label>
             <Form.Control
@@ -264,7 +259,7 @@ const Autopsy = ({
                 value={formData.externalExamination || ''}
                 onChange={handleChange}
                 placeholder="Résultats détaillés de l'examen externe (ex: marques d'identification, état du corps, blessures spécifiques observées extérieurement (les liaisons non mortelles))"
-                className={`form-control mb-2 ${!formData.externalExamination ? 'is-invalid' : ''}`}
+                className={`form-control mb-2 `}
             />
             <Form.Label>Vêtements:</Form.Label>
             <Form.Control
@@ -296,7 +291,7 @@ const Autopsy = ({
                         value={item}
                         onChange={(e) => handleAnatomicSummaryItemChange(index, e.target.value)}
                         placeholder={`Élément du résumé anatomique ${index + 1}`}
-                        className={`form-control ${index === 0 && !item.trim() && (formData.autopsyAnatomicSummaryItems?.length > 0) ? 'is-invalid' : ''}`}
+                        className="form-control"
                     />
                     {formData.autopsyAnatomicSummaryItems && formData.autopsyAnatomicSummaryItems.length > 0 && (
                         <Button
@@ -323,7 +318,7 @@ const Autopsy = ({
                 value={formData.RadiologyResult || ''}
                 onChange={handleChange}
                 placeholder="ex: Aucun objet étranger détecté. Les radiographies montrent trois projectiles dans le corps."
-                className={`form-control mb-2 ${!formData.RadiologyResult ? 'is-invalid' : ''}`}
+                className={`form-control mb-2 `}
             />
 
             <Form.Label>Photographies & Radiographies:</Form.Label>
@@ -335,7 +330,7 @@ const Autopsy = ({
                     value={formData.autopsyAlbumUrl || ''}
                     onChange={handleChange}
                     placeholder="Télécharger les photographies & radiographies (séparées par des virgules)"
-                    className={`form-control ${!formData.autopsyPhotosUnavailable && !(formData.autopsyAlbumUrl || '').trim() ? 'is-invalid' : ''}`}
+                    className="form-control"
                     disabled={formData.autopsyPhotosUnavailable}
                 />
                 <Button
@@ -376,7 +371,7 @@ const Autopsy = ({
                 onChange={handleChange}
                 rows="5"
                 placeholder="Opinion de l'examinateur médical sur l'état du défunt et la cause du décès"
-                className={`form-control mb-2 ${!formData.synopsis ? 'is-invalid' : ''}`}
+                className={`form-control mb-2 `}
             />
             <Form.Label>Examinateur médical effectuant l'autopsie</Form.Label>
             <Select
@@ -388,7 +383,7 @@ const Autopsy = ({
                 options={coronerGroupedOptions}
                 isClearable
                 placeholder="Rechercher ou sélectionner un coroner..."
-                className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                className="form-control"
                 styles={{
                     control: (base, state) => ({
                         ...base,
@@ -424,7 +419,7 @@ const Autopsy = ({
                 options={unrestrictedCoronerGroupedOptions}
                 isClearable
                 placeholder="Rechercher ou sélectionner le chef coroner..."
-                className={`form-control ${!formData.chiefCoronerEmployee ? 'is-invalid' : ''}`}
+                className="form-control"
                 styles={{
                     control: (base, state) => ({
                         ...base,

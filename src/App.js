@@ -1,3 +1,4 @@
+import FieldGuide from './components/FieldGuide';
 import { useState } from 'react';
 import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -249,8 +250,8 @@ const initialFormData = {
         applicantAddress: '',
         emsLicenseLink: '',
         emsPartTimeReason: '',
-        oocUcpName: '',
         oocForumName: '',
+        oocUcpName: '',
         oocDiscord: '',
         oocTimezone: '',
         oocOtherCharLicenseProof: '',
@@ -297,6 +298,7 @@ const initialFormData = {
                 <FormProvider initialFormData={initialFormData} setFormData={setFormData} setLastWebhookIdentifier={setLastWebhookIdentifier} showNotification={showNotification}>
                     <NotificationProvider>
                         <AuthProvider>
+                            <FieldGuide />
                             <Router>
                                 <Routes>
                                     <Route path="/" element={<MainApp formData={formData} setFormData={setFormData} lastWebhookIdentifier={lastWebhookIdentifier} setLastWebhookIdentifier={setLastWebhookIdentifier} initialFormData={initialFormData} showNotification={showNotification} removeNotification={removeNotification} setShowAdblockNotification={setShowAdblockNotification} />} />

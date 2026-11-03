@@ -32,22 +32,6 @@ const DeathRecord = ({
         mannerOfDeathOptions: [],
     });
 
-    const handleUrlChange = (e) => {
-        const url = e.target.value;
-        const name = e.target.name;
-
-        // Create a synthetic event for the URL itself to update deathReportPostId
-        const urlEvent = { target: { name, value: url } };
-        handleChange(urlEvent);
-
-        // Extract the number from the URL and update the caseNumber
-        const match = url.match(/\?t=(\d+)/);
-        const caseNumber = match ? match[1] : '';
-
-        const caseNumberEvent = { target: { name: 'caseNumber', value: caseNumber } };
-        handleChange(caseNumberEvent);
-    };
-
     useEffect(() => {
         const optionsRef = ref(database, 'selectOptions');
         get(optionsRef).then((snapshot) => {
@@ -77,8 +61,7 @@ const DeathRecord = ({
                     name="deathRecordType"
                     value={formData.deathRecordType}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.deathRecordType ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Sélectionner le type de dossier de cas de décès public</option>
                     {selectOptions.deathRecordType.map((option) => (
@@ -90,17 +73,17 @@ const DeathRecord = ({
             {formData.deathRecordType && (
                 <>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Control type="text" name="deathReportPostId" value={formData.deathReportPostId} onChange={handleUrlChange} placeholder="URL du rapport de décès" className={`form-control ${!formData.deathReportPostId ? 'is-invalid' : ''}`} />
-                        <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom & Nom" className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
-                        <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                        <Form.Control type="text" name="caseNumber" value={formData.caseNumber || ''} onChange={handleChange} placeholder="Numéro du dossier" className="form-control" />
+                        <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom & Nom" className="form-control" />
+                        <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" className="form-control" />
                         <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (optionnel)" className="form-control" />
                     </div>
                     <Form.Label>Date du décès</Form.Label>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Control type="date" name="dateOfDeath" value={formData.dateOfDeath} onChange={handleChange} className={`form-control ${!formData.dateOfDeath ? 'is-invalid' : ''}`} />
+                        <Form.Control type="date" name="dateOfDeath" value={formData.dateOfDeath} onChange={handleChange} className="form-control" />
 
-                        <Form.Select name="caseStatus" value={formData.caseStatus} onChange={handleChange} className={`form-control ${!formData.caseStatus ? 'is-invalid' : ''}`}>
+                        <Form.Select name="caseStatus" value={formData.caseStatus} onChange={handleChange} className="form-control">
                             <option value="">Statut du cas</option>
                             {selectOptions.caseStatusOptions.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -109,14 +92,14 @@ const DeathRecord = ({
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Select name="bodyStatus" value={formData.bodyStatus} onChange={handleChange} className={`form-control ${!formData.bodyStatus ? 'is-invalid' : ''}`}>
+                        <Form.Select name="bodyStatus" value={formData.bodyStatus} onChange={handleChange} className="form-control">
                             <option value="">Statut de libération du corps</option>
                             {selectOptions.bodyStatusOptions.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>
 
-                        <Form.Select name="sex" value={formData.sex} onChange={handleChange} className={`form-control ${!formData.sex ? 'is-invalid' : ''}`}>
+                        <Form.Select name="sex" value={formData.sex} onChange={handleChange} className="form-control">
                             <option value="">Genre à l'état civil du défunt</option>
                             {selectOptions.gender.map(option => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -124,13 +107,13 @@ const DeathRecord = ({
                         </Form.Select>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Control type="text" name="ethnicity" value={formData.ethnicity} onChange={handleChange} placeholder="Ethnicité du défunt" className={`form-control ${!formData.ethnicity ? 'is-invalid' : ''}`}/>
-                        <Form.Control type="text" name="placeOfDeath" value={formData.placeOfDeath} onChange={handleChange} placeholder="Lieu du décès (Numéro, Étage, Rue)" className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}/>
+                        <Form.Control type="text" name="ethnicity" value={formData.ethnicity} onChange={handleChange} placeholder="Ethnicité du défunt" className="form-control"/>
+                        <Form.Control type="text" name="placeOfDeath" value={formData.placeOfDeath} onChange={handleChange} placeholder="Lieu du décès (Numéro, Étage, Rue)" className="form-control"/>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <Form.Control type="text" name="age" value={formData.age} onChange={handleChange} placeholder="Âge du défunt" className={`form-control ${!formData.age ? 'is-invalid' : ''}`} />
+                        <Form.Control type="text" name="age" value={formData.age} onChange={handleChange} placeholder="Âge du défunt" className="form-control" />
 
-                        <Form.Select name="manner" value={formData.manner} onChange={handleChange} className={`form-control ${!formData.manner ? 'is-invalid' : ''}`}>
+                        <Form.Select name="manner" value={formData.manner} onChange={handleChange} className="form-control">
                             <option value="">Mode de décès</option>
                             {selectOptions.mannerOfDeathOptions.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -142,21 +125,21 @@ const DeathRecord = ({
                     {formData.deathRecordType === 'Unidentified' && (
                         <>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="hairColor" value={formData.hairColor} onChange={handleChange} placeholder="Couleur des cheveux" className={`form-control ${!formData.hairColor ? 'is-invalid' : ''}`}/>
-                                <Form.Control type="text" name="eyeColor" value={formData.eyeColor} onChange={handleChange} placeholder="Couleur des yeux" className={`form-control ${!formData.eyeColor ? 'is-invalid' : ''}`}/>
-                                <Form.Control type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="Poids" className={`form-control ${!formData.weight ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="hairColor" value={formData.hairColor} onChange={handleChange} placeholder="Couleur des cheveux" className="form-control"/>
+                                <Form.Control type="text" name="eyeColor" value={formData.eyeColor} onChange={handleChange} placeholder="Couleur des yeux" className="form-control"/>
+                                <Form.Control type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="Poids" className="form-control"/>
                             </div>
 
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="height" value={formData.height} onChange={handleChange} placeholder="Taille" className={`form-control ${!formData.height ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="height" value={formData.height} onChange={handleChange} placeholder="Taille" className="form-control"/>
 
-                                <Form.Control as="textarea" rows={1} name="tattoos" value={formData.tattoos} onChange={handleChange} placeholder="Tatouages ou Aucun" className={`form-control ${!formData.tattoos ? 'is-invalid' : ''}`} />
+                                <Form.Control as="textarea" rows={1} name="tattoos" value={formData.tattoos} onChange={handleChange} placeholder="Tatouages ou Aucun" className="form-control" />
 
-                                <Form.Control as="textarea" rows={1} name="jewelry" value={formData.jewelry} onChange={handleChange} placeholder="Bijoux ou Aucun" className={`form-control ${!formData.jewelry ? 'is-invalid' : ''}`}/>
+                                <Form.Control as="textarea" rows={1} name="jewelry" value={formData.jewelry} onChange={handleChange} placeholder="Bijoux ou Aucun" className="form-control"/>
                             </div>
 
                             <Form.Group className="mb-3">
-                                <Form.Control as="textarea" rows={3} name="comments" value={formData.comments} onChange={handleChange} placeholder="Commentaires..." className={`form-control ${!formData.comments ? 'is-invalid' : ''}`} />
+                                <Form.Control as="textarea" rows={3} name="comments" value={formData.comments} onChange={handleChange} placeholder="Commentaires..." className="form-control" />
                             </Form.Group>
                         </>
                     )}
@@ -164,14 +147,14 @@ const DeathRecord = ({
                     {formData.deathRecordType !== 'Unidentified' && (
                         <>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="causeA" value={formData.causeA} onChange={handleChange} placeholder="Entrez la cause A" className={`form-control ${!formData.causeA ? 'is-invalid' : ''}`} />
-                                <Form.Control type="text" name="causeB" value={formData.causeB} onChange={handleChange} placeholder="Entrez la cause B" className={`form-control ${!formData.causeB ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="causeA" value={formData.causeA} onChange={handleChange} placeholder="Entrez la cause A" className="form-control" />
+                                <Form.Control type="text" name="causeB" value={formData.causeB} onChange={handleChange} placeholder="Entrez la cause B" className="form-control"/>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" name="causeC" value={formData.causeC} onChange={handleChange} placeholder="Entrez la cause C" className={`form-control ${!formData.causeC ? 'is-invalid' : ''}`}/>
-                                <Form.Control type="text" name="causeD" value={formData.causeD} onChange={handleChange} placeholder="Entrez la cause D" className={`form-control ${!formData.causeD ? 'is-invalid' : ''}`}/>
+                                <Form.Control type="text" name="causeC" value={formData.causeC} onChange={handleChange} placeholder="Entrez la cause C" className="form-control"/>
+                                <Form.Control type="text" name="causeD" value={formData.causeD} onChange={handleChange} placeholder="Entrez la cause D" className="form-control"/>
                             </div>
-                            <Form.Control as="textarea" rows={3} name="otherSignificantConditions" value={formData.otherSignificantConditions} onChange={handleChange} placeholder="Entrez d'autres informations significatives" className={`form-control ${!formData.otherSignificantConditions ? 'is-invalid' : ''}`} />
+                            <Form.Control as="textarea" rows={3} name="otherSignificantConditions" value={formData.otherSignificantConditions} onChange={handleChange} placeholder="Entrez d'autres informations significatives" className="form-control" />
                         </>
                     )}
                     <Form.Label>Examinateur médical</Form.Label>
@@ -184,7 +167,7 @@ const DeathRecord = ({
                         options={coronerGroupedOptions}
                         isClearable
                         placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                        className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                        className="form-control"
                         styles={{ 
                             control: (base, state) => ({
                                 ...base,
@@ -216,7 +199,7 @@ const DeathRecord = ({
                         options={coronerGroupedOptions}
                         isClearable
                         placeholder="Sélectionner un examinateur médical en chef (Vous pouvez taper pour rechercher!)"
-                        className={`form-control ${!formData.chiefMedicalExaminer ? 'is-invalid' : ''}`}
+                        className="form-control"
                         styles={{ 
                             control: (base, state) => ({
                                 ...base,

@@ -421,7 +421,7 @@ const getRelevantFields = (bbCodeVersion) => {
             ];
         case 37: // Rapport public de décès
             return [
-                'deathRecordType', 'deathReportPostId', 'caseNumber', 'decedentName', 'decedentOOC', 'patientID',
+                'deathRecordType', 'caseNumber', 'decedentName', 'decedentOOC', 'patientID',
                 'dateOfDeath', 'caseStatus', 'bodyStatus', 'sex', 'ethnicity', 'placeOfDeath', 'age', 'manner',
                 'hairColor', 'eyeColor', 'weight', 'height', 'tattoos', 'jewelry', 'comments',
                 'causeA', 'causeB', 'causeC', 'causeD', 'otherSignificantConditions',

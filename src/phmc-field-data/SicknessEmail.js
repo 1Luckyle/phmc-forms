@@ -83,8 +83,7 @@ const SicknessEmail = ({
                     name="emailPurpose"
                     value={formData.emailPurpose}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.emailPurpose ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Sélectionner le type d'email</option>
                     <option value="Sickness Note">Certificat de maladie</option>
@@ -100,8 +99,7 @@ const SicknessEmail = ({
                     value={formData.emailRecipient}
                     onChange={handleChange}
                     placeholder="ex: Employeur, École, Individu"
-                    required
-                    className={`form-control ${!formData.emailRecipient ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </Form.Group>
 
@@ -113,8 +111,7 @@ const SicknessEmail = ({
                     value={formData.patientName}
                     onChange={handleChange}
                     placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                    required
-                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </Form.Group>
 
@@ -140,8 +137,7 @@ const SicknessEmail = ({
                     name="dateOfVisit"
                     value={formData.dateOfVisit}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.dateOfVisit ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </Form.Group>
 
@@ -154,8 +150,7 @@ const SicknessEmail = ({
                             name="sicknessStartDate"
                             value={formData.sicknessStartDate}
                             onChange={handleChange}
-                            required
-                            className={`form-control ${!formData.sicknessStartDate ? 'is-invalid' : ''}`}
+                            className="form-control"
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
@@ -165,8 +160,7 @@ const SicknessEmail = ({
                             name="sicknessEndDate"
                             value={formData.sicknessEndDate}
                             onChange={handleChange}
-                            required
-                            className={`form-control ${!formData.sicknessEndDate ? 'is-invalid' : ''}`}
+                            className="form-control"
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
@@ -178,8 +172,7 @@ const SicknessEmail = ({
                             value={formData.reasonForSickness}
                             onChange={handleChange}
                             placeholder="ex: Grippe, rhume, blessure mineure"
-                            required
-                            className={`form-control ${!formData.reasonForSickness ? 'is-invalid' : ''}`}
+                            className="form-control"
                         />
                     </Form.Group>
                 </>
@@ -195,8 +188,7 @@ const SicknessEmail = ({
                             value={formData.illnessCondition}
                             onChange={handleChange}
                             placeholder="ex: Angine streptococcique, Bras fracturé, Trouble anxieux"
-                            required
-                            className={`form-control ${!formData.illnessCondition ? 'is-invalid' : ''}`}
+                            className="form-control"
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
@@ -207,8 +199,7 @@ const SicknessEmail = ({
                             value={formData.confirmationPurpose}
                             onChange={handleChange}
                             placeholder="ex: Pour dossiers d'emploi, présence scolaire, réclamation d'assurance"
-                            required
-                            className={`form-control ${!formData.confirmationPurpose ? 'is-invalid' : ''}`}
+                            className="form-control"
                         />
                     </Form.Group>
                 </>
@@ -290,7 +281,7 @@ const SicknessEmail = ({
                     options={phmcGroupedOptions}
                     isClearable
                     placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-                    className={`form-control ${!formData.phmcEmployee ? 'is-invalid' : ''}`}
+                    className="form-control"
                     styles={{
                         control: (base) => ({
                             ...base,

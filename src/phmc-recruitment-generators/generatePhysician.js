@@ -66,13 +66,11 @@ const generatePhysician = (formData) => {
 
     // Determine the dynamic display name and URL
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
-    let dynamicJobPostingUrl = ""; // Default employment forum [Changer l'URL par défaut de l'emploi]
 
     if (formData.recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = formData.recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             // Updated console warning to reflect the new variable name

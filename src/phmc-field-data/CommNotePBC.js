@@ -19,7 +19,6 @@ const CommNotePBC = ({
                 value={formData.patientName}
                 onChange={handleChange}
                 placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                required
                 className="form-control"
             />
             <Form.Control
@@ -38,7 +37,6 @@ const CommNotePBC = ({
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                required
                 className="form-control"
             />
             <Form.Control
@@ -48,8 +46,7 @@ const CommNotePBC = ({
                 onChange={handleChange}
                 placeholder="Notes du patient"
                 rows="4"
-                required
-                className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
+                className="form-control"
             />
 
             <Form.Label></Form.Label>

@@ -26,7 +26,6 @@ const generateDeathRecord = (formData) => {
         decedentName,
         dateOfDeath,
         age,
-        deathReportPostId,
     } = formData;
 
 
@@ -65,9 +64,7 @@ const generateDeathRecord = (formData) => {
 [/table]`;
     }
 
-    const caseNumberDisplay = deathReportPostId 
-        ? `[url=${deathReportPostId}]${caseNumber}[/url]` 
-        : caseNumber || '';
+    const caseNumberDisplay = caseNumber || '';
 
     let formattedDateOfDeath = '[DATE ICI]';
     if (dateOfDeath) {

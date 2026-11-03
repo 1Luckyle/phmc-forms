@@ -22,8 +22,7 @@ const EmailInternal = ({
                 value={formData.internalEmailSubject || ''}
                 onChange={handleChange}
                 placeholder="Sujet de l'email"
-                required
-                className={`form-control ${!formData.internalEmailSubject ? 'is-invalid' : ''}`}
+                className="form-control"
 
             />
             <Form.Control
@@ -32,8 +31,7 @@ const EmailInternal = ({
                 value={formData.internalEmailRecipient || ''}
                 onChange={handleChange}
                 placeholder="Destinataire de l'email"
-                required
-                className={`form-control ${!formData.internalEmailRecipient ? 'is-invalid' : ''}`}
+                className="form-control"
 
             />
         </div>
@@ -45,8 +43,7 @@ const EmailInternal = ({
             onChange={handleChange}
             rows="4"
             placeholder="Corps de l'email"
-            required
-            className={`form-control ${!formData.internalEmailBody ? 'is-invalid' : ''}`}
+            className="form-control"
         />
         </div>
         <Form.Group className="mb-3 upload-container">
@@ -57,8 +54,7 @@ const EmailInternal = ({
                 name="internalEmailSignatureImage"
                 value={formData.internalEmailSignatureImage || ''}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.internalEmailSignatureImage ? 'is-invalid' : ''}`}
+                className="form-control"
                 placeholder="Image de signature de l'employé"
                 onPaste={(e) => {
                     const clipboardData = e.clipboardData || window.clipboardData;
@@ -194,8 +190,7 @@ const EmailInternal = ({
                 value={formData.internalEmailSenderTitle || ''}
                 onChange={handleChange}
                 placeholder="Fonction au sein du PHMC"
-                required
-                className={`form-control ${!formData.internalEmailSenderTitle ? 'is-invalid' : ''}`}
+                className="form-control"
 
             />
             <Form.Control
@@ -204,8 +199,7 @@ const EmailInternal = ({
                 value={formData.internalEmailSenderDepartment || ''}
                 onChange={handleChange}
                 placeholder="Département assigné"
-                required
-                className={`form-control ${!formData.internalEmailSenderDepartment ? 'is-invalid' : ''}`}
+                className="form-control"
 
             />
         </div>

@@ -6,8 +6,8 @@
 //   • avertissements : demandent confirmation (« Enregistrer quand même ? »), pour les cas légitimes mais rares.
 //
 // RAPPORTS (validateReport)
-//   - au minimum, tout ce qui sert à fabriquer le TITRE du rapport (voir utils/reportTitle.js) doit être rempli : un
-//     rapport sans titre exploitable ne peut pas être retrouvé dans « Rapports enregistrés » ni dans les dossiers ;
+//   - les champs obligatoires viennent de utils/formRulesCore.js : le minimum du code (au moins tout ce qui sert à fabriquer le TITRE du
+//     rapport, voir utils/reportTitle.js) + les réglages du back-office (Admin → Champs obligatoires) ;
 //   - dossiers médicaux Civils (3, 24, 25, 26) : ID patient, e-mail valide (il sert à envoyer les factures),
 //     et pour la divulgation / la mise à jour au moins un élément choisi (sinon rien à faire ni à facturer) ;
 //   - un Civil ne peut enregistrer un dossier que sous SON ID patient (jamais dans le dossier de quelqu'un d'autre) ;
@@ -24,8 +24,11 @@ import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
 import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } from './minors';
+import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
+import { getFieldInfo } from '../constants/fieldInfo';
+import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 
-const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : !!value);
+const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,33 +53,7 @@ export const CARE_FORM_VERSIONS = [3, 5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 24, 2
 // Dossiers médicaux Civils (facturés).
 export const CIVIL_MEDICAL_VERSIONS = [3, 24, 25, 26];
 
-// Champs obligatoires par formulaire : [champ, libellé]. Ce sont au minimum ceux du titre du rapport
-// (utils/reportTitle.js), plus quelques champs propres au formulaire.
-const REQUIRED_BY_VERSION = {
-    1: [['decedentOOC', 'Nom OOC du défunt'], ['dateTime', 'Date et heure']],
-    2: [['coronerEmployee', 'Médecin légiste'], ['requestingOfficer', "Agent à l'origine de la demande"]],
-    3: [['patientName', 'Nom du patient'], ['patientDateOfBirth', 'Date de naissance'], ['patientEmail', 'E-mail'], ['patientID', 'ID patient']],
-    4: [['decedentName', 'Nom IC du défunt'], ['decedentOOC', 'Nom OOC du défunt'], ['autopsyDate', "Date de l'autopsie"]],
-    5: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    6: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    7: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    8: [['decedentName', 'Nom du défunt'], ['date', 'Date']],
-    14: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    16: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    18: [['department', 'Service'], ['dateTime', 'Date et heure'], ['synopsis', 'Synthèse']],
-    19: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    20: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    21: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    22: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    23: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    24: [['patientEmail', 'E-mail'], ['patientID', 'ID patient']],
-    25: [['patientName', 'Nom du patient'], ['patientDateOfBirth', 'Date de naissance'], ['patientEmail', 'E-mail'], ['patientID', 'ID patient']],
-    26: [['patientName', 'Nom du patient'], ['date', 'Date de naissance'], ['patientEmail', 'E-mail'], ['patientID', 'ID patient']],
-    27: [['internalEmailSubject', 'Objet'], ['internalEmailRecipient', 'Destinataire']],
-    28: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    29: [['patientName', 'Nom du patient'], ['date', 'Date']],
-    37: [['deathReportPostId', 'Numéro du dossier'], ['decedentName', 'Nom du défunt'], ['decedentOOC', 'Nom OOC du défunt'], ['dateOfDeath', 'Date du décès']],
-};
+const fieldLabel = (version, field) => getFieldInfo(version, field, VERSION_FIELDS[version]?.[field]).label;
 
 // → { errors: [message], warnings: [message] }
 export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = false, civilianPatientId = '' } = {}) => {
@@ -85,15 +62,12 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     const warnings = [];
     const data = formData || {};
 
-    (REQUIRED_BY_VERSION[version] || []).forEach(([field, label]) => {
-        if (!filled(data[field])) errors.push(`${label} : champ obligatoire.`);
+    requiredFieldsOf(version).forEach((field) => {
+        if (!filled(data[field])) errors.push(`${fieldLabel(version, field)} : champ obligatoire.`);
     });
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
-    if (version === 35) {
-        if (!filled(data.patientName)) errors.push('Nom du patient : champ obligatoire.');
-        if (!filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de la visite : champ obligatoire.');
-    }
+    if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de la visite : champ obligatoire.');
     if (version === 24 && !filled(data.patientFirstName) && !filled(data.patientLastName)) {
         errors.push('Prénom ou nom du patient : champ obligatoire.');
     }
@@ -101,7 +75,6 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         const decedents = Array.isArray(data.decedents) ? data.decedents : [];
         if (decedents.length === 0) errors.push('Ajoutez au moins un défunt au rapport.');
         else if (!filled(decedents[0]?.decedentName)) errors.push('Le premier défunt doit avoir un nom.');
-        if (!filled(data.dateTime)) errors.push('Date et heure principales : champ obligatoire.');
     }
     if (version === 2 && !filled(data.decedentName) && !filled(data.decedentOOC)) {
         errors.push('Nom IC ou OOC du défunt : au moins un des deux est obligatoire.');
@@ -219,8 +192,19 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         errors.push("Cette candidature est en cours de traitement (examen, entretien programmé ou effectué) : elle ne peut plus être renvoyée. Contactez le recrutement depuis « Mon dossier candidat ».");
     }
 
-    const need = (field, label) => { if (!filled(data[field])) errors.push(`${label} : champ obligatoire.`); };
-    const needOne = (fields, label) => { if (!fields.some((field) => filled(data[field]))) errors.push(`${label} : faites un choix.`); };
+    // Champs que le back-office a rendus facultatifs (jamais ceux qui composent le titre) : ignorés ici. Ceux qu'il a rendus obligatoires en plus
+    // sont exigés après les vérifications du code.
+    const checked = new Set();
+    const need = (field, label) => {
+        checked.add(field);
+        if (isRelaxed(version, field)) return;
+        if (!filled(data[field])) errors.push(`${label} : champ obligatoire.`);
+    };
+    const needOne = (fields, label) => {
+        fields.forEach((field) => checked.add(field));
+        if (fields.every((field) => isRelaxed(version, field))) return;
+        if (!fields.some((field) => filled(data[field]))) errors.push(`${label} : faites un choix.`);
+    };
 
     // 1. Informations personnelles
     need('applicantTitleAndFullName', 'Titre et nom complet');
@@ -271,7 +255,6 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
 
     // Informations hors RP
     need('oocUcpName', "Nom d'utilisateur UCP");
-    need('oocForumName', 'Nom de compte du forum GTA:W');
     need('oocDiscord', 'Nom Discord');
     need('oocTimezone', 'Fuseau horaire');
     if (profile.experience === true || (profile.experience === 'ems' && emsFull)) {
@@ -284,6 +267,11 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         need('dfpLegalFactionLink', 'Preuve de DFP Legal Faction Management (ou N/A)');
     }
 
+    Object.entries(getFormOverrides()[version] || {}).forEach(([field, state]) => {
+        if (state === true && !checked.has(field)) need(field, fieldLabel(version, field));
+    });
+
+    need('oocForumName', 'Nom de compte du forum GTA:W');
     // Formes valides
     if (filled(data.applicantEmail) && !isValidEmail(data.applicantEmail)) errors.push('E-mail : format invalide (ex. prenomnom@mail.eyefind.fr).');
     if (filled(data.applicantPhone) && !isValidPhone(data.applicantPhone)) errors.push('Téléphone : numéro invalide (chiffres, espaces ou tirets).');

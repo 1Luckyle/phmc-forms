@@ -28,15 +28,13 @@ const PatientContextFields = ({ formData, handleChange, showHistory = true, alle
                 value={formData.patientAgeYears || ''}
                 onChange={handleChange}
                 placeholder="Âge du patient (en années)"
-                required
-                className={`form-control ${!formData.patientAgeYears ? 'is-invalid' : ''}`}
+                className="form-control"
             />
             <Form.Select
                 name="patientSex"
                 value={formData.patientSex || ''}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.patientSex ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Sexe du patient</option>
                 {PATIENT_GENDER_OPTIONS.map((option) => (
@@ -55,8 +53,7 @@ const PatientContextFields = ({ formData, handleChange, showHistory = true, alle
                     placeholder={allergiesRequired
                         ? 'Allergies connues (écrire « Aucune connue » si aucune)'
                         : 'Allergies connues (optionnel)'}
-                    required={allergiesRequired}
-                    className={`form-control ${allergiesRequired && !formData.patientAllergies ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                     as="textarea"

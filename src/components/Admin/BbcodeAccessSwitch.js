@@ -2,7 +2,7 @@
 //
 // Panneau admin → Affichage : active / désactive l'accès au BBCode pour TOUT le site (copie du BBCode,
 // « Montrer BBCode », onglets BBCode, convertisseur Discord). Désactivé, il ne reste que l'aperçu et le
-// téléchargement HTML, et les textes d'aide ne parlent plus de BBCode ni du forum PHMC.
+// téléchargement HTML, et les textes d'aide ne parlent plus de BBCode.
 import React, { useState } from 'react';
 import { ref, set } from 'firebase/database';
 import { database } from '../../firebase';
@@ -51,8 +51,7 @@ const BbcodeAccessSwitch = ({ currentUser, showInAppNotification }) => {
                 <p className="text-muted small mb-2">
                     Désactivé, tout le site cache la copie du BBCode, le bouton « Montrer BBCode », les onglets et boutons BBCode des listes
                     (rapports enregistrés, dossiers, candidatures, recrutement) et le convertisseur BBCode → Discord. Il ne reste que
-                    l'<strong>aperçu</strong> et le <strong>téléchargement HTML</strong> ; les fenêtres d'aide ne mentionnent plus le BBCode ni
-                    le forum PHMC. Seule la demande de fonctionnalité continue d'accepter du BBCode <em>ou</em> du HTML pour proposer un nouveau formulaire.
+                    l'<strong>aperçu</strong> et le <strong>téléchargement HTML</strong> ; les fenêtres d'aide ne mentionnent plus le BBCode. Seule la demande de fonctionnalité continue d'accepter du BBCode <em>ou</em> du HTML pour proposer un nouveau formulaire.
                 </p>
                 <p className="text-muted small mb-0">Le réglage s'applique à tous les visiteurs, immédiatement.</p>
             </div>

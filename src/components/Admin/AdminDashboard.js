@@ -30,6 +30,7 @@ import { logAdminAction } from '../../utils/activityLog';
 import CitiesManager from './CitiesManager';
 import PrivacyPolicyManager from './PrivacyPolicyManager';
 import MailTemplatesManager from './MailTemplatesManager';
+import FormRulesManager from './FormRulesManager';
 import { runRecruitmentMigrationOnce } from '../../utils/recruitmentMigration';
 
 const LAST_SECTION_KEY = 'adminLastSection';
@@ -403,6 +404,14 @@ const AdminDashboard = ({
                         showNotification={showInAppNotification}
                         adminName={currentUser?.displayName || currentUser?.email || ''}
                         onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'E-mails' })}
+                    />
+                );
+
+            case 'formRules':
+                return (
+                    <FormRulesManager
+                        showNotification={showInAppNotification}
+                        onLogAction={(action, details) => logAdminAction({ email: currentUser?.email, action, details, categoryName: 'Champs obligatoires' })}
                     />
                 );
 

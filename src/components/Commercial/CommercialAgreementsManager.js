@@ -234,11 +234,11 @@ const AgreementView = ({ agreement, issuer, showNotification, onBack, onEdit, on
                 ) : (
                     <fieldset className="border rounded p-3 mt-3" style={{ borderColor: '#30363d' }}>
                         <legend className="float-none w-auto px-2 fs-6">Consigner la signature de la Partie (sans compte)</legend>
-                        <div className="small text-muted mb-2">À utiliser quand la Partie a signé hors du site (message sur le forum, image du document signé…). La preuve est conservée avec l'accord.</div>
+                        <div className="small text-muted mb-2">À utiliser quand la Partie a signé hors du site (image du document signé, copie du message…). La preuve est conservée avec l'accord.</div>
                         <div className="row g-2">
                             <div className="col-md-6"><Form.Control placeholder="Nom du signataire *" value={proof.nom} onChange={(e) => setProof({ ...proof, nom: e.target.value })} /></div>
                             <div className="col-md-6"><Form.Control placeholder="Fonction" value={proof.fonction} onChange={(e) => setProof({ ...proof, fonction: e.target.value })} /></div>
-                            <div className="col-md-6"><Form.Control placeholder="Preuve (lien du message ou du document) *" value={proof.preuve} onChange={(e) => setProof({ ...proof, preuve: e.target.value })} /></div>
+                            <div className="col-md-6"><Form.Control placeholder="Preuve (lien de l'image ou du document) *" value={proof.preuve} onChange={(e) => setProof({ ...proof, preuve: e.target.value })} /></div>
                             <div className="col-md-6"><Form.Control placeholder="Lien de l'image de sa signature (facultatif)" value={proof.imageUrl} onChange={(e) => setProof({ ...proof, imageUrl: e.target.value })} /></div>
                         </div>
                         <Button className="mt-2" variant="success" disabled={busy} onClick={() => run(() => recordPartnerSignature(agreement.id, proof, issuer), 'Signature de la Partie consignée : accord en vigueur.')}>

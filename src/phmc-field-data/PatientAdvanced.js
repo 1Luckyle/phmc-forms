@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import './phmc-tooltips.css'; // Assuming you have a tooltip component
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
@@ -128,102 +128,62 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isGeneralInfoOpen && (
                 <div id="collapse-general-info" onFocusCapture={() => setActiveSection('general-info')}>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientID" className="phmc-tooltip">Identifiant unique du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 type="text"
                                 name="patientID"
                                 value={formData.patientID}
                                 onChange={handleChange}
                                 placeholder="ID Patient"
-                                required
-                                className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
 
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientTitle" className="phmc-tooltip">Sélectionner le titre du patient (M., Mme, etc).</Tooltip>}
-                            >
                                 <Form.Select
                                     name="patientTitle"
                                     value={formData.patientTitle}
                                     onChange={handleChange}
-                                    required
-                                    className={`form-control ${!formData.patientTitle ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 >
                                     <option value="" disabled>Titre</option>
                                     {patientTitleOptions.map((option) => (
                                         <option key={option.value} value={option.value} disabled={minorGuard.isDisabled(option)}>{minorGuard.label(option)}</option>
                                     ))}
                                 </Form.Select>
-                            </OverlayTrigger>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientName" className="phmc-tooltip">Entrer le nom complet du patient (Prénom / Deuxième Prénom / Nom de famille).</Tooltip>}
-                            >
                                 <Form.Control
                                     type="text"
                                     name="patientName"
                                     value={formData.patientName}
                                     onChange={handleChange}
                                     placeholder="Prénom & Nom du patient"
-                                    required
-                                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
-                            </OverlayTrigger>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientDateOfBirth" className="phmc-tooltip">Date de naissance du patient.</Tooltip>}
-                            >
                                 <Form.Control
                                     type="date"
                                     name="patientDateOfBirth"
                                     value={formData.patientDateOfBirth}
                                     onChange={handleChange}
                                     placeholder="Date de naissance"
-                                    required
-                                    className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
-                            </OverlayTrigger>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> 
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientAddress" className="phmc-tooltip">Adresse du domicile du patient.</Tooltip>}
-                            >
                                 <Form.Control
                                     type="text"
                                     name="patientAddress"
                                     value={formData.patientAddress}
                                     onChange={handleChange}
                                     placeholder="Adresse (Numéro, Étage, Rue)"
-                                    required
-                                    className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
-                            </OverlayTrigger>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientGender" className="phmc-tooltip">Genre à l'état civil du patient (Masculin / Féminin).</Tooltip>}
-                            >
                                 <Form.Control
                                     type="text"
                                     name="patientGender"
                                     value={formData.patientGender}
                                     onChange={handleChange}
                                     placeholder="Genre à l'état civil du patient"
-                                    required
-                                    className={`form-control ${!formData.patientGender ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 />
-                            </OverlayTrigger>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientRace" className="phmc-tooltip">Ethnicité du patient</Tooltip>}
-                            >
                                 <Form.Control
                                     type="text"
                                     name="patientRace"
@@ -232,41 +192,24 @@ const [activeSection, setActiveSection] = useState('general-info');
                                     placeholder="Ethnicité du patient (optionnel)"
                                     className="form-control"
                                 />
-                            </OverlayTrigger>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> 
-                        <OverlayTrigger
-                                placement="top"
-                                overlay={<Tooltip id="tooltip-patientPH" className="phmc-tooltip">Numéro de téléphone du patient.</Tooltip>}
-                            >
                             <Form.Control
                                 type="text"
                                 name="patientPH"
                                 value={formData.patientPH}
                                 onChange={handleChange}
                                 placeholder="Numéro de téléphone du patient"
-                                required
-                                className={`form-control ${!formData.patientPH ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientEmail" className="phmc-tooltip">Adresse email du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 type="email"
                                 name="patientEmail"
                                 value={formData.patientEmail}
                                 onChange={handleChange}
                                 placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
-                                required
-                                className={`form-control ${!formData.patientEmail ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientDiscord" className="phmc-tooltip">(( Pseudo Discord du patient (HRP). )) </Tooltip>}
-                        >
                             <Form.Control
                                 type="text"
                                 name="patientDiscord"
@@ -275,7 +218,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="(( Pseudo Discord du patient )) (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
 
                 </div>
@@ -291,54 +233,32 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isContactInfoOpen && (
                 <div id="collapse-contact-info" onFocusCapture={() => setActiveSection('contact-info')}>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientEmergencyContact" className="phmc-tooltip">Entrer le nom complet du contact d'urgence (Prénom / Deuxième Prénom / Nom de famille).</Tooltip>}
-                        >
                             <Form.Control
                                 type="text"
                                 name="patientEmergencyContact"
                                 value={formData.patientEmergencyContact}
                                 onChange={handleChange}
                                 placeholder="Prénom & Nom complet du contact d'urgence"
-                                required
-                                className={`form-control ${!formData.patientEmergencyContact ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientEmergencyContactRelation" className="phmc-tooltip">Relation du contact d'urgence avec le patient (Ex: parent, ami, etc.).</Tooltip>}
-                        >
                             <Form.Control
                                 type="text"
                                 name="patientEmergencyContactRelation"
                                 value={formData.patientEmergencyContactRelation}
                                 onChange={handleChange}
                                 placeholder="Relation du contact d'urgence avec le patient"
-                                required
-                                className={`form-control ${!formData.patientEmergencyContactRelation ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientEmergencyContactNumber" className="phmc-tooltip">Numéro de téléphone du contact d'urgence.</Tooltip>}
-                        >
                             <Form.Control
                                 type="text"
                                 name="patientEmergencyContactNumber"
                                 value={formData.patientEmergencyContactNumber}
                                 onChange={handleChange}
                                 placeholder="Numéro de téléphone du contact d'urgence"
-                                required
-                                className={`form-control ${!formData.patientEmergencyContactNumber ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientEmergencyContactDiscord" className="phmc-tooltip">(( Pseudo Discord du contact d'urgence (HRP). )) </Tooltip>}
-                        >
                             <Form.Control
                                 type="text"
                                 name="patientEmergencyContactDiscord"
@@ -347,7 +267,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="(( Discord du contact d'urgence du patient )) (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                 </div>
             )}
@@ -366,8 +285,7 @@ const [activeSection, setActiveSection] = useState('general-info');
                             name="patientBloodType"
                             value={formData.patientBloodType || ""}
                             onChange={handleChange}
-                            required
-                            className={`form-control ${!formData.patientBloodType ? 'is-invalid' : ''}`}
+                            className="form-control"
                         >
                             <option value="" disabled>Groupe sanguin</option>
                             {patientBloodType.map((option) => (
@@ -376,10 +294,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                         </Form.Select>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-allergies" className="phmc-tooltip">Allergies connues du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -387,14 +301,8 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 value={formData.patientAllergies}
                                 onChange={handleChange}
                                 placeholder="Allergies connues"
-                                required
-                                className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientCurrentMedicine" className="phmc-tooltip">Médicament(s) actuellement pris par le patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -402,16 +310,10 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 value={formData.patientCurrentMedicine}
                                 onChange={handleChange}
                                 placeholder="Médicaments actuels"
-                                required
-                                className={`form-control ${!formData.patientCurrentMedicine ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientChronicDiseases" className="phmc-tooltip">Maladies chroniques du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -419,14 +321,8 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 value={formData.patientChronicDiseases}
                                 onChange={handleChange}
                                 placeholder="Maladies chroniques"
-                                required
-                                className={`form-control ${!formData.patientChronicDiseases ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientNotes" className="phmc-tooltip">Traumatismes et blessures du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -436,7 +332,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Traumatismes et blessures (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                 </div>
             )}
@@ -450,10 +345,6 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isMentalHealthOpen && (
                 <div id="collapse-mental-health" onFocusCapture={() => setActiveSection('mental-health')}>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                            <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientMental" className="phmc-tooltip">Historique des troubles de santé mentale diagnostiqués du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -463,11 +354,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Troubles de santé mentale diagnostiqués (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientTherapy" className="phmc-tooltip">Historique de thérapie du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -477,11 +363,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Thérapies et séances de conseil (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                            <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientTriggers" className="phmc-tooltip">Déclencheurs ou phobies sensoriels du patient.</Tooltip>}
-                        >
                             
                             <Form.Control
                                 as="textarea"
@@ -493,14 +374,9 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 className="form-control"
                             />
                             
-                        </OverlayTrigger>
 
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                            <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientSupport" className="phmc-tooltip">Historique du soutien et des mécanismes d'adaptation personnels du patient.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -510,11 +386,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Soutien et mécanismes d'adaptation personnels (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                            <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip id="tooltip-patientHarm" className="phmc-tooltip">Historique d'automutilation du patient / tentatives ou danger pour autrui.</Tooltip>}
-                        >
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -524,7 +395,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Automutilation / tentatives ou danger pour autrui (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                 </div>
             )}
@@ -538,7 +408,6 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isFamilyHistoryOpen && (
                 <div id="collapse-family-health" onFocusCapture={() => setActiveSection('family-history')}>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientFam" className="phmc-tooltip">Historique des membres de la famille immédiate.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -548,8 +417,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Membres de la famille immédiate (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientGenetic" className="phmc-tooltip">Historique des conditions génétiques familiales (ex: conditions chroniques, troubles génétiques).</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -559,8 +426,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Maladies génétiques connues (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientFamSocial" className="phmc-tooltip">Historique social familial (ex: dynamique familiale, antécédents de santé mentale, tabagisme, consommation d'alcool, etc).</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -570,7 +435,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Antécédents sociaux familiaux (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                 </div>
             )}
@@ -588,8 +452,7 @@ const [activeSection, setActiveSection] = useState('general-info');
                             name="maritalStatus"
                             value={formData.maritalStatus || ""}
                             onChange={handleChange}
-                            required
-                            className={`form-control ${!formData.maritalStatus ? 'is-invalid' : ''}`}
+                            className="form-control"
                         >
                             <option value="" disabled>État civil</option>
                             {maritalStatus.map((option) => (
@@ -600,8 +463,7 @@ const [activeSection, setActiveSection] = useState('general-info');
                             name="numberChildren"
                             value={formData.numberChildren || ""}
                             onChange={handleChange}
-                            required
-                            className={`form-control ${!formData.numberChildren ? 'is-invalid' : ''}`}
+                            className="form-control"
                         >
                             <option value="" disabled>Nombre d'enfants</option>
                             {numberChildren.map((option) => (
@@ -610,7 +472,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                         </Form.Select>
                     </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientReligion" className="phmc-tooltip">Considérations culturelles et/ou religieuses.</Tooltip>}>
                                 <Form.Control
                                     as="textarea"
                                     rows="2"
@@ -620,21 +481,17 @@ const [activeSection, setActiveSection] = useState('general-info');
                                     placeholder="Considérations culturelles et/ou religieuses (optionnel)"
                                     className="form-control"
                                 />
-                            </OverlayTrigger>
-                            <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-financialStatus" className="phmc-tooltip">Situation financière.</Tooltip>}>
                                 <Form.Select
                                     name="financialStatus"
                                     value={formData.financialStatus || ""}
                                     onChange={handleChange}
-                                    required
-                                    className={`form-control ${!formData.financialStatus ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 >
                                     <option value="" disabled>Situation financière</option>
                                     {financialStatus.map((option) => (
                                         <option key={option.value} value={option.value}>{option.label}</option>
                                     ))}
                                 </Form.Select>
-                            </OverlayTrigger>
                         </div>
 
                 </div>
@@ -649,7 +506,6 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isLifestyleOpen && (
                 <div id="collapse-Lifestyle-Information" onFocusCapture={() => setActiveSection('Lifestyle-Information')}>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientSmoker" className="phmc-tooltip">Statut tabagique du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -659,8 +515,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Habitudes de tabagisme (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientAlcohol" className="phmc-tooltip">=Statut de la consommation d'alcool du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -670,8 +524,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Consommation d'alcool (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientDrugs" className="phmc-tooltip">Consommation de drogue ou de substances du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -681,10 +533,8 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Consommation de drogue ou de substances (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientExercise" className="phmc-tooltip">Habitudes d'exercice du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -694,8 +544,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Habitudes d'exercice (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientDiet" className="phmc-tooltip">Habitudes alimentaires du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -705,8 +553,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Habitudes alimentaires (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientSleep" className="phmc-tooltip">Habitudes de sommeil du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -716,10 +562,8 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Habitudes de sommeil (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientSexLife" className="phmc-tooltip">Santé sexuelle du patient (ex: activité, grossesse, IST).</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -729,8 +573,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Santé sexuelle (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientJobRisks" className="phmc-tooltip">Risques ou dangers professionnels du patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -740,8 +582,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Risques ou dangers professionnels (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientHazards" className="phmc-tooltip">Dangers environnementaux ou expositions pour le patient.</Tooltip>}>
                             <Form.Control
                                 as="textarea"
                                 rows="2"
@@ -751,10 +591,8 @@ const [activeSection, setActiveSection] = useState('general-info');
                                 placeholder="Dangers environnementaux ou expositions (optionnel)"
                                 className="form-control"
                             />
-                        </OverlayTrigger>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                    <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-patientOther" className="phmc-tooltip">Autres informations.</Tooltip>}>
                         <Form.Control
                             as="textarea"
                             rows="2"
@@ -764,7 +602,6 @@ const [activeSection, setActiveSection] = useState('general-info');
                             placeholder="Autres informations (optionnel)"
                             className="form-control"
                         />
-                    </OverlayTrigger>
                 </div>
 
                 </div>
@@ -780,52 +617,42 @@ const [activeSection, setActiveSection] = useState('general-info');
             {isAdvancedDirectivesOpen && (
                 <div id="collapse-advanced-directives" onFocusCapture={() => setActiveSection('advanced-directives')}>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-dnr" className="phmc-tooltip">Sélectionner la préférence de testament de vie / Non-réanimation.</Tooltip>}>
                             <Form.Select
                                 name="dnr"
                                 value={formData.dnr}
                                 onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.dnr ? 'is-invalid' : ''}`}
+                                className="form-control"
                             >
                                 <option value="" disabled>Testament de vie</option>
                                 {dnrOptions.map((option) => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </Form.Select>
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-attorney" className="phmc-tooltip">Sélectionner la procuration pour soins de santé.</Tooltip>}>
                             <Form.Select
                                 name="attorney"
                                 value={formData.attorney}
                                 onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.attorney ? 'is-invalid' : ''}`}
+                                className="form-control"
                             >
                                 <option value="" disabled>Procuration pour soins de santé</option>
                                 {attorneyOptions.map((option) => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </Form.Select>
-                        </OverlayTrigger>
-                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-dnrOrder" className="phmc-tooltip">Sélectionner l'ordre de non-réanimation.</Tooltip>}>
                             <Form.Select
                                 name="dnrOrder"
                                 value={formData.dnrOrder}
                                 onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.dnrOrder ? 'is-invalid' : ''}`}
+                                className="form-control"
                             >
                                 <option value="" disabled>Ordre de non-réanimation </option>
                                 {dnrOrderOptions.map((option) => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </Form.Select>
-                        </OverlayTrigger>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         {formData.dnr === 'other' && (
-                            <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-dnrOther" className="phmc-tooltip">Spécifier d'autres instructions de testament de vie.</Tooltip>}>
                                 <Form.Control
                                     as="textarea"
                                     rows="2"
@@ -833,47 +660,36 @@ const [activeSection, setActiveSection] = useState('general-info');
                                     value={formData.dnrOther}
                                     onChange={handleChange}
                                     placeholder="Autres instructions de testament de vie"
-                                    required
                                     className="form-control"
                                 />
-                            </OverlayTrigger>
                         )}
 
                         {formData.attorney === 'Yes' && (
                             <>
-                                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-attorneyName" className="phmc-tooltip">Entrer le nom complet du mandataire (Prénom / Deuxième Prénom / Nom de famille).</Tooltip>}>
                                     <Form.Control
                                         type="text"
                                         name="attorneyName"
                                         value={formData.attorneyName}
                                         onChange={handleChange}
                                         placeholder="Prénom & Nom du mandataire"
-                                        required
                                         className="form-control"
                                     />
-                                </OverlayTrigger>
-                                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-attorneyRelation" className="phmc-tooltip">Relation du mandataire avec le patient (Ex: parent, ami, etc.).</Tooltip>}>
                                     <Form.Control
                                         type="text"
                                         name="attorneyRelation"
                                         value={formData.attorneyRelation}
                                         onChange={handleChange}
                                         placeholder="Relation du mandataire"
-                                        required
-                                        className={`form-control ${!formData.attorneyRelation ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                     />
-                                </OverlayTrigger>
-                                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-attorneyPH" className="phmc-tooltip">Numéro de téléphone du mandataire.</Tooltip>}>
                                     <Form.Control
                                         type="text"
                                         name="attorneyPH"
                                         value={formData.attorneyPH}
                                         onChange={handleChange}
                                         placeholder="Numéro de téléphone du mandataire"
-                                        required
                                         className="form-control"
                                     />
-                                </OverlayTrigger>
                             </>
                         )}
                     </div>

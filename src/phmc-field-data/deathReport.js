@@ -61,7 +61,7 @@ useEffect(() => {
                 options={coronerGroupedOptions}
                 isClearable
                 placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                className="form-control"
                 styles={{ 
                     control: (base, state) => ({
                         ...base,
@@ -96,8 +96,7 @@ useEffect(() => {
                         name="dateTime"
                         value={formData.dateTime}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.dateTime ? 'is-invalid' : ''}`}
+                        className="form-control"
                     />
                     <Button
                         variant="outline-info"
@@ -121,8 +120,7 @@ useEffect(() => {
                         name="pronouncedTimeOfDeath"
                         value={formData.pronouncedTimeOfDeath}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.pronouncedTimeOfDeath ? 'is-invalid' : ''}`}
+                        className="form-control"
                     />
                     <Button
                         variant="outline-info"
@@ -155,8 +153,7 @@ useEffect(() => {
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.department ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Sélectionner l'agence demandeur</option>
                 {requestingAgencyOptions.map((option) => (
@@ -177,8 +174,8 @@ useEffect(() => {
                 </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" required className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`} />
-                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" required className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`} />
+                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" className="form-control" />
+                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" className="form-control" />
                 <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (optionnel, le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
             </div>
             <DecedentDetailsFields formData={formData} handleChange={handleChange} />
@@ -190,8 +187,7 @@ useEffect(() => {
                 name="typeOfDeath"
                 value={formData.typeOfDeath}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.typeOfDeath ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Sélectionner le type de décès</option>
                 {/* --- Updated to use typeOfDeathOptions --- */}
@@ -205,8 +201,7 @@ useEffect(() => {
                 value={formData.placeOfDeath}
                 onChange={handleChange}
                 placeholder="Lieu du décès (Numéro, Étage, Rue)"
-                required
-                className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}
+                className="form-control"
             />
 </div>
             {(formData.typeOfDeath === 'CK' || formData.typeOfDeath === 'Character Kill') && (
@@ -237,17 +232,16 @@ useEffect(() => {
                 name="mannerOfDeath"
                 value={formData.mannerOfDeath}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.mannerOfDeath ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Sélectionner le mode de décès</option>
                 {mannerOfDeathOptions.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
-            <Form.Control as="textarea" rows="2" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" required className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`} />
+            <Form.Control as="textarea" rows="2" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" className="form-control" />
 </div>
-            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé..." required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
+            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé..." className="form-control" />
             <label>Soumission au casier à preuves:</label>
             <Form.Check
                 type="checkbox"
@@ -279,8 +273,7 @@ useEffect(() => {
                     value={formData.evidenceLockerID || generateEvidenceLockerID()}
                     onChange={handleChange}
                     placeholder={generateEvidenceLockerID() + " Votre numéro de soumission ici"}
-                    required
-                    className={`form-control ${!formData.evidenceLockerID ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             )}
             <label></label>

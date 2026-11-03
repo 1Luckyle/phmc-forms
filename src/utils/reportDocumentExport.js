@@ -39,7 +39,7 @@ img[src*="LkRKav2"] { max-height: 26mm; width: auto; }
 table[bgcolor="#141414"] { break-after: avoid; page-break-after: avoid; }
 `;
 
-// Document HTML prêt à imprimer en A4 : fond blanc pur (inutile de le grisonner ici, c'est réservé au collage sur le forum),
+// Document HTML prêt à imprimer en A4 : fond blanc pur (inutile de le grisonner ici, c'est réservé au collage dans un éditeur de texte enrichi),
 // contenu enveloppé dans un tableau dont l'en-tête et le pied créent les marges haute et basse de chaque page.
 const buildPrintHtml = (bbCode, title) => {
     const raw = bbcodeToHtmlDocument(bbCode, { title }).replace(/#FDFDFD/gi, '#FFFFFF');

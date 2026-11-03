@@ -1991,7 +1991,7 @@ function MainApp({
                         </div>
 
                         {/* Quand on quitte un champ « ID patient », on le complète : 2752 → PHMC-2752. */}
-                        <form onBlur={(event) => {
+                        <form data-form-zone={bbCodeVersion} onBlur={(event) => {
                             const field = event.target;
                             if (field && field.name === 'patientID' && field.value && field.value.trim()) {
                                 const completed = canonicalPatientId(field.value);

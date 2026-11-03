@@ -993,7 +993,7 @@ const OnboardingModal = ({
                     <i className="fas fa-user" style={userTypeIconStyle}></i>
                     <h4 style={userTypeButtonTitleStyle}>Civil</h4>
                     <p style={userTypeButtonDescStyle}>
-                        J'ai besoin de soumettre un formulaire sur les forums (dossiers patients, autorisations médicales, etc.)
+                        J'ai besoin de soumettre un formulaire sur le site (dossiers patients, autorisations médicales, etc.)
                     </p>
                 </button>
 

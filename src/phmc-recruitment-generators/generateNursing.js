@@ -62,13 +62,11 @@ const generateNursing = (formData) => {
 
     // Déterminer le nom d'affichage dynamique et l'URL
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
-    let dynamicJobPostingUrl = ""; // Par défaut au forum du département infirmier
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey; // Repli sur la clé elle-même
             console.warn(`Position nursing "${selectedPositionKey}" not found in nursePositionDetailsData.. Using default URL and position key as display name.`);

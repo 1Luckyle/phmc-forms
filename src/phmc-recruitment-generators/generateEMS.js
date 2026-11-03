@@ -65,14 +65,12 @@ const generateEMS = (formData) => {
     console.log("DEBUG: positionDetailsMap in generateEMS.js:", positionDetailsMap);
 
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
-    let dynamicJobPostingUrl = "";
 
     if (recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = recruitmentPosition.toUpperCase();
         if (positionDetailsMap[selectedPositionKey]) {
             console.log(`positionDetailsMap[${selectedPositionKey}]`, positionDetailsMap[selectedPositionKey]);
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom || selectedPositionKey;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien || dynamicJobPostingUrl;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             // Ce console.warn fera maintenant correctement référence au nom de la source de données

@@ -255,7 +255,7 @@ const MassFatality = ({
                 options={coronerGroupedOptions}
                 isClearable
                 placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                className="form-control"
                 styles={{ 
                     control: (base, state) => ({
                         ...base,
@@ -292,8 +292,7 @@ const MassFatality = ({
                     name="dateTime"
                     value={formData.dateTime}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.dateTime ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             <Form.Control
                 type="text"
@@ -301,8 +300,7 @@ const MassFatality = ({
                 value={formData.placeOfDeath}
                 onChange={handleChange}
                 placeholder="Lieu de l'incident (Numéro, Étage, Rue)"
-                required
-                className={`form-control ${!formData.placeOfDeath ? 'is-invalid' : ''}`}
+                className="form-control"
             />
             </div>
             <Form.Group className="mb-3">
@@ -321,8 +319,7 @@ const MassFatality = ({
                         name="department"
                         value={formData.department}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.department ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Sélectionner l'agence demandeur</option>
                         {/* --- Updated to use requestingAgencyOptions --- */}
@@ -340,7 +337,7 @@ const MassFatality = ({
                         />
                     )}
                 </div>
-                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé - (Ceci couvre ce que vous avez initialement trouvé sur les lieux et l'aperçu des patients)" required className={`form-control ${!formData.synopsis ? 'is-invalid' : ''}`} />
+                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé - (Ceci couvre ce que vous avez initialement trouvé sur les lieux et l'aperçu des patients)" className="form-control" />
                 
             </Form.Group>
 
@@ -427,8 +424,7 @@ const MassFatality = ({
                                         value={formData.evidenceLockerID || generateEvidenceLockerID()}
                                         onChange={handleChange}
                                         placeholder={generateEvidenceLockerID() + " Votre numéro de soumission ici"}
-                                        required
-                                        className={`form-control ${!formData.evidenceLockerID ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                     />
                                 )}
                             </Form.Group>

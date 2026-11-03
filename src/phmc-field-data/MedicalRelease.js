@@ -88,8 +88,7 @@ const MedicalRelease = ({
                     name="patientTitle"
                     value={formData.patientTitle}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.patientTitle ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Titre</option>
                     {/* Updated to use patientTitleOptions prop */}
@@ -103,8 +102,7 @@ const MedicalRelease = ({
                     value={formData.patientFirstName}
                     onChange={handleChange}
                     placeholder="Prénom"
-                    required
-                    className={`form-control ${!formData.patientFirstName ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
 
@@ -122,8 +120,7 @@ const MedicalRelease = ({
                     value={formData.patientLastName}
                     onChange={handleChange}
                     placeholder="Nom de famille"
-                    required
-                    className={`form-control ${!formData.patientLastName ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
                 <Form.Control
@@ -132,8 +129,7 @@ const MedicalRelease = ({
                     value={formData.patientDateOfBirth}
                     onChange={handleChange}
                     placeholder="Date de naissance"
-                    required
-                    className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
 
@@ -145,8 +141,7 @@ const MedicalRelease = ({
                     value={formData.patientID}
                     onChange={handleChange}
                     placeholder="ID Patient"
-                    required
-                    className={`form-control ${!formData.patientID ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </Form.Group>
             {isMinor && (
@@ -173,15 +168,13 @@ const MedicalRelease = ({
                                 value={formData.guardianName || ''}
                                 onChange={handleChange}
                                 placeholder="Prénom Nom du représentant légal"
-                                required
-                                className={`form-control ${!formData.guardianName ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
                             <Form.Select
                                 name="guardianRelation"
                                 value={formData.guardianRelation || ''}
                                 onChange={handleChange}
-                                required
-                                className={`form-control ${!formData.guardianRelation ? 'is-invalid' : ''}`}
+                                className="form-control"
                             >
                                 <option value="" disabled>Lien avec le patient</option>
                                 {GUARDIAN_RELATIONS.map((relation) => <option key={relation} value={relation}>{relation}</option>)}
@@ -218,8 +211,7 @@ const MedicalRelease = ({
                     value={formData.patientAddress}
                     onChange={handleChange}
                     placeholder="Adresse (Numéro, Étage, Rue)"
-                    required
-                    className={`form-control ${!formData.patientAddress ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
                 <Form.Control
@@ -228,8 +220,7 @@ const MedicalRelease = ({
                     value={formData.patientZIP}
                     onChange={handleChange}
                     placeholder="LS : 90012 | BC : 92311 | SS : 92274 | PB : 95437"
-                    required
-                    className={`form-control ${!formData.patientZIP ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
             </div>
@@ -250,8 +241,7 @@ const MedicalRelease = ({
                     patientPhoneOther: selectedType === 'Other' ? prev.patientPhoneOther : '',
                 }));
             }}
-            required
-            className={`form-control ${!formData.patientPhoneType ? 'is-invalid' : ''}`}
+            className="form-control"
         >
             <option value="" disabled>Type de téléphone</option>
             {/* Updated to use patientPhoneOptions prop */}
@@ -266,8 +256,7 @@ const MedicalRelease = ({
                     value={formData.patientPH}
                     onChange={handleChange}
                     placeholder="Numéro de téléphone"
-                    required
-                    className={`form-control ${!formData.patientPH ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
                 <Form.Control
@@ -276,8 +265,7 @@ const MedicalRelease = ({
                     value={formData.patientEmail}
                     onChange={handleChange}
                     placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
-                    required
-                    className={`form-control ${!formData.patientEmail ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
             </div>
@@ -296,8 +284,7 @@ const MedicalRelease = ({
                         PurposeOther: selectedType === 'Other' ? prev.PurposeOther : '',
                     }));
                 }}
-                required
-                className={`form-control ${!formData.CarePurposeMedicalInformationRelease ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Divulguer les informations</option>
                 {(purposeOptions || []).map((option) => (
@@ -312,8 +299,7 @@ const MedicalRelease = ({
                 value={formData.patientMedInfoReleaseOther}
                 onChange={handleChange}
                 placeholder="Ajouter une raison de divulgation différente (Ex: Assurance / Tribunaux)"
-                required
-                className={`form-control ${!formData.patientMedInfoReleaseOther ? 'is-invalid' : ''}`}
+                className="form-control"
 
             />
         )}
@@ -333,8 +319,7 @@ const MedicalRelease = ({
                     Other: selectedType === 'Other' ? prev.Other : '',
                 }));
             }}
-            required
-            className={`form-control ${!formData.PurposeMedicalInformationReleaseFormat ? 'is-invalid' : ''}`}
+            className="form-control"
         >
             <option value="" disabled>Divulguer les informations</option>
             {/* Updated to use formatOptions prop */}
@@ -350,8 +335,7 @@ const MedicalRelease = ({
                 value={formData.patientMedInfoFormatOther}
                 onChange={handleChange}
                 placeholder="Ajouter une option de divulgation différente (Ex: FAX)"
-                required
-                className={`form-control ${!formData.patientMedInfoFormatOther ? 'is-invalid' : ''}`}
+                className="form-control"
 
             />
         )}
@@ -364,8 +348,7 @@ const MedicalRelease = ({
                     value={formData.StupidDateFrom}
                     onChange={handleChange}
                     placeholder="Date de traitement du jj/mm/aaaa"
-                    required
-                    className={`form-control ${!formData.StupidDateFrom ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                 type="text"
@@ -373,8 +356,7 @@ const MedicalRelease = ({
                 value={formData.StupidDateTo}
                 onChange={handleChange}
                 placeholder="Date de traitement au jj/mm/aaaa"
-                required
-                className={`form-control ${!formData.StupidDateTo ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
             </div>
 
@@ -394,7 +376,7 @@ const MedicalRelease = ({
                         }));
                     }}
                     options={medicalRecordOptions || []} // Updated to use medicalRecordOptions prop
-                    className={`form-control ${!formData.MedicalRecordsRelease || formData.MedicalRecordsRelease.length === 0 ? 'is-invalid' : ''}`}
+                    className="form-control"
                     placeholder="Sélectionner les options de divulgation (Choix multiples)"
                     styles={{
                         control: (base, state) => ({ 
@@ -502,8 +484,7 @@ const MedicalRelease = ({
                 value={formData.MedicalRecordsReleaseOther}
                 onChange={handleChange}
                 placeholder="Veuillez spécifier d'autres dossiers à divulguer"
-                required
-                className={`form-control ${!formData.MedicalRecordsReleaseOther ? 'is-invalid' : ''}`} 
+                className="form-control" 
             />
         )}
             <Form.Label></Form.Label>

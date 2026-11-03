@@ -25,8 +25,7 @@ const MentalHealth = ({
                     value={formData.patientName}
                     onChange={handleChange}
                     placeholder="Prénom & Nom du patient"
-                    required
-                    className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                     type="text"
@@ -42,16 +41,14 @@ const MentalHealth = ({
                     name="date"
                     value={formData.date}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </div>
             <Form.Select
                 name="phmcRank"
                 value={formData.phmcRank}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Fonction au sein du PHMC</option>
                 {phmcRank.map((option) => (
@@ -123,8 +120,7 @@ const MentalHealth = ({
                 onChange={handleChange}
                 placeholder="Plainte principale du patient"
                 rows="2"
-                required
-                className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
+                className="form-control"
             />
             <Form.Control
                 as="textarea"
@@ -133,8 +129,7 @@ const MentalHealth = ({
                 value={formData.patientNotes || ''}
                 onChange={handleChange}
                 placeholder="Notes de session / observations du patient"
-                required
-                className={`form-control ${!formData.patientNotes ? 'is-invalid' : ''}`}
+                className="form-control"
             />
 
             <Form.Label className="form-section-title">Diagnostic de sortie</Form.Label>
@@ -145,8 +140,7 @@ const MentalHealth = ({
                 onChange={handleChange}
                 placeholder="Diagnostic"
                 rows="2"
-                required
-                className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
+                className="form-control"
             />
 
             <Form.Label className="form-section-title">Thérapie et suivi</Form.Label>

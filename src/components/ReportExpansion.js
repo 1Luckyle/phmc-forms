@@ -61,7 +61,7 @@ const buildPreviewDocument = (bbCode, title) => {
     }
 };
 
-// Cadre d'aperçu : le BBCode converti en HTML, comme il s'affichera sur le forum (images comprises). Mis à jour
+// Cadre d'aperçu : le BBCode converti en HTML, images comprises. Mis à jour
 // ~0,4 s après la dernière modification (le formulaire change à chaque frappe).
 export const ReportPreviewFrame = ({ bbCode, title, height = 460 }) => {
     const [settled, setSettled] = useState(bbCode);

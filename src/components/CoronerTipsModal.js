@@ -139,7 +139,7 @@ const sceneInfoContent = `**Approche initiale :**
 - Informez les agents des forces de l'ordre si des armes à feu/drogues sont trouvées, si aucune n'est présente, rangez-les dans le casier à preuves (/el).</ul>**Étapes finales :**
 <ul>- Déplacez le défunt vers le fourgon du coroner (/cdrag). Une fois au fourgon, faites un clic droit pour arrêter de traîner et (/ctrunk) pour ranger le défunt à l'intérieur.
 - Retournez à la morgue et ouvrez le coffre (/trunk) et sortez le défunt (/cremove) et placez-le dans la morgue (/cmorgue).
-- Remplissez le rapport du défunt et déposez-le sur le forum.
+- Remplissez le rapport du défunt et enregistrez-le sur le site.
 `;
 // --- End Content ---
 

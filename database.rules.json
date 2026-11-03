@@ -483,6 +483,14 @@
       "tarifs": {
         ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
       },
+      // champsObligatoires/{version}/{champ}: true | false — champs rendus obligatoires (true) ou facultatifs (false) par les admins par-dessus le
+      // minimum du code (src/utils/formRulesCore.js). Écriture : admins (règle du dessus). Lecture publique (les formulaires en ont besoin).
+      "champsObligatoires": {
+        "$version": {
+          ".validate": "$version.matches(/^[0-9]{1,3}$/)",
+          "$champ": { ".validate": "newData.isBoolean() && $champ.matches(/^[A-Za-z0-9_]{1,60}$/)" }
+        }
+      },
       "transparence": {
         ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
       },

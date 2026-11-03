@@ -201,7 +201,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                     options={coronerGroupedOptions}
                                     isClearable
                                     placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                                    className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                 styles={customSelectStyles}
                                 />
                                 <Form.Label></Form.Label>
@@ -212,15 +212,13 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         value={formData.requestingOfficer}
                                         onChange={handleChange}
                                         placeholder="Matricule & Prénom & Nom de l'officier demandeur"
-                                        required
-                                        className={`form-control ${!formData.requestingOfficer ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                         />
                                 <Form.Select
                                     name="department"
                                     value={formData.department}
                                     onChange={handleChange}
-                                    required
-                                    className={`form-control ${!formData.department ? 'is-invalid' : ''}`}
+                                    className="form-control"
                                     disabled={isLoadingData || !agencyDataStore || Object.keys(agencyDataStore).length === 0}
                                 >
                                     <option value="" disabled>
@@ -243,9 +241,8 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         name="coronerPHNumber"
         value={formData.coronerPHNumber}
         onChange={handleChange}
-        required
         placeholder="Numéro de téléphone du coroner"
-        className={`form-control ${!formData.coronerPHNumber ? 'is-invalid' : ''}`}
+        className="form-control"
     />
 </Form.Group>
 <Form.Group className="mb-3">
@@ -283,8 +280,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                             value={formData.decedentName}
                                             onChange={handleChange}
                                             placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)"
-                                            required
-                                            className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
+                                            className="form-control"
                                         />
                                         <Form.Control
                                         type="text"
@@ -292,8 +288,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         value={formData.decedentOOC}
                                         onChange={handleChange}
                                         placeholder="(( Nom du défunt (HRP) ))"
-                                        required
-                                        className={`form-control ${!formData.decedentOOC ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                         />
                                     </div>
 
@@ -311,7 +306,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                         onPaste={handleMainReportPaste}
                                         placeholder="Collez ici le BBCode d'un rapport accepté (ou utilisez « Joindre un rapport ») : il sera vérifié avant d'être joint."
                                         rows="2"
-                                        className={`form-control ${!formData.deathReport ? 'is-invalid' : ''}`}
+                                        className="form-control"
                                     />
                                     {formData.deathReport ? (
                                         <div className="small text-success mt-1">
@@ -335,7 +330,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
                                 onPaste={handleExtraReportPaste(index)}
                                 placeholder="Collez ici le BBCode d'un rapport accepté supplémentaire (il sera vérifié)"
                                 rows="4"
-                                className={`form-control ${!report ? 'is-invalid' : ''}`}
+                                className="form-control"
                             />
                             <Button
                                 variant="danger"

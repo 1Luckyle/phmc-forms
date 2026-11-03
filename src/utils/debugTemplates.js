@@ -183,9 +183,6 @@ const buildHelpers = (ctx = {}) => {
 
 const LOREM_SHORT = "[TEST] Texte de démonstration généré par le mode debug.";
 const LOREM_LONG = "[TEST] Texte de démonstration généré par le mode debug. Il remplit entièrement ce champ afin de vérifier la mise en page, la génération du BBCode et les permissions, sans avoir à tout saisir à la main.";
-// Lien de test pour les champs qui attendent un sujet du forum (non-image).
-const TEST_TOPIC_ID = '10291';
-const TEST_TOPIC_URL = `https://phmc.gta.world/viewtopic.php?t=${TEST_TOPIC_ID}`;
 
 // Captures de test : les champs d'images utilisent ces deux URL en alternance
 // (h.img() / h.imgs(n)), pour vérifier l'affichage de plusieurs images.
@@ -321,10 +318,10 @@ const recruitmentBase = (h) => ({
     applicantPrevDismissalReason: 'Démission pour évolution de carrière.',
     applicantMotivationLetter: `${LOREM_LONG}\n\nJe souhaite rejoindre le PHMC pour mettre mes compétences au service des patients.`,
     oocUcpName: 'JeanTestard',
-    oocForumName: 'JeanTestard',
     oocDiscord: 'jean.testard',
     oocTimezone: 'GMT+1',
     oocMedicalExperience: 'Trois ans d\'expérience médicale en jeu.',
+    oocForumName: 'JeanTestard',
 });
 
 // Premier poste ouvert d'une liste de détails de poste (clé → { status }).
@@ -408,8 +405,8 @@ const TEMPLATES = {
         department: h.opt('requestingAgenciesOptions'),
         decedentName: 'Pierre Défunt',
         decedentOOC: 'Test Debug',
-        deathReport: TEST_TOPIC_URL,
-        additionalReports: [TEST_TOPIC_URL],
+        deathReport: LOREM_SHORT,
+        additionalReports: [LOREM_SHORT],
     }),
 
     // Certificat de Décès
@@ -638,8 +635,7 @@ const TEMPLATES = {
         ...h.coroner,
         chiefMedicalExaminer: h.chief.chiefCoronerEmployee || h.coroner.coronerEmployee || '',
         deathRecordType: h.optLabel('deathRecordType', 0, 'Identified'),
-        deathReportPostId: TEST_TOPIC_URL,
-        caseNumber: TEST_TOPIC_ID,
+        caseNumber: '2026-0042',
         decedentName: 'Pierre Défunt',
         decedentOOC: 'Test Debug',
         patientID: h.patient.id,

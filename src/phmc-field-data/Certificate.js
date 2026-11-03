@@ -27,7 +27,7 @@ const Certificate = ({
                 options={coronerGroupedOptions}
                 isClearable
                 placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                className={`form-control ${!formData.coronerEmployee ? 'is-invalid' : ''}`}
+                className="form-control"
                 styles={{
                     control: (base, state) => ({
                         ...base,
@@ -61,8 +61,7 @@ const Certificate = ({
                 value={formData.decedentName}
                 onChange={handleChange}
                 placeholder="Prénom (Deuxième Prénom) & Nom du défunt"
-                required
-                className={`form-control ${!formData.decedentName ? 'is-invalid' : ''}`}
+                className="form-control"
             />
                         <Form.Label>Âge du défunt | Date de naissance (si disponible)</Form.Label>
 
@@ -73,8 +72,7 @@ const Certificate = ({
                     value={formData.patientAge}
                     onChange={handleChange}
                     placeholder="Âge du défunt"
-                    required
-                    className={`form-control ${!formData.patientAge ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                 <Form.Control
                     type="date"
@@ -82,8 +80,7 @@ const Certificate = ({
                     value={formData.patientDateOfBirth}
                     onChange={handleChange}
                     placeholder="Date de naissance du défunt"
-                    required
-                    className={`form-control ${!formData.patientDateOfBirth ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
             </div>
 
@@ -94,8 +91,7 @@ const Certificate = ({
                 value={formData.probableCauseOfDeath}
                 onChange={handleChange}
                 placeholder="Cause probable du décès"
-                required
-                className={`form-control ${!formData.probableCauseOfDeath ? 'is-invalid' : ''}`}
+                className="form-control"
             />
                         <Form.Label>Heure du décès | Date du décès</Form.Label>
 
@@ -107,8 +103,7 @@ const Certificate = ({
                     value={formData.TimeofDeath}
                     onChange={handleChange}
                     placeholder="Heure du décès"
-                    required
-                    className={`form-control ${!formData.TimeofDeath ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
                                 <Form.Control
                     type="date"
@@ -116,8 +111,7 @@ const Certificate = ({
                     value={formData.dateofdeath}
                     onChange={handleChange}
                     placeholder="Date du décès"
-                    required
-                    className={`form-control ${!formData.dateofdeath ? 'is-invalid' : ''}`}
+                    className="form-control"
                 />
 
             </div>
@@ -130,8 +124,7 @@ const Certificate = ({
                 value={formData.witnessName}
                 onChange={handleChange}
                 placeholder="Prénom (Deuxième Prénom) & Nom du témoin"
-                required
-                className={`form-control ${!formData.witnessName ? 'is-invalid' : ''}`}
+                className="form-control"
             />
             <Form.Control
                 type="date"
@@ -139,8 +132,7 @@ const Certificate = ({
                 value={formData.date}
                 onChange={handleChange}
                 placeholder="Date de délivrance du certificat"
-                required
-                className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
+                className="form-control"
                 style={{ marginTop: '10px' }}
             />
             <span style={{ fontSize: '0.8em', color: '#9aa7b4', marginLeft: '10px' }}>

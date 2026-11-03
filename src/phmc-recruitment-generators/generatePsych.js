@@ -57,13 +57,11 @@ const generatePsych = (formData) => {
 
     // Déterminer le nom d'affichage dynamique et l'URL
     let dynamicDisplayPosition = "NOM DU POSTE (À DÉFINIR)";
-    let dynamicJobPostingUrl = ""; // Forum d'emploi par défaut
 
     if (formData.recruitmentPosition && Object.keys(positionDetailsMap).length > 0) {
         const selectedPositionKey = formData.recruitmentPosition;
         if (positionDetailsMap[selectedPositionKey]) {
             dynamicDisplayPosition = positionDetailsMap[selectedPositionKey].nom;
-            dynamicJobPostingUrl = positionDetailsMap[selectedPositionKey].lien;
         } else {
             dynamicDisplayPosition = selectedPositionKey;
             console.warn(`Position "${selectedPositionKey}" not found in positionDetailsData from Firebase. Using default URL.`);

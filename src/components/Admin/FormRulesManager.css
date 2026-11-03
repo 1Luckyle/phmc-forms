@@ -1,0 +1,27 @@
+/* Panneau admin → Champs obligatoires */
+.fr-wrap { color: #e6edf3; }
+.fr-head h4 { font-size: 1.15rem; margin: 0 0 4px; }
+.fr-head h4 i { margin-right: 8px; color: #58a6ff; }
+.fr-head p { color: #aab6c3; margin: 0 0 14px; }
+.fr-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: start; }
+.fr-list { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 8px; max-height: 80vh; overflow-y: auto; }
+.fr-group { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8b98a5; margin: 12px 4px 4px; }
+.fr-item { display: flex; flex-direction: column; text-align: left; background: transparent; border: 1px solid transparent; color: #e6edf3; padding: 7px 10px; border-radius: 6px; }
+.fr-item small { color: #8b98a5; }
+.fr-item:hover { background: rgba(255, 255, 255, 0.05); }
+.fr-item.on { background: rgba(88, 166, 255, 0.14); border-color: rgba(88, 166, 255, 0.5); }
+.fr-main h5 { margin-bottom: 8px; }
+.fr-title { margin-bottom: 10px; }
+.fr-title code { color: #7ee787; background: rgba(255, 255, 255, 0.06); padding: 2px 6px; border-radius: 4px; }
+.fr-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 10px; }
+.fr-tools .form-control { max-width: 280px; }
+.fr-table-wrap { overflow-x: auto; border: 1px solid #30363d; border-radius: 8px; }
+.fr-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.fr-table th { text-align: left; padding: 8px 10px; background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid #30363d; position: sticky; top: 0; }
+.fr-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); vertical-align: top; }
+.fr-table td b { display: block; }
+.fr-table td small { color: #8b98a5; }
+.fr-table tr.req { background: rgba(248, 81, 73, 0.06); }
+.fr-help { color: #c3ccd5; max-width: 420px; }
+.fr-empty { color: #8b98a5; }
+@media (max-width: 860px) { .fr-layout { grid-template-columns: 1fr; } .fr-list { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; } }

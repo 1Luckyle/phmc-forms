@@ -33,8 +33,7 @@ const Shrink = ({
             value={formData.patientName}
             onChange={handleChange}
             placeholder="Prénom & Nom du patient"
-            required
-            className={`form-control ${!formData.patientName ? 'is-invalid' : ''}`}
+            className="form-control"
             />
         <Form.Control
             type="text"
@@ -52,16 +51,14 @@ const Shrink = ({
             name="date"
             value={formData.date}
             onChange={handleChange}
-            required
-            className={`form-control ${!formData.date ? 'is-invalid' : ''}`}
+            className="form-control"
             />
 
 <Form.Select
                     name="phmcRank"
                     value={formData.phmcRank}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.phmcRank ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Fonction au sein du PHMC</option>
                     {phmcRank.map((option) => (
@@ -131,7 +128,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Plainte principale du patient"
                 rows="3"
-                className={`form-control ${!formData.patientChiefComplaint ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
 
             <Form.Label className="form-section-title">Problème présenté</Form.Label>
@@ -143,8 +140,7 @@ const Shrink = ({
                     value={formData.patientVisitReason}
                     onChange={handleChange}
                     placeholder="Description du problème (ex: anxiété, dépression)"
-                    required
-                    className={`form-control ${!formData.patientVisitReason ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
                 <Form.Control
@@ -154,8 +150,7 @@ const Shrink = ({
                     value={formData.patientSymptoms}
                     onChange={handleChange}
                     placeholder="Apparition et durée des symptômes"
-                    required
-                    className={`form-control ${!formData.patientSymptoms ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
             </div>
@@ -167,8 +162,7 @@ const Shrink = ({
                     value={formData.patientTriggers}
                     onChange={handleChange}
                     placeholder="Déclencheurs ou facteurs de stress"
-                    required
-                    className={`form-control ${!formData.patientTherapyMedicine ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
                 <Form.Control
@@ -178,8 +172,7 @@ const Shrink = ({
                     value={formData.patientStress}
                     onChange={handleChange}
                     placeholder="Impact sur la vie quotidienne"
-                    required
-                    className={`form-control ${!formData.patientStress ? 'is-invalid' : ''}`}
+                    className="form-control"
 
                 />
             </div>
@@ -191,8 +184,7 @@ const Shrink = ({
                     name="Appearance"
                     value={formData.Appearance}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.Appearance ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Apparence</option>
                     {Appearance.map((option) => (
@@ -203,8 +195,7 @@ const Shrink = ({
                     name="Behavior"
                     value={formData.Behavior}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.Behavior ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Comportement</option>
                     {Behavior.map((option) => (
@@ -215,8 +206,7 @@ const Shrink = ({
                     name="Speech"
                     value={formData.Speech}
                     onChange={handleChange}
-                    required
-                    className={`form-control ${!formData.Speech ? 'is-invalid' : ''}`}
+                    className="form-control"
                 >
                     <option value="" disabled>Discours</option>
                     {Speech.map((option) => (
@@ -229,8 +219,7 @@ const Shrink = ({
                         name="Mood"
                         value={formData.Mood}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.Mood ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Humeur</option>
                         {Mood.map((option) => (
@@ -241,8 +230,7 @@ const Shrink = ({
                         name="Affect"
                         value={formData.Affect}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.Affect ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Aspect</option>
                         {Behavior.map((option) => (
@@ -253,8 +241,7 @@ const Shrink = ({
                         name="ThoughtProcess"
                         value={formData.ThoughtProcess}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.ThoughtProcess ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Processus de pensée</option>
                         {ThoughtProcess.map((option) => (
@@ -267,8 +254,7 @@ const Shrink = ({
                         name="ThoughtContent"
                         value={formData.ThoughtContent}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.ThoughtContent ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Contenu de pensée</option>
                         {ThoughtContent.map((option) => (
@@ -279,8 +265,7 @@ const Shrink = ({
                         name="Insight"
                         value={formData.Insight}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.Insight ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Perspicacité</option>
                         {Insight.map((option) => (
@@ -291,8 +276,7 @@ const Shrink = ({
                         name="Cognition"
                         value={formData.Cognition}
                         onChange={handleChange}
-                        required
-                        className={`form-control ${!formData.Cognition ? 'is-invalid' : ''}`}
+                        className="form-control"
                     >
                         <option value="" disabled>Cognition</option>
                         {Cognition.map((option) => (
@@ -309,7 +293,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Diagnostics et traitements psychiatriques antérieurs"
                 rows="3"
-                className={`form-control ${!formData.patientTreatment ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 <Form.Control
                 as="textarea"
@@ -318,7 +302,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Hospitalisations"
                 rows="3"
-                className={`form-control ${!formData.patientMedicalRecord ? 'is-invalid' : ''}`}
+                className="form-control"
                                 />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -329,7 +313,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Historique psychiatrique familial"
                 rows="3"
-                className={`form-control ${!formData.patientFamily ? 'is-invalid' : ''}`}
+                className="form-control"
                  />
                 <Form.Control
                 as="textarea"
@@ -338,7 +322,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Historique d'automutilation ou tentatives de suicide"
                 rows="3"
-                className={`form-control ${!formData.patientJobRisks ? 'is-invalid' : ''}`}
+                className="form-control"
                                 />
                 </div>
                 <Form.Label className="form-section-title">Historique médical</Form.Label>
@@ -350,7 +334,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Conditions médicales actuelles et passées"
                 rows="3"
-                className={`form-control ${!formData.patientCondition ? 'is-invalid' : ''}`}
+                className="form-control"
                  />
                 <Form.Control
                 as="textarea"
@@ -359,7 +343,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Médicaments (y compris psychiatriques et non psychiatriques)"
                 rows="3"
-                className={`form-control ${!formData.patientChronicDiseases ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 <Form.Control
                 as="textarea"
@@ -368,7 +352,7 @@ const Shrink = ({
                 onChange={handleChange}
                 placeholder="Allergies du patient"
                 rows="3"
-                className={`form-control ${!formData.patientAllergies ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
             </div>
             <Form.Label className="form-section-title">Historique d'abus de substances</Form.Label>
@@ -380,7 +364,7 @@ const Shrink = ({
                 value={formData.patientDrugs}
                 onChange={handleChange}
                 placeholder="Consommation d'alcool, drogues, nicotine et autres substances"
-                className={`form-control ${!formData.patientDrugs ? 'is-invalid' : ''}`}
+                className="form-control"
                  />
                 <Form.Control
                 as="textarea"
@@ -389,7 +373,7 @@ const Shrink = ({
                 value={formData.patientDrugsUsage}
                 onChange={handleChange}
                 placeholder="Fréquence et durée de consommation"
-                className={`form-control ${!formData.patientDrugsUsage ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 <Form.Control
                 as="textarea"
@@ -398,7 +382,7 @@ const Shrink = ({
                 value={formData.patientMental}
                 onChange={handleChange}
                 placeholder="Impact sur la santé mentale"
-                className={`form-control ${!formData.patientMental ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
             </div>
             <Form.Label className="form-section-title">Historique psychosocial</Form.Label>
@@ -410,7 +394,7 @@ const Shrink = ({
                 value={formData.patientFam}
                 onChange={handleChange}
                 placeholder="Enfance et contexte familial"
-                className={`form-control ${!formData.patientFam ? 'is-invalid' : ''}`}
+                className="form-control"
                  />
                 <Form.Control
                 as="textarea"
@@ -419,7 +403,7 @@ const Shrink = ({
                 value={formData.patientJob}
                 onChange={handleChange}
                 placeholder="Historique d'éducation et d'emploi"
-                className={`form-control ${!formData.patientJob ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -430,7 +414,7 @@ const Shrink = ({
                 value={formData.patientRelationship}
                 onChange={handleChange}
                 placeholder="Relations et système de soutien social"
-                className={`form-control ${!formData.patientRelationship ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 <Form.Control
                 as="textarea"
@@ -439,7 +423,7 @@ const Shrink = ({
                 value={formData.patientLegal}
                 onChange={handleChange}
                 placeholder="Problèmes juridiques"
-                className={`form-control ${!formData.patientLegal ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
             </div>
             <Form.Label className="form-section-title">Évaluation des risques</Form.Label>
@@ -448,8 +432,7 @@ const Shrink = ({
                 name="Risk"
                 value={formData.Risk}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.Risk ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Évaluation des risques</option>
                 {Risk.map((option) => (
@@ -463,7 +446,7 @@ const Shrink = ({
                 value={formData.patientRiskAssessment}
                 onChange={handleChange}
                 placeholder="Détails de l'évaluation des risques"
-                className={`form-control ${!formData.patientRiskAssessment ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 </div>
                 <Form.Label className="form-section-title">Constatations</Form.Label>
@@ -475,7 +458,7 @@ const Shrink = ({
                 value={formData.patientFindings}
                 onChange={handleChange}
                 placeholder="Notes / Constatations du patient"
-                className={`form-control ${!formData.patientFindings ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 </div>
 
@@ -488,7 +471,7 @@ const Shrink = ({
                 value={formData.patientDiagnosis}
                 onChange={handleChange}
                 placeholder="Diagnostic principal"
-                className={`form-control ${!formData.patientDiagnosis ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 </div>
                 <Form.Label className="form-section-title">Thérapie</Form.Label>
@@ -497,8 +480,7 @@ const Shrink = ({
                 name="admission"
                 value={formData.admission}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.admission ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Admission</option>
                 {admission.map((option) => (
@@ -512,7 +494,7 @@ const Shrink = ({
                 value={formData.patientTreatmentPlan}
                 onChange={handleChange}
                 placeholder="Plan de traitement"
-                className={`form-control ${!formData.patientTreatmentPlan ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 <Form.Control
                 as="textarea"
@@ -521,14 +503,13 @@ const Shrink = ({
                 value={formData.patientTherapyMedicine}
                 onChange={handleChange}
                 placeholder="Médicaments"
-                className={`form-control ${!formData.patientTherapyMedicine ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
                 <Form.Select
                 name="followup"
                 value={formData.followup}
                 onChange={handleChange}
-                required
-                className={`form-control ${!formData.followup ? 'is-invalid' : ''}`}
+                className="form-control"
             >
                 <option value="" disabled>Suivi</option>
                 {followup.map((option) => (
@@ -546,7 +527,7 @@ const Shrink = ({
                 value={formData.patientTreatmentMedicine}
                 onChange={handleChange}
                 placeholder="Médicaments"
-                className={`form-control ${!formData.patientTreatmentMedicine ? 'is-invalid' : ''}`}
+                className="form-control"
 
                 />
                 <Form.Control
@@ -556,7 +537,7 @@ const Shrink = ({
                 value={formData.patientTherapy}
                 onChange={handleChange}
                 placeholder="Thérapie (ex: TCC, TCD)"
-                className={`form-control ${!formData.patientTherapy ? 'is-invalid' : ''}`}
+                className="form-control"
                 /></div> 
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
@@ -566,7 +547,7 @@ const Shrink = ({
                 value={formData.patientFollowUp}
                 onChange={handleChange}
                 placeholder="Rendez-vous de suivi"
-                className={`form-control ${!formData.patientFollowUp ? 'is-invalid' : ''}`}
+                className="form-control"
 
                 />
                 <Form.Control
@@ -576,7 +557,7 @@ const Shrink = ({
                 value={formData.patientSafety}
                 onChange={handleChange}
                 placeholder="Planification de la sécurité (si à risque)"
-                className={`form-control ${!formData.patientSafety ? 'is-invalid' : ''}`}
+                className="form-control"
                 />
 
                 </div>

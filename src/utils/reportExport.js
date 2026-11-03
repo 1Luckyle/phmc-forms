@@ -14,8 +14,8 @@ export const HTML_FORUM_HINT = 'forum GTA World';
 // Libellés communs des entrées de menu, pour que tous les menus disent la même chose.
 export const COPY_BBCODE_LABEL = 'Copier le BBCode';
 export const DOWNLOAD_HTML_LABEL = 'Télécharger le HTML';
-export const COPY_BBCODE_HINT = `Le BBCode est destiné au ${BBCODE_FORUM_HINT}`;
-export const DOWNLOAD_HTML_HINT = `Le HTML est destiné au ${HTML_FORUM_HINT}`;
+export const COPY_BBCODE_HINT = 'Copie le code BBCode du rapport';
+export const DOWNLOAD_HTML_HINT = 'Télécharge le rapport mis en page, au format HTML';
 
 // Assemble les BBCode de plusieurs rapports (même séparation que « Copier le BBCode sélectionné »).
 // Même assemblage pour les EXPORTS (HTML, PDF, images) : un séparateur invisible entre les rapports permet à l'export en images de
@@ -33,7 +33,7 @@ export const downloadBbCodeAsHtml = ({ bbCode, title, showNotification }) => {
     try {
         const safeTitle = title || 'Rapport';
         downloadHtmlFile(buildHtmlFileName(safeTitle), bbcodeToHtmlDocument(bbCode, { title: safeTitle }));
-        if (showNotification) showNotification(`Fichier HTML téléchargé (${DOWNLOAD_HTML_HINT.toLowerCase()}).`, 'check-circle');
+        if (showNotification) showNotification('Fichier HTML téléchargé !', 'check-circle');
         return true;
     } catch (error) {
         console.error('Export HTML impossible :', error);
