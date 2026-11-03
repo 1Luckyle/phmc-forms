@@ -23,7 +23,9 @@ const StatusBadge = ({ statut }) => { const info = statusInfo(statut); return <B
 // Photo d'aperçu d'un véhicule éligible (rien si la plaque est inconnue).
 const VehiclePhoto = ({ plate, thumb }) => {
     const vehicle = vehicleByPlate(plate);
-    return vehicle?.image ? <img className={thumb ? 'thc-thumb' : 'thc-photo'} src={vehicle.image} alt={vehicleLabel(plate)} loading="lazy" /> : null;
+    return vehicle?.image
+        ? <img className={thumb ? 'thc-thumb' : 'thc-photo'} src={vehicle.image} alt={vehicleLabel(plate)} loading="lazy" style={{ objectPosition: vehicle.focus || '50% 50%' }} />
+        : null;
 };
 
 // Menu de réponses toutes faites : en choisir une remplit le champ (qu'on peut ensuite modifier), « Écrire librement » le vide.

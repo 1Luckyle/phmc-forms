@@ -7,5 +7,6 @@
 .thc-scroll { max-height: 320px; overflow: auto; }
 .thc-table { font-size: 0.88rem; --bs-table-bg: transparent; --bs-table-color: #e6edf3; --bs-table-border-color: rgba(255, 255, 255, 0.12); }
 .thc-table td, .thc-table th { vertical-align: middle; }
-.thc-photo { display: block; width: 100%; max-height: 230px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); }
+/* Cadre 21:9 (au lieu d'une bande de 230 px qui ne montrait qu'un tiers de la photo) ; le point de cadrage de chaque véhicule (focus) garde la voiture entière visible. */
+.thc-photo { display: block; width: 100%; aspect-ratio: 21 / 9; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); }
 .thc-thumb { width: 72px; height: 44px; object-fit: cover; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.12); flex-shrink: 0; }

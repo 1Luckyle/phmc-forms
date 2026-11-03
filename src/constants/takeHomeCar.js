@@ -9,11 +9,13 @@ import rumpoImage from '../assets/vehicles/Bravado Rumpo (Deludamol).jpg';
 import buffaloImage from '../assets/vehicles/Bravado Buffalo AC Police 2023.jpg';
 
 // Véhicules éligibles (plaque = clé d'attribution) avec leur photo d'aperçu. Un seul agent à la fois par véhicule.
+// `focus` : point de la photo qui reste visible quand elle est recadrée (CSS object-position « x y ») : les captures sont en 16:9 et la voiture n'y
+// est pas centrée (elle occupe plutôt le bas de l'image), donc un cadrage au centre la coupait. À régler ici si on change de photo.
 export const TAKE_HOME_VEHICLES = [
-    { plate: 'PHMC04', model: 'Declasse Alamo Unmarked', image: alamoImage },
-    { plate: 'PHMC05', model: 'Declasse Alamo Unmarked', image: alamoImage },
-    { plate: 'PHMC15', model: 'Bravado Rumpo (Deludamol)', image: rumpoImage },
-    { plate: 'PHMC16', model: 'Bravado Buffalo A/C Police 2023', image: buffaloImage },
+    { plate: 'PHMC04', model: 'Declasse Alamo Unmarked', image: alamoImage, focus: '50% 56%' },
+    { plate: 'PHMC05', model: 'Declasse Alamo Unmarked', image: alamoImage, focus: '50% 56%' },
+    { plate: 'PHMC15', model: 'Bravado Rumpo (Deludamol)', image: rumpoImage, focus: '50% 92%' },
+    { plate: 'PHMC16', model: 'Bravado Buffalo A/C Police 2023', image: buffaloImage, focus: '50% 100%' },
 ];
 
 // Réponses toutes faites (menus déroulants) : elles remplissent le champ, qu'on peut ensuite modifier ou remplacer par un texte libre.
