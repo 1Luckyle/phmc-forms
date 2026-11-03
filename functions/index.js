@@ -401,6 +401,98 @@ export const deleteUserAccount = onRequest(async (req, res) => {
     }
 });
 
+// --- Suppression de SON PROPRE compte Civil ---
+// Un compte Civil se supprime lui-même (confirmation côté site). Le personnel et les admins passent par une demande traitée par un admin
+// (demandesSuppression). On retire les informations personnelles (profil, droits, créations, connexion) ; les archives liées à l'ID patient
+// (dossier, rapports, factures, candidatures, contrats) sont CONSERVÉES, avec le marqueur comptesSupprimes/{ID patient} : si la personne recrée
+// un compte, elle les retrouve.
+const CIVIL_PERSONAL_PATHS = ['civilians', 'recruteurs', 'recruiterUIDs', 'candidatsContrat', 'contractCandidates', 'statutsMobilite', 'userCreations'];
+// Même forme canonique que src/utils/patientId.js (« PHMC-2752 »).
+const canonicalPatientNode = (input) => {
+    const compact = String(input || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!compact) return '';
+    if (/^\d+$/.test(compact)) return `PHMC-${compact}`;
+    const prefixed = compact.match(/^PHMC[-_]?(\d+)$/);
+    if (prefixed) return `PHMC-${prefixed[1]}`;
+    return compact.replace(/[.#$[\]/]+/g, '_');
+};
+
+export const deleteOwnCivilAccount = onRequest(async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+
+    res.set('Access-Control-Allow-Origin', allowedCorsOrigin(req));
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+        const decoded = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
+        const uid = decoded.uid;
+
+        const [civilSnap, staffMark, adminMark] = await Promise.all([
+            db.ref(`civilians/${uid}`).once('value'),
+            db.ref(`staffUIDs/${uid}`).once('value'),
+            db.ref(`adminUIDs/${uid}`).once('value'),
+        ]);
+        if (staffMark.val() === true || adminMark.val() === true) {
+            res.status(403).json({ error: 'Le personnel et les admins envoient une demande de suppression, traitée par un admin.' });
+            return;
+        }
+        if (!civilSnap.exists()) {
+            res.status(404).json({ error: 'Aucun profil Civil sur ce compte.' });
+            return;
+        }
+        const civil = civilSnap.val() || {};
+        const displayName = `${civil.firstName || ''} ${civil.lastName || ''}`.trim() || civil.email || 'Compte supprimé';
+
+        const updates = {};
+        const node = canonicalPatientNode(civil.patientID);
+        if (node) updates[`comptesSupprimes/${node}`] = { type: 'civil', nom: displayName.slice(0, 120), role: '', supprimeLe: Date.now() };
+        CIVIL_PERSONAL_PATHS.forEach((path) => { updates[`${path}/${uid}`] = null; });
+
+        // Demandes envoyées depuis le site : on garde le contenu, on retire ce qui identifie la personne.
+        const siteSnap = await db.ref('siteRequests').orderByChild('by/uid').equalTo(uid).once('value');
+        siteSnap.forEach((child) => {
+            const request = child.val() || {};
+            updates[`siteRequests/${child.key}/by/name`] = 'Compte supprimé';
+            updates[`siteRequests/${child.key}/by/email`] = null;
+            updates[`siteRequests/${child.key}/by/discord`] = null;
+            if (Array.isArray(request.fields)) {
+                updates[`siteRequests/${child.key}/fields`] = request.fields.map((field) => (/^Soumis par/i.test(field.l || '') ? { ...field, v: 'Compte supprimé' } : field));
+            }
+        });
+        const cctvSnap = await db.ref('cctvRequests').orderByChild('by/uid').equalTo(uid).once('value');
+        cctvSnap.forEach((child) => { updates[`cctvRequests/${child.key}/by/email`] = null; });
+        const mobilitySnap = await db.ref(`demandesMobilite/${uid}`).once('value');
+        if (mobilitySnap.exists() && mobilitySnap.val().statut === 'acceptee') {
+            updates[`demandesMobilite/${uid}/statut`] = 'terminee';
+            updates[`demandesMobilite/${uid}/traiteLe`] = Date.now();
+        }
+
+        await db.ref().update(updates);
+        await admin.auth().deleteUser(uid);
+        console.log(`Compte Civil supprimé par son titulaire : ${uid}`);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error deleting own civil account:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Échange un code d'autorisation OAuth GTA World contre le token d'accès puis le
 // profil utilisateur GTAW. Partagé entre exchangeAuthCodeForToken (onboarding) et
 // gtawEmployeeLogin (connexion) pour ne pas dupliquer la logique d'appel à l'UCP.

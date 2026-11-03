@@ -18,8 +18,9 @@ const LegalNoticeModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay privacy-policy-modal">
-            <div className="modal-content">
+        // Un clic à côté de la fenêtre (sur le fond) la ferme.
+        <div className="modal-overlay privacy-policy-modal" onClick={onClose}>
+            <div className="modal-content" onClick={(event) => event.stopPropagation()}>
                 <h2>Mentions légales</h2>
                 {notice
                     ? <PolicyView text={notice.texte} miseAJour={notice.miseAJour} />

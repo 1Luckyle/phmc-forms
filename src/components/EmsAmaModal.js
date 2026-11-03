@@ -173,6 +173,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     }), [patientName, patientSignature, guardianName, guardianRelation, minor, emancipated, date, employee, employeeSignature]);
 
     const handleDebugFill = () => {
+        setDate(nowLabel());
         const option = { value: 'PHMC-99999', name: 'Jean Michel Testard', label: 'Jean Michel Testard (PHMC-99999)' };
         setPatientOption(option);
         setPatientName(option.name);
@@ -189,6 +190,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         if (!patientID) { showNotification('Choisissez le patient (ou tapez son ID).', 'warning'); return; }
         if (!isAdmin && await loadDeathLock(patientID)) { showNotification(DEATH_LOCK_MESSAGE, 'warning', 10000); return; }
         if (!patientName.trim()) { showNotification('Indiquez le nom du patient : il sert à créer sa signature et figure sur le document.', 'warning'); return; }
+        if (!date.trim()) { showNotification('Indiquez la date et l\'heure du refus de soins.', 'warning'); return; }
         if (minor && !emancipated && (!guardianName.trim() || !guardianRelation)) { showNotification('Patient mineur : indiquez le nom du représentant légal et son lien avec le patient.', 'warning', 7000); return; }
         if (!certified) { showNotification('Certifiez que c\'est bien le patient (ou son représentant légal) qui signe.', 'warning'); return; }
 
@@ -325,36 +327,41 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
 
     return shell(
         <>
-            <div className="ems-ama-modal-body">
+            <div className="ems-ama-modal-body" data-guide-zone>
+                <p className="text-muted small mb-2">Tous les champs sont obligatoires, sauf le représentant légal d'un patient majeur.</p>
                 <div className="ama-grid">
                     <Form.Group className="mb-2">
                         <Form.Label>Paramédic qui signe *</Form.Label>
+                        <div data-required data-guide="Le paramédic qui fait signer le refus de soins : sa signature s'imprime sur le document.">
                         <Select
-                            value={employee} onChange={setEmployee} options={employeeOptions} styles={selectStyles} menuPortalTarget={document.body}
+                            name="amaParamedic" value={employee} onChange={setEmployee} options={employeeOptions} styles={selectStyles} menuPortalTarget={document.body}
                             isDisabled={saving} placeholder="Choisir un employé…" noOptionsMessage={() => 'Aucun employé'}
                         />
+                        </div>
                         {!ownSelected && !isAdmin && employee && (
                             <Form.Text style={{ color: '#e3b341' }}>La signature d'un autre employé n'est pas accessible : il doit signer depuis son compte.</Form.Text>
                         )}
                     </Form.Group>
                     <Form.Group className="mb-2">
                         <Form.Label>Patient *</Form.Label>
+                        <div data-required data-guide="Choisissez un patient connu, ou tapez son ID : s'il est inconnu, un dossier et une signature seront créés à cet ID.">
                         <CreatableSelect
-                            value={patientOption} onChange={handlePatientChange} options={patientOptions} styles={selectStyles} menuPortalTarget={document.body}
+                            name="amaPatient" value={patientOption} onChange={handlePatientChange} options={patientOptions} styles={selectStyles} menuPortalTarget={document.body}
                             isClearable isDisabled={saving} placeholder="Choisir un patient ou taper son ID (ex. 2752)…"
                             noOptionsMessage={() => 'Tapez un ID patient'} formatCreateLabel={(typed) => `Utiliser l'ID « ${normalizePatientId(typed)} »`}
                             isValidNewOption={(typed) => typed.trim().length >= 3}
                             getNewOptionData={(input) => ({ value: normalizePatientId(input), label: normalizePatientId(input), name: '', __isNew__: true })}
                         />
+                        </div>
                         <Form.Text style={{ color: '#9aa7b4' }}>L'ID ne s'imprime pas : il sert à ranger l'AMA chez le patient et à retrouver sa signature.</Form.Text>
                     </Form.Group>
                     <Form.Group className="mb-2">
                         <Form.Label>Nom du patient (imprimé) *</Form.Label>
-                        <Form.Control size="sm" value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Prénom Nom" disabled={saving} />
+                        <Form.Control size="sm" name="amaPatientName" required data-guide="Prénom et nom du patient, tels qu'ils seront imprimés sur le document." value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Prénom Nom" disabled={saving} />
                     </Form.Group>
                     <Form.Group className="mb-2">
-                        <Form.Label>Date / heure</Form.Label>
-                        <Form.Control size="sm" value={date} onChange={(e) => setDate(e.target.value)} placeholder="JJ/MM/AAAA HH:MM" disabled={saving} />
+                        <Form.Label>Date / heure *</Form.Label>
+                        <Form.Control size="sm" name="amaDate" required data-guide="Date et heure du refus de soins (JJ/MM/AAAA HH:MM)." value={date} onChange={(e) => setDate(e.target.value)} placeholder="JJ/MM/AAAA HH:MM" disabled={saving} />
                     </Form.Group>
                     <Form.Check
                         className="mb-2" type="checkbox" id="ama-minor" checked={minor} disabled={saving}
@@ -375,9 +382,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                         <Form.Group className="mb-2">
                             <Form.Label>Représentant légal {minor ? '*' : '(nom, si applicable)'}</Form.Label>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <Form.Control size="sm" value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder={minor ? 'Prénom Nom' : 'Facultatif'} disabled={saving} />
+                                <Form.Control size="sm" name="amaGuardian" required={minor} data-guide={minor ? 'Nom du parent ou tuteur qui signe à la place du mineur.' : 'Facultatif : seulement si un représentant légal est présent.'} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder={minor ? 'Prénom Nom' : 'Facultatif'} disabled={saving} />
                                 {minor && (
-                                    <Form.Select size="sm" value={guardianRelation} onChange={(e) => setGuardianRelation(e.target.value)} disabled={saving}>
+                                    <Form.Select size="sm" name="amaGuardianRelation" required data-guide="Lien entre le représentant légal et le patient mineur." value={guardianRelation} onChange={(e) => setGuardianRelation(e.target.value)} disabled={saving}>
                                         <option value="">Lien avec le patient…</option>
                                         {GUARDIAN_RELATIONS.map((relation) => <option key={relation} value={relation}>{relation}</option>)}
                                     </Form.Select>
@@ -434,7 +441,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                 <ReportPreviewFrame bbCode={bbCode} title="Formulaire AMA" height={460} />
             </div>
             <DebugFillButton onFill={handleDebugFill} disabled={saving} className="ems-ama-save-button" />
-            <Button className="ems-ama-save-button" onClick={handleSave} disabled={saving || !certified || !employeeSignature?.url || !patientID}>
+            <Button className="ems-ama-save-button" onClick={handleSave} disabled={saving || !certified || !employeeSignature?.url || !patientID || !patientName.trim() || !date.trim() || (minor && !emancipated && (!guardianName.trim() || !guardianRelation))}>
                 {saving ? 'Enregistrement…' : 'Signer et enregistrer l\'AMA'}
             </Button>
         </>

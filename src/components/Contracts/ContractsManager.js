@@ -278,12 +278,12 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 
     const renderField = (field) => {
         const value = fields[field.key] ?? '';
-        const common = { value, onChange: set(field.key) };
+        const common = { value, onChange: set(field.key), name: field.key, required: !!field.required, 'data-guide': field.help || undefined };
         let control;
         switch (field.type) {
             case 'echelon':
                 control = (
-                    <Form.Select value={value} onChange={(e) => pickEchelon(e.target.value)}>
+                    <Form.Select name={field.key} required={!!field.required} data-guide={field.help || undefined} value={value} onChange={(e) => pickEchelon(e.target.value)}>
                         {!value && <option value="">{fields.role ? 'Choisir un échelon…' : 'Choisissez d\'abord le grade'}</option>}
                         {allEchelons.map((e) => <option key={e.numero} value={e.libelle}>{e.libelle} — {formatEchelonRates(e)}{gradeEchelon?.numero === e.numero ? ' (échelon du grade)' : ''}</option>)}
                     </Form.Select>
@@ -314,7 +314,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
             case 'criteres':
                 control = (
                     <>
-                        <Form.Select className="mb-1" value="" onChange={(e) => { if (e.target.value) addCriterion(e.target.value); }}>
+                        <Form.Select className="mb-1" data-no-mark value="" onChange={(e) => { if (e.target.value) addCriterion(e.target.value); }}>
                             <option value="">Ajouter un critère par défaut…</option>
                             {PRIME_CRITERIA.map((criterion) => <option key={criterion} value={criterion}>{criterion}</option>)}
                         </Form.Select>
@@ -375,7 +375,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                 control = <Form.Control as="textarea" rows={3} {...common} placeholder={field.placeholder} />;
                 break;
             case 'number':
-                control = <Form.Control inputMode="numeric" value={value} onChange={(e) => setFields((p) => ({ ...p, [field.key]: e.target.value.replace(/\D/g, '') }))} placeholder={field.placeholder} />;
+                control = <Form.Control inputMode="numeric" name={field.key} required={!!field.required} data-guide={field.help || undefined} value={value} onChange={(e) => setFields((p) => ({ ...p, [field.key]: e.target.value.replace(/\D/g, '') }))} placeholder={field.placeholder} />;
                 break;
             case 'date':
                 control = <Form.Control type="date" {...common} />;
@@ -443,12 +443,12 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         </Form.Group>
                     )}
 
-                    <Form.Group className="mb-3">
+                    <Form.Group className="mb-3" data-guide-zone>
                         <Form.Label>Destinataire</Form.Label>
                         {isNew ? (
                             <>
-                                <Form.Control className="mb-1" type="search" placeholder="Filtrer par nom…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-                                <Form.Select value={employeeUid} onChange={(e) => onPickEmployee(e.target.value)}>
+                                <Form.Control className="mb-1" type="search" data-no-mark placeholder="Filtrer par nom…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+                                <Form.Select name="destinataire" required data-guide="La personne à qui le document est adressé." value={employeeUid} onChange={(e) => onPickEmployee(e.target.value)}>
                                     <option value="">Sélectionner…</option>
                                     {recipients.map((m) => (
                                         <option key={m.uid} value={m.uid}>
@@ -478,7 +478,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 
                     {!employee && <Alert variant="secondary" className="py-2">Choisissez le destinataire pour afficher les champs du document.</Alert>}
                     {employee && (
-                        <div className="contract-field-row">
+                        <div className="contract-field-row" data-guide-zone>
                             {visible.map(renderField)}
                         </div>
                     )}

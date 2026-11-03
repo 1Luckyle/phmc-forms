@@ -211,14 +211,15 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                     )}
 
                     {canWrite ? (
-                        <form className="cctv-reply" onSubmit={send}>
+                        <form className="cctv-reply" onSubmit={send} data-guide-zone>
                             <textarea
+                                name="cctvReply" required data-guide={manage ? 'Votre réponse au demandeur.' : "Votre message ou précision pour l'administration."}
                                 rows={3} value={text} onChange={(e) => setText(e.target.value)} disabled={busy}
                                 placeholder={manage ? 'Votre réponse au demandeur…' : "Ajouter un message ou une précision à l'administration…"}
                             />
                             <div className="cctv-reply-actions">
                                 {manage && (
-                                    <select value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy} aria-label="Statut après la réponse">
+                                    <select name="cctvNextStatus" data-no-mark value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy} aria-label="Statut après la réponse">
                                         <option value="">Garder le statut « {cctvStatusInfo(request.statut).label} »</option>
                                         {Object.entries(CCTV_STATUSES).filter(([key]) => key !== request.statut && key !== 'nouvelle').map(([key, info]) => (
                                             <option key={key} value={key}>Passer en « {info.label} »</option>

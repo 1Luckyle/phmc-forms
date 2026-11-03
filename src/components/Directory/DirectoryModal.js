@@ -14,6 +14,7 @@ import {
     loadStaffMembers, loadCivilians, loadRecruiterUids, loadAdminUids, rankLabel, badgeDigits,
 } from '../../utils/staffAdmin';
 import { loadInternalGrants } from '../../utils/internalRecruitment';
+import { vehicleLabel } from '../../constants/takeHomeCar';
 import { getEmployeeFullName } from '../../utils/employeeName';
 import { STAFF_FAMILIES, familiesOfMember } from '../../constants/ranks';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
@@ -28,7 +29,7 @@ const nameOfCivilian = (civilian) => [civilian.firstName, civilian.middleName, c
 
 // Accès rapides (dont « Dossier disciplinaire » pour les admins, la Direction et le personnel administratif) : ouvrent l'outil correspondant déjà positionné sur la personne (comme si on ouvrait le menu et tapait son nom dans la
 // recherche). `access` dit lesquels l'utilisateur a le droit d'utiliser ; les callbacks viennent de la Boîte à outils.
-const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'directory', access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications, onOpenDiscipline }) => {
+const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'directory', access = {}, onOpenSavedReports, onOpenPatientDossier, onOpenApplications, onOpenDiscipline, onOpenAdmin }) => {
     const { isAdmin, staffProfile } = useEmployeeAuth();
     // Coordonnées des civils (e-mail, téléphone, Discord, adresse) : admins, personnel soignant et personnel administratif seulement.
     const families = staffProfile ? familiesOfMember(staffProfile, staffProfile.type) : [];
@@ -46,6 +47,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
     const [admins, setAdmins] = useState({});
     const [internalGrants, setInternalGrants] = useState({});
     const [creationFlags, setCreationFlags] = useState({});   // { uid: { signature, carte } }
+    const [takeHomePlates, setTakeHomePlates] = useState({});   // { uid: [plaque, …] } d'après takeHomeCars/attributions
     // Faux si la lecture des drapeaux est refusée : on n'affiche alors AUCUNE pastille « Sans signature / Sans carte » (sinon tout le monde semble n'avoir rien créé).
     const [flagsReadable, setFlagsReadable] = useState(false);
     const [family, setFamily] = useState('all');
@@ -64,13 +66,14 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
         (async () => {
             try {
                 // Les civils et le recrutement interne ne sont lisibles que selon le rôle : un refus n'empêche pas le reste de s'afficher.
-                const [staffList, civilList, recruiterUids, adminUids, grants, flagsSnap] = await Promise.all([
+                const [staffList, civilList, recruiterUids, adminUids, grants, flagsSnap, platesSnap] = await Promise.all([
                     loadStaffMembers(),
                     loadCivilians().catch(() => []),
                     loadRecruiterUids().catch(() => ({})),
                     loadAdminUids().catch(() => ({})),
                     loadInternalGrants().catch(() => ({})),
                     get(ref(database, 'creationsFlags')).catch(() => null),
+                    get(ref(database, 'takeHomeCars/attributions')).catch(() => null),
                 ]);
                 if (cancelled) return;
                 setStaff(staffList);
@@ -80,6 +83,13 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                 setInternalGrants(grants);
                 setCreationFlags(flagsSnap && flagsSnap.exists() ? flagsSnap.val() : {});
                 setFlagsReadable(!!flagsSnap);
+                const plates = {};
+                if (platesSnap && platesSnap.exists()) {
+                    Object.entries(platesSnap.val()).forEach(([plate, holder]) => {
+                        if (holder && holder.uid) plates[holder.uid] = [...(plates[holder.uid] || []), plate];
+                    });
+                }
+                setTakeHomePlates(plates);
             } catch (err) {
                 if (!cancelled) setError(err?.message || 'Annuaire illisible.');
             } finally {
@@ -193,6 +203,7 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                                             {member.uid && recruiters[member.uid] === true && <Pill color="#e3b341">Recruteur</Pill>}
                                             {member.uid && admins[member.uid] === true && <Pill color="#f85149">Admin</Pill>}
                                             {member.uid && internalGrants[member.uid] && <Pill color="#79c0ff" title="Statut de recrutement interne accordé">Recrutement interne</Pill>}
+                                            {member.uid && (takeHomePlates[member.uid] || []).map((plate) => <Pill key={plate} color="#d29922" title={`Take Home Car : ${vehicleLabel(plate)}`}><i className="fas fa-car me-1"></i>{plate}</Pill>)}
                                         </div>
                                         <div className="dir-actions">
                                             {access.savedReports && onOpenSavedReports && (
@@ -213,6 +224,11 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                                             {access.discipline && onOpenDiscipline && (
                                                 <Button size="sm" variant="outline-secondary" title="Ouvre « Documents disciplinaires » sur cette personne (convocations, sanctions, fins de contrat)" onClick={() => onOpenDiscipline(member.displayName)}>
                                                     <i className="fas fa-gavel me-1"></i>Dossier disciplinaire
+                                                </Button>
+                                            )}
+                                            {access.admin && onOpenAdmin && (
+                                                <Button size="sm" variant="outline-warning" title="Ouvre le panneau admin (Utilisateurs) sur cette personne" onClick={() => onOpenAdmin(member.displayName, 'staff')}>
+                                                    <i className="fas fa-user-gear me-1"></i>Gérer (admin)
                                                 </Button>
                                             )}
                                         </div>
@@ -261,6 +277,11 @@ const DirectoryModal = ({ show, onHide, canSeeDirectory = true, initialView = 'd
                                             {access.discipline && onOpenDiscipline && (
                                                 <Button size="sm" variant="outline-secondary" title="Ouvre « Documents disciplinaires » sur cette personne (convocations, sanctions, fins de contrat)" onClick={() => onOpenDiscipline(nameOfCivilian(civilian))}>
                                                     <i className="fas fa-gavel me-1"></i>Dossier disciplinaire
+                                                </Button>
+                                            )}
+                                            {access.admin && onOpenAdmin && (
+                                                <Button size="sm" variant="outline-warning" title="Ouvre le panneau admin (Utilisateurs) sur ce compte Civil" onClick={() => onOpenAdmin(civilian.patientID || civilian.lastName || nameOfCivilian(civilian), 'civilians')}>
+                                                    <i className="fas fa-user-gear me-1"></i>Gérer (admin)
                                                 </Button>
                                             )}
                                         </div>

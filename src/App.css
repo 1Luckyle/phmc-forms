@@ -1115,3 +1115,13 @@ input[type="checkbox"]:checked::after {
     border: 1px solid rgba(56, 139, 253, 0.5);
     border-radius: 8px;
 }
+
+/* Champs de date / d'heure : l'icône du petit calendrier est noire par défaut (thème clair du navigateur), donc invisible sur nos fonds sombres. */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="month"],
+input[type="week"] { color-scheme: dark; }
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.9; }

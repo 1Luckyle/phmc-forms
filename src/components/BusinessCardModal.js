@@ -31,6 +31,14 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
     const lastWebhookCallTimestamp = useRef(0);
     const webhookRateLimitDelay = 1100;
 
+    // Reprend les valeurs de la carte enregistrée (les champs restent obligatoires : on les modifie, on ne repart pas de zéro).
+    const fillFromCard = (card) => {
+        setName(card.name || '');
+        setRank(card.rank || '');
+        setPhoneNumber(card.phone || '');
+        setEmail(card.email || '');
+    };
+
     useEffect(() => {
         if (show) {
             setName(localStorage.getItem('name') || '');
@@ -41,17 +49,24 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
             setEditingCard(false);
             if (uid) {
                 loadUserCreations(uid, { patientID: civilian ? patientID : '' })
-                    .then(setCreations)
+                    .then((loaded) => {
+                        setCreations(loaded);
+                        if (loaded.businessCard) fillFromCard(loaded.businessCard);
+                    })
                     .catch((error) => console.error('Chargement de mes créations impossible :', error));
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show, uid, civilian, patientID]);
 
     const handleNameChange = (e) => setName(e.target.value);
     const handleRankChange = (e) => setRank(e.target.value);
     const handlePhoneNumberChange = (e) => setPhoneNumber(e.target.value);
     const handleEmailChange = (e) => setEmail(e.target.value);
-    // Ligne imprimée sur la carte : « 40152169 - email@blabla.fr » (l'e-mail est facultatif).
+    // Tous les champs sont obligatoires pour enregistrer la carte.
+    const cardComplete = [name, rank, phoneNumber, email].every((value) => value.trim() !== '');
+    const handleClearFields = () => { setName(''); setRank(''); setPhoneNumber(''); setEmail(''); };
+    // Ligne imprimée sur la carte : « 40152169 - email@blabla.fr ».
     const contactLine = [phoneNumber.trim(), email.trim()].filter(Boolean).join(' - ');
     // Mode debug : données de test.
     const handleDebugFill = () => {
@@ -213,6 +228,10 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
 
 
     const handleSave = useCallback(async () => {
+        if (![name, rank, phoneNumber, email].every((value) => value.trim() !== '')) {
+            showNotification('Tous les champs de la carte de visite sont obligatoires.', 'warning');
+            return;
+        }
         if (creations.businessCard && !window.confirm('Vous avez déjà une carte de visite. La nouvelle va REMPLACER l\'ancienne (qui ne sera plus associée à votre compte). Continuer ?')) {
             return;
         }
@@ -388,7 +407,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                                     title="Votre carte de visite"
                                     creation={creations.businessCard}
                                     onCopy={() => copyToClipboard(creations.businessCard.url, showNotification, 'Lien de l\'image copié dans le presse-papiers !')}
-                                    onChange={() => setEditingCard(true)}
+                                    onChange={() => { fillFromCard(creations.businessCard); setEditingCard(true); }}
                                     onDelete={handleDeleteCard}
                                 />
                             )}
@@ -452,11 +471,15 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                             {contactLine}
                         </div>
                     </div>
-                    <div className="business-card-input-fields" style={{ marginTop: '1rem' }}>
-                        <Form.Control className="mb-2" type="text" placeholder="Nom" value={name} onChange={handleNameChange} />
-                        <Form.Control className="mb-2" type="text" placeholder="Grade" value={rank} onChange={handleRankChange} />
-                        <Form.Control className="mb-2" type="text" placeholder="Numéro de téléphone" value={phoneNumber} onChange={handlePhoneNumberChange} />
-                        <Form.Control className="mb-2" type="email" placeholder="Adresse e-mail (imprimée après le numéro)" value={email} onChange={handleEmailChange} />
+                    <div className="business-card-input-fields" style={{ marginTop: '1rem' }} data-guide-zone>
+                        <Form.Control className="mb-2" type="text" name="cardName" required data-guide="Votre nom complet, imprimé en grand sur la carte." placeholder="Nom" value={name} onChange={handleNameChange} />
+                        <Form.Control className="mb-2" type="text" name="cardRank" required data-guide="Votre grade ou fonction (ex. Médecin Résident)." placeholder="Grade" value={rank} onChange={handleRankChange} />
+                        <Form.Control className="mb-2" type="text" name="cardPhone" required data-guide="Votre numéro de téléphone en jeu." placeholder="Numéro de téléphone" value={phoneNumber} onChange={handlePhoneNumberChange} />
+                        <Form.Control className="mb-2" type="email" name="cardEmail" required data-guide="Votre adresse e-mail en jeu, imprimée après le numéro." placeholder="Adresse e-mail (imprimée après le numéro)" value={email} onChange={handleEmailChange} />
+                        <p className="text-muted small mb-2">Tous les champs sont obligatoires.</p>
+                        <Button variant="outline-secondary" size="sm" onClick={handleClearFields} disabled={isSaving}>
+                            <i className="fas fa-eraser"></i> Vider les champs
+                        </Button>
                     </div>
                                 </>
                             )}
@@ -464,7 +487,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                         {!showCardPanel && (
                             <>
                                 <DebugFillButton onFill={handleDebugFill} disabled={isSaving} className="mt-3 w-100" />
-                                <Button className="mt-3 w-100" onClick={handleSave} disabled={isSaving}>
+                                <Button className="mt-3 w-100" onClick={handleSave} disabled={isSaving || !cardComplete} title={cardComplete ? undefined : 'Remplissez tous les champs pour enregistrer'}>
                                     {isSaving ? 'Enregistrement...' : (creations.businessCard ? 'Remplacer ma carte de visite' : 'Enregistrer et télécharger la carte de visite')}
                                 </Button>
                                 {creations.businessCard && (

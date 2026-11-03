@@ -64,9 +64,9 @@ const InternalRecruitmentRequest = ({ showNotification, disabled }) => {
                     pour une <strong>évolution interne</strong>. Il prend fin automatiquement quand l'une de vos candidatures est acceptée et que votre contrat
                     est signé ; vous pourrez alors le redemander au besoin.
                 </p>
-                <Form.Group className="mb-3">
+                <Form.Group className="mb-3" data-guide-zone>
                     <Form.Label>Poste visé et motivation (facultatif)</Form.Label>
-                    <Form.Control as="textarea" rows={4} value={motif} onChange={(e) => setMotif(e.target.value)} maxLength={1500} placeholder="Ex. : je souhaite postuler au poste d'Infirmier(ère) en Pratique Avancée…" />
+                    <Form.Control as="textarea" rows={4} name="motif" data-guide="Facultatif : le poste que vous visez et pourquoi." value={motif} onChange={(e) => setMotif(e.target.value)} maxLength={1500} placeholder="Ex. : je souhaite postuler au poste d'Infirmier(ère) en Pratique Avancée…" />
                 </Form.Group>
                 <div className="d-flex justify-content-end gap-2">
                     <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>Annuler</Button>

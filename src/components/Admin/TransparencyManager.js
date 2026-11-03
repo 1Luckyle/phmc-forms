@@ -137,19 +137,19 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
                                 <Button size="sm" variant="outline-danger" onClick={() => removeLine(index)} title="Retirer cette ligne"><i className="fas fa-trash"></i></Button>
                             </div>
                         </div>
-                        <div className="adm-form-grid">
-                            <div className="form-group"><label>Nom</label><Form.Control value={line.nom} onChange={(e) => changeLine(index, 'nom', e.target.value)} placeholder="ex. Dr Jane Doe" /></div>
-                            <div className="form-group"><label>Fonction</label><Form.Control value={line.fonction} onChange={(e) => changeLine(index, 'fonction', e.target.value)} placeholder="ex. Directrice du Pillbox Hill Medical Center" /></div>
-                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info@phmc.health · tél. 50056" /></div>
+                        <div className="adm-form-grid" data-guide-zone>
+                            <div className="form-group"><label>Nom</label><Form.Control name={`nom-${index}`} required data-guide="Le nom de la personne, tel qu'il apparaîtra sur la page publique." value={line.nom} onChange={(e) => changeLine(index, 'nom', e.target.value)} placeholder="ex. Dr Jane Doe" /></div>
+                            <div className="form-group"><label>Fonction</label><Form.Control name={`fonction-${index}`} required data-guide="Sa fonction au sein du PHMC." value={line.fonction} onChange={(e) => changeLine(index, 'fonction', e.target.value)} placeholder="ex. Directrice du Pillbox Hill Medical Center" /></div>
+                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control name={`contact-${index}`} required data-guide="Comment la joindre : e-mail ou téléphone en jeu." value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info@phmc.health · tél. 50056" /></div>
                         </div>
                     </div>
                 ))}
                 <Button size="sm" variant="outline-primary" onClick={addBlank} disabled={lines.length >= MAX_MEMBERS}><i className="fas fa-plus me-1"></i>Ajouter une ligne vide</Button>
             </div>
 
-            <div className="form-group tm-wide-field">
+            <div className="form-group tm-wide-field" data-guide-zone>
                 <label>Où adresser une demande d'accès aux informations <small className="text-muted">(facultatif)</small></label>
-                <Form.Control as="textarea" rows={3} value={contactDemandes} onChange={(e) => setContactDemandes(e.target.value)}
+                <Form.Control as="textarea" rows={3} name="contactDemandes" data-guide="Facultatif : où adresser une demande d'accès aux informations." value={contactDemandes} onChange={(e) => setContactDemandes(e.target.value)}
                     placeholder="ex. Écrivez à la Direction : une réponse est apportée sous 7 jours (Code du Gouvernement, art. 328)." />
             </div>
 
@@ -312,11 +312,11 @@ const clearLocalDraft = (key) => {
 const SAVE_DELAY = 900;   // enregistrement du brouillon 0,9 s après la dernière frappe
 
 // Libellé d'une ligne de comptes : on écrit directement, ou on choisit un libellé par défaut dans la liste (le choix remplit le champ, qui reste modifiable).
-const LabelCombo = ({ value, options, placeholder, onChange }) => {
+const LabelCombo = ({ value, options, placeholder, onChange, ...rest }) => {
     const id = useId();
     return (
         <InputGroup size="sm" className="tm-label-combo">
-            <Form.Control value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} aria-label="Libellé de la ligne" />
+            <Form.Control value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} aria-label="Libellé de la ligne" {...rest} />
             <DropdownButton variant="outline-secondary" align="end" title={<i className="fas fa-list" aria-hidden="true"></i>} id={`tm-label-menu-${id}`}
                 menuVariant="dark" popperConfig={{ strategy: 'fixed' }} aria-label="Libellés par défaut">
                 <Dropdown.Header>Libellés par défaut</Dropdown.Header>
@@ -657,12 +657,12 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             <QuarterCalendar year={year} comptes={accounts} onPick={(q) => setQuarter(q)} selected={quarter} entity={entity} />
             {publishedKeys.length > 0 && <small className="text-muted d-block mb-2">Déjà publiés : {publishedKeys.map(quarterLabel).join(' · ')}.</small>}
 
-            <fieldset className="tm-fieldset" disabled={loadingDraft}>
+            <fieldset className="tm-fieldset" disabled={loadingDraft} data-guide-zone>
             <div className="tm-opening">
                 <Form.Group>
                     <Form.Label>Solde d'ouverture <small className="text-muted">(solde au début du trimestre ; à renseigner au moins pour le premier, négatif possible)</small></Form.Label>
                     <div className="d-flex flex-wrap gap-2 align-items-center">
-                        <Form.Control style={{ maxWidth: 220 }} inputMode="decimal" value={ouverture} placeholder="ex. 250000"
+                        <Form.Control style={{ maxWidth: 220 }} inputMode="decimal" name="ouverture" data-guide="Le solde au début du trimestre (négatif possible). À renseigner au moins pour le premier trimestre." value={ouverture} placeholder="ex. 250000"
                             onChange={(e) => touch(lignes, notes, e.target.value.replace(/[^\d.,-]/g, '').replace(/(?!^)-/g, ''))} />
                         {previousClosing !== null && (
                             <Button size="sm" variant="outline-info" onClick={() => touch(lignes, notes, String(previousClosing))} title={`Clôture du ${quarterLabel(previousKey)}`}>
@@ -677,11 +677,11 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
                 {lignes.length === 0 && <p className="text-muted">Aucune ligne. Ajoutez des recettes et des dépenses, ou préremplissez les recettes avec les factures payées.</p>}
                 {lignes.map((line, index) => (
                     <div key={index} className="tm-line">
-                        <Form.Select size="sm" value={line.type} onChange={(e) => changeLine(index, 'type', e.target.value)} style={{ maxWidth: 120 }}>
+                        <Form.Select size="sm" name={`type-${index}`} required data-guide="Recette (argent reçu) ou dépense (argent versé)." value={line.type} onChange={(e) => changeLine(index, 'type', e.target.value)} style={{ maxWidth: 120 }}>
                             {Object.entries(LINE_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </Form.Select>
-                        <LabelCombo value={line.libelle} options={labelSuggestionsFor(entity, line.type)} placeholder="Libellé : choisir dans la liste ou écrire" onChange={(next) => changeLine(index, 'libelle', next)} />
-                        <Form.Control size="sm" style={{ maxWidth: 150 }} inputMode="decimal" value={line.montant} placeholder="Montant ($)" onChange={(e) => changeLine(index, 'montant', e.target.value.replace(/[^\d.,]/g, ''))} />
+                        <LabelCombo name={`libelle-${index}`} required data-guide="Ce que représente la ligne : écrivez-le ou choisissez un libellé dans la liste." value={line.libelle} options={labelSuggestionsFor(entity, line.type)} placeholder="Libellé : choisir dans la liste ou écrire" onChange={(next) => changeLine(index, 'libelle', next)} />
+                        <Form.Control size="sm" style={{ maxWidth: 150 }} inputMode="decimal" name={`montant-${index}`} required data-guide="Le montant en dollars de la ligne." value={line.montant} placeholder="Montant ($)" onChange={(e) => changeLine(index, 'montant', e.target.value.replace(/[^\d.,]/g, ''))} />
                         <Button size="sm" variant="outline-danger" onClick={() => removeLine(index)}><i className="fas fa-times"></i></Button>
                     </div>
                 ))}
@@ -707,7 +707,7 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
 
             <Form.Group className="mb-3">
                 <Form.Label>Notes <small className="text-muted">(facultatif, publiées avec les comptes)</small></Form.Label>
-                <Form.Control as="textarea" rows={2} value={notes} onChange={(e) => touch(lignes, e.target.value)} placeholder="ex. Les dépenses liées à une enquête pénale sont regroupées sous « Dépenses d'enquête »." />
+                <Form.Control as="textarea" rows={2} name="notes" data-guide="Facultatif : une remarque publiée avec les comptes." value={notes} onChange={(e) => touch(lignes, e.target.value)} placeholder="ex. Les dépenses liées à une enquête pénale sont regroupées sous « Dépenses d'enquête »." />
             </Form.Group>
             </fieldset>
 

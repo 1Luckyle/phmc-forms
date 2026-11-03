@@ -25,6 +25,15 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
     const text = buildSignatureText(name, { doctor: !civilian });
     const showForm = !creation || editing;
 
+    // Modifier : on repart de la signature enregistrée (nom et style) plutôt que d'un formulaire vide.
+    const startEditing = () => {
+        if (creation) {
+            setName(buildSignatureText(creation.text || '', { doctor: false }));
+            if (creation.style) setStyleKey(creation.style);
+        }
+        setEditing(true);
+    };
+
     // Aperçu de chaque style (recalculé quand le texte change).
     useEffect(() => {
         if (!showForm || !text) { setPreviews({}); return undefined; }
@@ -41,7 +50,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
 
     const handleCreate = async () => {
         if (!uid) { showNotification('Connectez-vous pour créer votre signature.', 'warning'); return; }
-        if (!text) { showNotification('Saisissez votre nom pour créer la signature.', 'warning'); return; }
+        if (!text) { showNotification('Le nom est obligatoire pour créer la signature.', 'warning'); return; }
         if (creation && !window.confirm('Vous avez déjà une signature. La nouvelle va REMPLACER l\'ancienne (qui ne sera plus associée à votre compte). Continuer ?')) return;
 
         setBusy(true);
@@ -91,7 +100,7 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
                     transparent
                     busy={busy}
                     onCopy={() => copyToClipboard(creation.url, showNotification, 'Lien de la signature copié dans le presse-papiers !')}
-                    onChange={() => setEditing(true)}
+                    onChange={startEditing}
                     onDelete={handleDelete}
                 />
             )}
@@ -103,14 +112,22 @@ const SignatureCreator = ({ uid, defaultName, creation, onCreationChange, upload
                             <i className="fas fa-exclamation-triangle"></i> Créer une nouvelle signature remplacera l'actuelle.
                         </p>
                     )}
-                    <Form.Label>{civilian ? 'Votre nom' : 'Nom du médecin'}</Form.Label>
-                    <Form.Control
-                        className="mb-2"
-                        type="text"
-                        placeholder="Prénom Nom"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
+                    <div data-guide-zone>
+                        <Form.Label>{civilian ? 'Votre nom' : 'Nom du médecin'}</Form.Label>
+                        <Form.Control
+                            className="mb-2"
+                            type="text"
+                            name="signatureName"
+                            required
+                            data-guide="Prénom et nom tels qu'ils apparaîtront dans la signature."
+                            placeholder="Prénom Nom"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                        />
+                    </div>
+                    <Button variant="outline-secondary" size="sm" className="mb-2" onClick={() => setName('')} disabled={busy || !name}>
+                        <i className="fas fa-eraser"></i> Vider les champs
+                    </Button>
                     <div className="signature-style-list">
                         {SIGNATURE_STYLES.map((style) => (
                             <button

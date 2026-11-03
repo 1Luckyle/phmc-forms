@@ -80,6 +80,8 @@ const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'
 const AgencyGroupSelectorModal = lazy(() => import('./components/AgencyGroupSelectorModal'));
 const AgencySelector = lazy(() => import('./components/AgencySelector'));
 const OnboardingModal = lazy(() => import('./components/OnboardingModal'));
+const InheritanceNotice = lazy(() => import('./components/InheritanceNotice'));
+const DeleteAccountModal = lazy(() => import('./components/DeleteAccountModal'));
 const Footer = lazy(() => import('./components/Footer'));
 const CoronerTipsModal = lazy(() => import('./components/CoronerTipsModal'));
 const BusinessCardModal = lazy(() => import('./components/BusinessCardModal'));
@@ -200,6 +202,9 @@ function MainApp({
     const [showMyPatientFile, setShowMyPatientFile] = useState(false);
     // « Mon profil » : le personnel modifie lui-même téléphone, Discord et adresse Eyefind Mail.
     const [showMyProfile, setShowMyProfile] = useState(false);
+    // « Supprimer mon compte » : suppression directe pour un Civil, demande aux admins pour le personnel.
+    const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+    const [deleteAccountMode, setDeleteAccountMode] = useState('civil');
     // Calendrier des événements de sensibilisation médicale (Octobre Rose, Movember...).
     const [showAwarenessCalendar, setShowAwarenessCalendar] = useState(false);
     // « Mes documents administratifs » : le personnel lit et signe les contrats envoyés par les recruteurs.
@@ -1488,6 +1493,15 @@ function MainApp({
                     initialStep={quickCivilOnboarding ? 'civilAuth' : null}
                     initialUserType={quickCivilOnboarding ? 'civilian' : null}
                 />
+                {/* Ce que le compte hérite d'un profil existant (dossier et signature du patient, rapports et documents du personnel). */}
+                <InheritanceNotice
+                    uid={myCreationsUid}
+                    isCivilian={!!isCivilian}
+                    patientID={civilianProfile?.patientID || ''}
+                    staffName={staffName || ''}
+                    canUseAma={!!canUseAma}
+                    enabled={!authLoading && !showOnboarding}
+                />
                 <AgencyGroupSelectorModal
                     show={showAgencyGroupSelectorModal && !selectedAgencyGroup && onboardingComplete}
                     onSelectGroup={handleSelectAgencyGroup}
@@ -1784,6 +1798,7 @@ function MainApp({
                                                         // Tout compte Civil crée sa signature (utilisée aussi pour ses documents, ex. formulaire AMA) ; le personnel la crée avec sa carte de visite.
                                                         isCivilian && toolAccess.signature && { key: 'signature', icon: 'fas fa-signature', label: 'Ma signature', onClick: closeAnd(() => setShowBusinessCard(true)) },
                                                         toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
+                                                        isCivilian && currentEmployee && { key: 'deleteAccount', icon: 'fas fa-user-slash', label: 'Supprimer mon compte', onClick: closeAnd(() => { setDeleteAccountMode('civil'); setShowDeleteAccount(true); }) },
                                                         toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes documents administratifs', onClick: closeAnd(() => setShowMyContracts(true)) },
                                                         // Dossier candidat : consultable par tout compte Civil ou employé ; seuls les Civils et les employés avec le statut de recrutement interne peuvent agir dessus.
                                                         (isCivilian || !!staffProfile) && { key: 'candidate', icon: 'fas fa-file-signature', label: 'Mon dossier candidat', onClick: closeAnd(() => { loadMyJobApplications(); setShowMyJobApplications(true); }) },
@@ -2631,7 +2646,8 @@ function MainApp({
                             show={showDirectory}
                             canSeeDirectory={!!toolAccess.directory}
                             onHide={() => setShowDirectory(false)}
-                            access={{ savedReports: !!isAdmin && toolAccess.savedReports, patientDossier: !!toolAccess.patientDossier, applications: !!toolAccess.recruitment, discipline: !!toolAccess.disciplineManage }}
+                            access={{ savedReports: !!isAdmin && toolAccess.savedReports, patientDossier: !!toolAccess.patientDossier, applications: !!toolAccess.recruitment, discipline: !!toolAccess.disciplineManage, admin: !!isAdmin }}
+                            onOpenAdmin={(search, userTab) => { setShowDirectory(false); navigate('/admin', { state: { section: 'users', search, userTab } }); }}
                             onOpenSavedReports={(employeeName) => { setShowDirectory(false); setDirectoryEmployeeReports(employeeName); if (!showSavedReports) toggleSavedReports(); }}
                             onOpenPatientDossier={(patientID) => { setShowDirectory(false); setDirectoryPatientId(patientID); setShowPatientDossierModal(true); }}
                             onOpenApplications={(search) => { setShowDirectory(false); setDirectoryApplicantSearch(search); setShowRecruitmentManager(true); }}
@@ -2720,6 +2736,13 @@ function MainApp({
                         <MyProfileModal
                             show={showMyProfile}
                             onHide={() => setShowMyProfile(false)}
+                            showNotification={showNotification}
+                            onRequestDeletion={() => { setShowMyProfile(false); setDeleteAccountMode('staff'); setShowDeleteAccount(true); }}
+                        />
+                        <DeleteAccountModal
+                            show={showDeleteAccount}
+                            onHide={() => setShowDeleteAccount(false)}
+                            mode={deleteAccountMode}
                             showNotification={showNotification}
                         />
                         <PatientInvoiceNotifier showNotification={showNotification} />

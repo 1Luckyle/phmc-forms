@@ -62,10 +62,16 @@ const describe = ({ field, anchor, name, type }) => {
             return { text: info.help, requirement, reason: REASONS[lockedReasonOf(version, name)] || '' };
         }
     }
+    // Fenêtres hors formulaires de rapport (fiche, signalement, demande…) : une zone `data-guide-zone` donne les deux codes couleur et l'infobulle ;
+    // `data-guide="texte"` sur un champ remplace l'indication par défaut (« À renseigner : libellé »).
+    const customHost = field.closest('[data-guide]') || (anchor && anchor.closest ? anchor.closest('[data-guide]') : null);
+    const custom = customHost ? customHost.getAttribute('data-guide') : '';
+    const inGuideZone = !!field.closest('[data-guide-zone]');
     const label = labelOf(field, anchor).replace(/[:*]+\s*$/, '').trim();
-    if (!label) return null;
-    const mandatory = field.required || field.getAttribute('aria-required') === 'true';
-    return { text: `À renseigner : ${label}.`, requirement: mandatory ? 'required' : '', reason: '' };
+    if (!label && !custom) return null;
+    // `data-required` sur un conteneur : rend obligatoires les champs qu'il contient (listes react-select, dont le champ caché n'a pas `required`).
+    const mandatory = field.required || field.getAttribute('aria-required') === 'true' || !!field.closest('[data-required]');
+    return { text: custom || `À renseigner : ${label}.`, requirement: mandatory ? 'required' : (inGuideZone ? 'optional' : ''), reason: '' };
 };
 
 const FieldGuide = () => {
@@ -175,7 +181,44 @@ const FieldGuide = () => {
                 optionalMarked.forEach((el) => { if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
             });
         };
-        const scheduleMarks = () => { if (!raf) raf = requestAnimationFrame(refreshMarks); };
+        // ── Zones balisées `data-guide-zone` (fenêtres autres que les formulaires de rapport) ──
+        // ROUGE = champ `required` encore vide ; BLEU = champ facultatif encore vide. Un champ rempli, en lecture seule, désactivé, ou placé dans
+        // `data-no-mark` (barres de recherche, filtres…) n'est jamais marqué. Les listes déroulantes (react-select) doivent porter un `name`.
+        const refreshGuideZones = () => {
+            document.querySelectorAll('[data-guide-zone]').forEach((zone) => {
+                const groups = new Map();
+                let anonymous = 0;
+                zone.querySelectorAll('input, textarea, select').forEach((field) => {
+                    if (field.closest('[data-no-mark]')) return;
+                    if ((SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.readOnly || field.disabled) return;
+                    let target = field;
+                    if (field.type === 'hidden') {
+                        const container = field.closest('[class*="-container"]');
+                        if (!container || !field.name) return;
+                        target = container.querySelector('[class*="-control"]') || container;
+                    } else if (field.closest('[class*="-container"]') && !field.name) {
+                        return;
+                    }
+                    const key = field.name || `__anonyme${anonymous++}`;
+                    const entry = groups.get(key) || { targets: [], filled: false, required: false };
+                    entry.targets.push(target);
+                    if (String(field.value || '').trim() !== '') entry.filled = true;
+                    if (field.required || field.getAttribute('aria-required') === 'true' || field.closest('[data-required]')) entry.required = true;
+                    groups.set(key, entry);
+                });
+                const red = new Set();
+                const blue = new Set();
+                groups.forEach((entry) => {
+                    if (entry.filled) return;
+                    entry.targets.forEach((target) => (entry.required ? red : blue).add(target));
+                });
+                zone.querySelectorAll('[data-req-empty]').forEach((el) => { if (!red.has(el)) el.removeAttribute('data-req-empty'); });
+                zone.querySelectorAll('[data-opt-empty]').forEach((el) => { if (!blue.has(el)) el.removeAttribute('data-opt-empty'); });
+                red.forEach((el) => { if (el.getAttribute('data-req-empty') !== '1') el.setAttribute('data-req-empty', '1'); });
+                blue.forEach((el) => { if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
+            });
+        };
+        const scheduleMarks = () => { if (!raf) raf = requestAnimationFrame(() => { refreshMarks(); refreshGuideZones(); }); };
 
         document.addEventListener('mouseover', onOver);
         document.addEventListener('mouseout', onOut);
@@ -188,7 +231,7 @@ const FieldGuide = () => {
         const observer = new MutationObserver(scheduleMarks);
         observer.observe(document.body, { childList: true, subtree: true });
         const unsubscribe = subscribeFormOverrides(scheduleMarks);
-        const poll = setInterval(() => { if (!document.hidden && document.querySelector('[data-form-zone]')) scheduleMarks(); }, 1000);
+        const poll = setInterval(() => { if (!document.hidden && (document.querySelector('[data-form-zone]') || document.querySelector('[data-guide-zone]'))) scheduleMarks(); }, 1000);
         scheduleMarks();
 
         return () => {

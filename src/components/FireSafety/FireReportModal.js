@@ -34,17 +34,18 @@ const FireReportModal = ({ show, onHide, showNotification }) => {
 
     return (
         <BaseModal isOpen={show} onClose={onHide} title="Signaler un problème de sécurité incendie" zIndex={1100} className="dark-ui">
+            <div data-guide-zone>
             <p className="text-muted small">Issue de secours encombrée, extincteur absent ou périmé, alarme ou détecteur défaillant… Décrivez ce que vous avez vu : les administrateurs s'en occupent.</p>
             <Form.Group className="mb-2">
                 <Form.Label>Étage et lieu</Form.Label>
-                <Form.Select value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value, lieu: '' })}>
+                <Form.Select name="etage" required data-guide="L'étage (ou le parking, l'extérieur) où se trouve le problème." value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value, lieu: '' })}>
                     <option value="">Choisir l'étage…</option>
                     {BUILDING_FLOORS.map((entry) => <option key={entry.label} value={entry.label}>{entry.label}</option>)}
                     <option value="Parking">Parking</option>
                     <option value="Extérieur du bâtiment">Extérieur du bâtiment</option>
                 </Form.Select>
                 {floorByLabel(form.etage) && (
-                    <Form.Select className="mt-2" value={form.lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} aria-label="Lieu précis">
+                    <Form.Select className="mt-2" name="lieu" data-guide="Facultatif : la pièce ou la zone précise de l'étage." value={form.lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} aria-label="Lieu précis">
                         <option value="">Lieu précis (facultatif)…</option>
                         {floorByLabel(form.etage).zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
                     </Form.Select>
@@ -52,17 +53,18 @@ const FireReportModal = ({ show, onHide, showNotification }) => {
             </Form.Group>
             <Form.Group className="mb-2">
                 <Form.Label>Type de problème</Form.Label>
-                <Form.Select value={form.article} onChange={(e) => setForm({ ...form, article: e.target.value })}>
+                <Form.Select name="article" required data-guide="La nature du problème (issue encombrée, extincteur, alarme…). « Autre » si rien ne correspond." value={form.article} onChange={(e) => setForm({ ...form, article: e.target.value })}>
                     {Object.entries(ARTICLES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
                 <Form.Label>Description</Form.Label>
-                <Form.Control as="textarea" rows={3} maxLength={500} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="ex. Des cartons bloquent la porte de secours du couloir" />
+                <Form.Control as="textarea" rows={3} maxLength={500} name="description" required data-guide="Ce que vous avez vu, en quelques phrases (5 caractères minimum)." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="ex. Des cartons bloquent la porte de secours du couloir" />
             </Form.Group>
             <Button variant="danger" onClick={submit} disabled={busy || !form.etage.trim() || form.description.trim().length < 5}>
                 {busy ? <Spinner as="span" animation="border" size="sm" /> : <><i className="fas fa-triangle-exclamation me-1"></i>Signaler</>}
             </Button>
+            </div>
         </BaseModal>
     );
 };

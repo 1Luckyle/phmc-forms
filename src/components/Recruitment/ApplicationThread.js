@@ -105,8 +105,9 @@ const ApplicationThread = ({ application, staff, authorName, authorRole, onSent,
                             ))}
                         </div>
                     )}
-                    <form className="cctv-reply" onSubmit={send}>
+                    <form className="cctv-reply" onSubmit={send} data-guide-zone>
                         <textarea
+                            name="messageCandidature" required data-guide={staff ? 'Votre message au candidat.' : 'Votre message au recrutement.'}
                             rows={3} value={text} onChange={(e) => setText(e.target.value)} disabled={busy}
                             placeholder={staff ? 'Votre message au candidat…' : 'Votre message au recrutement…'}
                         />

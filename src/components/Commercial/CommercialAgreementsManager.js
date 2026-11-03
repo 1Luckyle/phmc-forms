@@ -12,6 +12,8 @@ import { Alert, Badge, Button, Dropdown, Form, Spinner, Table } from 'react-boot
 import Select from 'react-select';
 import * as Sentry from '@sentry/react';
 import '../DarkUi.css';
+import '../Contracts/Contracts.css';
+import BaseModal from '../BaseModal';
 import ContractDocument from '../Contracts/ContractDocument';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
@@ -93,17 +95,18 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
         const value = champs[field.key];
         const id = `ac-${field.key}`;
         const control = (() => {
-            if (field.type === 'textarea') return <Form.Control id={id} as="textarea" rows={3} value={value || ''} placeholder={field.placeholder} onChange={(e) => set(field.key, e.target.value)} />;
+            const common = { name: field.key, required: !!field.required, 'data-guide': field.help || undefined };
+            if (field.type === 'textarea') return <Form.Control id={id} {...common} as="textarea" rows={3} value={value || ''} placeholder={field.placeholder} onChange={(e) => set(field.key, e.target.value)} />;
             if (field.type === 'select') {
                 return (
-                    <Form.Select id={id} value={value || ''} onChange={(e) => set(field.key, e.target.value)}>
+                    <Form.Select id={id} {...common} value={value || ''} onChange={(e) => set(field.key, e.target.value)}>
                         {!field.options.some((option) => option.value === value) && <option value="">— Choisir —</option>}
                         {field.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </Form.Select>
                 );
             }
             if (field.type === 'checkbox') return <Form.Check id={id} type="checkbox" label={field.label} checked={!!value} onChange={(e) => set(field.key, e.target.checked)} />;
-            return <Form.Control id={id} type={field.type === 'number' ? 'number' : field.type} min={field.type === 'number' ? 0 : undefined} value={value ?? ''} placeholder={field.placeholder} onChange={(e) => set(field.key, e.target.value)} />;
+            return <Form.Control id={id} {...common} type={field.type === 'number' ? 'number' : field.type} min={field.type === 'number' ? 0 : undefined} value={value ?? ''} placeholder={field.placeholder} onChange={(e) => set(field.key, e.target.value)} />;
         })();
         return (
             <Form.Group key={field.key} className="mb-2">
@@ -116,12 +119,8 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
 
     return (
         <div>
-            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h5 className="mb-0"><i className={`fas ${AGREEMENT_TYPES[type].icon} me-2`}></i>{agreement ? 'Modifier le brouillon' : 'Nouvel accord'} · {AGREEMENT_TYPES[type].label}</h5>
-                <Button variant="outline-secondary" size="sm" onClick={onCancel} disabled={busy}><i className="fas fa-arrow-left me-1"></i>Retour à la liste</Button>
-            </div>
             <div className="row g-3">
-                <div className="col-12 col-xl-6">
+                <div className="col-12 col-lg-6">
                     {groups.map(([group, groupFields]) => (
                         <fieldset key={group} className="border rounded p-3 mb-3" style={{ borderColor: '#30363d' }}>
                             <legend className="float-none w-auto px-2 fs-6">{group}</legend>
@@ -130,6 +129,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
                                 <Form.Group className="mb-2">
                                     <Form.Label>Compte de la Partie (facultatif)</Form.Label>
                                     <Select
+                                        name="partieCompte"
                                         options={accounts}
                                         value={partner}
                                         onChange={(option) => setPartnerUid(option ? option.value : '')}
@@ -148,9 +148,10 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
                     <div className="d-flex gap-2 flex-wrap">
                         <Button variant="primary" onClick={() => save(false)} disabled={busy}>{busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-floppy-disk me-1"></i>Enregistrer le brouillon</>}</Button>
                         <Button variant="success" onClick={() => save(true)} disabled={busy}><i className="fas fa-paper-plane me-1"></i>Enregistrer et envoyer</Button>
+                        <Button variant="secondary" onClick={onCancel} disabled={busy}>Annuler</Button>
                     </div>
                 </div>
-                <div className="col-12 col-xl-6">
+                <div className="col-12 col-lg-6">
                     <div className="small text-muted mb-1">Aperçu du document (mis à jour au fil de la saisie)</div>
                     <ContractDocument bbCode={preview} title={champs.titre || 'Accord commercial'} />
                 </div>
@@ -186,14 +187,8 @@ const AgreementView = ({ agreement, issuer, showNotification, onBack, onEdit, on
 
     return (
         <div>
-            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h5 className="mb-0">
-                    <i className={`fas ${AGREEMENT_TYPES[agreement.type].icon} me-2`}></i>{agreement.champs.titre || 'Accord commercial'}
-                    <Badge bg={status.variant} className="ms-2">{status.label}</Badge>
-                </h5>
-                <Button variant="outline-secondary" size="sm" onClick={onBack}><i className="fas fa-arrow-left me-1"></i>Retour à la liste</Button>
-            </div>
             <div className="small text-muted mb-2">
+                <Badge bg={status.variant} className="me-2">{status.label}</Badge>
                 {AGREEMENT_TYPES[agreement.type].label} · {agreement.reference ? `Réf. ${agreement.reference} · ` : ''}Partie : <strong>{agreement.champs.partieNom || '—'}</strong>
                 {agreement.partieCompteNom ? ` (compte : ${agreement.partieCompteNom})` : ' (sans compte)'} · créé par {agreement.creeParNom || '—'}
                 {agreement.envoyeLe ? ` · envoyé le ${formatDate(agreement.envoyeLe)}` : ''}{agreement.signeLe ? ` · signé le ${formatDate(agreement.signeLe)}` : ''}
@@ -328,51 +323,18 @@ const CommercialAgreementsManager = ({ showNotification }) => {
     });
     const current = screen.id ? agreements.find((agreement) => agreement.id === screen.id) : null;
 
-    if (screen.name === 'edit') {
-        return (
-            <AgreementEditor
-                type={screen.type}
-                agreement={current}
-                accounts={accounts}
-                issuer={issuer}
-                showNotification={showNotification}
-                onCancel={() => setScreen(current ? { name: 'view', id: current.id } : { name: 'list' })}
-                onSaved={async (id) => { await load(); setScreen({ name: 'view', id }); }}
-            />
-        );
-    }
-    if (screen.name === 'view' && current) {
-        return (
-            <AgreementView
-                agreement={current}
-                issuer={issuer}
-                showNotification={showNotification}
-                onBack={() => setScreen({ name: 'list' })}
-                onEdit={() => setScreen({ name: 'edit', id: current.id, type: current.type })}
-                onChanged={load}
-            />
-        );
-    }
+    const closeScreen = () => setScreen({ name: 'list' });
+    const editorOpen = screen.name === 'edit';
+    const viewOpen = screen.name === 'view' && !!current;
 
     return (
-        <div>
+        <div className="dark-ui">
             <p className="text-muted small">
                 Contrats avec des entreprises, fournisseurs, prestataires ou partenaires. Chaque accord suit un modèle qui renvoie aux articles du Code Civil (personnes morales, représentation et contrats)
                 et du Code Pénal ; l'écrit est obligatoire à partir de 100 000 $ ou pour une location immobilière (art. 206).
             </p>
-            <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
-                <Dropdown>
-                    <Dropdown.Toggle variant="success"><i className="fas fa-plus me-1"></i>Nouvel accord</Dropdown.Toggle>
-                    <Dropdown.Menu>
-                        {Object.entries(AGREEMENT_TYPES).map(([key, info]) => (
-                            <Dropdown.Item key={key} onClick={() => setScreen({ name: 'edit', type: key })}>
-                                <i className={`fas ${info.icon} me-2`}></i><strong>{info.short}</strong>
-                                <small className="d-block text-muted" style={{ maxWidth: 320, whiteSpace: 'normal' }}>{info.help}</small>
-                            </Dropdown.Item>
-                        ))}
-                    </Dropdown.Menu>
-                </Dropdown>
-                <Form.Control style={{ maxWidth: 260 }} placeholder="Rechercher (intitulé, partie, réf.)" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <div className="d-flex flex-wrap gap-2 align-items-center mb-3" data-no-mark>
+                <Form.Control type="search" style={{ maxWidth: 300 }} placeholder="Rechercher (intitulé, partie, réf.)…" value={query} onChange={(e) => setQuery(e.target.value)} />
                 <Form.Select style={{ maxWidth: 220 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Statut">
                     <option value="all">Tous les statuts</option>
                     {Object.entries(AGREEMENT_STATUS).map(([key, info]) => <option key={key} value={key}>{info.label}</option>)}
@@ -381,6 +343,18 @@ const CommercialAgreementsManager = ({ showNotification }) => {
                     <option value="all">Tous les types</option>
                     {Object.entries(AGREEMENT_TYPES).map(([key, info]) => <option key={key} value={key}>{info.short}</option>)}
                 </Form.Select>
+                <Dropdown>
+                    <Dropdown.Toggle variant="success" size="sm" disabled={loading}><i className="fas fa-plus-circle me-1"></i>Nouvel accord</Dropdown.Toggle>
+                    <Dropdown.Menu className="contracts-menu" popperConfig={{ strategy: 'fixed' }}>
+                        {Object.entries(AGREEMENT_TYPES).map(([key, info]) => (
+                            <Dropdown.Item key={key} onClick={() => setScreen({ name: 'edit', type: key })}>
+                                <i className={`fas ${info.icon} me-2`}></i><strong>{info.short}</strong>
+                                <small className="d-block" style={{ maxWidth: 320, whiteSpace: 'normal', color: '#8b949e' }}>{info.help}</small>
+                            </Dropdown.Item>
+                        ))}
+                    </Dropdown.Menu>
+                </Dropdown>
+                <Button variant="outline-secondary" size="sm" onClick={load} disabled={loading} title="Actualiser"><i className="fas fa-sync-alt"></i></Button>
             </div>
 
             {loading && <Spinner animation="border" size="sm" />}
@@ -388,7 +362,8 @@ const CommercialAgreementsManager = ({ showNotification }) => {
             {!loading && !error && filtered.length === 0 && <p className="text-muted">Aucun accord{agreements.length ? ' ne correspond à ces filtres' : ' pour le moment'}.</p>}
 
             {filtered.length > 0 && (
-                <Table hover responsive size="sm" variant="dark" className="align-middle">
+                <div className="table-responsive">
+                <Table hover size="sm" variant="dark" className="align-middle">
                     <thead>
                         <tr><th>Accord</th><th>Partie</th><th>Type</th><th>Montant</th><th>Statut</th><th>Mis à jour</th><th></th></tr>
                     </thead>
@@ -401,12 +376,65 @@ const CommercialAgreementsManager = ({ showNotification }) => {
                                 <td>{money(agreement.champs.montant)}</td>
                                 <td><Badge bg={AGREEMENT_STATUS[agreement.statut].variant}>{AGREEMENT_STATUS[agreement.statut].label}</Badge></td>
                                 <td>{formatDate(agreement.modifieLe || agreement.creeLe)}</td>
-                                <td className="text-end"><Button size="sm" variant="outline-info" onClick={() => setScreen({ name: 'view', id: agreement.id })}>Ouvrir</Button></td>
+                                <td>
+                                    <div className="contracts-row-actions">
+                                        <Button size="sm" variant="outline-light" onClick={() => setScreen({ name: 'view', id: agreement.id })}>
+                                            {agreement.statut === 'brouillon' ? <><i className="fas fa-edit me-1"></i>Modifier</> : <><i className="fas fa-eye me-1"></i>Voir</>}
+                                        </Button>
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </Table>
+                </div>
             )}
+
+            <BaseModal
+                isOpen={editorOpen}
+                onClose={() => setScreen(current ? { name: 'view', id: current.id } : { name: 'list' })}
+                title={editorOpen ? `${current ? 'Modifier le brouillon' : 'Nouvel accord'} — ${AGREEMENT_TYPES[screen.type].label}` : ''}
+                modalSize="xl"
+                zIndex={1100}
+                className="dark-ui"
+                closeOnOverlayClick={false}
+            >
+                {editorOpen && (
+                    <div data-guide-zone>
+                        <AgreementEditor
+                            key={`${screen.type}-${screen.id || 'nouveau'}`}
+                            type={screen.type}
+                            agreement={current}
+                            accounts={accounts}
+                            issuer={issuer}
+                            showNotification={showNotification}
+                            onCancel={() => setScreen(current ? { name: 'view', id: current.id } : { name: 'list' })}
+                            onSaved={async (id) => { await load(); setScreen({ name: 'view', id }); }}
+                        />
+                    </div>
+                )}
+            </BaseModal>
+
+            <BaseModal
+                isOpen={viewOpen}
+                onClose={closeScreen}
+                title={viewOpen ? (current.champs.titre || 'Accord commercial') : ''}
+                modalSize="large"
+                zIndex={1100}
+                className="dark-ui"
+            >
+                {viewOpen && (
+                    <AgreementView
+                        key={current.id}
+                        agreement={current}
+                        issuer={issuer}
+                        showNotification={showNotification}
+                        onBack={closeScreen}
+                        onEdit={() => setScreen({ name: 'edit', id: current.id, type: current.type })}
+                        onChanged={load}
+                    />
+                )}
+            </BaseModal>
         </div>
     );
 };

@@ -15,7 +15,7 @@ import { extraRanksOf, DOCTOR_RANKS } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import ZipCityField from './ZipCityField';
 
-const MyProfileModal = ({ show, onHide, showNotification }) => {
+const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) => {
     const { currentEmployee, staffProfile, staffName, updateLocalStaffProfile } = useEmployeeAuth();
     const [firstName, setFirstName] = useState('');
     const [middleName, setMiddleName] = useState('');
@@ -87,7 +87,7 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                     Aucune fiche du personnel n'est liée à votre compte : il n'y a rien à modifier ici.
                 </Alert>
             ) : (
-                <>
+                <div data-guide-zone>
                     <div className="mb-3">
                         <div className="fw-semibold">{staffName}</div>
                         <small className="text-muted">
@@ -100,17 +100,17 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                     {canHaveTitle && (
                         <Form.Group className="mb-2">
                             <Form.Label>Titre</Form.Label>
-                            <TitlePrefixPicker firstName={firstName} onChange={setFirstName} />
+                            <div data-no-mark><TitlePrefixPicker firstName={firstName} onChange={setFirstName} /></div>
                         </Form.Group>
                     )}
                     <div className="d-flex gap-3 flex-wrap">
                         <Form.Group className="mb-3 flex-grow-1">
                             <Form.Label>Prénom</Form.Label>
-                            <Form.Control value={firstName} maxLength={40} onChange={(e) => setFirstName(e.target.value)} />
+                            <Form.Control name="profilePrenom" required data-guide="Votre prénom, tel qu'il apparaît sur vos rapports." value={firstName} maxLength={40} onChange={(e) => setFirstName(e.target.value)} />
                         </Form.Group>
                         <Form.Group className="mb-3 flex-grow-1">
                             <Form.Label>Nom</Form.Label>
-                            <Form.Control value={lastName} maxLength={40} onChange={(e) => setLastName(e.target.value)} />
+                            <Form.Control name="profileNom" required data-guide="Votre nom de famille, tel qu'il apparaît sur vos rapports." value={lastName} maxLength={40} onChange={(e) => setLastName(e.target.value)} />
                         </Form.Group>
                     </div>
                     {nameChanged && (
@@ -121,12 +121,12 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
 
                     <Form.Group className="mb-3">
                         <Form.Label>Deuxième prénom <small className="text-muted">(facultatif)</small></Form.Label>
-                        <Form.Control value={middleName} maxLength={40} onChange={(e) => setMiddleName(e.target.value)} />
+                        <Form.Control name="profileDeuxiemePrenom" data-guide="Facultatif : votre deuxième prénom, pour pré-remplir vos dossiers médicaux." value={middleName} maxLength={40} onChange={(e) => setMiddleName(e.target.value)} />
                     </Form.Group>
                     <div className="d-flex gap-3 flex-wrap">
                         <Form.Group className="mb-3" style={{ flex: '2 1 220px' }}>
                             <Form.Label>Adresse <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Control value={address} maxLength={150} onChange={(e) => setAddress(e.target.value)} />
+                            <Form.Control name="profileAdresse" data-guide="Facultatif : votre adresse, pour pré-remplir vos dossiers médicaux." value={address} maxLength={150} onChange={(e) => setAddress(e.target.value)} />
                         </Form.Group>
                         <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
                             <Form.Label>Ville / code postal</Form.Label>
@@ -136,11 +136,11 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                     <div className="d-flex gap-3 flex-wrap">
                         <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
                             <Form.Label>Date de naissance <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Control type="date" value={dateOfBirth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDateOfBirth(e.target.value)} />
+                            <Form.Control type="date" name="profileNaissance" data-guide="Facultatif : votre date de naissance, pour pré-remplir vos dossiers médicaux." value={dateOfBirth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDateOfBirth(e.target.value)} />
                         </Form.Group>
                         <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
                             <Form.Label>Genre à l'état civil <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Select value={gender} onChange={(e) => setGender(e.target.value)}>
+                            <Form.Select name="profileGenre" data-guide="Facultatif : votre genre à l'état civil, pour pré-remplir vos dossiers médicaux." value={gender} onChange={(e) => setGender(e.target.value)}>
                                 <option value="">—</option>
                                 <option value="Male">Homme</option>
                                 <option value="Female">Femme</option>
@@ -151,11 +151,11 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                     <Form.Text className="text-muted d-block mb-3">Ces deux informations servent à pré-remplir vos propres dossiers médicaux (bouton « C'est pour moi »).</Form.Text>
                     <Form.Group className="mb-3">
                         <Form.Label>Téléphone</Form.Label>
-                        <Form.Control value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />
+                        <Form.Control name="profileTelephone" data-guide="Facultatif : votre numéro de téléphone en jeu." value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Discord</Form.Label>
-                        <Form.Control value={discord} maxLength={64} onChange={(e) => setDiscord(e.target.value)} />
+                        <Form.Control name="profileDiscord" data-guide="Facultatif : votre identifiant Discord." value={discord} maxLength={64} onChange={(e) => setDiscord(e.target.value)} />
                     </Form.Group>
                     {error && <Alert variant="danger" className="py-2">{error}</Alert>}
                     <div className="d-flex justify-content-end mb-4">
@@ -165,11 +165,23 @@ const MyProfileModal = ({ show, onHide, showNotification }) => {
                     </div>
 
                     <hr />
-                    <EmailChangeFlow
-                        currentEmail={staffProfile.email || currentEmployee.email}
-                        onChanged={(email) => updateLocalStaffProfile({ email })}
-                    />
-                </>
+                    <div data-no-mark>
+                        <EmailChangeFlow
+                            currentEmail={staffProfile.email || currentEmployee.email}
+                            onChanged={(email) => updateLocalStaffProfile({ email })}
+                        />
+                    </div>
+
+                    {onRequestDeletion && (
+                        <div data-no-mark>
+                            <hr />
+                            <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <small className="text-muted">Départ du PHMC ou compte en double ? Un administrateur traite la demande ; vos archives sont conservées.</small>
+                                <Button variant="outline-danger" size="sm" onClick={onRequestDeletion}><i className="fas fa-user-slash me-1"></i>Demander la suppression de mon compte</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
         </BaseModal>
     );

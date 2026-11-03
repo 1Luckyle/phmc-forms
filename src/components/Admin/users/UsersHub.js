@@ -92,8 +92,8 @@ const nameOfCivilian = (c) => `${c.firstName || ''} ${c.lastName || ''}`.trim() 
 // Quatre familles : PHMC Soignant, PHMC Administration & Direction, PHMC Polyvalent, DMEC. Chaque ligne
 // montre la famille, le rôle (en français), le service dirigé d'un Chef de Service et les droits
 // supplémentaires (Recruteur, Admin).
-const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, internalGrants = {}, adminEmail, showNotification, reload }) => {
-    const [query, setQuery] = useState('');
+const StaffTab = ({ staff, civilUids, recruiterUids, adminUids, internalGrants = {}, adminEmail, showNotification, reload, initialSearch = '' }) => {
+    const [query, setQuery] = useState(initialSearch);
     const [family, setFamily] = useState('all');
     const [editing, setEditing] = useState(null);
     const [adding, setAdding] = useState(false);
@@ -296,8 +296,8 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
 // ───────────────────────────── Civils (comptes Civils purs) ─────────────────────────────
 // Un Civil « pur » n'a pas de fiche du personnel. Une personne qui a une fiche (y compris un recruteur) est
 // dans l'onglet Personnel, même si elle garde aussi son profil Civil.
-const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, internalGrants = {}, adminEmail, showNotification, reload }) => {
-    const [query, setQuery] = useState('');
+const CiviliansTab = ({ civilians, recruiterUids, candidateRoles = {}, internalGrants = {}, adminEmail, showNotification, reload, initialSearch = '' }) => {
+    const [query, setQuery] = useState(initialSearch);
     const [editing, setEditing] = useState(null);
     const [toStaff, setToStaff] = useState(null); // { civilian, recruiter }
     const [deleting, setDeleting] = useState(null);
@@ -517,8 +517,8 @@ const TABS = [
     { key: 'tools', label: 'Outils', icon: 'fa-tools' },
 ];
 
-const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
-    const [tab, setTab] = useState('staff');
+const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools, initialTab, initialSearch = '' }) => {
+    const [tab, setTab] = useState(['staff', 'civilians', 'recruiters', 'tools'].includes(initialTab) ? initialTab : 'staff');
     const [staff, setStaff] = useState([]);
     const [civilians, setCivilians] = useState([]);
     const [recruiterUids, setRecruiterUids] = useState({});
@@ -587,8 +587,8 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools }) => {
                 {loadError && <Alert variant="danger">Chargement impossible : {loadError}</Alert>}
                 {isLoading && tab !== 'tools' ? <div className="text-center py-5"><Spinner animation="border" /></div> : (
                     <div className="uh-panel">
-                        {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} recruiterUids={recruiterUids} adminUids={adminUids} internalGrants={internalGrants} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
-                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} candidateRoles={candidateRoles} internalGrants={internalGrants} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
+                        {tab === 'staff' && <StaffTab staff={staff} civilUids={civilUids} recruiterUids={recruiterUids} adminUids={adminUids} internalGrants={internalGrants} adminEmail={adminEmail} showNotification={showNotification} reload={reload} initialSearch={initialTab === 'staff' || !initialTab ? initialSearch : ''} />}
+                        {tab === 'civilians' && <CiviliansTab civilians={pureCivilians} recruiterUids={recruiterUids} candidateRoles={candidateRoles} internalGrants={internalGrants} adminEmail={adminEmail} showNotification={showNotification} reload={reload} initialSearch={initialTab === 'civilians' ? initialSearch : ''} />}
                         {tab === 'recruiters' && <RecruitersTab staff={staff} civilians={civilians} recruiterUids={recruiterUids} adminEmail={adminEmail} showNotification={showNotification} reload={reload} />}
                         {tab === 'tools' && (
                             <>

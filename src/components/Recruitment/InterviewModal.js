@@ -118,30 +118,34 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
             <Modal.Header closeButton>
                 <Modal.Title>{interview ? "Modifier l'entretien" : 'Planifier un entretien'}</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body data-guide-zone>
                 <p className="cctv-muted">
                     Candidat : <strong>{application?.nomCandidat}</strong> — {application?.poste}. Le candidat est prévenu par mail de chaque planification, modification ou annulation.
                 </p>
                 <Form.Group className="mb-3">
                     <Form.Label>Date et heure *</Form.Label>
-                    <Form.Control type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} disabled={busy} style={{ colorScheme: 'dark' }} />
+                    <Form.Control type="datetime-local" name="entretienDate" required data-guide="La date et l'heure de l'entretien avec le candidat." value={when} onChange={(e) => setWhen(e.target.value)} disabled={busy} style={{ colorScheme: 'dark' }} />
                 </Form.Group>
                 <Form.Group className="mb-3">
                     <Form.Label>Qui mène le recrutement ? *</Form.Label>
+                    <div data-required data-guide="La personne du personnel qui reçoit le candidat (par défaut : vous).">
                     <Select
-                        value={lead} onChange={setLead} options={people.length ? people : [me]} isDisabled={busy}
+                        name="entretienResponsable" value={lead} onChange={setLead} options={people.length ? people : [me]} isDisabled={busy}
                         styles={selectStyles} menuPortalTarget={document.body} placeholder="Choisir une personne du personnel…"
                         noOptionsMessage={() => 'Aucune personne trouvée'}
                     />
+                    </div>
                     <Form.Text className="cctv-muted">Par défaut : vous. Choisissez quelqu'un d'autre si c'est lui ou elle qui reçoit le candidat.</Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3">
                     <Form.Label>Autres personnes présentes</Form.Label>
+                    <div data-guide="Facultatif : les autres personnes présentes à l'entretien.">
                     <Select
-                        isMulti value={others} onChange={(value) => setOthers(value || [])} options={peopleOptions} isDisabled={busy}
+                        name="entretienPresents" isMulti value={others} onChange={(value) => setOthers(value || [])} options={peopleOptions} isDisabled={busy}
                         styles={selectStyles} menuPortalTarget={document.body} placeholder="Ajouter des personnes présentes (facultatif)…"
                         noOptionsMessage={() => 'Aucune personne trouvée'}
                     />
+                    </div>
                 </Form.Group>
 
                 {hasAdministrative ? (
@@ -153,7 +157,7 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
                         <strong><i className="fas fa-file-signature me-2"></i>Aucun personnel administratif n'est prévu : décharge à signer</strong>
                         <p className="mt-2 mb-2" style={{ fontSize: '0.9em' }}>{DECHARGE_TEXT}</p>
                         <Form.Control
-                            type="text" value={signature} onChange={(e) => setSignature(e.target.value)} disabled={busy}
+                            type="text" name="entretienDecharge" required data-guide="Tapez votre nom complet pour signer la décharge." value={signature} onChange={(e) => setSignature(e.target.value)} disabled={busy}
                             placeholder={`Signature : tapez votre nom complet${actor?.name && !String(actor.name).includes('@') ? ` (${actor.name})` : ''}`}
                         />
                         <Form.Text style={{ color: '#c9d1d9' }}>

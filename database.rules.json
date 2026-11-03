@@ -685,6 +685,21 @@
       }
     },
 
+    // ─── Demandes de suppression de compte (personnel) ────────────────────────
+    // demandesSuppression/{uid} : { demandeLe, nom, email, rang, motif, statut: en_attente }. Un compte Civil se supprime lui-même (fonction
+    // deleteOwnCivilAccount) ; un membre du personnel envoie ICI une demande, traitée par un admin (Admin → Demandes de suppression), qui supprime
+    // le compte (archives conservées) ou refuse. Lecture : l'auteur et les admins ; création / annulation : l'auteur (personnel) ; le reste : les admins.
+    "demandesSuppression": {
+      ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && ((!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('statut').val() === 'en_attente') || !newData.exists())))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['demandeLe', 'nom', 'statut']) && newData.child('demandeLe').isNumber() && newData.child('nom').isString() && newData.child('nom').val().length <= 120 && newData.child('statut').val() === 'en_attente' && (!newData.child('motif').exists() || (newData.child('motif').isString() && newData.child('motif').val().length <= 500)) && (!newData.child('email').exists() || (newData.child('email').isString() && newData.child('email').val().length <= 200)) && (!newData.child('rang').exists() || (newData.child('rang').isString() && newData.child('rang').val().length <= 120)))",
+        "demandeLe": {}, "nom": {}, "email": {}, "rang": {}, "motif": {}, "statut": {},
+        "$other": { ".validate": false }
+      }
+    },
+
     // ─── Recrutement interne (évolution interne du personnel) ─────────────────
     // Un employé ne peut pas candidater. Il demande un statut spécial (demandesMobilite/{uid}) ; un recruteur ou
     // un admin l'accepte (statutsMobilite/{uid} est alors posé) ou le refuse. Le statut rouvre les candidatures ;

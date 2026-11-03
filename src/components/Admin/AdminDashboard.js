@@ -12,6 +12,7 @@ import BingoPauseButton from './BingoPauseButton';
 import BingoResetSetting from './BingoResetSetting';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
+import PendingAccountDeletions from './PendingAccountDeletions';
 import { useDebug } from '../../contexts/DebugContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import UsersHub from './users/UsersHub';
@@ -147,7 +148,7 @@ const AdminDashboard = ({
     const imageCount = useImgbbQueueCount();
     const counts = useAdminCounts();
     const { bbcodeEnabled } = useSiteConfig();
-    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests };
+    const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests, deletions: counts.deletions };
 
     const {
         debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
@@ -286,6 +287,9 @@ const AdminDashboard = ({
             case 'pendingAccounts':
                 return <div className="adm-card"><div className="adm-card-body"><PendingAccountRequests showNotification={showInAppNotification} currentUser={currentUser} /></div></div>;
 
+            case 'accountDeletions':
+                return <div className="adm-card"><div className="adm-card-body"><PendingAccountDeletions showNotification={showInAppNotification} currentUser={currentUser} /></div></div>;
+
             case 'pendingModifications':
                 return <div className="adm-card"><div className="adm-card-body"><PendingModificationRequests showNotification={showInAppNotification} currentUser={currentUser} /></div></div>;
 
@@ -295,6 +299,8 @@ const AdminDashboard = ({
             case 'users':
                 return (
                     <UsersHub
+                        initialTab={location.state?.userTab}
+                        initialSearch={location.state?.search}
                         currentUser={currentUser}
                         showNotification={showInAppNotification}
                         onOpenMigrationTools={() => setShowUserManagementModal(true)}

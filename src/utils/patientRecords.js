@@ -55,7 +55,7 @@ export const reportCreatorOf = (report) => report?.creatorName || report?.origin
 
 // Liste les clés d'un chemin sans télécharger les données (API REST shallow). Retourne
 // null si c'est impossible (compte sans droit de lecture, réseau…).
-async function shallowKeys(path) {
+export async function shallowKeys(path) {
     try {
         const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
         const baseUrl = database.app.options.databaseURL;

@@ -29,6 +29,11 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'fiche profil changement',
             },
             {
+                key: 'accountDeletions', icon: 'fa-user-slash', label: 'Demandes de suppression', badge: 'deletions',
+                description: 'Demandes de suppression de compte du personnel (les archives sont conservées).',
+                keywords: 'suppression compte départ supprimer personnel',
+            },
+            {
                 key: 'siteRequests', icon: 'fa-inbox', label: 'Demandes du site', badge: 'requests',
                 description: 'Bugs, idées de fonctionnalités et propositions de nouveaux formulaires envoyés par les utilisateurs.',
                 keywords: 'bug fonctionnalité suggestion ticket formulaire idée',

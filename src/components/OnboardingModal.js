@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { formDefinitions } from '../formDefinitions';
 import { useWebhooks } from '../hooks/useWebhooks';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import { getToolAccess } from '../utils/viewAs';
 import { PHMC_RANKS, CORONER_RANKS, DOCTOR_RANKS, getRoleInfo } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import * as Sentry from "@sentry/react";
@@ -30,6 +31,8 @@ export const ONBOARDING_STEPS = {
     // civils ET candidatures).
     CIVIL_AUTH: 'civilAuth',
     FORM_PREVIEW: 'formPreview',
+    // Fonctionnalités accessibles avec le rôle choisi (annuaire, plan de l'hôpital, gestion…), après la liste des formulaires.
+    FEATURES: 'features',
     PRIVACY_POLICY: 'privacyPolicy',
     COMPLETE: 'complete'
 };
@@ -68,6 +71,36 @@ const RECOMMENDED_FORMS = {
     // Candidat : toutes les candidatures + les dossiers civils (son compte Civil les ouvre).
     [USER_TYPES.RECRUITMENT]: [50, 51, 52, 53, 54, 55, ...CIVIL_MEDICAL_FORMS],
     [USER_TYPES.OTHER]: 'ALL_FORMS' // Show all available forms
+};
+
+// Fonctionnalités présentées à l'étape « Vos fonctionnalités » (clés de getToolAccess, utils/viewAs.js).
+const FEATURE_CATALOG = [
+    { key: 'myProfile', icon: 'fa-id-badge', title: 'Mon profil', desc: 'Votre fiche du personnel : grade, coordonnées, services.' },
+    { key: 'myContracts', icon: 'fa-file-signature', title: 'Mes documents administratifs', desc: 'Contrats et documents envoyés par la Direction, à lire et à signer.' },
+    { key: 'myPatientFile', icon: 'fa-notes-medical', title: 'Mon dossier patient', desc: 'Vos propres dossiers médicaux.' },
+    { key: 'savedReports', icon: 'fa-folder-open', title: 'Rapports enregistrés', desc: 'Retrouvez, copiez, partagez et exportez vos rapports et formulaires.' },
+    { key: 'patientDossier', icon: 'fa-folder-tree', title: 'Dossier Patient', desc: 'Dossier médical de chaque patient, tous rapports confondus.' },
+    { key: 'directory', icon: 'fa-address-book', title: "Annuaire & plan de l'hôpital", desc: "Qui est qui au PHMC, et le plan des étages et des salles (consultation)." },
+    { key: 'ama', icon: 'fa-hand', title: 'EMS Contre Avis Médical', desc: 'Formulaire de refus de soins signé par le patient (réservé aux soignants).' },
+    { key: 'lawEnforcement', icon: 'fa-shield-halved', title: "Demandes des forces de l'ordre", desc: "Aide-mémoire et registre des demandes d'un agent (réquisitions, vidéosurveillance…)." },
+    { key: 'fireReport', icon: 'fa-fire-extinguisher', title: 'Signaler un problème incendie', desc: 'Signalez une anomalie de sécurité incendie aux administrateurs.' },
+    { key: 'takeHome', icon: 'fa-car', title: 'Take Home Car', desc: 'Demandez un véhicule de fonction et consultez le règlement.' },
+    { key: 'businessCard', icon: 'fa-id-card', title: 'Carte de visite', desc: 'Créez votre carte de visite du PHMC.' },
+    { key: 'signature', icon: 'fa-signature', title: 'Signature', desc: 'Créez votre signature pour vos documents et formulaires.' },
+    { key: 'bingo', icon: 'fa-dice', title: 'Bingo', desc: 'Le bingo du personnel.' },
+    { key: 'administratif', icon: 'fa-briefcase', title: 'Administratif', desc: 'Recrutement, sanctions et contrats commerciaux (selon votre grade).' },
+    { key: 'recruitment', icon: 'fa-user-plus', title: 'Gestion du recrutement', desc: 'Candidatures et contrats de travail (recruteurs).' },
+    { key: 'fireManage', icon: 'fa-clipboard-check', title: 'Gestion de la sécurité incendie', desc: 'Registre, non-conformités et exercices (Direction et administration).' },
+    { key: 'takeHomeManage', icon: 'fa-key', title: 'Take Home Car — gestion', desc: 'Accorder ou retirer un véhicule (Direction et administration).' },
+];
+const STAFF_FEATURES = ['myProfile', 'myContracts', 'myPatientFile', 'savedReports', 'directory', 'lawEnforcement', 'fireReport', 'takeHome', 'businessCard', 'signature', 'bingo'];
+const FEATURES_BY_TYPE = {
+    [USER_TYPES.CIVILIAN]: ['savedReports', 'signature'],
+    [USER_TYPES.PHMC_STAFF]: [...STAFF_FEATURES, 'patientDossier', 'ama'],
+    [USER_TYPES.ADMIN_STAFF]: [...STAFF_FEATURES, 'administratif', 'fireManage', 'takeHomeManage'],
+    [USER_TYPES.CORONER]: [...STAFF_FEATURES, 'patientDossier'],
+    [USER_TYPES.RECRUITMENT]: ['savedReports', 'signature'],
+    [USER_TYPES.OTHER]: FEATURE_CATALOG.map((feature) => feature.key),
 };
 
 // Rôles proposés à l'étape « rôle principal » selon le type de personnel.
@@ -124,7 +157,8 @@ const OnboardingModal = ({
 }) => {
     // Initialize webhook functions
     const { logWebhookToFirebase } = useWebhooks({}, { sha: 'onboarding' }, showNotification);
-    const { requestEmployeeAccount, loginEmployee, employeeProfile, currentEmployee } = useEmployeeAuth();
+    const employeeAuth = useEmployeeAuth();
+    const { requestEmployeeAccount, loginEmployee, employeeProfile, currentEmployee } = employeeAuth;
     const { gtawOnly } = useAuthMethodsConfig();
     const [currentStep, setCurrentStep] = useState(ONBOARDING_STEPS.WELCOME);
     const [selectedUserType, setSelectedUserType] = useState(null);
@@ -242,7 +276,7 @@ const OnboardingModal = ({
                         showNotification(
                             isCivilFlow
                                 ? 'Aucun personnage n\'a été trouvé sur ce compte GTA World.'
-                                : 'Aucun personnage membre de la faction PHMC n\'a été trouvé sur ce compte GTA World. Si vous n\'êtes pas membre du PHMC, utilisez plutôt les options Civil ou Candidat.',
+                                : 'Aucun personnage membre de la faction PHMC n\'a été trouvé sur ce compte GTA World. Si vous n\'êtes pas membre du PHMC, utilisez plutôt l\'option Civil (elle donne aussi accès aux candidatures).',
                             'warning'
                         );
                     } else if (isCivilFlow) {
@@ -362,6 +396,9 @@ const OnboardingModal = ({
                 setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
                 break;
             case ONBOARDING_STEPS.FORM_PREVIEW:
+                setCurrentStep(ONBOARDING_STEPS.FEATURES);
+                break;
+            case ONBOARDING_STEPS.FEATURES:
                 setCurrentStep(ONBOARDING_STEPS.PRIVACY_POLICY);
                 break;
             case ONBOARDING_STEPS.PRIVACY_POLICY:
@@ -395,8 +432,11 @@ const OnboardingModal = ({
                     setCurrentStep(ONBOARDING_STEPS.USER_TYPE);
                 }
                 break;
-            case ONBOARDING_STEPS.PRIVACY_POLICY:
+            case ONBOARDING_STEPS.FEATURES:
                 setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW);
+                break;
+            case ONBOARDING_STEPS.PRIVACY_POLICY:
+                setCurrentStep(ONBOARDING_STEPS.FEATURES);
                 break;
             case ONBOARDING_STEPS.COMPLETE:
                 setCurrentStep(ONBOARDING_STEPS.PRIVACY_POLICY);
@@ -915,8 +955,8 @@ const OnboardingModal = ({
         const hasExtraStep = [
             USER_TYPES.PHMC_STAFF, USER_TYPES.ADMIN_STAFF, USER_TYPES.CORONER, USER_TYPES.CIVILIAN, USER_TYPES.RECRUITMENT
         ].includes(selectedUserType);
-        const steps = [ONBOARDING_STEPS.WELCOME, ONBOARDING_STEPS.USER_TYPE, ONBOARDING_STEPS.ROLE_SPECIFIC, ONBOARDING_STEPS.FORM_PREVIEW, ONBOARDING_STEPS.PRIVACY_POLICY, ONBOARDING_STEPS.COMPLETE];
-        const totalSteps = hasExtraStep ? 6 : 5;
+        const steps = [ONBOARDING_STEPS.WELCOME, ONBOARDING_STEPS.USER_TYPE, ONBOARDING_STEPS.ROLE_SPECIFIC, ONBOARDING_STEPS.FORM_PREVIEW, ONBOARDING_STEPS.FEATURES, ONBOARDING_STEPS.PRIVACY_POLICY, ONBOARDING_STEPS.COMPLETE];
+        const totalSteps = hasExtraStep ? 7 : 6;
         const normalizedStep = currentStep === ONBOARDING_STEPS.CIVIL_AUTH ? ONBOARDING_STEPS.ROLE_SPECIFIC : currentStep;
         let currentStepIndex = steps.indexOf(normalizedStep) + 1;
 
@@ -993,7 +1033,7 @@ const OnboardingModal = ({
                     <i className="fas fa-user" style={userTypeIconStyle}></i>
                     <h4 style={userTypeButtonTitleStyle}>Civil</h4>
                     <p style={userTypeButtonDescStyle}>
-                        J'ai besoin de soumettre un formulaire sur le site (dossiers patients, autorisations médicales, etc.)
+                        J'ai besoin de soumettre un formulaire sur le site (dossiers patients, autorisations médicales, candidatures pour un poste au PHMC, etc.)
                     </p>
                 </button>
 
@@ -1042,22 +1082,6 @@ const OnboardingModal = ({
                     <h4 style={userTypeButtonTitleStyle}>DMEC</h4>
                     <p style={userTypeButtonDescStyle}>
                         Je m'occupe des services médico-légaux, des rapports de décès, des autopsies et des enquêtes du coroner
-                    </p>
-                </button>
-
-                <button
-                    style={{
-                        ...userTypeButtonStyle,
-                        ...(selectedUserType === USER_TYPES.RECRUITMENT ? selectedButtonStyle : {}),
-                        backgroundColor: selectedUserType === USER_TYPES.RECRUITMENT ? '#1a3a5c' : '#2a2a2a',
-                        borderColor: selectedUserType === USER_TYPES.RECRUITMENT ? '#007bff' : '#444'
-                    }}
-                    onClick={() => setSelectedUserType(USER_TYPES.RECRUITMENT)}
-                >
-                    <i className="fas fa-clipboard-user" style={userTypeIconStyle}></i>
-                    <h4 style={userTypeButtonTitleStyle}>Candidat</h4>
-                    <p style={userTypeButtonDescStyle}>
-                        Je postule pour un poste au PHMC (médecin, infirmier, administratif, etc.)
                     </p>
                 </button>
             </div>
@@ -1940,12 +1964,12 @@ const OnboardingModal = ({
 
     const renderFormPreviewStep = () => (
         <div style={stepContentStyle}>
-            <h2 style={stepTitleStyle}>Voici vos formulaires recommandés</h2>
+            <h2 style={stepTitleStyle}>Vos formulaires</h2>
             <p style={stepDescriptionStyle}>
-                En fonction de votre sélection, ces formulaires seront prioritaires dans votre interface :
+                Voici les {recommendedForms.length} formulaires auxquels vous avez accès avec ce rôle :
             </p>
-            <div style={formPreviewGridStyle}>
-                {recommendedForms.slice(0, 14).map(form => (
+            <div style={{ ...formPreviewGridStyle, maxWidth: '700px', maxHeight: '46vh', overflowY: 'auto', padding: '2px' }}>
+                {recommendedForms.map(form => (
                     <div key={form.version} style={formPreviewCardStyle}>
                         <div style={formPreviewIconStyle}>
                             <img src={form.icon} alt={form.name} style={formIconImageStyle} />
@@ -1954,17 +1978,42 @@ const OnboardingModal = ({
                     </div>
                 ))}
             </div>
-            {recommendedForms.length > 6 && (
-                <p style={moreFormsTextStyle}>
-                    + {recommendedForms.length - 6} formulaires supplémentaires disponibles pour votre rôle
-                </p>
-            )}
             <div style={previewNoteStyle}>
                 <i className="fas fa-info-circle" style={noteIconStyle}></i>
-                <span>Vous pouvez toujours accéder à tous les formulaires via le sélecteur de formulaires, mais ceux-ci seront mis en avant pour un accès rapide.</span>
+                <span>Ils sont mis en avant dans le sélecteur de formulaires. La page suivante présente les autres fonctionnalités du site.</span>
             </div>
         </div>
     );
+
+    // Fonctionnalités accessibles : d'après les droits réels si la personne est connectée avec un profil, sinon d'après le rôle choisi.
+    const renderFeaturesStep = () => {
+        const realAccess = currentEmployee && (employeeAuth.isCivilian || employeeAuth.staffName || employeeAuth.isAdmin) ? getToolAccess(employeeAuth) : null;
+        const planned = FEATURES_BY_TYPE[selectedUserType] || FEATURES_BY_TYPE[USER_TYPES.OTHER];
+        const features = FEATURE_CATALOG.filter((feature) => (realAccess ? realAccess[feature.key] : planned.includes(feature.key)));
+        return (
+            <div style={stepContentStyle}>
+                <h2 style={stepTitleStyle}>Vos fonctionnalités</h2>
+                <p style={stepDescriptionStyle}>
+                    {realAccess ? 'Voici ce que votre compte vous permet de faire sur le site :' : 'Voici ce que vous pourrez faire sur le site avec ce rôle (certaines fonctions dépendent de votre grade) :'}
+                </p>
+                <div style={{ display: 'grid', gap: '10px', maxWidth: '700px', margin: '0 auto 16px', maxHeight: '46vh', overflowY: 'auto', textAlign: 'left' }}>
+                    {features.map((feature) => (
+                        <div key={feature.key} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#2a2a2a', borderRadius: '8px', padding: '10px 14px' }}>
+                            <i className={`fas ${feature.icon}`} style={{ color: '#58a6ff', width: '1.4em', textAlign: 'center', marginTop: '3px' }}></i>
+                            <div>
+                                <strong>{feature.title}</strong>
+                                <div style={{ color: '#aaa', fontSize: '0.88rem' }}>{feature.desc}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div style={previewNoteStyle}>
+                    <i className="fas fa-info-circle" style={noteIconStyle}></i>
+                    <span>Les outils se trouvent dans le menu « Outils » du site.</span>
+                </div>
+            </div>
+        );
+    };
 
     const renderPrivacyPolicyStep = () => (
         <div style={stepContentStyle}>
@@ -1997,7 +2046,7 @@ const OnboardingModal = ({
                     {selectedRole && ` (${getRoleLabel(selectedRole)})`}
                 </div>
                 <div style={summaryItemStyle}>
-                    <strong>Formulaires principaux :</strong> {recommendedForms.length} formulaires recommandés
+                    <strong>Formulaires :</strong> {recommendedForms.length} formulaires accessibles
                 </div>
                 <div style={summaryItemStyle}>
                     <strong>Catégories disponibles :</strong> {FORM_CATEGORIES[selectedUserType]?.join(', ') || 'Toutes les catégories'}
@@ -2050,6 +2099,8 @@ const OnboardingModal = ({
                 return !!currentEmployee || (!!companionCivil && accountCreated);
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 return true;
+            case ONBOARDING_STEPS.FEATURES:
+                return true;
             case ONBOARDING_STEPS.PRIVACY_POLICY:
                 return true;
             case ONBOARDING_STEPS.COMPLETE:
@@ -2084,6 +2135,8 @@ const OnboardingModal = ({
                 return renderCivilAuthStep();
             case ONBOARDING_STEPS.FORM_PREVIEW:
                 return renderFormPreviewStep();
+            case ONBOARDING_STEPS.FEATURES:
+                return renderFeaturesStep();
             case ONBOARDING_STEPS.PRIVACY_POLICY:
                 return renderPrivacyPolicyStep();
             case ONBOARDING_STEPS.COMPLETE:
@@ -2392,12 +2445,6 @@ const formPreviewDescStyle = {
     fontSize: '0.8rem',
     color: '#ccc',
     margin: 0
-};
-
-const moreFormsTextStyle = {
-    color: '#aaa',
-    fontSize: '0.9rem',
-    marginTop: '10px'
 };
 
 const previewNoteStyle = {

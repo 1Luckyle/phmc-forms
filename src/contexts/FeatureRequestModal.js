@@ -39,12 +39,16 @@ const FeatureRequestModal = ({
     const isFormRequest = isFeature && isBbcodeRequest;
     const kindLabel = isFeature ? (isFormRequest ? 'Nouveau formulaire' : 'Fonctionnalité') : 'Bug';
 
+    // Tous les champs sont obligatoires : le bouton reste grisé tant que l'un d'eux est vide.
+    const isComplete = !!featureRequest.trim() && !!discordName.trim()
+        && (!isFormRequest || (!!bbcodeTitleRequest.trim() && !!bbcodeRequestText.trim()));
+
     const handleFeatureRequestSubmit = async () => {
         // Validations
-        if (!featureRequest.trim() && (!isFormRequest || !bbcodeRequestText.trim())) {
-            showNotification(isFeature
-                ? 'Veuillez décrire la fonctionnalité souhaitée (ou fournir le BBCode / HTML du formulaire).'
-                : 'Veuillez décrire le bug rencontré.', 'warning');
+        if (!featureRequest.trim()) {
+            showNotification(isFormRequest
+                ? 'Veuillez ajouter le contexte de votre demande de formulaire.'
+                : (isFeature ? 'Veuillez décrire la fonctionnalité souhaitée.' : 'Veuillez décrire le bug rencontré.'), 'warning');
             return;
         }
         if (!discordName.trim()) {
@@ -115,7 +119,7 @@ const FeatureRequestModal = ({
                         <span>&times;</span>
                     </button>
                 </div>
-                <div className="modal-body">
+                <div className="modal-body" data-guide-zone>
                     <Form>
                         <Form.Group className="mb-3">
                             <Form.Label>Sur quoi porte votre retour ?</Form.Label>
@@ -143,6 +147,7 @@ const FeatureRequestModal = ({
                                                 value={bbcodeTitleRequest}
                                                 onChange={(e) => setBbcodeTitleRequest(e.target.value)}
                                                 placeholder="Entrez un titre pour le nouveau formulaire"
+                                                required
                                             />
                                         </Form.Group>
                                         <Form.Group className="mb-3">
@@ -153,6 +158,7 @@ const FeatureRequestModal = ({
                                                 value={bbcodeRequestText}
                                                 onChange={(e) => setBbcodeRequestText(e.target.value)}
                                                 placeholder="Collez ou tapez ici le BBCode ou le HTML du nouveau formulaire…"
+                                                required
                                             />
                                             <Form.Text className="text-muted">Les deux formats sont acceptés.</Form.Text>
                                         </Form.Group>
@@ -167,6 +173,7 @@ const FeatureRequestModal = ({
                                 rows={isFormRequest ? 3 : 8}
                                 value={featureRequest}
                                 onChange={(e) => setFeatureRequest(e.target.value)}
+                                required
                                 placeholder={isFormRequest
                                     ? "Fournissez ici tout contexte ou explication supplémentaire pour votre demande de formulaire."
                                     : isFeature
@@ -186,6 +193,7 @@ const FeatureRequestModal = ({
                                 value={discordName}
                                 onChange={(e) => setDiscordName(e.target.value)}
                                 placeholder="Entrez votre nom / ID Discord"
+                                required
                             />
                         </Form.Group>
                     </Form>
@@ -201,7 +209,8 @@ const FeatureRequestModal = ({
                             setDiscordName('testeur.debug');
                         }}
                     />
-                    <Button variant="primary" onClick={handleFeatureRequestSubmit}>
+                    <span className="text-muted small me-2">Tous les champs sont obligatoires.</span>
+                    <Button variant="primary" onClick={handleFeatureRequestSubmit} disabled={!isComplete} title={isComplete ? undefined : 'Remplissez tous les champs pour envoyer'}>
                         Soumettre
                     </Button>
                     <Button variant="secondary" onClick={onClose}>
