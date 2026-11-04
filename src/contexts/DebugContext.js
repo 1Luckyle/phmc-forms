@@ -20,6 +20,9 @@ const DEBUG_PATH = 'adminSettings/debugAutofill';
 // Second interrupteur : permet de SUPPRIMER une candidature dans l'historique (nettoyage des
 // candidatures de test). Les règles Firebase ne l'autorisent que tant qu'il est activé.
 const DEBUG_DELETE_APPLICATIONS_PATH = 'adminSettings/debugDeleteApplications';
+// Quatrième interrupteur : boutons « Supprimer (debug) » des nouveaux formulaires (Take Home Car, sécurité incendie, vidéosurveillance, contrats
+// commerciaux signés), réservés aux admins. Les règles Firebase donnent déjà l'écriture aux admins : il évite seulement les suppressions par erreur.
+const DEBUG_DELETE_FORMS_PATH = 'adminSettings/debugDeleteForms';
 // Troisième interrupteur : au bingo, on joue avec SON compte ; activé, il laisse les ADMINS choisir n'importe quel joueur.
 const DEBUG_BINGO_PICKER_PATH = 'adminSettings/debugBingoPicker';
 
@@ -32,6 +35,8 @@ const DebugContext = createContext({
     removeDebugAutofillUser: async () => {},
     debugDeleteApplicationsEnabled: false,
     setDebugDeleteApplicationsEnabled: async () => {},
+    debugDeleteFormsEnabled: false,
+    setDebugDeleteFormsEnabled: async () => {},
     debugBingoPickerEnabled: false,
     setDebugBingoPickerEnabled: async () => {},
 });
@@ -43,6 +48,7 @@ export const DebugProvider = ({ children }) => {
     const [debugAutofillAllowed, setAllowed] = useState({});
     const [uid, setUid] = useState(null);
     const [debugDeleteApplicationsEnabled, setDeleteEnabled] = useState(false);
+    const [debugDeleteFormsEnabled, setDeleteFormsEnabled] = useState(false);
     const [debugBingoPickerEnabled, setBingoPickerEnabled] = useState(false);
 
     // Compte connecté (toutes méthodes de connexion confondues) : sert à tester l'appartenance à la WL.
@@ -73,6 +79,15 @@ export const DebugProvider = ({ children }) => {
 
     useEffect(() => {
         const unsubscribe = onValue(
+            ref(database, DEBUG_DELETE_FORMS_PATH),
+            (snapshot) => setDeleteFormsEnabled(snapshot.val()?.enabled === true),
+            () => setDeleteFormsEnabled(false)
+        );
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = onValue(
             ref(database, DEBUG_BINGO_PICKER_PATH),
             (snapshot) => setBingoPickerEnabled(snapshot.val()?.enabled === true),
             () => setBingoPickerEnabled(false)
@@ -82,6 +97,14 @@ export const DebugProvider = ({ children }) => {
 
     const setDebugBingoPickerEnabled = useCallback(async (enabled, updatedBy = null) => {
         await set(ref(database, DEBUG_BINGO_PICKER_PATH), {
+            enabled: Boolean(enabled),
+            updatedBy: updatedBy || null,
+            updatedAt: Date.now(),
+        });
+    }, []);
+
+    const setDebugDeleteFormsEnabled = useCallback(async (enabled, updatedBy = null) => {
+        await set(ref(database, DEBUG_DELETE_FORMS_PATH), {
             enabled: Boolean(enabled),
             updatedBy: updatedBy || null,
             updatedAt: Date.now(),
@@ -131,6 +154,7 @@ export const DebugProvider = ({ children }) => {
             debugAutofillEnabled, setDebugAutofillEnabled,
             debugAutofillAllowed, canUseDebugFill, addDebugAutofillUser, removeDebugAutofillUser,
             debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
+            debugDeleteFormsEnabled, setDebugDeleteFormsEnabled,
             debugBingoPickerEnabled, setDebugBingoPickerEnabled,
         }}>
             {children}

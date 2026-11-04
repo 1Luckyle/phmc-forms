@@ -1,6 +1,6 @@
 // src/utils/debugDelete.js
 //
-// Suppressions « de test » : quand l'interrupteur Debug « Autoriser la suppression » est activé (Admin → Debug), un admin peut supprimer n'importe quelle
+// Suppressions « de test » : quand l'interrupteur Debug « Suppression des nouveaux formulaires » est activé (Admin → Debug), un admin peut supprimer n'importe quelle
 // entrée des nouveaux formulaires (Take Home Car, sécurité incendie, vidéosurveillance, contrats commerciaux…) : vider des tests, des demandes
 // farfelues. Les règles Firebase donnent déjà l'écriture aux admins ; l'interrupteur évite seulement les suppressions par erreur.
 import { ref, get, update, remove } from 'firebase/database';

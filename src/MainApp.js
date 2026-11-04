@@ -419,7 +419,7 @@ function MainApp({
     const [bbcodeRequestText, setBbcodeRequestText] = useState('');
     const [currentUtcTime, setCurrentUtcTime] = useState('');
 
-    const { seasonalEffectsEnabled, toggleSeasonalEffects, immersiveHeaderEnabled, toggleImmersiveHeader } = useSettings();
+    const { seasonalEffectsEnabled, toggleSeasonalEffects, immersiveHeaderEnabled, headerChoiceEnabled, toggleImmersiveHeader } = useSettings();
     // Deux versions du formulaire de retour : rapport de bug (tout le monde) et demande de fonctionnalité (comptes connectés).
     const [featureModalMode, setFeatureModalMode] = useState('bug');
     const { lockdownConfig, showDialog, hideDialog, isLockdownActive } = useLockdown();
@@ -1858,7 +1858,7 @@ function MainApp({
                                                     key: 'app', label: 'Application', items: [
                                                         { key: 'season', icon: `fas ${seasonalEffectsEnabled ? 'fa-snowflake' : 'fa-sun'}`, label: `${seasonalEffectsEnabled ? 'Désactiver' : 'Activer'} Effet de Saison`, onClick: closeAnd(toggleSeasonalEffects) },
                                                         { key: 'guide', icon: 'fas fa-play-circle', label: 'Guide de Configuration', onClick: closeAnd(restartOnboarding) },
-                                                        { key: 'header', icon: immersiveHeaderEnabled ? 'fas fa-heart' : 'fas fa-city', label: immersiveHeaderEnabled ? 'Header des remerciements' : 'Header immersif (heure & météo)', onClick: closeAnd(toggleImmersiveHeader) },
+                                                        headerChoiceEnabled && { key: 'header', icon: immersiveHeaderEnabled ? 'fas fa-heart' : 'fas fa-city', label: immersiveHeaderEnabled ? 'Header des remerciements' : 'Header immersif (heure & météo)', onClick: closeAnd(toggleImmersiveHeader) },
                                                         // Feedback : bug, idée de fonctionnalité ou nouveau formulaire, au choix dans un menu déroulant. Réservé aux comptes connectés (tous rôles) : le retour est enregistré à leur nom.
                                                         currentEmployee && { key: 'feedback', icon: 'fas fa-comment-dots', label: 'Feedback', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
                                                         {

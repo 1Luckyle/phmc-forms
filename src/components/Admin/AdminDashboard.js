@@ -13,6 +13,7 @@ import BingoResetSetting from './BingoResetSetting';
 import PendingAccountRequests from './PendingAccountRequests';
 import PendingModificationRequests from './PendingModificationRequests';
 import PendingAccountDeletions from './PendingAccountDeletions';
+import HeaderChoiceSwitch from './HeaderChoiceSwitch';
 import { useDebug } from '../../contexts/DebugContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import UsersHub from './users/UsersHub';
@@ -46,6 +47,7 @@ const LOCKDOWN_DEPLOYMENTS = [
 const DEBUG_TABS = [
     { key: 'autofill', label: 'Remplissage de test', icon: 'fa-wand-magic-sparkles' },
     { key: 'applications', label: 'Suppression de candidatures', icon: 'fa-trash-can' },
+    { key: 'forms', label: 'Suppression des nouveaux formulaires', icon: 'fa-broom' },
     { key: 'bingo', label: 'Bingo : choix du joueur', icon: 'fa-dice' },
     { key: 'season', label: 'Effets de saison', icon: 'fa-snowflake' },
     { key: 'viewas', label: 'Visualiser en tant que', icon: 'fa-eye' },
@@ -152,8 +154,9 @@ const AdminDashboard = ({
 
     const {
         debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
-        debugBingoPickerEnabled, setDebugBingoPickerEnabled,
+        debugBingoPickerEnabled, setDebugBingoPickerEnabled, debugDeleteFormsEnabled, setDebugDeleteFormsEnabled,
     } = useDebug();
+    const [isUpdatingDeleteForms, setIsUpdatingDeleteForms] = useState(false);
     const [isUpdatingBingoPicker, setIsUpdatingBingoPicker] = useState(false);
     const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
     const [isUpdatingDebug, setIsUpdatingDebug] = useState(false);
@@ -224,6 +227,19 @@ const AdminDashboard = ({
             alert('Impossible de modifier ce réglage : ' + (error?.message || error));
         } finally {
             setIsUpdatingBingoPicker(false);
+        }
+    };
+
+    const handleToggleDeleteForms = async (enabled) => {
+        setIsUpdatingDeleteForms(true);
+        try {
+            await setDebugDeleteFormsEnabled(enabled, currentUser?.email);
+            if (showInAppNotification) showInAppNotification(`Suppression des nouveaux formulaires ${enabled ? 'activée (admins)' : 'désactivée'}.`, enabled ? 'check-circle' : 'info-circle');
+        } catch (error) {
+            console.error('Error updating debug delete forms setting:', error);
+            alert('Impossible de modifier ce réglage : ' + (error?.message || error));
+        } finally {
+            setIsUpdatingDeleteForms(false);
         }
     };
 
@@ -385,7 +401,12 @@ const AdminDashboard = ({
                 );
 
             case 'display':
-                return <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />;
+                return (
+                    <>
+                        <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
+                        <HeaderChoiceSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
+                    </>
+                );
 
             case 'activity':
                 return (
@@ -557,7 +578,7 @@ const AdminDashboard = ({
                         {debugTab === 'applications' && (
                             <>
                                 <p className="text-muted">
-                                    Quand cet interrupteur est activé, un bouton « Supprimer » apparaît dans l'historique des candidatures (et, pour les admins, dans les nouveaux formulaires : Take Home Car, sécurité incendie, vidéosurveillance, contrats commerciaux signés, y compris les demandes de test ou de farce) : chaque candidat peut
+                                    Quand cet interrupteur est activé, un bouton « Supprimer » apparaît dans l'historique des candidatures : chaque candidat peut
                                     supprimer les siennes (« Mes candidatures ») et les admins et recruteurs celles de la liste de gestion. Utile pour nettoyer
                                     les candidatures de test ; à désactiver ensuite, car la suppression est définitive.
                                 </p>
@@ -566,10 +587,31 @@ const AdminDashboard = ({
                                     checked={debugDeleteApplicationsEnabled}
                                     disabled={isUpdatingDeleteDebug}
                                     onChange={handleToggleDeleteApplications}
-                                    label="Autoriser la suppression (candidatures et nouveaux formulaires)"
+                                    label="Autoriser la suppression des candidatures"
                                     busy={isUpdatingDeleteDebug}
                                     state={debugDeleteApplicationsEnabled ? 'ACTIVÉE' : 'désactivée'}
                                     stateTone={debugDeleteApplicationsEnabled ? 'warn' : 'ok'}
+                                />
+                            </>
+                        )}
+
+                        {debugTab === 'forms' && (
+                            <>
+                                <p className="text-muted">
+                                    Quand cet interrupteur est activé, les <strong>administrateurs</strong> (et eux seuls) voient un bouton « Supprimer (debug) » dans les nouveaux
+                                    formulaires : <strong>Take Home Car</strong> (demandes), <strong>sécurité incendie</strong> (contrôles, non-conformités, exercices),
+                                    <strong> vidéosurveillance</strong> (demandes) et <strong>contrats commerciaux</strong> (y compris signés). Utile pour vider des tests ou des
+                                    demandes de farce ; à désactiver ensuite, car la suppression est définitive.
+                                </p>
+                                <SwitchRow
+                                    id="debugDeleteFormsSwitch"
+                                    checked={debugDeleteFormsEnabled}
+                                    disabled={isUpdatingDeleteForms}
+                                    onChange={handleToggleDeleteForms}
+                                    label="Autoriser les admins à supprimer dans les nouveaux formulaires"
+                                    busy={isUpdatingDeleteForms}
+                                    state={debugDeleteFormsEnabled ? 'ACTIVÉE' : 'désactivée'}
+                                    stateTone={debugDeleteFormsEnabled ? 'warn' : 'ok'}
                                 />
                             </>
                         )}

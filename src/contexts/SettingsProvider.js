@@ -1,4 +1,6 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../firebase';
 
 const SettingsContext = createContext();
 
@@ -16,19 +18,32 @@ export const SettingsProvider = ({ children }) => {
         localStorage.setItem('seasonalEffectsEnabled', String(newValue));
     };
 
-    // En-tête « immersif » (identité, horloge du serveur, météo) à la place de l'en-tête de remerciements. Désactivé par défaut.
-    const [immersiveHeaderEnabled, setImmersiveHeaderEnabled] = useState(() => localStorage.getItem('immersiveHeaderEnabled') === 'true');
+    // En-tête : par défaut, et pour tout le monde, l'en-tête « immersif » (identité, horloge du serveur, météo). Les admins peuvent rétablir le CHOIX
+    // avec l'en-tête de remerciements (Admin → Affichage, adminSettings/headerChoice) : chacun retrouve alors le bouton, et sa préférence (mémorisée
+    // dans son navigateur) s'applique ; sans préférence, c'est la météo.
+    const [headerChoiceEnabled, setHeaderChoiceEnabled] = useState(false);
+    useEffect(() => {
+        const unsubscribe = onValue(
+            ref(database, 'adminSettings/headerChoice'),
+            (snapshot) => setHeaderChoiceEnabled(snapshot.val()?.enabled === true),
+            () => setHeaderChoiceEnabled(false)
+        );
+        return () => unsubscribe();
+    }, []);
+    const [storedImmersive, setStoredImmersive] = useState(() => localStorage.getItem('immersiveHeaderEnabled'));
+    const immersiveHeaderEnabled = headerChoiceEnabled ? storedImmersive !== 'false' : true;
 
     const toggleImmersiveHeader = () => {
-        const newValue = !immersiveHeaderEnabled;
-        setImmersiveHeaderEnabled(newValue);
-        localStorage.setItem('immersiveHeaderEnabled', String(newValue));
+        const newValue = String(!immersiveHeaderEnabled);
+        setStoredImmersive(newValue);
+        localStorage.setItem('immersiveHeaderEnabled', newValue);
     };
 
     const value = {
         seasonalEffectsEnabled,
         toggleSeasonalEffects,
         immersiveHeaderEnabled,
+        headerChoiceEnabled,
         toggleImmersiveHeader,
     };
 
