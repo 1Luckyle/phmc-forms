@@ -84,6 +84,8 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
     }, [data.membres.length]);
 
     const isListed = (entry) => lines.some((line) => sameName(line.nom, entry.name));
+    // Fiche du personnel correspondant à une ligne publiée : le contact d'une ligne est une COPIE faite à l'ajout, qui ne suit pas les changements de la fiche.
+    const leaderOfLine = (line) => leaders.find((entry) => sameName(entry.name, line.nom)) || null;
     const addLeader = (entry) => {
         if (isListed(entry)) return;
         if (lines.length >= MAX_MEMBERS) { showNotification(`Au plus ${MAX_MEMBERS} lignes sur la page publique.`, 'warning'); return; }
@@ -140,7 +142,19 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
                         <div className="adm-form-grid" data-guide-zone>
                             <div className="form-group"><label>Nom</label><Form.Control name={`nom-${index}`} required data-guide="Le nom de la personne, tel qu'il apparaîtra sur la page publique." value={line.nom} onChange={(e) => changeLine(index, 'nom', e.target.value)} placeholder="ex. Dr Jane Doe" /></div>
                             <div className="form-group"><label>Fonction</label><Form.Control name={`fonction-${index}`} required data-guide="Sa fonction au sein du PHMC." value={line.fonction} onChange={(e) => changeLine(index, 'fonction', e.target.value)} placeholder="ex. Directrice du Pillbox Hill Medical Center" /></div>
-                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control name={`contact-${index}`} required data-guide="Comment la joindre : e-mail ou téléphone en jeu." value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info@phmc.health · tél. 50056" /></div>
+                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control name={`contact-${index}`} required data-guide="Comment la joindre : e-mail ou téléphone en jeu." value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info@phmc.health · tél. 50056" />
+                                {(() => {
+                                    const leader = leaderOfLine(line);
+                                    const live = leader ? contactOf(leader.member) : '';
+                                    if (!leader || !live || live === line.contact) return null;
+                                    return (
+                                        <small className="d-block mt-1" style={{ color: '#e3b341' }}>
+                                            <i className="fas fa-triangle-exclamation me-1"></i>La fiche du personnel indique : <strong>{live}</strong>.{' '}
+                                            <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => changeLine(index, 'contact', live)}>Utiliser le contact de la fiche</button>
+                                        </small>
+                                    );
+                                })()}
+                            </div>
                         </div>
                     </div>
                 ))}

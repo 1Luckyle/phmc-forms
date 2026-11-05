@@ -2,10 +2,11 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
 import {
     normalizeApplicationStatus, applicationStatusLabel, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
+    countActiveApplications, maxActiveApplications, applicationLimitMessage,
 } from '../constants/recruitment';
 import { isLockdownOn, LOCK_MESSAGE } from '../utils/lockdownGuard';
 import { getFormDefinition } from '../formDefinitions'; // Assuming this path
-import { database } from '../firebase'; // Assuming this path
+import { database, auth } from '../firebase'; // Assuming this path
 import { ref, get, set } from 'firebase/database';
 import * as Sentry from "@sentry/react";
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
@@ -1323,6 +1324,16 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 .sort((a, b) => (b.modifieLe || 0) - (a.modifieLe || 0))[0] || null;
             const applicationId = existing?.id || (sameForm.length > 0 ? `form_${bbCodeVersion}_${Date.now()}` : `form_${bbCodeVersion}`);
 
+            // Plafond de candidatures actives (3 pour un Civil, 2 pour le personnel interne) : un NOUVEAU dépôt, ou la reprise d'une candidature en pause,
+            // en ajoute une. Modifier une candidature déjà active n'en change pas le nombre.
+            if (!existing || normalizeApplicationStatus(existing.statut) === 'en_pause') {
+                const activeCount = countActiveApplications(await loadApplicationsOf(applicant.uid));
+                if (activeCount >= maxActiveApplications(applicant.internal)) {
+                    showNotification(applicationLimitMessage(activeCount, applicant.internal), 'warning', 10000);
+                    return { success: false };
+                }
+            }
+
             // Conditions d'enregistrement : un brouillon exige au moins un poste ; l'envoi exige une candidature
             // complète pour un poste ouvert (voir utils/formValidation.js).
             const alreadySubmitted = !!editing && !['brouillon', 'en_pause'].includes(editedExisting.statut);
@@ -1567,6 +1578,14 @@ Candidature : ${applicationId}`,
                 return { success: false };
             }
             const statut = normalizeApplicationStatus(newStatus);
+            // Reprendre une candidature en pause la rend active : le plafond s'applique (seulement quand c'est le candidat lui-même qui agit).
+            if (statut === 'soumise' && normalizeApplicationStatus(existing.statut) === 'en_pause' && applicantUid === auth.currentUser?.uid) {
+                const activeCount = countActiveApplications(await loadApplicationsOf(applicantUid));
+                if (activeCount >= maxActiveApplications(!!existing.interne)) {
+                    showNotification(applicationLimitMessage(activeCount, !!existing.interne), 'warning', 10000);
+                    return { success: false };
+                }
+            }
             // Candidater / reprendre un brouillon ou une candidature en pause : mêmes conditions qu'un envoi depuis le formulaire.
             if (statut === 'soumise' && ['brouillon', 'en_pause'].includes(existing.statut)) {
                 if (!existing.donnees || Object.keys(existing.donnees).length === 0) {

@@ -1118,6 +1118,13 @@ input[type="checkbox"]:checked::after {
 
 /* Champs de date / d'heure : l'icône du petit calendrier est noire par défaut (thème clair du navigateur), donc invisible sur nos fonds sombres. */
 /* Champs désactivés ou en lecture seule (ex. salaire d'un échelon) : fond sombre et texte lisible, jamais blanc. */
+.guide-modal .form-select:disabled,
+.modal-content .form-select:disabled,
+.modal-container .form-select:disabled {
+    background-color: #161b22;
+    color: #9da7b3;
+    opacity: 1;
+}
 .guide-modal .form-control:disabled,
 .guide-modal .form-control[readonly],
 .modal-content .form-control:disabled,

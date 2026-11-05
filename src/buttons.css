@@ -753,6 +753,24 @@ input[type="radio"] {
 }
 
 
+/* Pied de page : une rangée centrée, boutons de même hauteur et même espacement (boutons et liens identiques). */
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 8px; padding: 4px 8px 8px; }
+.footer-links .privacy-policy-button {
+    margin-left: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+.footer-links .privacy-policy-button:hover { background-color: #0b6ae0; color: #fff; }
+
 .privacy-policy-button {
     background-color: #007bff;
     color: white;

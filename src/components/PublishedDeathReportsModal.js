@@ -41,6 +41,9 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
     const [contents, setContents] = useState({});
     const { bbcodeEnabled } = useSiteConfig();
     const { isAdmin } = useEmployeeAuth();
+    // Copie publique (page « Hommage ») de chaque rapport : { [clé]: 'ok' | 'absente' | 'erreur' | 'envoi' } et le dernier message d'erreur.
+    const [publicState, setPublicState] = useState({});
+    const [publicError, setPublicError] = useState('');
     const { open, toggle, setTab } = useExpansions();
 
     useEffect(() => {
@@ -53,9 +56,11 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
                 if (cancelled) return;
                 setItems(list);
                 // Publié avant la page « Hommage » : l'admin, ou le DMEC auteur de la publication, pose la copie publique manquante.
-                list.filter((item) => isAdmin || item.uid === auth.currentUser?.uid).forEach((item) => {
+                list.forEach((item) => {
                     get(ref(database, `hommages/${item.key}`)).then((snap) => {
-                        if (!snap.exists()) writePublicCopy({ reportPath: item.reportPath, title: item.titre, byName: item.par, publieLe: item.publieLe }).catch(() => {});
+                        if (cancelled) return;
+                        setPublicState((previous) => ({ ...previous, [item.key]: snap.exists() ? 'ok' : 'absente' }));
+                        if (!snap.exists() && canWritePublic(item)) publishPublicCopy(item);
                     }).catch(() => {});
                 });
             })
@@ -70,6 +75,23 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show]);
+
+    const canWritePublic = (item) => !!isAdmin || item.uid === auth.currentUser?.uid;
+
+    // Pose (ou repose) la copie publique d'un rapport publié ; l'échec est affiché, pas avalé.
+    const publishPublicCopy = async (item) => {
+        setPublicState((previous) => ({ ...previous, [item.key]: 'envoi' }));
+        try {
+            const written = await writePublicCopy({ reportPath: item.reportPath, title: item.titre, byName: item.par, publieLe: item.publieLe });
+            if (!written) throw new Error('Le rapport est vide ou illisible.');
+            setPublicState((previous) => ({ ...previous, [item.key]: 'ok' }));
+            setPublicError('');
+        } catch (error) {
+            console.warn('Copie publique non écrite :', error);
+            setPublicState((previous) => ({ ...previous, [item.key]: 'erreur' }));
+            setPublicError(String(error?.code === 'PERMISSION_DENIED' || /permission/i.test(error?.message || '') ? 'Écriture refusée : les règles Firebase (nœud hommages) ne sont probablement pas déployées.' : (error?.message || error)).slice(0, 200));
+        }
+    };
 
     const ensureContent = async (item) => {
         if (contents[item.key]) return contents[item.key];
@@ -95,6 +117,7 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
                     <span className="rpt-sub">{items.length} rapport{items.length > 1 ? 's' : ''} · lecture seule</span>
                 </div>
                 <div className="rpt-body">
+                    {publicError && <p style={{ color: '#f0883e', fontSize: '0.9em' }}><i className="fas fa-triangle-exclamation me-1"></i>Page Hommage : {publicError}</p>}
                     {isLoading && <p className="rpt-muted">Chargement…</p>}
                     {!isLoading && items.length === 0 && <p className="rpt-empty">Aucun rapport public de décès n'est publié pour le moment.</p>}
                     {items.map((item) => {
@@ -105,9 +128,19 @@ const PublishedDeathReportsModal = ({ show, onHide, showNotification }) => {
                                 color="#58a6ff"
                                 title={item.titre || item.key}
                                 meta={`${item.par || 'DMEC'} · publié le ${new Date(item.publieLe).toLocaleString('fr-FR')}${item.patientID ? ` · ${item.patientID}` : ''}`}
-                                chips={<Pill color="#58a6ff" title="Publié par le DMEC : consultable par tout le personnel">Publié</Pill>}
+                                chips={(
+                                    <>
+                                        <Pill color="#58a6ff" title="Publié par le DMEC : consultable par tout le personnel">Publié</Pill>
+                                        {publicState[item.key] === 'ok' && <Pill color="#3fb950" title="Visible par tous sur la page Hommage">Page Hommage</Pill>}
+                                        {publicState[item.key] === 'envoi' && <Pill color="#8b949e" title="Envoi vers la page Hommage…">Envoi…</Pill>}
+                                        {(publicState[item.key] === 'absente' || publicState[item.key] === 'erreur') && <Pill color="#d29922" title="Pas encore visible sur la page Hommage">Hors page Hommage</Pill>}
+                                    </>
+                                )}
                                 actions={(
                                     <>
+                                        {(publicState[item.key] === 'absente' || publicState[item.key] === 'erreur') && canWritePublic(item) && (
+                                            <Button size="sm" variant="outline-info" onClick={() => publishPublicCopy(item)}>Publier sur la page Hommage</Button>
+                                        )}
                                         <ExpandToggle
                                             open={!!open[item.key]}
                                             onClick={async () => { if (!open[item.key]) await ensureContent(item); toggle(item.key); }}

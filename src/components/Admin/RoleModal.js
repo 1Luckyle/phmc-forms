@@ -13,7 +13,9 @@ import DebugFillButton from '../DebugFillButton';
 import { STAFF_FAMILIES, ROLES, rolesByFiliere, normalizeRank } from '../../constants/ranks';
 import { STATUT_OUVERT, STATUT_FERME, makePositionKey } from '../../constants/recruitment';
 import { savePosition, positionsPath, getActiveStore } from '../../utils/recruitmentStore';
-import { loadSalaryGrid, echelonOf, addGradeIfMissing, formatEchelonRates } from '../../utils/salaryGrid';
+import { loadSalaryGrid, saveSalaryGrid, gradeKeyOf, echelonOf, addGradeIfMissing, formatEchelonRates } from '../../utils/salaryGrid';
+import { useAccountingAccess } from '../../utils/accountingAccess';
+import { logActivity } from '../../utils/activityLog';
 import { referenceEchelonOf } from '../../constants/salaryReference';
 import EchelonGuide from './EchelonGuide';
 import { createCustomRole, validateNewRole, suggestBadgePrefix, DEFAULT_FILIERE } from '../../utils/customRoles';
@@ -76,8 +78,13 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
     const [roleData, setRoleData] = useState(() => roleToEdit ? { ...initialRoleState, ...roleToEdit } : initialRoleState);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
-    const { staffName, currentEmployee } = useEmployeeAuth();
+    const { staffName, currentEmployee, isAdmin } = useEmployeeAuth();
     const actorName = staffName || currentEmployee?.email || '';
+    // Mêmes droits que la Comptabilité (admins, Directeur(trice), Assistant(e) de Direction) : l'échelon d'un rôle et le salaire d'un échelon se modifient ici,
+    // et c'est la grille salariale (source unique : contrats, page Transparence…) qui est mise à jour.
+    const canEditGrid = useAccountingAccess(isAdmin);
+    const [editedPick, setEditedPick] = useState(null);     // nouvel échelon d'un rôle déjà dans la grille (null = inchangé)
+    const [editedRates, setEditedRates] = useState(null);   // salaires modifiés de l'échelon affiché : { horaire?, hebdo? } en texte (null = inchangés)
 
     // Nouveau rôle du personnel (si « Créer un nouveau rôle… » est choisi) et échelon d'un rôle qui n'est pas encore dans la grille salariale (un rôle a UN échelon).
     const [newRole, setNewRole] = useState(EMPTY_NEW_ROLE);
@@ -98,6 +105,8 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
             setNewRole(EMPTY_NEW_ROLE);
             setPrefixTouched(false);
             setEchelonPick('');
+            setEditedPick(null);
+            setEditedRates(null);
             setGuideOpen(false);
             setBaseline(snapshot(initial, EMPTY_NEW_ROLE, ''));
             setError('');
@@ -114,7 +123,11 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
     // Échelon déjà défini par la grille pour ce rôle (alors non modifiable ici : il se change dans Comptabilité → Transparence), sinon à choisir parmi les 15.
     const gradeEchelon = useMemo(() => (effectiveRole && grid ? echelonOf(grid, effectiveRole) : null), [grid, effectiveRole]);
     const needsEchelon = !!effectiveRole && !!grid && !gradeEchelon;
-    const shownEchelon = gradeEchelon || (needsEchelon && echelonPick ? grid.echelons[echelonPick - 1] : null);
+    // Échelon affiché : celui de la grille (ou celui qu'un gestionnaire vient de choisir), avec les salaires qu'il a éventuellement retouchés.
+    const selectedNumero = gradeEchelon ? (editedPick ?? gradeEchelon.numero) : echelonPick;
+    const baseEchelon = selectedNumero && grid ? grid.echelons[Number(selectedNumero) - 1] : null;
+    const shownEchelon = baseEchelon ? { ...baseEchelon, ...(editedRates || {}) } : null;
+    const gridDirty = canEditGrid && (editedPick !== null || editedRates !== null);
 
     // Rôle d'origine qui figure dans la grille de référence : son échelon de référence est proposé d'office. Il ne compte pas comme une modification faite par la
     // personne (la valeur initiale en tient compte).
@@ -143,9 +156,11 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
         if (!grid) return creatingRole ? ['La grille salariale est en cours de chargement.'] : [];
         return needsEchelon && !echelonPick ? ["Choisissez l'échelon de ce rôle (le salaire en dépend)."] : [];
     })();
-    const roleBlockValid = roleErrors.length === 0 && echelonErrors.length === 0;
+    // Le rôle du personnel obtenu à l'embauche est OBLIGATOIRE (il pré-remplit la fiche et le contrat, et donne l'échelon).
+    const roleChoiceErrors = useMemo(() => (effectiveRole ? [] : ["Choisissez le rôle du personnel obtenu à l'embauche."]), [effectiveRole]);
+    const roleBlockValid = roleErrors.length === 0 && echelonErrors.length === 0 && roleChoiceErrors.length === 0;
     const canSave = roleBlockValid && (roleToEdit
-        ? isDirty && String(roleData.nom || '').trim() !== ''
+        ? (isDirty || gridDirty) && String(roleData.nom || '').trim() !== ''
         : isFormValid);
 
     const handleChange = useCallback((e) => {
@@ -158,6 +173,8 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
         const { value } = e.target;
         setRoleData((prev) => ({ ...prev, role: value }));
         setEchelonPick('');
+        setEditedPick(null);
+        setEditedRates(null);
     }, []);
 
     const changeNewRole = (field, value) => setNewRole((prev) => {
@@ -195,7 +212,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
         setError('');
 
         if (!canSave) {
-            setError(roleErrors[0] || echelonErrors[0] || (roleToEdit
+            setError(roleErrors[0] || roleChoiceErrors[0] || echelonErrors[0] || (roleToEdit
                 ? 'Modifiez au moins un champ (le nom ne peut pas être vide).'
                 : 'Tous les champs marqués d\'un * sont obligatoires, et les autres doivent également être remplis.'));
             if (showNotification) showNotification('Veuillez remplir tous les champs du formulaire.', 'warning');
@@ -222,6 +239,21 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                 roleValue = created.value;
             }
             if (roleValue && needsEchelon) await addGradeIfMissing(roleValue, echelonPick);
+            // Gestionnaire de la grille : nouvel échelon du rôle et/ou salaires retouchés → la grille salariale est mise à jour (valable partout).
+            if (canEditGrid && roleValue && (editedPick !== null || editedRates)) {
+                const fresh = await loadSalaryGrid();
+                const roleKey = gradeKeyOf(roleValue);
+                const target = editedPick ?? fresh.grades[roleKey]?.echelon ?? null;
+                const grades = { ...fresh.grades };
+                if (editedPick !== null && grades[roleKey]) grades[roleKey] = { ...grades[roleKey], echelon: editedPick };
+                const echelons = fresh.echelons.map((e) => ({
+                    numero: e.numero,
+                    horaire: editedRates && e.numero === target && editedRates.horaire !== undefined ? editedRates.horaire : e.horaire,
+                    hebdo: editedRates && e.numero === target && editedRates.hebdo !== undefined ? editedRates.hebdo : e.hebdo,
+                }));
+                await saveSalaryGrid({ echelons, grades }, actorName);
+                logActivity({ category: 'comptes', action: 'salary_grid_edited', severity: 'info', summary: `Grille salariale modifiée depuis le poste « ${roleData.nom || roleToEdit?.nom || ''} »`, details: `Rôle : ${roleValue}${editedPick !== null ? `\nNouvel échelon : ${editedPick}` : ''}${editedRates ? `\nSalaires de l'échelon ${target} modifiés` : ''}\nPar : ${actorName}`, target: roleValue });
+            }
 
             const store = await getActiveStore(category);
             if (!roleToEdit) {
@@ -245,7 +277,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
             if (showNotification) showNotification(`Échec de ${roleToEdit ? 'la modification' : 'l\'ajout'} du poste. ${dbError.message}`, "error");
         }
         setIsSaving(false);
-    }, [roleData, newRole, needsEchelon, echelonPick, roleErrors, echelonErrors, actorName, category, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
+    }, [roleData, newRole, needsEchelon, echelonPick, roleErrors, roleChoiceErrors, echelonErrors, canEditGrid, editedPick, editedRates, actorName, category, showNotification, onRoleSaved, handleClose, canSave, roleToEdit]);
 
     useEffect(() => {
         const handleEsc = (event) => {
@@ -277,14 +309,14 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                         </BootstrapForm.Group>
 
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Catégorie de recrutement</BootstrapForm.Label>
-                            <BootstrapForm.Control type="text" value={category?.label || ''} readOnly />
+                            <BootstrapForm.Label>Catégorie de recrutement *</BootstrapForm.Label>
+                            <BootstrapForm.Control type="text" name="categorie" required value={category?.label || ''} readOnly />
                         </BootstrapForm.Group>
 
                         <BootstrapForm.Group className="mb-3">
-                            <BootstrapForm.Label>Rôle du personnel obtenu à l'embauche</BootstrapForm.Label>
-                            <BootstrapForm.Select name="role" value={roleData.role || ''} onChange={handleRoleChange}>
-                                <option value="">— Non défini —</option>
+                            <BootstrapForm.Label>Rôle du personnel obtenu à l'embauche *</BootstrapForm.Label>
+                            <BootstrapForm.Select name="role" required value={roleData.role || ''} onChange={handleRoleChange}>
+                                <option value="">Choisir un rôle…</option>
                                 {Object.values(STAFF_FAMILIES).map((family) => (
                                     <optgroup key={family.key} label={family.label}>
                                         {rolesByFiliere(family.key).flatMap((group) => group.roles).map((role) => (
@@ -344,24 +376,35 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
                                     <BootstrapForm.Select
-                                        aria-label="Échelon" value={gradeEchelon ? gradeEchelon.numero : echelonPick} disabled={!!gradeEchelon}
-                                        onChange={(e) => setEchelonPick(e.target.value === '' ? '' : Number(e.target.value))}
+                                        aria-label="Échelon" name="echelon" required={needsEchelon} value={selectedNumero} disabled={!!gradeEchelon && !canEditGrid}
+                                        onChange={(e) => {
+                                            const next = e.target.value === '' ? '' : Number(e.target.value);
+                                            setEditedRates(null);
+                                            if (gradeEchelon) setEditedPick(next === '' || next === gradeEchelon.numero ? null : next);
+                                            else setEchelonPick(next);
+                                        }}
                                     >
                                         {!gradeEchelon && <option value="">Choisir un échelon…</option>}
                                         {(grid.echelons || []).map((e) => <option key={e.numero} value={e.numero}>{e.libelle} — {formatEchelonRates(e)}</option>)}
                                     </BootstrapForm.Select>
                                     <div className="input-group" style={{ flexWrap: 'nowrap' }}>
-                                        <BootstrapForm.Control type="text" value={shownEchelon ? shownEchelon.horaire : ''} aria-label="Montant à l'heure" placeholder="À l'heure" disabled readOnly />
+                                        <BootstrapForm.Control type="text" inputMode="decimal" name="salaireHeure" value={shownEchelon ? shownEchelon.horaire : ''} aria-label="Montant à l'heure" placeholder="À l'heure"
+                                            disabled={!canEditGrid || !shownEchelon} readOnly={!canEditGrid}
+                                            onChange={(e) => setEditedRates((prev) => ({ ...(prev || {}), horaire: e.target.value.replace(/[^\d.,]/g, '') }))} />
                                         <span className="input-group-text">$ / h</span>
                                     </div>
                                     <div className="input-group" style={{ flexWrap: 'nowrap' }}>
-                                        <BootstrapForm.Control type="text" value={shownEchelon ? shownEchelon.hebdo : ''} aria-label="Montant à la semaine" placeholder="À la semaine" disabled readOnly />
+                                        <BootstrapForm.Control type="text" inputMode="decimal" name="salaireSemaine" value={shownEchelon ? shownEchelon.hebdo : ''} aria-label="Montant à la semaine" placeholder="À la semaine"
+                                            disabled={!canEditGrid || !shownEchelon} readOnly={!canEditGrid}
+                                            onChange={(e) => setEditedRates((prev) => ({ ...(prev || {}), hebdo: e.target.value.replace(/[^\d.,]/g, '') }))} />
                                         <span className="input-group-text">$ / sem.</span>
                                     </div>
                                 </div>
                                 <BootstrapForm.Text className="text-muted d-block">
                                     {gradeEchelon
-                                        ? "Échelon de ce rôle dans la grille : un rôle n'a qu'un échelon, qui fixe son salaire. Il se modifie, avec le salaire des échelons, dans Comptabilité → Transparence."
+                                        ? (canEditGrid
+                                            ? "Échelon de ce rôle dans la grille : un rôle n'a qu'un échelon, qui fixe son salaire. Vous pouvez changer l'échelon du rôle ou le salaire de l'échelon : l'enregistrement met la grille à jour partout (contrats, page Transparence), pour tous les grades de l'échelon."
+                                            : "Échelon de ce rôle dans la grille : un rôle n'a qu'un échelon, qui fixe son salaire. Il se modifie, avec le salaire des échelons, par la Direction ou les admins (Comptabilité → Transparence).")
                                         : "Ce rôle n'est pas encore dans la grille salariale : son échelon fixe son salaire (les montants se remplissent seuls) et il y sera rangé à l'enregistrement."}
                                 </BootstrapForm.Text>
                                 {echelonErrors.length > 0 && echelonPick === '' && <p className="text-warning small mb-0 mt-1">{echelonErrors[0]}</p>}
@@ -415,9 +458,13 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
             {guideOpen && grid && (
                 <div style={{ flex: '0 1 380px', width: 'min(90%, 380px)', maxHeight: '88vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
                     <EchelonGuide
-                        echelons={grid.echelons} usage={gradeUsage(grid)} selected={gradeEchelon ? gradeEchelon.numero : (echelonPick || null)}
-                        onPick={gradeEchelon ? null : (numero) => setEchelonPick(numero)}
-                        help={gradeEchelon ? "Les 15 échelons, leur salaire et les grades qui s'y trouvent." : "Cliquez un échelon pour l'affecter à ce rôle ; le rôle donné en exemple aide à choisir."}
+                        echelons={grid.echelons} usage={gradeUsage(grid)} selected={selectedNumero || null}
+                        onPick={gradeEchelon && !canEditGrid ? null : (numero) => {
+                            setEditedRates(null);
+                            if (gradeEchelon) setEditedPick(numero === gradeEchelon.numero ? null : numero);
+                            else setEchelonPick(numero);
+                        }}
+                        help={gradeEchelon && !canEditGrid ? "Les 15 échelons, leur salaire et les grades qui s'y trouvent." : "Cliquez un échelon pour l'affecter à ce rôle ; le rôle donné en exemple aide à choisir."}
                     />
                 </div>
             )}

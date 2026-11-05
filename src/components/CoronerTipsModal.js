@@ -126,18 +126,24 @@ const commandsContent = `**Commandes de service :**
 Plus de commandes à venir bientôt !`;
 
 const sceneInfoContent = `**Approche initiale :**
-<ul>- Assurez-vous que la scène est sécurisée avant d'entrer.
+- Assurez-vous que la scène est sécurisée avant d'entrer.
 - Observez la disposition générale de la scène sans déranger les preuves.
 - Identifiez l'agent des forces de l'ordre responsable et demandez l'autorisation de déplacer le corps.</ul>**Documentation :**
-<ul>- Prenez de brèves notes de la scène et remplissez le résumé succinct au fur et à mesure.
-- Photographiez les détails importants (/camera) : (défunt, éclaboussures ou flaques de sang, preuves).</ul>**Examen du défunt (sur la scène) :**
-<ul>- Notez la position et la tenue du défunt.
+- Prenez de brèves notes de la scène et remplissez le résumé succinct au fur et à mesure.
+- Photographiez les détails importants (/camera) : (défunt, éclaboussures ou flaques de sang, preuves).
+
+**Examen du défunt (sur la scène) :**
+- Notez la position et la tenue du défunt.
 - Examinez le défunt et déterminez les causes du décès (/cdamages & /cdna - Prenez une capture d'écran car vous en aurez besoin pour le rapport).
-- Vérifiez l'identification, les effets personnels (/cloot).</ul>**Gestion des preuves :**
-<ul>- Ne déplacez aucune preuve avant de collecter des photographies.
+- Vérifiez l'identification, les effets personnels (/cloot)
+
+**Gestion des preuves :**
+- Ne déplacez aucune preuve avant de collecter des photographies.
 - Si une preuve doit être déplacée, documentez d'abord son emplacement d'origine.
-- Informez les agents des forces de l'ordre si des armes à feu/drogues sont trouvées, si aucune n'est présente, rangez-les dans le casier à preuves (/el).</ul>**Étapes finales :**
-<ul>- Déplacez le défunt vers le fourgon du coroner (/cdrag). Une fois au fourgon, faites un clic droit pour arrêter de traîner et (/ctrunk) pour ranger le défunt à l'intérieur.
+- Informez les agents des forces de l'ordre si des armes à feu/drogues sont trouvées, si aucune n'est présente, rangez-les dans le casier à preuves (/el).
+
+**Étapes finales :**
+- Déplacez le défunt vers le fourgon du coroner (/cdrag). Une fois au fourgon, faites un clic droit pour arrêter de traîner et (/ctrunk) pour ranger le défunt à l'intérieur.
 - Retournez à la morgue et ouvrez le coffre (/trunk) et sortez le défunt (/cremove) et placez-le dans la morgue (/cmorgue).
 - Remplissez le rapport du défunt et enregistrez-le sur le site.
 `;

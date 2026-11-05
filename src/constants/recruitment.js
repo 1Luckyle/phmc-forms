@@ -150,6 +150,14 @@ export const APPLICATION_STATUS_COLORS = {
 // Le fil se ferme au refus, ou à la signature du contrat d'une candidature acceptée.
 export const THREAD_OPEN_STATUSES = ['en_examen', 'entretien_programme', 'entretien_effectue', 'acceptee'];
 
+// PLAFOND de candidatures actives par personne, tous domaines confondus : 3 pour un compte Civil, 2 pour le personnel en recrutement interne.
+// « Active » = brouillon, soumise, en examen, entretien programmé ou effectué. Ne comptent pas : en pause, retirée, acceptée, refusée (une décision est définitive).
+export const ACTIVE_APPLICATION_STATUSES = ['brouillon', 'soumise', 'en_examen', 'entretien_programme', 'entretien_effectue'];
+export const MAX_ACTIVE_APPLICATIONS = { civil: 3, internal: 2 };
+export const maxActiveApplications = (internal) => (internal ? MAX_ACTIVE_APPLICATIONS.internal : MAX_ACTIVE_APPLICATIONS.civil);
+export const countActiveApplications = (applications) => (applications || []).filter((application) => ACTIVE_APPLICATION_STATUSES.includes(normalizeApplicationStatus(application.statut))).length;
+export const applicationLimitMessage = (count, internal) => `Vous avez déjà ${count} candidature${count > 1 ? 's' : ''} active${count > 1 ? 's' : ''} (maximum ${maxActiveApplications(internal)}${internal ? ' pour le personnel en recrutement interne' : ''}). Retirez-en une dans « Mon dossier candidat », ou attendez la décision du recrutement, avant d'en déposer une autre.`;
+
 // Une candidature reste modifiable par son candidat tant qu'aucun entretien n'est prévu (voir database.rules.json).
 export const APPLICATION_EDITABLE_STATUSES = ['brouillon', 'soumise', 'en_pause', 'en_examen'];
 

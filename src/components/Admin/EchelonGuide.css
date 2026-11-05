@@ -1,5 +1,6 @@
 /* Grille des 15 échelons : éditeur de la page Transparence et aide du chargé de recrutement */
-.eg { border: 1px solid rgba(88, 166, 255, 0.35); border-radius: 10px; padding: 12px; background: rgba(88, 166, 255, 0.05); color: #e6edf3; }
+/* Fond OPAQUE : en panneau flottant (fenêtre d'un poste), le texte placé derrière ne doit pas transparaître. */
+.eg { border: 1px solid rgba(88, 166, 255, 0.35); border-radius: 10px; padding: 12px; background: #0f141b; color: #e6edf3; }
 .eg-title { font-weight: 700; margin-bottom: 4px; }
 .eg-help { font-size: 0.78rem; color: #8b949e; margin: 0 0 10px; }
 .eg-list { display: flex; flex-direction: column; }

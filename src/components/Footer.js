@@ -16,11 +16,11 @@ const Footer = () => {
                 <span className="contact-info">
                     FOURNI À GTA WORLD (EU). ICÔNES FOURNIES PAR FLATICON.
                 </span>
-                <div>
+                <div className="footer-links">
                     <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">Voir la politique de confidentialité</button>
                     <button onClick={() => setLegalNoticeOpen(true)} className="privacy-policy-button">Mentions légales</button>
-                    <a href="#/transparence" className="privacy-policy-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Transparence</a>
-                    <a href="#/hommage" className="privacy-policy-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Hommage</a>
+                    <a href="#/transparence" className="privacy-policy-button">Transparence</a>
+                    <a href="#/hommage" className="privacy-policy-button">Hommage</a>
                 </div>
             </div>
             <PrivacyPolicyModal isOpen={isPrivacyPolicyModalOpen} onClose={togglePrivacyPolicyModal} />

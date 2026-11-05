@@ -1898,7 +1898,11 @@ export const requestStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
             res.status(403).json({ error: 'legacy-email', message: 'Ce compte utilise un ancien e-mail de connexion (hors Eyefind Mail) : son adresse ne peut pas être modifiée ici.' });
             return;
         }
-        if (currentEmail.toLowerCase() === newEmail.toLowerCase()) {
+        // « Déjà l'adresse actuelle » = la fiche ET le compte de connexion portent cette adresse. Si le compte de connexion
+        // a gardé un ancien e-mail (la fiche seule avait été mise à jour), on autorise la resynchronisation (code de vérification toujours exigé).
+        const authUserNow = await admin.auth().getUser(targetUid).catch(() => null);
+        const authEmailNow = ((authUserNow && authUserNow.email) || '').trim();
+        if (currentEmail.toLowerCase() === newEmail.toLowerCase() && authEmailNow.toLowerCase() === newEmail.toLowerCase()) {
             res.status(400).json({ error: 'same-email', message: 'C\'est déjà l\'adresse actuelle.' });
             return;
         }
@@ -1997,11 +2001,13 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
 
         // Compte de connexion d'abord, puis fiche : si l'écriture de la fiche échoue, on remet
         // l'ancienne adresse pour ne jamais laisser la fiche et le compte désynchronisés.
+        const authBefore = await admin.auth().getUser(targetUid).catch(() => null);
+        const previousAuthEmail = ((authBefore && authBefore.email) || oldEmail).trim();
         await admin.auth().updateUser(targetUid, { email: newEmail });
         try {
             await db.ref(staff.path).update({ email: newEmail });
         } catch (dbError) {
-            await admin.auth().updateUser(targetUid, { email: oldEmail }).catch((revertError) => console.error('Revert of Auth email failed:', revertError));
+            await admin.auth().updateUser(targetUid, { email: previousAuthEmail }).catch((revertError) => console.error('Revert of Auth email failed:', revertError));
             throw dbError;
         }
 
@@ -2025,7 +2031,7 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
         const changedBySomeoneElse = !!request.requestedBy && request.requestedBy !== targetUid;
         await logServerActivity({
             category: 'comptes', action: 'email_changed', severity: changedBySomeoneElse ? 'warning' : 'info',
-            summary: changedBySomeoneElse ? `Adresse e-mail modifiée par un administrateur : ${oldEmail} → ${newEmail}` : `Adresse e-mail modifiée par son titulaire : ${oldEmail} → ${newEmail}`,
+            summary: changedBySomeoneElse ? `Adresse e-mail modifiée par un administrateur : ${previousAuthEmail} → ${newEmail}` : `Adresse e-mail modifiée par son titulaire : ${previousAuthEmail} → ${newEmail}`,
             details: `Compte : ${targetUid}${changedBySomeoneElse ? `\nDemandé par : ${request.requestedBy}` : ''}`,
             target: staff.entry.name || staff.entry.email || targetUid,
         });
@@ -2033,8 +2039,8 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
         // Prévient l'ancienne adresse (alerte anti-usurpation) — jamais bloquant.
         try {
             const apiKey = process.env.EYEFIND_API_KEY;
-            if (apiKey) {
-                await sendEyefindMailInternal({ apiKey, to: oldEmail, ...(await composeServerMail('adresse_modifiee_alerte', { nouvelle_adresse: newEmail })) });
+            if (apiKey && oldEmail.toLowerCase() !== newEmail.toLowerCase()) {
+                await sendEyefindMailInternal({ apiKey, to: oldEmail,...(await composeServerMail('adresse_modifiee_alerte', { nouvelle_adresse: newEmail })) });
             }
         } catch (mailError) {
             console.warn('Could not notify old address of email change:', mailError && mailError.body ? mailError.body : mailError);

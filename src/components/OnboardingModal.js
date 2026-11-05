@@ -49,7 +49,8 @@ export const USER_TYPES = {
 
 // Form categories for each user type
 const FORM_CATEGORIES = {
-    [USER_TYPES.CIVILIAN]: ['PHMC'],
+    // Un compte Civil sert aussi aux candidatures : il a donc aussi le groupe « PHMC Recruitment ».
+    [USER_TYPES.CIVILIAN]: ['PHMC', 'PHMC Recruitment'],
     [USER_TYPES.PHMC_STAFF]: ['PHMC'],
     [USER_TYPES.ADMIN_STAFF]: ['PHMC'],
     [USER_TYPES.CORONER]: ['PHMC'],
@@ -61,7 +62,8 @@ const FORM_CATEGORIES = {
 // Recommended forms for each user type
 const CIVIL_MEDICAL_FORMS = [24, 25, 3, 26]; // Libération médicale, dossier basique, dossier avancé, mise à jour du dossier
 const RECOMMENDED_FORMS = {
-    [USER_TYPES.CIVILIAN]: CIVIL_MEDICAL_FORMS,
+    // Civil : ses dossiers médicaux ET toutes les candidatures (le profil Candidat n'existe plus : même compte).
+    [USER_TYPES.CIVILIAN]: [...CIVIL_MEDICAL_FORMS, 50, 51, 52, 53, 54, 55],
     // Soignant : consultations et rapports (dont certificat de maladie et évaluation psychologique) + dossiers civils.
     [USER_TYPES.PHMC_STAFF]: [5, 6, 14, 19, 20, 28, 35, 22, 27, ...CIVIL_MEDICAL_FORMS],
     // Administratif / employé : note de service, e-mail interne + ses propres dossiers médicaux.
