@@ -89,6 +89,19 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         if (isMinorTitle(title) && (age === null || age >= MAJORITY_AGE)) {
             errors.push('Titre « Mineur » : la date de naissance doit indiquer un patient de moins de 18 ans.');
         }
+        // Et inversement : un patient de moins de 18 ans a obligatoirement le titre « Mineur ».
+        if (age !== null && age < MAJORITY_AGE && !isMinorTitle(title)) {
+            errors.push('Titre : un patient de moins de 18 ans a obligatoirement le titre « Mineur ».');
+        }
+    }
+    // Mise à jour du dossier : le nouveau titre suit la nouvelle date de naissance (à défaut, la date actuelle).
+    if (version === 26 && filled(data.patientTitleNew)) {
+        const age = ageOn(data.patientDateOfBirthNew) ?? ageOn(data.date);
+        if (isMinorTitle(data.patientTitleNew) && (age === null || age >= MAJORITY_AGE)) {
+            errors.push('Nouveau titre « Maître (Enfant <18 ans) » : la date de naissance doit indiquer un patient de moins de 18 ans.');
+        } else if (!isMinorTitle(data.patientTitleNew) && age !== null && age < MAJORITY_AGE) {
+            errors.push('Nouveau titre : un patient de moins de 18 ans a obligatoirement le titre « Maître (Enfant <18 ans) ».');
+        }
     }
     // Patient mineur : l'autorisation de divulgation est signée par son représentant légal (sauf mineur émancipé).
     if (version === 24) {

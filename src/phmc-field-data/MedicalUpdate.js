@@ -115,6 +115,11 @@ const MedicalRelease = ({
     const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
     const { filledByStaff } = useBillingRole(formData, setFormData);
     const minorGuard = useMinorTitleGuard(formData, setFormData, { titleField: 'patientTitleOptions', dobField: 'date' });
+    // Nouveau titre (mise à jour des informations générales) : « Maître (Enfant <18 ans) » imposé à un mineur d'après la nouvelle date de naissance, à défaut la date actuelle.
+    const newTitleGuard = useMinorTitleGuard(formData, setFormData, {
+        titleField: 'patientTitleNew', dobField: 'patientDateOfBirthNew', fallbackDobField: 'date', minorValue: 'Mstr',
+        enabled: !!formData.UpdateMedicalFile?.includes('GeneralInformation'),
+    });
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {
@@ -145,6 +150,8 @@ const MedicalRelease = ({
             <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Select
             name="patientTitleOptions"
+            disabled={minorGuard.locked}
+            title={minorGuard.hint}
             value={formData.patientTitleOptions}
             onChange={handleChange}
             className="form-control"
@@ -255,10 +262,12 @@ const MedicalRelease = ({
             value={formData.patientTitleNew}
             onChange={handleChange}
             className="form-control"
+            disabled={newTitleGuard.locked}
+            title={newTitleGuard.hint}
         >
             <option value="" disabled>Titre</option>
             {(patientTitleNew || []).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+                <option key={option.value} value={option.value} disabled={newTitleGuard.isDisabled(option)}>{newTitleGuard.label(option)}</option>
             ))}
         </Form.Select>
                 <Form.Control

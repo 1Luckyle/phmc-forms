@@ -65,3 +65,26 @@ describe('titres des rapports', () => {
         expect(buildReportTitle(11, { dateTime: '2026-11-02T10:00', decedents: [{ decedentName: 'A' }, { decedentName: 'B' }] }, 'Rapport de Tuerie/Accident de Masse')).toBe('[A, B] Rapport de Tuerie/Accident de Masse - 02/11/2026');
     });
 });
+
+describe('titre « Mineur » obligatoire', () => {
+    const recent = (years) => { const d = new Date(); d.setFullYear(d.getFullYear() - years); return d.toISOString().slice(0, 10); };
+    const base = { patientName: 'A B', patientEmail: 'a@b.fr', patientID: '2752' };
+    test('un patient de moins de 18 ans sans le titre « Mineur » ne peut pas être enregistré', () => {
+        const errors = validateReport(25, { ...base, patientDateOfBirth: recent(10), patientTitle: 'Mr' }).errors;
+        expect(errors.join(' ')).toMatch(/obligatoirement le titre « Mineur »/);
+        expect(validateReport(25, { ...base, patientDateOfBirth: recent(10), patientTitle: 'Mineur' }).errors).toEqual([]);
+    });
+    test('un adulte ne peut pas avoir le titre « Mineur »', () => {
+        expect(validateReport(25, { ...base, patientDateOfBirth: recent(30), patientTitle: 'Mineur' }).errors.join(' ')).toMatch(/moins de 18 ans/);
+    });
+});
+
+describe('mise à jour du dossier : nouveau titre', () => {
+    const recent = (years) => { const d = new Date(); d.setFullYear(d.getFullYear() - years); return d.toISOString().slice(0, 10); };
+    const base = { patientName: 'A B', date: recent(10), patientEmail: 'a@b.fr', patientID: '2752', patientTitleOptions: 'Mineur', UpdateMedicalFile: ['GeneralInformation'] };
+    test('un mineur a forcément le nouveau titre « Maître (Enfant <18 ans) »', () => {
+        expect(validateReport(26, { ...base, patientTitleNew: 'Mr' }).errors.join(' ')).toMatch(/obligatoirement le titre « Maître/);
+        expect(validateReport(26, { ...base, patientTitleNew: 'Mstr' }).errors).toEqual([]);
+        expect(validateReport(26, { ...base, date: recent(30), patientTitleOptions: 'Mr', patientTitleNew: 'Mstr' }).errors.join(' ')).toMatch(/moins de 18 ans/);
+    });
+});

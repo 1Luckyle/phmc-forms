@@ -64,7 +64,7 @@ const generateMedicalRecordRelease = (formData) => {
 [list=none][${formData.patientTitle === 'Mineur' ? 'x' : ''}] Mineur
 [*][${formData.patientTitle === 'Mr' ? 'x' : ''}] M.
 [*][${formData.patientTitle === 'Mrs' ? 'x' : ''}] Mme
-[*][${formData.patientTitle === 'Ms' ? 'x' : ''}] Mlle
+[*][${formData.patientTitle === 'Miss' ? 'x' : ''}] Mlle
 [*][${formData.patientTitle === 'Other' ? 'x' : ''}] Autre[/list]
 [b]Prénom:[/b]
 [i]${patientFirstName}[/i][br][/br]

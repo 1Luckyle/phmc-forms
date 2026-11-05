@@ -31,8 +31,10 @@ export const ageOn = (birthDate, now = Date.now()) => {
     return age < 0 ? null : age;
 };
 
-// Le titre « Mineur <18 ans » (valeur « Mineur » dans la liste des titres) a-t-il été choisi ?
-export const isMinorTitle = (value) => String(value ?? '').trim().toLowerCase() === 'mineur';
+// Titres réservés aux mineurs : « Mineur <18 ans » (valeur « Mineur ») dans la liste des titres, « Maître (Enfant <18 ans) » (valeur « Mstr ») dans celle de
+// la mise à jour du dossier.
+const MINOR_TITLES = ['mineur', 'mstr'];
+export const isMinorTitle = (value) => MINOR_TITLES.includes(String(value ?? '').trim().toLowerCase());
 
 // Le patient est-il mineur ? `titleIsMinor` : le titre « Mineur » a été choisi sur le formulaire.
 export const isMinorPatient = ({ birthDate = '', titleIsMinor = false, now } = {}) => {

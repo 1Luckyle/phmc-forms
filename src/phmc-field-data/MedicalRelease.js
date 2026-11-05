@@ -86,6 +86,8 @@ const MedicalRelease = ({
             <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Select
                     name="patientTitle"
+                    disabled={minorGuard.locked}
+                    title={minorGuard.hint}
                     value={formData.patientTitle}
                     onChange={handleChange}
                     className="form-control"
