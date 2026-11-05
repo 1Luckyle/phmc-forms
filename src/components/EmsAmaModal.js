@@ -54,6 +54,15 @@ const nowLabel = () => {
     const d = new Date();
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+// « JJ/MM/AAAA HH:MM » (texte imprimé) ⇄ « AAAA-MM-JJTHH:MM » (sélecteur de date et d'heure du navigateur).
+const toLocalInput = (label) => {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/.exec(String(label || ''));
+    return match ? `${match[3]}-${match[2]}-${match[1]}T${match[4]}:${match[5]}` : '';
+};
+const fromLocalInput = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(value || ''));
+    return match ? `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}` : '';
+};
 const civilianName = (c) => [c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 
 const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) => {
@@ -361,7 +370,10 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                     </Form.Group>
                     <Form.Group className="mb-2">
                         <Form.Label>Date / heure *</Form.Label>
-                        <Form.Control size="sm" name="amaDate" required data-guide="Date et heure du refus de soins (JJ/MM/AAAA HH:MM)." value={date} onChange={(e) => setDate(e.target.value)} placeholder="JJ/MM/AAAA HH:MM" disabled={saving} />
+                        <div className="d-flex gap-2">
+                            <Form.Control size="sm" type="datetime-local" name="amaDate" required data-guide="Date et heure du refus de soins : cliquez pour ouvrir le sélecteur." value={toLocalInput(date)} onChange={(e) => setDate(fromLocalInput(e.target.value))} onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch (error) { /* saisie au clavier possible */ } }} disabled={saving} />
+                            <Button size="sm" variant="outline-secondary" onClick={() => setDate(nowLabel())} disabled={saving} title="Mettre la date et l'heure actuelles">Maintenant</Button>
+                        </div>
                     </Form.Group>
                     <Form.Check
                         className="mb-2" type="checkbox" id="ama-minor" checked={minor} disabled={saving}

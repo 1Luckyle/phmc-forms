@@ -49,6 +49,31 @@ const labelOf = (field, anchor) => {
 };
 
 // Contenu de l'infobulle : { text, requirement: 'required' | 'optional' | '', reason }.
+// Fenêtres traitées comme des zones « automatiques » (couleurs obligatoire / facultatif sans balisage).
+const AUTO_ZONE_SELECTOR = '.modal-container, .modal-content, .agency-selector-modal, .guide-modal';
+
+// Conteneur d'une liste react-select (classe « css-xxxx-container »), ou null : « modal-container » ou « -container » en général ne suffisent pas.
+const selectContainerOf = (el) => {
+    let node = el.parentElement;
+    while (node && node !== document.body) {
+        const cls = typeof node.className === 'string' ? node.className : '';
+        if (/(^|\s)css-[\w-]+-container(\s|$)/.test(cls)) return node;
+        node = node.parentElement;
+    }
+    return null;
+};
+
+// Le champ a-t-il une VRAIE étiquette (label associé ou du même groupe) ? Un simple placeholder n'en est pas une.
+const hasLabel = (field, anchor) => {
+    if (field.id) {
+        const explicit = document.querySelector(`label[for="${CSS.escape(field.id)}"]`);
+        if (explicit && explicit.textContent.trim()) return true;
+    }
+    const group = anchor.closest('.form-group, .mb-1, .mb-2, .mb-3, .row, [class*="Group"]');
+    const near = group ? group.querySelector('label') : null;
+    return !!(near && near.textContent.trim());
+};
+
 const describe = ({ field, anchor, name, type }) => {
     // Champ d'identité verrouillé (tiré du profil, voir ForMyselfBanner) : l'infobulle dit comment le modifier.
     if (field.getAttribute('data-self-locked') === '1') {
@@ -71,7 +96,7 @@ const describe = ({ field, anchor, name, type }) => {
     // `data-guide="texte"` sur un champ remplace l'indication par défaut (« À renseigner : libellé »).
     const customHost = field.closest('[data-guide]') || (anchor && anchor.closest ? anchor.closest('[data-guide]') : null);
     const custom = customHost ? customHost.getAttribute('data-guide') : '';
-    const inGuideZone = !!field.closest('[data-guide-zone]');
+    const inGuideZone = !field.closest('[data-no-mark]') && (!!field.closest('[data-guide-zone]') || (!!field.closest(AUTO_ZONE_SELECTOR) && hasLabel(field, anchor || field)));
     const label = labelOf(field, anchor).replace(/[:*]+\s*$/, '').trim();
     if (!label && !custom) return null;
     // `data-required` sur un conteneur : rend obligatoires les champs qu'il contient (listes react-select, dont le champ caché n'a pas `required`).
@@ -190,26 +215,43 @@ const FieldGuide = () => {
         // ROUGE = champ `required` encore vide ; BLEU = champ facultatif encore vide. Un champ rempli, en lecture seule, désactivé, ou placé dans
         // `data-no-mark` (barres de recherche, filtres…) n'est jamais marqué. Les listes déroulantes (react-select) doivent porter un `name`.
         const refreshGuideZones = () => {
-            document.querySelectorAll('[data-guide-zone]').forEach((zone) => {
+            const marked = new Set();
+            const explicit = Array.from(document.querySelectorAll('[data-guide-zone]'));
+            // Toute fenêtre est une zone « automatique » : mêmes couleurs partout, sans balisage. Dans celle-ci seuls les champs ÉTIQUETÉS sont marqués
+            // (une barre de recherche ou un filtre n'a pas d'étiquette) ; une zone balisée marque tous ses champs.
+            const auto = Array.from(document.querySelectorAll(AUTO_ZONE_SELECTOR)).filter((zone) => !zone.closest('[data-guide-zone]') && !zone.closest('[data-form-zone]'));
+            const zones = [...explicit.map((zone) => ({ zone, auto: false })), ...auto.map((zone) => ({ zone, auto: true }))];
+            zones.forEach(({ zone, auto: isAuto }) => {
                 const groups = new Map();
+                const handledSelects = new Set();
                 let anonymous = 0;
-                zone.querySelectorAll('input, textarea, select').forEach((field) => {
-                    if (field.closest('[data-no-mark]')) return;
-                    if ((SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.readOnly || field.disabled) return;
-                    let target = field;
-                    if (field.type === 'hidden') {
-                        const container = field.closest('[class*="-container"]');
-                        if (!container || !field.name) return;
-                        target = container.querySelector('[class*="-control"]') || container;
-                    } else if (field.closest('[class*="-container"]') && !field.name) {
-                        return;
-                    }
-                    const key = field.name || `__anonyme${anonymous++}`;
+                const add = (key, target, filled, required) => {
                     const entry = groups.get(key) || { targets: [], filled: false, required: false };
                     entry.targets.push(target);
-                    if (String(field.value || '').trim() !== '') entry.filled = true;
-                    if (field.required || field.getAttribute('aria-required') === 'true' || field.closest('[data-required]')) entry.required = true;
+                    if (filled) entry.filled = true;
+                    if (required) entry.required = true;
                     groups.set(key, entry);
+                };
+                zone.querySelectorAll('input, textarea, select').forEach((field) => {
+                    if (field.closest('[data-no-mark]')) return;
+                    if (isAuto && (field.closest('[data-guide-zone]') || field.closest('[data-form-zone]') || field.closest('table') || field.closest('.dropdown-menu'))) return;
+                    // Liste déroulante react-select : un seul repère par liste (sa zone de saisie interne n'est pas le champ).
+                    const container = selectContainerOf(field);
+                    if (container) {
+                        if (handledSelects.has(container)) return;
+                        handledSelects.add(container);
+                        const control = container.querySelector('[class*="-control"]');
+                        if (!control || /--is-disabled/.test(control.className)) return;
+                        if (isAuto && !hasLabel(field, container)) return;
+                        const hidden = container.querySelector('input[type="hidden"]');
+                        const filled = !!container.querySelector('[class*="-singleValue"], [class*="-multiValue"]') || !!(hidden && String(hidden.value || '').trim() !== '');
+                        add(hidden && hidden.name ? `select:${hidden.name}` : `__anonyme${anonymous++}`, control, filled, !!container.closest('[data-required]') || !!(hidden && hidden.required));
+                        return;
+                    }
+                    if ((SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.type === 'hidden' || field.readOnly || field.disabled) return;
+                    if (isAuto && !hasLabel(field, field)) return;
+                    add(field.name || `__anonyme${anonymous++}`, field, String(field.value || '').trim() !== '',
+                        field.required || field.getAttribute('aria-required') === 'true' || !!field.closest('[data-required]'));
                 });
                 const red = new Set();
                 const blue = new Set();
@@ -217,10 +259,12 @@ const FieldGuide = () => {
                     if (entry.filled) return;
                     entry.targets.forEach((target) => (entry.required ? red : blue).add(target));
                 });
-                zone.querySelectorAll('[data-req-empty]').forEach((el) => { if (!red.has(el)) el.removeAttribute('data-req-empty'); });
-                zone.querySelectorAll('[data-opt-empty]').forEach((el) => { if (!blue.has(el)) el.removeAttribute('data-opt-empty'); });
-                red.forEach((el) => { if (el.getAttribute('data-req-empty') !== '1') el.setAttribute('data-req-empty', '1'); });
-                blue.forEach((el) => { if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
+                // Nettoyage : seulement ce qui appartient à CETTE zone (pas aux zones balisées qu'elle contient).
+                const owns = (el) => !isAuto || (!el.closest('[data-guide-zone]') && !el.closest('[data-form-zone]'));
+                zone.querySelectorAll('[data-req-empty]').forEach((el) => { if (owns(el) && !red.has(el)) el.removeAttribute('data-req-empty'); });
+                zone.querySelectorAll('[data-opt-empty]').forEach((el) => { if (owns(el) && !blue.has(el)) el.removeAttribute('data-opt-empty'); });
+                red.forEach((el) => { marked.add(el); if (el.getAttribute('data-req-empty') !== '1') el.setAttribute('data-req-empty', '1'); });
+                blue.forEach((el) => { marked.add(el); if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
             });
         };
         // ── Champs d'identité verrouillés (`data-self-lock="champ1,champ2"` posé sur le formulaire par ForMyselfBanner) ──

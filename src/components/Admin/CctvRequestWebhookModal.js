@@ -214,21 +214,21 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Agent demandeur{required}</Form.Label>
-                                        <Form.Control type="text" value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="Matricule, Prénom & Nom" isInvalid={invalid(!officer.trim())} />
+                                        <Form.Control type="text" value={officer} onChange={(e) => setOfficer(e.target.value)} placeholder="Matricule, Prénom & Nom" required isInvalid={invalid(!officer.trim())} />
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Téléphone de l'agent{required}</Form.Label>
-                                        <Form.Control type="text" value={officerPH} onChange={(e) => setOfficerPH(e.target.value)} placeholder="ex. 555-0100" isInvalid={invalid(!officerPH.trim())} />
+                                        <Form.Control type="text" value={officerPH} onChange={(e) => setOfficerPH(e.target.value)} placeholder="ex. 555-0100" required isInvalid={invalid(!officerPH.trim())} />
                                     </Form.Group>
                                 </div>
                                 <div style={{ ...rowStyle, marginTop: '10px' }}>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Département demandeur{required}</Form.Label>
-                                        <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="ex. LSPD, LSSD" isInvalid={invalid(!department.trim())} />
+                                        <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="ex. LSPD, LSSD" required isInvalid={invalid(!department.trim())} />
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Nom d'utilisateur Discord{required}</Form.Label>
-                                        <Form.Control type="text" value={discordUsername} onChange={(e) => setDiscordUsername(e.target.value)} placeholder="ex. prenom.nom" isInvalid={invalid(!discordUsername.trim())} />
+                                        <Form.Control type="text" value={discordUsername} onChange={(e) => setDiscordUsername(e.target.value)} placeholder="ex. prenom.nom" required isInvalid={invalid(!discordUsername.trim())} />
                                     </Form.Group>
                                 </div>
                             </div>
@@ -238,15 +238,15 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                                 <div style={rowStyle}>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Date de l'incident{required}</Form.Label>
-                                        <Form.Control type="date" value={incidentDate} max={today} onChange={(e) => setIncidentDate(e.target.value)} isInvalid={invalid(!incidentDate)} />
+                                        <Form.Control type="date" value={incidentDate} max={today} onChange={(e) => setIncidentDate(e.target.value)} required isInvalid={invalid(!incidentDate)} />
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Heure de l'incident{required}</Form.Label>
-                                        <Form.Control type="time" value={incidentTime} onChange={(e) => setIncidentTime(e.target.value)} isInvalid={invalid(!incidentTime)} />
+                                        <Form.Control type="time" value={incidentTime} onChange={(e) => setIncidentTime(e.target.value)} required isInvalid={invalid(!incidentTime)} />
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Raison de la demande{required}</Form.Label>
-                                        <Form.Select value={reason} onChange={(e) => setReason(e.target.value)} isInvalid={invalid(!reason)}>
+                                        <Form.Select value={reason} onChange={(e) => setReason(e.target.value)} required isInvalid={invalid(!reason)}>
                                             <option value="">Sélectionnez une raison…</option>
                                             {CCTV_REASONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                                         </Form.Select>
@@ -255,7 +255,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                                 {reason === 'other' && (
                                     <Form.Group style={{ marginTop: '10px' }}>
                                         <Form.Label>Précisez la raison de la demande{required}</Form.Label>
-                                        <Form.Control type="text" value={otherReason} onChange={(e) => setOtherReason(e.target.value)} placeholder="Motif de la demande" isInvalid={invalid(!otherReason.trim())} />
+                                        <Form.Control type="text" value={otherReason} onChange={(e) => setOtherReason(e.target.value)} placeholder="Motif de la demande" required isInvalid={invalid(!otherReason.trim())} />
                                     </Form.Group>
                                 )}
                             </div>

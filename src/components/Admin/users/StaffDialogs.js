@@ -123,7 +123,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill">
                         <Form.Label>Prénom</Form.Label>
-                        <Form.Control value={form.firstName} onChange={set('firstName')} />
+                        <Form.Control name="prenom" required value={form.firstName} onChange={set('firstName')} />
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Deuxième prénom</Form.Label>
@@ -131,7 +131,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Nom</Form.Label>
-                        <Form.Control value={form.lastName} onChange={set('lastName')} />
+                        <Form.Control name="nom" required value={form.lastName} onChange={set('lastName')} />
                     </Form.Group>
                 </div>
                 {isEdit && (
@@ -159,7 +159,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                             <Form.Control value={buildBadge(service, form.rank || member.rank, form.badge)} disabled
                                 title="L'ID employé est unique (lié à l'UCP). C'est aussi l'ID patient PHMC-{ID} de la personne." />
                         ) : (
-                            <DigitsInput value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
+                            <DigitsInput name="badge" required value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
                         )}
                     </Form.Group>
                     <Form.Group className="flex-fill">
@@ -310,7 +310,7 @@ export const ConvertToCivilDialog = ({ show, onHide, member, hasCivilProfile, ad
                 {!hasCivilProfile && (
                     <Form.Group className="mb-2">
                         <Form.Label>ID patient du nouveau profil Civil *</Form.Label>
-                        <Form.Control value={patientID} onChange={(e) => setPatientID(e.target.value)}
+                        <Form.Control name="patientID" required value={patientID} onChange={(e) => setPatientID(e.target.value)}
                             onBlur={() => setPatientID((v) => (v.trim() ? canonicalPatientId(v) : v))} placeholder="ex. PHMC-2752" />
                         <Form.Text className="text-muted">
                             Cette personne n'a pas encore de profil Civil : il est créé avec son identité de personnel. Elle complétera le reste elle-même.
@@ -389,7 +389,7 @@ export const ConvertToStaffDialog = ({ show, onHide, civilian, presetRecruiter =
                 />
                 <Form.Group className="mb-3">
                     <Form.Label>Badge (4 ou 5 chiffres)</Form.Label>
-                    <DigitsInput value={badge} onChange={setBadge} placeholder="00000" />
+                    <DigitsInput name="badge" required value={badge} onChange={setBadge} placeholder="00000" />
                 </Form.Group>
                 <Form.Check
                     type="switch"

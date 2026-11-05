@@ -36,7 +36,7 @@ const RolePicker = ({
             </Form.Group>
             <Form.Group className="mb-3">
                 <Form.Label>Rôle principal</Form.Label>
-                <Form.Select value={rank} onChange={(e) => onRankChange(e.target.value)}>
+                <Form.Select name="rolePrincipal" required value={rank} onChange={(e) => onRankChange(e.target.value)}>
                     <option value="">Sélectionner…</option>
                     {groups.map((group) => (
                         <optgroup key={group.filiere} label={group.filiere}>

@@ -262,7 +262,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
 
     const modalPortalContent = (
         <div style={{ ...modalOverlayStyle, gap: '16px', flexWrap: 'wrap', overflowY: 'auto', padding: '16px' }} onClick={handleClose}>
-            <div style={{ ...modalContentStyle, width: 'min(90%, 750px)', flex: '0 1 750px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="guide-modal" style={{ ...modalContentStyle, width: 'min(90%, 750px)', flex: '0 1 750px' }} onClick={(e) => e.stopPropagation()}>
                 <div style={modalHeaderStyle}>
                     <h5 style={modalTitleStyle}>{modalTitleText}</h5>
                     <Button variant="link" onClick={handleClose} aria-label="Fermer" style={{ color: '#aaa', textDecoration: 'none', fontSize: '1.5rem', padding: '0 .5rem', lineHeight: 1 }}>
@@ -304,7 +304,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                                 <div style={{ fontWeight: 600, marginBottom: '10px' }}>Nouveau rôle du personnel</div>
                                 <BootstrapForm.Group className="mb-2">
                                     <BootstrapForm.Label>Nom du rôle *</BootstrapForm.Label>
-                                    <BootstrapForm.Control type="text" value={newRole.value} maxLength={60} placeholder="ex. Technicien(ne) de laboratoire" onChange={(e) => changeNewRole('value', e.target.value)} />
+                                    <BootstrapForm.Control type="text" name="nouveauRole" required value={newRole.value} maxLength={60} placeholder="ex. Technicien(ne) de laboratoire" onChange={(e) => changeNewRole('value', e.target.value)} />
                                 </BootstrapForm.Group>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
                                     <BootstrapForm.Group>
@@ -315,7 +315,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                                     </BootstrapForm.Group>
                                     <BootstrapForm.Group>
                                         <BootstrapForm.Label>Préfixe de badge *</BootstrapForm.Label>
-                                        <BootstrapForm.Control type="text" value={newRole.badgePrefix} maxLength={4} placeholder="ex. TL"
+                                        <BootstrapForm.Control type="text" name="prefixeBadge" required value={newRole.badgePrefix} maxLength={4} placeholder="ex. TL"
                                             onChange={(e) => { setPrefixTouched(true); changeNewRole('badgePrefix', e.target.value.toUpperCase().replace(/[^A-Z]/g, '')); }} />
                                     </BootstrapForm.Group>
                                     <BootstrapForm.Group>
