@@ -104,7 +104,7 @@ ${checkbox(citizenNone)} Aucune des réponses ci-dessus
     }
     // --- Fin BBCode conditionnel ---
 
-    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
+    let bbCode = `[imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 Centre de carrière [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${pageTitlePosition}[/b][/size][/center]

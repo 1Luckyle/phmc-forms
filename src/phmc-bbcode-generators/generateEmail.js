@@ -31,7 +31,7 @@ const generateEmail = (formData) => {
         return shortCode; // fallback to shortcode
     };
 
-    let bbCode = `[center][img]https://i.ibb.co/GfSHbMMj/ItaoQkO.webp[/img][/center]
+    let bbCode = `[center][img]https://phmc-tools.com/img/ItaoQkO.webp[/img][/center]
 [hr][/hr]
 
 DESTINATAIRE: ${requestingOfficer} - ${getDepartmentFullName(department)}

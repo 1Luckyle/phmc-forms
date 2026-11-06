@@ -65,11 +65,12 @@ const RECOMMENDED_FORMS = {
     // Civil : ses dossiers médicaux ET toutes les candidatures (le profil Candidat n'existe plus : même compte).
     [USER_TYPES.CIVILIAN]: [...CIVIL_MEDICAL_FORMS, 50, 51, 52, 53, 54, 55],
     // Soignant : consultations et rapports (dont certificat de maladie et évaluation psychologique) + dossiers civils.
-    [USER_TYPES.PHMC_STAFF]: [5, 6, 14, 19, 20, 28, 35, 22, 27, ...CIVIL_MEDICAL_FORMS],
-    // Administratif / employé : note de service, e-mail interne + ses propres dossiers médicaux.
-    [USER_TYPES.ADMIN_STAFF]: [22, 27, ...CIVIL_MEDICAL_FORMS],
-    // DMEC : médecine légale + e-mail interne + ses propres dossiers médicaux.
-    [USER_TYPES.CORONER]: [1, 2, 4, 8, 11, 37, 27, ...CIVIL_MEDICAL_FORMS],
+    // (L'e-mail interne n'est plus un formulaire : il est dans la Messagerie interne de la boîte à outils. Le certificat de vol est réservé aux soignants.)
+    [USER_TYPES.PHMC_STAFF]: [5, 6, 14, 19, 20, 28, 35, 41, 22, ...CIVIL_MEDICAL_FORMS],
+    // Administratif / employé : note de service + ses propres dossiers médicaux.
+    [USER_TYPES.ADMIN_STAFF]: [22, ...CIVIL_MEDICAL_FORMS],
+    // DMEC : médecine légale + ses propres dossiers médicaux.
+    [USER_TYPES.CORONER]: [1, 2, 4, 8, 11, 37, ...CIVIL_MEDICAL_FORMS],
     // Candidat : toutes les candidatures + les dossiers civils (son compte Civil les ouvre).
     [USER_TYPES.RECRUITMENT]: [50, 51, 52, 53, 54, 55, ...CIVIL_MEDICAL_FORMS],
     [USER_TYPES.OTHER]: 'ALL_FORMS' // Show all available forms
@@ -457,7 +458,7 @@ const OnboardingModal = ({
         if (selectedUserType === USER_TYPES.CIVILIAN) {
             defaultForm = 24; // Medical Release Form
         } else if (selectedUserType === USER_TYPES.ADMIN_STAFF) {
-            defaultForm = 27; // PHMC Email Interne
+            defaultForm = 22; // Note de Service (l'e-mail interne est maintenant dans la Messagerie)
         } else if (selectedUserType === USER_TYPES.PHMC_STAFF) {
             defaultForm = defaultFormForRank(loggedInUser?.rank || loggedInUser?.category);
         } else if (selectedUserType === USER_TYPES.CORONER) {

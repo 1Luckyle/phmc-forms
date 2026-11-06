@@ -37,7 +37,7 @@ const generateFlightCertificate = (formData) => {
     const noteBlock = f.flightCertNote ? `\n[b]Observations :[/b] ${f.flightCertNote}\n` : '';
     const signature = f.phmcEmployeeSignatureImage ? `[img]${String(f.phmcEmployeeSignatureImage).trim()}[/img]` : '';
 
-    return `[divbox=white][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
+    return `[divbox=white][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
 [divbox=white][br][/br][center][size=150][b]CERTIFICAT D'APTITUDE MÉDICALE AU VOL[/b][/size]
 [b]${cls ? cls.label : 'Classe non renseignée'}[/b][/center]
 [hr][/hr]

@@ -34,7 +34,7 @@ const numberToWords = (num) => {
 };
 
     // --- BBCode Header ---
-    let bbCode = `[divbox=transparent][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
+    let bbCode = `[divbox=transparent][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
 
 [divbox=transparent][br][/br][center]RAPPORT DE CATASTROPHE MORTELLE[/center]
 [hr][/hr]

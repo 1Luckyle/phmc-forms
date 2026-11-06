@@ -101,7 +101,7 @@ const generateAutopsy = (formData) => {
     const internalExamText = (formData.autopsyInternalExamination || '').trim()
         || "Conformément à la cause du décès indiquée, rien d'inhabituel n'a été observé.";
 
-    let bbCode = `[divbox=white][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
+    let bbCode = `[divbox=white][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
 
 [divbox=white][b][size=150][br][/br][center]DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/size][/b][/center]
 [center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Nom OOC'}))[/b] (ID Patient : ${formData.patientID || 'Non applicable'}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.${decedentDescriptionLine}${authorityLine ? `\n${authorityLine}` : ''}

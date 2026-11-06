@@ -25,7 +25,7 @@ export const sectionBanner = (title, { accent = BB_COLORS.red, size = null } = {
 // Fin de l'en-tête des formulaires PHMC (logo + bloc d'adresse du centre médical). À placer juste après
 // la première cellule de l'en-tête (titre, patient, date…), dans la table ouverte par le générateur :
 //   [table][tr][td][center]…première cellule…${phmcHeaderEnd()}
-export const phmcHeaderEnd = () => `[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
+export const phmcHeaderEnd = () => `[/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
 BP 742
 LOS SANTOS, SAN ANDREAS

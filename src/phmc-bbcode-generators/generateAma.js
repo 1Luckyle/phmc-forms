@@ -3,7 +3,7 @@
 // Formulaire AMA (Contre Avis Médical — refus de traitement médical), reconstitué en BBCode : il se copie, se télécharge en HTML / PDF /
 // image comme n'importe quel autre rapport, et n'est plus une image téléversée sur ImgBB. Seules les SIGNATURES (images, une par personne)
 // sont des images : celle du patient (rangée à son ID patient), celle du paramédic (sa signature créée dans « Ma signature »).
-const LOGO_URL = 'https://i.ibb.co/0pgw9hHm/phmc.png';
+const LOGO_URL = 'https://phmc-tools.com/img/phmc.png';
 
 const signatureCell = ({ imageUrl, typedName, label, caption }) => {
     const mark = imageUrl

@@ -72,7 +72,7 @@ const generateCoroner = (formData) => {
 
     // Helper for education/citizenship/gender checkboxes
 
-    const bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
+    const bbCode = `[imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 Centre de Carrières [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]

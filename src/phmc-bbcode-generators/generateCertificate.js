@@ -18,7 +18,7 @@ const generateCertificate = (formData) => {
     } = formData;
     const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
 
-    let bbCode = `[divbox=#E8E8E8][br][/br][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][br][/br]
+    let bbCode = `[divbox=#E8E8E8][br][/br][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][br][/br]
 
 
 [hr][/hr]

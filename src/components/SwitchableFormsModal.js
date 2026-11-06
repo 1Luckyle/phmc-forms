@@ -173,7 +173,7 @@ const SwitchableFormsModal = ({
 }) => {
     // Accès par rôle du personnel : on ne propose que les formulaires autorisés (voir utils/formAccess.js).
     const { canAccess: canAccessForm } = useFormAccess();
-    const forms = (allForms || []).filter((form) => canAccessForm(form.version));
+    const forms = (allForms || []).filter((form) => !form.retired && canAccessForm(form.version));
 
     // State to track whether to show personalized or all forms
     const [showPersonalizedForms, setShowPersonalizedForms] = useState(true);

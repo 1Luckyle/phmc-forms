@@ -148,7 +148,10 @@ userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']
     { version: 22, name: "Note de Service", group: "PHMC", icon: paperwork, generator: generateCommentaryNotePHMC, FieldComponent: CommNotePHMC, titleKey: "noteServicePHMC", sortOrder: 28, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
     // Add isHiddenInSelector: true to the PBC version
     { version: 23, name: "Note de Service (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateCommentaryNotePBC, FieldComponent: CommNotePBC, titleKey: "noteServicePBC", sortOrder: 29, isHiddenInSelector: true, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 27, name: "PHMC Email Interne", group: "PHMC", icon: emailIcon, generator: generateEmailPHMCEmail, FieldComponent: EmailInternal, titleKey: "phmcEmailInterne", sortOrder: 30, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 27, name: "PHMC Email Interne", group: "PHMC", icon: emailIcon, generator: generateEmailPHMCEmail, FieldComponent: EmailInternal, titleKey: "phmcEmailInterne", sortOrder: 30, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'],
+        // RETIRÉ : fusionné dans la Messagerie interne (boîte à outils). La définition reste pour ouvrir, copier et exporter les anciens rapports de ce formulaire,
+        // mais il n'est plus proposé dans les sélecteurs de formulaires (voir les filtres « retired »).
+        retired: true },
     { version: 28, name: "Évaluation Psychologique", group: "PHMC", icon: psychology, generator: generatePsychEvalPHMC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePHMC", sortOrder: 31, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     // Add isHiddenInSelector: true to the PBC version
     { version: 29, name: "Évaluation Psychologique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generatePsychEvalPBC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePBC", sortOrder: 32, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
@@ -265,15 +268,16 @@ export const getFormsByUserType = (userType) => {
 
 // Helper to get primary forms for a user type
 export const getPrimaryFormsForUserType = (userType) => {
-    return formDefinitions.filter(form => 
-        form.primaryFor && form.primaryFor.includes(userType)
+    return formDefinitions.filter(form =>
+        !form.retired && form.primaryFor && form.primaryFor.includes(userType)
     );
 };
 
 // Helper to get forms by group and user type
 export const getFormsByGroupAndUserType = (group, userType) => {
-    return formDefinitions.filter(form => 
-        form.group === group && 
+    return formDefinitions.filter(form =>
+        !form.retired &&
+        form.group === group &&
         (!form.userTypes || form.userTypes.includes(userType))
     );
 };

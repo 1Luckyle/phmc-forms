@@ -1255,7 +1255,7 @@ Clé : ${savedRoleData.cle}`,
     const buildWebhookPayload = (title, message, customUrl = '') => {
         const FORM_GENERATOR_URL = "https://phmc-tools.com";
         const ALTERNATIVE_FORM_GENERATOR_URL = "https://1luckyle.github.io/phmc-forms/";
-        const phmcLogoUrl = 'https://i.ibb.co/0pgw9hHm/phmc.png';
+        const phmcLogoUrl = 'https://phmc-tools.com/img/phmc.png';
         
         // Create embed fields with form generator links
         const embedFields = [];

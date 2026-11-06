@@ -57,7 +57,7 @@ const generateMedicalRecordRelease = (formData) => {
         : '';
     const signerLine = needsGuardian ? `${guardianName} — ${guardianRelation} de ${patientFullName} (mineur)` : patientFullName;
 
-    let bbCode = `[divbox=white] [center] [img]https://i.ibb.co/0pgw9hHm/phmc.png[/img] [/center] [/divbox]
+    let bbCode = `[divbox=white] [center] [img]https://phmc-tools.com/img/phmc.png[/img] [/center] [/divbox]
 [divbox=white]
 [br][/br][color=#800000][size=150][b]I. INFORMATIONS DU PATIENT[/b][/size][/color][hr][/hr]
 [list=none][b]Titre:[/b] [i](sélectionnez-en un)[/i]

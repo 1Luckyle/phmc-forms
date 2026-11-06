@@ -127,7 +127,7 @@ export const WebhookProvider = ({ children, commitInfo }) => {
 
         return {
             username: "PHMC",
-            avatar_url: 'https://i.ibb.co/0pgw9hHm/phmc.png',
+            avatar_url: 'https://phmc-tools.com/img/phmc.png',
             embeds: [embed],
         };
     }, [webhookTitle, webhookMessage, mediaUrls, commitInfo, showNotification]);

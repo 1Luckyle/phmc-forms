@@ -5,6 +5,7 @@ import { ref, get, onValue } from 'firebase/database';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNotification } from './NotificationContext';
 import { positionsFromSelectOptions } from '../constants/recruitment';
+import { withLocalAgencyLogos } from '../constants/agencyLogos';
 
 // Define cache segments
 const CACHE_SEGMENTS = {
@@ -118,7 +119,8 @@ export const DataProvider = ({ children }) => {
         setCoronerListData(data?.coroner || []);
         break;
       case CACHE_SEGMENTS.AGENCIES:
-        setAgencyDataStore(data || {});
+        // Les logos locaux (déjà dans le dépôt) remplacent les liens imgBB de la base : voir constants/agencyLogos.js.
+        setAgencyDataStore(withLocalAgencyLogos(data) || {});
         break;
       case CACHE_SEGMENTS.SELECT_OPTIONS:
         setSelectOptions(data || {});

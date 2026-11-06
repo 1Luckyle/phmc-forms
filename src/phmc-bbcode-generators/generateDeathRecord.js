@@ -77,7 +77,7 @@ const generateDeathRecord = (formData) => {
     }
 
     const bbCode = `[divbox=#FFFFFF]
-[center][img]https://i.ibb.co/Rk5bRDxX/image.png[/img][/center]
+[center][img]https://phmc-tools.com/img/death-record-header.png[/img][/center]
 [/divbox]
 
 [divbox=#4D4D4D][center][b][size=150]DOSSIER PUBLIC DU DÉFUNT[/size][/b][/center][/divbox]

@@ -122,7 +122,53 @@ const formatDateFr = (ms) => {
 };
 export { formatDateFr };
 
-// Document complet d'un message (en-tête + corps) : il sert à l'aperçu, au PDF, à l'image PNG et au HTML.
+const safeHttps = (url) => (/^https:\/\/[^\s[\]]+$/i.test(String(url || '').trim()) ? String(url).trim() : '');
+
+// Document « email PHMC » d'un message (ancien formulaire PHMC Email Interne, désormais fusionné dans la messagerie) : en-tête du centre,
+// objet, expéditeur / destinataires / date, texte, signature, puis fonction, département et coordonnées du PHMC.
+// C'est CE document qui sert à l'aperçu, au PDF, à l'image PNG, au HTML, au BBCode copié et au titre des exports.
+export const messageToEmailBbcode = (message, { fromName } = {}) => {
+    const m = message || {};
+    const dest = Object.values(m.dest || {}).join(', ');
+    const signature = safeHttps(m.deSignature);
+    const lines = [
+        `[b][size=105]${escapeBbText(fromName || m.deNom || 'Employé PHMC')}[/size][/b]`,
+        `[size=85]${[m.deFonction, m.deService].filter(Boolean).map(escapeBbText).join('\n')}`,
+        '[/size]',
+    ].join('\n');
+    return `[divbox=na][br][/br][imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b]
+[center][/center][br][/br]
+[center][size=150][b]${escapeBbText(m.objet || '(sans objet)')}[/b][/size][/center]
+
+[b]De :[/b] ${escapeBbText(fromName || m.deNom || 'Inconnu')}
+[b]À :[/b] ${escapeBbText(dest || '—')}
+[b]Le :[/b] ${formatDateFr(m.creeLe)}
+[hr][/hr][br][/br][list=none]
+${m.corps || ''}
+${signature ? `\nRespectueusement,\n[img]${signature}[/img]\n` : ''}[/list][hr][/hr][list=none]
+${lines}
+
+[b]Pillbox Hill Medical Center[/b]
+[size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
+Téléphone: 50056
+Courriel: info@phmc.health
+Site web: [url=https://phmc-tools.com]phmc-tools.com[/url]
+
+Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hill.Medical.Center?ref=qs]Pillbox Hill Medical Center[/url][/size]
+
+[size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/list][/divbox]`;
+};
+
+// Titre standard d'un message exporté (même convention que « Rapports enregistrés » : « [type] objet - À: destinataires - date »).
+export const mailTitle = (message) => {
+    const m = message || {};
+    const dest = Object.values(m.dest || {}).join(', ');
+    const date = new Date(Number(m.creeLe) || Date.now());
+    const pad = (n) => String(n).padStart(2, '0');
+    return `[Email interne] ${m.objet || '(sans objet)'}${dest ? ` - À: ${dest}` : ''} - ${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+};
+
+// Document complet d'un message (en-tête + corps), version sobre : sert aux contrôles de cohérence et au texte brut.
 export const messageToBbcode = (message, { fromName } = {}) => {
     const dest = Object.values(message?.dest || {}).join(', ');
     return `[size=130][b]${escapeBbText(message?.objet || '(sans objet)')}[/b][/size]
@@ -164,7 +210,7 @@ export const validateMailDraft = ({ objet, corps, destinataires }) => {
 };
 
 // destinataires : [{ uid, nom }]. fromName : le nom affiché de l'expéditeur (soi). Retourne l'id du message.
-export const sendInternalMail = async ({ objet, corps, destinataires, fromName, reponseA = '', fil = '' }) => {
+export const sendInternalMail = async ({ objet, corps, destinataires, fromName, fonction = '', service = '', signature = '', reponseA = '', fil = '' }) => {
     const user = auth.currentUser;
     if (!user) throw new Error('Connectez-vous pour envoyer un message.');
     const unique = [];
@@ -188,6 +234,9 @@ export const sendInternalMail = async ({ objet, corps, destinataires, fromName, 
     await set(ref(database, `messagesInternes/${id}`), {
         deUid: user.uid, deNom: senderName, objet: subject, corps: String(corps), creeLe: le, dest, acces, fil: threadId,
         ...(reponseA ? { reponseA: clean(reponseA, 60) } : {}),
+        ...(clean(fonction, MAIL_LIMITS.name) ? { deFonction: clean(fonction, MAIL_LIMITS.name) } : {}),
+        ...(clean(service, MAIL_LIMITS.name) ? { deService: clean(service, MAIL_LIMITS.name) } : {}),
+        ...(safeHttps(signature) ? { deSignature: safeHttps(signature).slice(0, 500) } : {}),
     });
     const base = { le, objet: subject, de: senderName, apercu: clean(bbcodeToPlainText(corps).replace(/\s+/g, ' '), MAIL_LIMITS.preview), fil: threadId };
     await set(ref(database, `messagerie/${user.uid}/${id}`), { ...base, role: 'envoye', lu: true, nb: unique.length });

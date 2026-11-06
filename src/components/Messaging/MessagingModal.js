@@ -17,8 +17,10 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import {
     MAIL_LIMITS, loadMailDirectory, loadInternalMail, sendInternalMail, setMailRead, deleteMyMailCopy,
-    validateMailDraft, messageToBbcode, bbcodeToPlainText, formatDateFr,
+    validateMailDraft, messageToEmailBbcode, mailTitle, bbcodeToPlainText, formatDateFr,
 } from '../../utils/internalMail';
+import { getCachedSignatureUrl } from '../../utils/userCreations';
+import ImagePreview from '../ImagePreview';
 import { exportReportDocument } from '../../utils/reportDocumentExport';
 import { downloadBbCodeAsHtml } from '../../utils/reportExport';
 import './MessagingModal.css';
@@ -67,6 +69,10 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
     const [bodyBb, setBodyBb] = useState('');
     const [reply, setReply] = useState(null);                             // { id, fil, quote }
     const [composeTab, setComposeTab] = useState('write');
+    // En-tête « email PHMC » (ancien formulaire PHMC Email Interne) : fonction, département et signature de l'expéditeur.
+    const [fonction, setFonction] = useState('');
+    const [service, setService] = useState('');
+    const [signature, setSignature] = useState('');
     const [sending, setSending] = useState(false);
     const [editorKey, setEditorKey] = useState(0);
     const [editorSeed, setEditorSeed] = useState('');
@@ -121,8 +127,9 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
 
     const readEntry = (mailbox?.items || []).find((item) => item.id === view.id);
     const senderName = message ? nameOf(message.deUid, message.deNom) : '';
-    const fullBbcode = message ? messageToBbcode(message, { fromName: senderName }) : '';
-    const exportTitle = message ? `Message - ${message.objet}` : 'Message';
+    // Le document du message est la mise en page « email PHMC » : c'est lui qu'on voit, qu'on exporte et dont on copie le titre ou le BBCode.
+    const fullBbcode = message ? messageToEmailBbcode(message, { fromName: senderName }) : '';
+    const exportTitle = message ? mailTitle(message) : 'Message';
 
     const handleDelete = async () => {
         if (!view.id || !window.confirm('Supprimer ce message de votre boîte ? Les autres personnes le gardent ; il disparaît pour de bon quand plus personne ne l\'a.')) return;
@@ -141,8 +148,15 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
     };
 
     // ───── Rédaction ─────
+    const serviceKey = `phmcMailService_${uid}`;
     const resetCompose = () => {
         setRecipients([]); setSubject(''); setBodyBb(''); setReply(null); setComposeTab('write'); setEditorSeed(''); setEditorKey((k) => k + 1);
+        // Par défaut : mon grade, le dernier département utilisé et ma signature (Carte de visite → Signature).
+        let lastService = '';
+        try { lastService = localStorage.getItem(serviceKey) || ''; } catch (error) { /* stockage indisponible */ }
+        setFonction(directory[uid]?.rank || '');
+        setService(lastService);
+        setSignature(getCachedSignatureUrl() || '');
     };
 
     const startCompose = (preset = {}) => {
@@ -188,18 +202,22 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
 
     const draftBody = reply ? `${bodyBb}${reply.quote}` : bodyBb;
     const problems = view.mode === 'compose' ? validateMailDraft({ objet: subject, corps: draftBody, destinataires: recipients }) : [];
-    const draftMessage = { objet: subject || '(sans objet)', deNom: staffName, dest: Object.fromEntries(recipients.map((r) => [r.value, r.name])), creeLe: Date.now(), corps: draftBody };
+    const draftMessage = {
+        objet: subject || '(sans objet)', deNom: staffName, dest: Object.fromEntries(recipients.map((r) => [r.value, r.name])), creeLe: Date.now(), corps: draftBody,
+        deFonction: fonction.trim(), deService: service.trim(), deSignature: signature.trim(),
+    };
 
     const handleSend = async () => {
         if (problems.length) { notify(problems[0], 'warning'); return; }
         setSending(true);
         try {
             const result = await sendInternalMail({
-                objet: subject, corps: draftBody, fromName: staffName,
+                objet: subject, corps: draftBody, fromName: staffName, fonction, service, signature,
                 destinataires: recipients.map((r) => ({ uid: r.value, nom: r.name })),
                 reponseA: reply?.id || '', fil: reply?.fil || '',
             });
             writeDraft(uid, null);
+            try { localStorage.setItem(serviceKey, service.trim()); } catch (error) { /* stockage indisponible */ }
             if (result.failed.length) notify(`Message envoyé, mais non déposé chez : ${result.failed.join(', ')}.`, 'warning', 9000);
             else notify('Message envoyé.', 'check-circle');
             resetCompose();
@@ -268,6 +286,10 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                         <Dropdown>
                             <Dropdown.Toggle size="sm" variant="outline-info"><i className="fas fa-file-export me-1"></i>Exporter</Dropdown.Toggle>
                             <Dropdown.Menu>
+                                <Dropdown.Item onClick={() => copyText(exportTitle, 'Titre copié !')}>
+                                    <i className="fas fa-heading me-2"></i>Copier le titre
+                                </Dropdown.Item>
+                                <Dropdown.Divider />
                                 <Dropdown.Item onClick={() => exportReportDocument('pdf', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
                                     <i className="fas fa-file-pdf me-2"></i>PDF (A4)
                                 </Dropdown.Item>
@@ -310,7 +332,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                         <div><strong>À :</strong> {Object.entries(message.dest || {}).map(([id, name]) => nameOf(id, name)).join(', ')}</div>
                         <div><strong>Le :</strong> {formatDateFr(message.creeLe)}</div>
                     </div>
-                    <ReportPreviewFrame bbCode={message.corps} title={message.objet} height={280} />
+                    <ReportPreviewFrame bbCode={fullBbcode} title={exportTitle} height={320} />
                 </>
             )}
         </div>
@@ -346,6 +368,30 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                 <Form.Label className="mm-label">Objet *</Form.Label>
                 <Form.Control size="sm" value={subject} maxLength={MAIL_LIMITS.subject} onChange={(event) => setSubject(event.target.value)} placeholder="Objet du message" />
             </Form.Group>
+            <details className="mm-sign" open={!signature && !fonction}>
+                <summary>Signature, fonction et département (affichés sous le message)</summary>
+                <div className="mm-sign-grid">
+                    <Form.Group>
+                        <Form.Label className="mm-label">Fonction au sein du PHMC</Form.Label>
+                        <Form.Control size="sm" value={fonction} maxLength={MAIL_LIMITS.name} onChange={(event) => setFonction(event.target.value)} placeholder="ex. Médecin Titulaire" />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label className="mm-label">Département</Form.Label>
+                        <Form.Control size="sm" value={service} maxLength={MAIL_LIMITS.name} onChange={(event) => setService(event.target.value)} placeholder="ex. Médecine interne" />
+                    </Form.Group>
+                </div>
+                <div className="mm-sign-image">
+                    <span className="mm-label">Signature</span>
+                    {signature ? <ImagePreview imageUrls={signature} /> : <small className="text-muted">Aucune signature.</small>}
+                    <div className="d-flex gap-2 mt-1">
+                        <Button size="sm" variant="outline-primary" onClick={() => {
+                            const mine = getCachedSignatureUrl();
+                            if (mine) setSignature(mine); else notify('Vous n\'avez pas encore de signature : créez-la dans la boîte à outils → Carte de visite → onglet Signature.', 'warning', 7000);
+                        }}><i className="fas fa-signature me-1"></i>Ma signature</Button>
+                        {signature && <Button size="sm" variant="outline-secondary" onClick={() => setSignature('')}>Retirer</Button>}
+                    </div>
+                </div>
+            </details>
             <div className="mm-tabs mm-compose-tabs">
                 <button type="button" className={composeTab === 'write' ? 'active' : ''} onClick={() => setComposeTab('write')}>Rédaction</button>
                 <button type="button" className={composeTab === 'preview' ? 'active' : ''} onClick={() => setComposeTab('preview')}>Aperçu</button>
@@ -356,7 +402,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
             </div>
             {composeTab === 'preview' && (
                 bodyBb.trim()
-                    ? <ReportPreviewFrame bbCode={messageToBbcode(draftMessage, { fromName: staffName })} title={subject || 'Aperçu'} height={300} />
+                    ? <ReportPreviewFrame bbCode={messageToEmailBbcode(draftMessage, { fromName: staffName })} title={mailTitle(draftMessage)} height={340} />
                     : <div className="mm-empty">Rien à afficher : le message est vide.</div>
             )}
             {reply && <small className="text-muted d-block mt-1"><i className="fas fa-quote-left me-1"></i>Le message d'origine sera cité à la suite de votre réponse.</small>}

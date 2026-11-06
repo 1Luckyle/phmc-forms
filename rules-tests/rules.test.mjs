@@ -448,6 +448,10 @@ await write('Message sans objet refusé', false, 'S1', 'messagesInternes/n1', ma
 await write('Message vide refusé', false, 'S1', 'messagesInternes/n1', mail({ corps: '', fil: 'n1' }));
 await write('Message trop long refusé', false, 'S1', 'messagesInternes/n1', mail({ corps: 'x'.repeat(20001), fil: 'n1' }));
 await write('Champ inattendu refusé', false, 'S1', 'messagesInternes/n1', mail({ secret: 'x', fil: 'n1' }));
+await write('Fonction, département et signature https acceptés', true, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deFonction: 'Médecin', deService: 'Urgences', deSignature: 'https://phmc-tools.com/img/phmc.png' }));
+await write('Signature non https refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deSignature: 'javascript:alert(1)' }));
+await write('Signature http refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deSignature: 'http://exemple.fr/a.png' }));
+await write('Fonction trop longue refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deFonction: 'x'.repeat(121) }));
 await write('Réécrire un message existant refusé', false, 'S1', 'messagesInternes/m1', mail({ corps: 'modifié' }), withMail);
 await write('Le destinataire ne modifie pas le message', false, 'S2', 'messagesInternes/m1/corps', 'modifié', withMail);
 await read('L\'expéditeur lit son message', true, 'S1', 'messagesInternes/m1', withMail);

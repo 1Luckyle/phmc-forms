@@ -104,7 +104,8 @@ const AgencySelector = ({
     let allAgencyGroupForms = isCivilian
         ? formDefinitions.filter(form => CIVILIAN_ALLOWED_VERSIONS.includes(form.version) && !form.name.includes('(PBC)'))
         : formDefinitions.filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
-    allAgencyGroupForms = allAgencyGroupForms.filter(form => canAccessForm(form.version));
+    // Les formulaires retirés (ex. PHMC Email Interne, fusionné dans la Messagerie) ne sont plus proposés : leurs anciens rapports restent ouvrables.
+    allAgencyGroupForms = allAgencyGroupForms.filter(form => !form.retired && canAccessForm(form.version));
 
     // Filter forms based on user preferences (existing functionality). Un
     // compte Civil réel saute cette étape : userPreferences.userType reflète

@@ -30,6 +30,11 @@
 .mm-meta { font-size: 0.85rem; color: #c9d1d9; display: flex; flex-direction: column; gap: 2px; padding: 6px 0 8px; }
 .mm-label { font-size: 0.85rem; margin-bottom: 2px; color: #c9d1d9; }
 .mm-compose-tabs { margin-top: 4px; }
+.mm-sign { border: 1px solid #21262d; border-radius: 6px; padding: 6px 10px; margin: 4px 0 6px; background: #0d1117; }
+.mm-sign summary { cursor: pointer; font-size: 0.85rem; color: #c9d1d9; }
+.mm-sign-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.mm-sign-image { margin-top: 8px; }
+@media (max-width: 560px) { .mm-sign-grid { grid-template-columns: 1fr; } }
 .mm-send-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 
 /* Éditeur visuel */

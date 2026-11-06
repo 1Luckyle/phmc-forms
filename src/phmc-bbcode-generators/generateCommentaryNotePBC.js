@@ -19,7 +19,7 @@ PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 
-[/center][td][center][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]
+[/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]
 PALETO BAY BLVD.
 BP 685
 PALETO BAY, SAN ANDREAS

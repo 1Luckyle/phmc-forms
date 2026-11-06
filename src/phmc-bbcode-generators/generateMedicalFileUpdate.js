@@ -82,7 +82,7 @@ const generateMedicalFileUpdate = (formData) => {
 ${patientName}
 [/size]
 
-[/center][td][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][img]https://i.ibb.co/fdGgxDH1/LkRKav2.png[/img]
+[/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img]
 [b][size=150]MISE À JOUR DES INFORMATIONS DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations du patient`, { size: 115 })}
 [table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}

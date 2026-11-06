@@ -96,7 +96,7 @@ const getDepartmentFullName = (shortCode) => {
     const authorityLine = requestingAuthorityLine(formData);
     const authorityParagraph = authorityLine ? `\n\n${authorityLine}` : '';
 
-    const bbCode = `[divbox=transparent][center][img]https://i.ibb.co/0pgw9hHm/phmc.png[/img][/center][/divbox]
+    const bbCode = `[divbox=transparent][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
 
 [divbox=transparent][br][/br][center]RAPPORT D'ENQUÊTE SUR LE DÉCÈS[/center]
 [hr][/hr]

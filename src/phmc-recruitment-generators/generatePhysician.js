@@ -82,7 +82,7 @@ const generatePhysician = (formData) => {
         console.warn(`positionDetailsData is empty or not provided. Using default URL for "${formData.recruitmentPosition}".`);
     }
 
-    let bbCode = `[imageleft]https://i.ibb.co/nMgfpMcv/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
+    let bbCode = `[imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b] 
 Centre de Carrières [center][/center]
 [center]Candidature pour:[/center]
 [center][size=150][b]${dynamicDisplayPosition}[/b][/size][/center]

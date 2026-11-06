@@ -1,5 +1,5 @@
 // Messagerie interne : conversion de l'éditeur visuel en BBCode, texte brut, validation d'un brouillon et document d'un message.
-import { htmlToBbcode, bbcodeToPlainText, validateMailDraft, messageToBbcode, MAIL_LIMITS } from './internalMail';
+import { htmlToBbcode, bbcodeToPlainText, validateMailDraft, messageToBbcode, messageToEmailBbcode, mailTitle, MAIL_LIMITS } from './internalMail';
 import { bbcodeToHtmlFragment } from './bbcodeToHtml';
 
 // Le module charge Firebase : on le remplace (aucune connexion dans ces tests).
@@ -92,6 +92,55 @@ describe('validateMailDraft', () => {
         expect(validateMailDraft({ ...ok, corps: 'x'.repeat(MAIL_LIMITS.body + 1) })).toHaveLength(1);
         const many = Array.from({ length: MAIL_LIMITS.recipients + 1 }, (_, i) => ({ uid: `u${i}`, nom: 'x' }));
         expect(validateMailDraft({ ...ok, destinataires: many })).toHaveLength(1);
+    });
+});
+
+describe('messageToEmailBbcode (mise en page « email PHMC »)', () => {
+    const base = {
+        objet: 'Réunion de service', deNom: 'Dr A', dest: { u1: 'Dr B' }, creeLe: new Date(2026, 10, 6, 9, 5).getTime(),
+        corps: 'Bonjour,\n[b]Important[/b]\n[list]\n[*]un\n[*]deux\n[/list]\n[quote]cité[/quote]\n[img]https://i.ibb.co/x/y.png[/img]',
+        deFonction: 'Médecin Titulaire', deService: 'Médecine interne', deSignature: 'https://i.ibb.co/sig/s.png',
+    };
+
+    test('contient en-tête du centre, objet, expéditeur, destinataires, date, fonction et département', () => {
+        const bb = messageToEmailBbcode(base);
+        expect(bb).toContain('https://phmc-tools.com/img/phmc-curve.png');
+        expect(bb).toContain('[b]Réunion de service[/b]');
+        expect(bb).toContain('[b]De :[/b] Dr A');
+        expect(bb).toContain('[b]À :[/b] Dr B');
+        expect(bb).toContain('06/11/2026 à 09:05');
+        expect(bb).toContain('Médecin Titulaire\nMédecine interne');
+        expect(bb).toContain('Respectueusement,\n[img]https://i.ibb.co/sig/s.png[/img]');
+    });
+
+    test('sans signature : pas de « Respectueusement » ; signature non https ignorée', () => {
+        expect(messageToEmailBbcode({ ...base, deSignature: '' })).not.toContain('Respectueusement');
+        expect(messageToEmailBbcode({ ...base, deSignature: 'javascript:alert(1)' })).not.toContain('javascript');
+        expect(messageToEmailBbcode({ ...base, deSignature: 'http://x.fr/a.png' })).not.toContain('Respectueusement');
+    });
+
+    test('le texte (liste, gras, citation, image) est rendu par le site sans balise brute restante', () => {
+        const html = bbcodeToHtmlFragment(messageToEmailBbcode(base));
+        expect(html).not.toMatch(/\[(\/?(b|list|quote|img|divbox|imageleft|hr|center|size|url|i)\b[^\]]*)\]/i);
+        expect(html).toContain('<b>Important</b>');
+        expect(html).toContain('un');
+        expect(html).toContain('deux');
+        expect(html).toContain('cité');
+        expect(html).toContain('src="https://i.ibb.co/x/y.png"');
+        expect(html).toContain('src="https://i.ibb.co/sig/s.png"');
+    });
+
+    test('un nom ou un objet contenant des balises ne casse pas la mise en page', () => {
+        const bb = messageToEmailBbcode({ ...base, objet: '[b]piège[/b]', deNom: '[url=x]y[/url]' });
+        expect(bb).not.toContain('[b][b]');
+        expect(bb).not.toContain('[url=x]');
+    });
+});
+
+describe('mailTitle', () => {
+    test('même convention que « Rapports enregistrés »', () => {
+        expect(mailTitle({ objet: 'Réunion', dest: { u1: 'Dr B', u2: 'Dr C' }, creeLe: new Date(2026, 10, 6, 9, 5).getTime() }))
+            .toBe('[Email interne] Réunion - À: Dr B, Dr C - 06/11/2026');
     });
 });
 
