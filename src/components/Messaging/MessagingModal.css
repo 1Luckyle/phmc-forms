@@ -63,3 +63,26 @@
     .mm-layout:not(.has-detail) .mm-main { display: none; }
     .mm-back { display: inline-block; }
 }
+
+/* Menu « Exporter » : mêmes couleurs sombres que le reste de la messagerie (le style Bootstrap clair ressortait en bleu sur blanc). */
+.mm-export-menu.dropdown-menu { background: #161b22; border: 1px solid #30363d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); padding: 4px 0; min-width: 240px; }
+.mm-export-menu .dropdown-item { color: #c9d1d9; font-size: 0.9rem; padding: 7px 14px; display: flex !important; align-items: center; margin: 0; background: transparent; }
+.mm-export-menu .dropdown-item i { width: 20px; margin-right: 10px; text-align: center; color: #8b949e; }
+.mm-export-menu .dropdown-item:hover, .mm-export-menu .dropdown-item:focus { background: #1f6feb33; color: #fff; }
+.mm-export-menu .dropdown-item:hover i, .mm-export-menu .dropdown-item:focus i { color: #58a6ff; }
+.mm-export-menu .dropdown-divider { border-top: 1px solid #30363d; margin: 4px 0; }
+
+/* Fil de la discussion (lecture et réponse). */
+.mm-thread { margin-top: 14px; border-top: 1px solid #30363d; padding-top: 10px; }
+.mm-thread-title { font-size: 0.85rem; color: #8b949e; margin-bottom: 6px; }
+.mm-thread-item { border: 1px solid #21262d; border-radius: 6px; background: #0d1117; margin-bottom: 6px; overflow: hidden; }
+.mm-thread-item.open { border-color: #30363d; }
+.mm-thread-head { display: flex; align-items: center; gap: 8px; width: 100%; background: transparent; border: 0; color: #c9d1d9; text-align: left; padding: 7px 10px; margin: 0; cursor: pointer; font-size: 0.85rem; }
+.mm-thread-head:hover { background: #161b22; }
+.mm-thread-chevron { width: 12px; font-size: 0.7rem; color: #8b949e; flex-shrink: 0; }
+.mm-thread-who { font-weight: 600; flex-shrink: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-thread-preview { flex: 1; min-width: 0; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-thread-content { padding: 0 10px 10px; }
+.mm-thread-meta { font-size: 0.78rem; color: #8b949e; margin: 2px 0 6px; }
+.mm-thread-body { background: #fff; color: #111; border-radius: 4px; padding: 10px 12px; overflow-wrap: anywhere; }
+.mm-thread-body img { max-width: 100%; height: auto; }

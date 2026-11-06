@@ -486,6 +486,7 @@ await write('S1 ne dépose pas un message dont il n\'est pas l\'expéditeur', fa
 await write('Entrée de boîte avec un rôle inconnu refusée', false, 'S1', 'messagerie/S2/m1', entry({ role: 'autre' }), withMail);
 await write('Entrée de boîte avec un champ en trop refusée', false, 'S1', 'messagerie/S2/m1', entry({ secret: 1 }), withMail);
 await write('S2 marque son message lu', true, 'S2', 'messagerie/S2/m1/lu', true, withBoxes);
+await scenario('S2 marque son message lu (update() du client, au niveau de l\'entrée)', true, { as: 'S2', op: 'update', path: 'messagerie/S2/m1', value: { lu: true } }, withBoxes);
 await write('S2 supprime son entrée de boîte', true, 'S2', 'messagerie/S2/m1', null, withBoxes);
 await write('S1 ne modifie pas la boîte de S2 une fois créée', false, 'S1', 'messagerie/S2/m1/lu', true, withBoxes);
 

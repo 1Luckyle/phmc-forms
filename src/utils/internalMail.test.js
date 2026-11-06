@@ -1,5 +1,5 @@
 // Messagerie interne : conversion de l'éditeur visuel en BBCode, texte brut, validation d'un brouillon et document d'un message.
-import { htmlToBbcode, bbcodeToPlainText, validateMailDraft, messageToBbcode, messageToEmailBbcode, mailTitle, MAIL_LIMITS } from './internalMail';
+import { htmlToBbcode, bbcodeToPlainText, validateMailDraft, messageToBbcode, messageToEmailBbcode, mailTitle, MAIL_LIMITS, SIGNATURE_WIDTH, stripImgWidth } from './internalMail';
 import { bbcodeToHtmlFragment } from './bbcodeToHtml';
 
 // Le module charge Firebase : on le remplace (aucune connexion dans ces tests).
@@ -117,7 +117,19 @@ describe('messageToEmailBbcode (mise en page « email PHMC »)', () => {
         expect(bb).toContain('[b]À :[/b] Dr B');
         expect(bb).toContain('06/11/2026 à 09:05');
         expect(bb).toContain('Médecin Titulaire\nMédecine interne');
-        expect(bb).toContain('Respectueusement,\n[img]https://i.ibb.co/sig/s.png[/img]');
+        expect(bb).toContain(`Respectueusement,\n[img=${SIGNATURE_WIDTH}]https://i.ibb.co/sig/s.png[/img]`);
+    });
+
+    test('la signature est affichée en réduit par le site, et la largeur est retirée du BBCode copié', () => {
+        const bb = messageToEmailBbcode(base);
+        const html = bbcodeToHtmlFragment(bb);
+        expect(html).toContain(`width:${SIGNATURE_WIDTH}px;`);
+        expect(html).not.toContain('[img');
+        // l'image du corps (sans largeur) garde sa taille naturelle
+        expect(html).toContain('<img src="https://i.ibb.co/x/y.png" alt="" style="max-width:100%;height:auto;">');
+        expect(stripImgWidth(bb)).toContain('[img]https://i.ibb.co/sig/s.png[/img]');
+        expect(stripImgWidth(bb)).not.toMatch(/\[img=\d+\]/);
+        expect(bbcodeToPlainText(bb)).not.toContain('i.ibb.co/sig');
     });
 
     test('sans signature : pas de « Respectueusement » ; signature non https ignorée', () => {

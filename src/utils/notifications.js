@@ -142,6 +142,16 @@ export const subscribeNotifications = ({ uid, groups = [], onData }) => {
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
 };
 
+// Marque comme lues les notifications (cloche) qui renvoient vers ce message : on l'a lu par la messagerie, pas par la cloche.
+export const markMessageNotificationsRead = async (uid, messageId) => {
+    const snapshot = await get(query(ref(database, `notifications/${uid}`), limitToLast(FEED_LIMIT)));
+    const lues = {};
+    Object.entries(snapshot.val() || {}).forEach(([id, entry]) => {
+        if (entry && entry.lien && entry.lien.cible === 'messagerie' && entry.lien.id === messageId) lues[`p_${id}`] = true;
+    });
+    if (Object.keys(lues).length) await update(ref(database, `notificationsLecture/${uid}/lues`), lues);
+};
+
 export const markNotificationRead = (uid, key) => update(ref(database, `notificationsLecture/${uid}/lues`), { [key]: true });
 
 // Tout marquer comme lu : on avance le repère de lecture (et on vide la liste des lues individuelles, devenue inutile).

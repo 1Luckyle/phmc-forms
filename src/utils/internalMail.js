@@ -107,7 +107,7 @@ export const htmlToBbcode = (root) => {
 export const bbcodeToPlainText = (bbcode) => String(bbcode || '')
     .replace(/\[\*\]/g, '• ')
     // Les images deviennent « [image] » APRÈS le retrait des balises (sinon ce marqueur serait pris pour une balise et effacé).
-    .replace(/\[(?:img)\][^[]*\[\/img\]/gi, 'image')
+    .replace(/\[img(?:=\d+)?\][^[]*\[\/img\]/gi, 'image')
     .replace(/\[url=([^\]]*)\]([^[]*)\[\/url\]/gi, '$2 ($1)')
     .replace(/\[\/?[a-z*][^\]]*\]/gi, '')
     .replace(/image/g, '[image]')
@@ -121,6 +121,10 @@ const formatDateFr = (ms) => {
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} à ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 export { formatDateFr };
+
+// Largeur d'affichage de la signature dans le message (pixels) ; la balise [img=largeur] n'existe pas sur le forum : on la retire à la copie du BBCode.
+export const SIGNATURE_WIDTH = 220;
+export const stripImgWidth = (bbcode) => String(bbcode || '').replace(/\[img=\d+\]/gi, '[img]');
 
 const safeHttps = (url) => (/^https:\/\/[^\s[\]]+$/i.test(String(url || '').trim()) ? String(url).trim() : '');
 
@@ -145,7 +149,7 @@ export const messageToEmailBbcode = (message, { fromName } = {}) => {
 [b]Le :[/b] ${formatDateFr(m.creeLe)}
 [hr][/hr][br][/br][list=none]
 ${m.corps || ''}
-${signature ? `\nRespectueusement,\n[img]${signature}[/img]\n` : ''}[/list][hr][/hr][list=none]
+${signature ? `\nRespectueusement,\n[img=${SIGNATURE_WIDTH}]${signature}[/img]\n` : ''}[/list][hr][/hr][list=none]
 ${lines}
 
 [b]Pillbox Hill Medical Center[/b]

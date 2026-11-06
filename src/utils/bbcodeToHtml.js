@@ -112,7 +112,7 @@ const tokenize = (input, warn) => {
             const rest = text.slice(lastIndex);
             const closeMatch = closeRe.exec(rest);
             if (closeMatch) {
-                tokens.push({ type: 'raw', name, text: rest.slice(0, closeMatch.index) });
+                tokens.push({ type: 'raw', name, text: rest.slice(0, closeMatch.index), param: param === undefined ? null : param });
                 lastIndex += closeMatch.index + closeMatch[0].length;
                 TAG_RE.lastIndex = lastIndex;
                 continue;
@@ -175,7 +175,7 @@ const parse = (tokens, warn) => {
             continue;
         }
         if (token.type === 'raw') {
-            addContent({ name: token.name === 'url' ? 'urlraw' : token.name, text: token.text, children: [] });
+            addContent({ name: token.name === 'url' ? 'urlraw' : token.name, text: token.text, param: token.param, children: [] });
             continue;
         }
 
@@ -324,8 +324,10 @@ const renderNode = (node, ctx) => {
         }
         case 'img': {
             const url = String(node.text || '').trim();
+            // [img=240] : largeur d'affichage en pixels (extension du site : signature réduite dans les messages internes).
+            const width = /^\d{2,4}$/.test(String(node.param || '').trim()) ? Number(node.param) : 0;
             return isHttpUrl(url)
-                ? `<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;">`
+                ? `<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;${width ? `width:${width}px;` : ''}">`
                 : escapeHtml(node.text);
         }
         case 'urlraw': {

@@ -17,8 +17,10 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import {
     MAIL_LIMITS, loadMailDirectory, loadInternalMail, sendInternalMail, setMailRead, deleteMyMailCopy,
-    validateMailDraft, messageToEmailBbcode, mailTitle, bbcodeToPlainText, formatDateFr,
+    validateMailDraft, messageToEmailBbcode, mailTitle, bbcodeToPlainText, formatDateFr, stripImgWidth,
 } from '../../utils/internalMail';
+import { markMessageNotificationsRead } from '../../utils/notifications';
+import { bbcodeToHtmlFragment } from '../../utils/bbcodeToHtml';
 import { getCachedSignatureUrl } from '../../utils/userCreations';
 import ImagePreview from '../ImagePreview';
 import { exportReportDocument } from '../../utils/reportDocumentExport';
@@ -104,14 +106,45 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
         try {
             const loaded = await loadInternalMail(id);
             setMessage(loaded);
-            const entry = (mailbox?.items || []).find((item) => item.id === id);
-            if (loaded && entry && entry.role === 'recu' && !entry.lu) setMailRead(uid, id, true).catch(() => {});
+            // Lu par la messagerie : la notification de la cloche qui y renvoie l'est aussi.
+            if (loaded) markMessageNotificationsRead(uid, id).catch(() => {});
         } catch (error) {
             notify('Message introuvable ou illisible.', 'error');
         } finally {
             setLoadingMessage(false);
         }
-    }, [mailbox, uid, notify]);
+    }, [uid, notify]);
+
+    // Marquage « lu » : dès que le message est affiché ET que sa ligne de boîte est connue (ouverture depuis une notification, avant le
+    // chargement de la boîte, comprise). Un seul essai par message : un refus des règles ne doit pas relancer l'écriture en boucle.
+    const readAttempts = useRef(new Set());
+    useEffect(() => {
+        if (view.mode !== 'read' || !message || message.id !== view.id || !uid) return;
+        const entry = (mailbox?.items || []).find((item) => item.id === view.id);
+        if (!entry || entry.role !== 'recu' || entry.lu || readAttempts.current.has(view.id)) return;
+        readAttempts.current.add(view.id);
+        setMailRead(uid, view.id, true).catch((error) => notify(`Le message n'a pas pu être marqué comme lu : ${error.message || 'erreur'}`, 'warning', 7000));
+    }, [view, message, mailbox, uid, notify]);
+
+    // Fil de discussion : les autres messages de la même conversation présents dans MA boîte (reçus ou envoyés), du plus ancien au plus récent.
+    const [threadOpen, setThreadOpen] = useState({});                       // id -> message chargé | null (en cours) | false (indisponible)
+    const threadFil = view.mode === 'read' ? (message ? (message.fil || message.id) : '') : (view.mode === 'compose' && reply ? reply.fil : '');
+    const threadItems = useMemo(() => {
+        if (!threadFil) return [];
+        return (mailbox?.items || []).filter((item) => (item.fil || item.id) === threadFil && !(view.mode === 'read' && item.id === view.id))
+            .sort((a, b) => a.le - b.le);
+    }, [mailbox, threadFil, view]);
+    useEffect(() => { setThreadOpen({}); }, [view.mode, view.id, threadFil]);
+    const toggleThreadItem = async (id) => {
+        if (threadOpen[id] !== undefined) { setThreadOpen((prev) => { const next = { ...prev }; delete next[id]; return next; }); return; }
+        setThreadOpen((prev) => ({ ...prev, [id]: null }));
+        try {
+            const loaded = await loadInternalMail(id);
+            setThreadOpen((prev) => (prev[id] === undefined ? prev : { ...prev, [id]: loaded || false }));
+        } catch (error) {
+            setThreadOpen((prev) => (prev[id] === undefined ? prev : { ...prev, [id]: false }));
+        }
+    };
 
     // Ouverture depuis une notification : on affiche directement le message.
     const openedFromNotification = useRef('');
@@ -271,6 +304,41 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
         </div>
     );
 
+    // Fil de la discussion, façon messagerie : les autres messages de la conversation, du plus ancien au plus récent ; un clic déplie le texte.
+    const renderThread = () => {
+        if (threadItems.length === 0) return null;
+        return (
+            <div className="mm-thread">
+                <div className="mm-thread-title"><i className="fas fa-comments me-2"></i>Fil de la discussion ({threadItems.length} {view.mode === 'read' ? 'autre' : 'message'}{threadItems.length > 1 ? 's' : ''})</div>
+                {threadItems.map((item) => {
+                    const opened = threadOpen[item.id];
+                    const isOpen = opened !== undefined;
+                    return (
+                        <div key={item.id} className={`mm-thread-item${isOpen ? ' open' : ''}`}>
+                            <button type="button" className="mm-thread-head" onClick={() => toggleThreadItem(item.id)} aria-expanded={isOpen}>
+                                <i className={`fas ${isOpen ? 'fa-chevron-down' : 'fa-chevron-right'} mm-thread-chevron`}></i>
+                                <span className="mm-thread-who">{item.role === 'envoye' ? 'Moi' : nameOf('', item.de)}</span>
+                                <span className="mm-thread-preview">{isOpen ? item.objet : item.apercu}</span>
+                                <span className="mm-item-date">{shortDate(item.le)}</span>
+                            </button>
+                            {isOpen && opened === null && <div className="mm-empty"><Spinner animation="border" size="sm" /> Chargement…</div>}
+                            {isOpen && opened === false && <div className="mm-empty">Ce message n'est plus disponible.</div>}
+                            {isOpen && opened && (
+                                <div className="mm-thread-content">
+                                    <div className="mm-thread-meta">
+                                        De : {nameOf(opened.deUid, opened.deNom)} — À : {Object.entries(opened.dest || {}).map(([id, name]) => nameOf(id, name)).join(', ')} — {formatDateFr(opened.creeLe)}
+                                    </div>
+                                    <div className="mm-thread-body" dangerouslySetInnerHTML={{ __html: bbcodeToHtmlFragment(opened.corps || '') }} />
+                                    {view.mode === 'read' && <Button size="sm" variant="outline-primary" className="mt-2" onClick={() => openMessage(item.id)}>Ouvrir ce message</Button>}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     const renderRead = () => (
         <div className="mm-detail">
             <div className="mm-detail-bar">
@@ -285,7 +353,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                         )}
                         <Dropdown>
                             <Dropdown.Toggle size="sm" variant="outline-info"><i className="fas fa-file-export me-1"></i>Exporter</Dropdown.Toggle>
-                            <Dropdown.Menu>
+                            <Dropdown.Menu className="mm-export-menu">
                                 <Dropdown.Item onClick={() => copyText(exportTitle, 'Titre copié !')}>
                                     <i className="fas fa-heading me-2"></i>Copier le titre
                                 </Dropdown.Item>
@@ -307,15 +375,24 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                                     <i className="fas fa-align-left me-2"></i>Copier le texte
                                 </Dropdown.Item>
                                 {bbcodeEnabled && (
-                                    <Dropdown.Item onClick={() => copyText(fullBbcode, 'BBCode copié.')}>
+                                    <Dropdown.Item onClick={() => copyText(stripImgWidth(fullBbcode), 'BBCode copié.')}>
                                         <i className="fas fa-code me-2"></i>Copier le BBCode
                                     </Dropdown.Item>
                                 )}
                             </Dropdown.Menu>
                         </Dropdown>
                         {readEntry && readEntry.role === 'recu' && (
-                            <Button size="sm" variant="outline-secondary" title="Remettre en non lu" onClick={() => { setMailRead(uid, view.id, false).catch(() => {}); setView({ mode: 'list', id: '' }); setMessage(null); }}>
+                            <Button size="sm" variant="outline-secondary" title="Remettre en non lu et fermer le message" onClick={() => {
+                                readAttempts.current.delete(view.id);
+                                setMailRead(uid, view.id, false).catch(() => {});
+                                setView({ mode: 'list', id: '' }); setMessage(null);
+                            }}>
                                 <i className="fas fa-envelope"></i>
+                            </Button>
+                        )}
+                        {readEntry && readEntry.role === 'envoye' && (
+                            <Button size="sm" variant="outline-secondary" title="Fermer le message (revenir à la liste, sans aperçu ouvert)" onClick={() => { setView({ mode: 'list', id: '' }); setMessage(null); }}>
+                                <i className="fas fa-envelope-open"></i>
                             </Button>
                         )}
                         <Button size="sm" variant="outline-danger" onClick={handleDelete} title="Supprimer de ma boîte"><i className="fas fa-trash"></i></Button>
@@ -333,6 +410,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                         <div><strong>Le :</strong> {formatDateFr(message.creeLe)}</div>
                     </div>
                     <ReportPreviewFrame bbCode={fullBbcode} title={exportTitle} height={320} />
+                    {renderThread()}
                 </>
             )}
         </div>
@@ -416,6 +494,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                 <Button variant="outline-secondary" onClick={discardCompose} disabled={sending}>Annuler</Button>
                 {!reply && <small className="text-muted ms-2">Brouillon enregistré automatiquement sur cet appareil.</small>}
             </div>
+            {renderThread()}
         </div>
     );
 
