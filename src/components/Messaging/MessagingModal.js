@@ -51,6 +51,12 @@ const shortDate = (ms) => {
         : `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${String(date.getFullYear()).slice(2)}`;
 };
 
+// Ligne de boîte d'un message pour l'onglet consulté (un message envoyé à soi-même a une ligne « reçu » ET une ligne « envoyé »).
+const entryFor = (mailbox, id, tab) => {
+    const lines = (mailbox?.items || []).filter((item) => item.id === id);
+    return lines.find((item) => item.role === (tab === 'envoye' ? 'envoye' : 'recu')) || lines[0];
+};
+
 const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNotification }) => {
     const { staffName } = useEmployeeAuth();
     const { bbcodeEnabled } = useSiteConfig();
@@ -120,11 +126,11 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
     const readAttempts = useRef(new Set());
     useEffect(() => {
         if (view.mode !== 'read' || !message || message.id !== view.id || !uid) return;
-        const entry = (mailbox?.items || []).find((item) => item.id === view.id);
+        const entry = entryFor(mailbox, view.id, tab);
         if (!entry || entry.role !== 'recu' || entry.lu || readAttempts.current.has(view.id)) return;
         readAttempts.current.add(view.id);
         setMailRead(uid, view.id, true).catch((error) => notify(`Le message n'a pas pu être marqué comme lu : ${error.message || 'erreur'}`, 'warning', 7000));
-    }, [view, message, mailbox, uid, notify]);
+    }, [view, message, mailbox, tab, uid, notify]);
 
     // Fil de discussion : les autres messages de la même conversation présents dans MA boîte (reçus ou envoyés), du plus ancien au plus récent.
     const [threadOpen, setThreadOpen] = useState({});                       // id -> message chargé | null (en cours) | false (indisponible)
@@ -158,7 +164,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
 
     useEffect(() => { if (!show) { setView({ mode: 'list', id: '' }); setMessage(null); } }, [show]);
 
-    const readEntry = (mailbox?.items || []).find((item) => item.id === view.id);
+    const readEntry = entryFor(mailbox, view.id, tab);
     const senderName = message ? nameOf(message.deUid, message.deNom) : '';
     // Le document du message est la mise en page « email PHMC » : c'est lui qu'on voit, qu'on exporte et dont on copie le titre ou le BBCode.
     const fullBbcode = message ? messageToEmailBbcode(message, { fromName: senderName }) : '';
@@ -381,6 +387,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                                 )}
                             </Dropdown.Menu>
                         </Dropdown>
+                        {/* « Non lu » n'a de sens que pour un message REÇU. */}
                         {readEntry && readEntry.role === 'recu' && (
                             <Button size="sm" variant="outline-secondary" title="Remettre en non lu et fermer le message" onClick={() => {
                                 readAttempts.current.delete(view.id);
@@ -390,11 +397,9 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                                 <i className="fas fa-envelope"></i>
                             </Button>
                         )}
-                        {readEntry && readEntry.role === 'envoye' && (
-                            <Button size="sm" variant="outline-secondary" title="Fermer le message (revenir à la liste, sans aperçu ouvert)" onClick={() => { setView({ mode: 'list', id: '' }); setMessage(null); }}>
-                                <i className="fas fa-envelope-open"></i>
-                            </Button>
-                        )}
+                        <Button size="sm" variant="outline-secondary" title="Fermer l'aperçu du message" aria-label="Fermer l'aperçu" onClick={() => { setView({ mode: 'list', id: '' }); setMessage(null); }}>
+                            <i className="fas fa-xmark me-1"></i>Fermer
+                        </Button>
                         <Button size="sm" variant="outline-danger" onClick={handleDelete} title="Supprimer de ma boîte"><i className="fas fa-trash"></i></Button>
                     </>
                 )}
