@@ -680,7 +680,7 @@ const sendFormInteractionWebhookInternal = async ({
     let userValue = 'Utilisateur inconnu';
 
     const coronerFormVersions = [1, 2, 4, 8, 11, 18];
-    const phmcFormVersions = [5, 6, 7, 9, 10, 12, 13, 14, 16, 19, 20, 21, 22, 23, 27, 28, 29, 35];
+    const phmcFormVersions = [5, 6, 7, 9, 10, 12, 13, 14, 16, 19, 20, 21, 22, 23, 27, 28, 29, 35, 41];
     const civilianFormVersions = [3, 24, 25, 26]; // Civilian forms
 
     const isCoronerForm = coronerFormVersions.includes(bbCodeVersion);

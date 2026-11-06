@@ -14,7 +14,7 @@ import {
     generateMedicalRecordRelease, generateBasicPatientFile, generateEmailPHMCEmail,
     generateConsultationNotesPBC, generatePsychEvalPHMC, generatePsychEvalPBC,
     generateAutopsy, generateCertificate, generateMedicalFileUpdate, generateMassFatality, generateDeathRecord,
-    generateSicknessEmail
+    generateSicknessEmail, generateFlightCertificate
 } from './phmc-bbcode-generators';
 import generatePhysician from './phmc-recruitment-generators/generatePhysician';
 import generatePsych from './phmc-recruitment-generators/generatePsych';
@@ -60,6 +60,7 @@ const MedicalUpdate = lazy(() => import('./phmc-field-data/MedicalUpdate'));
 const MassFatality = lazy(() => import('./phmc-field-data/MassFatality'));
 const DeathRecord = lazy(() => import('./phmc-field-data/DeathRecord'));
 const SicknessEmail = lazy(() => import('./phmc-field-data/SicknessEmail'));
+const FlightCertificate = lazy(() => import('./phmc-field-data/FlightCertificate'));
 
 // Lazy load recruitment field components
 const PhysicianFields = lazy(() => import('./phmc-civilian-fields/Physician'));
@@ -152,6 +153,8 @@ userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']
     // Add isHiddenInSelector: true to the PBC version
     { version: 29, name: "Évaluation Psychologique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generatePsychEvalPBC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePBC", sortOrder: 32, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     { version: 35, name: "Certificat de Maladie", group: "PHMC", icon: emailIcon, generator: generateSicknessEmail, FieldComponent: SicknessEmail, titleKey: "certificatMaladie", sortOrder: 33, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] }, // No FieldComponent for this one
+    // Certificat d'aptitude médicale au vol : réservé au personnel soignant (utils/formAccess.js : tout formulaire non listé = famille soignante + admins).
+    { version: 41, name: "Certificat de Vol", group: "PHMC", icon: paperwork, generator: generateFlightCertificate, FieldComponent: FlightCertificate, titleKey: "certificatVol", sortOrder: 34, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     {
         version: 50,
         name: "Postes Médicaux",

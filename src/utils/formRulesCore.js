@@ -34,6 +34,7 @@ export const DEFAULT_REQUIRED = {
     28: ['patientName', 'date'],
     29: ['patientName', 'date'],
     35: ['patientName'],
+    41: ['patientName', 'date'],
     37: ['caseNumber', 'decedentName', 'decedentOOC', 'dateOfDeath'],
     // Candidatures : socle commun à tous les envois (le reste dépend du poste et du profil, voir validateApplication).
     50: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
@@ -71,6 +72,7 @@ export const LOCKED_FIELDS = {
     28: { patientName: TITLE, date: TITLE },
     29: { patientName: TITLE, date: TITLE },
     35: { patientName: TITLE },
+    41: { patientName: TITLE, date: TITLE },
     37: { decedentName: TITLE, decedentOOC: TITLE, dateOfDeath: TITLE },
     50: { applicantTitleAndFullName: TITLE },
     51: { applicantTitleAndFullName: TITLE },
@@ -98,6 +100,7 @@ export const SPECIAL_RULES = {
     25: ["Titre « Mineur » : seulement si la date de naissance indique moins de 18 ans."],
     26: ["Au moins un élément du dossier médical à mettre à jour."],
     35: ["Date de la visite (date ou date de consultation) : au moins une des deux."],
+    41: ["Classe, catégorie(s) de vol, résultat de chaque examen de la classe et conclusion cohérente avec les examens."],
 };
 const FOR_ALL_REPORTS = [
     "Les dates ne peuvent pas être dans le futur ni antérieures à 1900.",

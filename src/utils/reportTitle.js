@@ -77,7 +77,7 @@ export function buildReportTitle(version, formData = {}, formName = '') {
         case 40: // Formulaire AMA (EMS)
             return buildStandardReportKey(name, f.patientID, f.patientSignature, f.date);
         case 5: case 6: case 7: case 14: case 16: case 19: case 20: case 21:
-        case 26: case 28: case 29: case 35: // Formulaires cliniques : le patient d'abord
+        case 26: case 28: case 29: case 35: case 41: // Formulaires cliniques : le patient d'abord
             // (formData est partagé entre formulaires : un decedentName resté d'un
             // rapport DMEC ne doit pas devenir l'identifiant d'un rapport clinique).
             return buildStandardReportKey(name, f.patientID, f.patientName, f.date || f.dateOfVisit);

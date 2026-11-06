@@ -27,6 +27,7 @@ import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } fro
 import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { getFieldInfo } from '../constants/fieldInfo';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
+import { validateFlightCertificate } from './flightCertificate';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
@@ -49,7 +50,7 @@ const isImplausiblyOld = (date) => date.getFullYear() < 1900;
 // ───────────────────────────── Rapports ─────────────────────────────
 
 // Formulaires de soin : un patient est concerné (donc un ID patient est attendu).
-export const CARE_FORM_VERSIONS = [3, 5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 35];
+export const CARE_FORM_VERSIONS = [3, 5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 35, 41];
 // Dossiers médicaux Civils (facturés).
 export const CIVIL_MEDICAL_VERSIONS = [3, 24, 25, 26];
 
@@ -68,6 +69,8 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
     if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de la visite : champ obligatoire.');
+    // Certificat de vol : classe, catégories, résultat de chaque examen de la classe, conclusion cohérente avec les examens (voir utils/flightCertificate.js).
+    if (version === 41) validateFlightCertificate(data).forEach((problem) => errors.push(problem));
     if (version === 24 && !filled(data.patientFirstName) && !filled(data.patientLastName)) {
         errors.push('Prénom ou nom du patient : champ obligatoire.');
     }

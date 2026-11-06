@@ -203,6 +203,14 @@ export const VERSION_FIELDS = {
         illnessCondition: 'text', confirmationPurpose: 'text', attachedReportSummary: 'textarea', phmcEmployee: 'select',
         phmcEmployeeSignatureImage: 'textarea', SubmitDate: 'date',
     },
+    41: {
+        flightCertClass: 'select', flightCertCategories: 'select', patientName: 'text', patientID: 'text',
+        patientDateOfBirth: 'date', date: 'date', flightCert_vision: 'select', flightCert_vision_value: 'text',
+        flightCert_colorVision: 'select', flightCert_hearing: 'select', flightCert_bloodPressure: 'select', flightCert_bloodPressure_value: 'text',
+        flightCert_cardio: 'select', flightCert_neuro: 'select', flightCert_mental: 'select', flightCert_substances: 'select',
+        flightCertConclusion: 'select', flightCertRestrictions: 'textarea', flightCertNote: 'textarea',
+        phmcEmployee: 'select', phmcEmployeeSignatureImage: 'textarea',
+    },
     37: {
         deathRecordType: 'select', caseNumber: 'text', decedentName: 'text', decedentOOC: 'text',
         patientID: 'text', dateOfDeath: 'date', caseStatus: 'select', bodyStatus: 'select',

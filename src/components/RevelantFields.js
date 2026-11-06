@@ -403,6 +403,15 @@ const getRelevantFields = (bbCodeVersion) => {
                 'illnessCondition', 'confirmationPurpose', 'attachedReportSummary',
                 'phmcEmployee', 'lastName', 'phmcRank', 'phmcEmployeeSignatureImage', 'SubmitDate',
             ];
+        case 41: // Certificat de vol (clés propres « flightCert… » : rien n'est partagé avec un autre formulaire, sauf patient/date/signataire)
+            return [
+                'flightCertClass', 'flightCertCategories', 'flightCertConclusion', 'flightCertRestrictions', 'flightCertNote',
+                'flightCert_vision', 'flightCert_vision_value', 'flightCert_colorVision', 'flightCert_hearing',
+                'flightCert_bloodPressure', 'flightCert_bloodPressure_value', 'flightCert_cardio', 'flightCert_neuro',
+                'flightCert_mental', 'flightCert_substances',
+                'patientName', 'patientID', 'patientDateOfBirth', 'date',
+                'phmcEmployee', 'lastName', 'phmcRank', 'phmcEmployeeSignatureImage',
+            ];
         case 50: // Candidatures (médecin, administration, soins infirmiers, médecine légale, paramédical, psychologie) :
         case 51: // une seule liste, les champs d'un autre formulaire n'existant pas simplement ignorés.
         case 52:

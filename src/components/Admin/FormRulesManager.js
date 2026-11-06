@@ -16,7 +16,7 @@ import './FormRulesManager.css';
 const GROUPS = [
     { label: 'Dossiers médicaux Civils', versions: [3, 25, 24, 26] },
     { label: 'Médecine légale (DMEC)', versions: [1, 4, 2, 8, 11, 37] },
-    { label: 'Soins et notes du personnel', versions: [5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 28, 29, 35] },
+    { label: 'Soins et notes du personnel', versions: [5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 28, 29, 35, 41] },
     { label: 'E-mail interne', versions: [27] },
     { label: 'Candidatures', versions: [50, 51, 52, 53, 54, 55] },
 ];
