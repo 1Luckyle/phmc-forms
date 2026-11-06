@@ -756,7 +756,8 @@ input[type="radio"] {
 /* Pied de page : une rangée centrée, boutons de même hauteur et même espacement (boutons et liens identiques). */
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 8px; padding: 4px 8px 8px; }
 .footer-links .privacy-policy-button {
-    margin-left: 0;
+    /* La règle globale « button { margin… } » ne s'applique pas aux liens <a> : on neutralise toutes les marges pour que boutons et liens soient strictement identiques. */
+    margin: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -768,8 +769,14 @@ input[type="radio"] {
     text-decoration: none;
     white-space: nowrap;
     box-sizing: border-box;
+    background-color: #007bff;
+    color: #fff;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
 }
-.footer-links .privacy-policy-button:hover { background-color: #0b6ae0; color: #fff; }
+.footer-links .privacy-policy-button:hover,
+.footer-links .privacy-policy-button:focus-visible { background-color: #0b6ae0; color: #fff; text-decoration: none; }
 
 .privacy-policy-button {
     background-color: #007bff;
