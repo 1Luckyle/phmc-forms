@@ -33,6 +33,7 @@ import { useLockdown } from './contexts/LockdownContext';
 import LockdownBanner from './components/LockdownBanner';
 import LockdownDialog from './components/LockdownDialog';
 import { useEmployeeAuth } from './contexts/EmployeeAuthContext';
+import useMailbox from './hooks/useMailbox';
 import { useEmployeeSelector } from './hooks/useEmployeeSelector';
 import DebugFillButton from './components/DebugFillButton';
 import { getDebugTemplate, hasDebugTemplate } from './utils/debugTemplates';
@@ -94,6 +95,7 @@ const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModa
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
 const DirectoryModal = lazy(() => import('./components/Directory/DirectoryModal'));
+const MessagingModal = lazy(() => import('./components/Messaging/MessagingModal'));
 const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'));
 const MyProfileModal = lazy(() => import('./components/MyProfileModal'));
 const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendarModal'));
@@ -196,6 +198,10 @@ function MainApp({
     // voir PatientDossierModal.js.
     const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
     const [showDirectory, setShowDirectory] = useState(false);
+    // Messagerie interne du personnel : boîte écoutée en direct (badge du menu), fenêtre ouverte depuis le menu ou une notification.
+    const [showMessaging, setShowMessaging] = useState(false);
+    const [messagingInitialId, setMessagingInitialId] = useState('');
+    const mailbox = useMailbox(auth.currentUser?.uid || (currentEmployee && currentEmployee.uid) || '', !!toolAccess.messaging);
     // Raccourcis de l'annuaire : ouvrir un outil déjà positionné sur la personne (voir DirectoryModal).
     const [directoryEmployeeReports, setDirectoryEmployeeReports] = useState('');
     const [directoryPatientId, setDirectoryPatientId] = useState('');
@@ -241,6 +247,7 @@ function MainApp({
             case 'takehome': if (toolAccess.takeHome) { setTakeHomeTab(lien.section === 'manage' && toolAccess.takeHomeManage ? 'manage' : 'mine'); setShowTakeHome(true); } break;
             case 'admin': navigate('/admin', { state: { section: lien.section } }); break;
             case 'exemptions': if (toolAccess.exemptionsManage) setShowExemptions(true); break;
+            case 'messagerie': if (toolAccess.messaging) { setMessagingInitialId(lien.id || ''); setShowMessaging(true); } break;
             default: break;
         }
     };
@@ -1831,6 +1838,7 @@ function MainApp({
                                                 {
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
+                                                        toolAccess.messaging && { key: 'messaging', icon: 'fas fa-envelope', label: mailbox.unread > 0 ? `Messagerie interne (${mailbox.unread} non lu${mailbox.unread > 1 ? 's' : ''})` : 'Messagerie interne', onClick: closeAnd(() => { setMessagingInitialId(''); setShowMessaging(true); }) },
                                                         toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: "Annuaire & plan de l'hôpital", onClick: closeAnd(() => setShowDirectory(true)) },
                                                         // Administratif : un seul accès pour le recrutement, les sanctions et les contrats commerciaux (chacun selon ses droits).
                                                         toolAccess.administratif && { key: 'administratif', icon: 'fas fa-briefcase', label: 'Administratif', onClick: closeAnd(() => setShowAdminHub(true)) },
@@ -2656,6 +2664,15 @@ function MainApp({
                             bbCodeVersion={bbCodeVersion}
                             handleReportSelectedForAttachment={handleReportSelectedForAttachment}
                         />
+                        {toolAccess.messaging && showMessaging && (
+                            <MessagingModal
+                                show={showMessaging}
+                                onHide={() => { setShowMessaging(false); setMessagingInitialId(''); }}
+                                mailbox={mailbox}
+                                initialMessageId={messagingInitialId}
+                                showNotification={showNotification}
+                            />
+                        )}
                         <DirectoryModal
                             show={showDirectory}
                             canSeeDirectory={!!toolAccess.directory}

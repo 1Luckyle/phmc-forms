@@ -291,6 +291,45 @@
       }
     },
 
+    // ─── Messagerie interne du personnel (src/utils/internalMail.js) ──────────────────────────────────────────────────────
+    // messagesInternes/{id} : le message, IMMUABLE. Création : le personnel et les admins, à leur propre nom (deUid), expéditeur compris dans « acces ».
+    // Lecture : les comptes de « acces » (expéditeur + destinataires) ; les admins seulement si l'interrupteur debug adminSettings/debugMessagerieAdmin est actif.
+    // Seule modification possible : retirer SON accès (supprimer sa copie). Quand plus personne n'a accès, le message est effacé par la tâche
+    // quotidienne du serveur (functions/index.js) : les règles Realtime Database ne savent pas compter les enfants d'un nœud.
+    // Limites (30 destinataires) : appliquées par le site, pas par les règles.
+    "messagesInternes": {
+      ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true && root.child('adminSettings').child('debugMessagerieAdmin').child('enabled').val() === true",
+      "$id": {
+        ".read": "auth != null && (data.child('acces').child(auth.uid).val() === true || (root.child('adminUIDs').child(auth.uid).val() === true && root.child('adminSettings').child('debugMessagerieAdmin').child('enabled').val() === true))",
+        ".write": "auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".validate": "data.exists() || !newData.exists() || (newData.hasChildren(['deUid', 'deNom', 'objet', 'corps', 'creeLe', 'dest', 'acces', 'fil']) && newData.child('deUid').val() === auth.uid && newData.child('deNom').isString() && newData.child('deNom').val().length <= 120 && newData.child('objet').isString() && newData.child('objet').val().length > 0 && newData.child('objet').val().length <= 160 && newData.child('corps').isString() && newData.child('corps').val().length > 0 && newData.child('corps').val().length <= 20000 && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && newData.child('fil').isString() && newData.child('fil').val().length <= 60 && newData.child('dest').hasChildren() && newData.child('acces').child(auth.uid).val() === true)",
+        "deUid": {}, "deNom": {}, "objet": {}, "corps": {}, "creeLe": {}, "fil": {},
+        "reponseA": { ".validate": "newData.isString() && newData.val().length <= 60" },
+        "dest": { "$uid": { ".validate": "newData.isString() && newData.val().length <= 120" } },
+        "acces": { "$uid": { ".validate": "newData.val() === true", ".write": "auth != null && auth.uid === $uid && data.exists() && !newData.exists()" } },
+        "$other": { ".validate": false }
+      }
+    },
+
+    // messagerie/{uid}/{id} : l'entrée de la boîte de chaque personne (reçu / envoyé, lu, aperçu). Lecture : la personne seule. Elle gère son état
+    // (lu, suppression) ; l'expéditeur peut CRÉER l'entrée d'un destinataire, seulement si le message existe et lui donne accès.
+    "messagerie": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$id": {
+          ".write": "auth != null && (auth.uid === $uid || (!data.exists() && newData.exists() && root.child('messagesInternes').child($id).child('deUid').val() === auth.uid && root.child('messagesInternes').child($id).child('acces').child($uid).val() === true))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['role', 'lu', 'le']) && (newData.child('role').val() === 'recu' || newData.child('role').val() === 'envoye') && newData.child('lu').isBoolean() && newData.child('le').isNumber() && newData.child('le').val() <= now + 3600000)",
+          "role": {}, "lu": {}, "le": {},
+          "objet": { ".validate": "newData.isString() && newData.val().length <= 160" },
+          "de": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "apercu": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "fil": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "nb": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
     // ─── Central de notifications (la cloche, src/utils/notifications.js) ──────────────────────────────────────────────
     // notifications/{uid}/{id} : notifications PERSONNELLES. Lecture : leur destinataire. N'importe quel compte connecté peut en CRÉER une pour
     // quelqu'un d'autre (réponse à un message, changement de statut, partage…), à son propre nom (deUid), jamais la modifier ensuite ; le

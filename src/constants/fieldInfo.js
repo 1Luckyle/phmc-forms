@@ -185,6 +185,8 @@ export const FIELD_INFO = {
     flightCertRestrictions: ["Restrictions de vol", "Conditions imposées au pilote (obligatoire si « apte avec restrictions »)."],
     flightCertNote: ["Observations du certificat de vol", "Information utile à l'autorité aéronautique, sans donnée médicale détaillée."],
     flightCert_vision: ["Examen : vue", "Conforme ou non conforme au critère d'acuité visuelle."],
+    flightCert_vision_value: ["Acuité visuelle mesurée", "Valeur mesurée, facultative (ex. 10/10 corrigée)."],
+    flightCert_bloodPressure_value: ["Tension et fréquence cardiaque mesurées", "Valeurs mesurées, facultatives (ex. 120/80 mmHg — 72 bpm)."],
     flightCert_colorVision: ["Examen : vision des couleurs", "Conforme ou non conforme."],
     flightCert_hearing: ["Examen : audition", "Conforme ou non conforme."],
     flightCert_bloodPressure: ["Examen : tension et fréquence cardiaque", "Conforme ou non conforme."],

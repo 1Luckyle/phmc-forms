@@ -20,6 +20,7 @@ import UsersHub from './users/UsersHub';
 import DebugWhitelist from './DebugWhitelist';
 import DebugSeasonTester from './DebugSeasonTester';
 import DebugViewAs from './DebugViewAs';
+import DebugMailViewer from './DebugMailViewer';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 import BbcodeAccessSwitch from './BbcodeAccessSwitch';
 import AdminOverview from './AdminOverview';
@@ -49,6 +50,7 @@ const DEBUG_TABS = [
     { key: 'applications', label: 'Suppression de candidatures', icon: 'fa-trash-can' },
     { key: 'forms', label: 'Suppression des nouveaux formulaires', icon: 'fa-broom' },
     { key: 'bingo', label: 'Bingo : choix du joueur', icon: 'fa-dice' },
+    { key: 'messagerie', label: 'Messagerie : lecture admin', icon: 'fa-envelope' },
     { key: 'season', label: 'Effets de saison', icon: 'fa-snowflake' },
     { key: 'viewas', label: 'Visualiser en tant que', icon: 'fa-eye' },
 ];
@@ -155,7 +157,9 @@ const AdminDashboard = ({
     const {
         debugAutofillEnabled, setDebugAutofillEnabled, debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
         debugBingoPickerEnabled, setDebugBingoPickerEnabled, debugDeleteFormsEnabled, setDebugDeleteFormsEnabled,
+        debugMailAdminEnabled, setDebugMailAdminEnabled,
     } = useDebug();
+    const [isUpdatingMailAdmin, setIsUpdatingMailAdmin] = useState(false);
     const [isUpdatingDeleteForms, setIsUpdatingDeleteForms] = useState(false);
     const [isUpdatingBingoPicker, setIsUpdatingBingoPicker] = useState(false);
     const [isUpdatingDeleteDebug, setIsUpdatingDeleteDebug] = useState(false);
@@ -227,6 +231,20 @@ const AdminDashboard = ({
             alert('Impossible de modifier ce réglage : ' + (error?.message || error));
         } finally {
             setIsUpdatingBingoPicker(false);
+        }
+    };
+
+    const handleToggleMailAdmin = async (enabled) => {
+        setIsUpdatingMailAdmin(true);
+        try {
+            await setDebugMailAdminEnabled(enabled, currentUser?.email);
+            logAdminAction({ email: currentUser?.email, action: `Lecture admin de la messagerie interne ${enabled ? 'ACTIVÉE' : 'désactivée'}` });
+            if (showInAppNotification) showInAppNotification(`Lecture des messages par les admins ${enabled ? 'activée' : 'désactivée'}.`, enabled ? 'check-circle' : 'info-circle');
+        } catch (error) {
+            console.error('Error updating debug mail admin setting:', error);
+            alert('Impossible de modifier ce réglage : ' + (error?.message || error));
+        } finally {
+            setIsUpdatingMailAdmin(false);
         }
     };
 
@@ -613,6 +631,27 @@ const AdminDashboard = ({
                                     state={debugDeleteFormsEnabled ? 'ACTIVÉE' : 'désactivée'}
                                     stateTone={debugDeleteFormsEnabled ? 'warn' : 'ok'}
                                 />
+                            </>
+                        )}
+
+                        {debugTab === 'messagerie' && (
+                            <>
+                                <p className="text-muted">
+                                    La messagerie interne est <strong>privée</strong> : seuls l'expéditeur et les destinataires lisent un message, et les règles Firebase
+                                    l'interdisent aux administrateurs. Cet interrupteur lève cette interdiction pour les <strong>admins</strong> (et eux seuls), par exemple
+                                    pour traiter un signalement. À n'activer que le temps nécessaire : chaque lecture est inscrite au journal d'activité.
+                                </p>
+                                <SwitchRow
+                                    id="debugMailAdminSwitch"
+                                    checked={debugMailAdminEnabled}
+                                    disabled={isUpdatingMailAdmin}
+                                    onChange={handleToggleMailAdmin}
+                                    label="Autoriser les admins à lire les messages internes"
+                                    busy={isUpdatingMailAdmin}
+                                    state={debugMailAdminEnabled ? 'ACTIVÉE' : 'désactivée'}
+                                    stateTone={debugMailAdminEnabled ? 'warn' : 'ok'}
+                                />
+                                <DebugMailViewer enabled={debugMailAdminEnabled} />
                             </>
                         )}
 

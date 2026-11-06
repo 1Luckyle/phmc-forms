@@ -2486,6 +2486,29 @@ export const fleecaGhostPaymentCleanup = onSchedule({
     });
 });
 
+// ─── Messagerie interne : nettoyage des messages que plus personne ne détient ──────────────────────────────
+// Chacun supprime SA copie en retirant son accès (messagesInternes/{id}/acces/{uid}) ; les règles Realtime Database ne savent pas compter,
+// donc le dernier à le faire ne peut pas supprimer le nœud lui-même : c'est ce nettoyage quotidien qui l'efface (le message est déjà
+// illisible pour tous). Voir src/utils/internalMail.js.
+export const internalMailCleanup = onSchedule({
+    schedule: 'every day 04:30',
+    timeZone: 'Europe/Paris',
+}, async () => {
+    const messages = (await db.ref('messagesInternes').once('value')).val() || {};
+    const updates = {};
+    let removed = 0;
+    Object.entries(messages).forEach(([id, message]) => {
+        const holders = message && message.acces && typeof message.acces === 'object' ? Object.keys(message.acces) : [];
+        if (holders.length === 0) { updates[`messagesInternes/${id}`] = null; removed += 1; }
+    });
+    if (removed === 0) return;
+    await db.ref().update(updates);
+    await logServerActivity({
+        category: 'systeme', action: 'internal_mail_cleanup',
+        summary: `${removed} message(s) interne(s) supprimé(s) par leurs détenteurs, effacé(s) définitivement`,
+    });
+});
+
 // ─── Vidéosurveillance (CCTV) : droit de gestion───────────────────────────────────────────────────────────
 // Les demandes CCTV (cctvRequests) sont lues et traitées par l'ADMINISTRATION du PHMC (Directeur(trice),
 // Assistant(e) de Direction, Personnel Administratif — rôle principal OU supplémentaire) et par les admins ;

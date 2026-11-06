@@ -198,6 +198,8 @@ export const getToolAccess = (identity) => {
         fireManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
         // Take Home Car : tout le personnel demande un véhicule et lit le règlement ; la Direction, l'administration et les admins accordent ou retirent.
         takeHome: isStaffMember || !!isAdmin,
+        // Messagerie interne : tout le personnel et les admins (les règles Firebase appliquent la même condition : staffUIDs ou adminUIDs).
+        messaging: isStaffMember || !!isAdmin,
         takeHomeManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
         // Exemptions de paiement (demandes, exemptés, retraits) : l'administration, comme Take Home Car.
         exemptionsManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
@@ -227,6 +229,7 @@ export const TOOL_ACCESS_LABELS = {
     lawEnforcement: "Demandes des forces de l'ordre",
     fireReport: 'Signaler un problème incendie',
     fireManage: 'Gestion de la sécurité incendie',
+    messaging: 'Messagerie interne',
     takeHome: 'Take Home Car (demande et règlement)',
     takeHomeManage: 'Take Home Car (gestion des attributions)',
     exemptionsManage: 'Exemptions de paiement (gestion)',

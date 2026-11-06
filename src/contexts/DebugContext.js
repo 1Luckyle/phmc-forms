@@ -25,6 +25,8 @@ const DEBUG_DELETE_APPLICATIONS_PATH = 'adminSettings/debugDeleteApplications';
 const DEBUG_DELETE_FORMS_PATH = 'adminSettings/debugDeleteForms';
 // Troisième interrupteur : au bingo, on joue avec SON compte ; activé, il laisse les ADMINS choisir n'importe quel joueur.
 const DEBUG_BINGO_PICKER_PATH = 'adminSettings/debugBingoPicker';
+// Cinquième interrupteur : lecture des messages internes par les ADMINS (sinon les règles Firebase la refusent). Voir Admin/DebugMailViewer.js.
+const DEBUG_MAIL_ADMIN_PATH = 'adminSettings/debugMessagerieAdmin';
 
 const DebugContext = createContext({
     debugAutofillEnabled: false,
@@ -39,6 +41,8 @@ const DebugContext = createContext({
     setDebugDeleteFormsEnabled: async () => {},
     debugBingoPickerEnabled: false,
     setDebugBingoPickerEnabled: async () => {},
+    debugMailAdminEnabled: false,
+    setDebugMailAdminEnabled: async () => {},
 });
 
 export const useDebug = () => useContext(DebugContext);
@@ -50,6 +54,7 @@ export const DebugProvider = ({ children }) => {
     const [debugDeleteApplicationsEnabled, setDeleteEnabled] = useState(false);
     const [debugDeleteFormsEnabled, setDeleteFormsEnabled] = useState(false);
     const [debugBingoPickerEnabled, setBingoPickerEnabled] = useState(false);
+    const [debugMailAdminEnabled, setMailAdminEnabled] = useState(false);
 
     // Compte connecté (toutes méthodes de connexion confondues) : sert à tester l'appartenance à la WL.
     useEffect(() => onAuthStateChanged(auth, (user) => setUid(user ? user.uid : null)), []);
@@ -93,6 +98,23 @@ export const DebugProvider = ({ children }) => {
             () => setBingoPickerEnabled(false)
         );
         return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = onValue(
+            ref(database, DEBUG_MAIL_ADMIN_PATH),
+            (snapshot) => setMailAdminEnabled(snapshot.val()?.enabled === true),
+            () => setMailAdminEnabled(false)
+        );
+        return () => unsubscribe();
+    }, []);
+
+    const setDebugMailAdminEnabled = useCallback(async (enabled, updatedBy = null) => {
+        await set(ref(database, DEBUG_MAIL_ADMIN_PATH), {
+            enabled: Boolean(enabled),
+            updatedBy: updatedBy || null,
+            updatedAt: Date.now(),
+        });
     }, []);
 
     const setDebugBingoPickerEnabled = useCallback(async (enabled, updatedBy = null) => {
@@ -156,6 +178,7 @@ export const DebugProvider = ({ children }) => {
             debugDeleteApplicationsEnabled, setDebugDeleteApplicationsEnabled,
             debugDeleteFormsEnabled, setDebugDeleteFormsEnabled,
             debugBingoPickerEnabled, setDebugBingoPickerEnabled,
+            debugMailAdminEnabled, setDebugMailAdminEnabled,
         }}>
             {children}
         </DebugContext.Provider>

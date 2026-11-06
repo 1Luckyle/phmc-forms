@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Form , Button, InputGroup} from 'react-bootstrap';
 import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 
 const EmailInternal = ({
     formData,
@@ -12,9 +13,25 @@ const EmailInternal = ({
     phmcGroupedOptions
 
 }) => {
+    const { staffName, isAdmin } = useEmployeeAuth();
+    // Un email interne s'écrit EN SON NOM : l'expéditeur est imposé (un administrateur peut en choisir un autre).
+    const myOption = useMemo(
+        () => (phmcGroupedOptions || []).flatMap((group) => group.options)
+            .find((option) => staffName && String(option.value || '').trim().toLowerCase() === String(staffName).trim().toLowerCase()) || null,
+        [phmcGroupedOptions, staffName],
+    );
+    const lockedToMe = !!myOption && !isAdmin;
+    useEffect(() => {
+        if (lockedToMe && formData.phmcEmployee !== myOption.value) {
+            setFormData((prev) => ({ ...prev, phmcEmployee: myOption.value, lastName: myOption.lastName || '' }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [lockedToMe, myOption, formData.phmcEmployee]);
+
     return (
         <>
         <p>Ce formulaire est utilisé pour créer des emails internes. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
+        <p className="text-muted"><i className="fas fa-envelope me-1"></i>Pour écrire à un collègue directement dans le site (destinataire choisi dans l'annuaire, réponse, notification), utilisez la <strong>Messagerie interne</strong> de la boîte à outils.</p>
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 type="text"
@@ -145,7 +162,8 @@ const EmailInternal = ({
             }));
         }}
         options={phmcGroupedOptions}
-        isClearable
+        isClearable={!lockedToMe}
+        isDisabled={lockedToMe}
         placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
         className="form-control"
         styles={{

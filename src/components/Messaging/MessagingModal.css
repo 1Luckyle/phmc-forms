@@ -1,0 +1,59 @@
+/* Messagerie interne : deux volets (liste + lecture / rédaction) ; un seul volet à la fois sur petit écran. */
+.mm-layout { display: flex; gap: 12px; min-height: 60vh; max-height: calc(100vh - 160px); color: #e6edf3; }
+.mm-side { width: 330px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.mm-main { flex: 1; min-width: 0; overflow-y: auto; padding-right: 4px; }
+.mm-new { width: 100%; }
+.mm-list { display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1; }
+.mm-tabs { display: flex; gap: 6px; }
+.mm-tabs button { flex: 1; background: transparent; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; padding: 5px 8px; font-size: 0.85rem; cursor: pointer; margin: 0; }
+.mm-tabs button.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.mm-badge { background: #f85149; color: #fff; border-radius: 10px; padding: 0 7px; margin-left: 6px; font-size: 0.72rem; }
+.mm-search { background: #0d1117 !important; border-color: #30363d !important; color: #e6edf3 !important; }
+.mm-items { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; flex: 1; min-height: 120px; }
+.mm-item { display: flex; flex-direction: column; gap: 2px; text-align: left; background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 8px 10px; color: #c9d1d9; cursor: pointer; margin: 0; width: 100%; }
+.mm-item:hover { background: #161b22; }
+.mm-item.active { border-color: #1f6feb; background: #11233f; }
+.mm-item.unread .mm-item-subject, .mm-item.unread .mm-item-from { font-weight: 700; color: #fff; }
+.mm-item-top { display: flex; justify-content: space-between; gap: 8px; font-size: 0.82rem; }
+.mm-item-from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-item-date { color: #8b949e; flex-shrink: 0; }
+.mm-item-subject { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-dot { color: #58a6ff; font-size: 0.5rem; margin-right: 6px; vertical-align: middle; }
+.mm-item-preview { font-size: 0.78rem; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-empty { color: #8b949e; text-align: center; padding: 22px 8px; font-size: 0.9rem; }
+.mm-placeholder { color: #6e7681; text-align: center; padding: 80px 16px; }
+.mm-placeholder i { font-size: 2.6rem; margin-bottom: 12px; display: block; }
+.mm-detail { display: flex; flex-direction: column; gap: 8px; }
+.mm-detail-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid #21262d; }
+.mm-back { display: none; }
+.mm-subject { margin: 4px 0 0; color: #fff; }
+.mm-meta { font-size: 0.85rem; color: #c9d1d9; display: flex; flex-direction: column; gap: 2px; padding: 6px 0 8px; }
+.mm-label { font-size: 0.85rem; margin-bottom: 2px; color: #c9d1d9; }
+.mm-compose-tabs { margin-top: 4px; }
+.mm-send-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+
+/* Éditeur visuel */
+.mm-editor { border: 1px solid #30363d; border-radius: 6px; background: #0d1117; margin-top: 6px; }
+.mm-editor.is-disabled { opacity: 0.6; }
+.mm-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid #21262d; background: #161b22; border-radius: 6px 6px 0 0; }
+.mm-tool { background: transparent; border: 0; color: #c9d1d9; border-radius: 4px; width: 30px; height: 28px; margin: 0; padding: 0; cursor: pointer; }
+.mm-tool:hover:not(:disabled) { background: #30363d; color: #fff; }
+.mm-toolbar-sep { width: 1px; height: 18px; background: #30363d; margin: 0 4px; }
+.mm-uploading { margin-left: auto; font-size: 0.8rem; color: #8b949e; display: inline-flex; align-items: center; gap: 6px; }
+.mm-colors { display: flex; gap: 6px; padding: 6px; border-bottom: 1px solid #21262d; background: #161b22; }
+.mm-color { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #30363d; margin: 0; padding: 0; cursor: pointer; }
+.mm-editable { padding: 10px 12px; outline: none; line-height: 1.5; overflow-wrap: anywhere; color: #e6edf3; max-height: 50vh; overflow-y: auto; }
+.mm-editable:empty::before { content: attr(data-placeholder); color: #6e7681; pointer-events: none; }
+.mm-editable img { max-width: 100%; height: auto; border-radius: 4px; }
+.mm-editable blockquote { border-left: 3px solid #30363d; margin: 6px 0; padding: 2px 10px; color: #9da7b3; }
+.mm-editable a { color: #58a6ff; }
+.mm-editable hr { border-color: #30363d; }
+.mm-editable ul, .mm-editable ol { padding-left: 24px; margin: 4px 0; }
+
+@media (max-width: 820px) {
+    .mm-layout { flex-direction: column; max-height: none; }
+    .mm-side { width: 100%; }
+    .mm-layout.has-detail .mm-side { display: none; }
+    .mm-layout:not(.has-detail) .mm-main { display: none; }
+    .mm-back { display: inline-block; }
+}

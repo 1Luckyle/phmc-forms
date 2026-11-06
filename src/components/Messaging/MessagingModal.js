@@ -1,0 +1,398 @@
+// src/components/Messaging/MessagingModal.js
+//
+// Messagerie interne du personnel : réception, messages envoyés, lecture (aperçu mis en page, images comprises) et rédaction.
+//   • On ne peut écrire qu'EN SON NOM : l'expéditeur est imposé (et vérifié par les règles Firebase) ;
+//   • les destinataires se choisissent dans l'annuaire du personnel (comptes existants) ;
+//   • chacun supprime SA copie ; le message disparaît pour de bon quand plus personne ne l'a ;
+//   • chaque message s'exporte comme un rapport : PDF (A4), image PNG, fichier HTML, texte brut (et BBCode si l'accès BBCode est activé).
+// Données et règles : utils/internalMail.js, database.rules.json (messagesInternes / messagerie).
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Dropdown, Spinner, Form } from 'react-bootstrap';
+import Select from 'react-select';
+import BaseModal from '../BaseModal';
+import { ReportPreviewFrame } from '../ReportExpansion';
+import RichMessageEditor from './RichMessageEditor';
+import { auth } from '../../firebase';
+import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import {
+    MAIL_LIMITS, loadMailDirectory, loadInternalMail, sendInternalMail, setMailRead, deleteMyMailCopy,
+    validateMailDraft, messageToBbcode, bbcodeToPlainText, formatDateFr,
+} from '../../utils/internalMail';
+import { exportReportDocument } from '../../utils/reportDocumentExport';
+import { downloadBbCodeAsHtml } from '../../utils/reportExport';
+import './MessagingModal.css';
+
+const selectStyles = {
+    control: (base) => ({ ...base, backgroundColor: '#16202c', borderColor: '#30363d', minHeight: 38, '&:hover': { borderColor: '#30363d' } }),
+    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 2000 }),
+    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1f6feb55' : '#16202c', color: '#e6edf3' }),
+    multiValue: (base) => ({ ...base, backgroundColor: '#1f6feb33' }),
+    multiValueLabel: (base) => ({ ...base, color: '#e6edf3' }),
+    input: (base) => ({ ...base, color: '#e6edf3' }),
+    placeholder: (base) => ({ ...base, color: '#8b949e' }),
+    singleValue: (base) => ({ ...base, color: '#e6edf3' }),
+};
+
+const draftKey = (uid) => `phmcMailDraft_${uid}`;
+const readDraft = (uid) => { try { return JSON.parse(localStorage.getItem(draftKey(uid)) || 'null'); } catch (error) { return null; } };
+const writeDraft = (uid, draft) => { try { if (draft) localStorage.setItem(draftKey(uid), JSON.stringify(draft)); else localStorage.removeItem(draftKey(uid)); } catch (error) { /* stockage indisponible */ } };
+
+const shortDate = (ms) => {
+    const date = new Date(ms);
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return date.toDateString() === now.toDateString()
+        ? `${pad(date.getHours())}:${pad(date.getMinutes())}`
+        : `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${String(date.getFullYear()).slice(2)}`;
+};
+
+const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNotification }) => {
+    const { staffName } = useEmployeeAuth();
+    const { bbcodeEnabled } = useSiteConfig();
+    const uid = auth.currentUser?.uid || '';
+    const notify = useMemo(() => showNotification || (() => {}), [showNotification]);
+
+    const [tab, setTab] = useState('recu');
+    const [search, setSearch] = useState('');
+    const [view, setView] = useState({ mode: 'list', id: '' });          // list | read | compose
+    const [message, setMessage] = useState(null);                         // message ouvert (contenu complet)
+    const [loadingMessage, setLoadingMessage] = useState(false);
+    const [directory, setDirectory] = useState({});
+    const [directoryReady, setDirectoryReady] = useState(false);
+
+    // Rédaction
+    const [recipients, setRecipients] = useState([]);                     // options react-select { value: uid, label, name }
+    const [subject, setSubject] = useState('');
+    const [bodyBb, setBodyBb] = useState('');
+    const [reply, setReply] = useState(null);                             // { id, fil, quote }
+    const [composeTab, setComposeTab] = useState('write');
+    const [sending, setSending] = useState(false);
+    const [editorKey, setEditorKey] = useState(0);
+    const [editorSeed, setEditorSeed] = useState('');
+    const editorRef = useRef(null);
+
+    useEffect(() => {
+        if (!show || directoryReady) return;
+        loadMailDirectory().then((map) => { setDirectory(map); setDirectoryReady(true); }).catch(() => setDirectoryReady(true));
+    }, [show, directoryReady]);
+
+    const nameOf = useCallback((userId, fallback) => (directory[userId]?.name || fallback || 'Inconnu'), [directory]);
+    const recipientOptions = useMemo(() => Object.values(directory).filter((person) => person.uid !== uid)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((person) => ({ value: person.uid, name: person.name, label: person.rank ? `${person.name} — ${person.rank}` : person.name })), [directory, uid]);
+
+    const items = useMemo(() => {
+        const role = tab === 'recu' ? 'recu' : 'envoye';
+        const needle = search.trim().toLowerCase();
+        return (mailbox?.items || []).filter((item) => item.role === role)
+            .filter((item) => !needle || `${item.objet} ${item.de} ${item.apercu}`.toLowerCase().includes(needle));
+    }, [mailbox, tab, search]);
+    const unreadCount = mailbox?.unread || 0;
+
+    // ───── Lecture ─────
+    const openMessage = useCallback(async (id) => {
+        setView({ mode: 'read', id });
+        setLoadingMessage(true);
+        setMessage(null);
+        try {
+            const loaded = await loadInternalMail(id);
+            setMessage(loaded);
+            const entry = (mailbox?.items || []).find((item) => item.id === id);
+            if (loaded && entry && entry.role === 'recu' && !entry.lu) setMailRead(uid, id, true).catch(() => {});
+        } catch (error) {
+            notify('Message introuvable ou illisible.', 'error');
+        } finally {
+            setLoadingMessage(false);
+        }
+    }, [mailbox, uid, notify]);
+
+    // Ouverture depuis une notification : on affiche directement le message.
+    const openedFromNotification = useRef('');
+    useEffect(() => {
+        if (show && initialMessageId && openedFromNotification.current !== initialMessageId) {
+            openedFromNotification.current = initialMessageId;
+            openMessage(initialMessageId);
+        }
+        if (!show) openedFromNotification.current = '';
+    }, [show, initialMessageId, openMessage]);
+
+    useEffect(() => { if (!show) { setView({ mode: 'list', id: '' }); setMessage(null); } }, [show]);
+
+    const readEntry = (mailbox?.items || []).find((item) => item.id === view.id);
+    const senderName = message ? nameOf(message.deUid, message.deNom) : '';
+    const fullBbcode = message ? messageToBbcode(message, { fromName: senderName }) : '';
+    const exportTitle = message ? `Message - ${message.objet}` : 'Message';
+
+    const handleDelete = async () => {
+        if (!view.id || !window.confirm('Supprimer ce message de votre boîte ? Les autres personnes le gardent ; il disparaît pour de bon quand plus personne ne l\'a.')) return;
+        try {
+            await deleteMyMailCopy(uid, view.id);
+            setView({ mode: 'list', id: '' });
+            setMessage(null);
+            notify('Message supprimé de votre boîte.', 'check-circle');
+        } catch (error) {
+            notify(`Suppression impossible : ${error.message || 'erreur'}`, 'error');
+        }
+    };
+
+    const copyText = async (text, okMessage) => {
+        try { await navigator.clipboard.writeText(text); notify(okMessage, 'check-circle'); } catch (error) { notify('Copie impossible dans ce navigateur.', 'error'); }
+    };
+
+    // ───── Rédaction ─────
+    const resetCompose = () => {
+        setRecipients([]); setSubject(''); setBodyBb(''); setReply(null); setComposeTab('write'); setEditorSeed(''); setEditorKey((k) => k + 1);
+    };
+
+    const startCompose = (preset = {}) => {
+        resetCompose();
+        const draft = !preset.reply ? readDraft(uid) : null;
+        if (preset.reply) {
+            setReply(preset.reply);
+            setSubject(preset.subject || '');
+            setRecipients(preset.recipients || []);
+        } else if (draft) {
+            setSubject(draft.subject || '');
+            setRecipients((draft.recipients || []).filter((id) => directory[id]).map((id) => ({ value: id, name: directory[id].name, label: directory[id].name })));
+            setEditorSeed(draft.html || '');
+            notify('Brouillon repris.', 'info-circle', 3000);
+        }
+        setView({ mode: 'compose', id: '' });
+    };
+
+    const startReply = (all) => {
+        if (!message) return;
+        const ids = all ? [message.deUid, ...Object.keys(message.dest || {})].filter((id) => id && id !== uid) : [message.deUid];
+        const unique = Array.from(new Set(ids));
+        const options = unique.filter((id) => directory[id]).map((id) => ({ value: id, name: directory[id].name, label: directory[id].name }));
+        if (options.length < unique.length) notify('Certains destinataires n\'ont plus de compte dans l\'annuaire : ils sont retirés de la réponse.', 'warning', 6000);
+        const plain = bbcodeToPlainText((message.corps || '').replace(/\[quote\][\s\S]*\[\/quote\]/gi, '')).slice(0, 1500);
+        startCompose({
+            reply: { id: message.id, fil: message.fil || message.id, quote: `\n\n[quote][b]${senderName} a écrit le ${formatDateFr(message.creeLe)} :[/b]\n${plain}[/quote]` },
+            subject: /^re\s*:/i.test(message.objet) ? message.objet : `RE: ${message.objet}`,
+            recipients: options,
+        });
+    };
+
+    // Brouillon : sauvegardé (sans destinataire obligatoire) tant qu'on rédige un nouveau message.
+    useEffect(() => {
+        if (view.mode !== 'compose' || reply || !uid) return undefined;
+        const timer = setTimeout(() => {
+            const html = editorRef.current ? editorRef.current.getHtml() : '';
+            const empty = !subject.trim() && !html.trim() && recipients.length === 0;
+            writeDraft(uid, empty ? null : { subject, recipients: recipients.map((r) => r.value), html });
+        }, 600);
+        return () => clearTimeout(timer);
+    }, [view.mode, reply, uid, subject, recipients, bodyBb]);
+
+    const draftBody = reply ? `${bodyBb}${reply.quote}` : bodyBb;
+    const problems = view.mode === 'compose' ? validateMailDraft({ objet: subject, corps: draftBody, destinataires: recipients }) : [];
+    const draftMessage = { objet: subject || '(sans objet)', deNom: staffName, dest: Object.fromEntries(recipients.map((r) => [r.value, r.name])), creeLe: Date.now(), corps: draftBody };
+
+    const handleSend = async () => {
+        if (problems.length) { notify(problems[0], 'warning'); return; }
+        setSending(true);
+        try {
+            const result = await sendInternalMail({
+                objet: subject, corps: draftBody, fromName: staffName,
+                destinataires: recipients.map((r) => ({ uid: r.value, nom: r.name })),
+                reponseA: reply?.id || '', fil: reply?.fil || '',
+            });
+            writeDraft(uid, null);
+            if (result.failed.length) notify(`Message envoyé, mais non déposé chez : ${result.failed.join(', ')}.`, 'warning', 9000);
+            else notify('Message envoyé.', 'check-circle');
+            resetCompose();
+            setTab('envoye');
+            setView({ mode: 'list', id: '' });
+        } catch (error) {
+            notify(`Envoi impossible : ${error.message || 'erreur'}`, 'error', 8000);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const discardCompose = () => {
+        if ((subject.trim() || bodyBb.trim()) && !window.confirm('Abandonner ce message ? Il ne sera pas enregistré.')) return;
+        writeDraft(uid, null);
+        resetCompose();
+        setView({ mode: 'list', id: '' });
+    };
+
+    // ───── Affichage ─────
+    const detailOpen = view.mode !== 'list';
+
+    const renderList = () => (
+        <div className="mm-list">
+            <div className="mm-tabs">
+                <button type="button" className={tab === 'recu' ? 'active' : ''} onClick={() => setTab('recu')}>
+                    Réception{unreadCount > 0 && <span className="mm-badge">{unreadCount}</span>}
+                </button>
+                <button type="button" className={tab === 'envoye' ? 'active' : ''} onClick={() => setTab('envoye')}>Envoyés</button>
+            </div>
+            <Form.Control size="sm" type="search" placeholder="Rechercher (objet, expéditeur, texte)…" value={search} onChange={(event) => setSearch(event.target.value)} className="mm-search" />
+            <div className="mm-items">
+                {!mailbox?.ready && <div className="mm-empty"><Spinner animation="border" size="sm" /> Chargement…</div>}
+                {mailbox?.ready && items.length === 0 && (
+                    <div className="mm-empty">{search ? 'Aucun message ne correspond.' : tab === 'recu' ? 'Aucun message reçu.' : 'Aucun message envoyé.'}</div>
+                )}
+                {items.map((item) => {
+                    const unread = item.role === 'recu' && !item.lu;
+                    return (
+                        <button key={item.id} type="button" className={`mm-item${view.id === item.id ? ' active' : ''}${unread ? ' unread' : ''}`} onClick={() => openMessage(item.id)}>
+                            <span className="mm-item-top">
+                                <span className="mm-item-from">{item.role === 'recu' ? nameOf('', item.de) : `À ${item.nb || 1} personne${item.nb > 1 ? 's' : ''}`}</span>
+                                <span className="mm-item-date">{shortDate(item.le)}</span>
+                            </span>
+                            <span className="mm-item-subject">{unread && <i className="fas fa-circle mm-dot"></i>}{item.objet}</span>
+                            <span className="mm-item-preview">{item.apercu}</span>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    const renderRead = () => (
+        <div className="mm-detail">
+            <div className="mm-detail-bar">
+                <Button size="sm" variant="outline-secondary" className="mm-back" onClick={() => { setView({ mode: 'list', id: '' }); setMessage(null); }}>
+                    <i className="fas fa-arrow-left me-1"></i>Retour
+                </Button>
+                {message && (
+                    <>
+                        {message.deUid !== uid && <Button size="sm" variant="primary" onClick={() => startReply(false)}><i className="fas fa-reply me-1"></i>Répondre</Button>}
+                        {message.deUid !== uid && Object.keys(message.dest || {}).filter((id) => id !== uid).length > 0 && (
+                            <Button size="sm" variant="outline-primary" onClick={() => startReply(true)}><i className="fas fa-reply-all me-1"></i>Répondre à tous</Button>
+                        )}
+                        <Dropdown>
+                            <Dropdown.Toggle size="sm" variant="outline-info"><i className="fas fa-file-export me-1"></i>Exporter</Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                <Dropdown.Item onClick={() => exportReportDocument('pdf', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
+                                    <i className="fas fa-file-pdf me-2"></i>PDF (A4)
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={() => exportReportDocument('png', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
+                                    <i className="fas fa-file-image me-2"></i>Image PNG (pour Discord)
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={() => exportReportDocument('png-copy', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
+                                    <i className="fas fa-copy me-2"></i>Copier l'image
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={() => downloadBbCodeAsHtml({ bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
+                                    <i className="fas fa-file-code me-2"></i>Fichier HTML
+                                </Dropdown.Item>
+                                <Dropdown.Divider />
+                                <Dropdown.Item onClick={() => copyText(bbcodeToPlainText(fullBbcode), 'Texte copié.')}>
+                                    <i className="fas fa-align-left me-2"></i>Copier le texte
+                                </Dropdown.Item>
+                                {bbcodeEnabled && (
+                                    <Dropdown.Item onClick={() => copyText(fullBbcode, 'BBCode copié.')}>
+                                        <i className="fas fa-code me-2"></i>Copier le BBCode
+                                    </Dropdown.Item>
+                                )}
+                            </Dropdown.Menu>
+                        </Dropdown>
+                        {readEntry && readEntry.role === 'recu' && (
+                            <Button size="sm" variant="outline-secondary" title="Remettre en non lu" onClick={() => { setMailRead(uid, view.id, false).catch(() => {}); setView({ mode: 'list', id: '' }); setMessage(null); }}>
+                                <i className="fas fa-envelope"></i>
+                            </Button>
+                        )}
+                        <Button size="sm" variant="outline-danger" onClick={handleDelete} title="Supprimer de ma boîte"><i className="fas fa-trash"></i></Button>
+                    </>
+                )}
+            </div>
+            {loadingMessage && <div className="mm-empty"><Spinner animation="border" size="sm" /> Ouverture…</div>}
+            {!loadingMessage && !message && <div className="mm-empty">Ce message n'existe plus ou vous n'y avez plus accès.</div>}
+            {message && (
+                <>
+                    <h5 className="mm-subject">{message.objet}</h5>
+                    <div className="mm-meta">
+                        <div><strong>De :</strong> {senderName}</div>
+                        <div><strong>À :</strong> {Object.entries(message.dest || {}).map(([id, name]) => nameOf(id, name)).join(', ')}</div>
+                        <div><strong>Le :</strong> {formatDateFr(message.creeLe)}</div>
+                    </div>
+                    <ReportPreviewFrame bbCode={message.corps} title={message.objet} height={280} />
+                </>
+            )}
+        </div>
+    );
+
+    const renderCompose = () => (
+        <div className="mm-detail">
+            <div className="mm-detail-bar">
+                <Button size="sm" variant="outline-secondary" className="mm-back" onClick={discardCompose}><i className="fas fa-arrow-left me-1"></i>Retour</Button>
+                <strong>{reply ? 'Répondre' : 'Nouveau message'}</strong>
+            </div>
+            <Form.Group className="mb-2">
+                <Form.Label className="mm-label">De</Form.Label>
+                <Form.Control size="sm" value={`${staffName || 'Moi'} (vous)`} disabled readOnly />
+                <small className="text-muted">Un message est toujours envoyé en votre nom : l'expéditeur ne peut pas être changé.</small>
+            </Form.Group>
+            <Form.Group className="mb-2">
+                <Form.Label className="mm-label">À *</Form.Label>
+                <Select
+                    isMulti
+                    value={recipients}
+                    onChange={(selected) => setRecipients(selected || [])}
+                    options={recipientOptions}
+                    isLoading={!directoryReady}
+                    placeholder="Choisir dans l'annuaire du personnel… (tapez pour rechercher)"
+                    noOptionsMessage={() => 'Aucune personne trouvée'}
+                    styles={selectStyles}
+                    closeMenuOnSelect={false}
+                />
+                {recipients.length >= MAIL_LIMITS.recipients && <small className="text-warning">Maximum {MAIL_LIMITS.recipients} destinataires.</small>}
+            </Form.Group>
+            <Form.Group className="mb-2">
+                <Form.Label className="mm-label">Objet *</Form.Label>
+                <Form.Control size="sm" value={subject} maxLength={MAIL_LIMITS.subject} onChange={(event) => setSubject(event.target.value)} placeholder="Objet du message" />
+            </Form.Group>
+            <div className="mm-tabs mm-compose-tabs">
+                <button type="button" className={composeTab === 'write' ? 'active' : ''} onClick={() => setComposeTab('write')}>Rédaction</button>
+                <button type="button" className={composeTab === 'preview' ? 'active' : ''} onClick={() => setComposeTab('preview')}>Aperçu</button>
+            </div>
+            {/* L'éditeur reste monté (masqué) pendant l'aperçu : on ne perd rien en changeant d'onglet. */}
+            <div style={{ display: composeTab === 'write' ? 'block' : 'none' }}>
+                <RichMessageEditor key={editorKey} ref={editorRef} initialHtml={editorSeed} onChange={(bb) => setBodyBb(bb)} onNotify={notify} />
+            </div>
+            {composeTab === 'preview' && (
+                bodyBb.trim()
+                    ? <ReportPreviewFrame bbCode={messageToBbcode(draftMessage, { fromName: staffName })} title={subject || 'Aperçu'} height={300} />
+                    : <div className="mm-empty">Rien à afficher : le message est vide.</div>
+            )}
+            {reply && <small className="text-muted d-block mt-1"><i className="fas fa-quote-left me-1"></i>Le message d'origine sera cité à la suite de votre réponse.</small>}
+            {problems.length > 0 && bodyBb.trim() && <small className="text-warning d-block mt-1">{problems[0]}</small>}
+            <div className="mm-send-bar">
+                <Button variant="success" onClick={handleSend} disabled={sending || problems.length > 0}>
+                    {sending ? <Spinner animation="border" size="sm" /> : <><i className="fas fa-paper-plane me-1"></i>Envoyer</>}
+                </Button>
+                <Button variant="outline-secondary" onClick={discardCompose} disabled={sending}>Annuler</Button>
+                {!reply && <small className="text-muted ms-2">Brouillon enregistré automatiquement sur cet appareil.</small>}
+            </div>
+        </div>
+    );
+
+    return (
+        <BaseModal isOpen={show} onClose={onHide} title="Messagerie interne" modalSize="xl" className="mm-modal" closeOnOverlayClick={false}>
+            <div className={`mm-layout${detailOpen ? ' has-detail' : ''}`}>
+                <div className="mm-side">
+                    <Button variant="primary" className="mm-new" onClick={() => startCompose()}>
+                        <i className="fas fa-pen me-2"></i>Nouveau message
+                    </Button>
+                    {renderList()}
+                </div>
+                <div className="mm-main">
+                    {view.mode === 'read' && renderRead()}
+                    {view.mode === 'compose' && renderCompose()}
+                    {view.mode === 'list' && (
+                        <div className="mm-placeholder">
+                            <i className="fas fa-envelope-open-text"></i>
+                            <p>Sélectionnez un message, ou écrivez-en un nouveau.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </BaseModal>
+    );
+};
+
+export default MessagingModal;
