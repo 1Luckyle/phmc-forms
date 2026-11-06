@@ -88,6 +88,13 @@ describe('validateMailDraft', () => {
         expect(validateMailDraft({ ...ok, destinataires: [] })).toHaveLength(1);
         expect(validateMailDraft({ ...ok, corps: '' })).toHaveLength(1);
     });
+    test('fonction et département sont obligatoires (la signature, elle, est facultative)', () => {
+        const full = { ...ok, fonction: 'Médecin', service: 'Urgences' };
+        expect(validateMailDraft(full)).toEqual([]);
+        expect(validateMailDraft({ ...full, fonction: '  ' })).toHaveLength(1);
+        expect(validateMailDraft({ ...full, service: '' })).toHaveLength(1);
+        expect(validateMailDraft({ ...full, signature: '' })).toEqual([]);
+    });
     test('limites de taille', () => {
         expect(validateMailDraft({ ...ok, corps: 'x'.repeat(MAIL_LIMITS.body + 1) })).toHaveLength(1);
         const many = Array.from({ length: MAIL_LIMITS.recipients + 1 }, (_, i) => ({ uid: `u${i}`, nom: 'x' }));

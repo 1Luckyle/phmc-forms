@@ -8,7 +8,8 @@
 .mm-tabs button { flex: 1; background: transparent; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; padding: 5px 8px; font-size: 0.85rem; cursor: pointer; margin: 0; }
 .mm-tabs button.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
 .mm-badge { background: #f85149; color: #fff; border-radius: 10px; padding: 0 7px; margin-left: 6px; font-size: 0.72rem; }
-.mm-search { background: #0d1117 !important; border-color: #30363d !important; color: #e6edf3 !important; }
+/* Le style global .form-control a flex-grow:1 : dans cette colonne flex, le champ s'étirait en hauteur et occupait toute la liste. */
+.mm-search { flex: 0 0 auto !important; height: 32px; background: #0d1117 !important; border-color: #30363d !important; color: #e6edf3 !important; }
 .mm-items { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; flex: 1; min-height: 120px; }
 .mm-item { display: flex; flex-direction: column; gap: 2px; text-align: left; background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 8px 10px; color: #c9d1d9; cursor: pointer; margin: 0; width: 100%; }
 .mm-item:hover { background: #161b22; }

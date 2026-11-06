@@ -56,14 +56,66 @@ const RichMessageEditor = forwardRef(({ initialHtml = '', onChange, onNotify, di
         emit();
     };
 
+    // Position du curseur dans le texte, mémorisée avant l'ouverture du sélecteur de fichier (qui fait perdre le curseur).
+    const savedRange = useRef(null);
+    const rememberCaret = () => {
+        const selection = window.getSelection();
+        savedRange.current = selection && selection.rangeCount > 0 && editorRef.current && editorRef.current.contains(selection.anchorNode)
+            ? selection.getRangeAt(0).cloneRange() : null;
+    };
+    const restoreCaret = () => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        editor.focus();
+        const selection = window.getSelection();
+        if (savedRange.current && editor.contains(savedRange.current.startContainer)) {
+            selection.removeAllRanges();
+            selection.addRange(savedRange.current);
+        } else {
+            // Pas de curseur connu : à la fin du message.
+            const range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    };
+
+    // Efface la mise en forme de la sélection ; sans sélection, de tout le message (texte, listes, citations, liens, tailles, couleurs).
+    const clearFormatting = () => {
+        const editor = editorRef.current;
+        if (disabled || !editor) return;
+        editor.focus();
+        const selection = window.getSelection();
+        const inside = selection && selection.rangeCount > 0 && editor.contains(selection.anchorNode);
+        const wholeMessage = !inside || selection.isCollapsed;
+        if (wholeMessage) {
+            const range = document.createRange();
+            range.selectNodeContents(editor);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        if (document.queryCommandState('insertUnorderedList')) document.execCommand('insertUnorderedList');
+        if (document.queryCommandState('insertOrderedList')) document.execCommand('insertOrderedList');
+        document.execCommand('formatBlock', false, 'div');
+        document.execCommand('removeFormat');
+        document.execCommand('unlink');
+        if (wholeMessage) selection.collapseToEnd();
+        emit();
+        notify(wholeMessage
+            ? 'Mise en forme effacée sur tout le message. Pour n\'effacer qu\'un passage, sélectionnez-le d\'abord.'
+            : 'Mise en forme effacée sur le texte sélectionné.', 'check-circle');
+    };
+
     const insertImageFile = async (file) => {
         if (!file || !/^image\//i.test(file.type)) { notify('Ce fichier n\'est pas une image.', 'warning'); return; }
         setUploading((n) => n + 1);
         try {
             const dataUrl = await fileToDataUrl(file);
             const { url } = await uploadImageToServer(dataUrl);
-            if (editorRef.current) editorRef.current.focus();
+            restoreCaret();
             document.execCommand('insertImage', false, url);
+            savedRange.current = null;
             emit();
         } catch (error) {
             notify(`Image non envoyée : ${error.message || 'erreur inconnue'}`, 'error', 8000);
@@ -74,7 +126,7 @@ const RichMessageEditor = forwardRef(({ initialHtml = '', onChange, onNotify, di
 
     const handlePaste = (event) => {
         const files = Array.from(event.clipboardData?.files || []).filter((file) => /^image\//i.test(file.type));
-        if (files.length) { event.preventDefault(); files.forEach(insertImageFile); return; }
+        if (files.length) { event.preventDefault(); rememberCaret(); files.forEach(insertImageFile); return; }
         // Texte seul : pas de mise en forme importée.
         event.preventDefault();
         const text = event.clipboardData?.getData('text/plain') || '';
@@ -83,10 +135,11 @@ const RichMessageEditor = forwardRef(({ initialHtml = '', onChange, onNotify, di
 
     const handleDrop = (event) => {
         const files = Array.from(event.dataTransfer?.files || []).filter((file) => /^image\//i.test(file.type));
-        if (files.length) { event.preventDefault(); files.forEach(insertImageFile); }
+        if (files.length) { event.preventDefault(); rememberCaret(); files.forEach(insertImageFile); }
     };
 
     const pickImage = () => {
+        rememberCaret();
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -121,9 +174,9 @@ const RichMessageEditor = forwardRef(({ initialHtml = '', onChange, onNotify, di
         { icon: 'fa-minus', title: 'Ligne de séparation', action: () => run('insertHorizontalRule') },
         { sep: true },
         { icon: 'fa-link', title: 'Insérer un lien', action: addLink },
-        { icon: 'fa-image', title: 'Insérer une image (ou collez-la, ou glissez-la dans le texte)', action: pickImage },
+        { icon: 'fa-image', title: 'Insérer une image à l\'endroit du curseur (vous pouvez aussi la coller avec Ctrl+V ou la glisser dans le texte)', action: pickImage },
         { sep: true },
-        { icon: 'fa-eraser', title: 'Effacer la mise en forme', action: () => run('removeFormat') },
+        { icon: 'fa-eraser', title: 'Effacer la mise en forme : du texte sélectionné, ou de tout le message si rien n\'est sélectionné', action: clearFormatting },
     ];
 
     return (

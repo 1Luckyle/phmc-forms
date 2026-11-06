@@ -429,7 +429,7 @@ await write('A publie la grille avec un échelon de grade invalide : refusé', f
 await read('Anonyme lit la grille', true, null, GP, withGrade);
 
 console.log('--- messagerie interne (messagesInternes / messagerie) ---');
-const mail = (over = {}) => ({ deUid: 'S1', deNom: 'S One', objet: 'Bonjour', corps: 'Texte du message', creeLe: 1, dest: { S2: 'S Two' }, acces: { S1: true, S2: true }, fil: 'm1', ...over });
+const mail = (over = {}) => ({ deUid: 'S1', deNom: 'S One', objet: 'Bonjour', corps: 'Texte du message', creeLe: 1, dest: { S2: 'S Two' }, acces: { S1: true, S2: true }, fil: 'm1', deFonction: 'Médecin', deService: 'Urgences', ...over });
 const withMail = (data) => { data.messagesInternes = { m1: mail(), m2: mail({ deUid: 'S2', deNom: 'S Two', dest: { S1: 'S One' }, fil: 'm2' }) }; };
 const withMailSolo = (data) => { data.messagesInternes = { m1: mail({ acces: { S1: true } }) }; };
 const withDebugMail = (data) => { withMail(data); data.adminSettings = { debugMessagerieAdmin: { enabled: true } }; };
@@ -449,6 +449,10 @@ await write('Message vide refusé', false, 'S1', 'messagesInternes/n1', mail({ c
 await write('Message trop long refusé', false, 'S1', 'messagesInternes/n1', mail({ corps: 'x'.repeat(20001), fil: 'n1' }));
 await write('Champ inattendu refusé', false, 'S1', 'messagesInternes/n1', mail({ secret: 'x', fil: 'n1' }));
 await write('Fonction, département et signature https acceptés', true, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deFonction: 'Médecin', deService: 'Urgences', deSignature: 'https://phmc-tools.com/img/phmc.png' }));
+await write('Message sans fonction refusé', false, 'S1', 'messagesInternes/n1', (({ deFonction, ...rest }) => rest)(mail({ fil: 'n1' })));
+await write('Message sans département refusé', false, 'S1', 'messagesInternes/n1', (({ deService, ...rest }) => rest)(mail({ fil: 'n1' })));
+await write('Fonction vide refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deFonction: '' }));
+await write('Message sans signature accepté (facultative)', true, 'S1', 'messagesInternes/n1', mail({ fil: 'n1' }));
 await write('Signature non https refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deSignature: 'javascript:alert(1)' }));
 await write('Signature http refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deSignature: 'http://exemple.fr/a.png' }));
 await write('Fonction trop longue refusée', false, 'S1', 'messagesInternes/n1', mail({ fil: 'n1', deFonction: 'x'.repeat(121) }));

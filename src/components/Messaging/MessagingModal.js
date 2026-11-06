@@ -201,7 +201,7 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
     }, [view.mode, reply, uid, subject, recipients, bodyBb]);
 
     const draftBody = reply ? `${bodyBb}${reply.quote}` : bodyBb;
-    const problems = view.mode === 'compose' ? validateMailDraft({ objet: subject, corps: draftBody, destinataires: recipients }) : [];
+    const problems = view.mode === 'compose' ? validateMailDraft({ objet: subject, corps: draftBody, destinataires: recipients, fonction, service }) : [];
     const draftMessage = {
         objet: subject || '(sans objet)', deNom: staffName, dest: Object.fromEntries(recipients.map((r) => [r.value, r.name])), creeLe: Date.now(), corps: draftBody,
         deFonction: fonction.trim(), deService: service.trim(), deSignature: signature.trim(),
@@ -368,20 +368,20 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                 <Form.Label className="mm-label">Objet *</Form.Label>
                 <Form.Control size="sm" value={subject} maxLength={MAIL_LIMITS.subject} onChange={(event) => setSubject(event.target.value)} placeholder="Objet du message" />
             </Form.Group>
-            <details className="mm-sign" open={!signature && !fonction}>
-                <summary>Signature, fonction et département (affichés sous le message)</summary>
+            <details className="mm-sign" open={!fonction.trim() || !service.trim()}>
+                <summary>Fonction *, département * et signature (facultative) — affichés sous le message</summary>
                 <div className="mm-sign-grid">
                     <Form.Group>
-                        <Form.Label className="mm-label">Fonction au sein du PHMC</Form.Label>
+                        <Form.Label className="mm-label">Fonction au sein du PHMC *</Form.Label>
                         <Form.Control size="sm" value={fonction} maxLength={MAIL_LIMITS.name} onChange={(event) => setFonction(event.target.value)} placeholder="ex. Médecin Titulaire" />
                     </Form.Group>
                     <Form.Group>
-                        <Form.Label className="mm-label">Département</Form.Label>
+                        <Form.Label className="mm-label">Département *</Form.Label>
                         <Form.Control size="sm" value={service} maxLength={MAIL_LIMITS.name} onChange={(event) => setService(event.target.value)} placeholder="ex. Médecine interne" />
                     </Form.Group>
                 </div>
                 <div className="mm-sign-image">
-                    <span className="mm-label">Signature</span>
+                    <span className="mm-label">Signature (facultative)</span>
                     {signature ? <ImagePreview imageUrls={signature} /> : <small className="text-muted">Aucune signature.</small>}
                     <div className="d-flex gap-2 mt-1">
                         <Button size="sm" variant="outline-primary" onClick={() => {
@@ -406,7 +406,9 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                     : <div className="mm-empty">Rien à afficher : le message est vide.</div>
             )}
             {reply && <small className="text-muted d-block mt-1"><i className="fas fa-quote-left me-1"></i>Le message d'origine sera cité à la suite de votre réponse.</small>}
-            {problems.length > 0 && bodyBb.trim() && <small className="text-warning d-block mt-1">{problems[0]}</small>}
+            {problems.length > 0 && (
+                <small className="text-warning d-block mt-1"><i className="fas fa-exclamation-circle me-1"></i>Pour envoyer : {problems.join(' ')}</small>
+            )}
             <div className="mm-send-bar">
                 <Button variant="success" onClick={handleSend} disabled={sending || problems.length > 0}>
                     {sending ? <Spinner animation="border" size="sm" /> : <><i className="fas fa-paper-plane me-1"></i>Envoyer</>}

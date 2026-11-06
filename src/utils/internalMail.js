@@ -199,8 +199,11 @@ export const loadMailDirectory = async () => {
 
 // ───────────── Envoi ─────────────
 
-export const validateMailDraft = ({ objet, corps, destinataires }) => {
+// fonction / service : obligatoires dès qu'ils sont fournis (undefined = contrôle ignoré, pour les appels qui n'en ont pas). La signature reste facultative.
+export const validateMailDraft = ({ objet, corps, destinataires, fonction, service }) => {
     const problems = [];
+    if (fonction !== undefined && !clean(fonction, MAIL_LIMITS.name)) problems.push('Indiquez votre fonction au sein du PHMC.');
+    if (service !== undefined && !clean(service, MAIL_LIMITS.name)) problems.push('Indiquez votre département.');
     if (!clean(objet, MAIL_LIMITS.subject)) problems.push('Indiquez l\'objet du message.');
     if (!Array.isArray(destinataires) || destinataires.length === 0) problems.push('Choisissez au moins un destinataire.');
     else if (destinataires.length > MAIL_LIMITS.recipients) problems.push(`Au plus ${MAIL_LIMITS.recipients} destinataires.`);
@@ -217,7 +220,7 @@ export const sendInternalMail = async ({ objet, corps, destinataires, fromName, 
     (destinataires || []).forEach((entry) => {
         if (entry && entry.uid && entry.uid !== user.uid && !unique.some((u) => u.uid === entry.uid)) unique.push(entry);
     });
-    const problems = validateMailDraft({ objet, corps, destinataires: unique });
+    const problems = validateMailDraft({ objet, corps, destinataires: unique, fonction, service });
     if (problems.length) throw new Error(problems[0]);
 
     const id = push(ref(database, 'messagesInternes')).key;
