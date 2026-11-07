@@ -167,12 +167,13 @@ const MedicalRelease = ({
     return (
         <>
         <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', date: 'dateOfBirth', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
+        <Form.Label className="form-section-title">Identité actuelle du patient</Form.Label>
         <PatientGeneralInfo
             formData={formData} setFormData={setFormData} handleChange={handleChange} fields={CURRENT_FIELDS}
             patientTitleOptions={patientTitleOptions || []} guard={minorGuard}
         />
 
-            <Form.Label>Options de mise à jour du dossier médical</Form.Label>
+            <Form.Label className="form-section-title">Rubriques à mettre à jour</Form.Label>
             <Select
                 isMulti
                 name="UpdateMedicalFile"
@@ -197,7 +198,7 @@ const MedicalRelease = ({
 
                 <>
 
-        <Form.Label>Mettre à jour les informations générales</Form.Label>
+        <Form.Label className="form-section-title">Mettre à jour les informations générales</Form.Label>
         <PatientGeneralInfo
             formData={formData} setFormData={setFormData} handleChange={handleChange} fields={NEW_FIELDS}
             patientTitleOptions={patientTitleNew || []} guard={newTitleGuard}
@@ -209,14 +210,14 @@ const MedicalRelease = ({
 
             {formData.UpdateMedicalFile?.includes('EmergencyContact') && (
                     <div style={{ marginTop: '20px' }}>
-                        <Form.Label>Mettre à jour le contact d'urgence</Form.Label>
+                        <Form.Label className="form-section-title">Mettre à jour le contact d'urgence</Form.Label>
                         <EmergencyContactFields formData={formData} handleChange={handleChange} />
                     </div>
             )}
 
             {formData.UpdateMedicalFile?.includes('Medical History') && (
         <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
-                    <Form.Label>Mettre à jour l'historique médical</Form.Label>
+                    <Form.Label className="form-section-title">Mettre à jour l'historique médical</Form.Label>
 
                 <>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
@@ -245,7 +246,7 @@ const MedicalRelease = ({
             {formData.UpdateMedicalFile?.includes('MentalHealth') && (
                     <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
 
-<>                    <Form.Label>Mettre à jour l'historique de santé mentale</Form.Label>
+<>                    <Form.Label className="form-section-title">Mettre à jour l'historique de santé mentale</Form.Label>
 
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
@@ -267,7 +268,7 @@ const MedicalRelease = ({
 
             {formData.UpdateMedicalFile?.includes('FamilyHistory') && (
         <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
-                    <Form.Label>Mettre à jour l'historique médical</Form.Label>
+                    <Form.Label className="form-section-title">Mettre à jour l'historique familial</Form.Label>
                     <>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
 
@@ -278,7 +279,7 @@ const MedicalRelease = ({
             )}
             {formData.UpdateMedicalFile?.includes('SocialInformation') && (
                 <>
-                    <Form.Label>Mettre à jour les informations sociales</Form.Label>
+                    <Form.Label className="form-section-title">Mettre à jour les informations sociales</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>
 
                     <Form.Select
@@ -323,7 +324,7 @@ const MedicalRelease = ({
             )}
             {formData.UpdateMedicalFile?.includes('Lifestyle') && (
                 <>
-                                    <Form.Label>Mettre à jour les informations sur le mode de vie</Form.Label>
+                                    <Form.Label className="form-section-title">Mettre à jour les informations sur le mode de vie</Form.Label>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <PresetTextField name="patientSmoker" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSmoker} />
@@ -361,7 +362,7 @@ const MedicalRelease = ({
                             <div style={{ marginTop: '20px' }}> {/* Added marginTop for spacing */}
 
                             <>
-                                                <Form.Label>Mettre à jour les directives anticipées</Form.Label>
+                                                <Form.Label className="form-section-title">Mettre à jour les directives anticipées</Form.Label>
 
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
                         <Form.Select

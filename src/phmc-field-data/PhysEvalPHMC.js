@@ -25,6 +25,7 @@ const PhysEval = ({
         }) => {
     return (
     <>
+                                <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
                                 <Form.Label>Nom du patient | ID Patient | Date:</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
 

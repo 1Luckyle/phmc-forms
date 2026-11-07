@@ -75,7 +75,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
     return (
         <>
-
+            <Form.Label className="form-section-title">Certificat</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Classe du certificat *</Form.Label>
                 <Form.Select name="flightCertClass" value={formData.flightCertClass || ''} onChange={handleChange} className="form-control" required>
@@ -97,6 +97,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
                 </div>
             </Form.Group>
 
+            <Form.Label className="form-section-title">Patient et examen</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Nom du patient *</Form.Label>
                 <Form.Control type="text" name="patientName" value={formData.patientName || ''} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du patient" className="form-control" required />
@@ -118,7 +119,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
             {cls && (
                 <>
-                    <h6 className="mt-2">Examens de la classe</h6>
+                    <Form.Label className="form-section-title">Examens de la classe</Form.Label>
                     {cls.exams.map((exam) => {
                         const info = FLIGHT_CERT_EXAMS[exam];
                         return (
@@ -143,6 +144,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
                 </>
             )}
 
+            <Form.Label className="form-section-title">Conclusion</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Conclusion *</Form.Label>
                 <Form.Select name="flightCertConclusion" value={formData.flightCertConclusion || ''} onChange={handleChange} className="form-control" required>
@@ -171,6 +173,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
                 </Alert>
             )}
 
+            <Form.Label className="form-section-title">Signature</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Médecin signataire *</Form.Label>
                 <Select

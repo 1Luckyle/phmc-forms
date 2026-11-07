@@ -85,7 +85,6 @@ const FormSections = ({ version }) => {
             const entry = keyed().find((item) => item.title === title);
             if (!entry || !title.hasAttribute('data-foldable')) return;
             if (folded.has(entry.key)) folded.delete(entry.key); else folded.add(entry.key);
-            autoOpened.delete(entry.key);
             apply();
         };
 

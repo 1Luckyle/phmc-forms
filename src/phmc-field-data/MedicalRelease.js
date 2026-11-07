@@ -90,6 +90,7 @@ const MedicalRelease = ({
     return (
         <>
         <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientZIP: 'zip', patientPH: 'phone', patientEmail: 'email' }} />
+        <Form.Label className="form-section-title">Identité du patient</Form.Label>
         <Form.Group className="mb-3">
             <PatientGeneralInfo
                 formData={formData} setFormData={setFormData} handleChange={handleChange} fields={RELEASE_FIELDS}
@@ -135,6 +136,7 @@ const MedicalRelease = ({
                 </div>
             )}
         </Form.Group>
+            <Form.Label className="form-section-title">Objet de la divulgation</Form.Label>
             <Form.Label>Objectif de la divulgation des informations médicales</Form.Label>
             <Form.Select
                 name="CarePurposeMedicalInformationRelease"
@@ -205,6 +207,7 @@ const MedicalRelease = ({
 
             />
         )}
+            <Form.Label className="form-section-title">Période concernée</Form.Label>
           <Form.Label>Période de divulgation des dossiers</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
@@ -217,6 +220,7 @@ const MedicalRelease = ({
             </div>
         </div>
 
+            <Form.Label className="form-section-title">Dossiers à divulguer</Form.Label>
             <Form.Label>Dossiers médicaux à divulguer </Form.Label>
             <Select
                     isMulti
@@ -298,8 +302,7 @@ const MedicalRelease = ({
                 className="form-control" 
             />
         )}
-            <Form.Label></Form.Label>
-            <Form.Label>Praticien consulté:</Form.Label> 
+            <Form.Label className="form-section-title">Praticien consulté</Form.Label>
     <Select
             name="phmcEmployee"
             value={practitionerOptions
@@ -334,9 +337,7 @@ const MedicalRelease = ({
                 groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 }),
             }}
         />
-            <Form.Label></Form.Label>
-
-            <Form.Label>Autorisation de divulgation des informations</Form.Label>
+            <Form.Label className="form-section-title">Autorisation de divulgation des informations</Form.Label>
             <Form.Control
 type="date"
 name="SubmitDate"

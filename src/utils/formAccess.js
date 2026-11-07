@@ -21,6 +21,17 @@ import { familiesOfMember } from '../constants/ranks';
 // Certificat de Décès, Rapport de Tuerie/Accident de Masse, Rapport Public de Décès.
 export const DMEC_FORM_VERSIONS = [1, 4, 2, 8, 11, 37];
 
+// Formulaires CIVILS (dossiers médicaux du patient).
+export const CIVIL_FORM_VERSIONS = [3, 24, 25, 26];
+
+// Thème de couleur d'un formulaire (accent des titres, cadres et champs) : 'dmec' = ambre, 'civil' = vert clair, sinon bleu (personnel soignant et candidatures).
+export const formThemeFor = (version) => {
+    const number = Number(version);
+    if (DMEC_FORM_VERSIONS.includes(number)) return 'dmec';
+    if (CIVIL_FORM_VERSIONS.includes(number)) return 'civil';
+    return undefined;
+};
+
 // Formulaires communs à tout le personnel : Note de Service (+ version PBC) et PHMC Email Interne.
 export const SHARED_STAFF_FORM_VERSIONS = [22, 23, 27];
 

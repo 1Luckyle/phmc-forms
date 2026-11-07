@@ -16,6 +16,7 @@ const MentalHealth = ({
     
     return (
         <>
+            <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
 
                 <Form.Control

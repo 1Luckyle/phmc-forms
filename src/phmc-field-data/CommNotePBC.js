@@ -11,7 +11,7 @@ const CommNotePBC = ({
 }) => {
     return (
         <>
-            {/* The JSX code block for bbCodeVersion === 22 */}
+            <Form.Label className="form-section-title">Patient</Form.Label>
             <Form.Control
                 type="text"
                 name="patientName"
@@ -30,6 +30,7 @@ const CommNotePBC = ({
                 style={{ marginTop: '10px' }}
             />
 
+            <Form.Label className="form-section-title">Note de service</Form.Label>
             <Form.Label>Date:</Form.Label>
             <Form.Control
                 type="date"
@@ -48,8 +49,7 @@ const CommNotePBC = ({
                 className="form-control"
             />
 
-            <Form.Label></Form.Label>
-            <Form.Label>Identifiants de l'employé</Form.Label>
+            <Form.Label className="form-section-title">Identifiants de l'employé</Form.Label>
 
             <Select
                 name="phmcEmployee"
@@ -103,7 +103,7 @@ const CommNotePBC = ({
                     })
                 }}
             />
-            <Form.Label></Form.Label>
+            <Form.Label className="form-section-title">Service</Form.Label>
             <Select
                 name="departmentLarge"
                 value={departmentLarge.find(option => option.value === formData.departmentLarge)}

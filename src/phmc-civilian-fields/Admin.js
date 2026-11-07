@@ -6,6 +6,7 @@ import { Form, Button } from 'react-bootstrap';
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     <Button
         variant="link"
+        className="section-toggle"
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={`collapse-${sectionId}`}

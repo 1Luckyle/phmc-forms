@@ -1192,10 +1192,11 @@ textarea:disabled {
    Ne touche ni aux couleurs des champs vides (rouge / bleu du guide), ni à la logique des formulaires.
    ========================================================================== */
 .form-container form {
-    --form-accent: #58a6ff;
-    --form-accent-soft: rgba(88, 166, 255, 0.10);
-    --form-accent-line: rgba(88, 166, 255, 0.45);
-    --form-accent-glow: rgba(88, 166, 255, 0.22);
+    /* Bleu du personnel soignant (PHMC) et des candidatures : un peu plus profond que le bleu clair des champs facultatifs (#58a6ff) */
+    --form-accent: #5b83f0;
+    --form-accent-soft: rgba(91, 131, 240, 0.12);
+    --form-accent-line: rgba(91, 131, 240, 0.50);
+    --form-accent-glow: rgba(91, 131, 240, 0.24);
     --form-accent-ink: #0d1117;
     --form-surface: #111a24;
     counter-reset: form-section;
@@ -1303,6 +1304,14 @@ textarea:disabled {
 .form-container form .btn-outline-secondary { border-color: var(--form-accent-line); color: var(--form-accent); }
 .form-container form .btn-outline-primary:hover,
 .form-container form .btn-outline-secondary:hover { background: var(--form-accent-soft); border-color: var(--form-accent); color: #f0f3f6; }
+
+/* Accent des formulaires CIVILS (dossiers médicaux du patient) : vert clair, un peu médical */
+.form-container form[data-form-family="civil"] {
+    --form-accent: #5fd1a5;
+    --form-accent-soft: rgba(95, 209, 165, 0.11);
+    --form-accent-line: rgba(95, 209, 165, 0.45);
+    --form-accent-glow: rgba(95, 209, 165, 0.22);
+}
 
 /* Accent des formulaires du DMEC (Médecine légale) */
 .form-container form[data-form-family="dmec"] {

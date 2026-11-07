@@ -76,6 +76,7 @@ const SicknessEmail = ({
 
     return (
         <>
+            <Form.Label className="form-section-title">Type d'email</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Objet de l'email</Form.Label>
                 <Form.Select
@@ -90,6 +91,7 @@ const SicknessEmail = ({
                 </Form.Select>
             </Form.Group>
 
+            <Form.Label className="form-section-title">Destinataire et patient</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Nom du destinataire</Form.Label>
                 <Form.Control
@@ -129,6 +131,7 @@ const SicknessEmail = ({
                 </span>
             </Form.Group>
 
+            <Form.Label className="form-section-title">Consultation et arrêt</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Date de consultation du patient au PHMC</Form.Label>
                 <Form.Control
@@ -204,6 +207,7 @@ const SicknessEmail = ({
                 </>
             )}
 
+            <Form.Label className="form-section-title">Rapport médical joint</Form.Label>
             {/* Rapport joint : seuls certains rapports sont acceptés, et ils sont toujours SIMPLIFIÉS
                 (le certificat est destiné à un tiers : employeur, école, assurance…). */}
             <Form.Group className="mb-3">
@@ -267,6 +271,7 @@ const SicknessEmail = ({
                 </span>
             </Form.Group>
 
+            <Form.Label className="form-section-title">Expéditeur</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Employé PHMC envoyant l'email</Form.Label>
                 <Select

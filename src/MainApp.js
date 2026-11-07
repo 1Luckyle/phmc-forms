@@ -1,7 +1,7 @@
 // src/MainApp.js
 import FormPurpose from './components/FormPurpose';
 import FormSections from './components/FormSections';
-import { isDmecReportVersion } from './utils/reportAccess';
+import { formThemeFor } from './utils/formAccess';
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -80,6 +80,7 @@ import CctvHubModal from './components/Cctv/CctvHubModal';
 import InternalRecruitmentRequest from './components/Recruitment/InternalRecruitmentRequest';
 import { useCctvManager } from './utils/cctvRequests';
 import { useAccountingAccess } from './utils/accountingAccess';
+
 // Lazy-loaded components
 const SavedReportsModal = lazy(() => import('./components/SavedReportsModal'));
 const SaveAsEmployeeModal = lazy(() => import('./components/SaveAsEmployeeModal'));
@@ -2019,7 +2020,7 @@ function MainApp({
                         </div>
 
                         {/* Quand on quitte un champ « ID patient », on le complète : 2752 → PHMC-2752. */}
-                        <form data-form-zone={bbCodeVersion} data-form-family={isDmecReportVersion(bbCodeVersion) ? 'dmec' : undefined} onBlur={(event) => {
+                        <form data-form-zone={bbCodeVersion} data-form-family={formThemeFor(bbCodeVersion)} onBlur={(event) => {
                             const field = event.target;
                             if (field && field.name === 'patientID' && field.value && field.value.trim()) {
                                 const completed = canonicalPatientId(field.value);

@@ -204,6 +204,7 @@ const Autopsy = ({
             </div>
 
             {/* Button to open the Autopsy Diagram Modal */}
+            <Form.Label className="form-section-title">Diagramme et causes du décès</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Diagramme des blessures</Form.Label>
                 <div>
@@ -254,6 +255,7 @@ const Autopsy = ({
 
             <Form.Label>Comment la blessure s'est produite:</Form.Label>
             <PresetTextField name="causeOfDeath" formData={formData} setFormData={setFormData} presets={DEATH_CAUSE_PRESETS} placeholder="Autres précisions (ex. multiples blessures par balle)" selectPlaceholder="Mécanisme (plusieurs choix possibles)…" />
+            <Form.Label className="form-section-title">Constatations</Form.Label>
             <Form.Label>Examen externe:</Form.Label>
             <Form.Control
                 as="textarea" // Changed to textarea for potentially longer descriptions
@@ -285,6 +287,7 @@ const Autopsy = ({
                 className="form-control mb-2"
             />
 
+            <Form.Label className="form-section-title">Résumé anatomique et radiologie</Form.Label>
             <Form.Label>Éléments du résumé anatomique:</Form.Label>
             {(formData.autopsyAnatomicSummaryItems || ['']).map((item, index) => (
                 <div key={`anatomic-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -325,6 +328,7 @@ const Autopsy = ({
                 className={`form-control mb-2 `}
             />
 
+            <Form.Label className="form-section-title">Photographies</Form.Label>
             <Form.Label>Photographies & Radiographies:</Form.Label>
             <InputGroup className="mb-1">
                 <Form.Control
@@ -367,6 +371,7 @@ const Autopsy = ({
                 />
             </div>
 
+            <Form.Label className="form-section-title">Avis et signatures</Form.Label>
             <Form.Label>Opinion (Synopsis de l'examinateur médical):</Form.Label>
             <Form.Control
                 as="textarea"

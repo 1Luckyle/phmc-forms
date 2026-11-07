@@ -24,6 +24,7 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         }) => {
     return (
     <>
+    <Form.Label className="form-section-title">Patient</Form.Label>
     <Form.Label>Nom du patient / ID Patient</Form.Label>
     <div style={{ display: 'flex', gap: '10px' }}>
         <Form.Control

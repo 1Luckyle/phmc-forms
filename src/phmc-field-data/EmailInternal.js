@@ -31,6 +31,7 @@ const EmailInternal = ({
     return (
         <>
         <p className="text-warning"><i className="fas fa-envelope me-1"></i>Ce formulaire est <strong>remplacé par la Messagerie interne</strong> de la boîte à outils (destinataire choisi dans l'annuaire, aperçu, PDF, image, copie du titre et du BBCode, notification). Cet écran ne sert plus qu'à consulter ou exporter un ancien rapport.</p>
+        <Form.Label className="form-section-title">Destinataire et objet</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
                 type="text"
@@ -51,6 +52,7 @@ const EmailInternal = ({
 
             />
         </div>
+        <Form.Label className="form-section-title">Message</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control
             as="textarea"
@@ -62,6 +64,7 @@ const EmailInternal = ({
             className="form-control"
         />
         </div>
+        <Form.Label className="form-section-title">Signature</Form.Label>
         <Form.Group className="mb-3 upload-container">
         <InputGroup>
             <Form.Control
@@ -146,6 +149,7 @@ const EmailInternal = ({
         <ImagePreview imageUrls={formData.internalEmailSignatureImage} />
     </Form.Group>
 
+        <Form.Label className="form-section-title">Expéditeur</Form.Label>
         <Select
         name="phmcEmployee"
         value={phmcGroupedOptions
