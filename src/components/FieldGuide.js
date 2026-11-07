@@ -83,13 +83,15 @@ const describe = ({ field, anchor, name, type }) => {
     const zone = field.closest('[data-form-zone]');
     if (zone) {
         const version = Number(zone.getAttribute('data-form-zone'));
-        const knownType = VERSION_FIELDS[version]?.[name];
-        if (name && (knownType || version)) {
-            const info = getFieldInfo(version, name, knownType || type);
-            const required = isFieldRequired(version, name);
+        // Champs à choix par défaut (voir PresetTextField) : la zone de texte libre `xxxFree` a la même aide que le champ `xxx`.
+        const baseName = name && !VERSION_FIELDS[version]?.[name] && VERSION_FIELDS[version]?.[name.replace(/(Free|Presets)$/, '')] ? name.replace(/(Free|Presets)$/, '') : name;
+        const knownType = VERSION_FIELDS[version]?.[baseName];
+        if (baseName && (knownType || version)) {
+            const info = getFieldInfo(version, baseName, knownType || type);
+            const required = isFieldRequired(version, baseName);
             // Candidatures : les autres champs sont exigés selon le poste, on n'affirme « facultatif » que pour un formulaire de rapport.
             const requirement = required ? 'required' : (version < 50 && knownType ? 'optional' : '');
-            return { text: info.help, requirement, reason: REASONS[lockedReasonOf(version, name)] || '' };
+            return { text: info.help, requirement, reason: REASONS[lockedReasonOf(version, baseName)] || '' };
         }
     }
     // Fenêtres hors formulaires de rapport (fiche, signalement, demande…) : une zone `data-guide-zone` donne les deux codes couleur et l'infobulle ;

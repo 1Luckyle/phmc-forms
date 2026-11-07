@@ -8,6 +8,7 @@ import { staffPatientIdOf } from './deletedAccounts';
 import { canonicalPatientId } from './patientId';
 import { buildCivilianAutofillValues } from './civilianAutofill';
 import { getEmployeeDisplayName, getEmployeeFullName } from './employeeName';
+import { toFrenchGender } from './patientIdentity';
 
 const TTL = 60 * 1000;
 let cache = null;
@@ -31,7 +32,7 @@ export const staffIdentity = (member, patientID = '', fallbackEmail = '') => {
         address: member.address || '',
         zip: member.zip || '',
         dateOfBirth: member.dateOfBirth || '',
-        gender: member.gender || '',
+        gender: toFrenchGender(member.gender || ''),
         phone: member.phNumber || '',
         email: member.email || fallbackEmail || '',
         discord: member.discord || '',

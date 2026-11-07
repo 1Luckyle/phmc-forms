@@ -29,7 +29,7 @@ describe('champs obligatoires', () => {
     test('un champ par défaut rendu facultatif ne bloque plus (hors verrous)', () => {
         setFormOverrides({ 25: { patientEmail: false, patientAddress: true } });
         // patientEmail est verrouillé (facturation) : reste exigé
-        const errors = validateReport(25, { patientName: 'A B', patientDateOfBirth: '1990-01-01', patientID: '2752' }).errors;
+        const errors = validateReport(25, { patientFirstName: 'A', patientLastName: 'B', patientDateOfBirth: '1990-01-01', patientID: '2752' }).errors;
         expect(errors).toEqual(expect.arrayContaining(['E-mail du patient : champ obligatoire.', 'Adresse du patient : champ obligatoire.']));
     });
 
@@ -68,7 +68,7 @@ describe('titres des rapports', () => {
 
 describe('titre « Mineur » obligatoire', () => {
     const recent = (years) => { const d = new Date(); d.setFullYear(d.getFullYear() - years); return d.toISOString().slice(0, 10); };
-    const base = { patientName: 'A B', patientEmail: 'a@b.fr', patientID: '2752' };
+    const base = { patientFirstName: 'A', patientLastName: 'B', patientEmail: 'a@b.fr', patientID: '2752' };
     test('un patient de moins de 18 ans sans le titre « Mineur » ne peut pas être enregistré', () => {
         const errors = validateReport(25, { ...base, patientDateOfBirth: recent(10), patientTitle: 'Mr' }).errors;
         expect(errors.join(' ')).toMatch(/obligatoirement le titre « Mineur »/);
@@ -81,7 +81,7 @@ describe('titre « Mineur » obligatoire', () => {
 
 describe('mise à jour du dossier : nouveau titre', () => {
     const recent = (years) => { const d = new Date(); d.setFullYear(d.getFullYear() - years); return d.toISOString().slice(0, 10); };
-    const base = { patientName: 'A B', date: recent(10), patientEmail: 'a@b.fr', patientID: '2752', patientTitleOptions: 'Mineur', UpdateMedicalFile: ['GeneralInformation'] };
+    const base = { patientFirstName: 'A', patientLastName: 'B', date: recent(10), patientEmail: 'a@b.fr', patientID: '2752', patientTitleOptions: 'Mineur', UpdateMedicalFile: ['GeneralInformation'] };
     test('un mineur a forcément le nouveau titre « Maître (Enfant <18 ans) »', () => {
         expect(validateReport(26, { ...base, patientTitleNew: 'Mr' }).errors.join(' ')).toMatch(/obligatoirement le titre « Maître/);
         expect(validateReport(26, { ...base, patientTitleNew: 'Mstr' }).errors).toEqual([]);

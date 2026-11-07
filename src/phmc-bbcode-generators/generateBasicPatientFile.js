@@ -1,6 +1,8 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
+import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { frDay } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -28,7 +30,9 @@ const generateBasicPatientFile = (formData) => {
         patientDateOfBirth = NOT_FILLED,
         patientID = NOT_FILLED,
     } = withoutBlanks(formData);
-            // Payment/Exempt logic
+    // Numéro suivi de son type (« 555-0142 (Mobile) ») ; « Non renseigné » reste tel quel.
+    const phone = (number, type) => (number === NOT_FILLED ? number : phoneWithType(number, type));
+    // Payment/Exempt logic
         let paymentSection = '';
         if (formData.filledByStaff) {
             paymentSection = staffPaymentLine(25, formData);
@@ -50,31 +54,28 @@ ${patientName}
 [/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img]
 [b][size=150]INFORMATIONS DE BASE DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations générales`, { size: 115 })}
-[table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
-[tr][td] Date de naissance: ${patientDateOfBirth}  [/td][td] Adresse: ${patientAddress}
+[table][tr][td] Titre: ${titleLabel(patientTitle)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
+[tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${patientAddress}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
+[tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 ${sectionBanner(`Contact d'urgence`, { size: 115 })}
 [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
+[tr][td] Numéro de téléphone: ${phone(patientEmergencyContactNumber, formData.patientEmergencyContactPhoneType)} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table]
-${sectionBanner(`Antécédents médicaux`, { size: 115 })}
+${sectionBanner(`Historique médical`, { size: 115 })}
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Groupe sanguin: [/td][td] ${checkbox(formData.patientBloodType === 'A+')} A+ ${checkbox(formData.patientBloodType === 'A-')} A- ${checkbox(formData.patientBloodType === 'B+')} B+ ${checkbox(formData.patientBloodType === 'B-')} B- ${checkbox(formData.patientBloodType === 'O+')} O+ ${checkbox(formData.patientBloodType === 'O-')} O- ${checkbox(formData.patientBloodType === 'AB+')} AB+ ${checkbox(formData.patientBloodType === 'AB-')} AB-
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
 [tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
 [tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}
 [tr][td] Traumatismes et blessures: [/td][td] ${patientNotes}
-[/table] 
-
+[/table]
 ${sectionBanner(`Paiement`, { size: 115 })}
 [table][tr][td] ${formData.filledByStaff ? 'Paiement à régler par le patient :' : 'Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.'}[/td][td]
     ${paymentSection}
-[/table]
-
-`
+[/table]`;
     return bbCode;
     };
 export default generateBasicPatientFile;

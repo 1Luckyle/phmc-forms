@@ -11,6 +11,15 @@ import useExemption from '../hooks/useExemption';
 import ExemptionNote from '../components/ExemptionNote';
 import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
+import PatientGeneralInfo from './shared/PatientGeneralInfo';
+import EmergencyContactFields from './shared/EmergencyContactFields';
+import PresetTextField from './shared/PresetTextField';
+import { HISTORY_PRESETS } from '../constants/historyPresets';
+
+const GENERAL_FIELDS = {
+    id: 'patientID', title: 'patientTitle', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
+    gender: 'patientGender', race: 'patientRace', address: 'patientAddress', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
+};
 
 // CollapsibleHeader copié de PatientAdvanced.js
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
@@ -42,6 +51,7 @@ const BasicPatientFile = ({
     formData,
     handleChange,
     patientTitleOptions,
+    patientPhoneOptions,
     patientBloodType,
     setFormData,
 }) => {
@@ -52,13 +62,12 @@ const BasicPatientFile = ({
         const [isContactInfoOpen, setIsContactInfoOpen] = useState(true);
         const [isMedicalHistoryOpen, setIsMedicalHistoryOpen] = useState(true);
         const [isPaymentInfoOpen, setIsPaymentInfoOpen] = useState(true);
-        const [activeSection, setActiveSection] = useState('general-info');
         // Si c'est un membre du personnel PHMC/DMEC connecté qui remplit ce
         // formulaire (pas le civil lui-même), le paiement ne doit jamais être
         // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
         // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
         // pas avoir lieu.
-        const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
+        const { isCivilian, civilianProfile } = useEmployeeAuth();
         const { filledByStaff } = useBillingRole(formData, setFormData);
         const exemption = useExemption(formData, setFormData);
     const minorGuard = useMinorTitleGuard(formData, setFormData);
@@ -76,6 +85,9 @@ const BasicPatientFile = ({
             setFormData(prev => applyCivilianAutofill(prev, autofillValues, {
                 patientID: 'patientID',
                 patientName: 'fullName',
+                patientFirstName: 'firstName',
+                patientMiddleName: 'middleName',
+                patientLastName: 'lastName',
                 patientDateOfBirth: 'dateOfBirth',
                 patientAddress: 'address',
                 patientGender: 'gender',
@@ -95,7 +107,7 @@ const BasicPatientFile = ({
 
     return (
         <>
-            <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
+            <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
             {/* --- 1. Informations générales --- */}
             <CollapsibleHeader
                 title="Informations générales"
@@ -104,102 +116,11 @@ const BasicPatientFile = ({
                 sectionId="general-info"
             />
             {isGeneralInfoOpen && (
-                <div id="collapse-general-info" onFocusCapture={() => setActiveSection('general-info')}>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Ajout de marginTop */}
-                            <Form.Control
-                                type="text"
-                                name="patientID"
-                                value={formData.patientID}
-                                onChange={handleChange}
-                                placeholder="ID Patient"
-                                className="form-control"
-                            />
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Ajout de marginTop */}
-
-                                <Form.Select
-                                    name="patientTitle"
-                                    disabled={minorGuard.locked}
-                                    title={minorGuard.hint}
-                                    value={formData.patientTitle}
-                                    onChange={handleChange}
-                                    className="form-control"
-                                >
-                                    <option value="" disabled>Titre</option>
-                                    {patientTitleOptions.map((option) => (
-                                        <option key={option.value} value={option.value} disabled={minorGuard.isDisabled(option)}>{minorGuard.label(option)}</option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Control
-                                    type="text"
-                                    name="patientName"
-                                    value={formData.patientName}
-                                    onChange={handleChange}
-                                    placeholder="Prénom & Nom du patient"
-                                    className="form-control"
-                                />
-                                <Form.Control
-                                    type="date"
-                                    name="patientDateOfBirth"
-                                    value={formData.patientDateOfBirth}
-                                    onChange={handleChange}
-                                    placeholder="Date de naissance"
-                                    className="form-control"
-                                />
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> 
-                                <Form.Control
-                                    type="text"
-                                    name="patientAddress"
-                                    value={formData.patientAddress}
-                                    onChange={handleChange}
-                                    placeholder="Adresse (Numéro, Étage, Rue)"
-                                    className="form-control"
-                                />
-                                <Form.Control
-                                    type="text"
-                                    name="patientGender"
-                                    value={formData.patientGender}
-                                    onChange={handleChange}
-                                    placeholder="Genre à l'état civil du patient"
-                                    className="form-control"
-                                />
-                                <Form.Control
-                                    type="text"
-                                    name="patientRace"
-                                    value={formData.patientRace}
-                                    onChange={handleChange}
-                                    placeholder="Ethnicité du patient (optionnel)"
-                                    className="form-control"
-                                />
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> 
-                            <Form.Control
-                                type="text"
-                                name="patientPH"
-                                value={formData.patientPH}
-                                onChange={handleChange}
-                                placeholder="Numéro de téléphone du patient"
-                                className="form-control"
-                            />
-                            <Form.Control
-                                type="email"
-                                name="patientEmail"
-                                value={formData.patientEmail}
-                                onChange={handleChange}
-                                placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
-                                className="form-control"
-                            />
-                            <Form.Control
-                                type="text"
-                                name="patientDiscord"
-                                value={formData.patientDiscord}
-                                onChange={handleChange}
-                                placeholder="(( Pseudo Discord du patient )) (optionnel)"
-                                className="form-control"
-                            />
-                    </div>
-
+                <div id="collapse-general-info" style={{ marginTop: '1rem' }}>
+                    <PatientGeneralInfo
+                        formData={formData} setFormData={setFormData} handleChange={handleChange} fields={GENERAL_FIELDS}
+                        patientTitleOptions={patientTitleOptions || []} patientPhoneOptions={patientPhoneOptions} guard={minorGuard}
+                    />
                 </div>
             )}
 
@@ -212,48 +133,13 @@ const BasicPatientFile = ({
             />
             {isContactInfoOpen && (
                 <div id="collapse-contact-info">
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                            <Form.Control
-                                type="text"
-                                name="patientEmergencyContact"
-                                value={formData.patientEmergencyContact}
-                                onChange={handleChange}
-                                placeholder="Nom complet du contact d'urgence"
-                                className="form-control"
-                            />
-                            <Form.Control
-                                type="text"
-                                name="patientEmergencyContactRelation"
-                                value={formData.patientEmergencyContactRelation}
-                                onChange={handleChange}
-                                placeholder="Relation du contact d'urgence avec le patient"
-                                className="form-control"
-                            />
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                            <Form.Control
-                                type="text"
-                                name="patientEmergencyContactNumber"
-                                value={formData.patientEmergencyContactNumber}
-                                onChange={handleChange}
-                                placeholder="Numéro de téléphone du contact d'urgence"
-                                className="form-control"
-                            />
-                            <Form.Control
-                                type="text"
-                                name="patientEmergencyContactDiscord"
-                                value={formData.patientEmergencyContactDiscord}
-                                onChange={handleChange}
-                                placeholder="(( Pseudo Discord du contact d'urgence du patient )) (optionnel)"
-                                className="form-control"
-                            />
-                    </div>
+                    <EmergencyContactFields formData={formData} handleChange={handleChange} patientPhoneOptions={patientPhoneOptions} />
                 </div>
             )}
 
-            {/* --- 3. Antécédents médicaux --- */}
+            {/* --- 3. Historique médical --- */}
             <CollapsibleHeader
-                title="Antécédents médicaux"
+                title="Historique médical"
                 isOpen={isMedicalHistoryOpen}
                 onToggle={() => setIsMedicalHistoryOpen(!isMedicalHistoryOpen)}
                 sectionId="medical-history"
@@ -261,57 +147,25 @@ const BasicPatientFile = ({
             {isMedicalHistoryOpen && (
                 <div id="collapse-medical-history">
                     <div style={{ display: 'flex', gap: '10px' }}>
-                            <Form.Select
-                                name="patientBloodType"
-                                value={formData.patientBloodType || ""}
-                                onChange={handleChange}
-                                className="form-control"
-                            >
-                                <option value="" disabled>Groupe sanguin du patient</option>
-                                {(patientBloodType || []).map((option) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                ))}
-                            </Form.Select>
+                        <Form.Select
+                            name="patientBloodType"
+                            value={formData.patientBloodType || ""}
+                            onChange={handleChange}
+                            className="form-control"
+                        >
+                            <option value="" disabled>Groupe sanguin du patient</option>
+                            {(patientBloodType || []).map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </Form.Select>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                            <Form.Control
-                                as="textarea"
-                                rows="2"
-                                name="patientAllergies"
-                                value={formData.patientAllergies}
-                                onChange={handleChange}
-                                placeholder="Allergies connues du patient"
-                                className="form-control"
-                            />
-                            <Form.Control
-                                as="textarea"
-                                rows="2"
-                                name="patientCurrentMedicine"
-                                value={formData.patientCurrentMedicine}
-                                onChange={handleChange}
-                                placeholder="Médicaments actuels du patient"
-                                className="form-control"
-                            />
+                        <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} placeholder="Autres allergies ou précisions" />
+                        <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} placeholder="Autres médicaments, doses ou précisions" />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                            <Form.Control
-                                as="textarea"
-                                rows="2"
-                                name="patientChronicDiseases"
-                                value={formData.patientChronicDiseases}
-                                onChange={handleChange}
-                                placeholder="Conditions chroniques du patient"
-                                className="form-control"
-                            />
-                            <Form.Control
-                                as="textarea"
-                                rows="2"
-                                name="patientNotes"
-                                value={formData.patientNotes}
-                                onChange={handleChange}
-                                placeholder="Traumatismes et blessures du patient (optionnel)"
-                                className="form-control"
-                            />
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                        <PresetTextField name="patientChronicDiseases" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientChronicDiseases} placeholder="Autres conditions chroniques ou précisions" />
+                        <PresetTextField name="patientNotes" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientNotes} placeholder="Autres traumatismes, blessures ou précisions" />
                     </div>
                 </div>
             )}
@@ -324,7 +178,7 @@ const BasicPatientFile = ({
                 sectionId="payment-info"
             />
             {isPaymentInfoOpen && (
-                <div id="collapse-payment-info" onFocusCapture={() => setActiveSection('payment-info')}>
+                <div id="collapse-payment-info">
 
             {filledByStaff ? (
                 <StaffBillingNotice

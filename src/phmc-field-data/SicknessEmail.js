@@ -317,7 +317,7 @@ const SicknessEmail = ({
             </Form.Group>
 
             <Form.Group className="mb-3 upload-container">
-                <Form.Label>Image de signature de l'employé (Optionnel)</Form.Label>
+                <Form.Label>Image de signature de l'employé</Form.Label>
                 <InputGroup>
                     <Form.Control
                         as="textarea"

@@ -8,6 +8,8 @@
 // donc ce module se contente de normaliser les valeurs disponibles ; c'est à
 // chaque field-data component de les mapper vers ses propres noms de champs.
 
+import { toFrenchGender } from './patientIdentity';
+
 export const buildCivilianAutofillValues = (civilianProfile) => {
     if (!civilianProfile) return null;
 
@@ -24,7 +26,7 @@ export const buildCivilianAutofillValues = (civilianProfile) => {
         fullName,
         patientID: civilianProfile.patientID || '',
         dateOfBirth: civilianProfile.dateOfBirth || '',
-        gender: civilianProfile.gender || '',
+        gender: toFrenchGender(civilianProfile.gender || ''),
         address: civilianProfile.address || '',
         zip: civilianProfile.zip || '',
         phone: civilianProfile.phone || '',

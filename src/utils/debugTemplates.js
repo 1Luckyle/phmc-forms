@@ -12,6 +12,9 @@
 
 import { buildEmployerSummaryBBCode } from './employerSummary';
 import { getCategoryPositions } from '../constants/recruitment';
+import { HISTORY_PRESETS, aggregatePresetText } from '../constants/historyPresets';
+import { toFrenchGender } from './patientIdentity';
+import { FLIGHT_CERT_CLASSES, examResultKey } from './flightCertificate';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -156,7 +159,7 @@ const buildHelpers = (ctx = {}) => {
         fullName: civilFullName || 'Jean Michel Testard',
         id: civil?.patientID || 'PHMC-99999',
         dob: dobValue,
-        gender: civil?.gender || 'Masculin',
+        gender: toFrenchGender(civil?.gender) || 'Homme',
         address: civil?.address || '1234 Vinewood Blvd, Los Santos',
         zip: civil?.zip || '90001',
         phone: civil?.phone || '555-0142',
@@ -198,50 +201,65 @@ const vitals = (h) => ({
     bloodPressure: h.opt('bloodPressure'),
 });
 
+// Champ d'historique à choix par défaut (voir PresetTextField) : `count` choix cochés + un texte libre, et le texte regroupé que lit le rapport.
+const presetFill = (key, count = 2, free = '') => {
+    const picked = (HISTORY_PRESETS[key] || []).filter((item) => !/^aucun/i.test(item)).slice(0, count);
+    return { [key]: aggregatePresetText(picked, free), [`${key}Presets`]: picked, [`${key}Free`]: free };
+};
+
+// Titre cohérent avec l'âge : « Mineur » est imposé sous 18 ans et interdit au-delà.
+const patientTitleFor = (h) => (Number(h.patient.ageYears) < 18 ? 'Mineur' : h.optIs('patientTitle', 'Mr', 'Mr'));
+const patientTitleNewFor = (h) => (Number(h.patient.ageYears) < 18 ? 'Mstr' : h.optIs('patientTitleNew', 'Mrs', 'Mrs'));
+
 const patientBasic = (h) => ({
-    patientTitle: h.opt('patientTitle', 0, 'M.'),
+    patientTitle: patientTitleFor(h),
     patientName: h.patient.fullName,
+    patientFirstName: h.patient.firstName,
+    patientMiddleName: h.patient.middleName,
+    patientLastName: h.patient.lastName,
     patientID: h.patient.id,
     patientDateOfBirth: h.patient.dob,
     patientAddress: h.patient.address,
     patientGender: h.patient.gender,
-    patientRace: 'Caucasien',
+    patientRace: 'Caucasien(ne)',
     patientPH: h.patient.phone,
+    patientPhoneType: h.optIs('patientPhone', 'Mobile', 'Mobile'),
     patientEmail: h.patient.email,
     patientDiscord: h.patient.discord,
     patientEmergencyContact: 'Marie Testard',
     patientEmergencyContactRelation: 'Épouse',
     patientEmergencyContactNumber: '555-0199',
+    patientEmergencyContactPhoneType: h.optIs('patientPhone', 'Home', 'Home'),
     patientEmergencyContactDiscord: 'marie.testard',
     patientBloodType: h.opt('patientBloodType', 0, 'O+'),
-    patientAllergies: 'Pénicilline',
-    patientCurrentMedicine: 'Aucun traitement en cours',
-    patientChronicDiseases: 'Aucune',
-    patientNotes: LOREM_LONG,
+    ...presetFill('patientAllergies', 2, 'Allergie légère aux piqûres de guêpe.'),
+    ...presetFill('patientCurrentMedicine', 2),
+    ...presetFill('patientChronicDiseases', 2),
+    ...presetFill('patientNotes', 1, LOREM_SHORT),
 });
 
 const patientAdvancedExtras = (h) => ({
-    patientMental: 'Aucun antécédent psychiatrique connu.',
-    patientTherapy: 'Aucune thérapie en cours.',
-    patientTriggers: 'Aucun déclencheur identifié.',
-    patientSupport: 'Entourage familial présent et soutenant.',
-    patientHarm: 'Aucune idée suicidaire ou autodestructrice.',
-    patientFam: 'Père : hypertension. Mère : diabète de type 2.',
-    patientGenetic: 'Aucune maladie génétique connue.',
-    patientFamSocial: 'Vit avec son épouse, deux enfants.',
+    ...presetFill('patientMental', 2),
+    ...presetFill('patientTherapy', 1),
+    ...presetFill('patientTriggers', 2),
+    ...presetFill('patientSupport', 2),
+    ...presetFill('patientHarm', 1),
+    ...presetFill('patientFam', 2),
+    ...presetFill('patientGenetic', 2),
+    ...presetFill('patientFamSocial', 1),
     maritalStatus: h.opt('maritalStatus', 0, 'Marié(e)'),
     numberChildren: h.opt('numberChildren', 0, '2'),
-    patientReligion: 'Aucune',
+    ...presetFill('patientReligion', 1),
     financialStatus: h.opt('financialStatus', 0, 'Stable'),
-    patientSmoker: 'Non-fumeur',
-    patientAlcohol: 'Occasionnel',
-    patientDrugs: 'Aucune',
-    patientExercise: '2 à 3 fois par semaine',
-    patientDiet: 'Équilibrée',
-    patientSleep: '7 heures par nuit',
-    patientSexLife: 'Active, sans particularité',
-    patientJobRisks: 'Aucun risque professionnel notable',
-    patientHazards: 'Aucun',
+    ...presetFill('patientSmoker', 1),
+    ...presetFill('patientAlcohol', 1),
+    ...presetFill('patientDrugs', 1),
+    ...presetFill('patientExercise', 1),
+    ...presetFill('patientDiet', 1),
+    ...presetFill('patientSleep', 1),
+    ...presetFill('patientSexLife', 1),
+    ...presetFill('patientJobRisks', 1),
+    ...presetFill('patientHazards', 1),
     patientOther: 'Aucune autre information.',
     dnr: h.opt('dnr'),
     attorney: h.opt('attorney'),
@@ -323,6 +341,10 @@ const recruitmentBase = (h) => ({
     oocMedicalExperience: 'Trois ans d\'expérience médicale en jeu.',
     oocForumName: 'JeanTestard',
 });
+
+// Copie de `obj` sans certaines clés (un formulaire qui n'a pas tel champ ne doit pas le recevoir).
+const without = (obj, keys) => Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)));
+const NO_LOCATION = ['locationPHMC', 'locationPBC'];
 
 // Premier poste ouvert d'une liste de détails de poste (clé → { status }).
 const openPosition = (details, optionValues = null) => {
@@ -413,7 +435,6 @@ const TEMPLATES = {
     8: (h) => ({
         ...h.coroner,
         decedentName: 'Pierre Défunt',
-        decedentOOC: 'Test Debug',
         patientAge: '42',
         patientDateOfBirth: '1984-03-12',
         probableCauseOfDeath: 'Hémorragie interne',
@@ -544,19 +565,19 @@ const TEMPLATES = {
     // [Civil] Formulaire de Libération Médicale
     24: (h) => ({
         ...h.phmc,
-        patientTitle: h.opt('patientTitle', 0, 'M.'),
+        patientTitle: patientTitleFor(h),
         patientFirstName: h.patient.firstName,
         patientMiddleName: h.patient.middleName,
         patientLastName: h.patient.lastName,
         patientID: h.patient.id,
         patientGender: h.patient.gender,
         patientPH: h.patient.phone,
-        patientPhoneType: h.opt('patientPhone'),
+        patientPhoneType: h.optIs('patientPhone', 'Mobile', 'Mobile'),
         patientDateOfBirth: h.patient.dob,
         patientAddress: h.patient.address,
         patientZIP: h.patient.zip,
         patientEmail: h.patient.email,
-        MedicalRecordsRelease: h.some('MedicalRecordsRelease', 2),
+        MedicalRecordsRelease: h.some('MedicalRecordsRelease', 2, ['ERVisit', 'HospitalStay']),
         CarePurposeMedicalInformationRelease: h.opt('PurposeMedicalInformationRelease'),
         PurposeMedicalInformationReleaseFormat: h.opt('PurposeMedicalInformationReleaseFormat'),
         StupidDateFrom: h.daysFromToday(-365),
@@ -575,23 +596,29 @@ const TEMPLATES = {
 
     // [Civil] Mise à Jour du Dossier Médical
     26: (h) => ({
-        ...patientBasic(h),
+        // La mise à jour n'a ni titre, ni date de naissance, ni genre, ni ethnicité « actuels » : ils sont dans la section « nouvelles informations ».
+        ...without(patientBasic(h), ['patientTitle', 'patientDateOfBirth', 'patientGender', 'patientRace']),
         ...patientAdvancedExtras(h),
-        date: h.today,
+        // Dans la mise à jour, le champ `date` est la DATE DE NAISSANCE du patient (pas la date du jour).
+        date: h.patient.dob,
         UpdateMedicalFile: h.every('UpdateMedicalFile', [
             'GeneralInformation', 'MentalHealth', 'EmergencyContact', 'Medical History',
             'FamilyHistory', 'SocialInformation', 'Lifestyle', 'AdvancedDirectives',
         ]),
         // MedicalUpdate stocke le titre actuel sous patientTitleOptions.
-        patientTitleOptions: h.opt('patientTitle', 0, 'M.'),
-        patientTitleNew: h.opt('patientTitleNew', 0, 'Mme'),
-        patientNameNew: 'Jeanne Testard',
+        patientTitleOptions: patientTitleFor(h),
+        patientTitleNew: patientTitleNewFor(h),
+        patientNameNew: 'Jeanne Marie Testard',
+        patientFirstNameNew: 'Jeanne',
+        patientMiddleNameNew: 'Marie',
+        patientLastNameNew: 'Testard',
         patientDateOfBirthNew: h.patient.dob,
         patientAddressNew: '5678 Rockford Hills, Los Santos',
         patientPHNew: '555-0177',
+        patientPhoneTypeNew: h.optIs('patientPhone', 'Work', 'Work'),
         patientDiscordNew: 'jeanne.testard',
-        patientGenderNew: 'Féminin',
-        patientRaceNew: 'Caucasienne',
+        patientGenderNew: 'Femme',
+        patientRaceNew: 'Autre',
         payNow: false,
     }),
 
@@ -662,6 +689,22 @@ const TEMPLATES = {
     }),
 
     // Candidatures
+    // Certificat d'aptitude médicale au vol (classe 1 : tous les examens, conclusion « Apte »)
+    41: (h) => ({
+        ...h.phmc,
+        flightCertClass: 'Class1',
+        flightCertCategories: ['Avion', 'Hélicoptère'],
+        patientName: h.patient.fullName,
+        patientID: h.patient.id,
+        patientDateOfBirth: h.patient.dob,
+        date: h.today,
+        ...Object.fromEntries(FLIGHT_CERT_CLASSES.Class1.exams.map((exam) => [examResultKey(exam), 'Conforme'])),
+        flightCert_vision_value: '10/10 corrigée',
+        flightCert_bloodPressure_value: '120/80 mmHg, 68 bpm',
+        flightCertConclusion: 'Apte',
+        flightCertNote: LOREM_SHORT,
+    }),
+
     50: (h) => ({
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'medecine')),
@@ -676,7 +719,7 @@ const TEMPLATES = {
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     52: (h) => ({
-        ...recruitmentBase(h),
+        ...without(recruitmentBase(h), [...NO_LOCATION, 'oocMedicalExperience']),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'administration')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
@@ -686,12 +729,12 @@ const TEMPLATES = {
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     54: (h) => ({
-        ...recruitmentBase(h),
+        ...without(recruitmentBase(h), NO_LOCATION),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'medecineLegale')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     55: (h) => ({
-        ...recruitmentBase(h),
+        ...without(recruitmentBase(h), NO_LOCATION),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'paramedical')),
         applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
         emsLicenseLink: h.img(),

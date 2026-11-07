@@ -346,7 +346,7 @@ const EmergencyForm = ({
                     {bloodOxy.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
             </div>
-            <Form.Label>Valeurs mesurées (optionnel — précisent les catégories ci-dessus)</Form.Label>
+            <Form.Label>Valeurs mesurées (précisent les catégories ci-dessus)</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 {VITAL_VALUE_FIELDS.map((field) => (
                     <Form.Control

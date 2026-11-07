@@ -28,7 +28,7 @@ const DecedentDetailsFields = ({ formData, handleChange, showMeasures = false })
                 name="decedentAge"
                 value={formData.decedentAge || ''}
                 onChange={handleChange}
-                placeholder="Âge (estimé si inconnu) (optionnel)"
+                placeholder="Âge (estimé si inconnu)"
                 className="form-control"
             />
             <Form.Select
@@ -37,7 +37,7 @@ const DecedentDetailsFields = ({ formData, handleChange, showMeasures = false })
                 onChange={handleChange}
                 className="form-control"
             >
-                <option value="">Sexe du défunt (optionnel)</option>
+                <option value="">Sexe du défunt</option>
                 {DECEDENT_SEX_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -49,7 +49,7 @@ const DecedentDetailsFields = ({ formData, handleChange, showMeasures = false })
                         name="decedentHeight"
                         value={formData.decedentHeight || ''}
                         onChange={handleChange}
-                        placeholder="Taille (ex. 1,80 m) (optionnel)"
+                        placeholder="Taille (ex. 1,80 m)"
                         className="form-control"
                     />
                     <Form.Control
@@ -57,7 +57,7 @@ const DecedentDetailsFields = ({ formData, handleChange, showMeasures = false })
                         name="decedentWeight"
                         value={formData.decedentWeight || ''}
                         onChange={handleChange}
-                        placeholder="Poids (ex. 80 kg) (optionnel)"
+                        placeholder="Poids (ex. 80 kg)"
                         className="form-control"
                     />
                 </>
@@ -69,7 +69,7 @@ const DecedentDetailsFields = ({ formData, handleChange, showMeasures = false })
             name="decedentMarks"
             value={formData.decedentMarks || ''}
             onChange={handleChange}
-            placeholder="Signes particuliers : tatouages, cicatrices, bijoux, piercings, marques de naissance… (optionnel)"
+            placeholder="Signes particuliers : tatouages, cicatrices, bijoux, piercings, marques de naissance…"
             className="form-control"
         />
     </>

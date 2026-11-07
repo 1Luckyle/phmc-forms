@@ -1,3 +1,5 @@
+import { HISTORY_PRESETS } from '../constants/historyPresets';
+
 // Champs communs aux formulaires cliniques (voir PatientContextFields) et
 // valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
 const PATIENT_CONTEXT_FIELDS = [
@@ -8,7 +10,7 @@ const VITAL_VALUE_FIELDS = [
     'spo2Value', 'glucoseValue',
 ];
 
-const getRelevantFields = (bbCodeVersion) => {
+const baseRelevantFields = (bbCodeVersion) => {
     switch (bbCodeVersion) {
         case 1: // Death Report
             return [
@@ -439,6 +441,23 @@ const getRelevantFields = (bbCodeVersion) => {
         default:
             return []; // Or return a default set of fields
     }
+};
+
+// Champs ajoutés aux dossiers patient (Basique 25, Avancé 3, Mise à jour 26) : nom en trois parties, type de téléphone, et pour chaque champ d'historique
+// à choix par défaut les choix cochés (`…Presets`) et le texte libre (`…Free`) qui composent le texte regroupé.
+const PATIENT_FILE_EXTRA = ['patientFirstName', 'patientMiddleName', 'patientLastName', 'patientPhoneType', 'patientEmergencyContactPhoneType'];
+const PATIENT_FILE_UPDATE_EXTRA = [
+    'patientFirstNameNew', 'patientMiddleNameNew', 'patientLastNameNew', 'patientPhoneTypeNew', 'patientPHNew', 'patientDiscordNew', 'patientRaceNew', 'patientAddressNew',
+    'patientGenderNew', 'patientTitleNew', 'patientNameNew', 'patientDateOfBirthNew',
+];
+const withPresetFields = (fields) => [...fields, ...Object.keys(HISTORY_PRESETS).flatMap((key) => [`${key}Presets`, `${key}Free`])];
+
+const getRelevantFields = (bbCodeVersion) => {
+    const base = baseRelevantFields(bbCodeVersion);
+    if (bbCodeVersion === 3 || bbCodeVersion === 25) return [...new Set(withPresetFields([...base, ...PATIENT_FILE_EXTRA]))];
+    // Mise à jour : toutes les rubriques du dossier avancé peuvent être modifiées, donc tous leurs champs sont gardés.
+    if (bbCodeVersion === 26) return [...new Set(withPresetFields([...baseRelevantFields(3), ...base, ...PATIENT_FILE_EXTRA, ...PATIENT_FILE_UPDATE_EXTRA]))];
+    return base;
 };
 
 export default getRelevantFields;

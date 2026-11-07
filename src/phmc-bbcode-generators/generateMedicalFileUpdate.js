@@ -1,6 +1,8 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
+import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { frDay, todayFr } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
@@ -12,8 +14,6 @@ const generateMedicalFileUpdate = (formData) => {
     const {
         patientName = NOT_FILLED,
         patientAddress = NOT_FILLED,
-        patientRace,
-        patientGender,
         patientPH = NOT_FILLED,
         patientEmail = NOT_FILLED,
         patientDiscord = NOT_FILLED,
@@ -21,12 +21,10 @@ const generateMedicalFileUpdate = (formData) => {
         patientEmergencyContactNumber = NOT_FILLED,
         patientEmergencyContactRelation = NOT_FILLED,
         patientEmergencyContactDiscord = NOT_FILLED,
-        patientTitle = NOT_FILLED,
         patientAllergies = NOT_FILLED,
         patientCurrentMedicine = NOT_FILLED,
         patientChronicDiseases = NOT_FILLED,
         patientNotes = NOT_FILLED,
-        date = NOT_FILLED,
         patientID = NOT_FILLED,
         patientTherapy = NOT_FILLED,
         patientTriggers = NOT_FILLED,
@@ -52,7 +50,6 @@ const generateMedicalFileUpdate = (formData) => {
         patientHazards = NOT_FILLED,
         patientOther = NOT_FILLED,
         dnrOther = '',
-        scenePhotos,
         UpdateMedicalFile, // Add this line
         patientBloodType,
         patientTitleNew = NOT_FILLED,
@@ -67,6 +64,9 @@ const generateMedicalFileUpdate = (formData) => {
 
     } = withoutBlanks(formData);
 
+    // Numéro suivi de son type (« 555-0142 (Mobile) ») ; « Non renseigné » reste tel quel.
+    const phone = (number, type) => (number === NOT_FILLED ? number : phoneWithType(number, type));
+
     // Payment/Exempt logic
     let paymentSection = '';
     if (formData.filledByStaff) {
@@ -74,6 +74,9 @@ const generateMedicalFileUpdate = (formData) => {
     } else if (paymentProofPhotos) {
         paymentSection = `[url=${paymentProofPhotos}]Preuve de paiement[/url]`;
     }
+
+    // Rubrique demandée ? (plusieurs écritures de la valeur acceptées)
+    const has = (...keys) => keys.some((key) => UpdateMedicalFile?.includes(key));
 
     let bbCode = `[table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]
 
@@ -85,39 +88,39 @@ ${patientName}
 [/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img]
 [b][size=150]MISE À JOUR DES INFORMATIONS DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations du patient`, { size: 115 })}
-[table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
-[tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
+[table][tr][td] Titre: ${titleLabel(formData.patientTitleOptions || formData.patientTitle || NOT_FILLED)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
+[tr][td] Date de naissance: ${frDay(formData.date || patientDateOfBirth) || NOT_FILLED} [/td][td] Adresse: ${patientAddress}
+[tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [u]Je demande par la présente la mise à jour des informations suivantes:[/u]
-[i](Cochez les champs pertinents en modifiant le préfixe [cb] en [cbc] et fournissez les nouvelles informations. Veuillez fournir les informations complètes pour les catégories demandées (cochées!), y compris les informations non mises à jour. N'ajoutez pas d'informations dans les catégories que vous n'avez pas cochées![/i]
+[i](Cochez les champs pertinents en modifiant le préfixe [cb] en [cbc] et fournissez les nouvelles informations. Veuillez fournir les informations complètes pour les catégories demandées (cochées!), y compris les informations non mises à jour. N'ajoutez pas d'informations dans les catégories que vous n'avez pas cochées!)[/i]`;
 
-`;
-
-    if (UpdateMedicalFile?.includes('GeneralInformation')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Informations générales[/b]
+    if (has('GeneralInformation')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Informations générales[/b]
 [altspoiler=Nouvelles informations générales]
-[table][tr][td] Titre: ${patientTitleNew}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientNameNew}
-[tr][td] Date de naissance: ${patientDateOfBirthNew} [/td][td] Adresse: ${patientAddressNew}
+[table][tr][td] Titre: ${titleLabel(patientTitleNew)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientNameNew}
+[tr][td] Date de naissance: ${frDay(patientDateOfBirthNew)} [/td][td] Adresse: ${patientAddressNew}
 [tr][td] Genre à l'état civil: ${patientGenderNew} [/td][td] Origine ethnique: ${patientRaceNew}
-[tr][td] Numéro de téléphone: ${patientPHNew} [/td][td] (( Pseudo Discord: ${patientDiscordNew}))
+[tr][td] Numéro de téléphone: ${phone(patientPHNew, formData.patientPhoneTypeNew)} [/td][td] (( Pseudo Discord: ${patientDiscordNew}))
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('EmergencyContact')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Contact d'urgence[/b]
+    if (has('EmergencyContact')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Contact d'urgence[/b]
 [altspoiler=Nouveaux détails du contact d'urgence]
 [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
+[tr][td] Numéro de téléphone: ${phone(patientEmergencyContactNumber, formData.patientEmergencyContactPhoneType)} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('MedicalHistory')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Antécédents médicaux[/b]
-        [altspoiler=Nouveaux antécédents médicaux]
-
+    if (has('Medical History', 'MedicalHistory')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Historique médical[/b]
+[altspoiler=Nouvel historique médical]
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Groupe sanguin: [/td][td] ${checkbox(patientBloodType === 'A+')} A+ ${checkbox(patientBloodType === 'A-')} A- ${checkbox(patientBloodType === 'B+')} B+ ${checkbox(patientBloodType === 'B-')} B- ${checkbox(patientBloodType === 'O+')} O+ ${checkbox(patientBloodType === 'O-')} O- ${checkbox(patientBloodType === 'AB+')} AB+ ${checkbox(patientBloodType === 'AB-')} AB-
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
@@ -127,9 +130,10 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('MentalHealth')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Antécédents de santé mentale[/b]
-        [altspoiler=Nouveaux antécédents de santé mentale]
+    if (has('MentalHealth')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Historique de santé mentale[/b]
+[altspoiler=Nouvel historique de santé mentale]
 [table][tr][td] Troubles de santé mentale diagnostiqués: [/td][td] ${patientMental}
 [tr][td] Thérapies et séances de conseil: [/td][td] ${patientTherapy}
 [tr][td] Déclencheurs ou phobies sensoriels: [/td][td] ${patientTriggers}
@@ -138,9 +142,10 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('FamilyMedicalHistory')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Antécédents médicaux familiaux[/b]
-        [altspoiler=Nouveaux antécédents médicaux familiaux]
+    if (has('FamilyHistory', 'FamilyMedicalHistory')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Historique médical familial[/b]
+[altspoiler=Nouvel historique médical familial]
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Membres de la famille immédiate: [/td][td] ${patientFam}
 [tr][td] Maladies génétiques connues: [/td][td] ${patientGenetic}
@@ -148,17 +153,19 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('SocialInformation')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b]Informations sociales[/b]
-        [altspoiler=Nouvelles informations sociales]
+    if (has('SocialInformation')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b]Informations sociales[/b]
+[altspoiler=Nouvelles informations sociales]
 [table][tr][td] État civil: ${checkbox(formData.maritalStatus === 'Single')} Célibataire ${checkbox(formData.maritalStatus === 'DomesticPartnership')} En couple / Union civile ${checkbox(formData.maritalStatus === 'Married')} Marié(e) ${checkbox(formData.maritalStatus === 'Divorced')} Divorcé(e) ${checkbox(formData.maritalStatus === 'Widowed')} Veuf(ve) [/td][td] Nombre d'enfants: ${checkbox(formData.numberChildren === '0')} 0 ${checkbox(formData.numberChildren === '1')} 1 ${checkbox(formData.numberChildren === '2')} 2 ${checkbox(formData.numberChildren === '3+')} 3 ou plus
 [tr][td] Considérations culturelles et/ou religieuses: ${patientReligion} [/td][td] Situation financière: ${checkbox(formData.financialStatus === 'LowIncome')} Faible revenu ${checkbox(formData.financialStatus === 'MiddleIncome')} Revenu moyen ${checkbox(formData.financialStatus === 'HighIncome')} Revenu élevé
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('LifestyleInformation')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Informations sur le mode de vie[/b]
-        [altspoiler=Nouvelles informations sur le mode de vie]
+    if (has('Lifestyle', 'LifestyleInformation')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Informations sur le mode de vie[/b]
+[altspoiler=Nouvelles informations sur le mode de vie]
 [table][tr][td] Statut tabagique: ${patientSmoker} [/td][td] Consommation d'alcool: ${patientAlcohol}[/td][td] Autres substances: ${patientDrugs}
 [tr][td] Habitudes d'exercice: ${patientExercise}[/td][td] Informations diététiques: ${patientDiet}[/td][td] Habitudes de sommeil: ${patientSleep}
 [tr][td] Santé sexuelle: ${patientSexLife}[/td][td] Risques professionnels: ${patientJobRisks}[/td][td] Risques environnementaux: ${patientHazards}[/table]
@@ -166,9 +173,10 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [/table][/altspoiler]`;
     }
 
-    if (UpdateMedicalFile?.includes('AdvancedDirectives')) {
-        bbCode += `[cbc][color=#FF0000]>[/color] [b] Directives anticipées [/b]
-        [altspoiler=Nouvelles directives anticipées]
+    if (has('AdvancedDirectives')) {
+        bbCode += `
+[cbc][color=#FF0000]>[/color] [b] Directives anticipées [/b]
+[altspoiler=Nouvelles directives anticipées]
 [divbox=transparent][list=none]Je soussigné(e), ${patientName}, fournis par la présente les directives anticipées suivantes concernant mes soins de santé, à suivre dans l'éventualité où je deviendrais incapable de prendre des décisions concernant mon traitement médical:
 
 [list=1][*] [size=110]Testament de vie[/size]: Dans l'éventualité où je serais incapable de communiquer, je demande ce qui suit concernant les traitements de maintien de la vie:
@@ -192,12 +200,12 @@ J'autorise le Pillbox Hill Medical Center à conserver une copie de mes directiv
 Je comprends que je peux réviser ou révoquer ces directives à tout moment en fournissant un avis écrit.
 
 Signature: [i][u]${patientName}[/u][/i]
-Date: ${date}[/divbox][/altspoiler]`;
+Date: ${todayFr()}[/divbox][/altspoiler]`;
     }
 
     bbCode += `
 ${sectionBanner(`Clause de non-responsabilité`, { size: 115 })}
-[divbox=transparent][list=none]Je soussigné(e), ${patientName}, déclare par la présente que les informations fournies dans ce formulaire d'antécédents médicaux sont vraies, exactes et complètes selon mes meilleures connaissances. Je comprends que ces informations seront stockées en toute sécurité dans les systèmes du Pillbox Hill Medical Center et peuvent être consultées par les professionnels de la santé autorisés impliqués dans mes soins.
+[divbox=transparent][list=none]Je soussigné(e), ${patientName}, déclare par la présente que les informations fournies dans ce formulaire de mise à jour du dossier médical sont vraies, exactes et complètes selon mes meilleures connaissances. Je comprends que ces informations seront stockées en toute sécurité dans les systèmes du Pillbox Hill Medical Center et peuvent être consultées par les professionnels de la santé autorisés impliqués dans mes soins.
 
 Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partage de mes informations médicales entre les professionnels de la santé du Pillbox Hill Medical Center dans le but de fournir des services de soins de santé complets et coordonnés. Je reconnais que ces informations peuvent être utilisées pour le diagnostic, le traitement et d'autres activités liées aux soins de santé conformément aux lois et règlements applicables, y compris la loi sur la portabilité et la responsabilité en matière d'assurance maladie (HIPAA).
 

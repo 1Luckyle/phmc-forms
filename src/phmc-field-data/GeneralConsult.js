@@ -237,7 +237,7 @@ onChange={(selectedOption) => {
                                         </Form.Select>
 
                                             </div>
-                                <Form.Label>Valeurs mesurées (optionnel — précisent les catégories ci-dessus)</Form.Label>
+                                <Form.Label>Valeurs mesurées (précisent les catégories ci-dessus)</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                     {VITAL_VALUE_FIELDS.map((field) => (
                                         <Form.Control
@@ -451,7 +451,7 @@ onChange={(selectedOption) => {
                                         value={formData.patientNotes || ''}
                                         onChange={handleChange}
                                         rows="2"
-                                        placeholder="Notes supplémentaires (optionnel)"
+                                        placeholder="Notes supplémentaires"
                                         className="form-control"
                                     />
                                 )}

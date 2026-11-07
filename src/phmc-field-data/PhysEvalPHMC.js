@@ -259,7 +259,7 @@ onChange={(selectedOption) => {
                                         }}
                                         className="form-control"
                                     >
-                                        <option value="" disabled>Risques professionnels (Optionnel) </option>
+                                        <option value="" disabled>Risques professionnels</option>
                                         {patientJobRisks.map((option) => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}

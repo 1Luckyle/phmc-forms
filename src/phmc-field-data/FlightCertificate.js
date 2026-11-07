@@ -192,7 +192,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
             </Form.Group>
 
             <Form.Group className="mb-3 upload-container">
-                <Form.Label>Image de signature (optionnel)</Form.Label>
+                <Form.Label>Image de signature</Form.Label>
                 <InputGroup>
                     <Form.Control as="textarea" rows={2} name="phmcEmployeeSignatureImage" value={formData.phmcEmployeeSignatureImage || ''} onChange={handleChange} placeholder="Image de signature" className="form-control" />
                     <Button variant="outline-primary" onClick={applyMySignature} title="Utiliser la signature créée dans Carte de visite → Signature">

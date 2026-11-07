@@ -76,7 +76,7 @@ const DeathRecord = ({
                         <Form.Control type="text" name="caseNumber" value={formData.caseNumber || ''} onChange={handleChange} placeholder="Numéro du dossier" className="form-control" />
                         <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom & Nom" className="form-control" />
                         <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" className="form-control" />
-                        <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (optionnel)" className="form-control" />
+                        <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient" className="form-control" />
                     </div>
                     <Form.Label>Date du décès</Form.Label>
 

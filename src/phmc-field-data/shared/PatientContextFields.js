@@ -52,7 +52,7 @@ const PatientContextFields = ({ formData, handleChange, showHistory = true, alle
                     onChange={handleChange}
                     placeholder={allergiesRequired
                         ? 'Allergies connues (écrire « Aucune connue » si aucune)'
-                        : 'Allergies connues (optionnel)'}
+                        : 'Allergies connues'}
                     className="form-control"
                 />
                 <Form.Control
@@ -61,7 +61,7 @@ const PatientContextFields = ({ formData, handleChange, showHistory = true, alle
                     name="patientChronicDiseases"
                     value={formData.patientChronicDiseases || ''}
                     onChange={handleChange}
-                    placeholder="Antécédents médicaux / maladies chroniques (optionnel)"
+                    placeholder="Antécédents médicaux / maladies chroniques"
                     className="form-control"
                 />
                 <Form.Control
@@ -70,7 +70,7 @@ const PatientContextFields = ({ formData, handleChange, showHistory = true, alle
                     name="patientCurrentMedicine"
                     value={formData.patientCurrentMedicine || ''}
                     onChange={handleChange}
-                    placeholder="Traitements habituels du patient (optionnel)"
+                    placeholder="Traitements habituels du patient"
                     className="form-control"
                 />
             </>

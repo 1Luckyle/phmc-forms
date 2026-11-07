@@ -167,7 +167,7 @@ const Autopsy = ({
                     name="patientID"
                     value={formData.patientID || ''}
                     onChange={handleChange}
-                    placeholder="ID Patient (optionnel, le défunt n'était peut-être pas patient du PHMC)"
+                    placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)"
                     className="form-control"
                 />
             </div>
@@ -268,7 +268,7 @@ const Autopsy = ({
                 name="autopsyClothing"
                 value={formData.autopsyClothing || ''}
                 onChange={handleChange}
-                placeholder="Vêtements et effets personnels présents sur le corps (optionnel — laissez vide pour « Le corps n'était pas vêtu »)"
+                placeholder="Vêtements et effets personnels présents sur le corps (laissez vide pour « Le corps n'était pas vêtu »)"
                 className="form-control mb-2"
             />
             <Form.Label>Examen interne:</Form.Label>
@@ -278,7 +278,7 @@ const Autopsy = ({
                 name="autopsyInternalExamination"
                 value={formData.autopsyInternalExamination || ''}
                 onChange={handleChange}
-                placeholder="Constatations de l'examen interne : organes, lésions, hémorragies… (optionnel — laissez vide pour « rien d'inhabituel »)"
+                placeholder="Constatations de l'examen interne : organes, lésions, hémorragies… (laissez vide pour « rien d'inhabituel »)"
                 className="form-control mb-2"
             />
 

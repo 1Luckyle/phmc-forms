@@ -70,6 +70,9 @@ export const useCities = () => {
     return cities;
 };
 
+// Liste actuelle (sans abonnement) : pour les générateurs de BBCode, qui ne sont pas des composants. Elle est chargée dès qu'un champ de ville est affiché.
+export const getCitiesSnapshot = () => current;
+
 export const cityOfZip = (cities, zip) => {
     const wanted = String(zip || '').trim().toLowerCase();
     return wanted ? (cities || []).find((entry) => entry.cp.toLowerCase() === wanted) || null : null;

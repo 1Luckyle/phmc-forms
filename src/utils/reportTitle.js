@@ -23,7 +23,7 @@ export function buildStandardReportKey(formName, patientID, patientName, dateVal
 const pad2 = (number) => String(number).padStart(2, '0');
 
 // Date du jour, JJ/MM/AAAA (heure locale : toISOString() donnait la date UTC, parfois la veille ou le lendemain).
-const todayFr = () => { const now = new Date(); return `${pad2(now.getDate())}/${pad2(now.getMonth() + 1)}/${now.getFullYear()}`; };
+export const todayFr = () => { const now = new Date(); return `${pad2(now.getDate())}/${pad2(now.getMonth() + 1)}/${now.getFullYear()}`; };
 
 // UN SEUL format de date dans les titres : JJ/MM/AAAA (+ « HH:MM » si l'heure est connue). Lecture par les chiffres de la date saisie, sans passer par
 // un objet Date (le fuseau horaire décalait parfois le jour). Une valeur qui n'est pas une date ISO est renvoyée telle quelle.

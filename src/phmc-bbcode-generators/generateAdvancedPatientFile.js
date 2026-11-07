@@ -1,6 +1,8 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
+import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { frDay, todayFr } from '../utils/reportTitle';
         // Placeholder utilisé pour les informations attendues mais non renseignées,
         // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
         // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
@@ -26,7 +28,6 @@ import { checkbox, sectionBanner } from './shared/bbStyles';
         patientCurrentMedicine = NOT_FILLED,
         patientChronicDiseases = NOT_FILLED,
         patientNotes = NOT_FILLED,
-        date = NOT_FILLED,
         patientID = NOT_FILLED,
         patientTherapy = NOT_FILLED,
         patientTriggers = NOT_FILLED,
@@ -55,6 +56,9 @@ import { checkbox, sectionBanner } from './shared/bbStyles';
         paymentProofPhotos = ''
         } = withoutBlanks(formData);
 
+        // Numéro suivi de son type (« 555-0142 (Mobile) ») ; « Non renseigné » reste tel quel.
+        const phone = (number, type) => (number === NOT_FILLED ? number : phoneWithType(number, type));
+
         const scenePhotosBBCode = paymentProofPhotos ? paymentProofPhotos.split(',').map(photo => `${photo.trim()}`).join('\n') : '';
         // Payment/Exempt logic
         let paymentSection = '';
@@ -76,17 +80,17 @@ ${patientName}
 [/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img]
 [b][size=150]INFORMATIONS AVANCÉES DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations générales`, { size: 115 })}
-[table][tr][td] Titre: ${patientTitle}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
-[tr][td] Date de naissance: ${patientDateOfBirth} [/td][td] Adresse: ${patientAddress}
+[table][tr][td] Titre: ${titleLabel(patientTitle)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
+[tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${patientAddress}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
+[tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
-    ${sectionBanner(`Contact d'urgence`, { size: 115 })}
-    [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-    [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
+${sectionBanner(`Contact d'urgence`, { size: 115 })}
+[table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
+[tr][td] Numéro de téléphone: ${phone(patientEmergencyContactNumber, formData.patientEmergencyContactPhoneType)} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table]
-${sectionBanner(`Antécédents médicaux`, { size: 115 })}
+${sectionBanner(`Historique médical`, { size: 115 })}
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Groupe sanguin: [/td][td] ${checkbox(formData.patientBloodType === 'A+')} A+ ${checkbox(formData.patientBloodType === 'A-')} A- ${checkbox(formData.patientBloodType === 'B+')} B+ ${checkbox(formData.patientBloodType === 'B-')} B- ${checkbox(formData.patientBloodType === 'O+')} O+ ${checkbox(formData.patientBloodType === 'O-')} O- ${checkbox(formData.patientBloodType === 'AB+')} AB+ ${checkbox(formData.patientBloodType === 'AB-')} AB-
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
@@ -94,7 +98,7 @@ ${sectionBanner(`Antécédents médicaux`, { size: 115 })}
 [tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}
 [tr][td] Traumatismes et blessures: [/td][td] ${patientNotes}
 [/table]
-${sectionBanner(`Antécédents de santé mentale`, { size: 115 })}
+${sectionBanner(`Historique de santé mentale`, { size: 115 })}
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Troubles de santé mentale diagnostiqués: [/td][td] ${patientMental}
 [tr][td] Thérapies et séances de conseil: [/td][td] ${patientTherapy}
@@ -102,7 +106,7 @@ ${sectionBanner(`Antécédents de santé mentale`, { size: 115 })}
 [tr][td] Systèmes de soutien et mécanismes d'adaptation personnels: [/td][td] ${patientSupport}
 [tr][td] Antécédents d'automutilation / tentatives ou danger pour autrui: [/td][td] ${patientHarm}
 [/table]
-${sectionBanner(`Antécédents médicaux familiaux`, { size: 115 })}
+${sectionBanner(`Historique médical familial`, { size: 115 })}
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Membres de la famille immédiate: [/td][td] ${patientFam}
 [tr][td] Maladies génétiques connues: [/td][td] ${patientGenetic}
@@ -142,17 +146,17 @@ J'autorise le Pillbox Hill Medical Center à conserver une copie de mes directiv
 Je comprends que je peux réviser ou révoquer ces directives à tout moment en fournissant un avis écrit.
 
 Signature: [i][u]${patientName}[/u][/i]
-Date: ${date}[/divbox]
+Date: ${formData.date ? frDay(formData.date) : todayFr()}[/divbox]
 ${sectionBanner(`Clause de non-responsabilité`, { size: 115 })}
 [divbox=transparent][list=none]Je soussigné(e), ${patientName}, déclare par la présente que les informations fournies dans ce formulaire d'antécédents médicaux sont vraies, exactes et complètes selon mes meilleures connaissances. Je comprends que ces informations seront stockées en toute sécurité dans les systèmes du Pillbox Hill Medical Center et peuvent être consultées par les professionnels de la santé autorisés impliqués dans mes soins.
 
 Je soussigné(e), ${patientName}, en soumettant ce formulaire, consens au partage de mes informations médicales entre les professionnels de la santé du Pillbox Hill Medical Center dans le but de fournir des services de soins de santé complets et coordonnés. Je reconnais que ces informations peuvent être utilisées pour le diagnostic, le traitement et d'autres activités liées aux soins de santé conformément aux lois et règlements applicables, y compris la loi sur la portabilité et la responsabilité en matière d'assurance maladie (HIPAA).
 
 Je soussigné(e), ${patientName}, conserve le droit de révoquer ce consentement à tout moment en avisant le Pillbox Hill Medical Center par écrit. Cependant, je comprends également que la révocation du consentement peut limiter la capacité des professionnels de la santé à me fournir des soins optimaux et coordonnés.[/list][/divbox]
-    ${sectionBanner(`Paiement`, { size: 115 })}
-    [table][tr][td] ${formData.filledByStaff ? 'Paiement à régler par le patient :' : 'Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.'}[/td][td]
-    ${paymentSection}
-    [/table]`
+${sectionBanner(`Paiement`, { size: 115 })}
+[table][tr][td] ${formData.filledByStaff ? 'Paiement à régler par le patient :' : 'Veuillez joindre une confirmation non modifiée de votre paiement, sauf si vous êtes exempté.'}[/td][td]
+${paymentSection}
+[/table]`
             return bbCode;
             };
 

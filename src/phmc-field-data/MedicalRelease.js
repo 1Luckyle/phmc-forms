@@ -10,6 +10,17 @@ import useBillingRole from '../hooks/useBillingRole';
 import ForMyselfBanner from '../components/ForMyselfBanner';
 import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 import { GUARDIAN_RELATIONS, ageOn, isMinorPatient } from '../utils/minors';
+import PatientGeneralInfo from './shared/PatientGeneralInfo';
+import { darkSelectStyles } from './shared/selectStyles';
+
+// Champs d'identité de la demande de divulgation (prénom, deuxième prénom et nom sont déjà séparés ; pas de nom complet à recomposer).
+const RELEASE_FIELDS = {
+    id: 'patientID', title: 'patientTitle', full: null, first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
+    gender: 'patientGender', address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail',
+};
+
+// Les anciens brouillons contenaient du texte libre (« 01/10/2026 ») : un champ date n'affiche que AAAA-MM-JJ, tout le reste s'affiche vide.
+const isoDate = (value) => (/^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : '');
 
 const MedicalRelease = ({
     formData,
@@ -42,7 +53,7 @@ const MedicalRelease = ({
     // demandé ici : c'est au civil de payer, pas au soignant qui remplit le
     // dossier à sa place — sinon le paiement Fleeca ne peut tout simplement
     // pas avoir lieu.
-    const { currentEmployee, employeeProfile, isAdmin, isCivilian, civilianProfile } = useEmployeeAuth();
+    const { isCivilian, civilianProfile } = useEmployeeAuth();
     const { filledByStaff } = useBillingRole(formData, setFormData);
     const minorGuard = useMinorTitleGuard(formData, setFormData);
     // Praticien consulté : un personnel qui remplit pour un patient est lui-même le praticien (liste restreinte à lui) ; quand la personne est son propre
@@ -81,73 +92,12 @@ const MedicalRelease = ({
         <>
         <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientZIP: 'zip', patientPH: 'phone', patientEmail: 'email' }} />
         <Form.Group className="mb-3">
-
-        <Form.Label>Titre / Prénom / Deuxième prénom / Nom de famille / Date de naissance</Form.Label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                    <Form.Select
-                    name="patientTitle"
-                    disabled={minorGuard.locked}
-                    title={minorGuard.hint}
-                    value={formData.patientTitle}
-                    onChange={handleChange}
-                    className="form-control"
-                >
-                    <option value="" disabled>Titre</option>
-                    {/* Updated to use patientTitleOptions prop */}
-                    {(patientTitleOptions || []).map((option) => (
-                        <option key={option.value} value={option.value} disabled={minorGuard.isDisabled(option)}>{minorGuard.label(option)}</option>
-                    ))}
-                </Form.Select>
-                <Form.Control
-                    type="text"
-                    name="patientFirstName"
-                    value={formData.patientFirstName}
-                    onChange={handleChange}
-                    placeholder="Prénom"
-                    className="form-control"
-
-                />
-
-                <Form.Control
-                    type="text"
-                    name="patientMiddleName"
-                    value={formData.patientMiddleName}
-                    onChange={handleChange}
-                    placeholder="Deuxième prénom (Optionnel)"
-                    className="form-control"
-                />
-                    <Form.Control
-                    type="text"
-                    name="patientLastName"
-                    value={formData.patientLastName}
-                    onChange={handleChange}
-                    placeholder="Nom de famille"
-                    className="form-control"
-
-                />
-                <Form.Control
-                    type="date"
-                    name="patientDateOfBirth"
-                    value={formData.patientDateOfBirth}
-                    onChange={handleChange}
-                    placeholder="Date de naissance"
-                    className="form-control"
-
-                />
-
-            </div>
-            <Form.Group className="mb-3">
-                <Form.Control
-                    type="text"
-                    name="patientID"
-                    value={formData.patientID}
-                    onChange={handleChange}
-                    placeholder="ID Patient"
-                    className="form-control"
-                />
-            </Form.Group>
+            <PatientGeneralInfo
+                formData={formData} setFormData={setFormData} handleChange={handleChange} fields={RELEASE_FIELDS}
+                patientTitleOptions={patientTitleOptions || []} patientPhoneOptions={patientPhoneOptions} guard={minorGuard}
+            />
             {isMinor && (
-                <div className="mb-3 p-3 border rounded" style={{ borderColor: '#e3b341' }}>
+                <div className="mt-3 mb-3 p-3 border rounded" style={{ borderColor: '#e3b341' }}>
                     <strong style={{ color: '#e3b341' }}>
                         <i className="fas fa-child me-2"></i>Patient mineur{minorAge !== null ? ` (${minorAge} ans)` : ''}
                     </strong>
@@ -185,92 +135,7 @@ const MedicalRelease = ({
                     )}
                 </div>
             )}
-            <Form.Label>Genre à l'état civil :</Form.Label>
-                <Form.Check
-                    type="radio"
-                    label="   Homme"
-                    name="patientGender"
-                    value="Male"
-                    checked={formData.patientGender === 'Male'}
-                    onChange={handleChange}
-                />
-                <Form.Check
-                    type="radio"
-                    label="   Femme"
-                    name="patientGender"
-                    value="Female"
-                    checked={formData.patientGender === 'Female'}
-                    onChange={handleChange}
-                />
-
         </Form.Group>
-        <Form.Group className="mb-3">
-            <Form.Label>Adresse & Code postal</Form.Label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    type="text"
-                    name="patientAddress"
-                    value={formData.patientAddress}
-                    onChange={handleChange}
-                    placeholder="Adresse (Numéro, Étage, Rue)"
-                    className="form-control"
-
-                />
-                <Form.Control
-                    type="text"
-                    name="patientZIP"
-                    value={formData.patientZIP}
-                    onChange={handleChange}
-                    placeholder="LS : 90012 | BC : 92311 | SS : 92274 | PB : 95437"
-                    className="form-control"
-
-                />
-            </div>
-        </Form.Group>
-            <Form.Label>Informations de contact</Form.Label>
-            <div className="input-group">
-            <Form.Select
-            name="patientPhoneType"
-            value={formData.patientPhoneType}
-            onChange={(e) => {
-                const selectedType = e.target.value;
-                setFormData(prev => ({
-                    ...prev,
-                    patientPhoneType: selectedType,
-                    patientPhoneMobile: selectedType === 'Mobile' ? prev.patientPhoneMobile : '',
-                    patientPhoneHome: selectedType === 'Home' ? prev.patientPhoneHome : '',
-                    patientPhoneWork: selectedType === 'Work' ? prev.patientPhoneWork : '',
-                    patientPhoneOther: selectedType === 'Other' ? prev.patientPhoneOther : '',
-                }));
-            }}
-            className="form-control"
-        >
-            <option value="" disabled>Type de téléphone</option>
-            {/* Updated to use patientPhoneOptions prop */}
-            {(patientPhoneOptions || []).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option> 
-            ))}
-        </Form.Select>
-
-         <Form.Control
-                    type="text"
-                    name="patientPH"
-                    value={formData.patientPH}
-                    onChange={handleChange}
-                    placeholder="Numéro de téléphone"
-                    className="form-control"
-
-                />
-                <Form.Control
-                    type="text"
-                    name="patientEmail"
-                    value={formData.patientEmail}
-                    onChange={handleChange}
-                    placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)"
-                    className="form-control"
-
-                />
-            </div>
             <Form.Label>Objectif de la divulgation des informations médicales</Form.Label>
             <Form.Select
                 name="CarePurposeMedicalInformationRelease"
@@ -288,7 +153,7 @@ const MedicalRelease = ({
                 }}
                 className="form-control"
             >
-                <option value="" disabled>Divulguer les informations</option>
+                <option value="" disabled>Objectif de la divulgation</option>
                 {(purposeOptions || []).map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -323,7 +188,7 @@ const MedicalRelease = ({
             }}
             className="form-control"
         >
-            <option value="" disabled>Divulguer les informations</option>
+            <option value="" disabled>Format de la divulgation</option>
             {/* Updated to use formatOptions prop */}
             {(formatOptions || []).map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -341,26 +206,17 @@ const MedicalRelease = ({
 
             />
         )}
-          <Form.Label>Période de divulgation des dossiers </Form.Label>
-
+          <Form.Label>Période de divulgation des dossiers</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    type="text"
-                    name="StupidDateFrom"
-                    value={formData.StupidDateFrom}
-                    onChange={handleChange}
-                    placeholder="Date de traitement du jj/mm/aaaa"
-                    className="form-control"
-                />
-                <Form.Control
-                type="text"
-                name="StupidDateTo"
-                value={formData.StupidDateTo}
-                onChange={handleChange}
-                placeholder="Date de traitement au jj/mm/aaaa"
-                className="form-control"
-                />
+            <div style={{ flex: 1 }}>
+                <Form.Label className="small mb-1">Du</Form.Label>
+                <Form.Control type="date" name="StupidDateFrom" value={isoDate(formData.StupidDateFrom)} max={formData.StupidDateTo || undefined} onChange={handleChange} className="form-control" />
             </div>
+            <div style={{ flex: 1 }}>
+                <Form.Label className="small mb-1">Au</Form.Label>
+                <Form.Control type="date" name="StupidDateTo" value={isoDate(formData.StupidDateTo)} min={formData.StupidDateFrom || undefined} onChange={handleChange} className="form-control" />
+            </div>
+        </div>
 
             <Form.Label>Dossiers médicaux à divulguer </Form.Label>
             <Select
@@ -381,57 +237,11 @@ const MedicalRelease = ({
                     className="form-control"
                     placeholder="Sélectionner les options de divulgation (Choix multiples)"
                     styles={{
-                        control: (base, state) => ({ 
-                            ...base,
-                            minHeight: '38px',
-                            backgroundColor: '#16202c',
-                            color: '#eeeeeeb0',
+                        ...darkSelectStyles,
+                        control: (base, state) => ({
+                            ...darkSelectStyles.control(base, state),
                             borderColor: !formData.MedicalRecordsRelease || formData.MedicalRecordsRelease.length === 0 ? '#dc3545' : '#6c757d',
-                            '&:hover': {
-                                borderColor: !formData.MedicalRecordsRelease || formData.MedicalRecordsRelease.length === 0 ? '#dc3545' : '#eeeeeeb0'
-                            }
                         }),
-                        menu: (base) => ({
-                            ...base,
-                            backgroundColor: '#16202c',
-                            zIndex: 1000,
-                            border: '1px solid #6c757d',
-                            borderRadius: '0.375rem'
-                        }),
-                        option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused ? '#30363d' : '#16202c',
-                            color: '#eeeeeeb0',
-                            padding: '0.5rem 1rem',
-                            '&:hover': {
-                                backgroundColor: '#30363d'
-                            }
-                        }),
-                        multiValue: (base) => ({
-                            ...base,
-                            backgroundColor: '#30363d',
-                            color: '#eeeeeeb0'
-                        }),
-                        multiValueLabel: (base) => ({
-                            ...base,
-                            color: '#eeeeeeb0'
-                        }),
-                        multiValueRemove: (base) => ({
-                            ...base,
-                            color: '#9aa7b4',
-                            '&:hover': {
-                                backgroundColor: '#dc3545',
-                                color: '#fff'
-                            }
-                        }),
-                        input: (base) => ({
-                            ...base,
-                            color: '#eeeeeeb0'
-                        }),
-                        placeholder: (base) => ({
-                            ...base,
-                            color: '#9aa7b4'
-                        })
                     }}
             />
                         {approximateCost > 0 && (
@@ -519,51 +329,10 @@ const MedicalRelease = ({
             isClearable
             placeholder="Quel médecin vous a traité? (Vous pouvez taper pour rechercher!)"
             className="form-control" 
-            styles={{ 
-                control: (base) => ({
-                    ...base,
-                    backgroundColor: '#16202c',
-                    color: '#eeeeeeb0',
-                    borderColor: '#6c757d',
-                    '&:hover': {
-                        borderColor: '#eeeeeeb0'
-                    }
-                }),
-                menu: (base) => ({
-                    ...base,
-                    backgroundColor: '#16202c',
-                    zIndex: 1000
-                }),
-                option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                    color: '#eeeeeeb0'
-                }),
-                singleValue: (base) => ({
-                    ...base,
-                    color: '#eeeeeeb0'
-                }),
-                input: (base) => ({
-                    ...base,
-                    color: '#eeeeeeb0'
-                }),
-                placeholder: (base) => ({
-                    ...base,
-                    color: '#eeeeeeb0'
-                }),
-                group: (base) => ({
-                    ...base,
-                    paddingTop: 8,
-                    paddingBottom: 8
-                }),
-                groupHeading: (base) => ({
-                    ...base,
-                    color: '#9aa7b4',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: '0.75rem',
-                    marginBottom: 4
-                })
+            styles={{
+                ...darkSelectStyles,
+                group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
+                groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 }),
             }}
         />
             <Form.Label></Form.Label>
