@@ -4,7 +4,7 @@
 //   • On ne peut écrire qu'EN SON NOM : l'expéditeur est imposé (et vérifié par les règles Firebase) ;
 //   • les destinataires se choisissent dans l'annuaire du personnel (comptes existants) ;
 //   • chacun supprime SA copie ; le message disparaît pour de bon quand plus personne ne l'a ;
-//   • chaque message s'exporte comme un rapport : PDF (A4), image PNG, fichier HTML, texte brut (et BBCode si l'accès BBCode est activé).
+//   • chaque message (ou toute la conversation) s'exporte comme un rapport : PDF (A4), image PNG, fichier HTML, texte brut (et BBCode si l'accès BBCode est activé).
 // Données et règles : utils/internalMail.js, database.rules.json (messagesInternes / messagerie).
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Dropdown, Spinner, Form } from 'react-bootstrap';
@@ -17,7 +17,7 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import {
     MAIL_LIMITS, loadMailDirectory, loadInternalMail, sendInternalMail, setMailRead, deleteMyMailCopy,
-    validateMailDraft, messageToEmailBbcode, mailTitle, bbcodeToPlainText, formatDateFr, stripImgWidth,
+    validateMailDraft, messageToEmailBbcode, conversationToEmailBbcode, conversationTitle, mailTitle, bbcodeToPlainText, formatDateFr, stripImgWidth,
 } from '../../utils/internalMail';
 import { markMessageNotificationsRead } from '../../utils/notifications';
 import { bbcodeToHtmlFragment } from '../../utils/bbcodeToHtml';
@@ -169,6 +169,50 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
     // Le document du message est la mise en page « email PHMC » : c'est lui qu'on voit, qu'on exporte et dont on copie le titre ou le BBCode.
     const fullBbcode = message ? messageToEmailBbcode(message, { fromName: senderName }) : '';
     const exportTitle = message ? mailTitle(message) : 'Message';
+
+    // Export d'un seul message ou de toute la conversation (les messages présents dans MA boîte, du plus ancien au plus récent, en un seul document).
+    const [exportingThread, setExportingThread] = useState(false);
+    const threadCount = message ? new Set([message.id, ...threadItems.map((item) => item.id)]).size : 0;
+    const runExport = async (kind, scope) => {
+        let bbCode = fullBbcode;
+        let title = exportTitle;
+        if (scope === 'thread') {
+            setExportingThread(true);
+            try {
+                const ids = [...new Set(threadItems.map((item) => item.id))].filter((id) => id !== message.id);
+                const loaded = await Promise.all(ids.map((id) => (threadOpen[id] && typeof threadOpen[id] === 'object'
+                    ? Promise.resolve(threadOpen[id]) : loadInternalMail(id).catch(() => null))));
+                const messages = [message, ...loaded.filter(Boolean)];
+                if (messages.length < ids.length + 1) notify(`${ids.length + 1 - messages.length} message(s) de la conversation n'ont pas pu être chargés et sont absents de l'export.`, 'warning', 7000);
+                bbCode = conversationToEmailBbcode(messages, { fromNameOf: (m) => nameOf(m.deUid, m.deNom) });
+                title = conversationTitle(messages);
+            } catch (error) {
+                notify(`Export de la conversation impossible : ${error.message || 'erreur'}`, 'error');
+                return;
+            } finally {
+                setExportingThread(false);
+            }
+        }
+        const options = { bbCode, title, showNotification: notify };
+        if (kind === 'title') copyText(title, 'Titre copié !');
+        else if (kind === 'pdf' || kind === 'png' || kind === 'png-copy') exportReportDocument(kind, options);
+        else if (kind === 'html') downloadBbCodeAsHtml(options);
+        else if (kind === 'text') copyText(bbcodeToPlainText(bbCode), 'Texte copié.');
+        else if (kind === 'bbcode') copyText(stripImgWidth(bbCode), 'BBCode copié.');
+    };
+    const renderExportItems = (scope) => (
+        <>
+            <Dropdown.Item onClick={() => runExport('title', scope)}><i className="fas fa-heading me-2"></i>Copier le titre</Dropdown.Item>
+            <Dropdown.Divider />
+            <Dropdown.Item onClick={() => runExport('pdf', scope)}><i className="fas fa-file-pdf me-2"></i>PDF (A4)</Dropdown.Item>
+            <Dropdown.Item onClick={() => runExport('png', scope)}><i className="fas fa-file-image me-2"></i>Image PNG (pour Discord)</Dropdown.Item>
+            <Dropdown.Item onClick={() => runExport('png-copy', scope)}><i className="fas fa-copy me-2"></i>Copier l'image</Dropdown.Item>
+            <Dropdown.Item onClick={() => runExport('html', scope)}><i className="fas fa-file-code me-2"></i>Fichier HTML</Dropdown.Item>
+            <Dropdown.Divider />
+            <Dropdown.Item onClick={() => runExport('text', scope)}><i className="fas fa-align-left me-2"></i>Copier le texte</Dropdown.Item>
+            {bbcodeEnabled && <Dropdown.Item onClick={() => runExport('bbcode', scope)}><i className="fas fa-code me-2"></i>Copier le BBCode</Dropdown.Item>}
+        </>
+    );
 
     const handleDelete = async () => {
         if (!view.id || !window.confirm('Supprimer ce message de votre boîte ? Les autres personnes le gardent ; il disparaît pour de bon quand plus personne ne l\'a.')) return;
@@ -358,32 +402,18 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                             <Button size="sm" variant="outline-primary" onClick={() => startReply(true)}><i className="fas fa-reply-all me-1"></i>Répondre à tous</Button>
                         )}
                         <Dropdown>
-                            <Dropdown.Toggle size="sm" variant="outline-info"><i className="fas fa-file-export me-1"></i>Exporter</Dropdown.Toggle>
+                            <Dropdown.Toggle size="sm" variant="outline-info" disabled={exportingThread}>
+                                {exportingThread ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="fas fa-file-export me-1"></i>}Exporter
+                            </Dropdown.Toggle>
                             <Dropdown.Menu className="mm-export-menu">
-                                <Dropdown.Item onClick={() => copyText(exportTitle, 'Titre copié !')}>
-                                    <i className="fas fa-heading me-2"></i>Copier le titre
-                                </Dropdown.Item>
-                                <Dropdown.Divider />
-                                <Dropdown.Item onClick={() => exportReportDocument('pdf', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
-                                    <i className="fas fa-file-pdf me-2"></i>PDF (A4)
-                                </Dropdown.Item>
-                                <Dropdown.Item onClick={() => exportReportDocument('png', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
-                                    <i className="fas fa-file-image me-2"></i>Image PNG (pour Discord)
-                                </Dropdown.Item>
-                                <Dropdown.Item onClick={() => exportReportDocument('png-copy', { bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
-                                    <i className="fas fa-copy me-2"></i>Copier l'image
-                                </Dropdown.Item>
-                                <Dropdown.Item onClick={() => downloadBbCodeAsHtml({ bbCode: fullBbcode, title: exportTitle, showNotification: notify })}>
-                                    <i className="fas fa-file-code me-2"></i>Fichier HTML
-                                </Dropdown.Item>
-                                <Dropdown.Divider />
-                                <Dropdown.Item onClick={() => copyText(bbcodeToPlainText(fullBbcode), 'Texte copié.')}>
-                                    <i className="fas fa-align-left me-2"></i>Copier le texte
-                                </Dropdown.Item>
-                                {bbcodeEnabled && (
-                                    <Dropdown.Item onClick={() => copyText(stripImgWidth(fullBbcode), 'BBCode copié.')}>
-                                        <i className="fas fa-code me-2"></i>Copier le BBCode
-                                    </Dropdown.Item>
+                                {threadCount > 1 && <Dropdown.Header>Ce message seulement</Dropdown.Header>}
+                                {renderExportItems('message')}
+                                {threadCount > 1 && (
+                                    <>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Header>Toute la conversation ({threadCount} messages)</Dropdown.Header>
+                                        {renderExportItems('thread')}
+                                    </>
                                 )}
                             </Dropdown.Menu>
                         </Dropdown>

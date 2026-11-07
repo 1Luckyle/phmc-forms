@@ -163,6 +163,48 @@ Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hi
 [size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/list][/divbox]`;
 };
 
+// Document « email PHMC » de TOUTE une conversation : un seul en-tête, puis chaque message (du plus ancien au plus récent) avec son expéditeur,
+// ses destinataires, sa date, son texte et sa signature, séparés par un trait. messages : messages chargés ; fromNameOf(message) : nom affiché.
+export const conversationToEmailBbcode = (messages, { fromNameOf } = {}) => {
+    const list = (Array.isArray(messages) ? messages : []).filter(Boolean).slice().sort((a, b) => (Number(a.creeLe) || 0) - (Number(b.creeLe) || 0));
+    const subject = list[0]?.objet || '(sans objet)';
+    const nameOf = (m) => (fromNameOf ? fromNameOf(m) : '') || m.deNom || 'Inconnu';
+    const blocks = list.map((m, index) => {
+        const signature = safeHttps(m.deSignature);
+        const role = [m.deFonction, m.deService].filter(Boolean).map(escapeBbText).join(' — ');
+        return `[b][size=110]Message ${index + 1} sur ${list.length}[/size][/b]
+[b]De :[/b] ${escapeBbText(nameOf(m))}${role ? ` (${role})` : ''}
+[b]À :[/b] ${escapeBbText(Object.values(m.dest || {}).join(', ') || '—')}
+[b]Le :[/b] ${formatDateFr(m.creeLe)}
+[b]Objet :[/b] ${escapeBbText(m.objet || '(sans objet)')}
+[br][/br]
+${m.corps || ''}
+${signature ? `\nRespectueusement,\n[img=${SIGNATURE_WIDTH}]${signature}[/img]\n` : ''}`;
+    });
+    return `[divbox=na][br][/br][imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b]
+[center][/center][br][/br]
+[center][size=150][b]${escapeBbText(subject)}[/b][/size][/center]
+[center][i]Conversation de ${list.length} message${list.length > 1 ? 's' : ''}[/i][/center]
+[hr][/hr][br][/br][list=none]
+${blocks.join('\n[hr][/hr]\n')}
+[/list][hr][/hr][list=none]
+[b]Pillbox Hill Medical Center[/b]
+[size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
+Téléphone: 50056
+Courriel: info@phmc.health
+Site web: [url=https://phmc-tools.com]phmc-tools.com[/url][/size]
+
+[size=70][i]Le contenu de ces messages et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/list][/divbox]`;
+};
+
+// Titre d'une conversation exportée : « [Conversation] objet (N messages) - date du dernier message ».
+export const conversationTitle = (messages) => {
+    const list = (Array.isArray(messages) ? messages : []).filter(Boolean).slice().sort((a, b) => (Number(a.creeLe) || 0) - (Number(b.creeLe) || 0));
+    const last = new Date(Number(list[list.length - 1]?.creeLe) || Date.now());
+    const pad = (n) => String(n).padStart(2, '0');
+    return `[Conversation] ${list[0]?.objet || '(sans objet)'} (${list.length} message${list.length > 1 ? 's' : ''}) - ${pad(last.getDate())}/${pad(last.getMonth() + 1)}/${last.getFullYear()}`;
+};
+
 // Titre standard d'un message exporté (même convention que « Rapports enregistrés » : « [type] objet - À: destinataires - date »).
 export const mailTitle = (message) => {
     const m = message || {};

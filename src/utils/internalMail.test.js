@@ -1,5 +1,5 @@
 // Messagerie interne : conversion de l'éditeur visuel en BBCode, texte brut, validation d'un brouillon et document d'un message.
-import { htmlToBbcode, bbcodeToPlainText, validateMailDraft, messageToBbcode, messageToEmailBbcode, mailTitle, MAIL_LIMITS, SIGNATURE_WIDTH, stripImgWidth } from './internalMail';
+import { htmlToBbcode, bbcodeToPlainText, validateMailDraft, messageToBbcode, messageToEmailBbcode, conversationToEmailBbcode, conversationTitle, mailTitle, MAIL_LIMITS, SIGNATURE_WIDTH, stripImgWidth } from './internalMail';
 import { bbcodeToHtmlFragment } from './bbcodeToHtml';
 
 // Le module charge Firebase : on le remplace (aucune connexion dans ces tests).
@@ -174,5 +174,23 @@ describe('messageToBbcode', () => {
     });
     test('un objet contenant des balises ne casse pas la mise en page', () => {
         expect(messageToBbcode({ objet: '[b]piège[/b]', deNom: 'x', dest: {}, creeLe: 1, corps: 'c' })).not.toContain('[b][b]');
+    });
+});
+
+describe('export d’une conversation', () => {
+    const first = { id: 'a', objet: 'Planning', corps: 'Premier message', creeLe: 1000, deNom: 'Alice', dest: { u2: 'Bob' } };
+    const second = { id: 'b', objet: 'RE: Planning', corps: 'Réponse de Bob', creeLe: 2000, deNom: 'Bob', dest: { u1: 'Alice' } };
+
+    test('range les messages du plus ancien au plus récent sous un seul en-tête', () => {
+        const bb = conversationToEmailBbcode([second, first], { fromNameOf: (m) => m.deNom });
+        expect(bb.indexOf('Premier message')).toBeGreaterThan(-1);
+        expect(bb.indexOf('Premier message')).toBeLessThan(bb.indexOf('Réponse de Bob'));
+        expect(bb).toContain('Message 1 sur 2');
+        expect(bb).toContain('Message 2 sur 2');
+        expect(bb.match(/Pillbox Hill Medical Center\[\/size\]/g)).toHaveLength(1);
+        expect(bb).toContain('Conversation de 2 messages');
+    });
+    test('le titre reprend l’objet du premier message et le nombre de messages', () => {
+        expect(conversationTitle([second, first])).toMatch(/^\[Conversation\] Planning \(2 messages\) - \d{2}\/\d{2}\/\d{4}$/);
     });
 });
