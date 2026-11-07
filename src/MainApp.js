@@ -1,5 +1,6 @@
 // src/MainApp.js
 import FormPurpose from './components/FormPurpose';
+import { isDmecReportVersion } from './utils/reportAccess';
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -2017,7 +2018,7 @@ function MainApp({
                         </div>
 
                         {/* Quand on quitte un champ « ID patient », on le complète : 2752 → PHMC-2752. */}
-                        <form data-form-zone={bbCodeVersion} onBlur={(event) => {
+                        <form data-form-zone={bbCodeVersion} data-form-family={isDmecReportVersion(bbCodeVersion) ? 'dmec' : undefined} onBlur={(event) => {
                             const field = event.target;
                             if (field && field.name === 'patientID' && field.value && field.value.trim()) {
                                 const completed = canonicalPatientId(field.value);

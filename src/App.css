@@ -1185,3 +1185,127 @@ textarea:disabled {
 .form-purpose > i { color: #58a6ff; font-size: 1.1rem; margin-top: 2px; }
 .form-purpose strong { display: block; margin-bottom: 2px; }
 .form-purpose p { margin: 0; color: #c3ccd5; font-size: 0.92rem; line-height: 1.4; }
+
+/* ==========================================================================
+   Formulaires du DMEC (Médecine légale) : habillage propre, accent ambre.
+   Activé par data-form-family="dmec" sur le <form> (MainApp). Ne touche ni aux
+   couleurs des champs vides (rouge / bleu du guide), ni à la logique des formulaires.
+   ========================================================================== */
+.form-container form[data-form-family="dmec"] {
+    --dmec-accent: #d29922;
+    --dmec-accent-soft: rgba(210, 153, 34, 0.10);
+    --dmec-accent-line: rgba(210, 153, 34, 0.45);
+    --dmec-surface: #111a24;
+    counter-reset: dmec-section;
+    padding: 4px 2px 8px;
+}
+
+/* Cadre « À quoi sert ce formulaire ? » : mêmes lignes que le reste, en ambre */
+.form-container form[data-form-family="dmec"] .form-purpose {
+    border: 1px solid var(--dmec-accent-line);
+    border-left: 4px solid var(--dmec-accent);
+    background: linear-gradient(90deg, var(--dmec-accent-soft), rgba(210, 153, 34, 0.02));
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+}
+.form-container form[data-form-family="dmec"] .form-purpose > i { color: var(--dmec-accent); font-size: 1.25rem; }
+.form-container form[data-form-family="dmec"] .form-purpose strong { color: #f0f3f6; letter-spacing: 0.01em; }
+
+/* Sections : bandeau numéroté (01, 02…) avec trait d'accent */
+.form-container form[data-form-family="dmec"] .form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 1.9rem 0 0.9rem;
+    padding: 9px 14px 9px 10px;
+    border: 1px solid #263241;
+    border-left: 4px solid var(--dmec-accent);
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--dmec-accent-soft), rgba(22, 32, 44, 0) 75%);
+    color: #f0f3f6;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.form-container form[data-form-family="dmec"] .form-section-title::before {
+    counter-increment: dmec-section;
+    content: counter(dmec-section, decimal-leading-zero);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 6px;
+    background: var(--dmec-accent);
+    color: #0d1117;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+/* Étiquettes simples (« Date du décès », « Lieu de l'incident »…) : discrètes, au-dessus de leur champ */
+.form-container form[data-form-family="dmec"] .form-label:not(.form-section-title) {
+    margin: 0.9rem 0 0.35rem;
+    color: #9fb0c0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Champs : coins plus doux, aération, survol et focus à l'accent ambre */
+.form-container form[data-form-family="dmec"] .form-control,
+.form-container form[data-form-family="dmec"] .form-select {
+    background-color: var(--dmec-surface);
+    border-color: #2a3646;
+    border-radius: 8px;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.form-container form[data-form-family="dmec"] .form-control:hover,
+.form-container form[data-form-family="dmec"] .form-select:hover {
+    background-color: #142030;
+    border-color: #3b4a5e;
+}
+.form-container form[data-form-family="dmec"] .form-control:focus,
+.form-container form[data-form-family="dmec"] .form-select:focus {
+    background-color: #142030;
+    border-color: var(--dmec-accent);
+    box-shadow: 0 0 0 0.22rem rgba(210, 153, 34, 0.22);
+}
+.form-container form[data-form-family="dmec"] .form-control::placeholder { color: #7f8c9a !important; }
+.form-container form[data-form-family="dmec"] textarea.form-control { padding: 0.7rem 0.85rem; }
+
+/* Rangées de champs : un peu d'air entre les lignes */
+.form-container form[data-form-family="dmec"] div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]) {
+    row-gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* Listes à choix (react-select) et champs d'historique : même coins que les champs */
+.form-container form[data-form-family="dmec"] [class$="-control"] { border-radius: 8px !important; }
+
+/* Cases et boutons radio à l'accent */
+.form-container form[data-form-family="dmec"] .form-check-input { background-color: var(--dmec-surface); border-color: #3b4a5e; }
+.form-container form[data-form-family="dmec"] .form-check-input:checked { background-color: var(--dmec-accent); border-color: var(--dmec-accent); }
+.form-container form[data-form-family="dmec"] .form-check-input:focus { box-shadow: 0 0 0 0.22rem rgba(210, 153, 34, 0.25); border-color: var(--dmec-accent); }
+.form-container form[data-form-family="dmec"] .form-check-label { color: #c9d1d9; }
+.form-container form[data-form-family="dmec"] .form-check { margin-bottom: 6px; }
+
+/* Boutons d'ajout / de retrait à l'intérieur du formulaire */
+.form-container form[data-form-family="dmec"] .btn { border-radius: 8px; font-weight: 600; }
+.form-container form[data-form-family="dmec"] .btn-outline-primary,
+.form-container form[data-form-family="dmec"] .btn-outline-secondary { border-color: var(--dmec-accent-line); color: #e3c27a; }
+.form-container form[data-form-family="dmec"] .btn-outline-primary:hover,
+.form-container form[data-form-family="dmec"] .btn-outline-secondary:hover { background: var(--dmec-accent-soft); border-color: var(--dmec-accent); color: #f6dc9c; }
+
+/* Petits écrans : bandeaux plus compacts */
+@media (max-width: 576px) {
+    .form-container form[data-form-family="dmec"] .form-section-title { font-size: 0.85rem; letter-spacing: 0.03em; padding: 8px 10px 8px 8px; }
+}
+
+/* Étiquettes vides (simples espaceurs dans certains formulaires) : pas de marge en plus */
+.form-container form[data-form-family="dmec"] .form-label:empty { display: none; }
