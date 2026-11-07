@@ -37,12 +37,34 @@ describe('rapports de médecine légale : construction', () => {
         expect(prepareCoronerReport(report).ok).toBe(true);
         const email = generateEmail({ ...getDebugTemplate(2, ctx), department: 'LSSD', agencyDataStore, deathReport: report, additionalReports: [], coronerEmail: 'a.b@phmc.health' });
         expect(email).toMatch(/\[table\]\[tr\]\[td\]\[center\]\[img\]https:\/\/img\/lssd\.png\[\/img\]\[\/center\]\[td\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/ItaoQkO\.webp/);
-        expect(email).toContain('EXPÉDITEUR: Dr Légiste (a.b@phmc.health)');
+        expect(email).toContain('Expéditeur: Dr Légiste (a.b@phmc.health)');
         expect(email).not.toContain('@ phmc.health');
         // La copie BBCode garde le bloc [code] ; l'aperçu / HTML ne montre jamais la source brute du rapport.
         expect(email).toContain('[code]');
         const html = bbcodeToHtmlFragment(email);
         expect(html).not.toContain('[divbox');
         expect(html).not.toContain('[altspoiler');
+    });
+});
+
+describe('rapports de médecine légale : aperçu HTML et lecture des rapports joints', () => {
+    test.each(Object.keys(GENERATORS).map(Number))('rapport %i : l’aperçu HTML se construit sans balise orpheline', (version) => {
+        const text = GENERATORS[version]({ ...getDebugTemplate(version, ctx), agencyDataStore });
+        const warnings = [];
+        const html = bbcodeToHtmlFragment(text, { onWarning: (message) => warnings.push(message) });
+        expect(warnings.filter((message) => !message.includes('[TEST]'))).toEqual([]);
+        expect(html).not.toMatch(/\[\/?(table|tr|td|divbox|divboxcolor|list|center|altspoiler|size|b)[\]= ]/);
+        expect(html).toContain('<table');
+    });
+
+    test('les rapports de décès et de catastrophe mortelle restent reconnus, avec leurs défunts', () => {
+        const death = prepareCoronerReport(generateDeathReport({ ...getDebugTemplate(1, ctx), decedentName: 'Pierre Défunt', decedentOOC: 'pierre#42', agencyDataStore }));
+        expect(death.ok).toBe(true);
+        expect(death.kind).toBe('death');
+        expect(death.decedents).toEqual([{ name: 'Pierre Défunt', ooc: 'pierre#42' }]);
+        const mass = prepareCoronerReport(generateMassFatality({ ...getDebugTemplate(11, ctx), agencyDataStore }));
+        expect(mass.ok).toBe(true);
+        expect(mass.kind).toBe('massFatality');
+        expect(mass.decedents.length).toBeGreaterThan(0);
     });
 });

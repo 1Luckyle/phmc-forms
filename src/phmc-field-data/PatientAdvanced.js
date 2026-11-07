@@ -28,6 +28,7 @@ const GENERAL_FIELDS = {
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
     <Button
         variant="link"
+        className="section-toggle"
         onClick={onToggle} // Keep the existing onToggle function
         aria-expanded={isOpen}
         aria-controls={`collapse-${sectionId}`}

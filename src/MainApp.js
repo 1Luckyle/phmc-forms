@@ -1,5 +1,6 @@
 // src/MainApp.js
 import FormPurpose from './components/FormPurpose';
+import FormSections from './components/FormSections';
 import { isDmecReportVersion } from './utils/reportAccess';
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
@@ -2035,6 +2036,7 @@ function MainApp({
                                 </div>
                             )}
                             {FieldComponent && currentEmployee && <FormPurpose version={bbCodeVersion} />}
+                            {FieldComponent && currentEmployee && <FormSections version={bbCodeVersion} />}
                             <Suspense fallback={<LoadingSpinner />}>
                                 {FieldComponent && currentEmployee ? (
                                     <FieldComponent

@@ -1,143 +1,121 @@
 import { buildDecedentDescription } from './shared/decedentDescription';
-import { requestingAuthorityLine } from './shared/requestingAuthority';
+import { requestingAuthorityText } from './shared/requestingAuthority';
 import { frDeath } from '../utils/deathLabels';
 import { placeWithCity } from '../utils/places';
+import { sectionBanner, dmecHeader, infoTable, paragraph, labelledRows } from './shared/bbStyles';
 
+// Liste numérotée (ou en lettres) d'éléments saisis un par un ; « N/A » quand la liste est vide.
+const itemList = (items, kind) => {
+    const clean = (Array.isArray(items) ? items : []).map((item) => String(item || '').trim()).filter(Boolean);
+    if (clean.length === 0) return `[list=${kind}][*]N/A[/list]`;
+    return `[list=${kind}]${clean[0]}${clean.length > 1 ? `\n${clean.slice(1).map((item) => `[*]${item}`).join('\n')}` : ''}\n[/list]`;
+};
+
+// Rapport d'autopsie (version 4) : en-tête à deux cellules, identification, causes du décès, diagramme, constatations (une ligne par rubrique), avis et signatures.
 const generateAutopsy = (formData) => {
     const {
         coronerRank,
         coronerEmployee,
         chiefCoronerRank,
         chiefCoronerEmployee,
-        synopsis,       // Used for Opinion
+        synopsis,       // Avis du médecin légiste
         decedentName,
-        externalExamination, // Added this from your Autopsy.js
+        externalExamination,
         decedentOOC,
         autopsyDeathCauses,
         deathType,
         causeOfDeath,
         autopsyAnatomicSummaryItems,
-        autopsyAlbumUrl,             // This now holds comma-separated image URLs
+        autopsyAlbumUrl,             // URL d'images séparées par des virgules
         autopsyPhotosUnavailable,
-        RadiologyResult,             // Added this from your Autopsy.js
+        RadiologyResult,
         autopsyDate: formAutopsyDate,
         autopsyTime: formAutopsyTime,
-        autopsyDiagramImgurUrl, // Assuming the Imgur URL is stored here
-
+        autopsyDiagramImgurUrl,
     } = formData;
 
-    // --- Dynamic Death Causes List ---
-    let deathCausesListItems = '[list=a][*]N/A[/list]';
-    if (autopsyDeathCauses && Array.isArray(autopsyDeathCauses)) {
-        const filteredCauses = autopsyDeathCauses
-            .map(cause => (cause || '').trim())
-            .filter(cause => cause);
-        if (filteredCauses.length > 0) {
-            deathCausesListItems = `[list=a]${filteredCauses[0]}`;
-            if (filteredCauses.length > 1) {
-                deathCausesListItems += `\n${filteredCauses.slice(1).map(cause => `[*]${cause}`).join('\n')}`;
-            }
-            deathCausesListItems += `\n[/list]`;
-        }
-    }
+    // --- Diagramme d'autopsie ---
+    const diagramUrl = String(autopsyDiagramImgurUrl || '').trim();
+    const diagramBlock = diagramUrl ? `[center][img]${diagramUrl}[/img][/center]` : '[center][i]Aucun diagramme d\'autopsie fourni (N/A).[/i][/center]';
 
-    // --- Dynamic Anatomic Summary List ---
-    let anatomicSummaryListItems = '[list=1][*]N/A[/list]';
-    if (autopsyAnatomicSummaryItems && Array.isArray(autopsyAnatomicSummaryItems)) {
-        const filteredSummaryItems = autopsyAnatomicSummaryItems
-            .map(item => (item || '').trim())
-            .filter(item => item);
-        if (filteredSummaryItems.length > 0) {
-            anatomicSummaryListItems = `[list=1]${filteredSummaryItems[0]}`;
-            if (filteredSummaryItems.length > 1) {
-                anatomicSummaryListItems += `\n${filteredSummaryItems.slice(1).map(item => `[*]${item}`).join('\n')}`;
-            }
-            anatomicSummaryListItems += `\n[/list]`;
-        }
-    }
-    // --- Autopsy Diagram Logic ---
-    let autopsyDiagramBBCode = '';
-    if (autopsyDiagramImgurUrl && autopsyDiagramImgurUrl.trim() !== '') {
-        autopsyDiagramBBCode = `[b]Diagramme d'autopsie[/b]:\n[img]${autopsyDiagramImgurUrl.trim()}[/img]\n`;
-    } else {
-        // Option 1: Omit the line if no diagram
-        // autopsyDiagramBBCode = ''; 
-        // Option 2: Indicate no diagram is available
-        autopsyDiagramBBCode = `[b]Diagramme d'autopsie[/b]: N/A\n`;
-    }
-
-    // --- Photography Link/Image Logic ---
-    let photographySectionBBCode = '';
+    // --- Photographies ---
+    let photographyText;
     if (autopsyPhotosUnavailable) {
-        photographySectionBBCode = 'Les photographies ne sont pas disponibles pour cette autopsie.';
+        photographyText = 'Les photographies ne sont pas disponibles pour cette autopsie.';
     } else if (autopsyAlbumUrl && autopsyAlbumUrl.trim() !== '') {
-        const photoUrls = autopsyAlbumUrl.split(',')
-            .map(url => url.trim())
-            .filter(url => url); // Filter out empty strings
-
-        if (photoUrls.length > 0) {
-            photographySectionBBCode = `Les photos sur les lieux sont disponibles: ${photoUrls.map((url, index) => `[url=${url}]Photo ${index + 1}[/url]`).join(' | ')} Des photographies ont été prises avant et pendant le déroulement de l'autopsie.`;
-        } else {
-            photographySectionBBCode = 'Aucune URL de photo valide fournie.';
-        }
+        const photoUrls = autopsyAlbumUrl.split(',').map((url) => url.trim()).filter(Boolean);
+        photographyText = photoUrls.length > 0
+            ? `Les photos sur les lieux sont disponibles: ${photoUrls.map((url, index) => `[url=${url}]Photo ${index + 1}[/url]`).join(' | ')} Des photographies ont été prises avant et pendant le déroulement de l'autopsie.`
+            : 'Aucune URL de photo valide fournie.';
     } else {
-        photographySectionBBCode = 'Aucune photographie fournie pour cette autopsie.';
+        photographyText = 'Aucune photographie fournie pour cette autopsie.';
     }
 
-    // --- Format date and time for the report ---
+    // --- Date et heure de l'autopsie ---
     let finalAutopsyDate = 'JJ/MMM/AAAA';
     if (formAutopsyDate) {
         const dateParts = formAutopsyDate.split('-'); // YYYY-MM-DD
         if (dateParts.length === 3) {
-            const dateObj = new Date(dateParts[0], parseInt(dateParts[1], 10) - 1, dateParts[2]); // Month is 0-indexed
+            const dateObj = new Date(dateParts[0], parseInt(dateParts[1], 10) - 1, dateParts[2]); // mois : base 0
             finalAutopsyDate = dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
         }
     }
     const finalAutopsyTime = formAutopsyTime || 'HH:MM';
 
+    const patientId = formData.patientID || 'Non applicable';
     const decedentDescription = buildDecedentDescription(formData);
-    const decedentDescriptionLine = decedentDescription ? `\n[b]IDENTIFICATION:[/b] ${decedentDescription}` : '';
-    const authorityLine = requestingAuthorityLine(formData);
+    const authorityText = requestingAuthorityText(formData);
     const clothingText = (formData.autopsyClothing || '').trim()
         || "Le corps n'était pas vêtu et les vêtements n'étaient pas disponibles au moment de l'autopsie.";
     const internalExamText = (formData.autopsyInternalExamination || '').trim()
         || "Conformément à la cause du décès indiquée, rien d'inhabituel n'a été observé.";
+    const performer = `${coronerRank || 'Médecin légiste'} ${coronerEmployee || 'Coroner inconnu'}`;
+    const approver = `${chiefCoronerRank || 'Chef médecin légiste-Coroner'} ${chiefCoronerEmployee || 'Anne Carter'}`;
 
-    let bbCode = `[divbox=white][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
+    const identification = [
+        [['Défunt', `${decedentName || 'John Doe'}`], ['(( Discord du joueur (HRP)', `${decedentOOC || 'Discord HRP'} ))`]],
+        [['ID Patient', patientId], ['Date et heure de l\'autopsie', `${finalAutopsyDate}, ${finalAutopsyTime}`]],
+        [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'Non renseigné'], ['Manière du décès', frDeath(deathType) || 'Indéterminée']],
+        [['Comment la blessure s\'est produite', causeOfDeath || 'Inconnue']],
+    ];
+    if (decedentDescription) identification.push([['Identification', decedentDescription]]);
+    if (authorityText) identification.push([['Autorité requérante', authorityText]]);
 
-[divbox=white][b][size=150][br][/br][center]DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/size][/b][/center]
-[center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Discord HRP'}))[/b] (ID Patient : ${formData.patientID || 'Non applicable'}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.${decedentDescriptionLine}${authorityLine ? `\n${authorityLine}` : ''}
-D'après les constatations anatomiques et les antécédents pertinents, j'attribue le décès à:
-${deathCausesListItems}
-[b]LIEU DU DÉCÈS:[/b] ${placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'Non renseigné'}
-[b]MANIÈRE DU DÉCÈS:[/b] ${frDeath(deathType) || 'Indéterminée'}
-[b]COMMENT LA BLESSURE S'EST PRODUITE:[/b] ${causeOfDeath || 'Inconnue'}
-${autopsyDiagramBBCode} 
-[b]Résumé anatomique:[/b]
-${anatomicSummaryListItems}
-[b]Examen externe:[/b]
-${externalExamination || 'Aucun détail d\'examen externe fourni.'}[br][/br]
-[b]Vêtements:[/b]
-${clothingText}[br][/br]
-[b]Incision initiale:[/b]
-Les cavités corporelles sont ouvertes par l'incision coronale standard et l'incision en forme de Y standard.[br][/br]
-[b]Examen interne:[/b]
-${internalExamText}[br][/br]
-[b]Sections histologiques:[/b]
-Des sections représentatives de divers organes sont conservées dans un bocal de stockage dans du formol à 10%.[br][/br]
-[b]Toxicologie:[/b]
-Du sang thoracique, du sang fémoral, du sang EDTA, de l'urine, du contenu gastrique et du vitré ont été soumis au laboratoire. Un dépistage complet a été demandé.[br][/br]
-[b]Photographie:[/b]
-${photographySectionBBCode}[br][/br]
-[b]Radiologie:[/b]
-Le corps est fluoroscopé et deux radiographies ont été prises; ${RadiologyResult || 'Aucun résultat radiologique spécifique noté.'}[br][/br]
-[b]Avis:[/b]
-${synopsis || 'Aucun avis fourni.'}[br][/br]
-[b]Effectué par:[/b]
-${coronerRank || 'Médecin légiste'} ${coronerEmployee || 'Coroner inconnu'} [br][/br]
-[b]Approuvé par:[/b]
-${chiefCoronerRank || 'Chef médecin légiste-Coroner'} ${chiefCoronerEmployee || 'Anne Carter'}[/justify][/divbox]`
+    const blocks = [
+        dmecHeader({
+            label: 'Informations du défunt',
+            name: decedentName || 'John Doe',
+            detail: `ID Patient : ${patientId}`,
+            title: 'RAPPORT D\'AUTOPSIE',
+            subtitle: 'Département de Pathologie et de Médecine Légale',
+        }),
+        sectionBanner('Identification', { size: 115 }),
+        paragraph(`J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Discord HRP'}))[/b] (ID Patient : ${patientId}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.`),
+        infoTable(identification),
+        sectionBanner('Causes du décès', { size: 115 }),
+        paragraph('D\'après les constatations anatomiques et les antécédents pertinents, j\'attribue le décès à:'),
+        itemList(autopsyDeathCauses, 'a'),
+        sectionBanner('Diagramme d\'autopsie', { size: 115 }),
+        diagramBlock,
+        sectionBanner('Résumé anatomique', { size: 115 }),
+        itemList(autopsyAnatomicSummaryItems, '1'),
+        sectionBanner('Constatations', { size: 115 }),
+        labelledRows([
+            ['Examen externe', externalExamination || 'Aucun détail d\'examen externe fourni.'],
+            ['Vêtements', clothingText],
+            ['Incision initiale', 'Les cavités corporelles sont ouvertes par l\'incision coronale standard et l\'incision en forme de Y standard.'],
+            ['Examen interne', internalExamText],
+            ['Sections histologiques', 'Des sections représentatives de divers organes sont conservées dans un bocal de stockage dans du formol à 10%.'],
+            ['Toxicologie', 'Du sang thoracique, du sang fémoral, du sang EDTA, de l\'urine, du contenu gastrique et du vitré ont été soumis au laboratoire. Un dépistage complet a été demandé.'],
+            ['Photographie', photographyText],
+            ['Radiologie', `Le corps est fluoroscopé et deux radiographies ont été prises; ${RadiologyResult || 'Aucun résultat radiologique spécifique noté.'}`],
+        ]),
+        sectionBanner('Avis du médecin légiste', { size: 115 }),
+        paragraph(synopsis || 'Aucun avis fourni.'),
+        sectionBanner('Signatures', { size: 115 }),
+        infoTable([[['Effectué par', performer], ['Approuvé par', approver]]]),
+    ];
 
-    return bbCode;
+    return blocks.filter(Boolean).join('\n');
 };
 export default generateAutopsy;

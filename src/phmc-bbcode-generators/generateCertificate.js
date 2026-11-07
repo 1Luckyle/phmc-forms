@@ -1,13 +1,14 @@
 import { frDay } from '../utils/reportTitle';
 import { placeWithCity } from '../utils/places';
+import { sectionBanner, dmecHeader, infoTable, paragraph } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
 const NOT_FILLED = 'Non renseigné';
 
+// Certificat de décès (version 8) : en-tête à deux cellules, attestation, renseignements du défunt en tableau, signatures.
 const generateCertificate = (formData) => {
     const {
-        scenePhotos,
         decedentName = NOT_FILLED,
         patientAge = NOT_FILLED,
         probableCauseOfDeath,
@@ -18,54 +19,34 @@ const generateCertificate = (formData) => {
         coronerEmployee = NOT_FILLED,
         date = NOT_FILLED,
     } = formData;
-    const scenePhotosBBCode = (scenePhotos || '').split(',').map(photo => `[img]${photo.trim()}[/img]`).join('\n');
+    const patientId = String(formData.patientID || '').trim() || 'Non applicable';
 
-    let bbCode = `[divbox=#E8E8E8][br][/br][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][br][/br]
+    const blocks = [
+        dmecHeader({
+            label: 'Informations du défunt',
+            name: decedentName,
+            detail: `ID Patient : ${patientId}`,
+            title: 'CERTIFICAT DE DÉCÈS',
+            subtitle: 'Département de Pathologie et de Médecine Légale',
+        }),
+        sectionBanner('Attestation', { size: 115 }),
+        paragraph(`Je soussigné(e), [b]${coronerEmployee}[/b], au nom du Département de Pathologie et de Médecine Légale du Pillbox Hill Medical Center, dans l'État de San Andreas, documente, enregistre, scelle et certifie par la présente le décès de [b]${decedentName}[/b]. Je confirme que les informations suivantes sont exactes au meilleur de mes capacités:`),
+        sectionBanner('Renseignements sur le défunt', { size: 115 }),
+        infoTable([
+            [['Prénom (Deuxième Prénom) & Nom', decedentName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU DÉFUNT ICI'], ['ID Patient', patientId]],
+            [['Âge', patientAge], ['Date de naissance', frDay(patientDateOfBirth) || 'INSÉRER LA DATE DE NAISSANCE ICI']],
+            [['Date du décès', frDay(dateofdeath) || 'INSÉRER LA DATE DU DÉCÈS ICI'], ['Heure du décès', TimeofDeath || 'INSÉRER L\'HEURE DU DÉCÈS ICI']],
+            [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'INSÉRER LE LIEU DU DÉCÈS ICI']],
+            [['Cause du décès', probableCauseOfDeath || 'INSÉRER LA CAUSE DU DÉCÈS ICI']],
+        ]),
+        sectionBanner('Signatures', { size: 115 }),
+        infoTable([
+            [['Signature du médecin légiste', `[i][u]${coronerEmployee}[/u][/i]`], ['Signature du témoin', `[i][u]${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}[/u][/i]`]],
+            [['Date d\'émission du certificat', frDay(date)]],
+        ]),
+        '[center][size=85]Note: Ceci est la copie originale du certificat de décès. Des copies supplémentaires peuvent être demandées moyennant des frais additionnels.[/size][/center]',
+    ];
 
-
-[hr][/hr]
-[center][size=125][b]CERTIFICAT DE DÉCÈS ÉMIS PAR LE
-DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/b][/size][/center]
-[hr][/hr][br]
-
-[center]Je soussigné(e), [b]${coronerEmployee}[/b], au nom du Département de Pathologie et de Médecine Légale du Pillbox Hill Medical Center, dans l'État de San Andreas, documente, enregistre, scelle et certifie par la présente le décès de [b]${decedentName}[/b]. Je confirme que les informations suivantes sont exactes au meilleur de mes capacités:[/center][br][/br]
-
-[table][tr][td]PRÉNOM (DEUXIÈME PRÉNOM) & NOM[/td][td]
-${decedentName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU DÉFUNT ICI'}
-
-[tr][td]ÂGE[/td][td]
-${patientAge}	
-
-[tr][td]DATE DE NAISSANCE[/td][td]
-${frDay(patientDateOfBirth) || 'INSÉRER LA DATE DE NAISSANCE ICI'}	
-
-[tr][td]CAUSE DU DÉCÈS[/td][td]
-${probableCauseOfDeath || 'INSÉRER LA CAUSE DU DÉCÈS ICI'}	
-
-[tr][td]HEURE DU DÉCÈS[/td][td]
-${TimeofDeath || 'INSÉRER L\'HEURE DU DÉCÈS ICI'}	
-
-[tr][td]DATE DU DÉCÈS[/td][td]
-${frDay(dateofdeath) || 'INSÉRER LA DATE DU DÉCÈS ICI'}	
-
-[tr][td]LIEU DU DÉCÈS[/td][td]
-${placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'INSÉRER LE LIEU DU DÉCÈS ICI'}	
-
-[tr][td]ID PATIENT[/td][td]
-${String(formData.patientID || '').trim() || 'Non applicable'}	
-[/table][br][/br]
-[list=none][left]
-SIGNATURE DU MÉDECIN LÉGISTE:
-NOM: ${coronerEmployee}
-
-SIGNATURE DU TÉMOIN:
-NOM: ${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}
-
-DATE D'ÉMISSION DU CERTIFICAT: ${frDay(date)}
-[/left][/list]
-
-[br][hr][/hr]
-[center]Note: Ceci est la copie originale du certificat de décès. Des copies supplémentaires peuvent être demandées moyennant des frais additionnels[/center][br][/br][/divbox]`
-    return bbCode;
-    };
+    return blocks.filter(Boolean).join('\n');
+};
 export default generateCertificate;

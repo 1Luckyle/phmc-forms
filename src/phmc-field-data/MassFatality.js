@@ -52,6 +52,7 @@ const isDecedentComplete = (dec) => {
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId, onRemove, showRemoveButton }) => (
     <Button
         variant="link"
+        className="section-toggle section-toggle--item"
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={`collapse-${sectionId}`}

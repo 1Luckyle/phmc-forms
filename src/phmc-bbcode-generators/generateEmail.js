@@ -1,10 +1,11 @@
 import { getPrice } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
+import { sectionBanner, infoTable, paragraph, DMEC_LOGO } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
 const NOT_FILLED = 'Non renseigné';
-const CORONER_LOGO = 'https://phmc-tools.com/img/ItaoQkO.webp';
+const CORONER_LOGO = DMEC_LOGO;
 
 const generateEmail = (formData) => {
     const {
@@ -45,27 +46,32 @@ const generateEmail = (formData) => {
     const discords = joinList(formData.decedentOOC, formData.reportDecedentOOC);
     const patientId = String(formData.patientID || '').trim();
     const decedentBlock = names || discords || patientId
-        ? `
-[b]Défunt(s) concerné(s) :[/b] ${names || NOT_FILLED}${discords ? ` (( Discord : ${discords} ))` : ''}${patientId ? ` — ID Patient : ${patientId}` : ''}
-`
+        ? `${names || NOT_FILLED}${discords ? ` (( Discord : ${discords} ))` : ''}${patientId ? ` — ID Patient : ${patientId}` : ''}`
         : '';
 
-    let bbCode = `${header}
-[hr][/hr]
+    const attachments = (additionalReports || []).filter((report) => String(report || '').trim());
+    const attachmentBlocks = attachments.map((report, index) => `[altspoiler=Rapport du coroner - Additionnel ${index + 1}]
+${report}
+[code]
+${report}
+[/code]
+[/altspoiler]`);
 
-DESTINATAIRE: ${requestingOfficer} - ${getDepartmentFullName(department)}
-EXPÉDITEUR: ${coronerEmployee} (${coronerEmail})
-OBJET: Documents du rapport de décès
+    const recipient = `${requestingOfficer} - ${getDepartmentFullName(department)}`;
+    const blocks = [
+        header,
+        sectionBanner('Courriel du Bureau du Coroner', { size: 115 }),
+        infoTable([
+            [['Destinataire', recipient], ['Expéditeur', `${coronerEmployee} (${coronerEmail})`]],
+            [['Objet', 'Documents du rapport de décès']],
+            ...(decedentBlock ? [[['Défunt(s) concerné(s)', decedentBlock]]] : []),
+        ]),
+        paragraph(`À l'attention de: [b]${getDepartmentFullName(department)}[/b] - [b]${requestingOfficer}[/b]
 
-À l'attention de: [b]${getDepartmentFullName(department)}[/b] - [b]${requestingOfficer}[/b]
-${decedentBlock}
-Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel. 
-
-[b]INFORMATIONS / DEMANDE(S) D'AUTOPSIE[/B] 
-Si vous avez besoin d'une autopsie, veuillez suivre ce lien et suivre les instructions: [url=]Portail d'autopsie[/url].
-
-
-[altspoiler=FAQ sur la demande d'autopsie]
+Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel.`),
+        sectionBanner('Informations / demande(s) d\'autopsie', { size: 115 }),
+        paragraph('Si vous avez besoin d\'une autopsie, veuillez suivre ce lien et suivre les instructions: [url=]Portail d\'autopsie[/url].'),
+        `[altspoiler=FAQ sur la demande d'autopsie]
 1) Comment puis-je demander un rapport d'autopsie et/ou un certificat de décès?
 Les autopsies et les certificats de décès peuvent être utiles dans diverses situations, en particulier lorsque la cause du décès joue un rôle essentiel. Nos professionnels s'efforcent de traiter chaque demande dans les délais les plus brefs. Cependant, étant donné que l'effort de documentation est immense, des frais de demande sont associés. Dès réception du paiement, le rapport ou le certificat vous sera envoyé directement.
 
@@ -82,40 +88,28 @@ ${paymentInstructions}
 De plus, s'il s'agit d'un PK, veuillez utiliser John/Jane Doe avec le nom de leur personnage entre parenthèses OOC. Ex: John Doe (( James Smith ))
 
 [url=]Cliquez ici pour contacter un médecin légiste afin d'obtenir le feu vert![/url] ))
-[/altspoiler]
-Si vous avez d'autres questions, n'hésitez pas à contacter la personne suivante:
-[list] ${coronerEmployee}
-[*] Numéro de téléphone: ${coronerPHNumber}
-[*] Adresse e-mail: ${coronerEmail}
-[*] (( Discord: ${coronerDiscord} ))[/list]
-
-[altspoiler=Rapport du coroner]
+[/altspoiler]`,
+        sectionBanner('Pour toute autre question', { size: 115 }),
+        infoTable([
+            [['Médecin légiste', `${coronerRank} ${coronerEmployee}`], ['Numéro de téléphone', coronerPHNumber]],
+            [['Adresse e-mail', coronerEmail], ['(( Discord', `${coronerDiscord} ))`]],
+        ]),
+        sectionBanner('Documents joints', { size: 115 }),
+        `[altspoiler=Rapport du coroner]
 ${deathReport}
 [code]
 ${deathReport}
 
 [/code]
-[/altspoiler]
-${additionalReports && additionalReports.length > 0
-            ? additionalReports
-                .filter(report => report.trim())
-                .map((report, index) => `
-[altspoiler=Rapport du coroner - Additionnel ${index + 1}]
-${report}
-[code]
-${report}
-[/code]
-[/altspoiler]`).join('\n\n')
-            : ''
-        }
-
-Cordialement
+[/altspoiler]`,
+        ...attachmentBlocks,
+        paragraph(`Cordialement
 ${coronerRank} ${coronerEmployee}
-Pillbox Hill Medical Center - Pathologie et Médecine Légale
+Pillbox Hill Medical Center - Pathologie et Médecine Légale`),
+        `[size=75]Le contenu de ce courriel est destiné uniquement à la personne ou à l'entité à laquelle il est adressé. Ce courriel peut contenir des informations confidentielles. Si vous n'êtes pas la personne à qui ce message est adressé, sachez que toute utilisation, reproduction ou distribution de ce message est strictement interdite. Si vous avez reçu ceci par erreur, veuillez contacter l'expéditeur et supprimer immédiatement ce courriel et toutes les pièces jointes.[/size]`,
+    ];
 
-[size=75]Le contenu de ce courriel est destiné uniquement à la personne ou à l'entité à laquelle il est adressé. Ce courriel peut contenir des informations confidentielles. Si vous n'êtes pas la personne à qui ce message est adressé, sachez que toute utilisation, reproduction ou distribution de ce message est strictement interdite. Si vous avez reçu ceci par erreur, veuillez contacter l'expéditeur et supprimer immédiatement ce courriel et toutes les pièces jointes.[/size]`;
-
-    return bbCode;
+    return blocks.filter(Boolean).join('\n');
 };
 
 export default generateEmail;
