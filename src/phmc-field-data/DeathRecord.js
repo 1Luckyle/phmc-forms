@@ -129,7 +129,7 @@ const DeathRecord = ({
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                             <ComboSelect name="ethnicity" value={formData.ethnicity || ''} onChange={set('ethnicity')} options={ETHNICITY_OPTIONS} placeholder="Ethnicité du défunt (choisir ou écrire)" />
                         </div>
                     </div>
@@ -157,10 +157,10 @@ const DeathRecord = ({
                         <>
                             <Form.Label className="form-section-title">Description physique</Form.Label>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                                     <ComboSelect name="hairColor" value={formData.hairColor || ''} onChange={set('hairColor')} options={HAIR_COLORS} placeholder="Couleur des cheveux" />
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                                     <ComboSelect name="eyeColor" value={formData.eyeColor || ''} onChange={set('eyeColor')} options={EYE_COLORS} placeholder="Couleur des yeux" />
                                 </div>
                             </div>

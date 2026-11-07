@@ -9,14 +9,20 @@ import React from 'react';
 import Select from 'react-select';
 import { Form } from 'react-bootstrap';
 import { darkSelectStyles } from './selectStyles';
-import { aggregatePresetText } from '../../constants/historyPresets';
+import { aggregatePresetText, HISTORY_FIELD_META, historyPlaceholder } from '../../constants/historyPresets';
 
 export { aggregatePresetText };
 
 // « Aucun(e) … » exclut les autres choix, et inversement.
 const isNone = (label) => /^aucun/i.test(String(label || ''));
 
-const PresetTextField = ({ name, formData, setFormData, presets = [], placeholder, rows = 2, selectPlaceholder = 'Choisir dans la liste (plusieurs choix possibles)…' }) => {
+const PresetTextField = ({ name, formData, setFormData, presets = [], placeholder: placeholderProp, rows = 2, selectPlaceholder: selectPlaceholderProp }) => {
+    // Pour les champs d'historique, le texte d'aide et le mode de choix viennent de HISTORY_FIELD_META (un champ à choix unique n'accepte qu'une réponse).
+    const meta = HISTORY_FIELD_META[name] || {};
+    const single = meta.mode === 'single';
+    const groups = meta.groups || [];
+    const placeholder = placeholderProp || historyPlaceholder(name);
+    const selectPlaceholder = selectPlaceholderProp || (single ? 'Choisir dans la liste…' : 'Choisir dans la liste (plusieurs choix possibles)…');
     const presetsKey = `${name}Presets`;
     const freeKey = `${name}Free`;
     const structured = formData?.[presetsKey] !== undefined || formData?.[freeKey] !== undefined;
@@ -30,24 +36,30 @@ const PresetTextField = ({ name, formData, setFormData, presets = [], placeholde
     const handleSelect = (options) => {
         let values = (options || []).map((option) => option.value);
         const lastAdded = values.find((value) => !selected.includes(value));
-        if (lastAdded && isNone(lastAdded)) values = [lastAdded];
-        else if (lastAdded) values = values.filter((value) => !isNone(value));
+        if (lastAdded && single) values = [lastAdded];
+        else if (lastAdded && isNone(lastAdded)) values = [lastAdded];
+        else if (lastAdded) {
+            values = values.filter((value) => !isNone(value));
+            // Un choix retire ceux de son groupe d'exclusion (ex. « Active » remplace « Inactive »).
+            const group = groups.find((list) => list.includes(lastAdded));
+            if (group) values = values.filter((value) => value === lastAdded || !group.includes(value));
+        }
         update(values, free);
     };
 
     return (
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
             <Select
                 isMulti
                 name={name}
-                closeMenuOnSelect={false}
+                closeMenuOnSelect={single}
                 value={selected.map((value) => ({ label: value, value }))}
                 onChange={handleSelect}
                 options={presets.map((preset) => ({ label: preset, value: preset }))}
                 placeholder={selectPlaceholder}
                 noOptionsMessage={() => 'Aucun choix'}
-                styles={darkSelectStyles}
-                className="form-control"
+                styles={{ ...darkSelectStyles, container: (base) => ({ ...base, width: '100%' }) }}
+                className="preset-select"
                 aria-label={placeholder}
             />
             <Form.Control

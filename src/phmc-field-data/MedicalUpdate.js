@@ -12,16 +12,19 @@ import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 import PatientGeneralInfo from './shared/PatientGeneralInfo';
 import EmergencyContactFields from './shared/EmergencyContactFields';
 import PresetTextField from './shared/PresetTextField';
+import NameFields from './shared/NameFields';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
+
+const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName' };
 
 // Champs de l'identité actuelle du patient (en-tête) et des nouvelles informations générales (section « Informations générales »).
 const CURRENT_FIELDS = {
     id: 'patientID', title: 'patientTitleOptions', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'date',
-    address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
+    address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', email: 'patientEmail', discord: 'patientDiscord',
 };
 const NEW_FIELDS = {
     title: 'patientTitleNew', full: 'patientNameNew', first: 'patientFirstNameNew', middle: 'patientMiddleNameNew', last: 'patientLastNameNew', dob: 'patientDateOfBirthNew',
-    gender: 'patientGenderNew', race: 'patientRaceNew', address: 'patientAddressNew', zip: 'patientZIPNew', phone: 'patientPHNew', phoneType: 'patientPhoneTypeNew', discord: 'patientDiscordNew',
+    gender: 'patientGenderNew', race: 'patientRaceNew', address: 'patientAddressNew', zip: 'patientZIPNew', phone: 'patientPHNew', discord: 'patientDiscordNew',
 };
 
 const customSelectStyles = {
@@ -101,7 +104,6 @@ const MedicalRelease = ({
     handleChange,
     setFormData,
     patientTitleOptions,
-    patientPhoneOptions,
     patientBloodType,
     numberChildren,
     maritalStatus,
@@ -167,7 +169,7 @@ const MedicalRelease = ({
         <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', date: 'dateOfBirth', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
         <PatientGeneralInfo
             formData={formData} setFormData={setFormData} handleChange={handleChange} fields={CURRENT_FIELDS}
-            patientTitleOptions={patientTitleOptions || []} patientPhoneOptions={patientPhoneOptions} guard={minorGuard}
+            patientTitleOptions={patientTitleOptions || []} guard={minorGuard}
         />
 
             <Form.Label>Options de mise à jour du dossier médical</Form.Label>
@@ -198,7 +200,7 @@ const MedicalRelease = ({
         <Form.Label>Mettre à jour les informations générales</Form.Label>
         <PatientGeneralInfo
             formData={formData} setFormData={setFormData} handleChange={handleChange} fields={NEW_FIELDS}
-            patientTitleOptions={patientTitleNew || []} patientPhoneOptions={patientPhoneOptions} guard={newTitleGuard}
+            patientTitleOptions={patientTitleNew || []} guard={newTitleGuard}
         />
                 </>            </div>
 
@@ -208,7 +210,7 @@ const MedicalRelease = ({
             {formData.UpdateMedicalFile?.includes('EmergencyContact') && (
                     <div style={{ marginTop: '20px' }}>
                         <Form.Label>Mettre à jour le contact d'urgence</Form.Label>
-                        <EmergencyContactFields formData={formData} handleChange={handleChange} patientPhoneOptions={patientPhoneOptions} />
+                        <EmergencyContactFields formData={formData} handleChange={handleChange} />
                     </div>
             )}
 
@@ -231,12 +233,12 @@ const MedicalRelease = ({
                         </Form.Select>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} placeholder="Autres allergies ou précisions" />
-                        <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} placeholder="Autres médicaments, doses ou précisions" />
+                        <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} />
+                        <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <PresetTextField name="patientChronicDiseases" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientChronicDiseases} placeholder="Autres conditions chroniques ou précisions" />
-                        <PresetTextField name="patientNotes" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientNotes} placeholder="Autres traumatismes, blessures ou précisions" />
+                        <PresetTextField name="patientChronicDiseases" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientChronicDiseases} />
+                        <PresetTextField name="patientNotes" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientNotes} />
                     </div>
                 </></div>
             )}
@@ -247,15 +249,15 @@ const MedicalRelease = ({
 
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
-                    <PresetTextField name="patientMental" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientMental} placeholder="Autres troubles ou précisions" />
-                    <PresetTextField name="patientTherapy" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientTherapy} placeholder="Autres thérapies ou précisions" />
-                <PresetTextField name="patientTriggers" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientTriggers} placeholder="Autres déclencheurs ou précisions" />
+                    <PresetTextField name="patientMental" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientMental} />
+                    <PresetTextField name="patientTherapy" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientTherapy} />
+                <PresetTextField name="patientTriggers" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientTriggers} />
 
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px' }}>
 
-                    <PresetTextField name="patientSupport" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSupport} placeholder="Autres soutiens ou précisions" />
-                    <PresetTextField name="patientHarm" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientHarm} placeholder="Précisions" />
+                    <PresetTextField name="patientSupport" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSupport} />
+                    <PresetTextField name="patientHarm" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientHarm} />
 
                                 </div>
 
@@ -269,9 +271,9 @@ const MedicalRelease = ({
                     <>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}> {/* Added marginTop */}
 
-                    <PresetTextField name="patientFam" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientFam} placeholder="Autres membres de la famille ou précisions" />
-                    <PresetTextField name="patientGenetic" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientGenetic} placeholder="Autres maladies génétiques ou précisions" />
-                    <PresetTextField name="patientFamSocial" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientFamSocial} placeholder="Autres antécédents ou précisions" />
+                    <PresetTextField name="patientFam" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientFam} />
+                    <PresetTextField name="patientGenetic" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientGenetic} />
+                    <PresetTextField name="patientFamSocial" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientFamSocial} />
                 </div></></div>
             )}
             {formData.UpdateMedicalFile?.includes('SocialInformation') && (
@@ -303,7 +305,9 @@ const MedicalRelease = ({
                     </Form.Select>
 </div>                 <div style={{ display: 'flex', gap: '10px' }}>
 
-                    <PresetTextField name="patientReligion" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientReligion} placeholder="Autres considérations ou précisions" />
+                    <PresetTextField name="patientReligion" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientReligion} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
                     <Form.Select
                         name="financialStatus"
                         value={formData.financialStatus || ""}
@@ -322,20 +326,22 @@ const MedicalRelease = ({
                                     <Form.Label>Mettre à jour les informations sur le mode de vie</Form.Label>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <PresetTextField name="patientSmoker" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSmoker} placeholder="Précisions (quantité, durée…)" />
-                <PresetTextField name="patientAlcohol" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAlcohol} placeholder="Précisions (fréquence, quantité…)" />
-                <PresetTextField name="patientDrugs" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientDrugs} placeholder="Autres substances, fréquence ou précisions" />
+                    <PresetTextField name="patientSmoker" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSmoker} />
+                <PresetTextField name="patientAlcohol" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAlcohol} />
+                <PresetTextField name="patientDrugs" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientDrugs} />
             </div>          
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <PresetTextField name="patientExercise" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientExercise} placeholder="Précisions" />
-                <PresetTextField name="patientDiet" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientDiet} placeholder="Précisions" />
-                <PresetTextField name="patientSleep" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSleep} placeholder="Précisions" />
+                    <PresetTextField name="patientExercise" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientExercise} />
+                <PresetTextField name="patientDiet" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientDiet} />
+                <PresetTextField name="patientSleep" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSleep} />
 
             </div>            
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <PresetTextField name="patientSexLife" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSexLife} placeholder="Précisions" />
-                <PresetTextField name="patientJobRisks" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientJobRisks} placeholder="Autres risques ou précisions" />
-                <PresetTextField name="patientHazards" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientHazards} placeholder="Autres dangers ou précisions" />
+                    <PresetTextField name="patientSexLife" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientSexLife} />
+                <PresetTextField name="patientJobRisks" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientJobRisks} />
+                <PresetTextField name="patientHazards" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientHazards} />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
                     as="textarea"
                     rows="2"
@@ -407,14 +413,12 @@ const MedicalRelease = ({
 
                         {formData.attorney === 'Yes' && (
                             <>
-                                <Form.Control
-                                    type="text"
-                                    name="attorneyName"
-                                    value={formData.attorneyName}
-                                    onChange={handleChange}
-                                    placeholder="Prénom & Nom du mandataire"
-                                    className="form-control"
-                                />
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <NameFields
+                                        formData={formData} setFormData={setFormData} handleChange={handleChange} fields={ATTORNEY_FIELDS}
+                                        placeholders={{ first: 'Prénom du mandataire', middle: 'Deuxième prénom du mandataire', last: 'Nom du mandataire' }}
+                                    />
+                                </div>
                                 <Form.Control
                                     type="text"
                                     name="attorneyRelation"

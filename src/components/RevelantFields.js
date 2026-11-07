@@ -36,7 +36,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientAllergies', 'patientCurrentMedicine', 'patientChronicDiseases', 'patientNotes',
                 'date', 'patientID', 'patientTherapy', 'patientTriggers', 'patientSupport',
                 'patientHarm', 'patientFam', 'patientGenetic', 'patientMental', 'patientFamSocial',
-                'patientReligion', 'attorneyName', 'attorneyRelation', 'attorneyPH', 'patientDateOfBirth',
+                'patientReligion', 'attorneyName', 'attorneyFirstName', 'attorneyMiddleName', 'attorneyLastName', 'attorneyRelation', 'attorneyPH', 'patientDateOfBirth',
                 'patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet',
                 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther',
                 'dnrOther', 'decedentOOC', 'maritalStatus', 'numberChildren', 'financialStatus', 'dnr', 'dnrOrder', 'attorney',
@@ -240,7 +240,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'PurposeMedicalInformationReleaseFormat',
                 'payNow', 
                 'paymentProofPhotos',
-                'patientID', 'patientTitle', 'patientGender', 'patientPhoneType',
+                'patientID', 'patientTitle', 'patientGender', 
                 'guardianName', 'guardianRelation', 'patientEmancipated',
             ];
         case 25: // Patient File - Basic
@@ -445,10 +445,10 @@ const baseRelevantFields = (bbCodeVersion) => {
 
 // Champs ajoutés aux dossiers patient (Basique 25, Avancé 3, Mise à jour 26) : nom en trois parties, type de téléphone, et pour chaque champ d'historique
 // à choix par défaut les choix cochés (`…Presets`) et le texte libre (`…Free`) qui composent le texte regroupé.
-const PATIENT_FILE_EXTRA = ['patientZIP', 'patientFirstName', 'patientMiddleName', 'patientLastName', 'patientPhoneType', 'patientEmergencyContactPhoneType'];
+const PATIENT_FILE_EXTRA = ['patientZIP', 'patientFirstName', 'patientMiddleName', 'patientLastName'];
 const PATIENT_FILE_UPDATE_EXTRA = [
     'patientZIPNew',
-    'patientFirstNameNew', 'patientMiddleNameNew', 'patientLastNameNew', 'patientPhoneTypeNew', 'patientPHNew', 'patientDiscordNew', 'patientRaceNew', 'patientAddressNew',
+    'patientFirstNameNew', 'patientMiddleNameNew', 'patientLastNameNew', 'patientPHNew', 'patientDiscordNew', 'patientRaceNew', 'patientAddressNew',
     'patientGenderNew', 'patientTitleNew', 'patientNameNew', 'patientDateOfBirthNew',
 ];
 const withPresetFields = (fields) => [...fields, ...Object.keys(HISTORY_PRESETS).flatMap((key) => [`${key}Presets`, `${key}Free`])];

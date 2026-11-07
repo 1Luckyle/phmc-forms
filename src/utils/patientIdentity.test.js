@@ -1,4 +1,4 @@
-import { splitFullName, joinFullName, toFrenchGender, phoneWithType, titleLabel } from './patientIdentity';
+import { splitFullName, joinFullName, toFrenchGender, titleLabel } from './patientIdentity';
 import { aggregatePresetText } from '../phmc-field-data/shared/PresetTextField';
 
 test('découpage du nom complet', () => {
@@ -9,13 +9,11 @@ test('découpage du nom complet', () => {
     expect(joinFullName('Jane', '', 'Doe')).toBe('Jane Doe');
 });
 
-test('genre, téléphone et titre en français', () => {
+test('genre et titre en français', () => {
     expect(toFrenchGender('Male')).toBe('Homme');
     expect(toFrenchGender('Female')).toBe('Femme');
     expect(toFrenchGender('Homme')).toBe('Homme');
     expect(toFrenchGender('Non-binaire')).toBe('Non-binaire');
-    expect(phoneWithType('555-0142', 'Home')).toBe('555-0142 (Domicile)');
-    expect(phoneWithType('555-0142', '')).toBe('555-0142');
     expect(titleLabel('Mrs')).toBe('Mme');
     expect(titleLabel('Mstr')).toBe('Maître');
 });

@@ -3,15 +3,15 @@
 // Bloc « Informations générales » commun aux dossiers patient (Basique, Avancé, Mise à jour) : ID patient d'abord, puis titre et nom en trois champs,
 // date de naissance, genre et ethnicité (listes avec choix par défaut), adresse, téléphone (avec son type), e-mail et Discord.
 // `fields` associe chaque rôle au NOM du champ du formulaire ; un rôle absent n'est pas affiché (ex. pas de genre dans l'en-tête d'une mise à jour).
-//   { id, title, full, first, middle, last, dob, gender, race, address, phone, phoneType, email, discord }
+//   { id, title, full, first, middle, last, dob, gender, race, address, phone, email, discord }
 import React, { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import usePatientNameParts from '../../hooks/usePatientNameParts';
 import ZipCityField from '../../components/ZipCityField';
 import ComboSelect from './ComboSelect';
-import { GENDER_OPTIONS, ETHNICITY_OPTIONS, PHONE_TYPE_LABELS, toFrenchGender } from '../../utils/patientIdentity';
+import { GENDER_OPTIONS, ETHNICITY_OPTIONS, toFrenchGender } from '../../utils/patientIdentity';
 
-const Row = ({ children, first = false }) => <div style={{ display: 'flex', gap: '10px', marginTop: first ? 0 : '1rem' }}>{children}</div>;
+const Row = ({ children, first = false }) => <div style={{ display: 'flex', gap: '10px', marginTop: first ? 0 : '1rem', flexWrap: 'wrap' }}>{children}</div>;
 
 // Liste de choix simple : la valeur actuelle reste visible même si elle n'est pas dans la liste (ancien rapport).
 export const SimpleSelect = ({ name, value, onChange, options, placeholder, disabled = false, title, style }) => {
@@ -26,9 +26,7 @@ export const SimpleSelect = ({ name, value, onChange, options, placeholder, disa
     );
 };
 
-export const phoneTypeOptions = (provided) => (provided && provided.length > 0 ? provided : Object.entries(PHONE_TYPE_LABELS).map(([value, label]) => ({ value, label })));
-
-const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patientTitleOptions = [], patientPhoneOptions, guard }) => {
+const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patientTitleOptions = [], guard }) => {
     usePatientNameParts(formData, setFormData, { full: fields.full, first: fields.first, middle: fields.middle, last: fields.last });
     // Anciennes valeurs du genre (« Male », « Female »…) → libellés français de la liste.
     const genderValue = fields.gender ? formData[fields.gender] : '';
@@ -47,7 +45,7 @@ const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patie
             {fields.id && <Row first>{text(fields.id, 'ID Patient')}</Row>}
             <Row first={!fields.id}>
                 <SimpleSelect
-                    name={fields.title} value={formData[fields.title]} onChange={handleChange} placeholder="Titre" style={{ flex: '0 0 150px' }}
+                    name={fields.title} value={formData[fields.title]} onChange={handleChange} placeholder="Titre" style={{ flex: '0 0 150px', minWidth: '130px' }}
                     options={patientTitleOptions.map((option) => ({ value: option.value, label: guard ? guard.label(option) : option.label, disabled: guard ? guard.isDisabled(option) : false }))}
                     disabled={guard?.locked} title={guard?.hint}
                 />
@@ -61,24 +59,20 @@ const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patie
                     <SimpleSelect name={fields.gender} value={formData[fields.gender]} onChange={handleChange} options={GENDER_OPTIONS} placeholder="Genre à l'état civil du patient" />
                 )}
                 {fields.race && (
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <ComboSelect name={fields.race} value={formData[fields.race] || ''} onChange={set(fields.race)} options={ETHNICITY_OPTIONS} placeholder="Ethnicité du patient (choisir ou écrire)" />
+                    <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+                        <ComboSelect name={fields.race} value={formData[fields.race] || ''} onChange={set(fields.race)} options={ETHNICITY_OPTIONS} placeholder="Ethnicité du patient" />
                     </div>
                 )}
             </Row>
             <Row>
                 {text(fields.address, 'Adresse (Numéro, Étage, Rue)')}
                 {fields.zip && (
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                         <ZipCityField zip={formData[fields.zip] || ''} onZipChange={(zip) => setFormData((prev) => ({ ...prev, [fields.zip]: zip }))} placeholder="Code postal" />
                     </div>
                 )}
             </Row>
             <Row>
-                <SimpleSelect
-                    name={fields.phoneType} value={formData[fields.phoneType]} onChange={handleChange} placeholder="Type de téléphone"
-                    options={phoneTypeOptions(patientPhoneOptions)} style={{ flex: '0 0 170px' }}
-                />
                 {text(fields.phone, 'Numéro de téléphone du patient')}
                 {fields.email && <Form.Control type="email" name={fields.email} value={formData[fields.email] || ''} onChange={handleChange} placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)" className="form-control" />}
                 {fields.discord && text(fields.discord, '(( Pseudo Discord du patient ))')}

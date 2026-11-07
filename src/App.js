@@ -181,7 +181,6 @@ const initialFormData = {
     patientMiddleName: '',
     patientLastName: '',
     patientEmail: '',
-    patientPhoneType: '',
     patientZIP: '',
     dnr: '',
     dnrOrder: '',

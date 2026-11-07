@@ -986,6 +986,8 @@ input[type="checkbox"]:checked::after {
    au lieu d'écraser les champs et de tronquer leur texte. */
 .form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):not([style*="align-items"]) {
     flex-wrap: wrap;
+    /* Chaque champ garde sa propre hauteur : un champ à plusieurs lignes (liste à choix, texte) ne fait plus gonfler ses voisins. */
+    align-items: flex-start;
 }
 
 .form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):not([style*="align-items"]) > .form-control,

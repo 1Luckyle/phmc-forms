@@ -1,7 +1,7 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
-import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { titleLabel } from '../utils/patientIdentity';
 import { placeWithCity } from '../utils/places';
 import { frDay } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -31,8 +31,6 @@ const generateBasicPatientFile = (formData) => {
         patientDateOfBirth = NOT_FILLED,
         patientID = NOT_FILLED,
     } = withoutBlanks(formData);
-    // Numéro suivi de son type (« 555-0142 (Mobile) ») ; « Non renseigné » reste tel quel.
-    const phone = (number, type) => (number === NOT_FILLED ? number : phoneWithType(number, type));
     // Payment/Exempt logic
         let paymentSection = '';
         if (formData.filledByStaff) {
@@ -58,12 +56,12 @@ ${sectionBanner(`Informations générales`, { size: 115 })}
 [table][tr][td] Titre: ${titleLabel(patientTitle)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${placeWithCity(patientAddress === NOT_FILLED ? '' : patientAddress, formData.patientZIP) || NOT_FILLED}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
-[tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 ${sectionBanner(`Contact d'urgence`, { size: 115 })}
 [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-[tr][td] Numéro de téléphone: ${phone(patientEmergencyContactNumber, formData.patientEmergencyContactPhoneType)} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
+[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table]
 ${sectionBanner(`Historique médical`, { size: 115 })}
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]

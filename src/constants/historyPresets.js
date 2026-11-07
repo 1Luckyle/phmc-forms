@@ -80,3 +80,39 @@ export const HISTORY_PRESETS = {
 
 // Texte regroupé d'un champ d'historique : « choix 1 ; choix 2 ; texte libre ».
 export const aggregatePresetText = (selected, free) => [...(selected || []), String(free || '').trim()].filter(Boolean).join(' ; ');
+
+// Règles de saisie de chaque champ d'historique : le sujet (pour le texte d'aide « Écrire les autres … ») et le mode de choix.
+//  - mode 'single' : UN seul choix (habitudes qui s'excluent : une seule réponse a du sens) ;
+//  - `groups` : listes de choix qui s'excluent entre eux (un choix du groupe remplace l'autre du même groupe) ;
+//  - sinon plusieurs choix possibles (« Aucun… » exclut les autres).
+export const HISTORY_FIELD_META = {
+    patientAllergies: { subject: 'allergies' },
+    patientCurrentMedicine: { subject: 'médicaments' },
+    patientChronicDiseases: { subject: 'conditions chroniques' },
+    patientNotes: { subject: 'traumatismes ou blessures' },
+    patientMental: { subject: 'troubles' },
+    patientTherapy: { subject: 'thérapies' },
+    patientTriggers: { subject: 'déclencheurs' },
+    patientSupport: { subject: 'soutiens' },
+    patientHarm: { subject: 'éléments' },
+    patientFam: { subject: 'membres de la famille' },
+    patientGenetic: { subject: 'maladies génétiques' },
+    patientFamSocial: { subject: 'antécédents' },
+    patientReligion: {
+        subject: 'considérations religieuses',
+        groups: [['Athée / aucune pratique', 'Chrétien(ne)', 'Catholique', 'Protestant(e)', 'Musulman(e)', 'Juif(ve)', 'Bouddhiste', 'Hindou(e)', 'Témoin de Jéhovah']],
+    },
+    patientSmoker: { subject: 'habitudes de tabac', mode: 'single' },
+    patientAlcohol: { subject: 'habitudes d\'alcool', mode: 'single' },
+    patientDrugs: { subject: 'substances' },
+    patientExercise: { subject: 'habitudes d\'exercice', mode: 'single' },
+    patientDiet: { subject: 'habitudes alimentaires' },
+    patientSleep: { subject: 'habitudes de sommeil', mode: 'single' },
+    patientSexLife: { subject: 'informations sur la vie sexuelle', groups: [['Active', 'Inactive'], ['Un seul partenaire', 'Plusieurs partenaires']] },
+    patientJobRisks: { subject: 'risques professionnels' },
+    patientHazards: { subject: 'dangers environnementaux' },
+};
+export const historyPlaceholder = (name) => {
+    const meta = HISTORY_FIELD_META[name];
+    return meta ? `Écrire les autres ${meta.subject} si indisponible dans la liste ou précisions` : undefined;
+};

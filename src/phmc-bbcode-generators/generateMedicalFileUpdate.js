@@ -1,7 +1,7 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
-import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { titleLabel } from '../utils/patientIdentity';
 import { placeWithCity } from '../utils/places';
 import { frDay, todayFr } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -65,8 +65,6 @@ const generateMedicalFileUpdate = (formData) => {
 
     } = withoutBlanks(formData);
 
-    // Numéro suivi de son type (« 555-0142 (Mobile) ») ; « Non renseigné » reste tel quel.
-    const phone = (number, type) => (number === NOT_FILLED ? number : phoneWithType(number, type));
 
     // Payment/Exempt logic
     let paymentSection = '';
@@ -91,7 +89,7 @@ ${patientName}
 ${sectionBanner(`Informations du patient`, { size: 115 })}
 [table][tr][td] Titre: ${titleLabel(formData.patientTitleOptions || formData.patientTitle || NOT_FILLED)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
 [tr][td] Date de naissance: ${frDay(formData.date || patientDateOfBirth) || NOT_FILLED} [/td][td] Adresse: ${placeWithCity(patientAddress === NOT_FILLED ? '' : patientAddress, formData.patientZIP) || NOT_FILLED}
-[tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
+[tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 ${sectionBanner(`Informations mises à jour`, { size: 115 })}
@@ -105,7 +103,7 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [table][tr][td] Titre: ${titleLabel(patientTitleNew)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientNameNew}
 [tr][td] Date de naissance: ${frDay(patientDateOfBirthNew)} [/td][td] Adresse: ${placeWithCity(patientAddressNew === NOT_FILLED ? '' : patientAddressNew, formData.patientZIPNew) || NOT_FILLED}
 [tr][td] Genre à l'état civil: ${patientGenderNew} [/td][td] Origine ethnique: ${patientRaceNew}
-[tr][td] Numéro de téléphone: ${phone(patientPHNew, formData.patientPhoneTypeNew)} [/td][td] (( Pseudo Discord: ${patientDiscordNew}))
+[tr][td] Numéro de téléphone: ${patientPHNew} [/td][td] (( Pseudo Discord: ${patientDiscordNew}))
 [/table][/altspoiler]`;
     }
 
@@ -114,7 +112,7 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [cbc][color=#FF0000]>[/color] [b] Contact d'urgence[/b]
 [altspoiler=Nouveaux détails du contact d'urgence]
 [table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
-[tr][td] Numéro de téléphone: ${phone(patientEmergencyContactNumber, formData.patientEmergencyContactPhoneType)} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
+[tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table][/altspoiler]`;
     }
 

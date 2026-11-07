@@ -2055,7 +2055,6 @@ function MainApp({
                                         handleImageUpload={handleImageUpload}
                                         removeNotification={removeNotification}
                                         patientTitleOptions={optionize(selectOptions.patientTitle)}
-                                        patientPhoneOptions={optionize(selectOptions.patientPhone)}
                                         purposeOptions={optionize(selectOptions.PurposeMedicalInformationRelease)}
                                         formatOptions={optionize(selectOptions.PurposeMedicalInformationReleaseFormat)}
                                         medicalRecordOptions={optionize(selectOptions.MedicalRecordsRelease)}
@@ -2971,7 +2970,6 @@ function MainAppWrapper() {
         patientMiddleName: '',
         patientLastName: '',
         patientEmail: '',
-        patientPhoneType: '',
         patientZIP: '',
         dnr: '',
         dnrOrder: '',

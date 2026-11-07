@@ -2,7 +2,7 @@ import { staffPaymentLine } from '../utils/patientBilling';
 import { getPrice } from '../utils/pricing';
 import { isMinorPatient } from '../utils/minors';
 import { frDay } from '../utils/reportTitle';
-import { titleLabel, phoneWithType, toFrenchGender } from '../utils/patientIdentity';
+import { titleLabel, toFrenchGender } from '../utils/patientIdentity';
 import { getCitiesSnapshot } from '../utils/cities';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
@@ -95,7 +95,7 @@ ${sectionBanner(`Informations générales`, { size: 115 })}
 [tr][td] Adresse: ${patientAddress} [/td][td] Ville et code postal: ${cityLine}
 [/table]${guardianTable}
 ${sectionBanner(`Coordonnées`, { size: 115 })}
-[table][tr][td] Numéro de téléphone: ${patientPH === NOT_FILLED ? patientPH : phoneWithType(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
+[table][tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
 [/table]
 ${sectionBanner(`Informations de divulgation`, { size: 115 })}
 [table][tr][td] Motif de la divulgation: [/td][td] ${checkbox(purpose === 'Further Treatment')} Traitement ultérieur / Suite de soins ${checkbox(purpose === 'Personal')} Usage personnel ${checkbox(purpose === 'Attorney')} Avocat / Client ${checkbox(purpose === 'Other')} Autre${patientMedInfoReleaseOther ? `: ${patientMedInfoReleaseOther}` : ''}

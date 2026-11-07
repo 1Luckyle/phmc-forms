@@ -9,14 +9,14 @@ jest.mock('firebase/database', () => ({ ref: jest.fn(), onValue: jest.fn(), get:
 const base = {
     patientID: 'PHMC-2752', patientTitle: 'Mrs', patientFirstName: 'Jane', patientMiddleName: 'Marie', patientLastName: 'Doe', patientName: 'Jane Marie Doe',
     patientDateOfBirth: '1990-05-14', patientGender: 'Femme', patientRace: 'Caucasien(ne)', patientAddress: '12 Elgin Ave, étage 3', patientZIP: '90012',
-    patientPH: '555-0142', patientPhoneType: 'Mobile', patientEmail: 'jane@mail.eyefind.fr', patientDiscord: 'jane#1',
-    patientEmergencyContact: 'John Doe', patientEmergencyContactRelation: 'Frère', patientEmergencyContactNumber: '555-0199', patientEmergencyContactPhoneType: 'Home',
+    patientPH: '555-0142', patientEmail: 'jane@mail.eyefind.fr', patientDiscord: 'jane#1',
+    patientEmergencyContact: 'John Doe', patientEmergencyContactRelation: 'Frère', patientEmergencyContactNumber: '555-0199',
     patientBloodType: 'A+', patientAllergies: 'Pénicilline ; Latex ; poussière', patientCurrentMedicine: 'Paracétamol', patientChronicDiseases: 'Asthme', patientNotes: 'Fracture',
     maritalStatus: 'Single', numberChildren: '2', financialStatus: 'MiddleIncome', date: '2026-11-02',
     CarePurposeMedicalInformationRelease: 'Other', patientMedInfoReleaseOther: 'Assurance', PurposeMedicalInformationReleaseFormat: 'CopyofRecords',
     StupidDateFrom: '2026-01-01', StupidDateTo: '2026-10-30', MedicalRecordsRelease: ['ERVisit', 'Other'], MedicalRecordsReleaseOther: 'Radios', phmcEmployee: 'Dr Who',
     UpdateMedicalFile: ['GeneralInformation', 'EmergencyContact', 'Medical History', 'MentalHealth', 'FamilyHistory', 'Lifestyle'], patientTitleOptions: 'Mrs', patientTitleNew: 'Mr',
-    patientFirstNameNew: 'Jane', patientNameNew: 'Jane Smith', patientPHNew: '555-0000', patientPhoneTypeNew: 'Work', patientGenderNew: 'Femme', patientRaceNew: 'Autre',
+    patientFirstNameNew: 'Jane', patientNameNew: 'Jane Smith', patientPHNew: '555-0000', patientGenderNew: 'Femme', patientRaceNew: 'Autre',
     patientMental: 'Dépression', filledByStaff: false, payNow: true, paymentProofPhotos: 'https://img/1.png',
 };
 

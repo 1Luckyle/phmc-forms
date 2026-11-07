@@ -13,10 +13,6 @@ export const ETHNICITY_OPTIONS = [
     'Caucasien(ne)', 'Afro-américain(e)', 'Hispanique / Latino(a)', 'Asiatique', 'Moyen-oriental(e)', 'Amérindien(ne)', 'Océanien(ne)', 'Métis(se)', 'Autre',
 ];
 
-export const PHONE_TYPE_LABELS = { Mobile: 'Mobile', Home: 'Domicile', Work: 'Travail', Other: 'Autre' };
-export const phoneTypeLabel = (value) => PHONE_TYPE_LABELS[value] || String(value || '');
-// « 555-0142 (Mobile) » ; le type est omis s'il n'est pas choisi.
-export const phoneWithType = (number, type) => (number && type ? `${number} (${phoneTypeLabel(type)})` : (number || ''));
 
 // Titre affiché dans les rapports (la valeur enregistrée est celle de la liste : Mr, Mrs…).
 export const TITLE_LABELS = { Mineur: 'Mineur', Mstr: 'Maître', Mr: 'M.', Mrs: 'Mme', Ms: 'Mme/Mlle', Miss: 'Mlle', Other: 'Autre' };

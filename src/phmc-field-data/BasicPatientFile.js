@@ -18,7 +18,7 @@ import { HISTORY_PRESETS } from '../constants/historyPresets';
 
 const GENERAL_FIELDS = {
     id: 'patientID', title: 'patientTitle', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
-    gender: 'patientGender', race: 'patientRace', address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
+    gender: 'patientGender', race: 'patientRace', address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', email: 'patientEmail', discord: 'patientDiscord',
 };
 
 // CollapsibleHeader copié de PatientAdvanced.js
@@ -51,7 +51,6 @@ const BasicPatientFile = ({
     formData,
     handleChange,
     patientTitleOptions,
-    patientPhoneOptions,
     patientBloodType,
     setFormData,
 }) => {
@@ -119,7 +118,7 @@ const BasicPatientFile = ({
                 <div id="collapse-general-info" style={{ marginTop: '1rem' }}>
                     <PatientGeneralInfo
                         formData={formData} setFormData={setFormData} handleChange={handleChange} fields={GENERAL_FIELDS}
-                        patientTitleOptions={patientTitleOptions || []} patientPhoneOptions={patientPhoneOptions} guard={minorGuard}
+                        patientTitleOptions={patientTitleOptions || []} guard={minorGuard}
                     />
                 </div>
             )}
@@ -133,7 +132,7 @@ const BasicPatientFile = ({
             />
             {isContactInfoOpen && (
                 <div id="collapse-contact-info">
-                    <EmergencyContactFields formData={formData} handleChange={handleChange} patientPhoneOptions={patientPhoneOptions} />
+                    <EmergencyContactFields formData={formData} handleChange={handleChange} />
                 </div>
             )}
 
@@ -160,12 +159,12 @@ const BasicPatientFile = ({
                         </Form.Select>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} placeholder="Autres allergies ou précisions" />
-                        <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} placeholder="Autres médicaments, doses ou précisions" />
+                        <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} />
+                        <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
-                        <PresetTextField name="patientChronicDiseases" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientChronicDiseases} placeholder="Autres conditions chroniques ou précisions" />
-                        <PresetTextField name="patientNotes" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientNotes} placeholder="Autres traumatismes, blessures ou précisions" />
+                        <PresetTextField name="patientChronicDiseases" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientChronicDiseases} />
+                        <PresetTextField name="patientNotes" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientNotes} />
                     </div>
                 </div>
             )}

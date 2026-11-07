@@ -16,7 +16,7 @@ import { darkSelectStyles } from './shared/selectStyles';
 // Champs d'identité de la demande de divulgation (prénom, deuxième prénom et nom sont déjà séparés ; pas de nom complet à recomposer).
 const RELEASE_FIELDS = {
     id: 'patientID', title: 'patientTitle', full: null, first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
-    gender: 'patientGender', address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail',
+    gender: 'patientGender', address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', email: 'patientEmail',
 };
 
 // Les anciens brouillons contenaient du texte libre (« 01/10/2026 ») : un champ date n'affiche que AAAA-MM-JJ, tout le reste s'affiche vide.
@@ -27,7 +27,6 @@ const MedicalRelease = ({
     handleChange,
     setFormData,
     patientTitleOptions, // Updated: Was patientTitle
-    patientPhoneOptions, // Updated: Was patientPhone
     purposeOptions,
     formatOptions, // Updated: Was PurposeMedicalInformationReleaseFormat
     medicalRecordOptions, // Updated: Was MedicalRecordsRelease
@@ -94,7 +93,7 @@ const MedicalRelease = ({
         <Form.Group className="mb-3">
             <PatientGeneralInfo
                 formData={formData} setFormData={setFormData} handleChange={handleChange} fields={RELEASE_FIELDS}
-                patientTitleOptions={patientTitleOptions || []} patientPhoneOptions={patientPhoneOptions} guard={minorGuard}
+                patientTitleOptions={patientTitleOptions || []} guard={minorGuard}
             />
             {isMinor && (
                 <div className="mt-3 mb-3 p-3 border rounded" style={{ borderColor: '#e3b341' }}>

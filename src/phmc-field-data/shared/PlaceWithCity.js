@@ -9,7 +9,7 @@ import ZipCityField from '../../components/ZipCityField';
 const PlaceWithCity = ({ formData, setFormData, handleChange, addressName, zipName, placeholder = 'Adresse (Numéro, Étage, Rue)' }) => (
     <>
         <Form.Control type="text" name={addressName} value={formData[addressName] || ''} onChange={handleChange} placeholder={placeholder} className="form-control" />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
             <ZipCityField zip={formData[zipName] || ''} onZipChange={(zip) => setFormData((prev) => ({ ...prev, [zipName]: zip }))} placeholder="Code postal" />
         </div>
     </>

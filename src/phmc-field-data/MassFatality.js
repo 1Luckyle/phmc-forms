@@ -295,7 +295,7 @@ const MassFatality = ({
                             <Form.Label>Lieu du décès</Form.Label>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <Form.Control type="text" value={dec.placeOfDeath} placeholder="Lieu du décès (Numéro, Étage, Rue)" onChange={(e) => updateDecedent(idx, 'placeOfDeath', e.target.value)} data-guide="Adresse du lieu où le défunt est décédé." />
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                                     <ZipCityField zip={dec.placeOfDeathZip || ''} onZipChange={(zip) => updateDecedent(idx, 'placeOfDeathZip', zip)} placeholder="Code postal" />
                                 </div>
                             </div>

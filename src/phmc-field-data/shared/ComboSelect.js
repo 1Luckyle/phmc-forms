@@ -18,8 +18,7 @@ const ComboSelect = ({ name, value, onChange, options = [], placeholder = 'Chois
             isClearable={isClearable}
             formatCreateLabel={(input) => `Utiliser « ${input} »`}
             noOptionsMessage={() => 'Aucun choix : écrivez votre valeur'}
-            styles={darkSelectStyles}
-            className="form-control"
+            styles={{ ...darkSelectStyles, container: (base) => ({ ...base, width: '100%' }) }}
         />
     );
 };
