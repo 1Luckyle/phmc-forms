@@ -20,6 +20,7 @@ import { startPriceSync } from './utils/pricing';
 import { startFormRulesSync } from './utils/formRules';
 import { startCustomRolesSync } from './utils/customRoles';
 import ExportProgressModal from './components/ExportProgressModal';
+import { isChunkLoadError, reloadOnceForNewVersion } from './utils/chunkReload';
 
 // --- START: Fallback Error Reporting ---
 const discordErrorWebhookQueue = [];
@@ -119,6 +120,11 @@ init({
 console.log("Sentry has been initialized.");
 window.Sentry = Sentry;
 console.log("Sentry has been initialized and exposed on window.Sentry");
+
+// Chargement d'un fichier d'une ancienne version (import dynamique hors d'un composant paresseux) : on recharge la page.
+window.addEventListener('unhandledrejection', (event) => {
+    if (isChunkLoadError(event.reason)) reloadOnceForNewVersion();
+});
 
 // --- Global Error Handling Setup ---
 window.onerror = (message, source, lineno, colno, errorObject) => {

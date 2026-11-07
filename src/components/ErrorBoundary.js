@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import * as Sentry from "@sentry/react";
+import { isChunkLoadError, reloadOnceForNewVersion } from '../utils/chunkReload';
 
 const notificationStyle = {
     position: 'fixed',
@@ -42,14 +43,29 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    // Nouvelle version déployée pendant que la page était ouverte : on recharge, sans alerter Sentry.
+    if (isChunkLoadError(error) && reloadOnceForNewVersion()) return;
     Sentry.captureException(error, { extra: errorInfo });
   }
 
   handleOkClick = () => {
+    if (isChunkLoadError(this.state.error)) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   }
 
   render() {
+    if (this.state.hasError && isChunkLoadError(this.state.error)) {
+      return (
+        <div style={notificationStyle}>
+          <div style={iconStyle}><i className="fas fa-sync-alt"></i></div>
+          <span>Une nouvelle version du site est disponible. Rechargez la page pour continuer.</span>
+          <button onClick={this.handleOkClick} style={buttonStyle}>Recharger</button>
+        </div>
+      );
+    }
     if (this.state.hasError) {
       return (
         <>
