@@ -35,7 +35,9 @@ const generateEmail = (formData) => {
     };
 
     // En-tête : le logo de l'agence destinataire à gauche, celui du Bureau du Coroner (DMEC) à droite.
-    const agencyLogo = String(agencyDataStore?.[department]?.logo || '').trim();
+    // Dans le BBCode, seule une ADRESSE WEB fonctionne (lien imgBB de l'agence) : jamais le fichier local du dépôt, utilisé seulement à l'écran.
+    const agencyLogo = [agencyDataStore?.[department]?.forumLogo, agencyDataStore?.[department]?.logo]
+        .map((url) => String(url || '').trim()).find((url) => /^https?:\/\//i.test(url)) || '';
     const header = agencyLogo
         ? `[table][tr][td][center][img]${agencyLogo}[/img][/center][td][center][img]${CORONER_LOGO}[/img][/center][/table]`
         : `[center][img]${CORONER_LOGO}[/img][/center]`;
@@ -57,7 +59,8 @@ ${report}
 [/code]
 [/altspoiler]`);
 
-    const recipient = `${requestingOfficer} - ${getDepartmentFullName(department)}`;
+    const agencyName = getDepartmentFullName(department);
+    const recipient = [requestingOfficer, agencyName].map((part) => String(part || '').trim()).filter(Boolean).join(' - ');
     const blocks = [
         header,
         sectionBanner('Courriel du Bureau du Coroner', { size: 115 }),
@@ -66,7 +69,7 @@ ${report}
             [['Objet', 'Documents du rapport de décès']],
             ...(decedentBlock ? [[['Défunt(s) concerné(s)', decedentBlock]]] : []),
         ]),
-        paragraph(`À l'attention de: [b]${getDepartmentFullName(department)}[/b] - [b]${requestingOfficer}[/b]
+        paragraph(`À l'attention de: ${[agencyName, requestingOfficer].map((part) => String(part || '').trim()).filter(Boolean).map((part) => `[b]${part}[/b]`).join(' - ')}
 
 Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel.`),
         sectionBanner('Informations / demande(s) d\'autopsie', { size: 115 }),

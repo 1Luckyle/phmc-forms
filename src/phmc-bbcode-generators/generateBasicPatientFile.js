@@ -1,7 +1,7 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
-import { titleLabel } from '../utils/patientIdentity';
+import { titleLabel, withTitle } from '../utils/patientIdentity';
 import { placeWithCity } from '../utils/places';
 import { frDay } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -60,7 +60,7 @@ ${sectionBanner(`Informations générales`, { size: 115 })}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
 ${sectionBanner(`Contact d'urgence`, { size: 115 })}
-[table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
+[table][tr][td] Prénom (Deuxième Prénom) & Nom: ${withTitle(formData.patientEmergencyContactTitle, patientEmergencyContact)} [/td][td] Relation: ${patientEmergencyContactRelation}
 [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table]
 ${sectionBanner(`Historique médical`, { size: 115 })}

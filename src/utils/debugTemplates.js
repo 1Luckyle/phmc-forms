@@ -120,6 +120,9 @@ const buildHelpers = (ctx = {}) => {
             coronerBadge: coronerPick.badge ?? '',
             coronerRank: coronerPick.rank ?? '',
             coronerDiscord: coronerPick.discord ?? '',
+            // Coordonnées du profil du coroner (comme à la sélection réelle) : jamais de fausses valeurs, sinon le rapport ne reflète pas le profil.
+            coronerPHNumber: coronerPick.phone ?? '',
+            coronerEmail: coronerPick.email ?? '',
         }
         : {};
     // Chef médecin légiste (liste non restreinte) : un autre nom que l'auteur si possible.
@@ -210,7 +213,7 @@ const presetFill = (key, count = 2, free = '', source = HISTORY_PRESETS[key]) =>
 
 // Défunt de démonstration : nom en trois parties (le nom complet est recomposé par le formulaire).
 const decedentParts = (first = 'Pierre', middle = '', last = 'Défunt') => ({
-    decedentFirstName: first, decedentMiddleName: middle, decedentLastName: last, decedentName: [first, middle, last].filter(Boolean).join(' '),
+    decedentTitle: 'Mr', decedentFirstName: first, decedentMiddleName: middle, decedentLastName: last, decedentName: [first, middle, last].filter(Boolean).join(' '),
 });
 
 // Titre cohérent avec l'âge : « Mineur » est imposé sous 18 ans et interdit au-delà.
@@ -233,6 +236,7 @@ const patientBasic = (h) => ({
     patientEmail: h.patient.email,
     patientDiscord: h.patient.discord,
     patientEmergencyContact: 'Marie Testard',
+    patientEmergencyContactTitle: 'Mrs', patientEmergencyContactFirstName: 'Marie', patientEmergencyContactMiddleName: '', patientEmergencyContactLastName: 'Testard',
     patientEmergencyContactRelation: 'Épouse',
     patientEmergencyContactNumber: '555-0199',
     patientEmergencyContactDiscord: 'marie.testard',
@@ -270,7 +274,7 @@ const patientAdvancedExtras = (h) => ({
     attorney: h.opt('attorney'),
     dnrOrder: h.opt('dnrOrder'),
     dnrOther: 'Aucune directive particulière.',
-    attorneyFirstName: 'Marie', attorneyMiddleName: 'Claire', attorneyLastName: 'Testard', attorneyName: 'Marie Claire Testard',
+    attorneyTitle: 'Mrs', attorneyFirstName: 'Marie', attorneyMiddleName: 'Claire', attorneyLastName: 'Testard', attorneyName: 'Marie Claire Testard',
     attorneyRelation: 'Épouse',
     attorneyPH: '555-0199',
 });
@@ -431,9 +435,7 @@ const TEMPLATES = {
     // Email DMEC
     2: (h) => ({
         ...h.coroner,
-        // Numéro et e-mail viennent du profil du coroner (non modifiables dans le formulaire).
-        coronerPHNumber: '555-0100',
-        coronerEmail: 'coroner.test@phmc.health',
+        // Numéro et e-mail viennent du profil du coroner (voir `coroner` plus haut), pas de valeurs inventées.
         requestingOfficer: 'Officier John Doe',
         department: h.opt('requestingAgenciesOptions'),
         ...decedentParts(),
@@ -457,7 +459,7 @@ const TEMPLATES = {
         placeOfDeathZip: h.patient.zip,
         witnessFirstName: 'Marie',
         witnessMiddleName: '',
-        witnessLastName: 'Témoin',
+        witnessTitle: 'Mrs', witnessLastName: 'Témoin',
         witnessName: 'Marie Témoin',
         date: h.today,
     }),
@@ -566,7 +568,11 @@ const TEMPLATES = {
     22: (h) => ({
         ...h.phmc,
         date: h.today,
+        patientTitle: h.optIs('patientTitle', 'Mr', 'Mr'),
         patientName: h.patient.fullName,
+        patientFirstName: h.patient.firstName,
+        patientMiddleName: h.patient.middleName,
+        patientLastName: h.patient.lastName,
         patientID: h.patient.id,
         departmentLarge: h.opt('departmentLarge'),
         patientNotes: LOREM_LONG,
@@ -575,7 +581,11 @@ const TEMPLATES = {
     23: (h) => ({
         ...h.phmc,
         date: h.today,
+        patientTitle: h.optIs('patientTitle', 'Mr', 'Mr'),
         patientName: h.patient.fullName,
+        patientFirstName: h.patient.firstName,
+        patientMiddleName: h.patient.middleName,
+        patientLastName: h.patient.lastName,
         patientID: h.patient.id,
         departmentLarge: h.opt('paletoClinicDepartment'),
         patientNotes: LOREM_LONG,

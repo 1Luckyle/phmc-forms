@@ -68,7 +68,7 @@ import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { database, auth } from './firebase'; // Your Firebase config
 import { signInWithCustomToken } from 'firebase/auth';
 import { getEmployeeDisplayName } from './utils/employeeName';
-import { mergeResultOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
+import { mergeResultOptions, mergeDepartmentOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 import PatientInvoiceNotifier from './components/PatientInvoiceNotifier';
 import { ReportPreviewFrame } from './components/ReportExpansion';
 import { useSiteConfig } from './contexts/SiteConfigContext';
@@ -2096,7 +2096,9 @@ function MainApp({
                                         departmentLarge={
                                             (currentFormDefinition?.version === 23 && selectedAgencyGroup === "PHMC")
                                                 ? optionize(selectOptions.paletoClinicDepartment)
-                                                : optionize(selectOptions.departmentLarge)
+                                                : (currentFormDefinition?.version === 22
+                                                    ? mergeDepartmentOptions(optionize(selectOptions.departmentLarge))
+                                                    : optionize(selectOptions.departmentLarge))
                                         }
                                         /* Shrink */
                                         Appearance={optionize(selectOptions.Appearance)}

@@ -11,7 +11,7 @@ import PresetTextField from './shared/PresetTextField';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 import { localizeOptions, MANNER_FR } from '../utils/deathLabels';
 
-const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
 
 const Autopsy = ({
     formData,

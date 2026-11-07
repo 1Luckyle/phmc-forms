@@ -31,12 +31,12 @@ const baseRelevantFields = (bbCodeVersion) => {
         case 3: // Patient File - Advanced
             return [
                 'patientName', 'patientAddress', 'patientRace', 'patientGender', 'patientPH',
-                'patientDiscord', 'patientEmergencyContact', 'patientEmergencyContactNumber',
+                'patientDiscord', 'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactNumber',
                 'patientEmergencyContactRelation', 'patientEmergencyContactDiscord', 'patientTitle',
                 'patientAllergies', 'patientCurrentMedicine', 'patientChronicDiseases', 'patientNotes',
                 'date', 'patientID', 'patientTherapy', 'patientTriggers', 'patientSupport',
                 'patientHarm', 'patientFam', 'patientGenetic', 'patientMental', 'patientFamSocial',
-                'patientReligion', 'attorneyName', 'attorneyFirstName', 'attorneyMiddleName', 'attorneyLastName', 'attorneyRelation', 'attorneyPH', 'patientDateOfBirth',
+                'patientReligion', 'attorneyName', 'attorneyFirstName', 'attorneyMiddleName', 'attorneyLastName', 'attorneyTitle', 'attorneyRelation', 'attorneyPH', 'patientDateOfBirth',
                 'patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet',
                 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther',
                 'dnrOther', 'decedentOOC', 'maritalStatus', 'numberChildren', 'financialStatus', 'dnr', 'dnrOrder', 'attorney',
@@ -205,6 +205,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'phmcEmployee', 'lastName',
                 'date',
                 'patientName',
+                'patientTitle', 'patientFirstName', 'patientMiddleName', 'patientLastName',
                 'patientID',
                 'departmentLarge',
                 'patientNotes',  // AJOUTER CETTE LIGNE
@@ -214,6 +215,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'phmcEmployee', 'lastName',
                 'date',
                 'patientName',
+                'patientTitle', 'patientFirstName', 'patientMiddleName', 'patientLastName',
                 'patientID',
                 'departmentLarge',
                 'patientNotes',  // AJOUTER CETTE LIGNE
@@ -251,7 +253,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientGender',
                 'patientPH',
                 'patientDiscord',
-                'patientEmergencyContact',
+                'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName',
                 'patientEmergencyContactNumber',
                 'patientEmergencyContactRelation',
                 'patientEmergencyContactDiscord',
@@ -273,7 +275,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientGender',
                 'patientPH',
                 'patientDiscord',
-                'patientEmergencyContact',
+                'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName',
                 'patientEmergencyContactNumber',
                 'patientEmergencyContactRelation',
                 'patientEmergencyContactDiscord',
@@ -456,12 +458,12 @@ const withPresetFields = (fields) => [...fields, ...Object.keys(HISTORY_PRESETS)
 // Champs ajoutés aux rapports de médecine légale : nom du défunt (et du témoin) en trois parties, ville du lieu, agence du demandeur, coordonnées du coroner,
 // causes à choix (`…Presets` / `…Free`).
 const DMEC_EXTRA = {
-    1: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'placeOfDeathZip', 'requestingAgency', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree', 'massFatality'],
-    2: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentName', 'decedentOOC', 'patientID', 'coronerEmail', 'coronerPHNumber', 'reportDecedentNames', 'reportDecedentOOC'],
-    4: ['placeOfDeath', 'placeOfDeathZip', 'decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'causeOfDeathPresets', 'causeOfDeathFree', 'deathType', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems'],
-    8: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'witnessFirstName', 'witnessMiddleName', 'witnessLastName', 'patientID', 'placeOfDeath', 'placeOfDeathZip', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree'],
+    1: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'requestingAgency', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree', 'massFatality'],
+    2: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'decedentName', 'decedentOOC', 'patientID', 'coronerEmail', 'coronerPHNumber', 'reportDecedentNames', 'reportDecedentOOC'],
+    4: ['placeOfDeath', 'placeOfDeathZip', 'decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'causeOfDeathPresets', 'causeOfDeathFree', 'deathType', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems'],
+    8: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'witnessFirstName', 'witnessMiddleName', 'witnessLastName', 'witnessTitle', 'patientID', 'placeOfDeath', 'placeOfDeathZip', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree'],
     11: ['placeOfDeathZip', 'requestingAgency', 'decedents'],
-    37: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'placeOfDeathZip', 'causesOfDeath', 'causesOfDeathPresets', 'causesOfDeathFree'],
+    37: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'causesOfDeath', 'causesOfDeathPresets', 'causesOfDeathFree'],
 };
 
 const getRelevantFields = (bbCodeVersion) => {

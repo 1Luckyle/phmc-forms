@@ -11,7 +11,7 @@ import { ReportPreviewFrame } from '../components/ReportExpansion';
 import CoronerSelect from './shared/CoronerSelect';
 import NameFields from './shared/NameFields';
 
-const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
 
 // Rapports joints = le rapport principal (deathReport) puis les supplémentaires (additionalReports) : une seule liste pour l'écran.
 const attachedOf = (formData) => [formData.deathReport, ...(formData.additionalReports || [])].filter((report) => String(report || '').trim());

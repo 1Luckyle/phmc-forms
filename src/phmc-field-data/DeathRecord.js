@@ -12,7 +12,7 @@ import { ETHNICITY_OPTIONS } from '../utils/patientIdentity';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 import { localizeOptions, MANNER_FR, BODY_STATUS_FR, CASE_STATUS_FR, IDENTIFICATION_FR, SEX_FR } from '../utils/deathLabels';
 
-const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
 const HAIR_COLORS = ['Noirs', 'Bruns', 'Châtains', 'Blonds', 'Roux', 'Gris', 'Blancs', 'Chauve'];
 const EYE_COLORS = ['Marron', 'Noisette', 'Bleus', 'Verts', 'Gris', 'Noirs'];
 

@@ -1,6 +1,11 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select'; // Make sure react-select is imported
+import NameFields from './shared/NameFields';
+import PhmcEmployeeSelect from './shared/PhmcEmployeeSelect';
+
+// Patient : titre et nom en trois champs (le nom complet « patientName » est recomposé tout seul).
+const NOTE_PATIENT_FIELDS = { full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', title: 'patientTitle' };
 
 // Destructure the props that this component will need from App.js
 const PHMCCommentaryNoteQuestions = ({
@@ -14,14 +19,12 @@ const PHMCCommentaryNoteQuestions = ({
     return (
         <>
             <Form.Label className="form-section-title">Patient</Form.Label>
-            <Form.Control
-                type="text"
-                name="patientName"
-                value={formData.patientName}
-                onChange={handleChange}
-                placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                className="form-control"
-            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <NameFields
+                    formData={formData} setFormData={setFormData} handleChange={handleChange} fields={NOTE_PATIENT_FIELDS}
+                    placeholders={{ first: 'Prénom du patient', middle: 'Deuxième prénom', last: 'Nom de famille' }}
+                />
+            </div>
             <Form.Control
                 type="text"
                 name="patientID"
@@ -53,61 +56,7 @@ const PHMCCommentaryNoteQuestions = ({
 
             <Form.Label className="form-section-title">Identifiants de l'employé</Form.Label>
 
-            <Select
-                name="phmcEmployee"
-                value={phmcGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.phmcEmployee) || null}
-onChange={(selectedOption) => {
-    handleSelectChange(selectedOption, { name: 'phmcEmployee' }); // Correct call to App.js handler
-
-    // eslint-disable-next-line no-unused-vars
-    const lastName = selectedOption ? selectedOption.lastName : '';
-    // This direct setFormData is redundant if handleSelectChange in App.js already updates these fields
-    setFormData(prev => ({
-        ...prev,
-        phmcEmployee: selectedOption ? selectedOption.value : '',
-        lastName: selectedOption ? selectedOption.lastName : '' 
-    }));
-}}
-                options={phmcGroupedOptions}
-                isClearable
-                placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-                className="form-control"
-                styles={{ // Keep the styles for react-select
-                    control: (base) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: '#30363d',
-                        '&:hover': {
-                            borderColor: '#30363d'
-                        }
-                    }),
-                    menu: (base) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        zIndex: 1000
-                    }),
-                    option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                        color: '#eeeeeeb0'
-                    }),
-                    singleValue: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    }),
-                    input: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    }),
-                    placeholder: (base) => ({
-                        ...base,
-                        color: '#eeeeeeb0'
-                    })
-                }}
-            />
+            <PhmcEmployeeSelect options={phmcGroupedOptions} formData={formData} setFormData={setFormData} />
             <Form.Label className="form-section-title">Service</Form.Label>
             <Select
                 name="departmentLarge"

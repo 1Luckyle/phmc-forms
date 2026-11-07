@@ -1,4 +1,5 @@
 import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
+import { titleLabel } from '../utils/patientIdentity';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -15,7 +16,7 @@ const generateCommentaryNotePBC = (formData) => {
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]
 
-PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
+PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join(' ')}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 

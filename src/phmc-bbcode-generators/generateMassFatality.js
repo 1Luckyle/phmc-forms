@@ -1,6 +1,7 @@
 import { placeWithCity } from '../utils/places';
 import { frDeath, DEATH_TYPE_SHORT_FR } from '../utils/deathLabels';
 import { frDay } from '../utils/reportTitle';
+import { withTitle } from '../utils/patientIdentity';
 import { sectionBanner, dmecHeader, infoTable, paragraph, photoBlock } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -96,7 +97,7 @@ Le ${rank}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]
         const card = [
             sectionBanner('Informations sur le défunt'),
             infoTable([
-                [['Nom du défunt', dec.decedentName || 'Défunt non identifié'], ['(( Discord du joueur (HRP)', `${dec.decedentOOC || 'Inconnu'} ))`]],
+                [['Nom du défunt', dec.decedentName ? withTitle(dec.decedentTitle, dec.decedentName) : 'Défunt non identifié'], ['(( Discord du joueur (HRP)', `${dec.decedentOOC || 'Inconnu'} ))`]],
                 [['ID Patient', dec.patientID || 'Non applicable'], ['Heure de décès prononcée', frDay(dec.pronouncedTimeOfDeath) || 'Heure inconnue']],
                 [['Lieu du décès', placeWithCity(dec.placeOfDeath, dec.placeOfDeathZip) || 'Lieu inconnu']],
                 [['Cause probable du décès', dec.probableCauseOfDeath || 'Cause inconnue'], ['Manière du décès', frDeath(dec.mannerOfDeath) || 'Manière inconnue']],

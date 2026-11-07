@@ -17,7 +17,7 @@ import PresetTextField from './shared/PresetTextField';
 import NameFields from './shared/NameFields';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
 
-const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName' };
+const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName', title: 'attorneyTitle' };
 
 const GENERAL_FIELDS = {
     id: 'patientID', title: 'patientTitle', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
@@ -161,7 +161,7 @@ const PatientAdvanced = ({
             />
             {isContactInfoOpen && (
                 <div id="collapse-contact-info">
-                    <EmergencyContactFields formData={formData} handleChange={handleChange} />
+                    <EmergencyContactFields formData={formData} handleChange={handleChange} setFormData={setFormData} />
                 </div>
             )}
 

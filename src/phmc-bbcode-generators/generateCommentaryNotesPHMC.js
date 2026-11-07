@@ -1,4 +1,6 @@
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { allNoteDepartments } from '../constants/clinicalOptions';
+import { titleLabel } from '../utils/patientIdentity';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -15,7 +17,7 @@ const generateCommentaryNotePHMC = (formData) => {
 
                 let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]
 
-PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
+PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join(' ')}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 
@@ -28,14 +30,7 @@ ${phmcEmployee}
 ${patientNotes}
 [br][/br]
 [u]Département: [/u][br][/br]
-${checkbox(formData.departmentLarge === 'EmergencyMedicine')} Service de Médecine d'Urgence
-${checkbox(formData.departmentLarge === 'InternalMedicine')} Service de Médecine Interne
-${checkbox(formData.departmentLarge === 'Surgical')} Département Chirurgical
-${checkbox(formData.departmentLarge === 'Midwifery')} Service de Maternité-Obstétrique
-${checkbox(formData.departmentLarge === 'PhysicalTherapy')} Service de Thérapie Physique
-${checkbox(formData.departmentLarge === 'Dentistry')} Service de Dentisterie
-${checkbox(formData.departmentLarge === 'MentalHealth')} Service de Psychiatrie / Psychologie
-${checkbox(formData.departmentLarge === 'Administration')} Administration / Direction
+${allNoteDepartments().map(([value, label]) => `${checkbox(formData.departmentLarge === value)} ${label}`).join('\n')}
 [br][/br][/left]
 [/table]
 `

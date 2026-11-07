@@ -1,7 +1,7 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
-import { titleLabel } from '../utils/patientIdentity';
+import { titleLabel, withTitle } from '../utils/patientIdentity';
 import { placeWithCity } from '../utils/places';
 import { frDay, todayFr } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -111,7 +111,7 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
         bbCode += `
 [cbc][color=#FF0000]>[/color] [b] Contact d'urgence[/b]
 [altspoiler=Nouveaux détails du contact d'urgence]
-[table][tr][td] Prénom (Deuxième Prénom) & Nom: ${patientEmergencyContact} [/td][td] Relation: ${patientEmergencyContactRelation}
+[table][tr][td] Prénom (Deuxième Prénom) & Nom: ${withTitle(formData.patientEmergencyContactTitle, patientEmergencyContact)} [/td][td] Relation: ${patientEmergencyContactRelation}
 [tr][td] Numéro de téléphone: ${patientEmergencyContactNumber} [/td][td] (( Pseudo Discord: ${patientEmergencyContactDiscord}))
 [/table][/altspoiler]`;
     }
@@ -185,7 +185,7 @@ ${checkbox(formData.dnr === 'other')}[/cb${formData.dnr === 'other' ? 'c' : ''}]
 
 [*][size=110]Procuration en matière de soins de santé[/size]:
 ${checkbox(formData.attorney === 'Yes')}[/cb${formData.attorney === 'Yes' ? 'c' : ''}]J'ai désigné la personne suivante comme mon mandataire/représentant en matière de soins de santé pour prendre des décisions médicales en mon nom:
-[list=none]Prénom (Deuxième Prénom) & Nom: ${attorneyName}
+[list=none]Prénom (Deuxième Prénom) & Nom: ${withTitle(formData.attorneyTitle, attorneyName)}
 Relation avec le patient: ${attorneyRelation}
 Numéro de téléphone: ${attorneyPH}[/list]
 

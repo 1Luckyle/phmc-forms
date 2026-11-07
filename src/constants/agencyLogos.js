@@ -14,6 +14,11 @@ import sanfire from '../assets/sanfire.png';
 import phmc from '../assets/phmc.png';
 import phmcpaletobay from '../assets/phmcpaletobaylogo.png';
 
+// Adresse publique des mêmes logos (copies dans public/img/agencies/{clé en minuscules}.png) : c'est celle que le BBCode doit contenir, car le fichier
+// du dépôt (/static/media/…) n'a pas d'adresse utilisable sur un forum. Un logo ajouté ici doit aussi être copié dans public/img/agencies.
+export const SITE_ORIGIN = 'https://phmc-tools.com';
+export const publicAgencyLogoUrl = (key) => (LOCAL_AGENCY_LOGOS[key] ? `${SITE_ORIGIN}/img/agencies/${String(key).toLowerCase()}.png` : '');
+
 export const LOCAL_AGENCY_LOGOS = {
     LSDAO: lsdao,
     LSFD: lsfd,
@@ -31,7 +36,8 @@ export const withLocalAgencyLogos = (agencies) => {
     if (!agencies || typeof agencies !== 'object') return agencies;
     const result = {};
     Object.entries(agencies).forEach(([key, agency]) => {
-        result[key] = agency && LOCAL_AGENCY_LOGOS[key] ? { ...agency, logo: LOCAL_AGENCY_LOGOS[key] } : agency;
+        // `logo` = fichier du dépôt (affichage à l'écran) ; `forumLogo` = son adresse publique, utilisée dans le BBCode.
+        result[key] = agency && LOCAL_AGENCY_LOGOS[key] ? { ...agency, logo: LOCAL_AGENCY_LOGOS[key], forumLogo: publicAgencyLogoUrl(key) } : agency;
     });
     return result;
 };

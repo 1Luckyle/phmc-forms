@@ -12,8 +12,8 @@ jest.mock('../firebase', () => ({ database: {}, auth: {} }));
 jest.mock('firebase/database', () => ({ ref: jest.fn(), onValue: jest.fn(), get: jest.fn(), set: jest.fn(), update: jest.fn() }));
 
 const GENERATORS = { 1: generateDeathReport, 4: generateAutopsy, 8: generateCertificate, 11: generateMassFatality, 37: generateDeathRecord };
-const ctx = { coronerOptions: [{ value: 'Dr Légiste', badge: '12', rank: 'Médecin légiste', discord: 'leg#1' }], unrestrictedCoronerOptions: [{ value: 'Dr Chef', badge: '1', rank: 'Chef', discord: 'chef#1' }] };
-const agencyDataStore = { LSSD: { fullName: 'Los Santos Sheriff Department', logo: 'https://img/lssd.png' }, LSPD: { fullName: 'Los Santos Police Department' } };
+const ctx = { coronerOptions: [{ value: 'Dr Légiste', badge: '12', rank: 'Médecin légiste', discord: 'leg#1', phone: '555-0142', email: 'a.b@phmc.health' }], unrestrictedCoronerOptions: [{ value: 'Dr Chef', badge: '1', rank: 'Chef', discord: 'chef#1' }] };
+const agencyDataStore = { LSSD: { fullName: 'Los Santos Sheriff Department', logo: '/static/media/lssd.abc.png', forumLogo: 'https://img/lssd.png' }, LSPD: { fullName: 'Los Santos Police Department' } };
 
 describe('rapports de médecine légale : construction', () => {
     test.each(Object.keys(GENERATORS).map(Number))('rapport %i : pas de valeur manquante, pas de saut de ligne doublé, libellés en français', (version) => {
@@ -32,12 +32,13 @@ describe('rapports de médecine légale : construction', () => {
         expect(unchecked).not.toContain('Officier Jane Roe');
     });
 
-    test('e-mail DMEC : logos agence + coroner, expéditeur avec son vrai e-mail, rapport joint rendu sans source brute', () => {
+    test('e-mail DMEC : logo de l’agence (lien web) + sceau du DMEC seul, expéditeur avec son vrai e-mail, rapport joint rendu sans source brute', () => {
         const report = generateDeathReport({ ...getDebugTemplate(1, ctx), agencyDataStore });
         expect(prepareCoronerReport(report).ok).toBe(true);
-        const email = generateEmail({ ...getDebugTemplate(2, ctx), department: 'LSSD', agencyDataStore, deathReport: report, additionalReports: [], coronerEmail: 'a.b@phmc.health' });
-        expect(email).toMatch(/\[table\]\[tr\]\[td\]\[center\]\[img\]https:\/\/img\/lssd\.png\[\/img\]\[\/center\]\[td\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/ItaoQkO\.webp/);
+        const email = generateEmail({ ...getDebugTemplate(2, ctx), department: 'LSSD', agencyDataStore, deathReport: report, additionalReports: [] });
+        expect(email).toMatch(/\[table\]\[tr\]\[td\]\[center\]\[img\]https:\/\/img\/lssd\.png\[\/img\]\[\/center\]\[td\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/dmec-seal\.png/);
         expect(email).toContain('Expéditeur: Dr Légiste (a.b@phmc.health)');
+        expect(email).toContain('Numéro de téléphone: 555-0142');
         expect(email).not.toContain('@ phmc.health');
         // La copie BBCode garde le bloc [code] ; l'aperçu / HTML ne montre jamais la source brute du rapport.
         expect(email).toContain('[code]');

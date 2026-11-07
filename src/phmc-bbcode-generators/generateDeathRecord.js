@@ -1,5 +1,6 @@
 import { placeWithCity } from '../utils/places';
 import { frDay } from '../utils/reportTitle';
+import { withTitle } from '../utils/patientIdentity';
 import { sectionBanner, infoTable, paragraph } from './shared/bbStyles';
 
 // Dossier public de décès (version 37) : bandeau d'en-tête public, fiche du défunt, dossier, circonstances, médecins légistes et mention de divulgation.
@@ -50,7 +51,7 @@ const generateDeathRecord = (formData) => {
     const blocks = [
         `[divbox=#FFFFFF]\n[center][img]https://phmc-tools.com/img/death-record-header.png[/img][/center]\n[/divbox]`,
         sectionBanner('DOSSIER PUBLIC DU DÉFUNT', { size: 130 }),
-        `[center][size=130][b]${decedentName || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/b][/size]\n${unidentified ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'} — Date du décès: ${frDay(dateOfDeath) || '[DATE ICI]'}[/center]`,
+        `[center][size=130][b]${withTitle(formData.decedentTitle, decedentName) || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/b][/size]\n${unidentified ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'} — Date du décès: ${frDay(dateOfDeath) || '[DATE ICI]'}[/center]`,
         sectionBanner('Dossier', { size: 115 }),
         infoTable([
             [['Numéro de dossier', caseNumber || ''], ['Statut du dossier', caseStatus || ''], ['Statut du corps', bodyStatus || '']],

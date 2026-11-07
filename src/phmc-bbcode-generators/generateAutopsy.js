@@ -2,6 +2,7 @@ import { buildDecedentDescription } from './shared/decedentDescription';
 import { requestingAuthorityText } from './shared/requestingAuthority';
 import { frDeath } from '../utils/deathLabels';
 import { placeWithCity } from '../utils/places';
+import { withTitle } from '../utils/patientIdentity';
 import { sectionBanner, dmecHeader, infoTable, paragraph, labelledRows } from './shared/bbStyles';
 
 // Liste numérotée (ou en lettres) d'éléments saisis un par un ; « N/A » quand la liste est vide.
@@ -73,7 +74,7 @@ const generateAutopsy = (formData) => {
     const approver = `${chiefCoronerRank || 'Chef médecin légiste-Coroner'} ${chiefCoronerEmployee || 'Anne Carter'}`;
 
     const identification = [
-        [['Défunt', `${decedentName || 'John Doe'}`], ['(( Discord du joueur (HRP)', `${decedentOOC || 'Discord HRP'} ))`]],
+        [['Défunt', decedentName ? withTitle(formData.decedentTitle, decedentName) : 'John Doe'], ['(( Discord du joueur (HRP)', `${decedentOOC || 'Discord HRP'} ))`]],
         [['ID Patient', patientId], ['Date et heure de l\'autopsie', `${finalAutopsyDate}, ${finalAutopsyTime}`]],
         [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'Non renseigné'], ['Manière du décès', frDeath(deathType) || 'Indéterminée']],
         [['Comment la blessure s\'est produite', causeOfDeath || 'Inconnue']],
@@ -84,7 +85,7 @@ const generateAutopsy = (formData) => {
     const blocks = [
         dmecHeader({
             label: 'Informations du défunt',
-            name: decedentName || 'John Doe',
+            name: decedentName ? withTitle(formData.decedentTitle, decedentName) : 'John Doe',
             detail: `ID Patient : ${patientId}`,
             title: 'RAPPORT D\'AUTOPSIE',
             subtitle: 'Département de Pathologie et de Médecine Légale',

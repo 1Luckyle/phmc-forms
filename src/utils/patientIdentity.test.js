@@ -1,4 +1,4 @@
-import { splitFullName, joinFullName, toFrenchGender, titleLabel } from './patientIdentity';
+import { splitFullName, joinFullName, toFrenchGender, titleLabel, withTitle } from './patientIdentity';
 import { aggregatePresetText } from '../phmc-field-data/shared/PresetTextField';
 
 test('découpage du nom complet', () => {
@@ -22,4 +22,11 @@ test('texte regroupé des champs à choix par défaut', () => {
     expect(aggregatePresetText(['Asthme', 'Diabète'], 'depuis 2020')).toBe('Asthme ; Diabète ; depuis 2020');
     expect(aggregatePresetText([], '  ')).toBe('');
     expect(aggregatePresetText(['Aucune allergie connue'], '')).toBe('Aucune allergie connue');
+});
+
+test('le titre se place devant le nom, jamais devant un texte « Non renseigné »', () => {
+    expect(withTitle('Mr', 'Jean Dupont')).toBe('M. Jean Dupont');
+    expect(withTitle('', 'Jean Dupont')).toBe('Jean Dupont');
+    expect(withTitle('Mrs', 'Non renseigné')).toBe('Non renseigné');
+    expect(withTitle('Mrs', '')).toBe('');
 });

@@ -15,7 +15,7 @@ import PresetTextField from './shared/PresetTextField';
 import NameFields from './shared/NameFields';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
 
-const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName' };
+const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName', title: 'attorneyTitle' };
 
 // Champs de l'identité actuelle du patient (en-tête) et des nouvelles informations générales (section « Informations générales »).
 const CURRENT_FIELDS = {
@@ -211,7 +211,7 @@ const MedicalRelease = ({
             {formData.UpdateMedicalFile?.includes('EmergencyContact') && (
                     <div style={{ marginTop: '20px' }}>
                         <Form.Label className="form-section-title">Mettre à jour le contact d'urgence</Form.Label>
-                        <EmergencyContactFields formData={formData} handleChange={handleChange} />
+                        <EmergencyContactFields formData={formData} handleChange={handleChange} setFormData={setFormData} />
                     </div>
             )}
 

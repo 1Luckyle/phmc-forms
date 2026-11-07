@@ -7,8 +7,8 @@ import PlaceWithCity from './shared/PlaceWithCity';
 import PresetTextField from './shared/PresetTextField';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 
-const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
-const WITNESS_FIELDS = { full: 'witnessName', first: 'witnessFirstName', middle: 'witnessMiddleName', last: 'witnessLastName' };
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
+const WITNESS_FIELDS = { full: 'witnessName', first: 'witnessFirstName', middle: 'witnessMiddleName', last: 'witnessLastName', title: 'witnessTitle' };
 
 const Certificate = ({
     formData,

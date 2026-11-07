@@ -7,7 +7,7 @@
 export const VERSION_FIELDS = {
     1: {
         coronerEmployee: 'select', dateTime: 'datetime-local', pronouncedTimeOfDeath: 'time', showRequestingOfficerInput: 'checkbox',
-        department: 'select', requestingOfficer: 'text', massFatality: 'radio', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text',
+        department: 'select', requestingOfficer: 'text', massFatality: 'radio', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select',
         decedentOOC: 'text', patientID: 'text', typeOfDeath: 'select', placeOfDeath: 'text', placeOfDeathZip: 'select',
         decedentAttributes: 'text', mannerOfDeath: 'textarea', probableCauseOfDeath: 'textarea', synopsis: 'textarea',
         evidenceLockerID: 'text', scenePhotos: 'textarea', additionalImages: 'textarea', decedentAge: 'text',
@@ -16,12 +16,12 @@ export const VERSION_FIELDS = {
     },
     2: {
         coronerEmployee: 'select', requestingOfficer: 'text', department: 'select', coronerPHNumber: 'text',
-        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text',
+        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text',
     },
     3: {
         patientID: 'text', patientTitle: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientDateOfBirth: 'date',
         patientAddress: 'text', patientZIP: 'select', patientGender: 'select', patientRace: 'select', patientPH: 'text',
-        patientEmail: 'email', patientDiscord: 'text', patientEmergencyContact: 'text', patientEmergencyContactRelation: 'text',
+        patientEmail: 'email', patientDiscord: 'text', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text',
         patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text', patientBloodType: 'select', patientAllergies: 'textarea',
         patientCurrentMedicine: 'textarea', patientChronicDiseases: 'textarea', patientNotes: 'textarea', patientMental: 'textarea',
         patientTherapy: 'textarea', patientTriggers: 'textarea', patientSupport: 'textarea', patientHarm: 'textarea',
@@ -30,11 +30,11 @@ export const VERSION_FIELDS = {
         patientAlcohol: 'textarea', patientDrugs: 'textarea', patientExercise: 'textarea', patientDiet: 'textarea',
         patientSleep: 'textarea', patientSexLife: 'textarea', patientJobRisks: 'textarea', patientHazards: 'textarea',
         patientOther: 'textarea', dnr: 'select', attorney: 'select', dnrOrder: 'select',
-        dnrOther: 'textarea', attorneyName: 'text', attorneyFirstName: 'text', attorneyMiddleName: 'text', attorneyLastName: 'text', attorneyRelation: 'text', attorneyPH: 'text',
+        dnrOther: 'textarea', attorneyName: 'text', attorneyFirstName: 'text', attorneyMiddleName: 'text', attorneyLastName: 'text', attorneyTitle: 'select', attorneyRelation: 'text', attorneyPH: 'text',
         paymentOption: 'radio',
     },
     4: {
-        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentOOC: 'text', patientID: 'text', autopsyDate: 'date',
+        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', patientID: 'text', autopsyDate: 'date',
         autopsyTime: 'time', deathType: 'text', causeOfDeath: 'text', externalExamination: 'textarea',
         autopsyClothing: 'textarea', autopsyInternalExamination: 'textarea', RadiologyResult: 'textarea', autopsyAlbumUrl: 'textarea',
         autopsyPhotosUnavailable: 'checkbox', synopsis: 'textarea', coronerEmployee: 'select', chiefCoronerEmployee: 'select',
@@ -71,9 +71,9 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
     },
     8: {
-        coronerEmployee: 'select', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', patientAge: 'number', patientDateOfBirth: 'date',
+        coronerEmployee: 'select', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', patientAge: 'number', patientDateOfBirth: 'date',
         probableCauseOfDeath: 'text', TimeofDeath: 'time', dateofdeath: 'date', witnessName: 'text',
-        date: 'date', witnessFirstName: 'text', witnessMiddleName: 'text', witnessLastName: 'text', patientID: 'text', placeOfDeath: 'text', placeOfDeathZip: 'select',
+        date: 'date', witnessFirstName: 'text', witnessMiddleName: 'text', witnessLastName: 'text', witnessTitle: 'select', patientID: 'text', placeOfDeath: 'text', placeOfDeathZip: 'select',
     },
     11: {
         coronerEmployee: 'select', dateTime: 'datetime-local', placeOfDeath: 'text', placeOfDeathZip: 'select', showRequestingOfficerInput: 'checkbox',
@@ -127,11 +127,11 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
     },
     22: {
-        patientName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',
+        patientTitle: 'select', patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',
         phmcEmployee: 'select', departmentLarge: 'select',
     },
     23: {
-        patientName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',
+        patientTitle: 'select', patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',
         phmcEmployee: 'select', departmentLarge: 'select',
     },
     24: {
@@ -145,7 +145,7 @@ export const VERSION_FIELDS = {
     25: {
         patientID: 'text', patientTitle: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientDateOfBirth: 'date',
         patientAddress: 'text', patientZIP: 'select', patientGender: 'select', patientRace: 'select', patientPH: 'text',
-        patientEmail: 'email', patientDiscord: 'text', patientEmergencyContact: 'text', patientEmergencyContactRelation: 'text',
+        patientEmail: 'email', patientDiscord: 'text', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text',
         patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text', patientBloodType: 'select', patientAllergies: 'textarea',
         patientCurrentMedicine: 'textarea', patientChronicDiseases: 'textarea', patientNotes: 'textarea', paymentOption: 'radio',
     },
@@ -155,7 +155,7 @@ export const VERSION_FIELDS = {
         UpdateMedicalFile: 'select', patientTitleNew: 'select', patientFirstNameNew: 'text', patientMiddleNameNew: 'text', patientLastNameNew: 'text', patientDateOfBirthNew: 'date',
         patientAddressNew: 'text', patientZIPNew: 'select', patientGenderNew: 'select', patientRaceNew: 'select', patientPHNew: 'text',
         patientDiscordNew: 'text', patientMental: 'textarea', patientTherapy: 'textarea', patientTriggers: 'textarea',
-        patientSupport: 'textarea', patientHarm: 'textarea', patientEmergencyContact: 'text', patientEmergencyContactRelation: 'text',
+        patientSupport: 'textarea', patientHarm: 'textarea', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text',
         patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text', patientBloodType: 'textarea', patientAllergies: 'textarea',
         patientCurrentMedicine: 'textarea', patientChronicDiseases: 'textarea', patientNotes: 'textarea', patientFam: 'textarea',
         patientGenetic: 'textarea', patientFamSocial: 'textarea', maritalStatus: 'select', numberChildren: 'textarea',
@@ -163,7 +163,7 @@ export const VERSION_FIELDS = {
         patientDrugs: 'textarea', patientExercise: 'textarea', patientDiet: 'textarea', patientSleep: 'textarea',
         patientSexLife: 'textarea', patientJobRisks: 'textarea', patientHazards: 'textarea', patientOther: 'textarea',
         dnr: 'select', attorney: 'select', dnrOrder: 'textarea', dnrOther: 'textarea',
-        attorneyName: 'text', attorneyFirstName: 'text', attorneyMiddleName: 'text', attorneyLastName: 'text', attorneyRelation: 'text', attorneyPH: 'text',
+        attorneyName: 'text', attorneyFirstName: 'text', attorneyMiddleName: 'text', attorneyLastName: 'text', attorneyTitle: 'select', attorneyRelation: 'text', attorneyPH: 'text',
     },
     27: {
         internalEmailSubject: 'text', internalEmailRecipient: 'text', internalEmailBody: 'textarea', internalEmailSignatureImage: 'textarea',
@@ -212,7 +212,7 @@ export const VERSION_FIELDS = {
         phmcEmployee: 'select', phmcEmployeeSignatureImage: 'textarea',
     },
     37: {
-        deathRecordType: 'select', caseNumber: 'text', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentOOC: 'text',
+        deathRecordType: 'select', caseNumber: 'text', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text',
         patientID: 'text', dateOfDeath: 'date', caseStatus: 'select', bodyStatus: 'select',
         sex: 'select', ethnicity: 'text', placeOfDeath: 'text', placeOfDeathZip: 'select', age: 'text',
         manner: 'select', hairColor: 'text', eyeColor: 'text', weight: 'text',

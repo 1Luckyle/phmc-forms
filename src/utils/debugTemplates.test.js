@@ -44,7 +44,7 @@ describe('le remplissage debug produit un rapport enregistrable', () => {
     const reportVersions = Object.keys(VERSION_FIELDS).map(Number).filter((v) => v < 50 && hasDebugTemplate(v) && ![41].includes(v));
     test.each(reportVersions)('formulaire %i : aucune erreur de validation après « Remplir (debug) »', (version) => {
         // Identité du personnel : fournie par la session connectée (listes des praticiens et des médecins légistes).
-        const ctx = { phmcOptions: [{ value: 'Dr Test', lastName: 'Test' }], coronerOptions: [{ value: 'Dr Légiste', badge: '1', rank: 'Coroner' }] };
+        const ctx = { phmcOptions: [{ value: 'Dr Test', lastName: 'Test' }], coronerOptions: [{ value: 'Dr Légiste', badge: '1', rank: 'Coroner', phone: '555-0100', email: 'dr.legiste@phmc.health' }] };
         const errors = validateReport(version, getDebugTemplate(version, ctx) || {}).errors;
         expect(errors).toEqual([]);
     });

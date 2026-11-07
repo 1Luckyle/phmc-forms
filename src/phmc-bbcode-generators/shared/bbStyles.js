@@ -36,7 +36,8 @@ T: 50056[/size][/center][/table][/divbox]`;
 // DMEC se lisent comme le reste des formulaires, aussi bien sur le forum (BBCode) que dans l'aperçu HTML.
 
 export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
-export const DMEC_LOGO = 'https://phmc-tools.com/img/ItaoQkO.webp';
+// Sceau du DMEC seul (public/img/dmec-seal.png). L'ancienne image ItaoQkO.webp montrait aussi celui du Comté.
+export const DMEC_LOGO = 'https://phmc-tools.com/img/dmec-seal.png';
 
 // En-tête d'un rapport : à gauche l'étiquette du dossier, le défunt et son identifiant ; à droite le logo et le titre du rapport.
 //   dmecHeader({ label: 'Informations du défunt', name: 'Jane Doe', detail: 'ID Patient : PHMC-12', title: 'RAPPORT D\'AUTOPSIE', subtitle: '…' })

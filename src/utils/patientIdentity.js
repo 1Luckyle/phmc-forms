@@ -17,6 +17,12 @@ export const ETHNICITY_OPTIONS = [
 // Titre affiché dans les rapports (la valeur enregistrée est celle de la liste : Mr, Mrs…).
 export const TITLE_LABELS = { Mineur: 'Mineur', Mstr: 'Maître', Mr: 'M.', Mrs: 'Mme', Ms: 'Mme/Mlle', Miss: 'Mlle', Other: 'Autre' };
 export const titleLabel = (value) => TITLE_LABELS[value] || String(value || '');
+// « M. Jean Dupont » : le titre devant le nom (rien si pas de titre ; le texte « Non renseigné » n'est jamais précédé d'un titre).
+export const withTitle = (title, name, placeholder = 'Non renseigné') => {
+    const label = titleLabel(title);
+    const text = String(name || '').trim();
+    return label && text && text !== placeholder ? `${label} ${text}` : text;
+};
 
 // « Jane Marie Doe » → { first: 'Jane', middle: 'Marie', last: 'Doe' } ; un seul mot = le prénom.
 export const splitFullName = (fullName) => {

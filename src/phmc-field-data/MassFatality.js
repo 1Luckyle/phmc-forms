@@ -4,6 +4,8 @@ import ImagePreview from '../components/ImagePreview';
 import CoronerSelect from './shared/CoronerSelect';
 import PlaceWithCity from './shared/PlaceWithCity';
 import PresetTextField from './shared/PresetTextField';
+import useTitleOptions from '../hooks/useTitleOptions';
+import { SimpleSelect } from './shared/PatientGeneralInfo';
 import ZipCityField from '../components/ZipCityField';
 import { splitFullName, joinFullName } from '../utils/patientIdentity';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
@@ -95,6 +97,7 @@ const MassFatality = ({
     currentUtcTime,
     coronerGroupedOptions,
 }) => {
+    const titleOptions = useTitleOptions();
     const generateEvidenceLockerID = () => {
         const today = new Date();
         const day = String(today.getDate()).padStart(2, '0');
@@ -275,6 +278,8 @@ const MassFatality = ({
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
+                                <SimpleSelect name={`decedentTitle-${idx}`} value={dec.decedentTitle} onChange={(e) => updateDecedent(idx, 'decedentTitle', e.target.value)} placeholder="Titre"
+                                    style={{ flex: '0 0 150px', minWidth: '130px' }} options={titleOptions} />
                                 <Form.Control type="text" value={partsOf(dec).first} placeholder="Prénom du défunt (IC)" onChange={(e) => setNamePart(idx, 'first', e.target.value)} required={idx === 0} data-guide="Prénom du défunt, tel que son personnage. Le premier défunt doit avoir un nom." />
                                 <Form.Control type="text" value={partsOf(dec).middle} placeholder="Deuxième prénom (IC)" onChange={(e) => setNamePart(idx, 'middle', e.target.value)} data-guide="Deuxième prénom du défunt, s'il en a un." />
                                 <Form.Control type="text" value={partsOf(dec).last} placeholder="Nom de famille (IC)" onChange={(e) => setNamePart(idx, 'last', e.target.value)} required={idx === 0} data-guide="Nom de famille du défunt, tel que son personnage." />

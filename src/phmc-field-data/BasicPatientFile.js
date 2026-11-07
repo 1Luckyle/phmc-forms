@@ -133,7 +133,7 @@ const BasicPatientFile = ({
             />
             {isContactInfoOpen && (
                 <div id="collapse-contact-info">
-                    <EmergencyContactFields formData={formData} handleChange={handleChange} />
+                    <EmergencyContactFields formData={formData} handleChange={handleChange} setFormData={setFormData} />
                 </div>
             )}
 

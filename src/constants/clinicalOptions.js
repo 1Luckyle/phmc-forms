@@ -257,3 +257,48 @@ export const mergeResultOptions = (baseOptions, additions = []) => {
 
 /** Texte imprimé dans le rapport : traduit les anciennes valeurs anglaises. */
 export const translateResultValue = (value) => LEGACY_RESULT_LABELS[value] || value;
+
+// ── Note de service (PHMC) : services de l'hôpital ──
+// Les 8 services historiques (valeur enregistrée → libellé imprimé dans la note) ...
+export const NOTE_DEPARTMENTS = [
+    ['EmergencyMedicine', "Service de Médecine d'Urgence"],
+    ['InternalMedicine', 'Service de Médecine Interne'],
+    ['Surgical', 'Département Chirurgical'],
+    ['Midwifery', 'Service de Maternité-Obstétrique'],
+    ['PhysicalTherapy', 'Service de Thérapie Physique'],
+    ['Dentistry', 'Service de Dentisterie'],
+    ['MentalHealth', 'Service de Psychiatrie / Psychologie'],
+    ['Administration', 'Administration / Direction'],
+];
+
+// ... et ceux ajoutés depuis (liste des services de l'hôpital : constants/contractOptions.js). Ils complètent la liste de la base sans la remplacer.
+export const DEPARTMENT_ADDITIONS = [
+    { value: 'IntensiveCare', label: 'Soins intensifs / réanimation' },
+    { value: 'OperatingRoom', label: 'Bloc opératoire / anesthésie' },
+    { value: 'Cardiology', label: 'Cardiologie' },
+    { value: 'Neurovascular', label: 'Neurovasculaire / AVC' },
+    { value: 'Burns', label: 'Grands brûlés' },
+    { value: 'Pediatrics', label: 'Pédiatrie' },
+    { value: 'Neonatology', label: 'Néonatalogie' },
+    { value: 'Toxicology', label: 'Toxicologie' },
+    { value: 'Hospitalization', label: 'Hospitalisation (médecine générale)' },
+    { value: 'Outpatient', label: 'Consultations externes' },
+    { value: 'Radiology', label: 'Radiologie / imagerie médicale' },
+    { value: 'Laboratory', label: "Laboratoire d'analyses" },
+    { value: 'Pharmacy', label: 'Pharmacie' },
+    { value: 'EmergencyServices', label: 'EMS / ambulances' },
+    { value: 'ForensicMedicine', label: 'Médecine légale (DMEC)' },
+    { value: 'Recruitment', label: 'Recrutement' },
+    { value: 'Logistics', label: 'Logistique / sécurité' },
+];
+
+/** Liste des services d'une Note de service : ceux de la base, puis les services ajoutés qui n'y figurent pas encore (même valeur ou même libellé). */
+export const mergeDepartmentOptions = (baseOptions) => {
+    const base = baseOptions || [];
+    const known = new Set();
+    base.forEach((option) => { known.add(normalize(option.value)); known.add(normalize(option.label)); });
+    return [...base, ...DEPARTMENT_ADDITIONS.filter((option) => !known.has(normalize(option.value)) && !known.has(normalize(option.label)))];
+};
+
+/** Tous les services connus d'une Note de service, avec le libellé imprimé : [valeur, libellé]. */
+export const allNoteDepartments = () => [...NOTE_DEPARTMENTS, ...DEPARTMENT_ADDITIONS.map((option) => [option.value, option.label])];

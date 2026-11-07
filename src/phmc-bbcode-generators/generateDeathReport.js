@@ -3,6 +3,7 @@ import { requestingAuthorityText } from './shared/requestingAuthority';
 import { placeWithCity } from '../utils/places';
 import { frDeath, DEATH_TYPE_SHORT_FR } from '../utils/deathLabels';
 import { frDay } from '../utils/reportTitle';
+import { withTitle } from '../utils/patientIdentity';
 import { sectionBanner, dmecHeader, infoTable, paragraph, photoBlock } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -95,7 +96,7 @@ const generateDeathReport = (formData) => {
     const blocks = [
         dmecHeader({
             label: 'Informations du défunt',
-            name: decedentName || 'Défunt non identifié',
+            name: decedentName ? withTitle(formData.decedentTitle, decedentName) : 'Défunt non identifié',
             detail: `ID Patient : ${patientId}`,
             title: 'RAPPORT D\'ENQUÊTE SUR LE DÉCÈS',
             subtitle: 'Bureau du Coroner du Comté',
