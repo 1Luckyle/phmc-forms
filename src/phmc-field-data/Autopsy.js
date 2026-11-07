@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Form, Button, InputGroup } from 'react-bootstrap';
-import Select from 'react-select';
 import AutopsyDiagramModal from '../components/AutopsyDiagramModal';
 import * as Sentry from "@sentry/react";
 import DecedentDetailsFields from './shared/DecedentDetailsFields';
 import RequestingAuthorityFields from './shared/RequestingAuthorityFields';
+import CoronerSelect from './shared/CoronerSelect';
+import NameFields from './shared/NameFields';
+import PlaceWithCity from './shared/PlaceWithCity';
+import PresetTextField from './shared/PresetTextField';
+import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
+import { localizeOptions, MANNER_FR } from '../utils/deathLabels';
+
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
 
 const Autopsy = ({
     formData,
@@ -17,7 +24,8 @@ const Autopsy = ({
     showNotification,
     commitInfo, // <-- Add commitInfo to props
     removeNotification,
-    handleImageUpload
+    handleImageUpload,
+    mannerOfDeathOptions
 
 }) => {
 
@@ -144,22 +152,20 @@ const Autopsy = ({
 
     return (
         <>
-            <p>Ce formulaire est utilisé pour documenter une procédure d'autopsie. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
-             <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
-                <Form.Control
-                    type="text"
-                    name="decedentName"
-                    value={formData.decedentName || ''}
-                    onChange={handleChange}
-                    placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)"
-                    className="form-control"
+            <Form.Label className="form-section-title">Défunt</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <NameFields
+                    formData={formData} setFormData={setFormData} handleChange={handleChange} fields={DECEDENT_FIELDS}
+                    placeholders={{ first: 'Prénom du défunt (IC)', middle: 'Deuxième prénom (IC)', last: 'Nom de famille (IC)' }}
                 />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
                 <Form.Control
                     type="text"
                     name="decedentOOC"
                     value={formData.decedentOOC || ''}
                     onChange={handleChange}
-                    placeholder="(( Nom du défunt (HRP) ))"
+                    placeholder="(( Discord du joueur (HRP) ))"
                     className="form-control"
                 />
                 <Form.Control
@@ -173,6 +179,10 @@ const Autopsy = ({
             </div>
             <DecedentDetailsFields formData={formData} handleChange={handleChange} showMeasures />
             <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
+            <Form.Label>Lieu du décès</Form.Label>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+                <PlaceWithCity formData={formData} setFormData={setFormData} handleChange={handleChange} addressName="placeOfDeath" zipName="placeOfDeathZip" placeholder="Lieu du décès (Numéro, Étage, Rue)" />
+            </div>
             <Form.Label className="form-section-title">Date et heure de l'autopsie</Form.Label>
              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
                 <Form.Control
@@ -209,6 +219,7 @@ const Autopsy = ({
                 <div key={`deathcause-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <Form.Control
                         as="textarea"
+                        name="autopsyDeathCauses"
                         value={cause}
                         rows={2}
                         onChange={(e) => handleDeathCauseChange(index, e.target.value)}
@@ -233,24 +244,16 @@ const Autopsy = ({
             </Button>
 
             <Form.Label>Mode de décès:</Form.Label>
-            <Form.Control
-                type="text"
-                name="deathType"
-                value={formData.deathType || ''}
-                onChange={handleChange}
-                placeholder="ex: Homicide, Accident, Naturel"
-                className={`form-control mb-2 `}
-            />
+            <Form.Select name="deathType" value={formData.deathType || ''} onChange={handleChange} className="form-control mb-2">
+                <option value="" disabled>Sélectionner le mode de décès</option>
+                {!(mannerOfDeathOptions || []).some((option) => option.value === formData.deathType) && formData.deathType && <option value={formData.deathType}>{formData.deathType}</option>}
+                {localizeOptions(mannerOfDeathOptions, MANNER_FR).map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </Form.Select>
 
             <Form.Label>Comment la blessure s'est produite:</Form.Label>
-            <Form.Control
-                type="text"
-                name="causeOfDeath"
-                value={formData.causeOfDeath || ''}
-                onChange={handleChange}
-                placeholder="ex: Multiples blessures par balle"
-                className={`form-control mb-2 `}
-            />
+            <PresetTextField name="causeOfDeath" formData={formData} setFormData={setFormData} presets={DEATH_CAUSE_PRESETS} placeholder="Autres précisions (ex. multiples blessures par balle)" selectPlaceholder="Mécanisme (plusieurs choix possibles)…" />
             <Form.Label>Examen externe:</Form.Label>
             <Form.Control
                 as="textarea" // Changed to textarea for potentially longer descriptions
@@ -288,6 +291,7 @@ const Autopsy = ({
                     <Form.Control
                         as="textarea"
                         rows={2}
+                        name="autopsyAnatomicSummaryItems"
                         value={item}
                         onChange={(e) => handleAnatomicSummaryItemChange(index, e.target.value)}
                         placeholder={`Élément du résumé anatomique ${index + 1}`}
@@ -373,75 +377,14 @@ const Autopsy = ({
                 placeholder="Opinion de l'examinateur médical sur l'état du défunt et la cause du décès"
                 className={`form-control mb-2 `}
             />
-            <Form.Label>Examinateur médical effectuant l'autopsie</Form.Label>
-            <Select
-                name="coronerEmployee"
-                value={coronerGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.coronerEmployee) || null}
-                onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
-                options={coronerGroupedOptions}
-                isClearable
-                placeholder="Rechercher ou sélectionner un coroner..."
-                className="form-control"
-                styles={{
-                    control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: !formData.coronerEmployee && state.isFocused ? '#dc3545' :
-                                     !formData.coronerEmployee ? '#dc3545' :
-                                     state.isFocused ? '#86b7fe' : '#6c757d',
-                        '&:hover': {
-                            borderColor: !formData.coronerEmployee ? '#dc3545' : '#86b7fe'
-                        },
-                        boxShadow: !formData.coronerEmployee && state.isFocused ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' :
-                                   state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
-                }}
+            <CoronerSelect
+                options={coronerGroupedOptions} formData={formData} handleSelectChange={handleSelectChange}
+                label="Examinateur médical effectuant l'autopsie" placeholder="Rechercher ou sélectionner un coroner..."
             />
             <Form.Label></Form.Label>
-
-            <Form.Label>Chef médecin légiste-Coroner</Form.Label>
-            <Select
-                name="chiefCoronerEmployee"
-                value={unrestrictedCoronerGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.chiefCoronerEmployee) || null}
-                onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'chiefCoronerEmployee' })}
-                options={unrestrictedCoronerGroupedOptions}
-                isClearable
-                placeholder="Rechercher ou sélectionner le chef coroner..."
-                className="form-control"
-                styles={{
-                    control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: !formData.chiefCoronerEmployee && state.isFocused ? '#dc3545' :
-                                     !formData.chiefCoronerEmployee ? '#dc3545' :
-                                     state.isFocused ? '#86b7fe' : '#6c757d',
-                        '&:hover': {
-                            borderColor: !formData.chiefCoronerEmployee ? '#dc3545' : '#86b7fe'
-                        },
-                        boxShadow: !formData.chiefCoronerEmployee && state.isFocused ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' :
-                                   state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
-                }}
+            <CoronerSelect
+                name="chiefCoronerEmployee" options={unrestrictedCoronerGroupedOptions} formData={formData} handleSelectChange={handleSelectChange}
+                label="Chef médecin légiste-Coroner" placeholder="Rechercher ou sélectionner le chef coroner..." restricted={false}
             />
             <Form.Label></Form.Label>
 

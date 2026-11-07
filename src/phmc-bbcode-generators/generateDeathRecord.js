@@ -1,3 +1,4 @@
+import { placeWithCity } from '../utils/places';
 const generateDeathRecord = (formData) => {
     const {
         caseNumber,
@@ -14,6 +15,7 @@ const generateDeathRecord = (formData) => {
         causeB,
         causeC,
         causeD,
+        causesOfDeath,
         otherSignificantConditions,
         deathRecordType,
         hairColor,
@@ -29,10 +31,17 @@ const generateDeathRecord = (formData) => {
     } = formData;
 
 
+    const legacyCauses = [causeA, causeB, causeC, causeD].filter((cause) => String(cause || '').trim());
+    const causesText = String(causesOfDeath || '').trim() || legacyCauses.join(' ; ');
+    const causesRow = `[tr]
+[td bgcolor=#E6E6E6][b]Causes du décès[/b]: ${causesText || 'Non renseignées'}[/td]
+[/tr]
+`;
+
     let detailsBlock;
     if (deathRecordType === 'Unidentified') {
         detailsBlock = `[table]
-[tr]
+${causesRow}[tr]
 [td bgcolor=#E6E6E6][b]Couleur des cheveux[/b]: ${hairColor || 'N/A'}[/td]
 [td bgcolor=#E6E6E6][b]Couleur des yeux[/b]: ${eyeColor || 'N/A'}[/td]
 [/tr]
@@ -50,15 +59,7 @@ const generateDeathRecord = (formData) => {
 [/table]`;
     } else {
         detailsBlock = `[table]
-[tr]
-[td bgcolor=#E6E6E6][b]Cause A[/b]: ${causeA || ''}[/td]
-[td bgcolor=#E6E6E6][b]Cause B[/b]: ${causeB || ''}[/td]
-[/tr]
-[tr]
-[td bgcolor=#E6E6E6][b]Cause C[/b]: ${causeC || ''}[/td]
-[td bgcolor=#E6E6E6][b]Cause D[/b]: ${causeD || ''}[/td]
-[/tr]
-[tr]
+${causesRow}[tr]
 [td bgcolor=#E6E6E6][b]Autres informations significatives[/b]: ${otherSignificantConditions || 'Aucune'}[/td]
 [/tr]
 [/table]`;
@@ -100,7 +101,7 @@ const generateDeathRecord = (formData) => {
 
 [table]
 [tr]
-[td bgcolor=#E6E6E6][b]Lieu du décès[/b]: ${placeOfDeath || ''}[/td]
+[td bgcolor=#E6E6E6][b]Lieu du décès[/b]: ${placeWithCity(placeOfDeath, formData.placeOfDeathZip) || ''}[/td]
 [td bgcolor=#E6E6E6][b]Mode de décès[/b]: ${manner || ''}[/td]
 [/tr]
 [tr]

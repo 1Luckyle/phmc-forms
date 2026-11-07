@@ -13,6 +13,7 @@
 import { buildEmployerSummaryBBCode } from './employerSummary';
 import { getCategoryPositions } from '../constants/recruitment';
 import { HISTORY_PRESETS, aggregatePresetText } from '../constants/historyPresets';
+import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 import { toFrenchGender } from './patientIdentity';
 import { FLIGHT_CERT_CLASSES, examResultKey } from './flightCertificate';
 
@@ -202,10 +203,15 @@ const vitals = (h) => ({
 });
 
 // Champ d'historique à choix par défaut (voir PresetTextField) : `count` choix cochés + un texte libre, et le texte regroupé que lit le rapport.
-const presetFill = (key, count = 2, free = '') => {
-    const picked = (HISTORY_PRESETS[key] || []).filter((item) => !/^aucun/i.test(item)).slice(0, count);
+const presetFill = (key, count = 2, free = '', source = HISTORY_PRESETS[key]) => {
+    const picked = (source || []).filter((item) => !/^aucun/i.test(item)).slice(0, count);
     return { [key]: aggregatePresetText(picked, free), [`${key}Presets`]: picked, [`${key}Free`]: free };
 };
+
+// Défunt de démonstration : nom en trois parties (le nom complet est recomposé par le formulaire).
+const decedentParts = (first = 'Pierre', middle = '', last = 'Défunt') => ({
+    decedentFirstName: first, decedentMiddleName: middle, decedentLastName: last, decedentName: [first, middle, last].filter(Boolean).join(' '),
+});
 
 // Titre cohérent avec l'âge : « Mineur » est imposé sous 18 ans et interdit au-delà.
 const patientTitleFor = (h) => (Number(h.patient.ageYears) < 18 ? 'Mineur' : h.optIs('patientTitle', 'Mr', 'Mr'));
@@ -220,6 +226,7 @@ const patientBasic = (h) => ({
     patientID: h.patient.id,
     patientDateOfBirth: h.patient.dob,
     patientAddress: h.patient.address,
+    patientZIP: h.patient.zip,
     patientGender: h.patient.gender,
     patientRace: 'Caucasien(ne)',
     patientPH: h.patient.phone,
@@ -370,12 +377,13 @@ const TEMPLATES = {
         ...h.coroner,
         dateTime: h.utcDateTime,
         pronouncedTimeOfDeath: h.utcTime,
-        showRequestingOfficerInput: true,
         department: h.opt('requestingAgenciesOptions'),
-        requestingOfficer: 'Officier John Doe, LSSD',
+        showRequestingOfficerInput: true,
+        requestingAgency: h.opt('requestingAgenciesOptions', 1),
+        requestingOfficer: 'Officier John Doe',
         massFatality: false,
-        decedentName: 'Pierre Défunt',
-        decedentOOC: 'Test Debug',
+        ...decedentParts(),
+        decedentOOC: 'test.debug',
         decedentAge: '42',
         decedentSex: 'Male',
         decedentHeight: '1,80 m',
@@ -383,9 +391,10 @@ const TEMPLATES = {
         decedentMarks: "Tatouage sur l'avant-bras gauche, cicatrice à l'abdomen.",
         patientID: h.patient.id,
         typeOfDeath: h.opt('typeOfDeathOptions'),
-        placeOfDeath: '1234 Vinewood Blvd, Los Santos',
+        placeOfDeath: '1234 Vinewood Blvd',
+        placeOfDeathZip: h.patient.zip,
         mannerOfDeath: h.opt('mannerOfDeathOptions'),
-        probableCauseOfDeath: 'Multiples blessures par balle',
+        ...presetFill('probableCauseOfDeath', 2, '', DEATH_CAUSE_PRESETS),
         synopsis: LOREM_LONG,
         scenePhotos: h.imgs(2),
         additionalImages: h.img(),
@@ -396,9 +405,11 @@ const TEMPLATES = {
     4: (h) => ({
         ...h.coroner,
         ...h.chief,
-        decedentName: 'Pierre Défunt',
-        decedentOOC: 'Test Debug',
+        ...decedentParts(),
+        decedentOOC: 'test.debug',
         patientID: h.patient.id,
+        placeOfDeath: '1234 Vinewood Blvd',
+        placeOfDeathZip: h.patient.zip,
         autopsyDate: h.today,
         autopsyTime: h.utcTime,
         decedentAge: '42',
@@ -410,7 +421,7 @@ const TEMPLATES = {
         autopsyInternalExamination: 'Hémopéritoine abondant, lésion hépatique et pulmonaire gauche.',
         autopsyDeathCauses: ['Hémorragie interne', 'Choc hypovolémique'],
         deathType: 'Homicide',
-        causeOfDeath: 'Multiples blessures par balle',
+        ...presetFill('causeOfDeath', 1, 'Multiples blessures par balle', DEATH_CAUSE_PRESETS),
         externalExamination: LOREM_LONG,
         autopsyAnatomicSummaryItems: ['Plaie thoracique gauche', 'Fracture de la 4e côte'],
         RadiologyResult: 'Projectile retenu dans le thorax.',
@@ -422,11 +433,14 @@ const TEMPLATES = {
     // Email DMEC
     2: (h) => ({
         ...h.coroner,
+        // Numéro et e-mail viennent du profil du coroner (non modifiables dans le formulaire).
         coronerPHNumber: '555-0100',
+        coronerEmail: 'coroner.test@phmc.health',
         requestingOfficer: 'Officier John Doe',
         department: h.opt('requestingAgenciesOptions'),
-        decedentName: 'Pierre Défunt',
-        decedentOOC: 'Test Debug',
+        ...decedentParts(),
+        decedentOOC: 'test.debug',
+        patientID: h.patient.id,
         deathReport: LOREM_SHORT,
         additionalReports: [LOREM_SHORT],
     }),
@@ -434,12 +448,18 @@ const TEMPLATES = {
     // Certificat de Décès
     8: (h) => ({
         ...h.coroner,
-        decedentName: 'Pierre Défunt',
+        ...decedentParts(),
+        patientID: h.patient.id,
         patientAge: '42',
         patientDateOfBirth: '1984-03-12',
-        probableCauseOfDeath: 'Hémorragie interne',
+        ...presetFill('probableCauseOfDeath', 2, '', DEATH_CAUSE_PRESETS),
         TimeofDeath: h.utcTime,
         dateofdeath: h.today,
+        placeOfDeath: '1234 Vinewood Blvd',
+        placeOfDeathZip: h.patient.zip,
+        witnessFirstName: 'Marie',
+        witnessMiddleName: '',
+        witnessLastName: 'Témoin',
         witnessName: 'Marie Témoin',
         date: h.today,
     }),
@@ -479,28 +499,29 @@ const TEMPLATES = {
     11: (h) => ({
         ...h.coroner,
         dateTime: h.utcDateTime,
-        placeOfDeath: 'Autoroute Del Perro, Los Santos',
-        showRequestingOfficerInput: true,
+        placeOfDeath: 'Autoroute Del Perro',
+        placeOfDeathZip: h.patient.zip,
         department: h.opt('requestingAgenciesOptions'),
-        requestingOfficer: 'Officier John Doe, LSSD',
+        showRequestingOfficerInput: true,
+        requestingAgency: h.opt('requestingAgenciesOptions', 1),
+        requestingOfficer: 'Officier John Doe',
         synopsis: LOREM_LONG,
         evidenceLocker: 'false',
         evidenceLockerID: '',
         decedents: [1, 2].map((n) => ({
-            decedentName: `Défunt Numéro${n}`,
-            decedentOOC: `Test Debug ${n}`,
+            ...decedentParts('Défunt', '', `Numéro${n}`),
+            decedentOOC: `test.debug${n}`,
             patientID: '',
             dateTime: h.utcDateTime,
             pronouncedTimeOfDeath: h.utcDateTime,
-            department: h.opt('requestingAgenciesOptions'),
-            requestingOfficer: 'Officier John Doe, LSSD',
             typeOfDeath: h.opt('typeOfDeathOptions'),
-            placeOfDeath: 'Autoroute Del Perro, Los Santos',
+            placeOfDeath: 'Autoroute Del Perro',
+            placeOfDeathZip: h.patient.zip,
             mannerOfDeath: h.opt('mannerOfDeathOptions'),
             synopsis: LOREM_SHORT,
             evidenceLocker: 'false',
             evidenceLockerID: '',
-            probableCauseOfDeath: 'Traumatisme crânien',
+            ...presetFill('probableCauseOfDeath', 1, '', DEATH_CAUSE_PRESETS),
             scenePhotos: h.img(),
             additionalImages: '',
             morgueStatus: 'false',
@@ -613,7 +634,8 @@ const TEMPLATES = {
         patientMiddleNameNew: 'Marie',
         patientLastNameNew: 'Testard',
         patientDateOfBirthNew: h.patient.dob,
-        patientAddressNew: '5678 Rockford Hills, Los Santos',
+        patientAddressNew: '5678 Rockford Hills',
+        patientZIPNew: h.patient.zip,
         patientPHNew: '555-0177',
         patientPhoneTypeNew: h.optIs('patientPhone', 'Work', 'Work'),
         patientDiscordNew: 'jeanne.testard',
@@ -661,30 +683,28 @@ const TEMPLATES = {
     37: (h) => ({
         ...h.coroner,
         chiefMedicalExaminer: h.chief.chiefCoronerEmployee || h.coroner.coronerEmployee || '',
-        deathRecordType: h.optLabel('deathRecordType', 0, 'Identified'),
+        deathRecordType: 'Identified',
         caseNumber: '2026-0042',
-        decedentName: 'Pierre Défunt',
-        decedentOOC: 'Test Debug',
+        ...decedentParts(),
+        decedentOOC: 'test.debug',
         patientID: h.patient.id,
         dateOfDeath: h.today,
-        caseStatus: h.optLabel('caseStatusOptions', 0, 'Ouvert'),
-        bodyStatus: h.optLabel('bodyStatusOptions', 0, 'Non libéré'),
-        sex: h.optLabel('gender', 0, 'Masculin'),
-        ethnicity: 'Caucasien',
-        placeOfDeath: '1234 Vinewood Blvd, Los Santos',
+        caseStatus: 'Ouvert',
+        bodyStatus: 'Prêt à être remis',
+        sex: 'Masculin',
+        ethnicity: 'Caucasien(ne)',
+        placeOfDeath: '1234 Vinewood Blvd',
+        placeOfDeathZip: h.patient.zip,
         age: '42',
-        manner: h.optLabel('mannerOfDeathOptions', 0, 'Homicide'),
-        hairColor: 'Brun',
+        manner: 'Homicide',
+        hairColor: 'Bruns',
         eyeColor: 'Bleus',
         weight: '80 kg',
         height: '1m80',
         tattoos: 'Aucun',
         jewelry: 'Aucun',
         comments: LOREM_SHORT,
-        causeA: 'Hémorragie interne',
-        causeB: 'Plaie par balle',
-        causeC: 'Agression armée',
-        causeD: 'N/A',
+        ...presetFill('causesOfDeath', 2, '', DEATH_CAUSE_PRESETS),
         otherSignificantConditions: 'Aucune.',
     }),
 

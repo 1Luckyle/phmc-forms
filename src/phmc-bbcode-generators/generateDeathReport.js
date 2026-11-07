@@ -1,5 +1,8 @@
 import { buildDecedentDescription } from './shared/decedentDescription';
 import { requestingAuthorityLine } from './shared/requestingAuthority';
+import { placeWithCity } from '../utils/places';
+import { frDeath, DEATH_TYPE_SHORT_FR } from '../utils/deathLabels';
+import { frDay } from '../utils/reportTitle';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -89,6 +92,12 @@ const getDepartmentFullName = (shortCode) => {
 
     // --- BBCode Template ---
     // Use template literals for better readability
+    // Qui a demandé le rapport (si la case « Rapport demandé ? » est cochée) : son nom et son agence, distincts de l'agence qui a appelé le Bureau du Coroner.
+    const requesterName = String(formData.requestingOfficer || '').trim();
+    const requesterAgency = formData.requestingAgency ? getDepartmentFullName(formData.requestingAgency) : '';
+    const requestedBy = formData.showRequestingOfficerInput && (requesterName || requesterAgency)
+        ? ` Ce rapport a été demandé par [b]${requesterName || NOT_FILLED}[/b] (${requesterAgency || NOT_FILLED}).`
+        : '';
     const decedentDescription = buildDecedentDescription(formData);
     const decedentDescriptionParagraph = decedentDescription
         ? `\n\nDescription du défunt: ${decedentDescription}`
@@ -103,11 +112,11 @@ const getDepartmentFullName = (shortCode) => {
 
 [center][b]A. RAPPORT ÉCRIT[/b][/center]
 
-Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à l'emplacement de [b]${placeOfDeath || 'Lieu inconnu'}[/b]. Après avoir reçu l'appel de[b] ${getDepartmentFullName(department) || 'Département inconnu'}[/b], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [b]${dateTime || 'Date/Heure inconnue'}[/b].
+Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à l'emplacement de [b]${placeWithCity(placeOfDeath, formData.placeOfDeathZip) || 'Lieu inconnu'}[/b]. Après avoir reçu l'appel de[b] ${getDepartmentFullName(department) || 'Département inconnu'}[/b], le Bureau du Coroner a dépêché un ${coronerRank || 'Coroner'} sur la scène de crime pour mener une enquête le [b]${frDay(dateTime) || 'Date/Heure inconnue'}[/b].${requestedBy}
 
 Le ${coronerRank || 'Coroner'}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]${coronerBadge || 'N/A'}[/b], est arrivé sur les lieux et a identifié l'individu comme étant [b]${decedentName || 'Défunt non identifié'}[/b] (ID Patient : ${formData.patientID || 'Non applicable'}), qui est estimé être décédé à [b]${pronouncedTimeOfDeath || 'Heure inconnue'}[/b]. Suite à une enquête initiale, le ${coronerRank || 'Coroner'} est arrivé au [b]synopsis[/b] suivant: ${synopsis || 'Aucun synopsis fourni.'}${decedentDescriptionParagraph}
 
-D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [b]${probableCauseOfDeath || 'Indéterminée'}[/b]. La manière du décès a été classée comme [b]${mannerOfDeath || 'Indéterminée'}[/b].${authorityParagraph}
+D'après les informations recueillies lors de l'enquête sur les lieux et les antécédents médicaux du défunt (si disponibles), la cause probable du décès a été déterminée comme étant [b]${probableCauseOfDeath || 'Indéterminée'}[/b]. La manière du décès a été classée comme [b]${frDeath(mannerOfDeath) || 'Indéterminée'}[/b].${authorityParagraph}
 [/divbox]
 [divbox=transparent][center][b]B. DOSSIER PHOTOGRAPHIQUE DOCUMENTAIRE[/b][/center]
 [hr][/hr]
@@ -135,16 +144,16 @@ Ce document est fourni à des fins officielles uniquement et ne doit pas être i
 [divbox=transparent][center][b][u](( IMAGES HORS PERSONNAGE ))[/u][/b][/center][hr][/hr]
 
 Cette section précise si le joueur a été tué de manière permanente (character killed) ou temporaire (player killed).
-Dans ce cas, le joueur a été; ${typeOfDeath || 'Inconnu'}
-Nom OOC du joueur: ${decedentOOC || 'Inconnu'}
+Dans ce cas, le joueur a subi : ${DEATH_TYPE_SHORT_FR[typeOfDeath] || typeOfDeath || 'Inconnu'}
+Discord du joueur (HRP): ${decedentOOC || 'Inconnu'}
 Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN: ${morgueStatusMessage || ''}
 [size=85][u] CES IMAGES SONT [b]HORS PERSONNAGE[/b] POUR LES DOSSIERS INTERNES, NE PAS LES UTILISER COMME PREUVE. [/u][/size]
-${additionalImagesBBCode}
+${additionalImagesBBCode}${decedentAttributesBBCode ? `
 
-${decedentAttributesBBCode}
+${decedentAttributesBBCode}` : ''}
 
-${coronerRank || 'Coroner'} ${coronerEmployee || 'Coroner inconnu'} a ajouté quelque chose au casier à preuves: ${evidenceLockerText}
-${evidenceLockerListItems}
+${coronerRank || 'Coroner'} ${coronerEmployee || 'Coroner inconnu'} a ajouté quelque chose au casier à preuves: ${evidenceLockerText}${evidenceLockerListItems ? `
+${evidenceLockerListItems}` : ''}
 
 [/divbox]
 `;

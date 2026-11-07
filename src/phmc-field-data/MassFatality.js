@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, InputGroup } from 'react-bootstrap';
-import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
+import CoronerSelect from './shared/CoronerSelect';
+import PlaceWithCity from './shared/PlaceWithCity';
+import PresetTextField from './shared/PresetTextField';
+import ZipCityField from '../components/ZipCityField';
+import { splitFullName, joinFullName } from '../utils/patientIdentity';
+import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
+import { localizeOptions, DEATH_TYPE_FR, MANNER_FR } from '../utils/deathLabels';
 const defaultDecedent = {
     decedentName: '',
     decedentOOC: '',
@@ -22,78 +28,14 @@ const defaultDecedent = {
     morgueStatus: 'false',
     collapsed: false, // Added for collapsable functionality
 };
-const customSelectStyles = {
-    control: (base, state) => ({
-        ...base,
-        minHeight: '38px',
-        backgroundColor: '#16202c',
-        color: '#eeeeeeb0',
-        borderColor: state.isFocused ? '#86b7fe' : '#30363d',
-        boxShadow: state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
-        '&:hover': {
-            borderColor: '#86b7fe'
-        }
-    }),
-    menu: (base) => ({
-        ...base,
-        backgroundColor: '#16202c',
-        zIndex: 1000,
-        border: '1px solid #30363d',
-        borderRadius: '0.375rem'
-    }),
-    option: (base, state) => ({
-        ...base,
-        backgroundColor: state.isFocused ? '#30363d' : '#16202c',
-        color: '#eeeeeeb0',
-        padding: '0.5rem 1rem',
-        '&:hover': {
-            backgroundColor: '#30363d'
-        }
-    }),
-    multiValue: (base) => ({
-        ...base,
-        backgroundColor: '#30363d',
-        color: '#eeeeeeb0'
-    }),
-    multiValueLabel: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    multiValueRemove: (base) => ({
-        ...base,
-        color: '#9aa7b4',
-        '&:hover': {
-            backgroundColor: '#dc3545',
-            color: '#fff'
-        }
-    }),
-    input: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    placeholder: (base) => ({
-        ...base,
-        color: '#9aa7b4'
-    }),
-    singleValue: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    group: (base) => ({
-        ...base,
-        paddingTop: 8,
-        paddingBottom: 8
-    }),
-    groupHeading: (base) => ({
-        ...base,
-        color: '#9aa7b4',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        fontSize: '0.75rem',
-        marginBottom: 4
-    })
+// Nom d'un défunt en trois parties (anciens rapports : découpé depuis le nom complet).
+const partsOf = (dec) => ((dec.decedentFirstName || dec.decedentMiddleName || dec.decedentLastName)
+    ? { first: dec.decedentFirstName || '', middle: dec.decedentMiddleName || '', last: dec.decedentLastName || '' }
+    : splitFullName(dec.decedentName));
+const isDoe = (dec, first) => {
+    const parts = partsOf(dec);
+    return parts.first.trim() === first && parts.last.trim() === 'Doe' && !parts.middle.trim();
 };
-
 
 const isDecedentComplete = (dec) => {
     return (
@@ -230,58 +172,27 @@ const MassFatality = ({
         }));
     };
 
-    const handleDoeChange = (index, type) => (e) => {
-        const isChecked = e.target.checked;
-        if (isChecked) {
-            if (type === 'john') {
-                updateDecedent(index, 'decedentName', 'John Doe');
-            } else if (type === 'jane') {
-                updateDecedent(index, 'decedentName', 'Jane Doe');
-            }
-        }
-    };
+    const patchDecedent = (index, patch) => setFormData((prev) => ({
+        ...prev,
+        decedents: prev.decedents.map((dec, i) => (i === index ? { ...dec, ...(typeof patch === 'function' ? patch(dec) : patch) } : dec)),
+    }));
+
+    const setNamePart = (index, part, value) => patchDecedent(index, (dec) => {
+        const next = { ...partsOf(dec), [part]: value };
+        return { decedentFirstName: next.first, decedentMiddleName: next.middle, decedentLastName: next.last, decedentName: joinFullName(next.first, next.middle, next.last) };
+    });
+
+    // John / Jane Doe : se cochent et se décochent ; la case se décoche toute seule dès qu'un autre nom est saisi.
+    const toggleDoe = (index, first, checked) => patchDecedent(index, {
+        decedentFirstName: checked ? first : '', decedentMiddleName: '', decedentLastName: checked ? 'Doe' : '', decedentName: checked ? `${first} Doe` : '',
+    });
 
     return (
         <>
-            <p>Ce formulaire est utilisé pour documenter une tuerie/accident de masse. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
-            <Form.Label>Identifiants de l'employé</Form.Label>
-            <Select
-                name="coronerEmployee"
-                value={coronerGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.coronerEmployee) || null}
-                // Corrected onChange handler:
-                onChange={(selectedOption) => handleSelectChange(selectedOption, 'coronerEmployee')}
-                options={coronerGroupedOptions}
-                isClearable
-                placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                className="form-control"
-                styles={{ 
-                    control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: !formData.coronerEmployee && state.isFocused ? '#dc3545' :
-                                     !formData.coronerEmployee ? '#dc3545' :
-                                     state.isFocused ? '#86b7fe' : '#6c757d',
-                        '&:hover': {
-                            borderColor: !formData.coronerEmployee ? '#dc3545' : '#86b7fe'
-                        },
-                        boxShadow: !formData.coronerEmployee && state.isFocused ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' :
-                                   state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
-                }}
-            />
-            <Form.Label></Form.Label>
+            <Form.Label className="form-section-title">Informations générales</Form.Label>
+            <CoronerSelect options={coronerGroupedOptions} formData={formData} handleSelectChange={(option) => handleSelectChange(option, 'coronerEmployee')} />
             <Form.Label>
-                Heure d'envoi | Lieu de l'incident
+                Heure d'envoi
                 <span style={{ fontSize: '0.8em', color: '#9aa7b4', marginLeft: '10px' }}>
                     (Heure actuelle du serveur: {currentUtcTime})
                 </span>
@@ -294,53 +205,52 @@ const MassFatality = ({
                     onChange={handleChange}
                     className="form-control"
                 />
-            <Form.Control
-                type="text"
-                name="placeOfDeath"
-                value={formData.placeOfDeath}
-                onChange={handleChange}
-                placeholder="Lieu de l'incident (Numéro, Étage, Rue)"
-                className="form-control"
-            />
             </div>
-            <Form.Group className="mb-3">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-                    <Form.Check
-                        type="checkbox"
-                        label="Rapport demandé?"
-                        name="showRequestingOfficerInput"
-                        checked={formData.showRequestingOfficerInput || false}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+            <Form.Label>Lieu de l'incident</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <PlaceWithCity formData={formData} setFormData={setFormData} handleChange={handleChange} addressName="placeOfDeath" zipName="placeOfDeathZip" placeholder="Lieu de l'incident (Numéro, Étage, Rue)" />
+            </div>
 
-                    <Form.Select
-                        name="department"
-                        value={formData.department}
-                        onChange={handleChange}
-                        className="form-control"
-                    >
-                        <option value="" disabled>Sélectionner l'agence demandeur</option>
-                        {/* --- Updated to use requestingAgencyOptions --- */}
+            <Form.Label className="form-section-title">Appel au Bureau du Coroner</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <Form.Select name="department" value={formData.department || ''} onChange={handleChange} className="form-control">
+                    <option value="" disabled>Agence ayant appelé le Bureau du Coroner</option>
+                    {requestingAgencyOptions.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </Form.Select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                <Form.Check
+                    type="checkbox"
+                    label="Rapport demandé ?"
+                    name="showRequestingOfficerInput"
+                    checked={formData.showRequestingOfficerInput || false}
+                    onChange={handleChange}
+                />
+            </div>
+            {formData.showRequestingOfficerInput && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <Form.Select name="requestingAgency" value={formData.requestingAgency || ''} onChange={handleChange} className="form-control">
+                        <option value="" disabled>Agence de la personne qui demande le rapport</option>
                         {requestingAgencyOptions.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                     </Form.Select>
-                    {formData.showRequestingOfficerInput && (
-                        <Form.Control
-                            type="text"
-                            name="requestingOfficer"
-                            value={formData.requestingOfficer || ''}
-                            onChange={handleChange}
-                            placeholder="ex: Officier John Doe, LSPD"
-                        />
-                    )}
+                    <Form.Control
+                        type="text"
+                        name="requestingOfficer"
+                        value={formData.requestingOfficer || ''}
+                        onChange={handleChange}
+                        placeholder="Grade, prénom et nom de la personne qui demande le rapport (ex. Officier John Doe)"
+                    />
                 </div>
-                            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé - (Ceci couvre ce que vous avez initialement trouvé sur les lieux et l'aperçu des patients)" className="form-control" />
-                
-            </Form.Group>
+            )}
 
+            <Form.Label className="form-section-title">Résumé de l'incident</Form.Label>
+            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé de l'incident (ce qui s'est passé, nombre de victimes, circonstances…)" className="form-control" />
+
+            <Form.Label className="form-section-title">Défunts</Form.Label>
             <Button variant="primary" onClick={addDecedent} style={{ marginBottom: '1rem' }}>
                 Ajouter un nouveau défunt
             </Button>
@@ -356,41 +266,58 @@ const MassFatality = ({
                     />
                     {!dec.collapsed && (
                         <div id={`decedent-collapse-${idx}`}>
-                                        <div className="radio-button-group">
-                                            <Form.Check type="radio" id={`johnDoe-${idx}`} name={`decedentName-${idx}`} label="John Doe" checked={dec.decedentName === 'John Doe'} onChange={handleDoeChange(idx, 'john')} inline />
-                                            <Form.Check type="radio" id={`janeDoe-${idx}`} name={`decedentName-${idx}`} label="Jane Doe" checked={dec.decedentName === 'Jane Doe'} onChange={handleDoeChange(idx, 'jane')} inline />
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <Form.Control type="text" value={dec.decedentName} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" onChange={e => updateDecedent(idx, 'decedentName', e.target.value)} />
-                                            <Form.Control type="text" value={dec.decedentOOC} placeholder="Nom du défunt (HRP)" onChange={e => updateDecedent(idx, 'decedentOOC', e.target.value)} />
-                                            <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient" onChange={e => updateDecedent(idx, 'patientID', e.target.value)} />
-                                        </div>
-                                                            <Form.Label>Heure du décès prononcée</Form.Label>
-
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="datetime-local" value={dec.pronouncedTimeOfDeath} onChange={e => updateDecedent(idx, 'pronouncedTimeOfDeath', e.target.value)} />
-                                      <Form.Control type="text" value={dec.probableCauseOfDeath} placeholder="Cause probable du décès" onChange={e => updateDecedent(idx, 'probableCauseOfDeath', e.target.value)} />
-
-                             <Form.Select value={dec.typeOfDeath} onChange={e => updateDecedent(idx, 'typeOfDeath', e.target.value)}>
-                                    <option value="" disabled>Sélectionner le type de décès</option>
-                                    {typeOfDeathOptions.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                </Form.Select>
-                                </div>   
-                                                                        <div style={{ display: 'flex', gap: '10px' }}>
-
-                                <Form.Control type="text" value={dec.placeOfDeath} placeholder='Lieu du décès (Numéro, Étage, Rue)' onChange={e => updateDecedent(idx, 'placeOfDeath', e.target.value)} />
-                                <Form.Select value={dec.mannerOfDeath} onChange={e => updateDecedent(idx, 'mannerOfDeath', e.target.value)}>
-                                    <option value="" disabled>Sélectionner le mode de décès</option>
-                                    {mannerOfDeathOptions.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                </Form.Select>
+                        <div data-guide-zone>
+                            <div className="radio-inline-container">
+                                <div className="radio-button-group">
+                                    <Form.Check type="checkbox" id={`johnDoe-${idx}`} label="   John Doe" checked={isDoe(dec, 'John')} onChange={(e) => toggleDoe(idx, 'John', e.target.checked)} inline />
+                                    <Form.Check type="checkbox" id={`janeDoe-${idx}`} label="   Jane Doe" checked={isDoe(dec, 'Jane')} onChange={(e) => toggleDoe(idx, 'Jane', e.target.checked)} inline />
                                 </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <Form.Control type="text" value={partsOf(dec).first} placeholder="Prénom du défunt (IC)" onChange={(e) => setNamePart(idx, 'first', e.target.value)} required={idx === 0} data-guide="Prénom du défunt, tel que son personnage. Le premier défunt doit avoir un nom." />
+                                <Form.Control type="text" value={partsOf(dec).middle} placeholder="Deuxième prénom (IC)" onChange={(e) => setNamePart(idx, 'middle', e.target.value)} data-guide="Deuxième prénom du défunt, s'il en a un." />
+                                <Form.Control type="text" value={partsOf(dec).last} placeholder="Nom de famille (IC)" onChange={(e) => setNamePart(idx, 'last', e.target.value)} required={idx === 0} data-guide="Nom de famille du défunt, tel que son personnage." />
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <Form.Control type="text" value={dec.decedentOOC} placeholder="(( Discord du joueur (HRP) ))" onChange={(e) => updateDecedent(idx, 'decedentOOC', e.target.value)} data-guide="Discord du joueur du défunt, hors jeu de rôle." />
+                                <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" onChange={(e) => updateDecedent(idx, 'patientID', e.target.value)} data-guide="ID du défunt s'il était patient du PHMC (PHMC-2752)." />
+                            </div>
+                            <Form.Label>Heure du décès prononcée</Form.Label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <Form.Control type="datetime-local" value={dec.pronouncedTimeOfDeath} onChange={(e) => updateDecedent(idx, 'pronouncedTimeOfDeath', e.target.value)} data-guide="Date et heure à laquelle le décès a été prononcé." />
+                                <Form.Select value={dec.typeOfDeath} onChange={(e) => updateDecedent(idx, 'typeOfDeath', e.target.value)} data-guide="Type de décès : PK (mort du joueur) ou CK (mort définitive du personnage).">
+                                    <option value="" disabled>Sélectionner le type de décès</option>
+                                    {localizeOptions(typeOfDeathOptions, DEATH_TYPE_FR).map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </Form.Select>
+                            </div>
+                            <Form.Label>Lieu du décès</Form.Label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <Form.Control type="text" value={dec.placeOfDeath} placeholder="Lieu du décès (Numéro, Étage, Rue)" onChange={(e) => updateDecedent(idx, 'placeOfDeath', e.target.value)} data-guide="Adresse du lieu où le défunt est décédé." />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <ZipCityField zip={dec.placeOfDeathZip || ''} onZipChange={(zip) => updateDecedent(idx, 'placeOfDeathZip', zip)} placeholder="Code postal" />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <Form.Select value={dec.mannerOfDeath} onChange={(e) => updateDecedent(idx, 'mannerOfDeath', e.target.value)} data-guide="Mode du décès : naturelle, accidentelle, suicide, homicide ou indéterminée.">
+                                    <option value="" disabled>Sélectionner le mode de décès</option>
+                                    {localizeOptions(mannerOfDeathOptions, MANNER_FR).map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </Form.Select>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <PresetTextField
+                                    name="probableCauseOfDeath" formData={dec}
+                                    setFormData={(updater) => patchDecedent(idx, (current) => updater(current))}
+                                    presets={DEATH_CAUSE_PRESETS} placeholder="Autres précisions sur la cause probable du décès" selectPlaceholder="Cause probable du décès (plusieurs choix possibles)…"
+                                />
+                            </div>
+                        </div>
                             <Form.Group className="mb-3">
                                 <Form.Label>Blessures du défunt / Points à noter</Form.Label>
-                                <Form.Control as="textarea" rows={3} value={dec.synopsis} onChange={e => updateDecedent(idx, 'synopsis', e.target.value)} />
+                                <Form.Control as="textarea" rows={3} value={dec.synopsis} onChange={e => updateDecedent(idx, 'synopsis', e.target.value)} placeholder="Blessures constatées, éléments notables…" data-guide="Blessures constatées sur le défunt et éléments à noter." />
                             </Form.Group>
                             <Form.Group className="mb-3">
                                 <label>Soumission au casier à preuves:</label>
@@ -545,6 +472,14 @@ const MassFatality = ({
                                 <span className="helper-text">
                                     Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                                 </span>
+                                <label>Bugs de la morgue:</label>
+                                <Form.Check
+                                    type="checkbox"
+                                    id={`morgueStatus-${idx}`}
+                                    label="       Cocher si l'écran de morgue est indisponible / cassé / inaccessible"
+                                    checked={dec.morgueStatus === 'true' || dec.morgueStatus === true}
+                                    onChange={(e) => updateDecedent(idx, 'morgueStatus', e.target.checked.toString())}
+                                />
                             </Form.Group>
                             
                         </div>

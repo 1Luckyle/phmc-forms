@@ -24,7 +24,6 @@ const Surgical = ({ // Renamed component to follow PascalCase convention
         }) => {
     return (
     <>
-    <p>Ce formulaire est utilisé pour documenter une intervention chirurgicale. Il doit être ajouté au dossier pour chaque rendez-vous de chirurgie, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
     <Form.Label>Nom du patient / ID Patient</Form.Label>
     <div style={{ display: 'flex', gap: '10px' }}>
         <Form.Control

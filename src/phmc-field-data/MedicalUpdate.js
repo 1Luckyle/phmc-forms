@@ -17,11 +17,11 @@ import { HISTORY_PRESETS } from '../constants/historyPresets';
 // Champs de l'identité actuelle du patient (en-tête) et des nouvelles informations générales (section « Informations générales »).
 const CURRENT_FIELDS = {
     id: 'patientID', title: 'patientTitleOptions', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'date',
-    address: 'patientAddress', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
+    address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
 };
 const NEW_FIELDS = {
     title: 'patientTitleNew', full: 'patientNameNew', first: 'patientFirstNameNew', middle: 'patientMiddleNameNew', last: 'patientLastNameNew', dob: 'patientDateOfBirthNew',
-    gender: 'patientGenderNew', race: 'patientRaceNew', address: 'patientAddressNew', phone: 'patientPHNew', phoneType: 'patientPhoneTypeNew', discord: 'patientDiscordNew',
+    gender: 'patientGenderNew', race: 'patientRaceNew', address: 'patientAddressNew', zip: 'patientZIPNew', phone: 'patientPHNew', phoneType: 'patientPhoneTypeNew', discord: 'patientDiscordNew',
 };
 
 const customSelectStyles = {

@@ -2,6 +2,7 @@ import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
 import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { placeWithCity } from '../utils/places';
 import { frDay, todayFr } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -89,7 +90,7 @@ ${patientName}
 [b][size=150]MISE À JOUR DES INFORMATIONS DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations du patient`, { size: 115 })}
 [table][tr][td] Titre: ${titleLabel(formData.patientTitleOptions || formData.patientTitle || NOT_FILLED)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
-[tr][td] Date de naissance: ${frDay(formData.date || patientDateOfBirth) || NOT_FILLED} [/td][td] Adresse: ${patientAddress}
+[tr][td] Date de naissance: ${frDay(formData.date || patientDateOfBirth) || NOT_FILLED} [/td][td] Adresse: ${placeWithCity(patientAddress === NOT_FILLED ? '' : patientAddress, formData.patientZIP) || NOT_FILLED}
 [tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
 [/table]
@@ -102,7 +103,7 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [cbc][color=#FF0000]>[/color] [b] Informations générales[/b]
 [altspoiler=Nouvelles informations générales]
 [table][tr][td] Titre: ${titleLabel(patientTitleNew)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientNameNew}
-[tr][td] Date de naissance: ${frDay(patientDateOfBirthNew)} [/td][td] Adresse: ${patientAddressNew}
+[tr][td] Date de naissance: ${frDay(patientDateOfBirthNew)} [/td][td] Adresse: ${placeWithCity(patientAddressNew === NOT_FILLED ? '' : patientAddressNew, formData.patientZIPNew) || NOT_FILLED}
 [tr][td] Genre à l'état civil: ${patientGenderNew} [/td][td] Origine ethnique: ${patientRaceNew}
 [tr][td] Numéro de téléphone: ${phone(patientPHNew, formData.patientPhoneTypeNew)} [/td][td] (( Pseudo Discord: ${patientDiscordNew}))
 [/table][/altspoiler]`;

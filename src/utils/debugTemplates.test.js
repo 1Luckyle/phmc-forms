@@ -12,7 +12,7 @@ const TECHNICAL = new Set([
     'coronerBadge', 'coronerRank', 'coronerDiscord', 'chiefCoronerEmployee', 'chiefCoronerBadge', 'chiefCoronerRank', 'chiefCoronerDiscord', 'decedents',
     'caseNumber', 'recruitmentPosition', 'phmcSignature', 'additionalReports', 'date', 'UpdateMedicalFile', 'patientTitleOptions',
     // Nom complet recomposé à partir des trois champs (prénom, deuxième prénom, nom) : voir usePatientNameParts.
-    'patientName', 'patientNameNew',
+    'patientName', 'patientNameNew', 'decedentName', 'witnessName',
     // Champs dont la saisie n'a pas d'attribut `name` (listes, sélecteurs, tableaux) et que le catalogue ne voit donc pas.
     'morgueStatus', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems', 'evidenceLocker', 'scenePhotos', 'XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults',
 ]);

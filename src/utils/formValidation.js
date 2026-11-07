@@ -64,6 +64,8 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     const data = formData || {};
 
     requiredFieldsOf(version).forEach((field) => {
+        // Rapport public de décès d'un défunt NON IDENTIFIÉ : son Discord (HRP) est forcément inconnu.
+        if (version === 37 && field === 'decedentOOC' && data.deathRecordType === 'Unidentified') return;
         if (!filled(data[field])) errors.push(`${fieldLabel(version, field)} : champ obligatoire.`);
     });
 
@@ -79,7 +81,7 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         if (decedents.length === 0) errors.push('Ajoutez au moins un défunt au rapport.');
         else if (!filled(decedents[0]?.decedentName)) errors.push('Le premier défunt doit avoir un nom.');
     }
-    if (version === 2 && !filled(data.decedentName) && !filled(data.decedentOOC)) {
+    if (version === 2 && !filled(data.decedentName) && !filled(data.decedentOOC) && !filled(data.reportDecedentNames) && !filled(data.reportDecedentOOC)) {
         errors.push('Nom IC ou OOC du défunt : au moins un des deux est obligatoire.');
     }
     if (version === 24 && !(Array.isArray(data.MedicalRecordsRelease) && data.MedicalRecordsRelease.length > 0)) {

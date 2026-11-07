@@ -25,7 +25,6 @@ const PhysEval = ({
         }) => {
     return (
     <>
-                                <p>Ce formulaire est utilisé pour documenter un examen physique. Il doit être ajouté au dossier pour chaque rendez-vous de médecine générale, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
                                 <Form.Label>Nom du patient | ID Patient | Date:</Form.Label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
 

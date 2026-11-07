@@ -18,7 +18,7 @@ import { HISTORY_PRESETS } from '../constants/historyPresets';
 
 const GENERAL_FIELDS = {
     id: 'patientID', title: 'patientTitle', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
-    gender: 'patientGender', race: 'patientRace', address: 'patientAddress', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
+    gender: 'patientGender', race: 'patientRace', address: 'patientAddress', zip: 'patientZIP', phone: 'patientPH', phoneType: 'patientPhoneType', email: 'patientEmail', discord: 'patientDiscord',
 };
 
 // CollapsibleHeader copié de PatientAdvanced.js

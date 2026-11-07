@@ -4,6 +4,7 @@ import { formatMoney } from '../utils/patientBilling';
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
 const NOT_FILLED = 'Non renseigné';
+const CORONER_LOGO = 'https://phmc-tools.com/img/ItaoQkO.webp';
 
 const generateEmail = (formData) => {
     const {
@@ -13,6 +14,7 @@ const generateEmail = (formData) => {
         coronerRank = NOT_FILLED,
         coronerDiscord = NOT_FILLED,
         coronerPHNumber = NOT_FILLED,
+        coronerEmail = NOT_FILLED,
         deathReport = NOT_FILLED,
         additionalReports,
         agencyDataStore, // Added agencyDataStore
@@ -31,15 +33,32 @@ const generateEmail = (formData) => {
         return shortCode; // fallback to shortcode
     };
 
-    let bbCode = `[center][img]https://phmc-tools.com/img/ItaoQkO.webp[/img][/center]
+    // En-tête : le logo de l'agence destinataire à gauche, celui du Bureau du Coroner (DMEC) à droite.
+    const agencyLogo = String(agencyDataStore?.[department]?.logo || '').trim();
+    const header = agencyLogo
+        ? `[table][tr][td][center][img]${agencyLogo}[/img][/center][td][center][img]${CORONER_LOGO}[/img][/center][/table]`
+        : `[center][img]${CORONER_LOGO}[/img][/center]`;
+
+    // Défunt(s) concerné(s) : ceux saisis dans le formulaire et ceux des rapports joints (IC, Discord, ID patient).
+    const joinList = (...lists) => lists.map((list) => String(list || '').trim()).filter(Boolean).join(', ');
+    const names = joinList(formData.decedentName, formData.reportDecedentNames);
+    const discords = joinList(formData.decedentOOC, formData.reportDecedentOOC);
+    const patientId = String(formData.patientID || '').trim();
+    const decedentBlock = names || discords || patientId
+        ? `
+[b]Défunt(s) concerné(s) :[/b] ${names || NOT_FILLED}${discords ? ` (( Discord : ${discords} ))` : ''}${patientId ? ` — ID Patient : ${patientId}` : ''}
+`
+        : '';
+
+    let bbCode = `${header}
 [hr][/hr]
 
 DESTINATAIRE: ${requestingOfficer} - ${getDepartmentFullName(department)}
-EXPÉDITEUR: ${coronerEmployee} @ phmc.health
+EXPÉDITEUR: ${coronerEmployee} (${coronerEmail})
 OBJET: Documents du rapport de décès
 
 À l'attention de: [b]${getDepartmentFullName(department)}[/b] - [b]${requestingOfficer}[/b]
-
+${decedentBlock}
 Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel. 
 
 [b]INFORMATIONS / DEMANDE(S) D'AUTOPSIE[/B] 
@@ -67,6 +86,7 @@ De plus, s'il s'agit d'un PK, veuillez utiliser John/Jane Doe avec le nom de leu
 Si vous avez d'autres questions, n'hésitez pas à contacter la personne suivante:
 [list] ${coronerEmployee}
 [*] Numéro de téléphone: ${coronerPHNumber}
+[*] Adresse e-mail: ${coronerEmail}
 [*] (( Discord: ${coronerDiscord} ))[/list]
 
 [altspoiler=Rapport du coroner]

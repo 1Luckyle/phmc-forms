@@ -1177,3 +1177,9 @@ textarea:disabled {
     opacity: 0.8;
     cursor: not-allowed;
 }
+
+/* Cadre « À quoi sert ce formulaire ? » en haut de chaque formulaire */
+.form-purpose { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 14px; padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(88, 166, 255, 0.45); background: rgba(88, 166, 255, 0.08); color: #e6edf3; }
+.form-purpose > i { color: #58a6ff; font-size: 1.1rem; margin-top: 2px; }
+.form-purpose strong { display: block; margin-bottom: 2px; }
+.form-purpose p { margin: 0; color: #c3ccd5; font-size: 0.92rem; line-height: 1.4; }

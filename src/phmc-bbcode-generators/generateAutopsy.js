@@ -1,5 +1,7 @@
 import { buildDecedentDescription } from './shared/decedentDescription';
 import { requestingAuthorityLine } from './shared/requestingAuthority';
+import { frDeath } from '../utils/deathLabels';
+import { placeWithCity } from '../utils/places';
 
 const generateAutopsy = (formData) => {
     const {
@@ -104,10 +106,11 @@ const generateAutopsy = (formData) => {
     let bbCode = `[divbox=white][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
 
 [divbox=white][b][size=150][br][/br][center]DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/size][/b][/center]
-[center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Nom OOC'}))[/b] (ID Patient : ${formData.patientID || 'Non applicable'}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.${decedentDescriptionLine}${authorityLine ? `\n${authorityLine}` : ''}
+[center][size=120]Rapport d'autopsie par le médecin légiste[/size][/center][hr][/hr][justify][br][/br]J'ai effectué une autopsie sur le corps de [b]${decedentName || 'John Doe'} ((${decedentOOC || 'Discord HRP'}))[/b] (ID Patient : ${formData.patientID || 'Non applicable'}) au Département de Pathologie et de Médecine Légale du PHMC le ${finalAutopsyDate}, ${finalAutopsyTime}.${decedentDescriptionLine}${authorityLine ? `\n${authorityLine}` : ''}
 D'après les constatations anatomiques et les antécédents pertinents, j'attribue le décès à:
 ${deathCausesListItems}
-[b]MANIÈRE DU DÉCÈS:[/b] ${deathType || 'Indéterminée'}
+[b]LIEU DU DÉCÈS:[/b] ${placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'Non renseigné'}
+[b]MANIÈRE DU DÉCÈS:[/b] ${frDeath(deathType) || 'Indéterminée'}
 [b]COMMENT LA BLESSURE S'EST PRODUITE:[/b] ${causeOfDeath || 'Inconnue'}
 ${autopsyDiagramBBCode} 
 [b]Résumé anatomique:[/b]

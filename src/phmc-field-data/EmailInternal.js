@@ -30,7 +30,6 @@ const EmailInternal = ({
 
     return (
         <>
-        <p>Ce formulaire est utilisé pour créer des emails internes. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
         <p className="text-warning"><i className="fas fa-envelope me-1"></i>Ce formulaire est <strong>remplacé par la Messagerie interne</strong> de la boîte à outils (destinataire choisi dans l'annuaire, aperçu, PDF, image, copie du titre et du BBCode, notification). Cet écran ne sert plus qu'à consulter ou exporter un ancien rapport.</p>
         <div style={{ display: 'flex', gap: '10px' }}>
             <Form.Control

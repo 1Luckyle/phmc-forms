@@ -1,3 +1,5 @@
+import { frDay } from '../utils/reportTitle';
+import { placeWithCity } from '../utils/places';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -35,7 +37,7 @@ ${decedentName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU DÉFUNT ICI'
 ${patientAge}	
 
 [tr][td]DATE DE NAISSANCE[/td][td]
-${patientDateOfBirth || 'INSÉRER LA DATE DE NAISSANCE ICI'}	
+${frDay(patientDateOfBirth) || 'INSÉRER LA DATE DE NAISSANCE ICI'}	
 
 [tr][td]CAUSE DU DÉCÈS[/td][td]
 ${probableCauseOfDeath || 'INSÉRER LA CAUSE DU DÉCÈS ICI'}	
@@ -44,7 +46,13 @@ ${probableCauseOfDeath || 'INSÉRER LA CAUSE DU DÉCÈS ICI'}
 ${TimeofDeath || 'INSÉRER L\'HEURE DU DÉCÈS ICI'}	
 
 [tr][td]DATE DU DÉCÈS[/td][td]
-${dateofdeath || 'INSÉRER LA DATE DU DÉCÈS ICI'}	
+${frDay(dateofdeath) || 'INSÉRER LA DATE DU DÉCÈS ICI'}	
+
+[tr][td]LIEU DU DÉCÈS[/td][td]
+${placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'INSÉRER LE LIEU DU DÉCÈS ICI'}	
+
+[tr][td]ID PATIENT[/td][td]
+${String(formData.patientID || '').trim() || 'Non applicable'}	
 [/table][br][/br]
 [list=none][left]
 SIGNATURE DU MÉDECIN LÉGISTE:
@@ -53,7 +61,7 @@ NOM: ${coronerEmployee}
 SIGNATURE DU TÉMOIN:
 NOM: ${witnessName || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU TÉMOIN ICI'}
 
-DATE D'ÉMISSION DU CERTIFICAT: ${date}
+DATE D'ÉMISSION DU CERTIFICAT: ${frDay(date)}
 [/left][/list]
 
 [br][hr][/hr]

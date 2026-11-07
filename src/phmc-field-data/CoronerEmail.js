@@ -1,99 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { useData } from '../contexts/DataContext';
-import { Form, Button, Alert } from 'react-bootstrap';
-import Select from 'react-select';
-import { getFormDefinition } from '../formDefinitions'; // Import getFormDefinition
+import { Form, Button } from 'react-bootstrap';
 import { createFleecaPayment } from '../utils/fleecaPayment';
 import { getPrice, usePrices } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
 import {
     prepareCoronerReport, mergeNameList, sameReport, CORONER_REPORT_VERSIONS, CORONER_REPORT_LABELS,
 } from '../utils/coronerAttachments';
+import { ReportPreviewFrame } from '../components/ReportExpansion';
+import CoronerSelect from './shared/CoronerSelect';
+import NameFields from './shared/NameFields';
 
-const customSelectStyles = {
-    control: (base, state) => ({
-        ...base,
-        minHeight: '38px',
-        backgroundColor: '#16202c',
-        color: '#eeeeeeb0',
-        borderColor: state.isFocused ? '#86b7fe' : '#30363d',
-        boxShadow: state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
-        '&:hover': {
-            borderColor: '#86b7fe'
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
+
+// Rapports joints = le rapport principal (deathReport) puis les supplémentaires (additionalReports) : une seule liste pour l'écran.
+const attachedOf = (formData) => [formData.deathReport, ...(formData.additionalReports || [])].filter((report) => String(report || '').trim());
+
+// Noms (IC et HRP) de tous les défunts des rapports joints : recalculés à chaque ajout ou retrait.
+const decedentListsOf = (reports) => {
+    const names = [];
+    const oocs = [];
+    reports.forEach((report) => {
+        const prepared = prepareCoronerReport(report);
+        if (prepared.ok) {
+            prepared.decedents.forEach((decedent) => { names.push(decedent.name); oocs.push(decedent.ooc); });
         }
-    }),
-    menu: (base) => ({
-        ...base,
-        backgroundColor: '#16202c',
-        zIndex: 1000,
-        border: '1px solid #30363d',
-        borderRadius: '0.375rem'
-    }),
-    option: (base, state) => ({
-        ...base,
-        backgroundColor: state.isFocused ? '#30363d' : '#16202c',
-        color: '#eeeeeeb0',
-        padding: '0.5rem 1rem',
-        '&:hover': {
-            backgroundColor: '#30363d'
-        }
-    }),
-    multiValue: (base) => ({
-        ...base,
-        backgroundColor: '#30363d',
-        color: '#eeeeeeb0'
-    }),
-    multiValueLabel: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    multiValueRemove: (base) => ({
-        ...base,
-        color: '#9aa7b4',
-        '&:hover': {
-            backgroundColor: '#dc3545',
-            color: '#fff'
-        }
-    }),
-    input: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    placeholder: (base) => ({
-        ...base,
-        color: '#9aa7b4'
-    }),
-    singleValue: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    group: (base) => ({
-        ...base,
-        paddingTop: 8,
-        paddingBottom: 8
-    }),
-    groupHeading: (base) => ({
-        ...base,
-        color: '#9aa7b4',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        fontSize: '0.75rem',
-        marginBottom: 4
-    })
+    });
+    return { reportDecedentNames: mergeNameList('', names), reportDecedentOOC: mergeNameList('', oocs) };
 };
 
-const CoronerEmail = ({ // Renamed component to follow PascalCase convention
+const CoronerEmail = ({
     formData,
     handleChange,
-    setFormData, // <-- Make sure setFormData is passed as a prop
-    handleSelectChange, // Added this prop
+    setFormData,
+    handleSelectChange,
     coronerGroupedOptions,
-    handleFillCoronerPhone,
-    fillPhoneChecked,
-    setFillPhoneChecked,
-    addReport,
-    removeReport,
-    handleReportChange,
     toggleSavedReports,
     showNotification
 }) => {
@@ -104,10 +45,16 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
     const { agencyDataStore, isLoadingData } = useData();
 
     useEffect(() => {
+        // Un nouvel e-mail repart sans défunt ni rapport : les noms viennent des rapports joints ou de ce qu'on saisit ici.
         setFormData(prev => ({
             ...prev,
             decedentName: '',
-            decedentOOC: ''
+            decedentFirstName: '',
+            decedentMiddleName: '',
+            decedentLastName: '',
+            decedentOOC: '',
+            reportDecedentNames: '',
+            reportDecedentOOC: '',
         }));
     }, [setFormData]);
 
@@ -116,6 +63,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
     // et des instructions de virement manuel (voir generateEmail.js).
     const [isCreatingPaymentLink, setIsCreatingPaymentLink] = useState(false);
     const [paymentLinkError, setPaymentLinkError] = useState('');
+    const [openPreview, setOpenPreview] = useState(-1);
 
     const handleGeneratePaymentLink = async () => {
         setIsCreatingPaymentLink(true);
@@ -123,7 +71,7 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         try {
             const { payment_link } = await createFleecaPayment({
                 amount: getPrice('fraisDemandeAutopsie'),
-                description: `Frais de demande d'autopsie/certificat - ${formData.decedentName || 'Défunt'}`,
+                description: `Frais de demande d'autopsie/certificat - ${formData.decedentName || formData.reportDecedentNames || 'Défunt'}`,
             });
             setFormData(prev => ({ ...prev, autopsyPaymentLink: payment_link }));
         } catch (err) {
@@ -134,240 +82,172 @@ const CoronerEmail = ({ // Renamed component to follow PascalCase convention
         }
     };
 
-
-    // Vérifie qu'un contenu est bien un rapport accepté (rapport de décès ou de catastrophe mortelle, d'après ses titres), pas déjà
-    // joint, puis l'ajoute avec le nom du défunt (IC et HRP). `slot` : 'auto' (premier emplacement libre), 'main' ou l'index d'un
-    // rapport supplémentaire. Retourne true si le rapport a été joint.
-    const acceptReport = (bbCode, slot = 'auto') => {
+    // Vérifie qu'un contenu est bien un rapport accepté (rapport de décès ou de catastrophe mortelle, d'après ses titres), pas déjà joint, puis
+    // l'ajoute à la liste avec les noms du défunt (IC et Discord). Retourne true si le rapport a été joint.
+    const acceptReport = (bbCode) => {
         const result = prepareCoronerReport(bbCode);
         if (!result.ok) {
             notify(result.reason, 'warning', 8000);
             return false;
         }
-        const attached = [formData.deathReport, ...(formData.additionalReports || [])];
-        if (attached.some((report) => sameReport(report, result.bbCode))) {
+        if (attachedOf(formData).some((report) => sameReport(report, result.bbCode))) {
             notify("Ce rapport est déjà joint à l'e-mail.", 'warning');
             return false;
         }
         setFormData((prev) => {
-            const next = {
+            const reports = [...attachedOf(prev), result.bbCode];
+            return {
                 ...prev,
-                decedentName: mergeNameList(prev.decedentName, result.decedents.map((decedent) => decedent.name)),
-                decedentOOC: mergeNameList(prev.decedentOOC, result.decedents.map((decedent) => decedent.ooc)),
+                deathReport: reports[0] || '',
+                additionalReports: reports.slice(1),
+                ...decedentListsOf(reports),
+                ...(result.kind === 'massFatality' ? { paperworkType: 'Mass Fatality' } : {}),
             };
-            if (result.kind === 'massFatality') next.paperworkType = 'Mass Fatality';
-            if (slot === 'main' || (slot === 'auto' && !String(prev.deathReport || '').trim())) {
-                next.deathReport = result.bbCode;
-            } else if (slot === 'auto') {
-                next.additionalReports = [...(prev.additionalReports || []), result.bbCode];
-            } else {
-                const list = [...(prev.additionalReports || [])];
-                list[slot] = result.bbCode;
-                next.additionalReports = list;
-            }
-            return next;
         });
-        notify(`${result.kindLabel} reconnu et joint à l'e-mail (noms du défunt ajoutés).`, 'check-circle', 6000);
+        notify(`${result.kindLabel} joint à l'e-mail (noms du défunt ajoutés).`, 'check-circle', 6000);
         return true;
     };
 
-    // Un rapport ne se tape pas à la main : on le colle (vérifié) ou on le vide.
-    const handleMainReportPaste = (event) => {
-        event.preventDefault();
-        acceptReport(event.clipboardData.getData('text'), 'main');
-    };
-    const handleMainReportChange = (event) => {
-        if (!event.target.value.trim()) setFormData((prev) => ({ ...prev, deathReport: '' }));
-    };
-    const handleExtraReportPaste = (index) => (event) => {
-        event.preventDefault();
-        acceptReport(event.clipboardData.getData('text'), index);
-    };
-    const handleExtraReportChange = (index) => (event) => {
-        if (!event.target.value.trim()) handleReportChange(index, '');
-    };
+    const removeAttached = (index) => setFormData((prev) => {
+        const reports = attachedOf(prev).filter((_, i) => i !== index);
+        return { ...prev, deathReport: reports[0] || '', additionalReports: reports.slice(1), ...decedentListsOf(reports) };
+    });
+
+    const attached = attachedOf(formData);
 
     return (
         <>
-            <p>Veuillez faire attention lors de l'ajout de rapports, cela peut prendre un certain temps à traiter. De plus, l'ajout de rapports ajoutera automatiquement le nom du défunt et le nom HRP du défunt !!!</p>
-
-                                <Form.Label>Identifiants de l'employé</Form.Label>
-                            <Select
-                                    name="coronerEmployee"
-                                    value={coronerGroupedOptions
-                                        .flatMap(group => group.options)
-                                        .find(option => option.value === formData.coronerEmployee) || null}
-                onChange={(selectedOption, actionMeta) => handleSelectChange(selectedOption, actionMeta)}
-                                    options={coronerGroupedOptions}
-                                    isClearable
-                                    placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                                    className="form-control"
-                                styles={customSelectStyles}
-                                />
-                                <Form.Label></Form.Label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <Form.Control
-                                        type="text"
-                                        name="requestingOfficer"
-                                        value={formData.requestingOfficer}
-                                        onChange={handleChange}
-                                        placeholder="Matricule & Prénom & Nom de l'officier demandeur"
-                                        className="form-control"
-                                        />
-                                <Form.Select
-                                    name="department"
-                                    value={formData.department}
-                                    onChange={handleChange}
-                                    className="form-control"
-                                    disabled={isLoadingData || !agencyDataStore || Object.keys(agencyDataStore).length === 0}
-                                >
-                                    <option value="" disabled>
-                                        {isLoadingData ? 'Chargement des départements...' : 'Sélectionner un département'}
-                                    </option>
-                                    {agencyDataStore && Object.entries(agencyDataStore).map(([key, agency]) => (
-                                        <option key={key} value={key}>
-                                            {agency.fullName || key}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-</div>
-<Form.Group className="mb-3">
-    <Form.Label>
-        Numéro de contact du coroner:
-    </Form.Label>
-    {/* Keep the input field */}
-    <Form.Control
-        type="text"
-        name="coronerPHNumber"
-        value={formData.coronerPHNumber}
-        onChange={handleChange}
-        placeholder="Numéro de téléphone du coroner"
-        className="form-control"
-    />
-</Form.Group>
-<Form.Group className="mb-3">
-    <Form.Label>Lien de paiement Fleeca (frais de demande, {formatMoney(getPrice('fraisDemandeAutopsie'))})</Form.Label>
-    <div>
-        <Button
-            variant="success"
-            size="sm"
-            onClick={handleGeneratePaymentLink}
-            disabled={isCreatingPaymentLink}
-        >
-            {isCreatingPaymentLink
-                ? 'Génération...'
-                : (formData.autopsyPaymentLink ? 'Régénérer le lien' : 'Générer le lien de paiement')}
-        </Button>
-        {formData.autopsyPaymentLink && (
-            <div style={{ marginTop: '8px', fontSize: '0.85em', color: '#28a745' }}>
-                <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
-                Lien généré : <a href={formData.autopsyPaymentLink} target="_blank" rel="noopener noreferrer">{formData.autopsyPaymentLink}</a>
+            <Form.Label className="form-section-title">Expéditeur</Form.Label>
+            <CoronerSelect options={coronerGroupedOptions} formData={formData} handleSelectChange={handleSelectChange} label="Coroner expéditeur" />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
+                <Form.Control
+                    type="text" name="coronerPHNumber" value={formData.coronerPHNumber || ''} readOnly
+                    placeholder="Numéro de téléphone du coroner (tiré de son profil)" className="form-control"
+                />
+                <Form.Control
+                    type="text" name="coronerEmail" value={formData.coronerEmail || ''} readOnly
+                    placeholder="Adresse e-mail du coroner (tirée de son profil)" className="form-control"
+                />
             </div>
-        )}
-        {paymentLinkError && (
-            <div style={{ marginTop: '8px', color: '#dc3545', fontSize: '0.85em' }}>{paymentLinkError}</div>
-        )}
-    </div>
-    <span className="helper-text">
-        Génère un vrai lien de paiement Fleeca à inclure dans l'email, à la place de l'ancien RIB/virement manuel.
-    </span>
-</Form.Group>
+            <span className="helper-text">
+                Le numéro et l'adresse e-mail sont repris du profil du coroner et ne se modifient pas ici : chacun les met à jour dans « Mon profil » (menu Outils).
+            </span>
 
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                        <Form.Control
-                                            type="text"
-                                            name="decedentName"
-                                            value={formData.decedentName}
-                                            onChange={handleChange}
-                                            placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)"
-                                            className="form-control"
-                                        />
-                                        <Form.Control
-                                        type="text"
-                                        name="decedentOOC"
-                                        value={formData.decedentOOC}
-                                        onChange={handleChange}
-                                        placeholder="(( Nom du défunt (HRP) ))"
-                                        className="form-control"
-                                        />
-                                    </div>
-
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Rapport joint (rapport de décès ou de catastrophe mortelle):</Form.Label>
-                                    <Alert variant="info" className="py-2" style={{ fontSize: '0.85em' }}>
-                                        <strong>Rapports acceptés :</strong> {CORONER_REPORT_LABELS.join(' · ')}. Le rapport est vérifié d'après ses titres puis joint
-                                        <strong> en entier</strong> à l'e-mail, avec le nom du défunt (IC et HRP). Tout autre contenu est refusé et le texte ne se saisit pas à la main.
-                                    </Alert>
-                                    <Form.Control
-                                        as="textarea"
-                                        name="deathReport"
-                                        value={formData.deathReport || ''}
-                                        onChange={handleMainReportChange}
-                                        onPaste={handleMainReportPaste}
-                                        placeholder="Collez ici le BBCode d'un rapport accepté (ou utilisez « Joindre un rapport ») : il sera vérifié avant d'être joint."
-                                        rows="2"
-                                        className="form-control"
-                                    />
-                                    {formData.deathReport ? (
-                                        <div className="small text-success mt-1">
-                                            <i className="fas fa-check-circle"></i> Rapport vérifié et joint.{' '}
-                                            <Button variant="link" size="sm" className="p-0 align-baseline"
-                                                onClick={() => setFormData((prev) => ({ ...prev, deathReport: '' }))}>
-                                                Retirer le rapport joint
-                                            </Button>
-                                        </div>
-                                    ) : null}
-                                </Form.Group>
-            <Form.Group className="mb-3">
-                <Form.Label>Rapports supplémentaires:</Form.Label>
-                <div className="reports-container">
-                    {(formData.additionalReports || []).map((report, index) => (
-                        <div key={index} className="report-input">
-                            <Form.Control
-                                as="textarea"
-                                value={report}
-                                onChange={handleExtraReportChange(index)}
-                                onPaste={handleExtraReportPaste(index)}
-                                placeholder="Collez ici le BBCode d'un rapport accepté supplémentaire (il sera vérifié)"
-                                rows="4"
-                                className="form-control"
-                            />
-                            <Button
-                                variant="danger"
-                                onClick={() => removeReport(index)}
-                                className="remove-report-button"
-                            >
-                                Retirer le rapport
-                            </Button>
-                        </div>
+            <Form.Label className="form-section-title">Destinataire</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <Form.Control
+                    type="text"
+                    name="requestingOfficer"
+                    value={formData.requestingOfficer}
+                    onChange={handleChange}
+                    placeholder="Grade, prénom et nom du destinataire (ex. Officier John Doe)"
+                    className="form-control"
+                />
+                <Form.Select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    className="form-control"
+                    disabled={isLoadingData || !agencyDataStore || Object.keys(agencyDataStore).length === 0}
+                >
+                    <option value="" disabled>
+                        {isLoadingData ? 'Chargement des agences...' : 'Agence du destinataire'}
+                    </option>
+                    {agencyDataStore && Object.entries(agencyDataStore).map(([key, agency]) => (
+                        <option key={key} value={key}>
+                            {agency.fullName || key}
+                        </option>
                     ))}
-                    <div className="email-buttons">
-                        <Button
-                            variant="primary"
-                            onClick={addReport}
-                            className="add-report-button"
-                        >
-                            Ajouter un autre rapport
-                        </Button>
+                </Form.Select>
+            </div>
 
+            <Form.Label className="form-section-title">Défunt concerné</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <NameFields
+                    formData={formData} setFormData={setFormData} handleChange={handleChange} fields={DECEDENT_FIELDS}
+                    placeholders={{ first: 'Prénom du défunt (IC)', middle: 'Deuxième prénom (IC)', last: 'Nom de famille (IC)' }}
+                />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
+                <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
+            </div>
+            <span className="helper-text">Les défunts des rapports joints ci-dessous s'ajoutent automatiquement (nom IC et Discord) : inutile de les saisir une seconde fois.</span>
+
+            <Form.Label className="form-section-title">Frais de demande</Form.Label>
+            <Form.Group className="mb-3">
+                <Form.Label>Lien de paiement Fleeca (frais de demande, {formatMoney(getPrice('fraisDemandeAutopsie'))})</Form.Label>
+                <div>
+                    <Button
+                        variant="success"
+                        size="sm"
+                        onClick={handleGeneratePaymentLink}
+                        disabled={isCreatingPaymentLink}
+                    >
+                        {isCreatingPaymentLink
+                            ? 'Génération...'
+                            : (formData.autopsyPaymentLink ? 'Régénérer le lien' : 'Générer le lien de paiement')}
+                    </Button>
+                    {formData.autopsyPaymentLink && (
+                        <div style={{ marginTop: '8px', fontSize: '0.85em', color: '#28a745' }}>
+                            <i className="fas fa-check-circle" style={{ marginRight: '6px' }}></i>
+                            Lien généré : <a href={formData.autopsyPaymentLink} target="_blank" rel="noopener noreferrer">{formData.autopsyPaymentLink}</a>
+                        </div>
+                    )}
+                    {paymentLinkError && (
+                        <div style={{ marginTop: '8px', color: '#dc3545', fontSize: '0.85em' }}>{paymentLinkError}</div>
+                    )}
+                </div>
+                <span className="helper-text">
+                    Génère un vrai lien de paiement Fleeca à inclure dans l'email, à la place de l'ancien RIB/virement manuel.
+                </span>
+            </Form.Group>
+
+            <Form.Label className="form-section-title">Rapports joints</Form.Label>
+            <Form.Group className="mb-3">
+                <div className="reports-container">
+                    {attached.length === 0 && (
+                        <span className="helper-text">Aucun rapport joint. Rapports acceptés : {CORONER_REPORT_LABELS.join(' · ')}.</span>
+                    )}
+                    {attached.map((report, index) => {
+                        const prepared = prepareCoronerReport(report);
+                        const names = prepared.ok ? prepared.decedents.map((decedent) => decedent.name || decedent.ooc).filter(Boolean).join(', ') : '';
+                        return (
+                            <div key={index} className="mb-2 p-2" style={{ border: '1px solid #30363d', borderRadius: '8px' }}>
+                                <div className="d-flex align-items-center gap-2 flex-wrap">
+                                    <i className="fas fa-file-medical text-info"></i>
+                                    <strong>{prepared.ok ? prepared.kindLabel : 'Rapport joint'}</strong>
+                                    {names && <span className="text-muted small">— {names}</span>}
+                                    <span className="ms-auto d-flex gap-2">
+                                        <Button size="sm" variant="outline-info" onClick={() => setOpenPreview(openPreview === index ? -1 : index)}>
+                                            <i className={`fas ${openPreview === index ? 'fa-eye-slash' : 'fa-eye'} me-1`}></i>{openPreview === index ? 'Masquer' : 'Aperçu'}
+                                        </Button>
+                                        <Button size="sm" variant="outline-danger" onClick={() => removeAttached(index)}>
+                                            <i className="fas fa-times me-1"></i>Retirer
+                                        </Button>
+                                    </span>
+                                </div>
+                                {openPreview === index && <div className="mt-2"><ReportPreviewFrame bbCode={report} title="Rapport joint" height={360} /></div>}
+                            </div>
+                        );
+                    })}
+                    <div className="email-buttons">
                         <Button
                             variant="info"
                             onClick={() => toggleSavedReports([1, 11], 'Coroner', (reportData) => {
-                                // Exécuté quand un rapport est choisi dans « Rapports enregistrés » (un seul à la fois).
+                                // Exécuté quand un rapport est choisi dans « Rapports enregistrés » (un seul à la fois ; on peut en joindre autant qu'on veut).
                                 // Retourner false = rapport refusé (rien n'est joint).
                                 if (!reportData?.bbCode || !CORONER_REPORT_VERSIONS.includes(Number(reportData.bbCodeVersion))) {
                                     notify(`Ce rapport n'est pas accepté pour un Email DMEC. Rapports acceptés : ${CORONER_REPORT_LABELS.join(', ')}.`, 'warning', 8000);
                                     return false;
                                 }
-                                return acceptReport(reportData.bbCode, 'auto');
+                                return acceptReport(reportData.bbCode);
                             })}
                             className="email-button"
                         >
                             <i className="fas fa-paperclip"></i> Joindre un rapport (décès, catastrophe mortelle)
                         </Button>
-
                     </div>
-
                 </div>
             </Form.Group>
         </>

@@ -35,16 +35,9 @@ export const useEmployeeSelector = (phmcList = [], coronerList = [], applyRestri
             return [];
         }
 
-        // Si employé PHMC connecté, montrer seulement cet employé
-        if (employeeProfile && employeeProfile.type === 'phmc') {
-            const currentEmployeeData = phmcArray.find(emp => emp.uid === currentEmployee.uid);
-            return currentEmployeeData ? [currentEmployeeData] : [];
-        }
-
-        // Si employé Coroner connecté, ne pas montrer d'employés PHMC
-        if (employeeProfile && employeeProfile.type === 'coroner') {
-            return [];
-        }
+        // Un employé connecté ne retrouve QUE lui-même (même s'il cumule plusieurs rôles : la liste dont il fait partie ne lui propose que lui).
+        const own = phmcArray.find(emp => emp.uid === currentEmployee.uid);
+        if (own) return [own];
 
         return [];
     }, [phmcList, employeeProfile, currentEmployee, isAdmin, applyRestriction]);
@@ -67,16 +60,9 @@ export const useEmployeeSelector = (phmcList = [], coronerList = [], applyRestri
             return [];
         }
 
-        // Si employé Coroner connecté, montrer seulement cet employé
-        if (employeeProfile && employeeProfile.type === 'coroner') {
-            const currentEmployeeData = coronerArray.find(emp => emp.uid === currentEmployee.uid);
-            return currentEmployeeData ? [currentEmployeeData] : [];
-        }
-
-        // Si employé PHMC connecté, ne pas montrer de coroners
-        if (employeeProfile && employeeProfile.type === 'phmc') {
-            return [];
-        }
+        // Un employé connecté ne retrouve QUE lui-même.
+        const own = coronerArray.find(emp => emp.uid === currentEmployee.uid);
+        if (own) return [own];
 
         return [];
     }, [coronerList, employeeProfile, currentEmployee, isAdmin, applyRestriction]);

@@ -1,19 +1,24 @@
 import React, { useState, useEffect} from 'react'; // Import useEffect
 import { Form, Button, InputGroup } from 'react-bootstrap';
-import Select from 'react-select';
 import ImagePreview from '../components/ImagePreview';
 import DecedentDetailsFields from './shared/DecedentDetailsFields';
 import RequestingAuthorityFields from './shared/RequestingAuthorityFields';
+import CoronerSelect from './shared/CoronerSelect';
+import NameFields from './shared/NameFields';
+import DoeChoice from './shared/DoeChoice';
+import PlaceWithCity from './shared/PlaceWithCity';
+import PresetTextField from './shared/PresetTextField';
+import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
+import { localizeOptions, DEATH_TYPE_FR, MANNER_FR } from '../utils/deathLabels';
+
+const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName' };
 
 const DeathReport = ({
     formData,
     handleChange,
     handleSelectChange,
     coronerGroupedOptions,
-    handleDoeChange,
     setFormData,
-    isJohnDoe,
-    isJaneDoe,
     currentUtcTime,
     isUploading,
     handleImageUpload,
@@ -49,161 +54,120 @@ useEffect(() => {
 
     return (
         <>
-            <p>Ce formulaire est utilisé pour rédiger un rapport d’événement. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du coroner.</p>
-            <Form.Label>Identifiants de l'employé</Form.Label>
-            <Select
-                name="coronerEmployee"
-                value={coronerGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.coronerEmployee) || null}
-                // Corrected onChange handler:
-                onChange={(selectedOption) => handleSelectChange(selectedOption, { name: 'coronerEmployee' })}
-                options={coronerGroupedOptions}
-                isClearable
-                placeholder="Sélectionner un coroner. (Vous pouvez taper pour rechercher!)"
-                className="form-control"
-                styles={{ 
-                    control: (base, state) => ({
-                        ...base,
-                        backgroundColor: '#16202c',
-                        color: '#eeeeeeb0',
-                        borderColor: !formData.coronerEmployee && state.isFocused ? '#dc3545' :
-                                     !formData.coronerEmployee ? '#dc3545' :
-                                     state.isFocused ? '#86b7fe' : '#6c757d',
-                        '&:hover': {
-                            borderColor: !formData.coronerEmployee ? '#dc3545' : '#86b7fe'
-                        },
-                        boxShadow: !formData.coronerEmployee && state.isFocused ? '0 0 0 0.25rem rgba(220, 53, 69, 0.25)' :
-                                   state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, 0.25)' : null,
-                    }),
-                    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-                    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-                    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-                    group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                    groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 })
-                }}
-            />
-            <Form.Label></Form.Label>
-                <span style={{ fontSize: '0.8em', color: '#9aa7b4', marginLeft: '10px' }}>
-                    Heure actuelle du serveur: {currentUtcTime}
-                </span>
+            <Form.Label className="form-section-title">Informations générales</Form.Label>
+            <CoronerSelect options={coronerGroupedOptions} formData={formData} handleSelectChange={handleSelectChange} />
+            <span style={{ fontSize: '0.8em', color: '#9aa7b4', display: 'block', marginTop: '0.5rem' }}>
+                Heure actuelle du serveur: {currentUtcTime}
+            </span>
 
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <Form.Control
-                        type="datetime-local"
-                        name="dateTime"
-                        value={formData.dateTime}
-                        onChange={handleChange}
-                        className="form-control"
-                    />
-                    <Button
-                        variant="outline-info"
-                        size="sm"
-                        style={{ height: '38px', lineHeight: '1.5', paddingTop: 0, paddingBottom: 0, display: 'flex', alignItems: 'center', position: 'relative', top: '-10px' }}
-                        onClick={() => {
-                            const now = new Date();
-                            const pad = (n) => n.toString().padStart(2, '0');
-                            // Use UTC for accuracy (matches Current Server Time)
-                            const utc = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
-                            handleChange({ target: { name: 'dateTime', value: utc } });
-                        }}
-                    >
-                        Envoyé sur la scène    
-                    </Button>
-                </div>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <Form.Control
+                    type="datetime-local"
+                    name="dateTime"
+                    value={formData.dateTime}
+                    onChange={handleChange}
+                    className="form-control"
+                />
+                <Button
+                    variant="outline-info"
+                    size="sm"
+                    style={{ height: '38px', lineHeight: '1.5', paddingTop: 0, paddingBottom: 0, display: 'flex', alignItems: 'center', position: 'relative', top: '-10px' }}
+                    onClick={() => {
+                        const now = new Date();
+                        const pad = (n) => n.toString().padStart(2, '0');
+                        // Use UTC for accuracy (matches Current Server Time)
+                        const utc = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+                        handleChange({ target: { name: 'dateTime', value: utc } });
+                    }}
+                >
+                    Envoyé sur la scène
+                </Button>
+            </div>
 
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <Form.Control
-                        type="time"
-                        name="pronouncedTimeOfDeath"
-                        value={formData.pronouncedTimeOfDeath}
-                        onChange={handleChange}
-                        className="form-control"
-                    />
-                    <Button
-                        variant="outline-info"
-                        size="sm"
-                        style={{ height: '38px', lineHeight: '1.5', paddingTop: 0, paddingBottom: 0, display: 'flex', alignItems: 'center', position: 'relative', top: '-10px' }}
-                        onClick={() => {
-                            const now = new Date();
-                            const pad = (n) => n.toString().padStart(2, '0');
-                            // Use UTC for accuracy (matches Current Server Time)
-                            const time = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
-                            handleChange({ target: { name: 'pronouncedTimeOfDeath', value: time } });
-                        }}
-                    >
-                        Heure du décès du défunt
-                    </Button>
-                </div>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <Form.Control
+                    type="time"
+                    name="pronouncedTimeOfDeath"
+                    value={formData.pronouncedTimeOfDeath}
+                    onChange={handleChange}
+                    className="form-control"
+                />
+                <Button
+                    variant="outline-info"
+                    size="sm"
+                    style={{ height: '38px', lineHeight: '1.5', paddingTop: 0, paddingBottom: 0, display: 'flex', alignItems: 'center', position: 'relative', top: '-10px' }}
+                    onClick={() => {
+                        const now = new Date();
+                        const pad = (n) => n.toString().padStart(2, '0');
+                        // Use UTC for accuracy (matches Current Server Time)
+                        const time = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+                        handleChange({ target: { name: 'pronouncedTimeOfDeath', value: time } });
+                    }}
+                >
+                    Heure du décès du défunt
+                </Button>
+            </div>
 
+            <Form.Label className="form-section-title">Appel au Bureau du Coroner</Form.Label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <Form.Select name="department" value={formData.department || ''} onChange={handleChange} className="form-control">
+                    <option value="" disabled>Agence ayant appelé le Bureau du Coroner</option>
+                    {requestingAgencyOptions.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </Form.Select>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-            <Form.Check
-                type="checkbox"
-                label="Rapport demandé?"
-                name="showRequestingOfficerInput"
-                checked={formData.showRequestingOfficerInput || false}
-                onChange={handleChange}
-            />
+                <Form.Check
+                    type="checkbox"
+                    label="Rapport demandé ?"
+                    name="showRequestingOfficerInput"
+                    checked={formData.showRequestingOfficerInput || false}
+                    onChange={handleChange}
+                />
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-
-            <Form.Select
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className="form-control"
-            >
-                <option value="" disabled>Sélectionner l'agence demandeur</option>
-                {requestingAgencyOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </Form.Select>
             {formData.showRequestingOfficerInput && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <Form.Select name="requestingAgency" value={formData.requestingAgency || ''} onChange={handleChange} className="form-control">
+                        <option value="" disabled>Agence de la personne qui demande le rapport</option>
+                        {requestingAgencyOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </Form.Select>
                     <Form.Control
-                        type="text" name="requestingOfficer" value={formData.requestingOfficer || ''} onChange={handleChange} placeholder="ex: Officier John Doe, LSSD"/>
-            )}
-            </div>
-
-            <div className="radio-inline-container">
-                <div className="radio-button-group">
-                    <Form.Check type="radio" id="johnDoe" label="   John Doe" checked={isJohnDoe} onChange={handleDoeChange('john')} inline />
-                    <Form.Check type="radio" id="janeDoe" label="   Jane Doe" checked={isJaneDoe} onChange={handleDoeChange('jane')} inline />
-                    <Form.Check type="radio" id="massFatality" name="massFatality" label="   Tuerie/accident de masse?" checked={formData.massFatality || false} onChange={handleChange} inline />
+                        type="text" name="requestingOfficer" value={formData.requestingOfficer || ''} onChange={handleChange}
+                        placeholder="Grade, prénom et nom de la personne qui demande le rapport (ex. Officier John Doe)"
+                    />
                 </div>
+            )}
+            <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
+
+            <Form.Label className="form-section-title">Défunt</Form.Label>
+            <DoeChoice formData={formData} setFormData={setFormData} fields={DECEDENT_FIELDS} showMassFatality />
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <NameFields
+                    formData={formData} setFormData={setFormData} handleChange={handleChange} fields={DECEDENT_FIELDS}
+                    placeholders={{ first: 'Prénom du défunt (IC)', middle: 'Deuxième prénom (IC)', last: 'Nom de famille (IC)' }}
+                />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control type="text" name="decedentName" value={formData.decedentName} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du défunt (IC)" className="form-control" />
-                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Nom du défunt (HRP) ))" className="form-control" />
+                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
                 <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
             </div>
             <DecedentDetailsFields formData={formData} handleChange={handleChange} />
-            <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
+
             <Form.Label className="form-section-title">Circonstances du décès</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-
-            <Form.Select
-                name="typeOfDeath"
-                value={formData.typeOfDeath}
-                onChange={handleChange}
-                className="form-control"
-            >
-                <option value="" disabled>Sélectionner le type de décès</option>
-                {/* --- Updated to use typeOfDeathOptions --- */}
-                {typeOfDeathOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </Form.Select>
-            <Form.Control
-                type="text"
-                name="placeOfDeath"
-                value={formData.placeOfDeath}
-                onChange={handleChange}
-                placeholder="Lieu du décès (Numéro, Étage, Rue)"
-                className="form-control"
-            />
-</div>
+                <Form.Select name="typeOfDeath" value={formData.typeOfDeath} onChange={handleChange} className="form-control">
+                    <option value="" disabled>Sélectionner le type de décès</option>
+                    {localizeOptions(typeOfDeathOptions, DEATH_TYPE_FR).map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </Form.Select>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <PlaceWithCity formData={formData} setFormData={setFormData} handleChange={handleChange} addressName="placeOfDeath" zipName="placeOfDeathZip" placeholder="Lieu du décès (Numéro, Étage, Rue)" />
+            </div>
             {(formData.typeOfDeath === 'CK' || formData.typeOfDeath === 'Character Kill') && (
                 <>
                     <Form.Group className="mb-3 upload-container">
@@ -227,21 +191,18 @@ useEffect(() => {
                 </>
             )}
             <div style={{ display: 'flex', gap: '10px' }}>
-
-            <Form.Select
-                name="mannerOfDeath"
-                value={formData.mannerOfDeath}
-                onChange={handleChange}
-                className="form-control"
-            >
-                <option value="" disabled>Sélectionner le mode de décès</option>
-                {mannerOfDeathOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </Form.Select>
-            <Form.Control as="textarea" rows="2" name="probableCauseOfDeath" value={formData.probableCauseOfDeath} onChange={handleChange} placeholder="Cause probable du décès" className="form-control" />
-</div>
-            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé..." className="form-control" />
+                <Form.Select name="mannerOfDeath" value={formData.mannerOfDeath} onChange={handleChange} className="form-control">
+                    <option value="" disabled>Sélectionner le mode de décès</option>
+                    {localizeOptions(mannerOfDeathOptions, MANNER_FR).map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </Form.Select>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <PresetTextField name="probableCauseOfDeath" formData={formData} setFormData={setFormData} presets={DEATH_CAUSE_PRESETS} placeholder="Autres précisions sur la cause probable du décès" selectPlaceholder="Cause probable du décès (plusieurs choix possibles)…" />
+            </div>
+            <Form.Label className="form-section-title">Résumé et preuves</Form.Label>
+            <Form.Control as="textarea" name="synopsis" value={formData.synopsis} onChange={handleChange} rows="4" placeholder="Résumé de l'enquête sur la scène…" className="form-control" />
             <label>Soumission au casier à preuves:</label>
             <Form.Check
                 type="checkbox"

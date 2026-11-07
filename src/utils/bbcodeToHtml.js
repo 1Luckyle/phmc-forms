@@ -342,7 +342,9 @@ const renderNode = (node, ctx) => {
             return isHttpUrl(url) ? `<a href="${escapeHtml(url)}" style="color:#0066CC;">${inner}</a>` : inner;
         }
         case 'code':
-            return `<span style="font-family:Consolas,'Courier New',monospace;">${renderText(node.text)}</span>`;
+            // Les blocs [code] des rapports ne servent qu'à COPIER le BBCode d'un rapport joint (e-mail DMEC) : à l'écran, en HTML, en PDF et en image,
+            // le rapport est déjà affiché mis en page juste au-dessus, on n'en montre pas la source brute. (La copie du BBCode, elle, est inchangée.)
+            return '';
         case 'center':
             return `<div style="text-align:center;">${renderChildren(node.children, ctx)}</div>`;
         case 'left':

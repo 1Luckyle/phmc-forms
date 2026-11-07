@@ -1,4 +1,5 @@
 // src/MainApp.js
+import FormPurpose from './components/FormPurpose';
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -403,8 +404,6 @@ function MainApp({
         filteredCoronerList: unrestrictedCoronerList
     } = useEmployeeSelector(phmcListData, coronerListData, false); // applyRestriction = false
     
-    const [isJohnDoe, setIsJohnDoe] = useState(false);
-    const [isJaneDoe, setIsJaneDoe] = useState(false);
     const commitInfo = useGitHubCommit();
     
     // Onboarding state management
@@ -513,6 +512,9 @@ function MainApp({
                     coronerBadge: selectedOption.badge,
                     coronerRank: selectedOption.rank,
                     coronerDiscord: selectedOption.discord,
+                    // Coordonnées reprises du profil du coroner (non modifiables dans les formulaires : à changer dans « Mon profil »).
+                    coronerPHNumber: selectedOption.phone || '',
+                    coronerEmail: selectedOption.email || '',
                 };
             } else if (name === 'coronerEmployee' && !selectedOption) {
                 newFormData = {
@@ -521,6 +523,8 @@ function MainApp({
                     coronerBadge: '',
                     coronerRank: '',
                     coronerDiscord: '',
+                    coronerPHNumber: '',
+                    coronerEmail: '',
                 };
             } else if (name === 'chiefCoronerEmployee' && selectedOption) {
                 newFormData = {
@@ -882,6 +886,8 @@ function MainApp({
             coronerBadge: prevFormData.coronerBadge,
             coronerRank: prevFormData.coronerRank,
             coronerDiscord: prevFormData.coronerDiscord,
+            coronerPHNumber: prevFormData.coronerPHNumber,
+            coronerEmail: prevFormData.coronerEmail,
             SubmitDate: new Date().toISOString().split('T')[0],
         }));
         const fieldsToRemove = [
@@ -1278,6 +1284,8 @@ function MainApp({
                     badge: coroner.badge,
                     rank: coroner.rank,
                     discord: coroner.discord,
+                    phone: coroner.phNumber || coroner.phone || '',
+                    email: coroner.email || '',
                     category: categoryName
                 });
                 return groups;
@@ -1332,6 +1340,8 @@ function MainApp({
                     badge: coroner.badge,
                     rank: coroner.rank,
                     discord: coroner.discord,
+                    phone: coroner.phNumber || coroner.phone || '',
+                    email: coroner.email || '',
                     category: categoryName
                 });
                 return groups;
@@ -1367,35 +1377,6 @@ function MainApp({
         showNotification('Formulaire rempli avec des données de test (debug).', 'check-circle');
     };
 
-    const handleDoeChange = (type) => (e) => {
-        const isChecked = e.target.checked;
-
-        if (isChecked) {
-            setFormData(prev => ({ ...prev, massFatality: false }));
-        }
-
-        if (type === 'john') {
-            setIsJohnDoe(isChecked);
-            if (isChecked) {
-                setIsJaneDoe(false); 
-                setFormData(prev => ({ ...prev, decedentName: 'John Doe' }));
-            } else {
-                if (formData.decedentName === 'John Doe') {
-                    setFormData(prev => ({ ...prev, decedentName: '' }));
-                }
-            }
-        } else if (type === 'jane') {
-            setIsJaneDoe(isChecked);
-            if (isChecked) {
-                setIsJohnDoe(false);
-                setFormData(prev => ({ ...prev, decedentName: 'Jane Doe' }));
-            } else {
-                if (formData.decedentName === 'Jane Doe') {
-                    setFormData(prev => ({ ...prev, decedentName: '' }));
-                }
-            }
-        }
-    };
 
     useEffect(() => {
         const updateUtcTime = () => {
@@ -2021,6 +2002,14 @@ function MainApp({
                                 }}
                             />
 
+                            {/* Vider le formulaire : tout en haut, à portée de main (les sélections des employés sont conservées). */}
+                            {currentEmployee && FieldComponent && (
+                                <Button type="button" variant="outline-danger" onClick={clearForm} className="changelog-button" title="Efface tous les champs du formulaire (vos sélections d'employé sont conservées)">
+                                    <i className="fas fa-trash-alt"></i>
+                                    Vider le formulaire
+                                </Button>
+                            )}
+
                             {/* Mode debug : visible seulement si un admin l'a activé (voir DebugContext). */}
                             {FieldComponent && currentEmployee && hasDebugTemplate(bbCodeVersion) && (
                                 <DebugFillButton onFill={handleDebugFill} className="changelog-button" />
@@ -2044,6 +2033,7 @@ function MainApp({
                                     <span className="opt"><i></i>Bleu : champ facultatif pas encore rempli</span>
                                 </div>
                             )}
+                            {FieldComponent && currentEmployee && <FormPurpose version={bbCodeVersion} />}
                             <Suspense fallback={<LoadingSpinner />}>
                                 {FieldComponent && currentEmployee ? (
                                     <FieldComponent
@@ -2128,9 +2118,6 @@ function MainApp({
                                         dnr={optionize(selectOptions.dnr)}
                                         attorney={optionize(selectOptions.attorney)}
                                         dnrOrder={optionize(selectOptions.dnrOrder)}
-                                        isJohnDoe={isJohnDoe}
-                                        isJaneDoe={isJaneDoe}
-                                        handleDoeChange={handleDoeChange}
                                         currentUtcTime={currentUtcTime}
                                         UpdateMedicalFile={optionize(selectOptions.UpdateMedicalFile)}
                                         Imaging={optionize(selectOptions.Imaging)}
@@ -2182,18 +2169,6 @@ function MainApp({
                                     <p>Veuillez sélectionner une agence, puis un type de formulaire.</p>
                                 )}
                             </Suspense>
-                            {currentEmployee && (
-                                <div className="button-group">
-                                    <Button
-                                        type="button"
-                                        onClick={clearForm}
-                                        className="remove-report-button"
-                                    >
-                                        <i className="fas fa-trash-alt"></i>
-                                        Vider le Formulaire
-                                    </Button>
-                                </div>
-                            )}
                         </form>
                     </div>
                     

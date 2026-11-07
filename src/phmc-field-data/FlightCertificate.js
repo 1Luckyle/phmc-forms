@@ -75,10 +75,6 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
     return (
         <>
-            <p>
-                Certificat d'aptitude médicale au vol, réservé au personnel soignant. Il atteste <strong>uniquement</strong> de l'aptitude (conforme / non conforme) :
-                aucun diagnostic n'y figure. Il ne remplace pas la licence de vol de la SAAA.
-            </p>
 
             <Form.Group className="mb-3">
                 <Form.Label>Classe du certificat *</Form.Label>

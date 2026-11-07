@@ -13,7 +13,6 @@ const PHMCCommentaryNoteQuestions = ({
 }) => {
     return (
         <>
-            <p>Ce formulaire est utilisé pour créer des notes de service. Il doit être ajouté au dossier pour chaque rendez-vous patient concerné, à la suite des autres. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
             {/* The JSX code block for bbCodeVersion === 22 */}
             <Form.Control
                 type="text"

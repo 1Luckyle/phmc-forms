@@ -58,7 +58,7 @@ export function extractDecedents(bbCode, kind) {
             .filter((decedent) => decedent.name || decedent.ooc);
     }
     const name = raw.match(/identifi\S*\s+l'individu\s+comme\s+[^[]*\[b\]\s*([^[]+?)\s*\[\/b\]/i);
-    const ooc = raw.match(/Nom OOC du joueur:\s*([^\r\n]+)/i);
+    const ooc = raw.match(/(?:Nom OOC du joueur|Discord du joueur \(HRP\)):\s*([^\r\n]+)/i);
     const decedent = { name: usable(name && name[1]), ooc: usable(ooc && ooc[1]) };
     return decedent.name || decedent.ooc ? [decedent] : [];
 }

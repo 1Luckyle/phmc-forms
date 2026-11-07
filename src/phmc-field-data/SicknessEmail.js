@@ -76,7 +76,6 @@ const SicknessEmail = ({
 
     return (
         <>
-        <p>Ce formulaire est utilisé pour créer des emails externes. Veuillez remplir tous les champs obligatoires avec précision. Le formulaire est ensuite enregistré dans le suivi des rapports du soignant.</p>
             <Form.Group className="mb-3">
                 <Form.Label>Objet de l'email</Form.Label>
                 <Form.Select

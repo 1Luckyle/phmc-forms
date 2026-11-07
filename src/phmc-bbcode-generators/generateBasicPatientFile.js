@@ -2,6 +2,7 @@ import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
 import { checkbox, sectionBanner } from './shared/bbStyles';
 import { titleLabel, phoneWithType } from '../utils/patientIdentity';
+import { placeWithCity } from '../utils/places';
 import { frDay } from '../utils/reportTitle';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -55,7 +56,7 @@ ${patientName}
 [b][size=150]INFORMATIONS DE BASE DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations générales`, { size: 115 })}
 [table][tr][td] Titre: ${titleLabel(patientTitle)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
-[tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${patientAddress}
+[tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${placeWithCity(patientAddress === NOT_FILLED ? '' : patientAddress, formData.patientZIP) || NOT_FILLED}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
 [tr][td] Numéro de téléphone: ${phone(patientPH, formData.patientPhoneType)} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))
