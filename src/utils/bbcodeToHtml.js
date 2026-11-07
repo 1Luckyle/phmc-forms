@@ -264,6 +264,9 @@ const renderText = (value) => String(value == null ? '' : value).split(URL_IN_TE
 
 // Enfants d'un conteneur « bloc » (racine, cellule, bandeau) : on retire les sauts de ligne
 // qui ne font que séparer deux blocs (ex. « [/table]\n[divboxcolor] »).
+// Image dans une cellule de tableau = logo d'en-tête (agence, PHMC, DMEC) : plafonnée pour ne pas envahir le document, quelle que soit la taille du fichier d'origine.
+const CELL_IMAGE_MAX = 170;
+
 const renderChildren = (children, ctx) => {
     const out = [];
     children.forEach((child, index) => {
@@ -327,7 +330,7 @@ const renderNode = (node, ctx) => {
             // [img=240] : largeur d'affichage en pixels (extension du site : signature réduite dans les messages internes).
             const width = /^\d{2,4}$/.test(String(node.param || '').trim()) ? Number(node.param) : 0;
             return isHttpUrl(url)
-                ? `<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;${width ? `width:${width}px;` : ''}">`
+                ? `<img src="${escapeHtml(url)}" alt="" style="max-width:100%;height:auto;${ctx && ctx.inCell && !width ? `max-width:min(100%,${CELL_IMAGE_MAX}px);max-height:${CELL_IMAGE_MAX}px;object-fit:contain;` : ''}${width ? `width:${width}px;` : ''}">`
                 : escapeHtml(node.text);
         }
         case 'urlraw': {
@@ -403,7 +406,7 @@ const renderNode = (node, ctx) => {
 
 const renderCell = (cell, ctx, width) => {
     const { align, children } = unwrapCenter(cell.children);
-    const cellCtx = { ...ctx, fg: FG };
+    const cellCtx = { ...ctx, fg: FG, inCell: true };
     const attrs = `${width ? ` width="${width}%"` : ''}${align ? ` align="${align}"` : ''} valign="middle" bgcolor="${BG}"`;
     return `<td${attrs} style="${cellStyle(align)}"><span style="color:${FG};">${renderChildren(children, cellCtx)}</span></td>`;
 };
