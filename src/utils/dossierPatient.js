@@ -56,7 +56,7 @@ export const dossierBlockMessage = (version, context) => {
     const { access } = context;
     if (Number(version) === 26) return access.canCreateUpdate ? '' : "Le dossier médical n'est pas encore créé : remplissez d'abord le Dossier Médical Basique ou Avancé (la mise à jour n'est possible qu'ensuite).";
     if (access.canCreateBasic) return '';
-    if (access.initialForm) return "Vous avez déjà un dossier médical en cours : reprenez-le (Dossier Patient) ou supprimez-le tant qu'il peut l'être. Une fois appliqué, on le complète par la « Mise à jour du dossier médical ».";
+    if (access.initialForm) return "Vous avez déjà un dossier médical en cours : reprenez-le (bouton « Modifier » dans « Mon dossier patient » ou « Mon profil ») ou supprimez-le tant qu'il peut l'être. Une fois appliqué, on le complète par la « Mise à jour du dossier médical ».";
     return "Le dossier médical est déjà créé : on le complète désormais par la « Mise à jour du dossier médical » (Basique et Avancé ne sont plus disponibles).";
 };
 

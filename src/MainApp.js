@@ -2849,6 +2849,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             show={showMyPatientFile}
                             onHide={() => setShowMyPatientFile(false)}
                             showNotification={showNotification}
+                            onLoadForm={(form) => { setShowMyPatientFile(false); loadReportForUser(form.key, form.reportPath.split('/')[1]); }}
                         />
                         <MyJobApplicationsModal
                             show={showMyJobApplications}

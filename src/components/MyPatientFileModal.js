@@ -13,7 +13,10 @@ import ReactDOM from 'react-dom';
 import { Dropdown } from 'react-bootstrap';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
-import { loadPatientDossier, reportTitleOf, reportCreatorOf } from '../utils/patientRecords';
+import { loadPatientDossier, reportTitleOf, reportCreatorOf, deleteReportWithRules } from '../utils/patientRecords';
+import { loadDossierContext, canModifyForm } from '../utils/dossierPatient';
+import { isDossierVersion } from '../utils/dossierCore';
+import MyDossierPanel from './MyDossierPanel';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
 import ExemptionStatusCard from './ExemptionStatusCard';
 import ForumHint from './ForumHint';
@@ -40,8 +43,11 @@ const closeStyle = {
 const thStyle = { backgroundColor: '#161b22', border: '1px solid #30363d', padding: '8px 10px', textAlign: 'left' };
 const tdStyle = { border: '1px solid #30363d', padding: '8px 10px', verticalAlign: 'middle' };
 
-const MyPatientFileModal = ({ show, onHide, showNotification }) => {
-    const { myPatientID } = useEmployeeAuth();
+const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
+    const { myPatientID, isAdmin, staffName } = useEmployeeAuth();
+    // Formulaires du dossier (Basique, Avancé, Mise à jour) : leur état décide s'ils se modifient ou se suppriment encore (utils/dossierCore.js).
+    const [dossierForms, setDossierForms] = useState({});
+    const [busyKey, setBusyKey] = useState('');
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
@@ -57,6 +63,10 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
             // lui-même ; jamais les copies de médecins ni ce que le créateur a retiré.
             setEntries(dossier.filter((e) => !e.copiedFrom && !e.ownerDeleted
                 && (e.visibility === 'shared' || e.visibility === 'owner')));
+            try {
+                const context = await loadDossierContext(myPatientID);
+                setDossierForms(Object.fromEntries(context.forms.map((form) => [form.key, form])));
+            } catch (contextError) { setDossierForms({}); }
         } catch (error) {
             console.error('Error loading my patient file:', error);
             showNotification('Impossible de charger votre dossier patient.', 'error');
@@ -72,6 +82,20 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
     const copy = (text, message) => (text
         ? copyToClipboard(text, showNotification, message)
         : showNotification('Rien à copier.', 'warning'));
+
+    const removeDossierForm = async (entry, form) => {
+        if (!window.confirm(`Supprimer « ${form.title} » ?${form.phase === 'fenetre' ? '\n\nIl n\'alimentera pas votre dossier. Si vous aviez payé, vous recevez un jeton gratuit pour ce formulaire.' : ''}`)) return;
+        setBusyKey(entry.indexKey);
+        try {
+            const outcome = await deleteReportWithRules({ reportPath: form.reportPath, indexKey: form.key, patientID: myPatientID, patientNode: entry.patientNode }, { role: 'staff', isAdmin, staffName });
+            showNotification(outcome.message || 'Formulaire supprimé.', outcome.ok ? 'check-circle' : 'exclamation-circle');
+            await load();
+        } catch (error) {
+            showNotification(`Suppression impossible : ${error.message || 'erreur'}`, 'exclamation-circle');
+        } finally {
+            setBusyKey('');
+        }
+    };
 
     const exportDocument = (format, entry) => exportReportDocument(format, { bbCode: entry.bbCode, title: reportTitleOf(entry) || entry.originalKey, showNotification });
 
@@ -107,6 +131,12 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
 
                 {myPatientID && (
                     <div style={{ marginBottom: '16px' }}>
+                        <MyDossierPanel patientID={myPatientID} showNotification={showNotification} onLoadForm={onLoadForm} />
+                    </div>
+                )}
+
+                {myPatientID && (
+                    <div style={{ marginBottom: '16px' }}>
                         <h6 style={{ marginBottom: '8px' }}>Mes factures</h6>
                         <PatientInvoicesPanel patientID={myPatientID} showNotification={showNotification} />
                     </div>
@@ -138,6 +168,17 @@ const MyPatientFileModal = ({ show, onHide, showNotification }) => {
                                             {(entry.bbCode || entry.imageUrl) && (
                                                 <ExpandToggle open={!!openRows[entry.indexKey]} onClick={() => toggleRow(entry.indexKey)} title="Déplier / replier l'aperçu du rapport" />
                                             )}
+                                            {(() => {
+                                                const form = isDossierVersion(entry.bbCodeVersion) ? dossierForms[entry.indexKey] : null;
+                                                if (!form) return null;
+                                                const allowed = canModifyForm(form, { role: isAdmin ? 'admin' : 'patient' });
+                                                return (
+                                                    <>
+                                                        {allowed.edit && onLoadForm && <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => onLoadForm(form)} title="Rouvre le formulaire pour le modifier (modifié sur place).">Modifier</button>}
+                                                        {allowed.remove && <button type="button" className="btn btn-sm btn-outline-danger me-1" disabled={busyKey === entry.indexKey} onClick={() => removeDossierForm(entry, form)}>Supprimer</button>}
+                                                    </>
+                                                );
+                                            })()}
                                             <Dropdown className="d-inline-block">
                                                 <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
                                                 <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
