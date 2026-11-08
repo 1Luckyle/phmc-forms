@@ -490,6 +490,56 @@ await scenario('S2 marque son message lu (update() du client, au niveau de l\'en
 await write('S2 supprime son entrée de boîte', true, 'S2', 'messagerie/S2/m1', null, withBoxes);
 await write('S1 ne modifie pas la boîte de S2 une fois créée', false, 'S1', 'messagerie/S2/m1/lu', true, withBoxes);
 
+console.log('--- dossier patient : verrou des formulaires, jetons, file d\'attente ---');
+const MIN = 60 * 1000;
+const dossierForm = (version, ageMin) => ({ bbCodeVersion: version, bbCode: 'dossier', timestamp: Date.now() - ageMin * MIN, data: { patientID: 'PHMC-1' } });
+// Le formulaire du patient C (compte Civil, ID PHMC-1) : facture et index rangés sous PHMC-1 / clé du rapport.
+const withDossierForm = (version, { age = 30, invoice = null, visibility = 'owner' } = {}) => (data) => {
+    data.savedReports['Civil_Name_PHMC-1'] = { d1: dossierForm(version, age) };
+    data.patientRecords['PHMC-1'].d1 = { reportPath: 'savedReports/Civil_Name_PHMC-1/d1', visibility, bbCodeVersion: version };
+    if (invoice) data.facturesPatients = { 'PHMC-1': { d1: invoice } };
+    data.patientsDecedes = {};
+};
+const FORM_PATH = 'savedReports/Civil_Name_PHMC-1/d1';
+await write('Civil C supprime son dossier payé il y a 5 minutes (dans le délai)', true, 'C', FORM_PATH, null,
+    withDossierForm(25, { age: 60, invoice: { statut: 'paye', payeLe: Date.now() - 5 * MIN, montant: 1 } }));
+await write('Civil C ne supprime pas son dossier payé il y a 20 minutes', false, 'C', FORM_PATH, null,
+    withDossierForm(25, { age: 60, invoice: { statut: 'paye', payeLe: Date.now() - 20 * MIN, montant: 1 } }));
+await write('Civil C ne modifie pas son dossier payé il y a 20 minutes', false, 'C', FORM_PATH, { ...dossierForm(3, 60), bbCode: 'maj' },
+    withDossierForm(3, { age: 60, invoice: { statut: 'paye', payeLe: Date.now() - 20 * MIN, montant: 1 } }));
+await write('Civil C supprime son dossier pas encore payé, même ancien', true, 'C', FORM_PATH, null,
+    withDossierForm(25, { age: 600, invoice: { statut: 'a_payer', montant: 1 } }));
+await write('Civil C supprime sa mise à jour gratuite enregistrée il y a 5 minutes', true, 'C', FORM_PATH, null, withDossierForm(26, { age: 5 }));
+await write('Civil C ne supprime pas sa mise à jour gratuite enregistrée il y a 20 minutes', false, 'C', FORM_PATH, null, withDossierForm(26, { age: 20 }));
+await write('Civil C ne supprime pas un dossier créé par le personnel', false, 'C', FORM_PATH, null,
+    withDossierForm(25, { age: 1, visibility: 'staff-only', invoice: { statut: 'a_payer', montant: 1 } }));
+await write('Un autre formulaire de soins reste supprimable comme avant', true, 'C', FORM_PATH, null, withDossierForm(20, { age: 600 }));
+await write('Admin A supprime un dossier verrouillé', true, 'A', FORM_PATH, null,
+    withDossierForm(25, { age: 600, invoice: { statut: 'paye', payeLe: Date.now() - 300 * MIN, montant: 1 } }));
+
+const withDossier = (data) => {
+    data.dossiersPatients = { 'PHMC-1': { donnees: { patientBloodType: 'A+' } }, 'PHMC-2': { donnees: { patientBloodType: 'O-' } } };
+    data.jetonsDossier = { 'PHMC-1': { basique: 1, avance: 0, maj: 0 } };
+};
+await read('Civil C lit son dossier', true, 'C', 'dossiersPatients/PHMC-1', withDossier);
+await read('Civil C ne lit pas le dossier d un autre', false, 'C', 'dossiersPatients/PHMC-2', withDossier);
+await read('S1 (personnel) lit le dossier d un patient', true, 'S1', 'dossiersPatients/PHMC-2', withDossier);
+await write('Civil C n écrit pas dans son dossier', false, 'C', 'dossiersPatients/PHMC-1/donnees/patientBloodType', 'AB+', withDossier);
+await write('S1 n écrit pas dans le dossier', false, 'S1', 'dossiersPatients/PHMC-1/donnees/patientBloodType', 'AB+', withDossier);
+await write('Admin A corrige le dossier', true, 'A', 'dossiersPatients/PHMC-1/donnees/patientBloodType', 'AB+', withDossier);
+await write('Civil C dépense un jeton (1 -> 0)', true, 'C', 'jetonsDossier/PHMC-1/basique', 0, withDossier);
+await write('Civil C ne se donne pas un jeton', false, 'C', 'jetonsDossier/PHMC-1/avance', 1, withDossier);
+await write('Civil C n augmente pas son compteur de jetons', false, 'C', 'jetonsDossier/PHMC-1/basique', 5, withDossier);
+await write('S1 dépense un jeton pour le patient (formulaire rempli pour lui)', true, 'S1', 'jetonsDossier/PHMC-1/basique', 0, withDossier);
+await write('S1 ne se donne pas de jeton', false, 'S1', 'jetonsDossier/PHMC-1/avance', 3, withDossier);
+await write('Civil C signale une erreur sur son dossier', true, 'C', 'signalementsDossier/PHMC-1/d1', { creeLe: Date.now() }, withDossier);
+await write('Civil C ne signale pas pour un autre patient', false, 'C', 'signalementsDossier/PHMC-2/d1', { creeLe: Date.now() }, withDossier);
+await write('Civil C met un formulaire en file pour son dossier', true, 'C', 'dossiersEnAttente/PHMC-1/d1', { version: 25, reportPath: FORM_PATH, creeLe: Date.now(), createur: 'patient' }, withDossier);
+await write('Civil C ne met pas en file pour un autre patient', false, 'C', 'dossiersEnAttente/PHMC-2/d1', { version: 25, reportPath: FORM_PATH, creeLe: Date.now(), createur: 'patient' }, withDossier);
+await write('Civil C ne retire pas son formulaire de la file', false, 'C', 'dossiersEnAttente/PHMC-1/d1', null,
+    (data) => { withDossier(data); data.dossiersEnAttente = { 'PHMC-1': { d1: { version: 25, reportPath: FORM_PATH, creeLe: 1, createur: 'patient' } } }; });
+await write('S1 met un formulaire en file pour un patient', true, 'S1', 'dossiersEnAttente/PHMC-2/d1', { version: 3, reportPath: 'savedReports/S_One/x', creeLe: Date.now(), createur: 'personnel' }, withDossier);
+
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);
 process.exit(failures === 0 ? 0 : 1);

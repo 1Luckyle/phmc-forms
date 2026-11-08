@@ -15,6 +15,7 @@ import PatientGeneralInfo from './shared/PatientGeneralInfo';
 import EmergencyContactFields from './shared/EmergencyContactFields';
 import PresetTextField from './shared/PresetTextField';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
+import DossierStateBanner from '../components/DossierStateBanner';
 
 const GENERAL_FIELDS = {
     id: 'patientID', title: 'patientTitle', full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', dob: 'patientDateOfBirth',
@@ -108,6 +109,7 @@ const BasicPatientFile = ({
     return (
         <>
             <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
+            <DossierStateBanner formData={formData} version={25} />
             {/* --- 1. Informations générales --- */}
             <CollapsibleHeader
                 title="Informations générales"

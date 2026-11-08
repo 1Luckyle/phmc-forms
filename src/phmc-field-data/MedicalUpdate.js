@@ -14,6 +14,7 @@ import EmergencyContactFields from './shared/EmergencyContactFields';
 import PresetTextField from './shared/PresetTextField';
 import NameFields from './shared/NameFields';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
+import DossierStateBanner from '../components/DossierStateBanner';
 
 const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName', title: 'attorneyTitle' };
 
@@ -167,6 +168,7 @@ const MedicalRelease = ({
     return (
         <>
         <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', date: 'dateOfBirth', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
+        <DossierStateBanner formData={formData} version={26} />
         <Form.Label className="form-section-title">Identité actuelle du patient</Form.Label>
         <PatientGeneralInfo
             formData={formData} setFormData={setFormData} handleChange={handleChange} fields={CURRENT_FIELDS}

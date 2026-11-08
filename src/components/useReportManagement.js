@@ -21,7 +21,9 @@ import { validateReport, validateApplication, formatIssues } from '../utils/form
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
 import { logActivity } from '../utils/activityLog';
 import { isCareStaff } from '../hooks/useBillingRole';
-import { isBillableVersion } from '../utils/patientBilling';
+import { isBillableVersion, computeBilling } from '../utils/patientBilling';
+import { loadDossierContext, dossierBlockMessage, spendDossierToken, enqueueDossierForm, isDossierVersion, canModifyForm } from '../utils/dossierPatient';
+import { hasToken, isContactOnlyUpdate } from '../utils/dossierCore';
 import { getFormAccess } from '../utils/formAccess';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from '../utils/notifications';
@@ -216,6 +218,41 @@ export const useReportManagement = (
             return { success: false, error: 'Enregistrement annulé.' };
         }
 
+        // Dossier patient : un seul dossier initial (Basique OU Avancé), la mise à jour seulement ensuite ; un formulaire repris dans son délai de 15 minutes
+        // (ou resté en brouillon) est modifié SUR PLACE ; un jeton gratuit du même formulaire est dépensé automatiquement. Voir utils/dossierCore.js.
+        let dossierContext = null;
+        let editingForm = null;
+        let dossierToken = false;
+        if (isDossierVersion(bbCodeVersion) && formData.patientID) {
+            try {
+                dossierContext = await loadDossierContext(formData.patientID);
+            } catch (dossierError) {
+                console.warn('Dossier patient illisible, contrôles ignorés :', dossierError);
+            }
+            if (dossierContext) {
+                const editKey = String(formData.dossierEditPath || '').split('/').pop();
+                editingForm = editKey ? dossierContext.forms.find((form) => form.key === editKey) || null : null;
+                if (editingForm) {
+                    const allowed = canModifyForm(editingForm, {
+                        role: isAdmin ? 'admin' : (isCivilian ? 'patient' : 'personnel'),
+                        isCreator: !!currentAuthor && String(editingForm.authorName || '').trim().toLowerCase() === String(currentAuthor).trim().toLowerCase(),
+                    });
+                    if (!allowed.edit) {
+                        const message = 'Ce formulaire ne peut plus être modifié (le délai de 15 minutes après paiement est écoulé, ou il a été rempli par le personnel). Utilisez la « Mise à jour du dossier médical ».';
+                        showNotification(message, 'exclamation-circle', 9000);
+                        return { success: false, error: message };
+                    }
+                } else {
+                    const blocked = dossierBlockMessage(bbCodeVersion, dossierContext);
+                    if (blocked) {
+                        showNotification(blocked, 'exclamation-circle', 10000);
+                        return { success: false, error: blocked };
+                    }
+                    dossierToken = hasToken(dossierContext.tokens, bbCodeVersion) && computeBilling(bbCodeVersion, formData).baseAmount > 0;
+                }
+            }
+        }
+
         // Le titre est fabriqué par buildReportTitle : exactement celui affiché dans
         // « Titre du Formulaire » pendant la saisie (voir MainApp).
         key = buildReportTitle(bbCodeVersion, formData, getFormDefinition(bbCodeVersion)?.name);
@@ -253,7 +290,7 @@ export const useReportManagement = (
         // les rapports déjà enregistrés pour cet auteur et on ajoute un
         // suffixe " (2)", " (3)"... si le nom généré existe déjà.
         try {
-            const authorReportsSnapshot = await get(ref(database, `savedReports/${sanitizedAuthorId}`));
+            const authorReportsSnapshot = editingForm ? { exists: () => false } : await get(ref(database, `savedReports/${sanitizedAuthorId}`));
             if (authorReportsSnapshot.exists()) {
                 const existingKeys = new Set(
                     Object.values(authorReportsSnapshot.val()).map((r) => r.originalKey)
@@ -270,7 +307,7 @@ export const useReportManagement = (
             console.warn('Could not check for duplicate report names, saving without suffix:', error);
         }
 
-        const sanitizedKey = key.trim().replace(/[.#$[\/ \]]+/g, '_') + '_' + Date.now();
+        const sanitizedKey = editingForm ? editingForm.key : key.trim().replace(/[.#$[\/ \]]+/g, '_') + '_' + Date.now();
 
         // --- Easter Egg Logic ---
         const currentSavedCountForAuthor = savedReports.filter(r => r.authorName === currentAuthor).length;
@@ -302,7 +339,8 @@ export const useReportManagement = (
         bbCodeVersion: bbCodeVersion,
         data: filterFormData(formData, bbCodeVersion),
         bbCode: bbCodeContent,
-        timestamp: Date.now(),
+        // Un formulaire de dossier repris dans son délai garde sa date d'origine (sinon on pourrait prolonger le délai indéfiniment).
+        timestamp: editingForm ? editingForm.timestamp : Date.now(),
         originalKey: key,
         title: pureTitle,
         authorName: currentAuthor,
@@ -324,7 +362,7 @@ export const useReportManagement = (
 
         // Supprime toute autre clé undefined profondément
         const cleanPayload = sanitizeForFirebase(reportDataToSave);
-        const reportPath = `savedReports/${sanitizedAuthorId}/${sanitizedKey}`;
+        const reportPath = editingForm ? editingForm.reportPath : `savedReports/${sanitizedAuthorId}/${sanitizedKey}`;
 
         try {
             const reportRef = ref(database, reportPath);
@@ -340,9 +378,10 @@ export const useReportManagement = (
             // Best-effort : une erreur ici ne doit jamais faire échouer la
             // sauvegarde du rapport lui-même.
             if (formData.patientID) {
+                let isOwnedByThisCivilian = false;
                 try {
                     const ownPatientId = options.ownerPatientId || (isCivilian ? civilianProfile?.patientID : myPatientID);
-                    const isOwnedByThisCivilian = !!ownPatientId
+                    isOwnedByThisCivilian = !!ownPatientId
                         && normalizePatientId(ownPatientId) === normalizePatientId(formData.patientID);
                     await writeIndexEntry({
                         patientID: formData.patientID,
@@ -356,7 +395,10 @@ export const useReportManagement = (
                             authorName: currentAuthor,
                             creatorName: currentAuthor,
                             patientName: formData.patientName || null,
-                            timestamp: Date.now(),
+                            timestamp: editingForm ? editingForm.timestamp : Date.now(),
+                            // Mise à jour de simples coordonnées : gratuite et appliquée tout de suite par le serveur ; jeton gratuit dépensé : repris pour le rendre si le formulaire est supprimé.
+                            ...(Number(bbCodeVersion) === 26 && isContactOnlyUpdate(formData) ? { dossierImmediat: true } : {}),
+                            ...(dossierToken ? { dossierJeton: true } : {}),
                         },
                     });
                 } catch (indexError) {
@@ -366,17 +408,33 @@ export const useReportManagement = (
                 // Facturation : les 4 formulaires médicaux civils payants créent une facture au nom du patient
                 // (notification à sa connexion, état de paiement dans son dossier, mails groupés). Best-effort.
                 try {
-                    await recordInvoiceForReport({
-                        patientID: formData.patientID,
-                        indexKey: sanitizedKey,
-                        reportPath,
-                        bbCodeVersion,
-                        title: pureTitle,
-                        formData,
-                        createdBy: currentAuthor,
-                    });
+                    // Jeton gratuit : dépensé (compteur - 1) puis facture « sans paiement ». Formulaire de dossier repris : sa facture existe déjà (jamais réécrite).
+                    if (dossierToken) dossierToken = await spendDossierToken(dossierContext.patientNode, bbCodeVersion, dossierContext.tokens);
+                    if (!(editingForm && editingForm.invoice)) {
+                        await recordInvoiceForReport({
+                            patientID: formData.patientID,
+                            indexKey: sanitizedKey,
+                            reportPath,
+                            bbCodeVersion,
+                            title: pureTitle,
+                            formData: dossierToken ? { ...formData, dossierJeton: true } : formData,
+                            createdBy: currentAuthor,
+                        });
+                    }
                 } catch (invoiceError) {
                     console.warn('Could not record patient invoice:', invoiceError);
+                }
+                // File du dossier patient : le serveur applique le formulaire 15 minutes après son paiement (voir utils/dossierCore.js).
+                if (dossierContext && isDossierVersion(bbCodeVersion)) {
+                    try {
+                        await enqueueDossierForm({
+                            patientNode: dossierContext.patientNode, key: sanitizedKey, version: bbCodeVersion, reportPath,
+                            createdAt: editingForm ? editingForm.timestamp : reportDataToSave.timestamp, createur: isOwnedByThisCivilian ? 'patient' : 'personnel', jeton: dossierToken || !!editingForm?.jeton,
+                        });
+                    } catch (queueError) {
+                        console.warn('Could not queue the dossier form:', queueError);
+                        showNotification("Le formulaire est enregistré, mais il n'a pas pu être mis en file pour le dossier patient : prévenez un administrateur.", 'warning', 9000);
+                    }
                 }
                 // Libération médicale : la demande part avec le formulaire. Avec des rapports retenus, chaque médecin concerné est prévenu et partage SES rapports ;
                 // sans rapport précis (ou pour « Autres dossiers »), l'administration est prévenue et la traite à la main.
@@ -601,6 +659,8 @@ Clé : ${sanitizedKey}`,
                     } else {
                         // When loading into the form, ensure any escaped bold tags are converted to simple [b]
                         loadedBbCode = loadedBbCode.replace(/\[bold\]/gi, '[b]').replace(/\[\/bold\]/gi, '[/b]');
+                        // Dossier patient : reprendre un formulaire (Basique, Avancé, Mise à jour) le MODIFIE sur place tant que c'est permis (voir saveReport).
+                        if (isDossierVersion(loadedVersion)) loadedFormData = { ...loadedFormData, dossierEditPath: reportPath };
                     }
                     const loadedCoronerEmployee = loadedFormData.coronerEmployee;
                     const loadedPhmcEmployee = loadedFormData.phmcEmployee;

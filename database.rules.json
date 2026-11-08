@@ -675,7 +675,7 @@
           // supprimer ce rapport ; il faut d'abord lever le gel (admin, avec un justificatif : voir gelsJudiciaires). LIMITE : le droit d'écriture
           // d'un admin sur le NŒUD entier (renommage, fusion de comptes : ligne « .write » de $userKey) l'emporte sur cette règle ; pour les
           // admins le gel est donc appliqué par l'application (deleteReportWithRules ; assertNoneFrozen avant chaque opération d'admin sur un nœud entier), pas par la base.
-          ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama'))))",
+          ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama' && !((data.child('bbCodeVersion').val() === 3 || data.child('bbCodeVersion').val() === 25 || data.child('bbCodeVersion').val() === 26) && (root.child('patientRecords').child(data.child('data').child('patientID').val()).child($reportKey).child('visibility').val() !== 'owner' || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() === 'paye' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('payeLe').val() < now - 900000) || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'a_payer' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'paye' && data.child('timestamp').val() < now - 900000)))))))",
           // Marqueurs que les renommages de fiche mettent à jour dans les COPIES d'un autre médecin (voir renameReportOwner).
           "copiedFrom": {
             "reportPath": {
@@ -952,6 +952,49 @@
           // Personnel : tout, SAUF créer une NOUVELLE entrée sur un patient décédé (patientsDecedes/{ID}) quand on n'est pas DMEC.
           // Civil : créer / modifier ; supprimer seulement une entrée « owner » (la sienne).
           ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.exists() || !newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !root.child('patientsDecedes').child($patientId).exists())) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (newData.exists() || data.child('visibility').val() === 'owner')))"
+        }
+      }
+    },
+
+    // ─── Dossier patient (src/utils/dossierCore.js ; Cloud Function reconcileDossiers) ───────────────────────────────────────────────────
+    // dossiersPatients/{ID patient} : { initial: { type, cle, appliqueLe }, donnees: { champ: valeur }, majLe, historique: { clé du formulaire: {...} } }. Écrit par la
+    // fonction serveur (qui contourne ces règles) et par les administrateurs (correction) ; lu par le personnel, les admins et le patient lui-même.
+    "dossiersPatients": {
+      "$patientId": {
+        ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true"
+      }
+    },
+    // dossiersEnAttente/{ID patient}/{clé du formulaire} : file des formulaires de dossier pas encore appliqués ({ version, kind, reportPath, creeLe, createur, jeton? }).
+    // Créée à l'enregistrement du formulaire (par le patient pour son dossier, ou par le personnel) ; vidée par la fonction serveur.
+    "dossiersEnAttente": {
+      "$patientId": {
+        ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        "$cle": {
+          ".write": "auth != null && newData.exists() && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['version', 'reportPath', 'creeLe', 'createur']) && newData.child('creeLe').isNumber() && (newData.child('createur').val() === 'patient' || newData.child('createur').val() === 'personnel'))"
+        }
+      }
+    },
+    // jetonsDossier/{ID patient}/{basique|avance|maj} : jetons gratuits (même formulaire seulement). Rendus par la fonction serveur ; le patient (ou le personnel qui
+    // remplit pour lui) en DÉPENSE un en baissant le compteur de 1.
+    "jetonsDossier": {
+      "$patientId": {
+        ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        "$kind": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) && data.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() === data.val() - 1))",
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 20)"
+        }
+      }
+    },
+    // signalementsDossier/{ID patient}/{clé du formulaire} : le patient signale une erreur sur un formulaire rempli par le personnel et payé (un jeton gratuit de mise à
+    // jour lui est alors accordé par la fonction serveur). Création seulement, par le patient.
+    "signalementsDossier": {
+      "$patientId": {
+        ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        "$cle": {
+          ".write": "auth != null && ((!data.exists() && newData.exists() && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) || root.child('adminUIDs').child(auth.uid).val() === true)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['creeLe']) && newData.child('creeLe').isNumber())"
         }
       }
     },

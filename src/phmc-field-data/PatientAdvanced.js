@@ -16,6 +16,7 @@ import EmergencyContactFields from './shared/EmergencyContactFields';
 import PresetTextField from './shared/PresetTextField';
 import NameFields from './shared/NameFields';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
+import DossierStateBanner from '../components/DossierStateBanner';
 
 const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName', title: 'attorneyTitle' };
 
@@ -136,6 +137,7 @@ const PatientAdvanced = ({
 
         <>
             <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
+            <DossierStateBanner formData={formData} version={3} />
             {/* --- 1. General Information --- */}
             <CollapsibleHeader
                 title="Informations générales"

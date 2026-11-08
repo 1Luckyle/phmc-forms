@@ -6,6 +6,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
 import crypto from 'crypto';
 import { renderMail, wrapMailHtml, PHMC_SITE_URL } from './mailTemplatesCore.js';
+import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion } from './dossierCore.js';
 
 // Initialize Firebase Admin SDK
 // L'URL de la Realtime Database est fournie explicitement : sans elle,
@@ -2794,5 +2795,112 @@ export const adoptArchivedRecords = onRequest({}, async (req, res) => {
     } catch (error) {
         console.error('Error adopting archived records:', error);
         res.status(500).json({ error: 'internal', message: 'Impossible de rattacher les archives.' });
+    }
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Dossier patient (voir src/utils/dossierCore.js pour les règles). Chaque minute :
+//   • dossiersEnAttente/{patient}/{clé du formulaire} : un formulaire Basique / Avancé / Mise à jour dont le dossier n'est pas encore alimenté.
+//     - supprimé avant d'être appliqué : rien n'est appliqué ; un JETON gratuit (même formulaire) est rendu au patient s'il avait payé ;
+//     - payé (ou gratuit) depuis 15 minutes : ses valeurs sont écrites dans dossiersPatients/{patient}, et le profil du compte est tenu à jour ;
+//     - une mise à jour de simples coordonnées (nom, prénoms, téléphone, Discord, adresse) est gratuite et appliquée tout de suite ;
+//   • signalementsDossier/{patient}/{clé} : le patient signale une erreur sur un formulaire rempli par le PERSONNEL et payé : il reçoit un jeton gratuit de
+//     mise à jour (une seule fois par formulaire).
+// Le dossier n'est JAMAIS écrit par un client : seule cette fonction le modifie, ce qui garde les données intactes si un formulaire est supprimé ensuite.
+// ───────────────────────────────────────────────────────────────────────────────
+const staffPatientNodeOf = (member) => {
+    if (member && member.gtawCharacterId != null) return `PHMC-${member.gtawCharacterId}`;
+    const badge = String((member && member.badge) || '');
+    const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');
+    return digits ? `PHMC-${digits}` : '';
+};
+
+const addDossierToken = async (patientNode, kind, delta = 1) => {
+    if (!kind) return;
+    await db.ref(`jetonsDossier/${patientNode}/${kind}`).transaction((current) => Math.max(0, Number(current || 0) + delta));
+};
+
+// Reporte l'identité du dossier sur le profil du compte (Civil : toutes les coordonnées ; personnel : tout sauf le nom, qui touche ses rapports).
+const syncDossierToProfiles = async (patientNode, values) => {
+    const patch = profilePatch(values);
+    if (Object.keys(patch).length === 0) return;
+    const updates = {};
+    const civilSnap = await db.ref('civilians').get();
+    Object.entries(civilSnap.val() || {}).forEach(([uid, civil]) => {
+        if (!civil || String(civil.patientID || '').toUpperCase().replace(/\s+/g, '') !== patientNode) return;
+        Object.entries(patch).forEach(([key, value]) => { updates[`civilians/${uid}/${key}`] = value === '' ? null : value; });
+    });
+    for (const path of ['staff/phmc', 'staff/coroner']) {
+        const staffSnap = await db.ref(path).get();
+        Object.entries(staffSnap.val() || {}).forEach(([key, member]) => {
+            if (!member || staffPatientNodeOf(member) !== patientNode) return;
+            const staffPatch = { middleName: patch.middleName, dateOfBirth: patch.dateOfBirth, gender: patch.gender, address: patch.address, zip: patch.zip, phNumber: patch.phone, discord: patch.discord };
+            Object.entries(staffPatch).forEach(([field, value]) => { if (value !== undefined) updates[`${path}/${key}/${field}`] = value === '' ? null : value; });
+        });
+    }
+    if (Object.keys(updates).length > 0) await db.ref().update(updates);
+};
+
+const applyDossierEntry = async (patientNode, key, entry, report) => {
+    const { values } = extractDossierValues(entry.version, (report && report.data) || {});
+    const now = Date.now();
+    const updates = {};
+    Object.entries(values).forEach(([field, value]) => { updates[`dossiersPatients/${patientNode}/donnees/${field}`] = value === '' ? null : value; });
+    updates[`dossiersPatients/${patientNode}/majLe`] = now;
+    updates[`dossiersPatients/${patientNode}/historique/${key}`] = { version: Number(entry.version), appliqueLe: now, titre: String((report && report.title) || '').slice(0, 200), createur: entry.createur || 'patient' };
+    if (isInitialVersion(entry.version)) {
+        const initial = await db.ref(`dossiersPatients/${patientNode}/initial`).get();
+        if (!initial.exists()) updates[`dossiersPatients/${patientNode}/initial`] = { type: dossierKindOf(entry.version), cle: key, appliqueLe: now };
+    }
+    await db.ref().update(updates);
+    await syncDossierToProfiles(patientNode, values);
+    await logServerActivity({ category: 'dossier', action: 'dossier_applique', summary: `Dossier patient mis à jour (${dossierKindOf(entry.version)})`, details: `Patient : ${patientNode}\nFormulaire : ${key}`, target: patientNode, severity: 'info' }).catch(() => {});
+};
+
+export const reconcileDossiers = onSchedule({ schedule: 'every 1 minutes', timeZone: 'Europe/Paris' }, async () => {
+    const now = Date.now();
+    const queue = (await db.ref('dossiersEnAttente').get()).val() || {};
+    for (const [patientNode, entries] of Object.entries(queue)) {
+        for (const [key, entry] of Object.entries(entries || {})) {
+            try {
+                const report = (await db.ref(entry.reportPath).get()).val();
+                const invoice = (await db.ref(`facturesPatients/${patientNode}/${key}`).get()).val();
+                // Supprimé (ou retiré par le patient) avant d'être appliqué : rien n'est appliqué, et un jeton est rendu s'il avait payé.
+                if (!report || report.ownerDeleted === true) {
+                    if (refundsToken({ createur: entry.createur, invoice, usedToken: entry.jeton === true })) await addDossierToken(patientNode, dossierKindOf(entry.version));
+                    await db.ref(`dossiersEnAttente/${patientNode}/${key}`).remove();
+                    continue;
+                }
+                // Une mise à jour de simples coordonnées n'a pas de facture : gratuite et immédiate. Tout autre formulaire sans facture attend la sienne.
+                const contactOnly = Number(entry.version) === UPDATE_VERSION && !invoice && isContactOnlyUpdate(report.data || {});
+                if (!invoice && !contactOnly) continue;
+                const { phase } = formPhase({ createdAt: entry.creeLe, invoice, immediate: contactOnly }, now);
+                if (phase !== 'verrouille') continue;
+                await applyDossierEntry(patientNode, key, entry, report);
+                await db.ref(`dossiersEnAttente/${patientNode}/${key}`).remove();
+            } catch (error) {
+                console.error(`reconcileDossiers: échec pour ${patientNode}/${key}:`, error);
+            }
+        }
+    }
+    // Erreur signalée par le patient sur un formulaire rempli par le personnel et payé : un jeton gratuit de mise à jour, une seule fois.
+    const reports = (await db.ref('signalementsDossier').get()).val() || {};
+    for (const [patientNode, items] of Object.entries(reports)) {
+        for (const [key, item] of Object.entries(items || {})) {
+            if (!item || item.traiteLe) continue;
+            try {
+                const invoice = (await db.ref(`facturesPatients/${patientNode}/${key}`).get()).val();
+                const indexEntry = (await db.ref(`patientRecords/${patientNode}/${key}`).get()).val();
+                const byStaff = !!indexEntry && indexEntry.visibility !== 'owner';
+                if (byStaff && invoice && invoice.statut === 'paye') {
+                    await addDossierToken(patientNode, 'maj');
+                    await db.ref(`signalementsDossier/${patientNode}/${key}/traiteLe`).set(now);
+                } else if (!byStaff || (invoice && invoice.statut !== 'a_payer')) {
+                    await db.ref(`signalementsDossier/${patientNode}/${key}/traiteLe`).set(now); // refusé : pas un formulaire du personnel
+                }
+            } catch (error) {
+                console.error(`reconcileDossiers: signalement ${patientNode}/${key}:`, error);
+            }
+        }
     }
 });

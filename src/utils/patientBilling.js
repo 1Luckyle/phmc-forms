@@ -1,4 +1,5 @@
 import { getPrice } from './pricing';
+import { isContactOnlyUpdate } from './dossierCore';
 // src/utils/patientBilling.js
 //
 // Facturation des formulaires médicaux civils (module pur, sans Firebase) : montant dû, état d'une
@@ -46,7 +47,8 @@ const baseAmountOf = (bbCodeVersion, formData) => {
         case 3: return getPrice('dossierAvance');
         case 25: return getPrice('dossierBase');
         case 24: return (formData?.MedicalRecordsRelease?.length || 0) * getPrice('divulgationParElement');
-        case 26: return formData?.UpdateMedicalFile?.length > 0 ? getPrice('miseAJourDossier') : 0;
+        // Mise à jour : gratuite quand elle ne touche que nom, prénoms, téléphone, Discord ou adresse (voir utils/dossierCore.js).
+        case 26: return formData?.UpdateMedicalFile?.length > 0 && !isContactOnlyUpdate(formData) ? getPrice('miseAJourDossier') : 0;
         default: return 0;
     }
 };
@@ -58,7 +60,9 @@ export const computeBilling = (bbCodeVersion, formData = {}) => {
     // Exemption DEMANDÉE mais pas encore enregistrée sur le dossier du patient (ni mineur) : la facture reste due, « en attente de traitement pour
     // l'exemption », jusqu'à la décision du personnel administratif (voir utils/exemptions.js).
     const exemptPending = exempt && formData.exemptSource === 'demande';
-    return { baseAmount, exempt, exemptPending, amount: exempt ? 0 : baseAmount };
+    // Jeton gratuit dépensé (formulaire du dossier supprimé dans son délai, ou erreur signalée) : rien à payer.
+    const jeton = isTrue(formData.dossierJeton);
+    return { baseAmount, exempt, exemptPending, jeton, amount: exempt || jeton ? 0 : baseAmount };
 };
 
 export const formatMoney = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} $`;

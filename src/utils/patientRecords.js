@@ -28,6 +28,7 @@ import { loadFreeze, isFrozen, FREEZE_MESSAGE } from './judicialFreeze';
 import {
     canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId,
 } from './patientId';
+import { isDossierVersion } from './dossierCore';
 
 export { canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId };
 
@@ -304,6 +305,26 @@ async function removeUnpaidInvoice(patientNode, indexKey) {
 //  • Un patient ne peut pas supprimer un rapport créé par le personnel.
 //  • Un médecin ne supprime que ses rapports ; un rapport créé par le patient n'est
 //    supprimable que par le patient (ou un admin).
+// Verrou des formulaires du dossier patient (Basique, Avancé, Mise à jour) : supprimables par leur patient tant qu'ils sont en brouillon ou dans les 15 minutes qui
+// suivent le paiement, jamais ensuite (sauf par un administrateur) ; un formulaire rempli par le personnel : par son créateur tant qu'il est en brouillon.
+async function dossierDeletionRefusal(report, indexEntry, indexKey, viewer, patientNode) {
+    const version = indexEntry?.bbCodeVersion ?? report.bbCodeVersion;
+    if (!isDossierVersion(version) || viewer.isAdmin) return null;
+    const { loadDossierContext, canModifyForm } = await import('./dossierPatient');
+    const context = await loadDossierContext(patientNode || report.patientID);
+    const form = context.forms.find((entry) => entry.key === indexKey);
+    if (!form) return null;
+    const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+    const allowed = canModifyForm(form, { role: viewer.role === 'civil' ? 'patient' : 'personnel', isCreator: sameName(form.authorName, viewer.staffName) });
+    if (allowed.remove) return null;
+    if (form.createur === 'personnel') {
+        return { ok: false, action: 'refused', message: viewer.role === 'civil'
+            ? "Ce dossier a été rempli par le personnel : vous ne pouvez pas le supprimer. Si une information est fausse, signalez-le depuis votre dossier : un jeton gratuit de mise à jour vous sera accordé."
+            : "Ce dossier ne peut plus être supprimé : seul son créateur le peut tant que le patient ne l'a pas payé, ensuite un administrateur." };
+    }
+    return { ok: false, action: 'refused', message: "Ce formulaire est appliqué au dossier médical : il ne peut plus être supprimé (délai de 15 minutes après le paiement dépassé). Utilisez la « Mise à jour du dossier médical » pour corriger une information." };
+}
+
 export async function deleteReportWithRules(report, viewer) {
     const { reportPath } = report;
     const indexKey = report.indexKey || report.key || (reportPath ? reportPath.split('/').pop() : null);
@@ -325,6 +346,11 @@ export async function deleteReportWithRules(report, viewer) {
 
     const hasCopies = !!indexEntry?.copiedBy && Object.keys(indexEntry.copiedBy).length > 0;
     const isCopy = !!indexEntry?.copiedFrom || !!report.isCopy;
+
+    if (indexRef && !isCopy) {
+        const refusal = await dossierDeletionRefusal(report, indexEntry, indexKey, viewer, indexRef.parent.key);
+        if (refusal) return refusal;
+    }
 
     // Rapport de décès supprimé : la fiche du patient est libérée ; Rapport Public de Décès supprimé : il est dépublié.
     const releaseDeath = () => (viewer.role === 'civil' ? Promise.resolve() : releaseDeathArtifacts({
