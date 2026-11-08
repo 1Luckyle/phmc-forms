@@ -605,7 +605,7 @@ const TEMPLATES = {
         patientAddress: h.patient.address,
         patientZIP: h.patient.zip,
         patientEmail: h.patient.email,
-        MedicalRecordsRelease: h.some('MedicalRecordsRelease', 2, ['ERVisit', 'HospitalStay']),
+        MedicalRecordsRelease: ['ERVisit', 'OfficeClinic'],
         CarePurposeMedicalInformationRelease: h.opt('PurposeMedicalInformationRelease'),
         PurposeMedicalInformationReleaseFormat: h.opt('PurposeMedicalInformationReleaseFormat'),
         StupidDateFrom: h.daysFromToday(-365),

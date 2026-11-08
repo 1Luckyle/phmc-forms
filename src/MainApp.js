@@ -66,6 +66,7 @@ import { groupsFor } from './utils/notifications';
 import useFormAccess from './hooks/useFormAccess';
 import useDossierPrefill, { useCandidaturePrefill } from './hooks/useDossierPrefill';
 import { staffIdentity } from './utils/knownPatient';
+import { adaptReleaseOptions } from './utils/releaseRequests';
 import { buildCivilianAutofillValues } from './utils/civilianAutofill';
 import { loadDossierContext } from './utils/dossierPatient';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
@@ -2137,7 +2138,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                         patientTitleOptions={optionize(selectOptions.patientTitle)}
                                         purposeOptions={optionize(selectOptions.PurposeMedicalInformationRelease)}
                                         formatOptions={optionize(selectOptions.PurposeMedicalInformationReleaseFormat)}
-                                        medicalRecordOptions={optionize(selectOptions.MedicalRecordsRelease)}
+                                        medicalRecordOptions={adaptReleaseOptions(optionize(selectOptions.MedicalRecordsRelease))}
                                         /* Surgical */
                                         phmcRank={optionize(selectOptions.phmcRank)}
                                         patientConsent={optionize(selectOptions.patientConsent)}

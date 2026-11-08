@@ -38,12 +38,30 @@ export const ITEM_STATUS = { WAITING: 'attente', SHARED: 'partage', REMOVED: 're
 // formulaire médical est donc divulgable sans rien changer. Les formulaires du DMEC, les candidatures, la libération elle-même, les courriels et les
 // formulaires AMA n'en font jamais partie. Pour classer un formulaire autrement, c'est ici.
 export const RELEASE_CATEGORIES = {
-    ERVisit: [19],                           // Protocole d'urgence
-    HospitalStay: [6, 7],                    // Évaluations physiques
-    Outpatient: [5],                         // Opération chirurgicale
-    OfficeClinic: [9, 10, 12, 13, 20, 21],   // Consultations générales, obstétrique, gynécologie
-    PsychologyVisits: [14, 16, 28, 29],      // Consultations et évaluations psychiatriques / psychologiques
-    Other: [3, 25, 26, 35, 41],              // Dossiers médicaux, mise à jour, certificats
+    ERVisit: [19],                              // Protocole d'urgence
+    HospitalStay: [],                           // DÉSACTIVÉE pour l'instant : plus proposée dans les choix (voir adaptReleaseOptions), aucun formulaire n'y est rangé
+    Outpatient: [5],                            // Opération chirurgicale
+    OfficeClinic: [6, 7, 9, 10, 12, 13, 20, 21], // Évaluations physiques, consultations générales, obstétrique, gynécologie
+    PsychologyVisits: [14, 16, 28, 29],         // Consultations et évaluations psychiatriques / psychologiques
+    Certificate: [35, 41],                      // Certificat de maladie, certificat de vol
+    Other: [3, 25, 26],                         // Dossiers médicaux (basique, avancé), mise à jour
+};
+
+// Catégories retirées des choix du formulaire de libération (valeur de « Dossiers médicaux à divulguer »).
+export const DISABLED_RELEASE_CATEGORIES = ['HospitalStay'];
+export const PSYCHOLOGY_RELEASE_LABEL = 'Visites psychologiques et psychiatriques';
+export const CERTIFICATE_RELEASE_OPTION = { value: 'Certificate', label: 'Certificats : certificat de maladie, certificat de vol' };
+
+// Liste des choix du formulaire à partir de celle de la base : sans les catégories désactivées, « Visites psychologiques » renommée, et la catégorie « Certificats »
+// ajoutée (juste avant « Autre »). Le libellé de la base garde ses précisions : seul le début change.
+export const adaptReleaseOptions = (options) => {
+    const base = (Array.isArray(options) ? options : []).filter((option) => !DISABLED_RELEASE_CATEGORIES.includes(option.value))
+        .map((option) => (option.value === 'PsychologyVisits'
+            ? { ...option, label: String(option.label || '').replace(/^Visites? (de )?psychologi(ques?|e)/i, PSYCHOLOGY_RELEASE_LABEL) || PSYCHOLOGY_RELEASE_LABEL }
+            : option));
+    if (base.some((option) => option.value === CERTIFICATE_RELEASE_OPTION.value)) return base;
+    const otherIndex = base.findIndex((option) => option.value === 'Other');
+    return otherIndex === -1 ? [...base, CERTIFICATE_RELEASE_OPTION] : [...base.slice(0, otherIndex), CERTIFICATE_RELEASE_OPTION, ...base.slice(otherIndex)];
 };
 // Jamais divulgués par ce circuit : les notes de service (22, 23 : notes internes du personnel), la libération (24), les courriels (27), le retour d'agence (18),
 // les candidatures (50 à 55) et le panneau admin.

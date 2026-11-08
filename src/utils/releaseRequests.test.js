@@ -1,5 +1,5 @@
 import {
-    releaseCategoryOf, eligibleReleaseEntries, canShareReport, isServiceChief, practitionersOf, practitionerLabel, toSelection,
+    releaseCategoryOf, adaptReleaseOptions, eligibleReleaseEntries, canShareReport, isServiceChief, practitionersOf, practitionerLabel, toSelection,
     shareableItems, requestsVisibleTo, shareRequestItems, isReleaseFormGone, isReleasePaymentPending, cancelReleaseRequest, RELEASE_STATUS, ITEM_STATUS,
 } from './releaseRequests';
 import { loadPatientInvoices } from './patientInvoices';
@@ -32,12 +32,15 @@ describe('catégories de divulgation', () => {
         expect(releaseCategoryOf(5)).toBe('Outpatient');
         expect(releaseCategoryOf(14)).toBe('PsychologyVisits');
         expect(releaseCategoryOf(25)).toBe('Other');
+        expect(releaseCategoryOf(35)).toBe('Certificate');
+        expect(releaseCategoryOf(41)).toBe('Certificate');
         expect(releaseCategoryOf(4)).toBeNull();
         expect(releaseCategoryOf(24)).toBeNull();
         expect(releaseCategoryOf(53)).toBeNull();
     });
     test('les anciens formulaires médicaux sont couverts, un futur formulaire tombe dans « Autre », les courriels jamais', () => {
-        expect(releaseCategoryOf(6)).toBe('HospitalStay');
+        expect(releaseCategoryOf(6)).toBe('OfficeClinic');   // évaluations physiques : « Clinique »
+        expect(releaseCategoryOf(7)).toBe('OfficeClinic');
         expect(releaseCategoryOf(9)).toBe('OfficeClinic');
         expect(releaseCategoryOf(13)).toBe('OfficeClinic');
         expect(releaseCategoryOf(77)).toBe('Other');
@@ -46,6 +49,27 @@ describe('catégories de divulgation', () => {
         expect(releaseCategoryOf(27)).toBeNull();
         expect(releaseCategoryOf(18)).toBeNull();
         expect(releaseCategoryOf(undefined)).toBeNull();
+    });
+});
+
+describe('choix du formulaire de libération', () => {
+    const base = [
+        { value: 'ERVisit', label: 'Visite aux urgences : notes' },
+        { value: 'HospitalStay', label: 'Hospitalisation : notes' },
+        { value: 'PsychologyVisits', label: 'Visites psychologiques : notes de bureau, résultats d\u2019évaluation' },
+        { value: 'Other', label: 'Autre' },
+    ];
+    test('Hospitalisation n\u2019est plus proposée, la catégorie psychologique est renommée, « Certificats » s\u2019ajoute avant « Autre »', () => {
+        const options = adaptReleaseOptions(base);
+        expect(options.map((o) => o.value)).toEqual(['ERVisit', 'PsychologyVisits', 'Certificate', 'Other']);
+        expect(options.find((o) => o.value === 'PsychologyVisits').label).toBe('Visites psychologiques et psychiatriques : notes de bureau, résultats d\u2019évaluation');
+        expect(adaptReleaseOptions(options).filter((o) => o.value === 'Certificate')).toHaveLength(1);
+        expect(adaptReleaseOptions(undefined).map((o) => o.value)).toEqual(['Certificate']);
+    });
+    test('une demande « Certificats » propose le certificat de maladie et le certificat de vol', () => {
+        const entries = [{ indexKey: 'm', bbCodeVersion: 35, timestamp: 1, visibility: 'staff-only' }, { indexKey: 'v', bbCodeVersion: 41, timestamp: 2, visibility: 'staff-only' }, { indexKey: 'c', bbCodeVersion: 20, timestamp: 3, visibility: 'staff-only' }];
+        expect(eligibleReleaseEntries(entries, { categories: ['Certificate'] }).map((e) => e.indexKey).sort()).toEqual(['m', 'v']);
+        expect(eligibleReleaseEntries(entries, { categories: ['HospitalStay'] })).toEqual([]);
     });
 });
 

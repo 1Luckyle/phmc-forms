@@ -43,6 +43,14 @@ test('aucune ligne vide doublée entre deux rubriques, aucun espace en début de
     });
 });
 
+test('libération : catégories renommées et « Certificats » ajoutée, « Séjour hospitalier » seulement si elle est cochée (ancienne demande)', () => {
+    const text = generateMedicalRecordRelease({ ...base, MedicalRecordsRelease: ['Certificate', 'PsychologyVisits'] });
+    expect(text).toContain('[cbc] [b]Certificats[/b]');
+    expect(text).toContain('[cbc] [b]Visites psychologiques et psychiatriques[/b]');
+    expect(text).not.toContain('Séjour hospitalier');
+    expect(generateMedicalRecordRelease({ ...base, MedicalRecordsRelease: ['HospitalStay'] })).toContain('Séjour hospitalier');
+});
+
 test('la libération médicale liste les rapports retenus avec leur médecin, et rien sans sélection', () => {
     const withReports = generateMedicalRecordRelease({
         ...base,

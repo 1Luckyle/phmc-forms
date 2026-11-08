@@ -114,10 +114,10 @@ ${sectionBanner(`Informations de divulgation`, { size: 115 })}
 [/table]
 ${sectionBanner(`Dossiers médicaux à divulguer`, { size: 115 })}
 [table][tr][td] ${checkbox(has('ERVisit'))} [b]Visite aux urgences[/b] (Notes des urgences, notes d'évolution, consultations, notes de procédure, résultats de tests)
-[tr][td] ${checkbox(has('HospitalStay'))} [b]Séjour hospitalier[/b] (Anamnèse et examen physique, notes d'évolution, consultations, rapports opératoires, résumé de sortie, résultats de tests)
-[tr][td] ${checkbox(has('Outpatient'))} [b]Chirurgie/Procédure ambulatoire[/b] (Anamnèse et examen physique, notes d'évolution, consultations, notes de procédure, résultats de tests)
+${has('HospitalStay') ? `[tr][td] ${checkbox(true)} [b]Séjour hospitalier[/b] (Anamnèse et examen physique, notes d'évolution, consultations, rapports opératoires, résumé de sortie, résultats de tests)\n` : ''}[tr][td] ${checkbox(has('Outpatient'))} [b]Chirurgie/Procédure ambulatoire[/b] (Anamnèse et examen physique, notes d'évolution, consultations, notes de procédure, résultats de tests)
 [tr][td] ${checkbox(has('OfficeClinic'))} [b]Visite à la clinique, au cabinet ou soins immédiats[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats de tests)
-[tr][td] ${checkbox(has('PsychologyVisits'))} [b]Visites de psychologie[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats d'évaluation)
+[tr][td] ${checkbox(has('PsychologyVisits'))} [b]Visites psychologiques et psychiatriques[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats d'évaluation)
+[tr][td] ${checkbox(has('Certificate'))} [b]Certificats[/b] (Certificat de maladie, certificat de vol)
 [tr][td] ${checkbox(has('Other'))} [b]Autres dossiers[/b]${MedicalRecordsReleaseOther ? `: ${MedicalRecordsReleaseOther}` : ''}
 [/table]${retainedBlock}
 ${sectionBanner(`Autorisation de divulgation des informations`, { size: 115 })}
