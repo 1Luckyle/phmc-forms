@@ -8,6 +8,7 @@ import { database } from '../firebase';
 import { canonicalPatientId } from './patientId';
 import { findPatientNodes, comprehensiveSanitize } from './patientRecords';
 import { loadPatientInvoices } from './patientInvoices';
+import { staffNameParts } from './staffAdmin';
 import {
     isDossierVersion, dossierKindOf, formPhase, dossierAccess, canModifyForm, hasToken, emptyTokens,
 } from './dossierCore';
@@ -20,6 +21,55 @@ export { isDossierVersion, dossierKindOf, canModifyForm };
 // il le gère comme un patient (modifier, supprimer dans le délai), même si le formulaire a été partagé ou enregistré sous son compte du personnel.
 const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 export const isSelfPatient = (self, patientNode) => !!self && !!self.myPatientID && canonicalPatientId(self.myPatientID) === canonicalPatientId(patientNode);
+
+// Identité du COMPTE (Civil, ou fiche du personnel) dont l'ID patient est celui-ci : c'est elle qui prime sur le dossier à l'affichage (les coordonnées se modifient gratuitement
+// dans « Mon profil »). Sert à la vue du personnel, pour qu'elle montre le même dossier que le patient. {} si le patient n'a pas de compte.
+// ID patient d'une fiche du personnel (comme staffPatientNodeOf côté serveur).
+const staffPatientNode = (member) => {
+    if (member && member.gtawCharacterId != null) return `PHMC-${member.gtawCharacterId}`;
+    const badge = String((member && member.badge) || '');
+    const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');
+    return digits ? `PHMC-${digits}` : '';
+};
+
+// Fiches du personnel indexées par ID patient : une personne du personnel a UN nom (celui de sa fiche d'employé), même si un profil Civil lui est aussi lié.
+export async function loadStaffByPatientNode() {
+    const found = new Map();
+    for (const path of ['staff/phmc', 'staff/coroner']) {
+        let members = {};
+        try { members = (await get(ref(database, path))).val() || {}; } catch (error) { continue; }
+        Object.values(members).forEach((member) => {
+            const node = member ? canonicalPatientId(staffPatientNode(member)) : '';
+            if (node && !found.has(node)) found.set(node, member);
+        });
+    }
+    return found;
+}
+
+export async function loadAccountIdentity(patientID) {
+    const patientNode = canonicalPatientId(patientID);
+    if (!patientNode) return {};
+    try {
+        // La fiche du personnel prime : c'est elle qui porte le nom d'employé ; le profil Civil lié sert seulement quand il n'y a pas de fiche.
+        const member = (await loadStaffByPatientNode()).get(patientNode);
+        if (member) {
+            const parts = staffNameParts(member);
+            return {
+                patientFirstName: parts.firstName, patientMiddleName: member.middleName, patientLastName: parts.lastName, patientPH: member.phNumber, patientDiscord: member.discord,
+                patientAddress: member.address, patientZIP: member.zip, patientEmail: member.email, patientDateOfBirth: member.dateOfBirth, patientGender: member.gender,
+            };
+        }
+        const civilians = (await get(ref(database, 'civilians'))).val() || {};
+        const civil = Object.values(civilians).find((c) => c && c.patientID && canonicalPatientId(c.patientID) === patientNode);
+        if (civil) {
+            return {
+                patientFirstName: civil.firstName, patientMiddleName: civil.middleName, patientLastName: civil.lastName, patientPH: civil.phone, patientDiscord: civil.discord,
+                patientAddress: civil.address, patientZIP: civil.zip, patientEmail: civil.email, patientDateOfBirth: civil.dateOfBirth,
+            };
+        }
+    } catch (error) { /* lecture refusée : on affiche le dossier tel quel */ }
+    return {};
+}
 
 export async function loadDossierContext(patientID, now = Date.now(), self = null) {
     const patientNode = canonicalPatientId(patientID);

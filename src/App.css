@@ -1394,3 +1394,21 @@ textarea:disabled {
 
 /* Étiquettes vides (simples espaceurs dans certains formulaires) : pas de marge en plus */
 .form-container form .form-label:empty { display: none; }
+
+/* Menus déroulants « Copier » du dossier médical (Mon profil, Mon dossier patient) : fond sombre et texte clair, lisibles dans les fenêtres sombres. */
+.dossier-menu {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+}
+.dossier-menu .dropdown-item {
+    color: #e6edf3;
+}
+.dossier-menu .dropdown-item:hover,
+.dossier-menu .dropdown-item:focus {
+    background-color: #1f6feb;
+    color: #ffffff;
+}
+.dossier-menu .dropdown-item:active {
+    background-color: #1158c7;
+    color: #ffffff;
+}

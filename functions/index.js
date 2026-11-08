@@ -2837,14 +2837,23 @@ const syncDossierToProfiles = async (patientNode, values) => {
     const patch = profilePatch(values);
     if (Object.keys(patch).length === 0) return;
     const updates = {};
+    const staffSnaps = {};
+    let isStaffPatient = false;
+    for (const path of ['staff/phmc', 'staff/coroner']) {
+        staffSnaps[path] = (await db.ref(path).get()).val() || {};
+        if (Object.values(staffSnaps[path]).some((member) => member && staffPatientNodeOf(member) === patientNode)) isStaffPatient = true;
+    }
     const civilSnap = await db.ref('civilians').get();
     Object.entries(civilSnap.val() || {}).forEach(([uid, civil]) => {
         if (!civil || String(civil.patientID || '').toUpperCase().replace(/\s+/g, '') !== patientNode) return;
-        Object.entries(patch).forEach(([key, value]) => { updates[`civilians/${uid}/${key}`] = value === '' ? null : value; });
+        Object.entries(patch).forEach(([key, value]) => {
+            // Un patient qui est aussi membre du personnel garde son nom d'employé (il touche ses rapports) : le formulaire ne le renomme pas, y compris sur son profil Civil lié.
+            if (isStaffPatient && (key === 'firstName' || key === 'lastName')) return;
+            updates[`civilians/${uid}/${key}`] = value === '' ? null : value;
+        });
     });
     for (const path of ['staff/phmc', 'staff/coroner']) {
-        const staffSnap = await db.ref(path).get();
-        Object.entries(staffSnap.val() || {}).forEach(([key, member]) => {
+        Object.entries(staffSnaps[path]).forEach(([key, member]) => {
             if (!member || staffPatientNodeOf(member) !== patientNode) return;
             const staffPatch = { middleName: patch.middleName, dateOfBirth: patch.dateOfBirth, gender: patch.gender, address: patch.address, zip: patch.zip, phNumber: patch.phone, discord: patch.discord };
             Object.entries(staffPatch).forEach(([field, value]) => { if (value !== undefined) updates[`${path}/${key}/${field}`] = value === '' ? null : value; });

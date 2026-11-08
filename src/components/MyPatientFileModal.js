@@ -181,7 +181,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                             })()}
                                             <Dropdown className="d-inline-block">
                                                 <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
-                                                <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                                                <Dropdown.Menu className="dossier-menu" popperConfig={{ strategy: 'fixed' }}>
                                                     {entry.kind === 'ama' && !entry.bbCode ? (
                                                         <>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>

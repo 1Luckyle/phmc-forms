@@ -14,7 +14,7 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { loadDossierContext, canModifyForm, reportDossierError } from '../utils/dossierPatient';
+import { loadDossierContext, loadAccountIdentity, canModifyForm, reportDossierError } from '../utils/dossierPatient';
 import { deleteReportWithRules } from '../utils/patientRecords';
 import { dossierBbCode, formatDossierDate } from '../utils/dossierView';
 import { getFormLabel } from '../formDefinitions';
@@ -51,7 +51,16 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
     // Le compte à rebours des 15 minutes se met à jour chaque 30 secondes.
     useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
 
-    const bbCode = useMemo(() => (context && context.dossier && context.dossier.donnees ? dossierBbCode(context.dossier.donnees, { patientID: context.patientNode, ...identity }) : ''), [context, identity]);
+    // Vue du personnel : l'identité vient du compte du patient, comme dans son propre « Mon profil » (sinon le personnel verrait le dossier brut, sans les coordonnées modifiées depuis).
+    const [accountIdentity, setAccountIdentity] = useState({});
+    useEffect(() => {
+        let cancelled = false;
+        if (!staffView || !patientID) { setAccountIdentity({}); return undefined; }
+        loadAccountIdentity(patientID).then((found) => { if (!cancelled) setAccountIdentity(found); });
+        return () => { cancelled = true; };
+    }, [staffView, patientID]);
+    const shownIdentity = staffView ? accountIdentity : identity;
+    const bbCode = useMemo(() => (context && context.dossier && context.dossier.donnees ? dossierBbCode(context.dossier.donnees, { patientID: context.patientNode, ...shownIdentity }) : ''), [context, shownIdentity]);
     const exportTitle = `Dossier médical - ${context ? context.patientNode : patientID}`;
     const notify = (message, icon = 'info-circle') => { if (showNotification) showNotification(message, icon, 7000); };
 
@@ -119,7 +128,7 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
                         <ExpandToggle open={previewOpen} onClick={() => setPreviewOpen((value) => !value)} title="Montrer ou cacher l'aperçu du dossier médical" />
                         <Dropdown className="d-inline-block">
                             <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
-                            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                            <Dropdown.Menu className="dossier-menu" popperConfig={{ strategy: 'fixed' }}>
                                 {bbcodeEnabled && (
                                     <Dropdown.Item onClick={() => copyToClipboard(bbCode, showNotification, 'BBCode copié !')} title={COPY_BBCODE_HINT}>Copier le BBCode</Dropdown.Item>
                                 )}

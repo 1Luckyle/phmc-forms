@@ -50,6 +50,8 @@ import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathR
 import ReleaseRequestsPanel from './ReleaseRequestsPanel';
 import MyDossierPanel from './MyDossierPanel';
 import AdminDossierEditor from './AdminDossierEditor';
+import { loadStaffByPatientNode } from '../utils/dossierPatient';
+import { staffNameParts } from '../utils/staffAdmin';
 import { isServiceChief } from '../utils/releaseRequests';
 
 // Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
@@ -158,13 +160,14 @@ const PatientDossierModal = ({
         setIsLoadingPatients(true);
         (async () => {
             try {
-                const [civilSnap, indexed] = await Promise.all([
+                const [civilSnap, indexed, staffByNode] = await Promise.all([
                     get(ref(database, 'civilians')),
                     listIndexedPatientIds().catch((error) => {
                         console.error('Could not list indexed patient ids:', error);
                         showNotification("Impossible de lister les patients sans compte (règles Firebase « patientRecords » à déployer : firebase deploy --only database).", 'warning', 8000);
                         return [];
                     }),
+                    loadStaffByPatientNode(),
                 ]);
                 const withAccount = new Map();
                 // Nombre de rapports par patient (index patientRecords) : affiché aussi pour les patients AVEC compte.
@@ -174,9 +177,12 @@ const PatientDossierModal = ({
                         if (c && c.patientID) {
                             const id = canonicalPatientId(c.patientID);
                             const reportCount = reportCounts.get(id) || 0;
+                            // Une personne du personnel garde le nom de sa fiche d'employé, même avec un profil Civil lié.
+                            const staffMember = staffByNode.get(id);
+                            const names = staffMember ? staffNameParts(staffMember) : { firstName: c.firstName, lastName: c.lastName };
                             withAccount.set(id, {
                                 value: id,
-                                label: `${`${c.firstName || ''} ${c.lastName || ''} (${id})`.trim()}${reportCount > 0 ? ` — ${reportCount} rapport(s)` : ''}`,
+                                label: `${`${names.firstName || ''} ${names.lastName || ''} (${id})`.trim()}${reportCount > 0 ? ` — ${reportCount} rapport(s)` : ''}`,
                             });
                         }
                     });
