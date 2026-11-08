@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[9898],{39898:(i,e,s)=>{s.r(e),s.d(e,{default:()=>n});s(65043);var o=s(6564),t=(s(55662),s(9155)),l=s(70579);const n=i=>{let{show:e,onHide:s,showNotification:n,initialSearch:c=""}=i;return(0,l.jsx)(o.A,{isOpen:e,onClose:s,title:"Documents disciplinaires",modalSize:"xl",zIndex:1100,className:"dark-ui",children:(0,l.jsx)(t.A,{scope:"discipline",showNotification:n,initialQuery:c})})}}}]);
+//# sourceMappingURL=9898.874af61d.chunk.js.map
