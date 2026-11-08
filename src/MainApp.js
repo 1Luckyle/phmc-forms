@@ -64,7 +64,9 @@ import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
 import { groupsFor } from './utils/notifications';
 import useFormAccess from './hooks/useFormAccess';
-import useDossierPrefill from './hooks/useDossierPrefill';
+import useDossierPrefill, { useCandidaturePrefill } from './hooks/useDossierPrefill';
+import { staffIdentity } from './utils/knownPatient';
+import { buildCivilianAutofillValues } from './utils/civilianAutofill';
 import { loadDossierContext } from './utils/dossierPatient';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
@@ -1497,6 +1499,15 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
     const { canAccess: canAccessCurrentForm } = useFormAccess();
     // Le formulaire se pré-remplit à partir du dossier du patient dont l'ID est saisi (voir utils/dossierPrefill.js).
     useDossierPrefill(bbCodeVersion, formData, setFormData);
+    // Candidatures : identité du compte et résumé médical du dossier (voir utils/dossierPrefill.js).
+    useCandidaturePrefill({
+        enabled: getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !authLoading,
+        version: bbCodeVersion,
+        patientID: ownPatientID,
+        identity: isCivilian ? buildCivilianAutofillValues(civilianProfile) : (staffProfile ? staffIdentity(staffProfile, ownPatientID, currentEmployee?.email) : null),
+        formData,
+        setFormData,
+    });
 
     // Invitation à la création du compte Civil : proposer, une seule fois, de remplir son dossier médical (Basique ou Avancé) tant qu'il n'existe pas.
     useEffect(() => {

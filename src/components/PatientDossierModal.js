@@ -49,6 +49,7 @@ import { FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathReports';
 import ReleaseRequestsPanel from './ReleaseRequestsPanel';
 import MyDossierPanel from './MyDossierPanel';
+import AdminDossierEditor from './AdminDossierEditor';
 import { isServiceChief } from '../utils/releaseRequests';
 
 // Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
@@ -123,6 +124,7 @@ const PatientDossierModal = ({
     const otherScopeLabel = viewerFamilies.dmec ? 'du PHMC (soins)' : 'du DMEC (médecine légale)';
 
     const [selectedPatientOption, setSelectedPatientOption] = useState(null);
+    const [showDossierEditor, setShowDossierEditor] = useState(false);
     const [patientOptions, setPatientOptions] = useState([]);
     const [isLoadingPatients, setIsLoadingPatients] = useState(false);
     const [searchedPatientId, setSearchedPatientId] = useState(null);
@@ -615,6 +617,12 @@ const PatientDossierModal = ({
                     {searchedPatientId && (
                         <div className="mb-3" data-no-mark>
                             <MyDossierPanel patientID={searchedPatientId} staffView showNotification={showNotification} />
+                            {isAdmin && (
+                                <div className="mt-2">
+                                    <Button size="sm" variant="outline-warning" onClick={() => setShowDossierEditor(true)}><i className="fas fa-pen-to-square me-1"></i>Corriger le dossier (admin)</Button>
+                                    <AdminDossierEditor show={showDossierEditor} onHide={() => setShowDossierEditor(false)} patientID={searchedPatientId} adminName={staffName} showNotification={showNotification} />
+                                </div>
+                            )}
                         </div>
                     )}
                     {searchedPatientId && deathLock && (

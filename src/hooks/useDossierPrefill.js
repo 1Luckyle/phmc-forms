@@ -7,7 +7,7 @@ import { ref, get } from 'firebase/database';
 import { database } from '../firebase';
 import { canonicalPatientId } from '../utils/patientId';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
-import { dossierPrefillPatch } from '../utils/dossierPrefill';
+import { dossierPrefillPatch, candidaturePrefillPatch } from '../utils/dossierPrefill';
 
 const useDossierPrefill = (bbCodeVersion, formData, setFormData) => {
     const done = useRef(new Set());
@@ -36,3 +36,28 @@ const useDossierPrefill = (bbCodeVersion, formData, setFormData) => {
 };
 
 export default useDossierPrefill;
+
+// Candidatures : identité du compte + dossier de la personne connectée (jamais celui d'un autre). `enabled` : le formulaire courant est une candidature.
+export const useCandidaturePrefill = ({ enabled, version, patientID, identity, formData, setFormData }) => {
+    const done = useRef(new Set());
+    const marker = `${version}|${canonicalPatientId(patientID)}`;
+    useEffect(() => {
+        if (!enabled || !identity || !setFormData || done.current.has(marker)) return undefined;
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            let donnees = {};
+            try {
+                const node = canonicalPatientId(patientID);
+                if (node) { const snap = await get(ref(database, `dossiersPatients/${node}/donnees`)); if (snap.exists()) donnees = snap.val(); }
+            } catch (error) { /* dossier illisible : l'identité du compte suffit */ }
+            if (cancelled) return;
+            done.current.add(marker);
+            setFormData((prev) => {
+                const patch = candidaturePrefillPatch(identity, donnees, prev);
+                return Object.keys(patch).length ? { ...prev, ...patch } : prev;
+            });
+        }, 1200);
+        return () => { cancelled = true; clearTimeout(timer); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enabled, marker, !!identity]);
+};

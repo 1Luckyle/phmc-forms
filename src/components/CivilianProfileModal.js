@@ -10,6 +10,7 @@ import { database } from '../firebase';
 import BaseModal from './BaseModal';
 import ZipCityField from './ZipCityField';
 import MyDossierPanel from './MyDossierPanel';
+import EmailChangeFlow from './EmailChangeFlow';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 
 const FIELDS = ['firstName', 'middleName', 'lastName', 'phone', 'discord', 'address', 'zip'];
@@ -81,11 +82,19 @@ const CivilianProfileModal = ({ show, onHide, showNotification, onLoadForm }) =>
                     </div>
                     <Form.Text className="text-muted d-block mb-3">
                         Ces coordonnées se modifient ici sans payer. La date de naissance, le genre, l'origine ethnique et les informations de santé se modifient par la « Mise à jour du dossier médical ».
-                        L'adresse e-mail est liée à votre compte Eyefind Mail.
+                        L'adresse e-mail se change plus bas (code de vérification), uniquement ici.
                     </Form.Text>
                     {error && <Alert variant="danger" className="py-2">{error}</Alert>}
                     <div className="d-flex justify-content-end mb-3">
                         <Button variant="primary" onClick={handleSave} disabled={saving || !dirty}>{saving ? <Spinner size="sm" animation="border" /> : 'Enregistrer'}</Button>
+                    </div>
+
+                    <hr />
+                    <div data-no-mark>
+                        <EmailChangeFlow
+                            currentEmail={civilianProfile.email || currentEmployee?.email}
+                            onChanged={(email) => { if (updateLocalCivilianProfile) updateLocalCivilianProfile({ email }); }}
+                        />
                     </div>
 
                     <hr />

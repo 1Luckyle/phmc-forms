@@ -9,6 +9,8 @@ import {
     ADVANCED_FIELDS, IDENTITY_FIELDS, EMERGENCY_FIELDS, MEDICAL_FIELDS, MENTAL_FIELDS, FAMILY_FIELDS, SOCIAL_FIELDS, LIFESTYLE_FIELDS, DIRECTIVE_FIELDS,
     NEW_KEY, isDossierVersion, BASIC_VERSION, ADVANCED_VERSION, UPDATE_VERSION,
 } from './dossierCore';
+import { titleLabel } from './patientIdentity';
+import { placeWithCity } from './places';
 
 // Fond médical qu'un formulaire de soins peut reprendre du dossier (jamais le motif, l'examen ni le diagnostic).
 export const CARE_BACKGROUND_FIELDS = ['patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine'];
@@ -34,5 +36,36 @@ export const dossierPrefillPatch = (version, donnees = {}, formData = {}, knownF
     }
     const patch = {};
     Object.entries(wanted).forEach(([target, value]) => { if (empty(formData[target])) patch[target] = value; });
+    return patch;
+};
+
+// ───────────── Candidatures ─────────────
+// Les candidatures reprennent l'identité du compte (profil) et le dossier : titre et nom complet, genre, date de naissance, adresse, téléphone, e-mail, Discord, et un résumé des
+// conditions médicales connues (allergies, maladies chroniques, traitements). identity : { firstName, middleName, lastName, dateOfBirth, gender, address, zip, phone, email, discord }.
+// Un champ déjà rempli (ou restauré du brouillon) n'est jamais écrasé.
+export const candidaturePrefillPatch = (identity = {}, donnees = {}, formData = {}) => {
+    const person = { ...identity };
+    const fullName = [donnees.patientFirstName || person.firstName, donnees.patientMiddleName || person.middleName, donnees.patientLastName || person.lastName].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    const gender = String(donnees.patientGender || person.gender || '').toLowerCase();
+    const medical = [
+        donnees.patientAllergies && `Allergies : ${donnees.patientAllergies}`,
+        donnees.patientChronicDiseases && `Maladies chroniques : ${donnees.patientChronicDiseases}`,
+        donnees.patientCurrentMedicine && `Traitements en cours : ${donnees.patientCurrentMedicine}`,
+    ].filter(Boolean).join(' ; ');
+    const wanted = {
+        applicantTitleAndFullName: fullName ? [titleLabel(donnees.patientTitle) || '', fullName].filter(Boolean).join(' ').trim() : '',
+        applicantDOB: donnees.patientDateOfBirth || person.dateOfBirth || '',
+        applicantAddress: placeWithCity(donnees.patientAddress || person.address || '', donnees.patientZIP || person.zip || '', donnees.patientZIPCity || ''),
+        applicantPhone: donnees.patientPH || person.phone || '',
+        applicantEmail: person.email || '',
+        oocDiscord: donnees.patientDiscord || person.discord || '',
+        applicantMedicalConditions: medical,
+    };
+    const patch = {};
+    Object.entries(wanted).forEach(([key, value]) => { if (value && empty(formData[key])) patch[key] = value; });
+    // Genre : une case, seulement si aucune n'est cochée.
+    const noGender = !formData.genderMale && !formData.genderFemale && !formData.genderOther;
+    if (noGender && (gender === 'homme' || gender === 'male')) patch.genderMale = true;
+    if (noGender && (gender === 'femme' || gender === 'female')) patch.genderFemale = true;
     return patch;
 };
