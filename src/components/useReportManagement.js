@@ -23,6 +23,7 @@ import { logActivity } from '../utils/activityLog';
 import { isCareStaff } from '../hooks/useBillingRole';
 import { isBillableVersion } from '../utils/patientBilling';
 import { getFormAccess } from '../utils/formAccess';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from '../utils/notifications';
 import { readFamiliesOf, locksPatient } from '../utils/reportAccess';
 import { loadDeathLock, declareDeath, DEATH_LOCK_MESSAGE } from '../utils/deathReports';
@@ -102,6 +103,7 @@ export const useReportManagement = (
     initialFormData
 ) => {
     const { isCivilian, civilianProfile, isAdmin, staffName, staffProfile, hasInternalRecruitment, currentEmployee, myPatientID } = useEmployeeAuth();
+    const { pbcEnabled } = useSiteConfig();
 
     // Qui candidate : un compte Civil, ou un EMPLOYÉ qui a obtenu le statut de recrutement interne (évolution interne).
     // Même forme dans les deux cas : { uid, patientID, email, firstName, lastName, internal }.
@@ -192,8 +194,8 @@ export const useReportManagement = (
         }
         // Un membre du DMEC n'enregistre pas de rapport médical de soins, ni un soignant de rapport de médecine légale :
         // les formulaires sont filtrés à l'écran, et l'enregistrement le revérifie.
-        if (!getFormAccess({ isAdmin, isCivilian, staffProfile }).canAccess(bbCodeVersion)) {
-            const message = 'Votre rôle ne donne pas accès à ce formulaire : il ne peut pas être enregistré.';
+        if (!getFormAccess({ isAdmin, isCivilian, staffProfile, pbcEnabled }).canAccess(bbCodeVersion)) {
+            const message = pbcEnabled ? 'Votre rôle ne donne pas accès à ce formulaire : il ne peut pas être enregistré.' : 'Les formulaires de la clinique de Paleto Bay (PBC) sont désactivés : ce formulaire ne peut pas être enregistré.';
             showNotification(message, 'exclamation-circle', 7000);
             return { success: false, error: message };
         }

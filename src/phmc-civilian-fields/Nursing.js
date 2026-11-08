@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getCategoryPositions, isPositionClosed, matchesPosition } from '../constants/recruitment';
 import { Form, Button } from 'react-bootstrap';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 
 // Helper component for collapsible section headers
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
@@ -54,6 +55,8 @@ const NursingFields = ({
     handleImageUpload, // Added prop
     isUploading        // Added prop
 }) => {
+    // Choix « PBC » masqué quand les formulaires PBC sont désactivés (panneau admin → Affichage).
+    const { pbcEnabled } = useSiteConfig();
     // Use nursePositionDetailsData from selectOptions for position dropdown
     const positionDetails = getCategoryPositions(selectOptions, 'soinsInfirmiers');
 
@@ -315,10 +318,10 @@ const NursingFields = ({
                                     inline type="checkbox" label="Pillbox Hill Medical Center (Ville de Los Santos)" name="locationPHMC"
                                     checked={formData.locationPHMC || true} onChange={handleChange}
                                 />
-                                <Form.Check
+                                {pbcEnabled && (<Form.Check
                                     inline type="checkbox" label="PHMC Paleto Bay Clinic (Paleto Bay)" name="locationPBC"
                                     checked={formData.locationPBC || false} disabled // onChange={handleChange}
-                                />
+                                />)}
                             </div>
                         </Form.Group>
                     )}

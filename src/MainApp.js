@@ -1,7 +1,7 @@
 // src/MainApp.js
 import FormPurpose from './components/FormPurpose';
 import FormSections from './components/FormSections';
-import { formThemeFor } from './utils/formAccess';
+import { formThemeFor, isPbcVersion, PHMC_VERSION_OF_PBC } from './utils/formAccess';
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -371,7 +371,7 @@ function MainApp({
     const [showBBCode, setShowBBCode] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     // BBCode désactivé par les admins : il ne reste que l'aperçu et le téléchargement HTML.
-    const { bbcodeEnabled } = useSiteConfig();
+    const { bbcodeEnabled, pbcEnabled } = useSiteConfig();
     const [bbCodeVersion, setBbCodeVersion] = useState(() => {
         const storedVersion = localStorage.getItem('bbCodeVersion');
         return storedVersion ? parseInt(storedVersion, 10) : (formDefinitions[0]?.version || 1);
@@ -1166,9 +1166,10 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
         { version: 35, name: "Certificat de Maladie", icon: nurse },
     ];
 
+    // Les formulaires PBC désactivés (panneau admin → Affichage) ne sont plus proposés.
     const openSwitchableModal = (title, formsArray) => {
         setSwitchableModalTitle(title);
-        setSwitchableFormsList(formsArray);
+        setSwitchableFormsList((formsArray || []).filter((form) => pbcEnabled || !isPbcVersion(form.version)));
         setShowPHMCModal(true);
     };
 
@@ -1488,11 +1489,19 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
     const { canAccess: canAccessCurrentForm } = useFormAccess();
     useEffect(() => {
         if (authLoading || canAccessCurrentForm(bbCodeVersion)) return;
+        // Formulaire PBC désactivé : on passe à son équivalent PHMC quand il existe.
+        const twinVersion = !pbcEnabled && isPbcVersion(bbCodeVersion) ? PHMC_VERSION_OF_PBC[Number(bbCodeVersion)] : null;
+        const twin = twinVersion && getFormDefinition(twinVersion) && canAccessCurrentForm(twinVersion) ? getFormDefinition(twinVersion) : null;
+        if (twin) {
+            setBbCodeVersion(twin.version);
+            showNotification('Les formulaires de la clinique de Paleto Bay (PBC) sont désactivés : bascule sur « ' + twin.name + ' ».', 'warning');
+            return;
+        }
         const allowed = formDefinitions.filter((form) => canAccessCurrentForm(form.version));
         const fallback = allowed.find((form) => !form.name.startsWith('[Civil]') && !form.isHiddenInSelector && !form.name.includes('(PBC)')) || allowed[0];
         if (fallback) {
             setBbCodeVersion(fallback.version);
-            showNotification('Ce formulaire n\'est pas accessible avec votre rôle : bascule sur « ' + fallback.name + ' ».', 'warning');
+            showNotification((!pbcEnabled && isPbcVersion(bbCodeVersion) ? 'Les formulaires de la clinique de Paleto Bay (PBC) sont désactivés' : 'Ce formulaire n\'est pas accessible avec votre rôle') + ' : bascule sur « ' + fallback.name + ' ».', 'warning');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bbCodeVersion, canAccessCurrentForm, authLoading]);
@@ -2010,6 +2019,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
 
                             <SwitchableFormButtons
                                 bbCodeVersion={bbCodeVersion}
+                                pbcEnabled={pbcEnabled}
                                 openSwitchableModal={openSwitchableModal}
                                 formGroups={{
                                     coronerFormsSubGroup,

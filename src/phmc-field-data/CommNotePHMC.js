@@ -2,7 +2,7 @@ import React from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select'; // Make sure react-select is imported
 import NameFields from './shared/NameFields';
-import PhmcEmployeeSelect from './shared/PhmcEmployeeSelect';
+import PhmcEmployeeSelect, { withDmecOptions } from './shared/PhmcEmployeeSelect';
 
 // Patient : titre et nom en trois champs (le nom complet « patientName » est recomposé tout seul).
 const NOTE_PATIENT_FIELDS = { full: 'patientName', first: 'patientFirstName', middle: 'patientMiddleName', last: 'patientLastName', title: 'patientTitle' };
@@ -12,6 +12,7 @@ const PHMCCommentaryNoteQuestions = ({
     formData,
     handleChange,
     phmcGroupedOptions,
+    coronerGroupedOptions,
     departmentLarge,
     setFormData, // We need this for the Select's onChange logic
     handleSelectChange 
@@ -56,7 +57,7 @@ const PHMCCommentaryNoteQuestions = ({
 
             <Form.Label className="form-section-title">Identifiants de l'employé</Form.Label>
 
-            <PhmcEmployeeSelect options={phmcGroupedOptions} formData={formData} setFormData={setFormData} />
+            <PhmcEmployeeSelect options={withDmecOptions(phmcGroupedOptions, coronerGroupedOptions)} formData={formData} setFormData={setFormData} />
             <Form.Label className="form-section-title">Service</Form.Label>
             <Select
                 name="departmentLarge"

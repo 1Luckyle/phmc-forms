@@ -41,8 +41,21 @@ const ADMIN_PANEL_VERSION = 999;
 // Dossiers médicaux Civils et candidatures : ouverts aux comptes Civils (qui n'ont QUE ça, voir AgencySelector) et à tout le personnel.
 export const CIVILIAN_ALLOWED_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
 
-// Accès d'une identité : { kind: 'all' | 'civil' | 'restricted', families, canAccess(version) }.
-export const getFormAccess = ({ isAdmin, isCivilian, staffProfile }) => {
+// Formulaires de la clinique de Paleto Bay (PBC) : Évaluation physique, Consultation psychiatrique, Consultation générale, Note de service, Évaluation
+// psychologique. Un admin peut les désactiver pour tout le site (panneau admin → Affichage) : personne n'y accède plus, administrateurs compris.
+export const PBC_FORM_VERSIONS = [7, 16, 21, 23, 29];
+// Formulaire PHMC qui prend la place d'un formulaire PBC désactivé.
+export const PHMC_VERSION_OF_PBC = { 7: 6, 16: 14, 21: 20, 23: 22, 29: 28 };
+export const isPbcVersion = (version) => PBC_FORM_VERSIONS.includes(Number(version));
+
+// Accès d'une identité : { kind: 'all' | 'civil' | 'restricted', families, canAccess(version) }. `pbcEnabled` : false = les formulaires PBC sont fermés à tous.
+export const getFormAccess = ({ isAdmin, isCivilian, staffProfile, pbcEnabled = true }) => {
+    const access = getBaseFormAccess({ isAdmin, isCivilian, staffProfile });
+    if (pbcEnabled) return access;
+    return { ...access, canAccess: (version) => !isPbcVersion(version) && access.canAccess(version) };
+};
+
+const getBaseFormAccess = ({ isAdmin, isCivilian, staffProfile }) => {
     if (isAdmin) return { kind: 'all', canAccess: () => true };
     if (isCivilian) return { kind: 'civil', canAccess: (version) => CIVILIAN_ALLOWED_VERSIONS.includes(version) };
     if (!staffProfile) return { kind: 'all', canAccess: () => true }; // visiteur : pas de restriction

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { isPositionClosed } from '../constants/recruitment';
 import { Form, Button } from 'react-bootstrap';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 
 // Helper component for collapsible section headers (from Physician.js)
 const CollapsibleHeader = ({ title, isOpen, onToggle, sectionId }) => (
@@ -55,6 +56,8 @@ const PsychFields = ({
     handleImageUpload, // Added prop
     isUploading        // Added prop
     }) => {
+    // Choix « PBC » masqué quand les formulaires PBC sont désactivés (panneau admin → Affichage).
+    const { pbcEnabled } = useSiteConfig();
 
     const currentPositionDetails = psychRecruitmentDetails || {};
     // Les options sont les postes eux-mêmes (clé = valeur, nom = libellé).
@@ -329,7 +332,7 @@ const PsychFields = ({
                                 <Form.Label className="field-label">1.6 Lieu d'emploi souhaité</Form.Label>
                                 <div onBlur={() => handleSectionFieldBlur('personalInfo', isPersonalInfoOpen, setIsPersonalInfoOpen, 'personalInfo')}>
                                     <Form.Check inline type="checkbox" label="Pillbox Hill Medical Center (Ville)" name="locationPHMC" checked={!!formData.locationPHMC || true} onChange={handleChange} />
-                                    <Form.Check inline type="checkbox" label="PHMC Paleto Bay Clinic" name="locationPBC" checked={!!formData.locationPBC || false} disabled />
+                                    {pbcEnabled && (<Form.Check inline type="checkbox" label="PHMC Paleto Bay Clinic" name="locationPBC" checked={!!formData.locationPBC || false} disabled />)}
                                     {!(formData.locationPHMC || formData.locationPBC) && <div className="invalid-feedback d-block">Au moins un lieu doit être sélectionné.</div>}
                                 </div>
                             </Form.Group>

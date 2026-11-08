@@ -11,8 +11,18 @@ import { darkSelectStyles } from './selectStyles';
 
 const norm = (value) => String(value || '').trim().toLowerCase();
 
+// La Note de Service est ouverte à tout le personnel, DMEC compris (utils/formAccess.js) : la liste du personnel hospitalier est complétée par celle du DMEC
+// (groupes préfixés « DMEC · »), sinon un membre du DMEC n'y trouverait personne.
+export const withDmecOptions = (phmcGroups, coronerGroups) => [
+    ...(phmcGroups || []),
+    ...(coronerGroups || []).map((group) => ({ ...group, label: `DMEC · ${group.label}` })),
+];
+
+// Nom de famille d'un membre du personnel qui n'en porte pas (liste du DMEC) : le dernier mot de son nom.
+const lastNameOf = (option) => option.lastName || String(option.value || '').trim().split(/\s+/).slice(-1)[0] || '';
+
 const PhmcEmployeeSelect = ({
-    name = 'phmcEmployee', label = '', options = [], formData, setFormData, placeholder = 'Sélectionner un médecin. (Vous pouvez taper pour rechercher!)',
+    name = 'phmcEmployee', label = '', options = [], formData, setFormData, placeholder = 'Sélectionner un personnel. (Vous pouvez taper pour rechercher!)',
 }) => {
     const { staffName, isAdmin } = useEmployeeAuth();
     const flat = options.flatMap((group) => group.options);
@@ -21,7 +31,7 @@ const PhmcEmployeeSelect = ({
     const current = flat.find((option) => option.value === formData[name]) || null;
 
     const choose = (option) => setFormData((prev) => ({
-        ...prev, [name]: option ? option.value : '', phmcEmployeeLastName: option ? (option.lastName || '') : '', lastName: option ? (option.lastName || '') : '',
+        ...prev, [name]: option ? option.value : '', phmcEmployeeLastName: option ? lastNameOf(option) : '', lastName: option ? lastNameOf(option) : '',
     }));
 
     useEffect(() => {

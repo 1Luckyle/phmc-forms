@@ -1,7 +1,9 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
 
-const SwitchableFormButtons = ({ bbCodeVersion, openSwitchableModal, formGroups }) => {
+import { isPbcVersion } from '../utils/formAccess';
+
+const SwitchableFormButtons = ({ bbCodeVersion, openSwitchableModal, formGroups, pbcEnabled = true }) => {
     const {
         coronerFormsSubGroup,
         physicalEvalFormsSubGroup,
@@ -29,6 +31,9 @@ const SwitchableFormButtons = ({ bbCodeVersion, openSwitchableModal, formGroups 
     if (!switchableButton) {
         return null;
     }
+    // PBC désactivé : un choix PHMC / PBC n'a plus lieu d'être (il ne reste qu'un formulaire dans la liste).
+    const remaining = (switchableButton.modalArgs[1] || []).filter((form) => pbcEnabled || !isPbcVersion(form.version));
+    if (!pbcEnabled && remaining.length <= 1) return null;
 
     return (
         <Button
