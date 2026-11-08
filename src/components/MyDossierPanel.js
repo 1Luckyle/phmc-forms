@@ -7,8 +7,12 @@
 //     la signaler et reçoit un jeton gratuit de mise à jour.
 // Règles : utils/dossierCore.js. Le dossier lui-même n'est écrit que par le serveur.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Badge, Button } from 'react-bootstrap';
-import { ReportPreviewFrame } from './ReportExpansion';
+import { Badge, Button, Dropdown } from 'react-bootstrap';
+import { ReportPreviewFrame, ExpandToggle } from './ReportExpansion';
+import { copyToClipboard } from './notificationService';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { loadDossierContext, canModifyForm, reportDossierError } from '../utils/dossierPatient';
 import { deleteReportWithRules } from '../utils/patientRecords';
@@ -35,6 +39,8 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
     const [busyKey, setBusyKey] = useState('');
     const [reported, setReported] = useState({});
     const [now, setNow] = useState(Date.now());
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const { bbcodeEnabled } = useSiteConfig();
 
     const reload = useCallback(async () => {
         if (!patientID) return;
@@ -46,6 +52,7 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
     useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
 
     const bbCode = useMemo(() => (context && context.dossier && context.dossier.donnees ? dossierBbCode(context.dossier.donnees, { patientID: context.patientNode, ...identity }) : ''), [context, identity]);
+    const exportTitle = `Dossier médical - ${context ? context.patientNode : patientID}`;
     const notify = (message, icon = 'info-circle') => { if (showNotification) showNotification(message, icon, 7000); };
 
     const remove = async (form) => {
@@ -105,7 +112,28 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
                 </div>
             )}
 
-            {bbCode && <div style={{ marginBottom: 12 }}><ReportPreviewFrame bbCode={bbCode} title="Dossier médical" height={420} /></div>}
+            {bbCode && (
+                <div style={{ marginBottom: 12 }}>
+                    {/* Mêmes actions que sur un rapport : montrer / cacher l'aperçu, et copier ou exporter le dossier médical. */}
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                        <ExpandToggle open={previewOpen} onClick={() => setPreviewOpen((value) => !value)} title="Montrer ou cacher l'aperçu du dossier médical" />
+                        <Dropdown className="d-inline-block">
+                            <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
+                            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+                                {bbcodeEnabled && (
+                                    <Dropdown.Item onClick={() => copyToClipboard(bbCode, showNotification, 'BBCode copié !')} title={COPY_BBCODE_HINT}>Copier le BBCode</Dropdown.Item>
+                                )}
+                                <Dropdown.Item onClick={() => downloadBbCodeAsHtml({ bbCode, title: exportTitle, showNotification })} title={DOWNLOAD_HTML_HINT}>Télécharger le HTML</Dropdown.Item>
+                                <Dropdown.Item onClick={() => exportReportDocument('pdf', { bbCode, title: exportTitle, showNotification })}>{PDF_EXPORT_LABEL}</Dropdown.Item>
+                                <Dropdown.Item onClick={() => exportReportDocument('png', { bbCode, title: exportTitle, showNotification })}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
+                                <Dropdown.Item onClick={() => exportReportDocument('png-copy', { bbCode, title: exportTitle, showNotification })}>Copier l'image (à coller dans Discord)</Dropdown.Item>
+                                <Dropdown.Item onClick={() => copyToClipboard(exportTitle, showNotification, 'Titre copié !')}>Copier le titre</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                    </div>
+                    {previewOpen && <ReportPreviewFrame bbCode={bbCode} title={exportTitle} height={420} />}
+                </div>
+            )}
 
             <strong className="d-block mb-2">Formulaires du dossier</strong>
             {context.forms.length === 0 && <div style={mutedStyle}>Aucun formulaire de dossier pour l'instant.</div>}

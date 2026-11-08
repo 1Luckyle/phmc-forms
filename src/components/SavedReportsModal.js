@@ -12,6 +12,7 @@ import { getFormDefinition, getFormLabel } from '../formDefinitions';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
 import useReportInvoices from '../hooks/useReportInvoices';
 import { INVOICE_STATUS_COLORS } from '../utils/patientBilling';
+import { isDossierVersion, formPhase } from '../utils/dossierCore';
 import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar, Pager } from './Reports/ReportParts';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
@@ -171,6 +172,15 @@ const SavedReportsModal = ({
     const [showPublished, setShowPublished] = useState(false);
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
+    // Formulaire du dossier (Basique, Avancé, Mise à jour) APPLIQUÉ au dossier (15 minutes après son paiement) : il ne se supprime plus, même par son auteur du personnel ; seul un
+    // administrateur le peut (règles : utils/dossierCore.js). Le contrôle du clic donne le même verdict ; ici on grise simplement le bouton.
+    const DOSSIER_LOCKED_TITLE = "Ce formulaire est appliqué au dossier médical (15 minutes après son paiement) : il ne peut plus être supprimé. Corrigez par une « Mise à jour du dossier médical ».";
+    const dossierLocked = (report) => {
+        if (isAdmin || !isDossierVersion(report.bbCodeVersion)) return false;
+        const invoice = invoiceOf(report);
+        const phaseInvoice = invoice ? { statut: invoice.statutEffectif, payeLe: invoice.payeLe || (invoice.statutEffectif === 'paye' ? Date.now() : undefined) } : null;
+        return formPhase({ createdAt: report.timestamp, invoice: phaseInvoice }, Date.now()).phase === 'verrouille';
+    };
     // Partagé avec le patient ? Copie déjà récupérée ? Même enregistrement que « Dossier Patient » (relié : jamais deux fois).
     const [indexRefresh, setIndexRefresh] = useState(0);
     const { openForumNotice, forumNoticeModal } = useForumNotice();
@@ -498,9 +508,12 @@ const SavedReportsModal = ({
         if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedReportKeys.length} rapport(s) sélectionné(s) ? Cette action est irréversible.${hasAma ? '\n\n⚠ La sélection contient un formulaire AMA (refus de soins signé) : sa suppression sera consignée dans le journal d\'activité avec un avertissement.' : ''}`)) {
             return;
         }
+        const lockedCount = sortedReports.filter((r) => selectedReportKeys.includes(r.key) && dossierLocked(r)).length;
+        if (lockedCount > 0) showNotification(`${lockedCount} formulaire(s) du dossier médical déjà appliqué(s) ne sont pas supprimés : corrigez-les par une « Mise à jour du dossier médical ».`, 'warning', 8000);
         const reportsToDelete = sortedReports
-            .filter((r) => selectedReportKeys.includes(r.key))
+            .filter((r) => selectedReportKeys.includes(r.key) && !dossierLocked(r))
             .map(toDeletePayload);
+        if (reportsToDelete.length === 0) { setSelectedReportKeys([]); return; }
         setSelectedReportKeys([]);
         // Les règles (qui peut supprimer quoi) et les notifications sont gérées par le hook.
         await deleteReportsForUser(reportsToDelete, selectedEmployee.value);
@@ -750,8 +763,8 @@ const SavedReportsModal = ({
                                     await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
                                 }
                             }}
-                            disabled={isLoadingReports || !selectedEmployee || locked || frozen}
-                            title={locked ? lockTitle : (frozen ? FREEZE_MESSAGE : undefined)}
+                            disabled={isLoadingReports || !selectedEmployee || locked || frozen || dossierLocked(report)}
+                            title={locked ? lockTitle : (frozen ? FREEZE_MESSAGE : (dossierLocked(report) ? DOSSIER_LOCKED_TITLE : undefined))}
                         >
                             <i className="fas fa-trash me-1"></i>Supprimer
                         </Button>}
