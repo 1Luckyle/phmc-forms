@@ -246,6 +246,7 @@ function MainApp({
             case 'cctv': setCctvHubTab(lien.section === 'manage' ? 'manage' : 'mine'); setShowCctvHub(true); break;
             case 'contrats': setShowMyContracts(true); break;
             case 'dossierPatient': setShowMyPatientFile(true); break;
+            case 'divulgation': if (toolAccess.patientDossier) setShowPatientDossierModal(true); break;
             case 'rapports': setShowSavedReports(true); break;
             case 'incendie': if (toolAccess.fireManage) setShowFireManage(true); break;
             case 'takehome': if (toolAccess.takeHome) { setTakeHomeTab(lien.section === 'manage' && toolAccess.takeHomeManage ? 'manage' : 'mine'); setShowTakeHome(true); } break;
@@ -2956,6 +2957,8 @@ function MainAppWrapper() {
         departmentLarge: '',
         paletoClinicDepartment: '',
         MedicalRecordsRelease: [],
+        releaseReports: [],
+        releasePractitionerAuto: false,
         payNow: false,
         paymentProofPhotos: '',
         fleecaPaymentId: '',

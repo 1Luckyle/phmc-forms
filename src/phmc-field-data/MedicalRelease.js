@@ -12,6 +12,8 @@ import useMinorTitleGuard from '../hooks/useMinorTitleGuard';
 import { GUARDIAN_RELATIONS, ageOn, isMinorPatient } from '../utils/minors';
 import PatientGeneralInfo from './shared/PatientGeneralInfo';
 import { darkSelectStyles } from './shared/selectStyles';
+import ReleaseReportPicker from './shared/ReleaseReportPicker';
+import { practitionerLabel, practitionersOf } from '../utils/releaseRequests';
 
 // Champs d'identité de la demande de divulgation (prénom, deuxième prénom et nom sont déjà séparés ; pas de nom complet à recomposer).
 const RELEASE_FIELDS = {
@@ -61,6 +63,20 @@ const MedicalRelease = ({
     const practitionerOptions = ((filledByStaff ? phmcGroupedOptions : unrestrictedPhmcGroupedOptions) || phmcGroupedOptions || [])
         .map((group) => ({ ...group, options: group.options.filter((option) => !option.families || option.families.includes('soignant')) }))
         .filter((group) => group.options.length > 0);
+    // Praticien consulté déduit des rapports retenus : leurs médecins responsables (plusieurs si plusieurs soignants les ont créés). Tant qu'aucun rapport
+    // n'est retenu, la personne choisit elle-même dans la liste ; la déduction automatique est repérée par `releasePractitionerAuto` pour pouvoir s'effacer
+    // sans écraser un choix manuel.
+    const retainedReports = Array.isArray(formData.releaseReports) ? formData.releaseReports : [];
+    const autoPractitioner = practitionerLabel(retainedReports);
+    useEffect(() => {
+        setFormData((prev) => {
+            const label = practitionerLabel(prev.releaseReports);
+            if (label) {
+                return prev.phmcEmployee === label && prev.releasePractitionerAuto === true ? prev : { ...prev, phmcEmployee: label, phmcSignature: '', releasePractitionerAuto: true };
+            }
+            return prev.releasePractitionerAuto ? { ...prev, phmcEmployee: '', phmcSignature: '', releasePractitionerAuto: false } : prev;
+        });
+    }, [autoPractitioner, setFormData]);
     // Répercuté dans formData car le générateur BBCode (fonction pure, sans
     // accès au contexte React) en a besoin pour afficher le bon texte.
     useEffect(() => {
@@ -302,7 +318,16 @@ const MedicalRelease = ({
                 className="form-control" 
             />
         )}
+            <ReleaseReportPicker formData={formData} setFormData={setFormData} />
             <Form.Label className="form-section-title">Praticien consulté</Form.Label>
+            {autoPractitioner ? (
+                <div className="p-2 border rounded" style={{ borderColor: '#30363d', background: '#0d1117' }} data-no-tip="1">
+                    <div><i className="fas fa-user-doctor me-2"></i><strong>{practitionersOf(retainedReports).join(', ')}</strong></div>
+                    <span className="helper-text">
+                        Rempli automatiquement d'après les rapports retenus ci-dessus : ce sont leurs médecins responsables. Retirez les rapports pour choisir un praticien vous-même.
+                    </span>
+                </div>
+            ) : (
     <Select
             name="phmcEmployee"
             value={practitionerOptions
@@ -337,6 +362,7 @@ const MedicalRelease = ({
                 groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 }),
             }}
         />
+            )}
             <Form.Label className="form-section-title">Autorisation de divulgation des informations</Form.Label>
             <Form.Control
 type="date"

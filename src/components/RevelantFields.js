@@ -228,7 +228,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientPH',
                 'patientDateOfBirth',
                 'patientAddress',
-                'patientZIP',
+                'patientZIP', 'patientZIPCity',
                 'patientEmail',
                 'patientMedInfoReleaseOther',
                 'phmcEmployee', 'lastName',
@@ -237,7 +237,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'StupidDateFrom',
                 'StupidDateTo',
                 'SubmitDate',
-                'MedicalRecordsRelease',
+                'MedicalRecordsRelease', 'releaseReports', 'releasePractitionerAuto',
                 'CarePurposeMedicalInformationRelease',
                 'PurposeMedicalInformationReleaseFormat',
                 'payNow', 
@@ -447,9 +447,9 @@ const baseRelevantFields = (bbCodeVersion) => {
 
 // Champs ajoutés aux dossiers patient (Basique 25, Avancé 3, Mise à jour 26) : nom en trois parties, type de téléphone, et pour chaque champ d'historique
 // à choix par défaut les choix cochés (`…Presets`) et le texte libre (`…Free`) qui composent le texte regroupé.
-const PATIENT_FILE_EXTRA = ['patientZIP', 'patientFirstName', 'patientMiddleName', 'patientLastName'];
+const PATIENT_FILE_EXTRA = ['patientZIP', 'patientZIPCity', 'patientFirstName', 'patientMiddleName', 'patientLastName'];
 const PATIENT_FILE_UPDATE_EXTRA = [
-    'patientZIPNew',
+    'patientZIPNew', 'patientZIPNewCity',
     'patientFirstNameNew', 'patientMiddleNameNew', 'patientLastNameNew', 'patientPHNew', 'patientDiscordNew', 'patientRaceNew', 'patientAddressNew',
     'patientGenderNew', 'patientTitleNew', 'patientNameNew', 'patientDateOfBirthNew',
 ];
@@ -458,12 +458,12 @@ const withPresetFields = (fields) => [...fields, ...Object.keys(HISTORY_PRESETS)
 // Champs ajoutés aux rapports de médecine légale : nom du défunt (et du témoin) en trois parties, ville du lieu, agence du demandeur, coordonnées du coroner,
 // causes à choix (`…Presets` / `…Free`).
 const DMEC_EXTRA = {
-    1: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'requestingAgency', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree', 'massFatality'],
+    1: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'placeOfDeathZipCity', 'requestingAgency', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree', 'massFatality'],
     2: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'decedentName', 'decedentOOC', 'patientID', 'coronerEmail', 'coronerPHNumber', 'reportDecedentNames', 'reportDecedentOOC'],
-    4: ['placeOfDeath', 'placeOfDeathZip', 'decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'causeOfDeathPresets', 'causeOfDeathFree', 'deathType', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems'],
-    8: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'witnessFirstName', 'witnessMiddleName', 'witnessLastName', 'witnessTitle', 'patientID', 'placeOfDeath', 'placeOfDeathZip', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree'],
-    11: ['placeOfDeathZip', 'requestingAgency', 'decedents'],
-    37: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'causesOfDeath', 'causesOfDeathPresets', 'causesOfDeathFree'],
+    4: ['placeOfDeath', 'placeOfDeathZip', 'placeOfDeathZipCity', 'decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'causeOfDeathPresets', 'causeOfDeathFree', 'deathType', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems'],
+    8: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'witnessFirstName', 'witnessMiddleName', 'witnessLastName', 'witnessTitle', 'patientID', 'placeOfDeath', 'placeOfDeathZip', 'placeOfDeathZipCity', 'probableCauseOfDeathPresets', 'probableCauseOfDeathFree'],
+    11: ['placeOfDeathZip', 'placeOfDeathZipCity', 'requestingAgency', 'decedents'],
+    37: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'placeOfDeathZipCity', 'causesOfDeath', 'causesOfDeathPresets', 'causesOfDeathFree'],
 };
 
 const getRelevantFields = (bbCodeVersion) => {

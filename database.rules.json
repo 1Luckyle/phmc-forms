@@ -956,6 +956,23 @@
       }
     },
 
+    // ─── Demandes de divulgation du dossier médical (formulaire « Libération médicale », src/utils/releaseRequests.js) ─────────────────────
+    // releaseRequests/{id} : { patientNode, patientID, patientNom, demandeurUid, demandeurNom, demandeurRole, reportPath, categories, du, au, statut,
+    // creeLe, elements: { clé d'index du rapport: { titre, version, auteur, ts, statut, partageLe?, partagePar? } } }.
+    // Lecture de la liste : personnel et admins (chacun y retrouve les demandes qui contiennent ses rapports) ; un civil ne lit que les demandes de
+    // SON dossier, par identifiant. Création : tout compte connecté, à son nom (demandeurUid). Modification (partage des éléments, annulation) : personnel
+    // et admins ; « chacun partage ses rapports, un admin ou un chef de service peut tout partager » est appliqué par l'application, comme le bouton
+    // « Partager avec le patient » (la base laisse déjà tout le personnel écrire dans patientRecords).
+    "releaseRequests": {
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".indexOn": ["statut"],
+      "$id": {
+        ".read": "auth != null && root.child('civilians').child(auth.uid).child('patientID').val() === data.child('patientNode').val()",
+        ".write": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.exists() && newData.child('demandeurUid').val() === auth.uid))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['patientNode', 'statut', 'creeLe', 'elements']) && newData.child('statut').isString() && newData.child('creeLe').isNumber())"
+      }
+    },
+
     // ─── Pipeline de candidatures (Lot 6) ──────────────────────────────────────
     // jobApplications/{applicantUid}/{applicationId} — une entrée par
     // combinaison civil/poste (applicationId dérivé du bbCodeVersion). Même

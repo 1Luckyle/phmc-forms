@@ -162,6 +162,8 @@ const initialFormData = {
     departmentLarge: '',
     paletoClinicDepartment: '',
     MedicalRecordsRelease: [],
+    releaseReports: [],
+    releasePractitionerAuto: false,
     payNow: false,
     paymentProofPhotos: '',
     fleecaPaymentId: '',

@@ -17,20 +17,35 @@ import './FieldGuide.css';
 const SKIP_TYPES = new Set(['hidden', 'button', 'submit', 'reset', 'file', 'range', 'color', 'image', 'checkbox', 'radio', 'search']);
 const REASONS = { title: 'Compose le titre du rapport.', billing: 'Sert à la facturation du dossier.' };
 
+// Parties d'une liste react-select (classes générées « css-xxxx-container » / « css-xxxx-control ») : un simple « [class*="-container"] » prendrait
+// aussi « modal-container » ou « form-control » et ferait lire le champ caché d'une AUTRE liste du formulaire (infobulle d'un mauvais champ).
+const selectPartOf = (el, part) => {
+    const re = new RegExp('(^|\\s)css-[\\w-]+-' + part + '(\\s|$)');
+    let node = el;
+    while (node && node !== document.body) {
+        const cls = typeof node.className === 'string' ? node.className : '';
+        if (re.test(cls)) return node;
+        node = node.parentElement;
+    }
+    return null;
+};
+
 // Champ saisissable survolé → { field (élément avec name/valeur), anchor (élément à entourer), name, type } ou null.
 const resolveField = (target) => {
     if (!(target instanceof Element)) return null;
     const control = target.closest('input, textarea, select');
     if (control && !SKIP_TYPES.has(control.type)) {
         // Zone de saisie interne d'une liste déroulante (react-select) : le nom est porté par son champ caché.
-        const container = control.closest('[class*="-container"]');
+        const container = selectPartOf(control, 'container');
         const hidden = container ? container.querySelector('input[type="hidden"][name]') : null;
         if (hidden && !control.name) return { field: hidden, anchor: container.querySelector('[class*="-control"]') || container, name: hidden.name, type: 'select' };
-        return { field: control, anchor: control, name: control.name || '', type: control.tagName === 'SELECT' ? 'select' : (control.tagName === 'TEXTAREA' ? 'textarea' : control.type) };
+        // Champ sans `name` (menu de villes) : `data-field-name` lui donne le nom du champ de formulaire dont il reprend l'aide.
+        const declared = control.closest('[data-field-name]');
+        return { field: control, anchor: control, name: control.name || (declared ? declared.getAttribute('data-field-name') : ''), type: control.tagName === 'SELECT' ? 'select' : (control.tagName === 'TEXTAREA' ? 'textarea' : control.type) };
     }
-    const selectControl = target.closest('[class*="-control"]');
+    const selectControl = selectPartOf(target, 'control');
     if (selectControl) {
-        const container = selectControl.closest('[class*="-container"]');
+        const container = selectPartOf(selectControl, 'container');
         const hidden = container ? container.querySelector('input[type="hidden"][name]') : null;
         if (hidden) return { field: hidden, anchor: selectControl, name: hidden.name, type: 'select' };
     }

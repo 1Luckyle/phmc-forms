@@ -59,7 +59,7 @@ const generateDeathRecord = (formData) => {
         ]),
         sectionBanner('Circonstances du décès', { size: 115 }),
         infoTable([
-            [['Lieu du décès', placeWithCity(placeOfDeath, formData.placeOfDeathZip) || ''], ['Mode de décès', manner || '']],
+            [['Lieu du décès', placeWithCity(placeOfDeath, formData.placeOfDeathZip, formData.placeOfDeathZipCity) || ''], ['Mode de décès', manner || '']],
             [['Causes du décès', causesText || 'Non renseignées']],
         ]),
         sectionBanner(unidentified ? 'Description du défunt' : 'Informations complémentaires', { size: 115 }),

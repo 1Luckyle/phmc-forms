@@ -15,6 +15,7 @@ import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
 import { recordInvoiceForReport } from '../utils/patientInvoices';
+import { createReleaseRequest, canShareReport, isServiceChief, practitionerLabel, RELEASE_VERSION } from '../utils/releaseRequests';
 import { requestExemption } from '../utils/exemptions';
 import { validateReport, validateApplication, formatIssues } from '../utils/formValidation';
 import { ACCEPTED_REPORT_VERSIONS } from '../utils/employerSummary';
@@ -372,6 +373,26 @@ export const useReportManagement = (
                     });
                 } catch (invoiceError) {
                     console.warn('Could not record patient invoice:', invoiceError);
+                }
+                // Libération médicale avec des rapports retenus : la demande part avec le formulaire, chaque médecin concerné est prévenu et partage SES rapports.
+                if (Number(bbCodeVersion) === RELEASE_VERSION && Array.isArray(formData.releaseReports) && formData.releaseReports.length > 0) {
+                    try {
+                        const own = isCivilian;
+                        const created = await createReleaseRequest({
+                            patientID: formData.patientID,
+                            patientName: formData.patientName || [formData.patientFirstName, formData.patientMiddleName, formData.patientLastName].filter(Boolean).join(' '),
+                            requester: { uid: currentEmployee?.uid || '', name: own ? (civilianProfile ? `${civilianProfile.firstName || ''} ${civilianProfile.lastName || ''}`.trim() : currentAuthor) : (staffName || currentAuthor), role: own ? 'patient' : 'personnel' },
+                            reportPath,
+                            categories: formData.MedicalRecordsRelease,
+                            from: formData.StupidDateFrom,
+                            to: formData.StupidDateTo,
+                            selection: formData.releaseReports,
+                        });
+                        if (created) showNotification(`Demande de divulgation transmise à : ${practitionerLabel(formData.releaseReports)}. Chaque médecin partage ses propres rapports avec le patient.`, 'info-circle', 9000);
+                    } catch (releaseError) {
+                        console.warn('Could not create the release request:', releaseError);
+                        showNotification("Le formulaire est enregistré, mais la demande de divulgation n'a pas pu être transmise aux médecins : prévenez un administrateur.", 'warning', 9000);
+                    }
                 }
                 // Exemption cochée sans être établie (ni drapeau, ni mineur) : la demande part avec le rapport, au nom du patient ou du soignant qui s'engage.
                 if ((Number(bbCodeVersion) === 3 || Number(bbCodeVersion) === 25) && (formData.isExempt === true || formData.isExempt === 'true') && formData.exemptSource === 'demande') {
@@ -1034,9 +1055,9 @@ Clé : ${sanitizedKey}`,
                 showNotification('Ce rapport a été créé par le patient lui-même : il le voit déjà.', 'info-circle');
                 return;
             }
-            const isCreator = !!staffName && entry.authorName === staffName;
-            if (!isCreator && !isAdmin) {
-                showNotification("Seul le médecin qui a créé ce rapport (ou un administrateur) peut le partager avec le patient.", 'warning');
+            // Chacun partage SES rapports ; un administrateur ou un chef de service peut partager tous ceux du dossier.
+            if (!canShareReport({ authorName: entry.creatorName || entry.authorName, staffName, isAdmin, isChief: isServiceChief(staffProfile) })) {
+                showNotification("Seul le médecin qui a créé ce rapport, un chef de service ou un administrateur peut le partager avec le patient.", 'warning');
                 return;
             }
             await set(ref(database, `patientRecords/${location.node}/${reportKey}/visibility`), 'shared');
@@ -1051,7 +1072,7 @@ Clé : ${sanitizedKey}`,
             Sentry.captureException(error, { extra: { context: 'shareReportWithPatient', patientID, reportKey } });
             showNotification('Erreur lors du partage du rapport.', 'error');
         }
-    }, [showNotification, staffName, isAdmin]);
+    }, [showNotification, staffName, isAdmin, staffProfile]);
 
     // Action personnel : duplique un rapport (créé par un civil, ou par un collègue) dans
     // son PROPRE savedReports, pour le consulter plus tard indépendamment de l'auteur

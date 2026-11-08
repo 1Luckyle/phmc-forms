@@ -76,7 +76,7 @@ const generateAutopsy = (formData) => {
     const identification = [
         [['Défunt', decedentName ? withTitle(formData.decedentTitle, decedentName) : 'John Doe'], ['(( Discord du joueur (HRP)', `${decedentOOC || 'Discord HRP'} ))`]],
         [['ID Patient', patientId], ['Date et heure de l\'autopsie', `${finalAutopsyDate}, ${finalAutopsyTime}`]],
-        [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'Non renseigné'], ['Manière du décès', frDeath(deathType) || 'Indéterminée']],
+        [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip, formData.placeOfDeathZipCity) || 'Non renseigné'], ['Manière du décès', frDeath(deathType) || 'Indéterminée']],
         [['Comment la blessure s\'est produite', causeOfDeath || 'Inconnue']],
     ];
     if (decedentDescription) identification.push([['Identification', decedentDescription]]);

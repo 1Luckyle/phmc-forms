@@ -10,7 +10,8 @@ const PlaceWithCity = ({ formData, setFormData, handleChange, addressName, zipNa
     <>
         <Form.Control type="text" name={addressName} value={formData[addressName] || ''} onChange={handleChange} placeholder={placeholder} className="form-control" />
         <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-            <ZipCityField zip={formData[zipName] || ''} onZipChange={(zip) => setFormData((prev) => ({ ...prev, [zipName]: zip }))} placeholder="Code postal" />
+            <ZipCityField fieldName={zipName} zip={formData[zipName] || ''} onZipChange={(zip) => setFormData((prev) => ({ ...prev, [zipName]: zip }))}
+                city={formData[`${zipName}City`] || ''} onCityChange={(name) => setFormData((prev) => ({ ...prev, [`${zipName}City`]: name }))} placeholder="Code postal" />
         </div>
     </>
 );

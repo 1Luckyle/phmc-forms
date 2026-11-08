@@ -37,7 +37,7 @@ const generateCertificate = (formData) => {
             [['Prénom (Deuxième Prénom) & Nom', withTitle(formData.decedentTitle, decedentName) || 'INSÉRER LE PRÉNOM (DEUXIÈME PRÉNOM) & NOM DU DÉFUNT ICI'], ['ID Patient', patientId]],
             [['Âge', patientAge], ['Date de naissance', frDay(patientDateOfBirth) || 'INSÉRER LA DATE DE NAISSANCE ICI']],
             [['Date du décès', frDay(dateofdeath) || 'INSÉRER LA DATE DU DÉCÈS ICI'], ['Heure du décès', TimeofDeath || 'INSÉRER L\'HEURE DU DÉCÈS ICI']],
-            [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip) || 'INSÉRER LE LIEU DU DÉCÈS ICI']],
+            [['Lieu du décès', placeWithCity(formData.placeOfDeath, formData.placeOfDeathZip, formData.placeOfDeathZipCity) || 'INSÉRER LE LIEU DU DÉCÈS ICI']],
             [['Cause du décès', probableCauseOfDeath || 'INSÉRER LA CAUSE DU DÉCÈS ICI']],
         ]),
         sectionBanner('Signatures', { size: 115 }),

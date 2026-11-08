@@ -51,7 +51,8 @@ const generateMedicalRecordRelease = (formData) => {
     // Ville et code postal : le code est enregistré, la ville s'en déduit d'après la liste des villes tenue par les admins.
     const zip = String(formData.patientZIP || '').trim();
     const city = zip ? (getCitiesSnapshot().find((entry) => String(entry.cp).toLowerCase() === zip.toLowerCase()) || null) : null;
-    const cityLine = zip ? `${city ? `${city.nom} — ` : ''}${zip}` : NOT_FILLED;
+    const cityName = String(formData.patientZIPCity || '').trim() || (city ? city.nom : '');
+    const cityLine = zip || cityName ? `${cityName ? `${cityName}${zip ? ' — ' : ''}` : ''}${zip}` : NOT_FILLED;
 
     // Patient mineur : l'autorisation est signée par son représentant légal (sauf mineur émancipé, qui signe lui-même).
     const minor = isMinorPatient({ birthDate: formData.patientDateOfBirth, titleIsMinor: formData.patientTitle === 'Mineur' });
@@ -66,6 +67,13 @@ const generateMedicalRecordRelease = (formData) => {
         ? `[b]Patient mineur.[/b] La présente autorisation est signée par ${guardianName}, ${guardianRelation} de ${patientFullName}, qui agit en son nom : les mentions « je soussigné(e) » ci-dessous s'entendent du représentant légal.\n\n`
         : '';
     const signerLine = needsGuardian ? `${guardianName} — ${guardianRelation} de ${patientFullName} (mineur)` : patientFullName;
+
+    // Rapports retenus dans la liste des rapports disponibles : titre, date et médecin responsable (jamais leur contenu).
+    const retained = (Array.isArray(formData.releaseReports) ? formData.releaseReports : []).filter((item) => item && item.t);
+    const retainedRows = retained.map((item) => `[tr][td] ${item.t} [/td][td] ${item.ts ? new Date(Number(item.ts)).toLocaleDateString('fr-FR') : NOT_FILLED} [/td][td] ${item.a || NOT_FILLED}`);
+    const retainedBlock = retained.length > 0
+        ? `\n${sectionBanner('Rapports retenus', { size: 115 })}\n[table]\n${retainedRows.join('\n')}\n[/table]`
+        : '';
 
     const purpose = formData.CarePurposeMedicalInformationRelease;
     const format = formData.PurposeMedicalInformationReleaseFormat;
@@ -110,7 +118,7 @@ ${sectionBanner(`Dossiers médicaux à divulguer`, { size: 115 })}
 [tr][td] ${checkbox(has('OfficeClinic'))} [b]Visite à la clinique, au cabinet ou soins immédiats[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats de tests)
 [tr][td] ${checkbox(has('PsychologyVisits'))} [b]Visites de psychologie[/b] (Notes de bureau, notes d'évolution, notes de procédure, résultats d'évaluation)
 [tr][td] ${checkbox(has('Other'))} [b]Autres dossiers[/b]${MedicalRecordsReleaseOther ? `: ${MedicalRecordsReleaseOther}` : ''}
-[/table]
+[/table]${retainedBlock}
 ${sectionBanner(`Autorisation de divulgation des informations`, { size: 115 })}
 [divbox=transparent][list=none]${guardianParagraph}Je soussigné(e), ${patientFullName}, autorise par la présente le Pillbox Hill Medical Center à divulguer mes informations de santé individuellement identifiables. Je comprends que cette autorisation est volontaire et que je peux refuser de signer cette autorisation. Je comprends également que mes soins de santé ne seront pas affectés si je ne signe pas ce formulaire.
 

@@ -68,7 +68,8 @@ const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patie
                 {text(fields.address, 'Adresse (Numéro, Étage, Rue)')}
                 {fields.zip && (
                     <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-                        <ZipCityField zip={formData[fields.zip] || ''} onZipChange={(zip) => setFormData((prev) => ({ ...prev, [fields.zip]: zip }))} placeholder="Code postal" />
+                        <ZipCityField fieldName={fields.zip} zip={formData[fields.zip] || ''} onZipChange={(zip) => setFormData((prev) => ({ ...prev, [fields.zip]: zip }))}
+                            city={formData[`${fields.zip}City`] || ''} onCityChange={(name) => setFormData((prev) => ({ ...prev, [`${fields.zip}City`]: name }))} placeholder="Code postal" />
                     </div>
                 )}
             </Row>

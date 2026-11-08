@@ -80,7 +80,7 @@ ${patientName}
 [b][size=150]INFORMATIONS AVANCÉES DU PATIENT[/size][/b][/center][/table]
 ${sectionBanner(`Informations générales`, { size: 115 })}
 [table][tr][td] Titre: ${titleLabel(patientTitle)}[/td][td] Prénom (Deuxième Prénom) & Nom: ${patientName}
-[tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${placeWithCity(patientAddress === NOT_FILLED ? '' : patientAddress, formData.patientZIP) || NOT_FILLED}
+[tr][td] Date de naissance: ${frDay(patientDateOfBirth)} [/td][td] Adresse: ${placeWithCity(patientAddress === NOT_FILLED ? '' : patientAddress, formData.patientZIP, formData.patientZIPCity) || NOT_FILLED}
 [tr][td] Genre à l'état civil: ${patientGender} [/td][td] Origine ethnique: ${patientRace}
 [tr][td] Numéro de téléphone: ${patientPH} [/td][td] Email: ${patientEmail}
 [tr][td] (( Pseudo Discord: ${patientDiscord}))

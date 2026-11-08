@@ -42,3 +42,19 @@ test('aucune ligne vide doublée entre deux rubriques, aucun espace en début de
         expect(text).not.toMatch(/\n +\[divboxcolor/);
     });
 });
+
+test('la libération médicale liste les rapports retenus avec leur médecin, et rien sans sélection', () => {
+    const withReports = generateMedicalRecordRelease({
+        ...base,
+        phmcEmployee: 'Alice Martin, Bob Durand',
+        releaseReports: [
+            { k: 'a', t: 'Protocole urgence 12/03', a: 'Alice Martin', v: 19, ts: new Date('2026-03-12T10:00:00').getTime() },
+            { k: 'b', t: 'Opération', a: 'Bob Durand', v: 5, ts: new Date('2026-04-01T10:00:00').getTime() },
+        ],
+    });
+    expect(withReports).toContain('Praticien consulté: [/td][td] Alice Martin, Bob Durand');
+    expect(withReports).toContain('Rapports retenus');
+    expect(withReports).toContain('[tr][td] Protocole urgence 12/03 [/td][td] 12/03/2026 [/td][td] Alice Martin');
+    expect(withReports).not.toMatch(/\n\n\n/);
+    expect(generateMedicalRecordRelease(base)).not.toContain('Rapports retenus');
+});

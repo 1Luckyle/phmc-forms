@@ -39,7 +39,7 @@ const generateMassFatality = (formData) => {
     };
 
     const rank = coronerRank || 'Coroner';
-    const place = placeWithCity(placeOfDeath, formData.placeOfDeathZip) || 'Lieu inconnu';
+    const place = placeWithCity(placeOfDeath, formData.placeOfDeathZip, formData.placeOfDeathZipCity) || 'Lieu inconnu';
     const agencyName = getDepartmentFullName(department) || 'Département inconnu';
     const hasRequester = !!showRequestingOfficerInput && !!(requestingOfficer || formData.requestingAgency);
     const requesterAgency = getDepartmentFullName(formData.requestingAgency) || NOT_FILLED;
@@ -99,7 +99,7 @@ Le ${rank}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]
             infoTable([
                 [['Nom du défunt', dec.decedentName ? withTitle(dec.decedentTitle, dec.decedentName) : 'Défunt non identifié'], ['(( Discord du joueur (HRP)', `${dec.decedentOOC || 'Inconnu'} ))`]],
                 [['ID Patient', dec.patientID || 'Non applicable'], ['Heure de décès prononcée', frDay(dec.pronouncedTimeOfDeath) || 'Heure inconnue']],
-                [['Lieu du décès', placeWithCity(dec.placeOfDeath, dec.placeOfDeathZip) || 'Lieu inconnu']],
+                [['Lieu du décès', placeWithCity(dec.placeOfDeath, dec.placeOfDeathZip, dec.placeOfDeathZipCity) || 'Lieu inconnu']],
                 [['Cause probable du décès', dec.probableCauseOfDeath || 'Cause inconnue'], ['Manière du décès', frDeath(dec.mannerOfDeath) || 'Manière inconnue']],
                 [['Blessures du défunt / Éléments notables', dec.synopsis || 'Aucun synopsis fourni']],
             ]),

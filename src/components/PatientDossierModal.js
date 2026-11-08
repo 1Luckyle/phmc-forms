@@ -13,8 +13,10 @@
 //   • « Supprimer ma copie » si on a une copie (elle seule est supprimée) ;
 //   • « Supprimer » si on est le créateur du rapport ;
 //   • « Récupérer une copie » seulement si on n'en a pas déjà une (une par médecin) ;
-//   • « Partager avec le patient » seulement pour le créateur d'un rapport non partagé
-//     (jamais pour une copie, jamais deux fois).
+//   • « Partager avec le patient » seulement pour le créateur d'un rapport non partagé, ou un
+//     administrateur / chef de service (jamais pour une copie, jamais deux fois) ;
+//   • « Demandes de divulgation à traiter » en haut : les demandes de la Libération médicale
+//     qui contiennent SES rapports (tous ceux de la demande pour un admin / chef de service).
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Form, Dropdown } from 'react-bootstrap';
@@ -45,6 +47,8 @@ import { readFamiliesOf, canViewOthersReport, isDmecReportVersion } from '../uti
 import useReportGovernance from '../hooks/useReportGovernance';
 import { FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathReports';
+import ReleaseRequestsPanel from './ReleaseRequestsPanel';
+import { isServiceChief } from '../utils/releaseRequests';
 
 // Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
 const recentlyViewed = new Map();
@@ -105,6 +109,8 @@ const PatientDossierModal = ({
     const { isAdmin, employeeProfile, staffName, staffProfile } = useEmployeeAuth();
     const isStaffViewer = isAdmin || !!employeeProfile;
     const viewerFamilies = readFamiliesOf(staffProfile);
+    // Chacun partage SES rapports ; un administrateur ou un chef de service peut partager ceux de tous les médecins.
+    const isChief = isServiceChief(staffProfile);
     // Nom du médecin sous lequel ses rapports sont rangés (jamais l'e-mail).
     const staffAuthorNameForCopy = staffName || null;
     const myNodeKey = comprehensiveSanitize(staffAuthorNameForCopy);
@@ -280,10 +286,10 @@ const PatientDossierModal = ({
             myCopy,
             iAmHolder,
             deleteTarget,
-            canShare: !rootIsCopy && root.kind !== 'ama' && !isDmecReportVersion(root.bbCodeVersion) && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin),
+            canShare: !rootIsCopy && root.kind !== 'ama' && !isDmecReportVersion(root.bbCodeVersion) && root.visibility === 'staff-only' && !root.ownerDeleted && (iAmHolder || isAdmin || isChief),
             canCopy: !!staffAuthorNameForCopy && !rootIsCopy && !iAmHolder && !myCopy && (!deathLock || canWriteOnDeceased),
         };
-    }), [entries, myNodeKey, isAdmin, staffAuthorNameForCopy, deathLock, canWriteOnDeceased]); // eslint-disable-line react-hooks/exhaustive-deps
+    }), [entries, myNodeKey, isAdmin, isChief, staffAuthorNameForCopy, deathLock, canWriteOnDeceased]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Filtres : recherche par titre + pastilles (mes rapports, créés par le patient, partagés, personnel uniquement, copies, à payer).
     const matchesDossierFilter = (family, key) => {
@@ -566,6 +572,12 @@ const PatientDossierModal = ({
                         Une carte = un rapport ; les copies des médecins sont résumées sur le rapport d'origine.
                     </span>
                 </div>
+
+                <ReleaseRequestsPanel
+                    active={!!show && isStaffViewer}
+                    showNotification={showNotification}
+                    onOpenPatient={(node) => { setSelectedPatientOption({ value: node, label: node }); handleSearch(node); }}
+                />
 
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-2" style={{ flexShrink: 0 }}>
                     <CreatableSelect

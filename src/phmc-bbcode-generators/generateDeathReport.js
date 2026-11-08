@@ -48,7 +48,7 @@ const generateDeathReport = (formData) => {
     };
 
     const rank = coronerRank || 'Coroner';
-    const place = placeWithCity(placeOfDeath, formData.placeOfDeathZip) || 'Lieu inconnu';
+    const place = placeWithCity(placeOfDeath, formData.placeOfDeathZip, formData.placeOfDeathZipCity) || 'Lieu inconnu';
     const agencyName = getDepartmentFullName(department) || 'Département inconnu';
     const patientId = formData.patientID || 'Non applicable';
 
