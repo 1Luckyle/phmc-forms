@@ -63,7 +63,10 @@ const getBaseFormAccess = ({ isAdmin, isCivilian, staffProfile }) => {
     const families = familiesOfMember(staffProfile, staffProfile.type);
     const isCare = families.includes('soignant');
     const isDmec = families.includes('dmec');
+    // Le PBC n'a pas de service DMEC : un membre du DMEC (seulement DMEC) n'a aucun formulaire PBC.
+    const onlyDmec = families.every((family) => family === 'dmec');
     const canAccess = (version) => {
+        if (isPbcVersion(version) && onlyDmec) return false;
         if (SHARED_STAFF_FORM_VERSIONS.includes(version)) return true;           // toute la famille du personnel
         if (CIVILIAN_ALLOWED_VERSIONS.includes(version)) return true;            // patient ou candidat : tout le personnel
         if (DMEC_FORM_VERSIONS.includes(version)) return isDmec;                // DMEC : ses formulaires

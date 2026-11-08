@@ -1,4 +1,4 @@
-import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { checkbox, sectionBanner } from './shared/bbStyles';
 import { allNoteDepartments } from '../constants/clinicalOptions';
 import { titleLabel } from '../utils/patientIdentity';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -21,7 +21,7 @@ PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join
 
 Date: ${date}
 
-${phmcHeaderEnd()}
+[/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/table][/divbox]
 ${sectionBanner(`Note de commentaire`)}
 [table][tr][td][left][list=none][u]Identifiants de l'employé: [/u][br][/br]
 ${phmcEmployee}

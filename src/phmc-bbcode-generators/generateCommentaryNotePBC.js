@@ -20,11 +20,7 @@ PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join
 
 Date: ${date}
 
-[/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]
-PALETO BAY BLVD.
-BP 685
-PALETO BAY, SAN ANDREAS
-T: 50056[/size][/center][/table][/divbox]
+[/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][/table][/divbox]
 ${sectionBanner(`Note de commentaire`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Identifiants de l'employé: [/u][br][/br]
 ${phmcEmployee}

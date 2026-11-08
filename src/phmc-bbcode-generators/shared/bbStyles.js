@@ -4,6 +4,8 @@
 // des bandeaux de section, les cases à cocher ou l'en-tête PHMC, au lieu de modifier chaque générateur.
 // Chaque fonction produit exactement le BBCode qui était auparavant recopié dans les générateurs.
 
+import { isPbcVersion } from '../../utils/formAccess';
+
 export const BB_COLORS = {
     red: '#FF0000',     // chevron « > » des bandeaux (PHMC, DMEC)
     blue: '#0080FF',    // chevron « > » des bandeaux (variante bleue)
@@ -40,12 +42,20 @@ ${PHMC_FOOTER_MARK}, Los Santos, SA
 Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
 [url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
 
+// Pied de page des formulaires de la clinique de Paleto Bay (PBC) : ses propres coordonnées (celles de son en-tête), pas celles de l'hôpital.
+export const PBC_FOOTER_MARK = 'Paleto Bay Blvd., BP 685';
+export const pbcFooter = () => `[hr][/hr]
+[center][size=85][b]Clinique de Paleto Bay[/b]
+${PBC_FOOTER_MARK}, Paleto Bay, San Andreas
+Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
+[url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
+
 // Formulaires qui portent déjà ce pied de page dans leur propre texte (courriels du PHMC) : rien n'est ajouté.
 const FORMS_WITH_OWN_FOOTER = [27, 35];
 export const withPhmcFooter = (bbCode, version) => {
     const text = String(bbCode || '');
-    if (!text.trim() || FORMS_WITH_OWN_FOOTER.includes(Number(version)) || text.includes(PHMC_FOOTER_MARK)) return text;
-    return `${text.replace(/\s+$/, '')}\n${phmcFooter()}`;
+    if (!text.trim() || FORMS_WITH_OWN_FOOTER.includes(Number(version)) || text.includes(PHMC_FOOTER_MARK) || text.includes(PBC_FOOTER_MARK)) return text;
+    return `${text.replace(/\s+$/, '')}\n${isPbcVersion(version) ? pbcFooter() : phmcFooter()}`;
 };
 
 // ─────────────────────────── Rapports du DMEC (Médecine légale) ───────────────────────────

@@ -80,6 +80,8 @@ describe('en-tête commun des rapports du DMEC', () => {
     test('le rapport public de décès garde son bandeau et un tableau « Dossier » à deux cellules par ligne', () => {
         const text = generateDeathRecord({ ...getDebugTemplate(37, ctx), agencyDataStore });
         expect(text).toContain('death-record-header.png');
+        // Logo à texte clair : sur un bandeau sombre, pas sur fond blanc.
+        expect(text).toMatch(/\[divboxcolor=black\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/death-record-header\.png/);
         expect(text).not.toContain('dmec-seal-small');
         const dossier = text.slice(text.indexOf('Numéro de dossier'), text.indexOf('Circonstances du décès'));
         // Jamais trois cellules sur une ligne : la troisième serait écrasée sur la droite.

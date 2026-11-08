@@ -49,7 +49,8 @@ const generateDeathRecord = (formData) => {
         : [[['Autres informations significatives', otherSignificantConditions || 'Aucune']]];
 
     const blocks = [
-        `[divbox=#FFFFFF]\n[center][img]https://phmc-tools.com/img/death-record-header.png[/img][/center]\n[/divbox]`,
+        // Logo à texte clair : posé sur un bandeau sombre (sur fond blanc il serait presque invisible).
+        `[divboxcolor=black][center][img]https://phmc-tools.com/img/death-record-header.png[/img][/center][/divboxcolor]`,
         sectionBanner('DOSSIER PUBLIC DU DÉFUNT', { size: 130 }),
         `[center][size=130][b]${withTitle(formData.decedentTitle, decedentName) || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/b][/size]\n${unidentified ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'} — Date du décès: ${frDay(dateOfDeath) || '[DATE ICI]'}[/center]`,
         sectionBanner('Dossier', { size: 115 }),

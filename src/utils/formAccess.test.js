@@ -2,6 +2,20 @@ import { getFormAccess, isPbcVersion, PBC_FORM_VERSIONS, PHMC_VERSION_OF_PBC } f
 
 const careStaff = { type: 'phmc', rank: 'Médecin Titulaire' };
 
+describe('le PBC n’a pas de service DMEC', () => {
+    test('un membre du DMEC (seulement DMEC) n’a aucun formulaire PBC, même la Note de service', () => {
+        const dmec = getFormAccess({ isAdmin: false, staffProfile: { type: 'coroner', rank: 'Stagiaire Médico-Légal(e)' } });
+        expect(dmec.canAccess(23)).toBe(false);
+        expect(dmec.canAccess(21)).toBe(false);
+        expect(dmec.canAccess(22)).toBe(true);   // Note de service PHMC : ouverte à tout le personnel
+        expect(dmec.canAccess(1)).toBe(true);    // ses formulaires DMEC
+    });
+    test('un soignant, ou un cumul soignant + DMEC, garde les formulaires PBC', () => {
+        expect(getFormAccess({ isAdmin: false, staffProfile: careStaff }).canAccess(23)).toBe(true);
+        expect(getFormAccess({ isAdmin: false, staffProfile: { ...careStaff, extraRanks: ['Stagiaire Médico-Légal(e)'] } }).canAccess(23)).toBe(true);
+    });
+});
+
 describe('formulaires PBC activables par l’administration', () => {
     test('les cinq formulaires PBC sont reconnus, chacun a son équivalent PHMC', () => {
         expect(PBC_FORM_VERSIONS.sort()).toEqual([16, 21, 23, 29, 7]);
