@@ -10,7 +10,9 @@
 //      son dossier (il est notifié). Un administrateur ou un chef de service peut tout partager si un soignant ne le fait pas.
 //      Sans rapport précis (aucun rapport ne correspond, ou « Autres dossiers » décrits en texte), la demande n'a pas de médecin désigné : elle est signalée à
 //      l'administration (notification de groupe) et traitée à la main par un administrateur ou un chef de service (« manuelle »).
-//   4. Tant que le formulaire existe, la demande reste « en attente » ; s'il est supprimé (annulation), la demande est annulée.
+//   4. Tant que le patient n'a pas PAYÉ le formulaire (facture à payer), rien n'est partagé : ni par les médecins, ni par l'administration.
+//   5. Tant que le formulaire existe, la demande reste « en attente » ; s'il est supprimé (annulation), la demande est annulée : les rapports pas encore
+//      partagés ne le seront pas, ceux déjà partagés le restent (le patient avait payé).
 //
 // Stockage : releaseRequests/{id} = { patientNode, patientID, patientNom, demandeurUid, demandeurNom, demandeurRole, reportPath, categories, du, au, statut,
 //   creeLe, elements: { [clé d'index du rapport]: { titre, version, auteur, ts, statut: 'attente' | 'partage' | 'retire', partageLe?, partagePar? } } }.
@@ -23,26 +25,36 @@ import { findPatientNodes, comprehensiveSanitize } from './patientRecords';
 import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from './notifications';
 import { isDmecReportVersion } from './reportAccess';
 import { extraRanksOf, normalizeRank } from '../constants/ranks';
+import { loadPatientInvoices } from './patientInvoices';
+import { INVOICE_STATUS } from './patientBilling';
 
 export const RELEASE_VERSION = 24;
 export const RELEASE_STATUS = { PENDING: 'en_attente', DONE: 'terminee', CANCELLED: 'annulee' };
-export const ITEM_STATUS = { WAITING: 'attente', SHARED: 'partage', REMOVED: 'retire' };
+export const ITEM_STATUS = { WAITING: 'attente', SHARED: 'partage', REMOVED: 'retire', CANCELLED: 'annule' };
 
-// Catégorie du formulaire (valeurs de « Dossiers médicaux à divulguer ») -> versions de formulaires de soins qu'elle regroupe.
-// « Autre » reprend les dossiers qui ne rentrent dans aucune catégorie précise. Les formulaires du DMEC, les candidatures et les formulaires AMA n'en font
-// jamais partie. Pour classer un formulaire autrement, c'est ici.
+// Catégorie du formulaire (valeurs de « Dossiers médicaux à divulguer ») -> versions de formulaires de soins qu'elle regroupe (anciens formulaires compris :
+// 6 évaluation physique PHMC ; 9, 10, 12, 13 obstétrique et gynécologie, dont les rapports existent encore dans les dossiers).
+// « Autre » reprend les dossiers qui ne rentrent dans aucune catégorie précise, ET tout formulaire qui n'est pas listé ci-dessous ni exclu : un futur
+// formulaire médical est donc divulgable sans rien changer. Les formulaires du DMEC, les candidatures, la libération elle-même, les courriels et les
+// formulaires AMA n'en font jamais partie. Pour classer un formulaire autrement, c'est ici.
 export const RELEASE_CATEGORIES = {
-    ERVisit: [19],                       // Protocole d'urgence
-    HospitalStay: [7, 22, 23],           // Évaluation physique, notes de service
-    Outpatient: [5],                     // Opération chirurgicale
-    OfficeClinic: [20, 21],              // Consultation générale
-    PsychologyVisits: [14, 16, 28, 29],  // Consultations et évaluations psychiatriques / psychologiques
-    Other: [3, 25, 26, 35, 41],          // Dossiers médicaux, mise à jour, certificats
+    ERVisit: [19],                           // Protocole d'urgence
+    HospitalStay: [6, 7],                    // Évaluations physiques
+    Outpatient: [5],                         // Opération chirurgicale
+    OfficeClinic: [9, 10, 12, 13, 20, 21],   // Consultations générales, obstétrique, gynécologie
+    PsychologyVisits: [14, 16, 28, 29],      // Consultations et évaluations psychiatriques / psychologiques
+    Other: [3, 25, 26, 35, 41],              // Dossiers médicaux, mise à jour, certificats
 };
+// Jamais divulgués par ce circuit : les notes de service (22, 23 : notes internes du personnel), la libération (24), les courriels (27), le retour d'agence (18),
+// les candidatures (50 à 55) et le panneau admin.
+const NEVER_RELEASED = [18, 22, 23, 24, 27, 50, 51, 52, 53, 54, 55, 999];
 
 export const releaseCategoryOf = (version) => {
     const wanted = Number(version);
-    return Object.keys(RELEASE_CATEGORIES).find((key) => RELEASE_CATEGORIES[key].includes(wanted)) || null;
+    const listed = Object.keys(RELEASE_CATEGORIES).find((key) => RELEASE_CATEGORIES[key].includes(wanted));
+    if (listed) return listed;
+    if (!Number.isFinite(wanted) || wanted <= 0 || NEVER_RELEASED.includes(wanted) || isDmecReportVersion(wanted)) return null;
+    return 'Other';
 };
 
 // Chef de service : rôle principal ou supplémentaire « Chef de Service ».
@@ -154,19 +166,56 @@ export async function createReleaseRequest({ patientID, patientName, requester, 
 // ───────────── Traitement par le personnel ─────────────
 
 // Demandes en attente dont le formulaire existe encore (un formulaire supprimé = demande annulée, constatée ici).
+// Le formulaire de libération a-t-il été supprimé (ou retiré par le patient) ? On lit l'index du dossier, que le personnel peut toujours lire ;
+// s'il est absent, on regarde le rapport lui-même. Une lecture impossible n'annule jamais la demande.
+export async function isReleaseFormGone(request) {
+    if (!request?.reportPath || !request.patientNode) return false;
+    const indexKey = String(request.reportPath).split('/').pop();
+    try {
+        const index = await get(ref(database, `patientRecords/${request.patientNode}/${indexKey}`));
+        if (index.exists()) return !!(index.val() && index.val().ownerDeleted);
+    } catch (error) { return false; }
+    try {
+        const report = await get(ref(database, `${request.reportPath}/bbCodeVersion`));
+        if (!report.exists()) return true;
+        const flag = await get(ref(database, `${request.reportPath}/ownerDeleted`));
+        return flag.val() === true;
+    } catch (error) { return false; }
+}
+
+// Le patient a-t-il encore à PAYER le formulaire de libération ? (facture « à payer » du formulaire : la même que dans « Dossier Patient »). Pas de facture
+// (gratuit, exempté) = rien à payer. Une lecture impossible bloque par prudence : mieux vaut attendre que partager un dossier non payé.
+export async function isReleasePaymentPending(request) {
+    if (!request?.reportPath || !request.patientNode) return false;
+    const indexKey = String(request.reportPath).split('/').pop();
+    try {
+        const invoices = await loadPatientInvoices(request.patientNode);
+        const invoice = (invoices || []).find((entry) => entry.id === indexKey);
+        return !!invoice && invoice.statutEffectif === INVOICE_STATUS.A_PAYER;
+    } catch (error) {
+        return true;
+    }
+}
+
+// Annule une demande : elle ne se traite plus ; les rapports pas encore partagés ne le seront pas, ceux déjà partagés le restent.
+const cancelUpdates = (request, by) => {
+    const updates = {
+        [`releaseRequests/${request.id}/statut`]: RELEASE_STATUS.CANCELLED,
+        [`releaseRequests/${request.id}/annuleLe`]: Date.now(),
+        [`releaseRequests/${request.id}/annulePar`]: String(by || 'personnel').slice(0, 120),
+    };
+    waitingItems(request).forEach((item) => { updates[`releaseRequests/${request.id}/elements/${item.key}/statut`] = ITEM_STATUS.CANCELLED; });
+    return updates;
+};
+
 export async function loadPendingReleaseRequests() {
     const snap = await get(query(ref(database, 'releaseRequests'), orderByChild('statut'), equalTo(RELEASE_STATUS.PENDING)));
     const requests = Object.entries(snap.val() || {}).map(([id, request]) => ({ id, ...request }));
     const alive = [];
     await Promise.all(requests.map(async (request) => {
-        if (request.reportPath) {
-            try {
-                const exists = (await get(ref(database, request.reportPath))).exists();
-                if (!exists) {
-                    update(ref(database, `releaseRequests/${request.id}`), { statut: RELEASE_STATUS.CANCELLED, annuleLe: Date.now(), annulePar: 'formulaire supprimé' }).catch(() => {});
-                    return;
-                }
-            } catch (error) { /* lecture refusée : on garde la demande visible */ }
+        if (await isReleaseFormGone(request)) {
+            update(ref(database), cancelUpdates(request, 'formulaire supprimé')).catch(() => {});
+            return;
         }
         alive.push(request);
     }));
@@ -187,6 +236,8 @@ export const requestsVisibleTo = (requests, viewer) => (requests || []).filter((
 // Partage les éléments que le lecteur a le droit de partager : le rapport passe à « partagé » dans le dossier du patient. Retourne { shared, removed, left }.
 export async function shareRequestItems(request, viewer, { author = '' } = {}) {
     const items = shareableItems(request, viewer);
+    // Rien ne se partage tant que le patient n'a pas payé son formulaire (revérifié ici : l'écran peut dater).
+    if (items.length > 0 && await isReleasePaymentPending(request)) return { shared: 0, removed: 0, left: waitingItems(request).length, blocked: 'paiement' };
     const now = Date.now();
     const updates = {};
     let shared = 0;
@@ -224,6 +275,7 @@ export async function shareRequestItems(request, viewer, { author = '' } = {}) {
 
 // Clôture une demande traitée à la main (administrateur ou chef de service) ; le patient en est informé.
 export async function completeReleaseRequest(request, by) {
+    if (await isReleasePaymentPending(request)) throw new Error('Le patient n’a pas encore payé son formulaire.');
     await update(ref(database, `releaseRequests/${request.id}`), { statut: RELEASE_STATUS.DONE, traiteLe: Date.now(), traitePar: String(by || 'personnel').slice(0, 120) });
     findCivilianUidByPatientId(request.patientNode).then((uid) => notifyUser(uid, {
         type: 'statut', titre: 'Votre demande de divulgation a été traitée', texte: request.autres || undefined, lien: { cible: 'dossierPatient' },
@@ -233,5 +285,5 @@ export async function completeReleaseRequest(request, by) {
 export const canCancelRequest = (request, { uid, isAdmin }) => !!isAdmin || (!!uid && request?.demandeurUid === uid);
 
 export async function cancelReleaseRequest(request, by) {
-    await update(ref(database, `releaseRequests/${request.id}`), { statut: RELEASE_STATUS.CANCELLED, annuleLe: Date.now(), annulePar: String(by || 'personnel').slice(0, 120) });
+    await update(ref(database), cancelUpdates(request, by));
 }

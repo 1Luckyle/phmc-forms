@@ -99,11 +99,11 @@ const generateDeathReport = (formData) => {
             name: decedentName ? withTitle(formData.decedentTitle, decedentName) : 'Défunt non identifié',
             detail: `ID Patient : ${patientId}`,
             title: 'RAPPORT D\'ENQUÊTE SUR LE DÉCÈS',
-            subtitle: 'Bureau du Coroner du Comté',
+            subtitle: 'Département de Pathologie et de Médecine Légale',
         }),
         sectionBanner('A. Rapport écrit', { size: 115 }),
         infoTable(rows),
-        paragraph(`Le Bureau du Coroner du Comté a été appelé concernant le décès survenu à l'emplacement de [b]${place}[/b]. Après avoir reçu l'appel de[b] ${agencyName}[/b], le Bureau du Coroner a dépêché un ${rank} sur la scène de crime pour mener une enquête le [b]${frDay(dateTime) || 'Date/Heure inconnue'}[/b].${requestedBy}
+        paragraph(`Le Département de Pathologie et de Médecine Légale a été appelé concernant le décès survenu à l'emplacement de [b]${place}[/b]. Après avoir reçu l'appel de[b] ${agencyName}[/b], le Département a dépêché un ${rank} sur la scène de crime pour mener une enquête le [b]${frDay(dateTime) || 'Date/Heure inconnue'}[/b].${requestedBy}
 
 Le ${rank}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]${coronerBadge || 'N/A'}[/b], est arrivé sur les lieux et a identifié l'individu comme étant [b]${decedentName || 'Défunt non identifié'}[/b] (ID Patient : ${patientId}), qui est estimé être décédé à [b]${pronouncedTimeOfDeath || 'Heure inconnue'}[/b]. Suite à une enquête initiale, le ${rank} est arrivé au [b]synopsis[/b] suivant: ${synopsis || 'Aucun synopsis fourni.'}
 

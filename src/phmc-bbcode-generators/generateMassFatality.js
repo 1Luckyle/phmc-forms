@@ -54,7 +54,7 @@ const generateMassFatality = (formData) => {
     const requestedParagraph = hasRequester
         ? `\n\nCe rapport a été demandé par [b]${requestingOfficer || NOT_FILLED}[/b] (${requesterAgency}). Sur sa demande, il a été transmis via l'Intranet sécurisé pour un traitement et un examen plus approfondis.`
         : '';
-    const writtenReport = `Le Bureau du Coroner du Comté a été appelé concernant un incident tuerie/accident de masse survenu à l'emplacement de [b]${place}[/b]. Après avoir reçu l'appel de[b] ${agencyName}[/b], le Bureau du Coroner a dépêché un ${rank} sur la scène de crime pour mener une enquête le [b]${frDay(dateTime) || 'Date/Heure inconnue'}[/b].
+    const writtenReport = `Le Département de Pathologie et de Médecine Légale a été appelé concernant un incident tuerie/accident de masse survenu à l'emplacement de [b]${place}[/b]. Après avoir reçu l'appel de[b] ${agencyName}[/b], le Département a dépêché un ${rank} sur la scène de crime pour mener une enquête le [b]${frDay(dateTime) || 'Date/Heure inconnue'}[/b].
 
 Le ${rank}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]${coronerBadge || 'N/A'}[/b], est arrivé sur les lieux et a identifié un total de [b]${numberToWords(decedents.length)} Défunts[/b]. Suite à une enquête initiale, le ${rank} est arrivé au [b]synopsis[/b] suivant: ${synopsis || 'Aucun synopsis fourni.'}${requestedParagraph}`;
 
@@ -64,7 +64,7 @@ Le ${rank}, [b]${coronerEmployee || 'Coroner inconnu'}[/b], Numéro de badge [b]
             name: place,
             detail: `${numberToWords(decedents.length)} défunt${decedents.length > 1 ? 's' : ''}`,
             title: 'RAPPORT DE CATASTROPHE MORTELLE',
-            subtitle: 'Bureau du Coroner du Comté',
+            subtitle: 'Département de Pathologie et de Médecine Légale',
         }),
         sectionBanner('A. Rapport écrit', { size: 115 }),
         infoTable(summaryRows),

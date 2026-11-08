@@ -32,11 +32,11 @@ describe('rapports de médecine légale : construction', () => {
         expect(unchecked).not.toContain('Officier Jane Roe');
     });
 
-    test('e-mail DMEC : logo de l’agence (lien web) + sceau du DMEC seul, expéditeur avec son vrai e-mail, rapport joint rendu sans source brute', () => {
+    test('e-mail DMEC : logo de l’agence (lien web) puis logo PHMC et petit sceau du DMEC, expéditeur avec son vrai e-mail, rapport joint rendu sans source brute', () => {
         const report = generateDeathReport({ ...getDebugTemplate(1, ctx), agencyDataStore });
         expect(prepareCoronerReport(report).ok).toBe(true);
         const email = generateEmail({ ...getDebugTemplate(2, ctx), department: 'LSSD', agencyDataStore, deathReport: report, additionalReports: [] });
-        expect(email).toMatch(/\[table\]\[tr\]\[td\]\[center\]\[img\]https:\/\/img\/lssd\.png\[\/img\]\[\/center\]\[td\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/dmec-seal\.png/);
+        expect(email).toMatch(/\[table\]\[tr\]\[td\]\[center\]\[img\]https:\/\/img\/lssd\.png\[\/img\]\[\/center\]\[td\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/phmc\.png\[\/img\]\[img\]https:\/\/phmc-tools\.com\/img\/dmec-seal-small\.png/);
         expect(email).toContain('Expéditeur: Dr Légiste (a.b@phmc.health)');
         expect(email).toContain('Numéro de téléphone: 555-0142');
         expect(email).not.toContain('@ phmc.health');
@@ -67,5 +67,23 @@ describe('rapports de médecine légale : aperçu HTML et lecture des rapports j
         expect(mass.ok).toBe(true);
         expect(mass.kind).toBe('massFatality');
         expect(mass.decedents.length).toBeGreaterThan(0);
+    });
+});
+
+describe('en-tête commun des rapports du DMEC', () => {
+    test.each([1, 4, 8, 11])('rapport %i : logo PHMC et petit sceau du DMEC côte à côte, mention « Département de Pathologie et de Médecine Légale »', (version) => {
+        const text = GENERATORS[version]({ ...getDebugTemplate(version, ctx), agencyDataStore });
+        expect(text).toContain('[img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/dmec-seal-small.png[/img]');
+        expect(text).toContain('Département de Pathologie et de Médecine Légale');
+        expect(text).not.toContain('Bureau du Coroner');
+    });
+    test('le rapport public de décès garde son bandeau et un tableau « Dossier » à deux cellules par ligne', () => {
+        const text = generateDeathRecord({ ...getDebugTemplate(37, ctx), agencyDataStore });
+        expect(text).toContain('death-record-header.png');
+        expect(text).not.toContain('dmec-seal-small');
+        const dossier = text.slice(text.indexOf('Numéro de dossier'), text.indexOf('Circonstances du décès'));
+        // Jamais trois cellules sur une ligne : la troisième serait écrasée sur la droite.
+        dossier.split('[tr]').filter((row) => row.includes(': ')).forEach((row) => expect(row.split('[td]').length - 1).toBeLessThanOrEqual(2));
+        expect(dossier).toContain('Statut du corps');
     });
 });

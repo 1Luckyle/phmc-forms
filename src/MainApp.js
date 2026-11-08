@@ -1087,6 +1087,12 @@ function MainApp({
         setShowSaveAsEmployeeModal(false);
         // Demande civile : la personne choisie est un COMPTE PATIENT (Civil ou du personnel), pas un employé rédacteur.
         if (choice && typeof choice === 'object') {
+            // L'ID du patient choisi doit être celui du formulaire : sinon le rapport serait rangé sous un patient et porterait l'ID d'un autre.
+            const formId = canonicalPatientId(formData.patientID);
+            if (formId && canonicalPatientId(choice.patientID) !== formId
+                && !window.confirm(`L'ID du formulaire (${formId}) est différent de celui du patient choisi (${choice.patientID}).
+
+Enregistrer quand même sur ${choice.patientID} ?`)) return;
             runSaveReport(choice.author, choice.patientID);
             return;
         }
@@ -1101,7 +1107,7 @@ function MainApp({
             const formName = getFormDefinition(bbCodeVersion)?.name || 'un rapport';
             sendTemplatedMail('rapport_enregistre_admin', { to: employeeRecord.email, vars: { nom: employeeName, formulaire: formName } });
         }
-    }, [runSaveReport, phmcListData, coronerListData, bbCodeVersion]);
+    }, [runSaveReport, phmcListData, coronerListData, bbCodeVersion, formData.patientID]);
 
     // Les zones de texte du formulaire s'agrandissent avec leur contenu.
     useAutoGrowTextareas([formData, bbCodeVersion]);
@@ -2806,6 +2812,8 @@ function MainApp({
                             onHide={() => setShowSaveAsEmployeeModal(false)}
                             employeeOptions={combinedStaffOptions}
                             patientMode={CIVIL_MEDICAL_VERSIONS.includes(Number(bbCodeVersion))}
+                            defaultPatientId={formData.patientID || ''}
+                            fallbackName={[formData.patientFirstName, formData.patientMiddleName, formData.patientLastName].filter(Boolean).join(' ') || formData.patientName || ''}
                             onConfirm={handleConfirmSaveAsEmployee}
                         />
                     </div>

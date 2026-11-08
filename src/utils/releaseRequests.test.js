@@ -1,8 +1,9 @@
 import {
     releaseCategoryOf, eligibleReleaseEntries, canShareReport, isServiceChief, practitionersOf, practitionerLabel, toSelection,
-    shareableItems, requestsVisibleTo, shareRequestItems, RELEASE_STATUS, ITEM_STATUS,
+    shareableItems, requestsVisibleTo, shareRequestItems, isReleaseFormGone, isReleasePaymentPending, cancelReleaseRequest, RELEASE_STATUS, ITEM_STATUS,
 } from './releaseRequests';
-import { get, update } from 'firebase/database';
+import { loadPatientInvoices } from './patientInvoices';
+import { ref, get, update } from 'firebase/database';
 import * as notifications from './notifications';
 
 jest.mock('../firebase', () => ({ database: {}, auth: { currentUser: { uid: 'me' } } }));
@@ -10,10 +11,13 @@ jest.mock('firebase/database', () => ({
     ref: jest.fn((db, path) => path), get: jest.fn(), set: jest.fn(), update: jest.fn(() => Promise.resolve()), push: jest.fn(() => ({ key: 'newid' })),
     query: jest.fn(), orderByChild: jest.fn(), equalTo: jest.fn(), onValue: jest.fn(),
 }));
+jest.mock('./patientInvoices', () => ({ loadPatientInvoices: jest.fn() }));
 jest.mock('./notifications', () => ({ notifyUser: jest.fn(), findCivilianUidByPatientId: jest.fn(), findStaffUidByNode: jest.fn() }));
 
 // La configuration de Create React App remet les simulations à zéro avant chaque test : leurs retours se posent ici.
 beforeEach(() => {
+    loadPatientInvoices.mockResolvedValue([]);
+    ref.mockImplementation((db, path) => path);
     update.mockImplementation(() => Promise.resolve());
     notifications.notifyUser.mockResolvedValue(true);
     notifications.findCivilianUidByPatientId.mockResolvedValue('civil-uid');
@@ -31,6 +35,17 @@ describe('catégories de divulgation', () => {
         expect(releaseCategoryOf(4)).toBeNull();
         expect(releaseCategoryOf(24)).toBeNull();
         expect(releaseCategoryOf(53)).toBeNull();
+    });
+    test('les anciens formulaires médicaux sont couverts, un futur formulaire tombe dans « Autre », les courriels jamais', () => {
+        expect(releaseCategoryOf(6)).toBe('HospitalStay');
+        expect(releaseCategoryOf(9)).toBe('OfficeClinic');
+        expect(releaseCategoryOf(13)).toBe('OfficeClinic');
+        expect(releaseCategoryOf(77)).toBe('Other');
+        expect(releaseCategoryOf(22)).toBeNull(); // notes de service : notes internes, jamais divulguées
+        expect(releaseCategoryOf(23)).toBeNull();
+        expect(releaseCategoryOf(27)).toBeNull();
+        expect(releaseCategoryOf(18)).toBeNull();
+        expect(releaseCategoryOf(undefined)).toBeNull();
     });
 });
 
@@ -140,5 +155,66 @@ describe('partage d’une demande', () => {
         const outcome = await shareRequestItems(request, alice, {});
         expect(outcome).toEqual({ shared: 0, removed: 1, left: 1 });
         expect(update.mock.calls[0][1]['releaseRequests/r1/elements/a/statut']).toBe(ITEM_STATUS.REMOVED);
+    });
+});
+
+describe('formulaire de libération supprimé par le patient', () => {
+    const request = { id: 'r1', patientNode: 'PHMC-1234', reportPath: 'savedReports/Jean_Test/rel_1' };
+    const snap = (exists, value) => ({ exists: () => exists, val: () => value });
+
+    test('supprimé pour de bon (ni index ni rapport) ou simplement retiré (ownerDeleted) : la demande est caduque', async () => {
+        get.mockImplementation(() => Promise.resolve(snap(false, null)));
+        expect(await isReleaseFormGone(request)).toBe(true);
+        get.mockImplementation(() => Promise.resolve(snap(true, { ownerDeleted: true })));
+        expect(await isReleaseFormGone(request)).toBe(true);
+    });
+    test('formulaire toujours là : la demande reste', async () => {
+        get.mockImplementation(() => Promise.resolve(snap(true, { visibility: 'owner' })));
+        expect(await isReleaseFormGone(request)).toBe(false);
+    });
+    test('lecture refusée : on ne conclut jamais à une suppression', async () => {
+        get.mockImplementation(() => Promise.reject(new Error('PERMISSION_DENIED')));
+        expect(await isReleaseFormGone(request)).toBe(false);
+    });
+});
+
+describe('paiement du formulaire et annulation', () => {
+    const request = {
+        id: 'r1', patientNode: 'PHMC-1234', reportPath: 'savedReports/Jean_Test/rel_1', demandeurRole: 'patient', statut: RELEASE_STATUS.PENDING,
+        elements: {
+            a: { titre: 'Urgence', auteur: 'Alice Martin', statut: ITEM_STATUS.WAITING },
+            b: { titre: 'Chirurgie', auteur: 'Bob Durand', statut: ITEM_STATUS.WAITING },
+            c: { titre: 'Déjà fait', auteur: 'Alice Martin', statut: ITEM_STATUS.SHARED },
+        },
+    };
+    const alice = { staffName: 'Alice Martin', isAdmin: false, isChief: false };
+
+    test('facture à payer : rien ne se partage ; payée ou sans facture : le partage est permis', async () => {
+        loadPatientInvoices.mockResolvedValue([{ id: 'rel_1', statutEffectif: 'a_payer' }]);
+        expect(await isReleasePaymentPending(request)).toBe(true);
+        update.mockClear();
+        const blocked = await shareRequestItems(request, alice, {});
+        expect(blocked).toMatchObject({ shared: 0, blocked: 'paiement' });
+        expect(update).not.toHaveBeenCalled();
+
+        loadPatientInvoices.mockResolvedValue([{ id: 'rel_1', statutEffectif: 'paye' }]);
+        expect(await isReleasePaymentPending(request)).toBe(false);
+        loadPatientInvoices.mockResolvedValue([]);
+        expect(await isReleasePaymentPending(request)).toBe(false);
+    });
+
+    test('facture illisible : par prudence, on attend', async () => {
+        loadPatientInvoices.mockRejectedValue(new Error('PERMISSION_DENIED'));
+        expect(await isReleasePaymentPending(request)).toBe(true);
+    });
+
+    test('annuler une demande annule ce qui n’est pas partagé et laisse ce qui l’est déjà', async () => {
+        update.mockClear();
+        await cancelReleaseRequest(request, 'le patient');
+        const written = update.mock.calls[0][1];
+        expect(written['releaseRequests/r1/statut']).toBe(RELEASE_STATUS.CANCELLED);
+        expect(written['releaseRequests/r1/elements/a/statut']).toBe(ITEM_STATUS.CANCELLED);
+        expect(written['releaseRequests/r1/elements/b/statut']).toBe(ITEM_STATUS.CANCELLED);
+        expect(written['releaseRequests/r1/elements/c/statut']).toBeUndefined();
     });
 });

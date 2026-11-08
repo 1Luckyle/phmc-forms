@@ -54,8 +54,9 @@ const generateDeathRecord = (formData) => {
         `[center][size=130][b]${withTitle(formData.decedentTitle, decedentName) || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/b][/size]\n${unidentified ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'} — Date du décès: ${frDay(dateOfDeath) || '[DATE ICI]'}[/center]`,
         sectionBanner('Dossier', { size: 115 }),
         infoTable([
-            [['Numéro de dossier', caseNumber || ''], ['Statut du dossier', caseStatus || ''], ['Statut du corps', bodyStatus || '']],
-            [['Genre à l\'état civil', sex || ''], ['Origine ethnique', ethnicity || '']],
+            [['Numéro de dossier', caseNumber || ''], ['Statut du dossier', caseStatus || '']],
+            [['Statut du corps', bodyStatus || ''], ['Genre à l\'état civil', sex || '']],
+            [['Origine ethnique', ethnicity || '']],
         ]),
         sectionBanner('Circonstances du décès', { size: 115 }),
         infoTable([

@@ -10,7 +10,7 @@ import { getFormLabel } from '../formDefinitions';
 import { logActivity } from '../utils/activityLog';
 import {
     loadPendingReleaseRequests, requestsVisibleTo, shareableItems, waitingItems, shareRequestItems, cancelReleaseRequest, canCancelRequest,
-    isServiceChief, completeReleaseRequest, ITEM_STATUS,
+    isServiceChief, completeReleaseRequest, isReleasePaymentPending, ITEM_STATUS,
 } from '../utils/releaseRequests';
 
 const cardStyle = { border: '1px solid #30363d', borderRadius: 6, padding: '10px 12px', background: '#0d1117', marginBottom: 8 };
@@ -21,6 +21,7 @@ const ITEM_BADGE = {
     [ITEM_STATUS.WAITING]: { bg: 'warning', text: 'À partager' },
     [ITEM_STATUS.SHARED]: { bg: 'success', text: 'Partagé' },
     [ITEM_STATUS.REMOVED]: { bg: 'secondary', text: 'Rapport retiré' },
+    [ITEM_STATUS.CANCELLED]: { bg: 'secondary', text: 'Annulé' },
 };
 
 const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
@@ -30,11 +31,16 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
     const [loading, setLoading] = useState(false);
     const [busyId, setBusyId] = useState('');
     const [open, setOpen] = useState(true);
+    // Demandes dont le patient n'a pas encore payé le formulaire : rien ne se partage tant que c'est le cas.
+    const [unpaid, setUnpaid] = useState({});
 
     const reload = useCallback(async () => {
         setLoading(true);
         try {
-            setRequests(await loadPendingReleaseRequests());
+            const loaded = await loadPendingReleaseRequests();
+            const flags = await Promise.all(loaded.map(async (request) => [request.id, await isReleasePaymentPending(request)]));
+            setUnpaid(Object.fromEntries(flags));
+            setRequests(loaded);
         } catch (error) {
             console.warn('Demandes de divulgation illisibles :', error);
             setRequests([]);
@@ -51,6 +57,11 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
         setBusyId(request.id);
         try {
             const outcome = await shareRequestItems(request, viewer, { author: staffName });
+            if (outcome.blocked) {
+                showNotification("Le patient n'a pas encore payé son formulaire : rien ne peut être partagé tant que ce n'est pas fait.", 'warning', 7000);
+                await reload();
+                return;
+            }
             logActivity({
                 category: 'rapports', action: 'report_shared', summary: `Divulgation : ${outcome.shared} rapport(s) partagé(s) avec le patient`,
                 details: `Patient : ${request.patientNode}\nPartagé par : ${staffName || 'admin'}\nDemande : ${request.id}`, target: request.patientNode,
@@ -72,7 +83,7 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
             showNotification('Demande marquée comme traitée : le patient en est informé.', 'check-circle');
             await reload();
         } catch (error) {
-            showNotification("Impossible de clôturer la demande.", 'error');
+            showNotification(error && /payé/.test(error.message) ? error.message : 'Impossible de clôturer la demande.', 'error');
         } finally {
             setBusyId('');
         }
@@ -98,6 +109,9 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
                 <i className={`fas ${open ? 'fa-chevron-down' : 'fa-chevron-right'} me-2`}></i>
                 Demandes de divulgation à traiter ({mine.length})
             </button>
+            <button type="button" className="btn btn-sm btn-outline-secondary mb-2 ms-2" onClick={reload} disabled={loading} title="Recharger les demandes (et l'état des paiements)">
+                <i className="fas fa-rotate"></i>
+            </button>
             {open && (
                 <div style={{ maxHeight: '38vh', overflowY: 'auto' }}>
                     {loading && mine.length === 0 && <div style={mutedStyle}>Chargement…</div>}
@@ -121,13 +135,13 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
                                             <i className="fas fa-folder-open me-1"></i>Ouvrir le dossier
                                         </Button>
                                         {request.manuelle && everything && (
-                                            <Button size="sm" variant="success" disabled={busyId === request.id} onClick={() => complete(request)}
+                                            <Button size="sm" variant="success" disabled={busyId === request.id || !!unpaid[request.id]} onClick={() => complete(request)}
                                                 title="À faire une fois la demande traitée à la main : elle disparaît de la liste et le patient est prévenu.">
                                                 <i className="fas fa-check me-1"></i>Marquer comme traitée
                                             </Button>
                                         )}
                                         {allCount > 0 && (
-                                            <Button size="sm" variant="primary" disabled={busyId === request.id || myCount === 0} onClick={() => share(request)}
+                                            <Button size="sm" variant="primary" disabled={busyId === request.id || myCount === 0 || !!unpaid[request.id]} onClick={() => share(request)}
                                                 title={everything ? 'Partage tous les rapports en attente de cette demande (administrateur / chef de service).' : 'Partage uniquement vos propres rapports de cette demande.'}>
                                                 <i className="fas fa-share-nodes me-1"></i>{everything ? `Tout partager (${myCount})` : `Partager mes rapports (${myCount})`}
                                             </Button>
@@ -137,6 +151,12 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
                                         )}
                                     </div>
                                 </div>
+                                {unpaid[request.id] && (
+                                    <div className="mt-2 p-2 border rounded" style={{ borderColor: '#f85149', color: '#ff7b72', fontSize: '0.85rem' }}>
+                                        <i className="fas fa-hand-holding-dollar me-2"></i>
+                                        En attente du paiement du patient : rien ne peut être partagé tant que son formulaire n'est pas payé. Actualisez cet écran après son paiement.
+                                    </div>
+                                )}
                                 {request.manuelle && (
                                     <div className="mt-2 p-2 border rounded" style={{ borderColor: '#d29922', color: '#e3b341', fontSize: '0.85rem' }}>
                                         <i className="fas fa-hand me-2"></i>

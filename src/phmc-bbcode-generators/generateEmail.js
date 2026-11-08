@@ -1,11 +1,10 @@
 import { getPrice } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
-import { sectionBanner, infoTable, paragraph, DMEC_LOGO } from './shared/bbStyles';
+import { sectionBanner, infoTable, paragraph, dmecHeaderLogos } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
 const NOT_FILLED = 'Non renseigné';
-const CORONER_LOGO = DMEC_LOGO;
 
 const generateEmail = (formData) => {
     const {
@@ -34,13 +33,13 @@ const generateEmail = (formData) => {
         return shortCode; // fallback to shortcode
     };
 
-    // En-tête : le logo de l'agence destinataire à gauche, celui du Bureau du Coroner (DMEC) à droite.
+    // En-tête : le logo de l'agence destinataire à gauche ; à droite, le logo du PHMC et, plus petit à côté, le sceau du DMEC.
     // Dans le BBCode, seule une ADRESSE WEB fonctionne (lien imgBB de l'agence) : jamais le fichier local du dépôt, utilisé seulement à l'écran.
     const agencyLogo = [agencyDataStore?.[department]?.forumLogo, agencyDataStore?.[department]?.logo]
         .map((url) => String(url || '').trim()).find((url) => /^https?:\/\//i.test(url)) || '';
     const header = agencyLogo
-        ? `[table][tr][td][center][img]${agencyLogo}[/img][/center][td][center][img]${CORONER_LOGO}[/img][/center][/table]`
-        : `[center][img]${CORONER_LOGO}[/img][/center]`;
+        ? `[table][tr][td][center][img]${agencyLogo}[/img][/center][td][center]${dmecHeaderLogos()}[/center][/table]`
+        : `[center]${dmecHeaderLogos()}[/center]`;
 
     // Défunt(s) concerné(s) : ceux saisis dans le formulaire et ceux des rapports joints (IC, Discord, ID patient).
     const joinList = (...lists) => lists.map((list) => String(list || '').trim()).filter(Boolean).join(', ');
@@ -63,7 +62,7 @@ ${report}
     const recipient = [requestingOfficer, agencyName].map((part) => String(part || '').trim()).filter(Boolean).join(' - ');
     const blocks = [
         header,
-        sectionBanner('Courriel du Bureau du Coroner', { size: 115 }),
+        sectionBanner('Courriel du Département de Pathologie et de Médecine Légale', { size: 115 }),
         infoTable([
             [['Destinataire', recipient], ['Expéditeur', `${coronerEmployee} (${coronerEmail})`]],
             [['Objet', 'Documents du rapport de décès']],

@@ -55,6 +55,10 @@ export const withPhmcFooter = (bbCode, version) => {
 export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
 // Sceau du DMEC seul (public/img/dmec-seal.png). L'ancienne image ItaoQkO.webp montrait aussi celui du Comté.
 export const DMEC_LOGO = 'https://phmc-tools.com/img/dmec-seal.png';
+// Même sceau en petit (public/img/dmec-seal-small.png) : à côté du logo PHMC dans l'en-tête des rapports du DMEC, comme le logo de Paleto Bay à côté de celui du PHMC.
+export const DMEC_LOGO_SMALL = 'https://phmc-tools.com/img/dmec-seal-small.png';
+// Logos de l'en-tête des rapports du DMEC : le logo du PHMC, et le sceau du DMEC plus petit à côté.
+export const dmecHeaderLogos = () => `[img]${PHMC_LOGO}[/img][img]${DMEC_LOGO_SMALL}[/img]`;
 
 // En-tête d'un rapport : à gauche l'étiquette du dossier, le défunt et son identifiant ; à droite le logo et le titre du rapport.
 //   dmecHeader({ label: 'Informations du défunt', name: 'Jane Doe', detail: 'ID Patient : PHMC-12', title: 'RAPPORT D\'AUTOPSIE', subtitle: '…' })
@@ -62,7 +66,7 @@ export const dmecHeader = ({ label, name, detail = '', title, subtitle = '' }) =
 
 [size=110]${name}${detail ? `\n${detail}` : ''}[/size]
 
-[/center][td][center][img]${PHMC_LOGO}[/img]
+[/center][td][center]${dmecHeaderLogos()}
 [b][size=150]${title}[/size][/b]${subtitle ? `\n${subtitle}` : ''}[/center][/table]`;
 
 // Tableau « étiquette : valeur ». Chaque ligne est une liste de 1 à 3 paires [étiquette, valeur] ; une ligne à une seule paire prend toute la largeur.
