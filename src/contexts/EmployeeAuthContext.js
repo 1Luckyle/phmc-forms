@@ -41,6 +41,8 @@ export const EmployeeAuthProvider = ({ children }) => {
     // Le profil n'est lu qu'à la connexion : après une auto-édition (téléphone, Discord, e-mail
     // depuis « Mon profil »), on fusionne les champs modifiés dans l'état local pour que
     // l'interface les reflète sans devoir se reconnecter.
+    // Idem pour un compte Civil (« Mon profil » : coordonnées modifiées sans payer).
+    const updateLocalCivilianProfile = (patch) => setCivilianProfile((prev) => (prev ? { ...prev, ...patch } : prev));
     const updateLocalStaffProfile = (patch) => {
         setEmployeeProfile((prev) => (prev ? { ...prev, ...patch } : prev));
         setAdminStaffProfile((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -467,6 +469,7 @@ export const EmployeeAuthProvider = ({ children }) => {
         employeeProfile: effective.employeeProfile,
         staffProfile,
         updateLocalStaffProfile,
+        updateLocalCivilianProfile,
         staffName: derived.staffName,
         isPhmcStaff: derived.isPhmcStaff,
         canUseAma: derived.canUseAma,

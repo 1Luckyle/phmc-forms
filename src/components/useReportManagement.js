@@ -399,6 +399,7 @@ export const useReportManagement = (
                             // Mise à jour de simples coordonnées : gratuite et appliquée tout de suite par le serveur ; jeton gratuit dépensé : repris pour le rendre si le formulaire est supprimé.
                             ...(Number(bbCodeVersion) === 26 && isContactOnlyUpdate(formData) ? { dossierImmediat: true } : {}),
                             ...(dossierToken ? { dossierJeton: true } : {}),
+                            ...(formData.dossierSansCompte === true && !isOwnedByThisCivilian ? { dossierSansCompte: true } : {}),
                         },
                     });
                 } catch (indexError) {

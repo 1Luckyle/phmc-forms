@@ -66,7 +66,7 @@ export const SECTION_FIELDS = {
 };
 
 // Dans une mise à jour, les informations générales nouvelles portent le suffixe « New ».
-const NEW_KEY = {
+export const NEW_KEY = {
     patientTitle: 'patientTitleNew', patientFirstName: 'patientFirstNameNew', patientMiddleName: 'patientMiddleNameNew', patientLastName: 'patientLastNameNew',
     patientDateOfBirth: 'patientDateOfBirthNew', patientAddress: 'patientAddressNew', patientZIP: 'patientZIPNew', patientZIPCity: 'patientZIPNewCity',
     patientGender: 'patientGenderNew', patientRace: 'patientRaceNew', patientPH: 'patientPHNew', patientDiscord: 'patientDiscordNew',
@@ -154,8 +154,9 @@ export const canModifyForm = (form, actor) => {
     if (actor.role === 'admin') return { edit: true, remove: true };
     if (form.phase === 'verrouille') return { edit: false, remove: false };
     if (form.createur === 'patient') return actor.role === 'patient' ? { edit: true, remove: true } : { edit: false, remove: false };
-    // Créé par le personnel : brouillon modifiable et supprimable par son créateur ; le patient n'y touche pas.
-    if (actor.role === 'personnel' && actor.isCreator && form.phase === 'brouillon') return { edit: true, remove: true };
+    // Créé par le personnel : brouillon modifiable et supprimable par son créateur ; le patient n'y touche pas. Pour un patient SANS COMPTE (formulaire gratuit,
+    // personne à qui envoyer une facture), le créateur dispose du même délai de 15 minutes.
+    if (actor.role === 'personnel' && actor.isCreator && (form.phase === 'brouillon' || (form.sansCompte === true && form.phase === 'fenetre'))) return { edit: true, remove: true };
     return { edit: false, remove: false };
 };
 

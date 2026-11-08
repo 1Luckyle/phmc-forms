@@ -15,9 +15,10 @@ import { extraRanksOf, DOCTOR_RANKS } from '../constants/ranks';
 import TitlePrefixPicker from './TitlePrefixPicker';
 import ExemptionStatusCard from './ExemptionStatusCard';
 import ZipCityField from './ZipCityField';
+import MyDossierPanel from './MyDossierPanel';
 
-const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) => {
-    const { currentEmployee, staffProfile, staffName, updateLocalStaffProfile } = useEmployeeAuth();
+const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion, onLoadForm }) => {
+    const { currentEmployee, staffProfile, staffName, updateLocalStaffProfile, myPatientID } = useEmployeeAuth();
     const [firstName, setFirstName] = useState('');
     const [middleName, setMiddleName] = useState('');
     const [address, setAddress] = useState('');
@@ -82,7 +83,7 @@ const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) =
     };
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title="Mon profil" modalSize="medium" className="dark-ui">
+        <BaseModal isOpen={show} onClose={onHide} title="Mon profil" modalSize="large" className="dark-ui">
             {!ownsProfile ? (
                 <Alert variant="warning" className="mb-0">
                     Aucune fiche du personnel n'est liée à votre compte : il n'y a rien à modifier ici.
@@ -134,22 +135,9 @@ const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) =
                             <ZipCityField zip={zip} onZipChange={setZip} placeholder="Code postal (facultatif)" />
                         </Form.Group>
                     </div>
-                    <div className="d-flex gap-3 flex-wrap">
-                        <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
-                            <Form.Label>Date de naissance <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Control type="date" name="profileNaissance" data-guide="Facultatif : votre date de naissance, pour pré-remplir vos dossiers médicaux." value={dateOfBirth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDateOfBirth(e.target.value)} />
-                        </Form.Group>
-                        <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
-                            <Form.Label>Genre à l'état civil <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Select name="profileGenre" data-guide="Facultatif : votre genre à l'état civil, pour pré-remplir vos dossiers médicaux." value={gender} onChange={(e) => setGender(e.target.value)}>
-                                <option value="">—</option>
-                                <option value="Male">Homme</option>
-                                <option value="Female">Femme</option>
-                                <option value="Other">Autre</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </div>
-                    <Form.Text className="text-muted d-block mb-3">Ces deux informations servent à pré-remplir vos propres dossiers médicaux (bouton « C'est pour moi »).</Form.Text>
+                    <Form.Text className="text-muted d-block mb-3">
+                        La date de naissance, le genre et les informations de santé ne se modifient plus ici : ils font partie de votre dossier médical (« Mise à jour du dossier médical », payante).
+                    </Form.Text>
                     <Form.Group className="mb-3">
                         <Form.Label>Téléphone</Form.Label>
                         <Form.Control name="profileTelephone" data-guide="Facultatif : votre numéro de téléphone en jeu." value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />
@@ -177,6 +165,23 @@ const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion }) =
                         <hr />
                         <ExemptionStatusCard showNotification={showNotification} />
                     </div>
+
+                    {/* Le personnel est aussi un patient : son dossier médical (même fonctionnement que celui d'un compte Civil). */}
+                    {myPatientID && (
+                        <div data-no-mark>
+                            <hr />
+                            <MyDossierPanel
+                                patientID={myPatientID}
+                                identity={{
+                                    patientFirstName: firstName, patientMiddleName: middleName, patientLastName: lastName, patientPH: phNumber, patientDiscord: discord,
+                                    patientAddress: address, patientZIP: zip, patientEmail: staffProfile.email || currentEmployee.email,
+                                    patientDateOfBirth: dateOfBirth, patientGender: gender,
+                                }}
+                                showNotification={showNotification}
+                                onLoadForm={onLoadForm}
+                            />
+                        </div>
+                    )}
 
                     {onRequestDeletion && (
                         <div data-no-mark>

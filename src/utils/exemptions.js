@@ -218,16 +218,21 @@ export async function withdrawExemption({ patientID, patientName, name, comment 
 
 // ───────────────────────────── Mineurs : drapeau automatique ─────────────────────────────
 
-// Un profil mineur reçoit le drapeau (source « mineur ») ; devenu majeur, il le perd. Appelée à la connexion, pour SON propre ID patient.
+// Un profil mineur reçoit le drapeau (source « mineur ») ; devenu majeur, il le perd (et la personne en est avertie : retourne { removed: true } pour que l'appelant
+// l'affiche). Appelée à la connexion, pour SON propre ID patient. Une fonction serveur quotidienne (minorExemptionExpiry) fait la même vérification pour ceux qui ne
+// se connectent plus, et une exemption « mineur » ne vaut de toute façon jamais pour un formulaire dont la date de naissance indique un adulte (hooks/useExemption).
 export async function syncMinorFlag(patientID, dateOfBirth, name = '') {
     const id = canonicalPatientId(patientID);
-    if (!isValidPatientId(id) || !dateOfBirth) return;
+    if (!isValidPatientId(id) || !dateOfBirth) return null;
     const age = ageOn(dateOfBirth);
-    if (age === null) return;
+    if (age === null) return null;
     const flag = await loadExemption(id);
     if (age < MAJORITY_AGE && !flag) {
         await set(ref(database, `exemptions/${id}`), { statut: 'active', source: 'mineur', depuisLe: Date.now(), parNom: clean(name, 120) || 'Profil mineur' });
     } else if (age >= MAJORITY_AGE && flag?.source === 'mineur') {
         await remove(ref(database, `exemptions/${id}`));
+        await history(id, { type: 'retiree', parNom: 'Majorité atteinte', commentaire: "L'exemption de paiement accordée aux mineurs prend fin à 18 ans." });
+        return { removed: true };
     }
+    return null;
 }

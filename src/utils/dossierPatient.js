@@ -42,7 +42,8 @@ export async function loadDossierContext(patientID, now = Date.now()) {
         const phase = formPhase({ createdAt: entry.timestamp, invoice: phaseInvoice, immediate: entry.dossierImmediat === true }, now);
         return {
             key, version: Number(entry.bbCodeVersion), createur: entry.visibility === 'owner' ? 'patient' : 'personnel', title: entry.title || entry.originalKey || 'Dossier',
-            timestamp: Number(entry.timestamp) || 0, authorName: entry.creatorName || entry.authorName || '', reportPath: entry.reportPath, invoice, jeton: entry.dossierJeton === true, ...phase,
+            timestamp: Number(entry.timestamp) || 0, authorName: entry.creatorName || entry.authorName || '', reportPath: entry.reportPath, invoice, jeton: entry.dossierJeton === true,
+            sansCompte: entry.dossierSansCompte === true, ...phase,
         };
     }).sort((a, b) => b.timestamp - a.timestamp);
     const dossier = dossierSnap && dossierSnap.exists() ? dossierSnap.val() : null;

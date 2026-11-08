@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { loadExemption, isValidPatientId } from '../utils/exemptions';
 import { canonicalPatientId } from '../utils/patientId';
-import { isMinorPatient } from '../utils/minors';
+import { isMinorPatient, ageOn, MAJORITY_AGE } from '../utils/minors';
 
 const isTrue = (value) => value === true || value === 'true';
 
@@ -25,7 +25,10 @@ const useExemption = (formData, setFormData) => {
     }, [id]);
 
     const isMinor = isMinorPatient({ birthDate: formData?.patientDateOfBirth, titleIsMinor: formData?.patientTitle === 'Mineur' });
-    const reason = flag ? 'flag' : (isMinor ? 'mineur' : null);
+    // Une exemption « mineur » ne vaut plus dès que la date de naissance du formulaire indique un adulte (le drapeau n'a pas encore été retiré à la connexion).
+    const formAge = ageOn(formData?.patientDateOfBirth);
+    const outgrown = flag?.source === 'mineur' && formAge !== null && formAge >= MAJORITY_AGE;
+    const reason = flag && !outgrown ? 'flag' : (isMinor ? 'mineur' : null);
 
     useEffect(() => {
         if (!setFormData) return;
@@ -42,7 +45,7 @@ const useExemption = (formData, setFormData) => {
         });
     }, [reason, setFormData]);
 
-    return { flag, isMinor, reason };
+    return { flag, isMinor, reason, outgrown };
 };
 
 export default useExemption;

@@ -137,7 +137,7 @@ const PatientAdvanced = ({
 
         <>
             <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
-            <DossierStateBanner formData={formData} version={3} />
+            <DossierStateBanner formData={formData} setFormData={setFormData} version={3} />
             {/* --- 1. General Information --- */}
             <CollapsibleHeader
                 title="Informations générales"

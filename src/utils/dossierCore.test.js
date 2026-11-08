@@ -96,6 +96,11 @@ describe('qui peut modifier ou supprimer', () => {
         expect(canModifyForm({ createur: 'personnel', phase: 'fenetre' }, { role: 'personnel', isCreator: true })).toEqual({ edit: false, remove: false });
         expect(canModifyForm({ createur: 'personnel', phase: 'brouillon' }, { role: 'personnel', isCreator: false })).toEqual({ edit: false, remove: false });
     });
+    test('patient sans compte : le créateur garde le délai de 15 minutes sur son formulaire gratuit', () => {
+        expect(canModifyForm({ createur: 'personnel', phase: 'fenetre', sansCompte: true }, { role: 'personnel', isCreator: true })).toEqual({ edit: true, remove: true });
+        expect(canModifyForm({ createur: 'personnel', phase: 'verrouille', sansCompte: true }, { role: 'personnel', isCreator: true })).toEqual({ edit: false, remove: false });
+        expect(canModifyForm({ createur: 'personnel', phase: 'fenetre', sansCompte: true }, { role: 'patient' })).toEqual({ edit: false, remove: false });
+    });
     test('un administrateur peut toujours supprimer', () => {
         expect(canModifyForm({ createur: 'patient', phase: 'verrouille' }, { role: 'admin' }).remove).toBe(true);
     });

@@ -48,6 +48,7 @@ import useReportGovernance from '../hooks/useReportGovernance';
 import { FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathReports';
 import ReleaseRequestsPanel from './ReleaseRequestsPanel';
+import MyDossierPanel from './MyDossierPanel';
 import { isServiceChief } from '../utils/releaseRequests';
 
 // Une même consultation du même dossier n'est journalisée qu'une fois par quart d'heure.
@@ -611,6 +612,11 @@ const PatientDossierModal = ({
                 </div>
 
                 <div className="rpt-body">
+                    {searchedPatientId && (
+                        <div className="mb-3" data-no-mark>
+                            <MyDossierPanel patientID={searchedPatientId} staffView showNotification={showNotification} />
+                        </div>
+                    )}
                     {searchedPatientId && deathLock && (
                         <div className="rpt-banner warn">
                             <i className="fas fa-lock me-2" style={{ color: '#f85149' }}></i>

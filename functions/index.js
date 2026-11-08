@@ -2815,6 +2815,18 @@ const staffPatientNodeOf = (member) => {
     return digits ? `PHMC-${digits}` : '';
 };
 
+// Le patient a-t-il un compte (Civil, ou fiche du personnel dont l'ID patient est celui-ci) ? Sinon, un formulaire de dossier rempli par le personnel pour lui est
+// gratuit : aucune facture n'existe et il ne doit pas attendre un paiement qui ne viendra jamais.
+const patientHasAccount = async (patientNode) => {
+    const civilSnap = await db.ref('civilians').get();
+    if (Object.values(civilSnap.val() || {}).some((civil) => civil && String(civil.patientID || '').toUpperCase().replace(/\s+/g, '') === patientNode)) return true;
+    for (const path of ['staff/phmc', 'staff/coroner']) {
+        const staffSnap = await db.ref(path).get();
+        if (Object.values(staffSnap.val() || {}).some((member) => member && staffPatientNodeOf(member) === patientNode)) return true;
+    }
+    return false;
+};
+
 const addDossierToken = async (patientNode, kind, delta = 1) => {
     if (!kind) return;
     await db.ref(`jetonsDossier/${patientNode}/${kind}`).transaction((current) => Math.max(0, Number(current || 0) + delta));
@@ -2873,7 +2885,9 @@ export const reconcileDossiers = onSchedule({ schedule: 'every 1 minutes', timeZ
                 }
                 // Une mise à jour de simples coordonnées n'a pas de facture : gratuite et immédiate. Tout autre formulaire sans facture attend la sienne.
                 const contactOnly = Number(entry.version) === UPDATE_VERSION && !invoice && isContactOnlyUpdate(report.data || {});
-                if (!invoice && !contactOnly) continue;
+                // Rempli par le personnel pour un patient SANS compte : gratuit (pas de facture), le délai court depuis l'enregistrement.
+                const freeNoAccount = !invoice && !contactOnly && entry.createur === 'personnel' && !(await patientHasAccount(patientNode));
+                if (!invoice && !contactOnly && !freeNoAccount) continue;
                 const { phase } = formPhase({ createdAt: entry.creeLe, invoice, immediate: contactOnly }, now);
                 if (phase !== 'verrouille') continue;
                 await applyDossierEntry(patientNode, key, entry, report);
@@ -2901,6 +2915,55 @@ export const reconcileDossiers = onSchedule({ schedule: 'every 1 minutes', timeZ
             } catch (error) {
                 console.error(`reconcileDossiers: signalement ${patientNode}/${key}:`, error);
             }
+        }
+    }
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Exemption de paiement d'un MINEUR : valable tant que la date de naissance du patient indique moins de 18 ans. Chaque jour, celles dont le patient est devenu majeur
+// sont retirées (même si la personne ne se connecte plus) et elle en est avertie (cloche du site). La date de naissance vient du profil du compte, à défaut du
+// dossier patient. Une exemption « demande » ou « manuel » (faible revenu…) n'est jamais touchée.
+// ───────────────────────────────────────────────────────────────────────────────
+const birthDateOf = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+    return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+};
+const ageAt = (birth, now) => {
+    let age = now.getFullYear() - birth.getFullYear();
+    if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age -= 1;
+    return age;
+};
+
+export const minorExemptionExpiry = onSchedule({ schedule: 'every day 03:30', timeZone: 'Europe/Paris' }, async () => {
+    const now = new Date();
+    const exemptions = (await db.ref('exemptions').get()).val() || {};
+    const minors = Object.entries(exemptions).filter(([, flag]) => flag && flag.source === 'mineur');
+    if (minors.length === 0) return;
+    const civilians = Object.entries((await db.ref('civilians').get()).val() || {});
+    const staffEntries = [];
+    for (const path of ['staff/phmc', 'staff/coroner']) {
+        Object.values((await db.ref(path).get()).val() || {}).forEach((member) => { if (member) staffEntries.push(member); });
+    }
+    for (const [patientNode] of minors) {
+        try {
+            const civil = civilians.find(([, entry]) => entry && String(entry.patientID || '').toUpperCase().replace(/\s+/g, '') === patientNode);
+            const staff = staffEntries.find((member) => staffPatientNodeOf(member) === patientNode);
+            const dossierBirth = (await db.ref(`dossiersPatients/${patientNode}/donnees/patientDateOfBirth`).get()).val();
+            const birth = birthDateOf((civil && civil[1].dateOfBirth) || (staff && staff.dateOfBirth) || dossierBirth);
+            if (!birth || ageAt(birth, now) < 18) continue;
+            await db.ref(`exemptions/${patientNode}`).remove();
+            await db.ref(`exemptionsHistorique/${patientNode}`).push({ type: 'retiree', parNom: 'Serveur', commentaire: 'Majorité atteinte : l\'exemption de paiement accordée aux mineurs prend fin.', le: Date.now() });
+            const uid = (civil && civil[1].uid) || (staff && staff.uid) || '';
+            if (uid) {
+                await db.ref(`notifications/${uid}`).push({
+                    type: 'statut', titre: 'Votre exemption de paiement a pris fin',
+                    texte: 'Vous avez atteint la majorité : les dossiers médicaux sont désormais à payer, comme pour tous.',
+                    creeLe: Date.now(), deUid: 'serveur', lien: { cible: 'dossierPatient' },
+                });
+            }
+            await logServerActivity({ category: 'demandes', action: 'exemption_expired', severity: 'info', summary: `Exemption mineur terminée (majorité) : ${patientNode}`, details: 'Retirée automatiquement', target: patientNode }).catch(() => {});
+        } catch (error) {
+            console.error(`minorExemptionExpiry: échec pour ${patientNode}:`, error);
         }
     }
 });

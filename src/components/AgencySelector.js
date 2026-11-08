@@ -4,6 +4,7 @@ import { isPositionOpen, isPositionClosed } from '../constants/recruitment';
 import { Button, Form, Image } from 'react-bootstrap';
 import { getPrimaryFormsForUserType } from '../formDefinitions';
 import useFormAccess from '../hooks/useFormAccess';
+import useOwnDossierAccess from '../hooks/useOwnDossierAccess';
 
 // Style definitions for recruitment forms
 const positionStatusListStyle = {
@@ -65,6 +66,7 @@ const AgencySelector = ({
     const CIVILIAN_ALLOWED_VERSIONS = [3, 24, 25, 26, 50, 51, 52, 53, 54, 55];
     // Accès par rôle du personnel (soignant / DMEC / polyvalent / administration) : voir utils/formAccess.js.
     const { canAccess: canAccessForm } = useFormAccess();
+    const { canOpenDossierForm } = useOwnDossierAccess(!!isCivilian);
     // State to track whether to show personalized or all forms
     const [showPersonalizedForms, setShowPersonalizedForms] = useState(true);
     
@@ -106,6 +108,8 @@ const AgencySelector = ({
         : formDefinitions.filter(form => form.group === selectedAgencyGroup && !form.name.includes('(PBC)'));
     // Les formulaires retirés (ex. PHMC Email Interne, fusionné dans la Messagerie) ne sont plus proposés : leurs anciens rapports restent ouvrables.
     allAgencyGroupForms = allAgencyGroupForms.filter(form => !form.retired && canAccessForm(form.version));
+    // Compte Civil : seuls les formulaires du dossier possibles pour SON dossier (Basique ou Avancé tant qu'il n'existe pas, ensuite la Mise à jour).
+    if (isCivilian) allAgencyGroupForms = allAgencyGroupForms.filter(form => canOpenDossierForm(form.version));
 
     // Filter forms based on user preferences (existing functionality). Un
     // compte Civil réel saute cette étape : userPreferences.userType reflète

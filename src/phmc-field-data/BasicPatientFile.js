@@ -109,7 +109,7 @@ const BasicPatientFile = ({
     return (
         <>
             <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', patientDateOfBirth: 'dateOfBirth', patientGender: 'gender', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
-            <DossierStateBanner formData={formData} version={25} />
+            <DossierStateBanner formData={formData} setFormData={setFormData} version={25} />
             {/* --- 1. Informations générales --- */}
             <CollapsibleHeader
                 title="Informations générales"

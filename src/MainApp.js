@@ -64,6 +64,8 @@ import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
 import { groupsFor } from './utils/notifications';
 import useFormAccess from './hooks/useFormAccess';
+import useDossierPrefill from './hooks/useDossierPrefill';
+import { loadDossierContext } from './utils/dossierPatient';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 // database
@@ -100,6 +102,7 @@ const EasterEggModal = lazy(() => import('./components/EasterEggModal'));
 const SwitchableFormsModal = lazy(() => import('./components/SwitchableFormsModal'));
 const EmployeeLoginModal = lazy(() => import('./components/Auth/EmployeeLoginModal'));
 const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'));
+const CivilianProfileModal = lazy(() => import('./components/CivilianProfileModal'));
 const DirectoryModal = lazy(() => import('./components/Directory/DirectoryModal'));
 const MessagingModal = lazy(() => import('./components/Messaging/MessagingModal'));
 const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'));
@@ -215,6 +218,7 @@ function MainApp({
     const [directoryDisciplineSearch, setDirectoryDisciplineSearch] = useState('');
     // « Mon dossier patient » : le personnel peut lui aussi être un patient.
     const [showMyPatientFile, setShowMyPatientFile] = useState(false);
+    const [showCivilProfile, setShowCivilProfile] = useState(false);
     // « Mon profil » : le personnel modifie lui-même téléphone, Discord et adresse Eyefind Mail.
     const [showMyProfile, setShowMyProfile] = useState(false);
     // « Supprimer mon compte » : suppression directe pour un Civil, demande aux admins pour le personnel.
@@ -464,7 +468,11 @@ function MainApp({
     const { myPatientID: ownPatientID } = useEmployeeAuth();
     const ownBirthDate = isCivilian ? civilianProfile?.dateOfBirth : staffProfile?.dateOfBirth;
     useEffect(() => {
-        if (myCreationsUid && ownPatientID && ownBirthDate) syncMinorFlag(ownPatientID, ownBirthDate, staffName || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ')).catch(() => {});
+        if (myCreationsUid && ownPatientID && ownBirthDate) {
+            syncMinorFlag(ownPatientID, ownBirthDate, staffName || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' '))
+                .then((outcome) => { if (outcome && outcome.removed) showNotification('Vous avez atteint la majorité : votre exemption de paiement prend fin. Vos prochains dossiers médicaux seront à payer.', 'exclamation-triangle', 15000); })
+                .catch(() => {});
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [myCreationsUid, ownPatientID, ownBirthDate]);
     // All references to bbCodeVersion now occur after its initialization
@@ -1487,6 +1495,34 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
     // Garde du formulaire courant : si le rôle de la personne (ou le profil simulé par un admin) n'y donne pas accès,
     // on bascule sur le premier formulaire autorisé — ex. un membre du DMEC qui avait gardé une consultation en mémoire.
     const { canAccess: canAccessCurrentForm } = useFormAccess();
+    // Le formulaire se pré-remplit à partir du dossier du patient dont l'ID est saisi (voir utils/dossierPrefill.js).
+    useDossierPrefill(bbCodeVersion, formData, setFormData);
+
+    // Invitation à la création du compte Civil : proposer, une seule fois, de remplir son dossier médical (Basique ou Avancé) tant qu'il n'existe pas.
+    useEffect(() => {
+        if (authLoading || !isCivilian || !ownPatientID) return undefined;
+        const inviteKey = `dossierInvite_${ownPatientID}`;
+        try { if (localStorage.getItem(inviteKey)) return undefined; } catch (error) { /* stockage indisponible : on propose */ }
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            try {
+                const context = await loadDossierContext(ownPatientID);
+                if (cancelled || context.access.initialised || context.access.initialForm) return;
+                try { localStorage.setItem(inviteKey, '1'); } catch (error) { /* ignoré */ }
+                const noticeId = showNotification(
+                    "Bienvenue ! Si vous le souhaitez, créez votre dossier médical : le Dossier Basique (l'essentiel) ou le Dossier Avancé (complet). Il se complète ensuite par des mises à jour.",
+                    'notes-medical', 0,
+                    [
+                        { label: 'Dossier Basique', handler: () => { setBbCodeVersion(25); removeNotification(noticeId); } },
+                        { label: 'Dossier Avancé', handler: () => { setBbCodeVersion(3); removeNotification(noticeId); } },
+                        { label: 'Plus tard', handler: () => removeNotification(noticeId) },
+                    ],
+                );
+            } catch (error) { /* dossier illisible : pas d'invitation */ }
+        }, 4000);
+        return () => { cancelled = true; clearTimeout(timer); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authLoading, isCivilian, ownPatientID]);
     useEffect(() => {
         if (authLoading || canAccessCurrentForm(bbCodeVersion)) return;
         // Formulaire PBC désactivé : on passe à son équivalent PHMC quand il existe.
@@ -1830,6 +1866,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                                         // Tout compte Civil crée sa signature (utilisée aussi pour ses documents, ex. formulaire AMA) ; le personnel la crée avec sa carte de visite.
                                                         isCivilian && toolAccess.signature && { key: 'signature', icon: 'fas fa-signature', label: 'Ma signature', onClick: closeAnd(() => setShowBusinessCard(true)) },
                                                         toolAccess.myProfile && { key: 'profile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowMyProfile(true)) },
+                                                        isCivilian && currentEmployee && { key: 'civilProfile', icon: 'fas fa-id-badge', label: 'Mon profil', onClick: closeAnd(() => setShowCivilProfile(true)) },
                                                         isCivilian && currentEmployee && { key: 'deleteAccount', icon: 'fas fa-user-slash', label: 'Supprimer mon compte', onClick: closeAnd(() => { setDeleteAccountMode('civil'); setShowDeleteAccount(true); }) },
                                                         toolAccess.myContracts && { key: 'contracts', icon: 'fas fa-file-contract', label: 'Mes documents administratifs', onClick: closeAnd(() => setShowMyContracts(true)) },
                                                         // Dossier candidat : consultable par tout compte Civil ou employé ; seuls les Civils et les employés avec le statut de recrutement interne peuvent agir dessus.
@@ -2781,6 +2818,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             onHide={() => setShowMyProfile(false)}
                             showNotification={showNotification}
                             onRequestDeletion={() => { setShowMyProfile(false); setDeleteAccountMode('staff'); setShowDeleteAccount(true); }}
+                            onLoadForm={(form) => { setShowMyProfile(false); setShowCivilProfile(false); loadReportForUser(form.key, form.reportPath.split('/')[1]); }}
                         />
                         <DeleteAccountModal
                             show={showDeleteAccount}
@@ -2789,6 +2827,12 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             showNotification={showNotification}
                         />
                         <PatientInvoiceNotifier showNotification={showNotification} />
+                        <CivilianProfileModal
+                            show={showCivilProfile}
+                            onHide={() => setShowCivilProfile(false)}
+                            showNotification={showNotification}
+                            onLoadForm={(form) => { setShowMyProfile(false); setShowCivilProfile(false); loadReportForUser(form.key, form.reportPath.split('/')[1]); }}
+                        />
                         <MyPatientFileModal
                             show={showMyPatientFile}
                             onHide={() => setShowMyPatientFile(false)}

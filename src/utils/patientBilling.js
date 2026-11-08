@@ -43,6 +43,8 @@ export const isBillableVersion = (bbCodeVersion) => BILLABLE_VERSIONS.includes(N
 
 // Montant « plein » (hors exemption) du formulaire.
 const baseAmountOf = (bbCodeVersion, formData) => {
+    // Dossier rempli par le personnel pour un patient qui n'a PAS de compte : création gratuite, ni facture ni lien de paiement (cela n'exempte pas le futur compte).
+    if (isTrue(formData?.dossierSansCompte) && [3, 25, 26].includes(Number(bbCodeVersion))) return 0;
     switch (Number(bbCodeVersion)) {
         case 3: return getPrice('dossierAvance');
         case 25: return getPrice('dossierBase');
