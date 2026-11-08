@@ -6,7 +6,7 @@
 import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
 import { canonicalPatientId } from './patientId';
-import { findPatientNodes } from './patientRecords';
+import { findPatientNodes, comprehensiveSanitize } from './patientRecords';
 import { loadPatientInvoices } from './patientInvoices';
 import {
     isDossierVersion, dossierKindOf, formPhase, dossierAccess, canModifyForm, hasToken, emptyTokens,
@@ -16,7 +16,12 @@ export { isDossierVersion, dossierKindOf, canModifyForm };
 
 // Formulaires de dossier encore existants d'un patient, avec leur phase (brouillon / fenêtre de 15 minutes / verrouillé) ; le dossier persistant ; les jetons.
 //   → { patientNode, dossier, tokens, forms: [{ key, version, createur, title, timestamp, authorName, reportPath, invoice, phase, startAt, lockAt }], access }
-export async function loadDossierContext(patientID, now = Date.now()) {
+// `self` : { myPatientID, staffName } de la personne connectée. Un membre du personnel qui a rempli SON PROPRE dossier (son ID patient, créé sous son nom) est le patient de ce formulaire :
+// il le gère comme un patient (modifier, supprimer dans le délai), même si le formulaire a été partagé ou enregistré sous son compte du personnel.
+const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+export const isSelfPatient = (self, patientNode) => !!self && !!self.myPatientID && canonicalPatientId(self.myPatientID) === canonicalPatientId(patientNode);
+
+export async function loadDossierContext(patientID, now = Date.now(), self = null) {
     const patientNode = canonicalPatientId(patientID);
     if (!patientNode) return { patientNode: '', dossier: null, tokens: emptyTokens(), forms: [], access: dossierAccess({}) };
     const [dossierSnap, tokensSnap, nodes, invoices] = await Promise.all([
@@ -40,8 +45,11 @@ export async function loadDossierContext(patientID, now = Date.now()) {
         // Payé : le délai court depuis le paiement (heure enregistrée par le serveur ; en attendant elle, depuis maintenant). Sans facture : gratuit.
         const phaseInvoice = invoice ? { statut: invoice.statutEffectif, payeLe: invoice.payeLe || (invoice.statutEffectif === 'paye' ? now : undefined) } : null;
         const phase = formPhase({ createdAt: entry.timestamp, invoice: phaseInvoice, immediate: entry.dossierImmediat === true }, now);
+        // Rempli par soi-même : même nom d'auteur, ou rapport rangé dans le nœud de rapports de la personne (plus fiable que le nom, qui peut varier d'écriture).
+        const ownNode = !!self && !!self.staffName && String(entry.reportPath || '').split('/')[1] === comprehensiveSanitize(self.staffName);
+        const selfMade = isSelfPatient(self, patientNode) && (sameName(entry.creatorName || entry.authorName, self.staffName) || ownNode);
         return {
-            key, version: Number(entry.bbCodeVersion), createur: entry.visibility === 'owner' ? 'patient' : 'personnel', title: entry.title || entry.originalKey || 'Dossier',
+            key, version: Number(entry.bbCodeVersion), createur: entry.visibility === 'owner' || selfMade ? 'patient' : 'personnel', title: entry.title || entry.originalKey || 'Dossier',
             timestamp: Number(entry.timestamp) || 0, authorName: entry.creatorName || entry.authorName || '', reportPath: entry.reportPath, invoice, jeton: entry.dossierJeton === true,
             sansCompte: entry.dossierSansCompte === true, ...phase,
         };

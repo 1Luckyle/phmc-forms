@@ -307,22 +307,25 @@ async function removeUnpaidInvoice(patientNode, indexKey) {
 //    supprimable que par le patient (ou un admin).
 // Verrou des formulaires du dossier patient (Basique, Avancé, Mise à jour) : supprimables par leur patient tant qu'ils sont en brouillon ou dans les 15 minutes qui
 // suivent le paiement, jamais ensuite (sauf par un administrateur) ; un formulaire rempli par le personnel : par son créateur tant qu'il est en brouillon.
-async function dossierDeletionRefusal(report, indexEntry, indexKey, viewer, patientNode) {
+export async function dossierDeletionRefusal(report, indexEntry, indexKey, viewer, patientNode) {
     const version = indexEntry?.bbCodeVersion ?? report.bbCodeVersion;
     if (!isDossierVersion(version) || viewer.isAdmin) return null;
     const { loadDossierContext, canModifyForm } = await import('./dossierPatient');
-    const context = await loadDossierContext(patientNode || report.patientID);
+    const context = await loadDossierContext(patientNode || report.patientID, Date.now(), { myPatientID: viewer.myPatientID, staffName: viewer.staffName });
     const form = context.forms.find((entry) => entry.key === indexKey);
     if (!form) return null;
     const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
-    const allowed = canModifyForm(form, { role: viewer.role === 'civil' ? 'patient' : 'personnel', isCreator: sameName(form.authorName, viewer.staffName) });
+    const ownDossier = viewer.myPatientID && canonicalPatientId(viewer.myPatientID) === canonicalPatientId(patientNode || report.patientID);
+    const allowed = canModifyForm(form, { role: viewer.role === 'civil' || ownDossier ? 'patient' : 'personnel', isCreator: sameName(form.authorName, viewer.staffName) });
     if (allowed.remove) return null;
+    // Diagnostic : l'état lu par le contrôle (utile si un refus paraît incohérent avec ce que l'écran affiche).
+    console.warn('Suppression refusée (formulaire de dossier)', { phase: form.phase, createur: form.createur, role: viewer.role === 'civil' || ownDossier ? 'patient' : 'personnel', ownDossier: !!ownDossier, patientNode, myPatientID: viewer.myPatientID, authorName: form.authorName, staffName: viewer.staffName, lockAt: form.lockAt });
     if (form.createur === 'personnel') {
         return { ok: false, action: 'refused', message: viewer.role === 'civil'
             ? "Ce dossier a été rempli par le personnel : vous ne pouvez pas le supprimer. Si une information est fausse, signalez-le depuis votre dossier : un jeton gratuit de mise à jour vous sera accordé."
             : "Ce dossier ne peut plus être supprimé : seul son créateur le peut tant que le patient ne l'a pas payé, ensuite un administrateur." };
     }
-    return { ok: false, action: 'refused', message: "Ce formulaire est appliqué au dossier médical : il ne peut plus être supprimé (délai de 15 minutes après le paiement dépassé). Utilisez la « Mise à jour du dossier médical » pour corriger une information." };
+    return { ok: false, action: 'refused', message: "Ce formulaire est appliqué au dossier médical : il ne peut plus être supprimé (délai de 15 minutes après le paiement dépassé). Utilisez la « Mise à jour du dossier médical » pour corriger une information. [état : " + form.phase + ", rôle : " + (viewer.role === 'civil' || ownDossier ? 'patient' : 'personnel') + "]" };
 }
 
 export async function deleteReportWithRules(report, viewer) {

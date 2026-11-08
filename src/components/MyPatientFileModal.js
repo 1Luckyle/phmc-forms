@@ -64,7 +64,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
             setEntries(dossier.filter((e) => !e.copiedFrom && !e.ownerDeleted
                 && (e.visibility === 'shared' || e.visibility === 'owner')));
             try {
-                const context = await loadDossierContext(myPatientID);
+                const context = await loadDossierContext(myPatientID, Date.now(), { myPatientID, staffName });
                 setDossierForms(Object.fromEntries(context.forms.map((form) => [form.key, form])));
             } catch (contextError) { setDossierForms({}); }
         } catch (error) {
@@ -87,7 +87,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
         if (!window.confirm(`Supprimer « ${form.title} » ?${form.phase === 'fenetre' ? '\n\nIl n\'alimentera pas votre dossier. Si vous aviez payé, vous recevez un jeton gratuit pour ce formulaire.' : ''}`)) return;
         setBusyKey(entry.indexKey);
         try {
-            const outcome = await deleteReportWithRules({ reportPath: form.reportPath, indexKey: form.key, patientID: myPatientID, patientNode: entry.patientNode }, { role: 'staff', isAdmin, staffName });
+            const outcome = await deleteReportWithRules({ reportPath: form.reportPath, indexKey: form.key, patientID: myPatientID, patientNode: entry.patientNode }, { role: 'staff', isAdmin, staffName, myPatientID });
             showNotification(outcome.message || 'Formulaire supprimé.', outcome.ok ? 'check-circle' : 'exclamation-circle');
             await load();
         } catch (error) {

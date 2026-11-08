@@ -225,7 +225,7 @@ export const useReportManagement = (
         let dossierToken = false;
         if (isDossierVersion(bbCodeVersion) && formData.patientID) {
             try {
-                dossierContext = await loadDossierContext(formData.patientID);
+                dossierContext = await loadDossierContext(formData.patientID, Date.now(), { myPatientID, staffName });
             } catch (dossierError) {
                 console.warn('Dossier patient illisible, contrôles ignorés :', dossierError);
             }
@@ -234,7 +234,7 @@ export const useReportManagement = (
                 editingForm = editKey ? dossierContext.forms.find((form) => form.key === editKey) || null : null;
                 if (editingForm) {
                     const allowed = canModifyForm(editingForm, {
-                        role: isAdmin ? 'admin' : (isCivilian ? 'patient' : 'personnel'),
+                        role: isAdmin ? 'admin' : (isCivilian || normalizePatientId(myPatientID) === normalizePatientId(formData.patientID) ? 'patient' : 'personnel'),
                         isCreator: !!currentAuthor && String(editingForm.authorName || '').trim().toLowerCase() === String(currentAuthor).trim().toLowerCase(),
                     });
                     if (!allowed.edit) {
@@ -1294,7 +1294,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
         const result = { deleted: 0, hidden: 0, refused: 0 };
         if (list.length === 0) return result;
         if (isLockdownOn()) { showNotification(LOCK_MESSAGE, 'warning'); return result; }
-        const viewer = { role: isCivilian ? 'civil' : 'staff', isAdmin, staffName };
+        const viewer = { role: isCivilian ? 'civil' : 'staff', isAdmin, staffName, myPatientID };
         const refusals = new Set();
 
         for (const report of list) {

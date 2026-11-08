@@ -29,7 +29,7 @@ const minutesLeft = (lockAt, now) => Math.max(0, Math.ceil((lockAt - now) / 6000
 // identity : champs d'identité du compte (profil) qui priment sur le dossier : { patientFirstName, patientPH, ..., patientEmail }.
 // staffView : le personnel consulte le dossier d'un patient (« Dossier Patient ») : mêmes informations, formulées pour lui, sans les actions réservées au patient.
 const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm, staffView = false }) => {
-    const { isCivilian, isAdmin, staffName } = useEmployeeAuth();
+    const { isCivilian, isAdmin, staffName, myPatientID } = useEmployeeAuth();
     const [context, setContext] = useState(null);
     const [loading, setLoading] = useState(false);
     const [busyKey, setBusyKey] = useState('');
@@ -39,8 +39,8 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
     const reload = useCallback(async () => {
         if (!patientID) return;
         setLoading(true);
-        try { setContext(await loadDossierContext(patientID)); } catch (error) { setContext(null); } finally { setLoading(false); }
-    }, [patientID]);
+        try { setContext(await loadDossierContext(patientID, Date.now(), staffView ? null : { myPatientID, staffName })); } catch (error) { setContext(null); } finally { setLoading(false); }
+    }, [patientID, staffView, myPatientID, staffName]);
     useEffect(() => { reload(); }, [reload]);
     // Le compte à rebours des 15 minutes se met à jour chaque 30 secondes.
     useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
@@ -54,7 +54,7 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
         try {
             const outcome = await deleteReportWithRules(
                 { reportPath: form.reportPath, indexKey: form.key, patientID: context.patientNode, patientNode: context.patientNode },
-                { role: isCivilian ? 'civil' : 'staff', isAdmin, staffName },
+                { role: isCivilian ? 'civil' : 'staff', isAdmin, staffName, myPatientID: staffView ? '' : myPatientID },
             );
             notify(outcome.message || 'Formulaire supprimé.', outcome.ok ? 'check-circle' : 'exclamation-circle');
             await reload();
@@ -83,7 +83,8 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
     if (!context) return <div style={mutedStyle}>Le dossier n'a pas pu être chargé.</div>;
 
     const tokens = Object.entries(context.tokens).filter(([, count]) => Number(count) > 0);
-    const actor = { role: isAdmin ? 'admin' : (isCivilian ? 'patient' : 'personnel') };
+    // Le panneau « Mon dossier » est celui du patient lui-même (Civil ou membre du personnel) ; en vue du personnel (Dossier Patient), la personne agit comme personnel.
+    const actor = { role: isAdmin ? 'admin' : (staffView ? 'personnel' : 'patient') };
 
     return (
         <div data-no-tip="1">
