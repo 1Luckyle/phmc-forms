@@ -142,7 +142,7 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
                         <div className="adm-form-grid" data-guide-zone>
                             <div className="form-group"><label>Nom</label><Form.Control name={`nom-${index}`} required data-guide="Le nom de la personne, tel qu'il apparaîtra sur la page publique." value={line.nom} onChange={(e) => changeLine(index, 'nom', e.target.value)} placeholder="ex. Dr Jane Doe" /></div>
                             <div className="form-group"><label>Fonction</label><Form.Control name={`fonction-${index}`} required data-guide="Sa fonction au sein du PHMC." value={line.fonction} onChange={(e) => changeLine(index, 'fonction', e.target.value)} placeholder="ex. Directrice du Pillbox Hill Medical Center" /></div>
-                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control name={`contact-${index}`} required data-guide="Comment la joindre : e-mail ou téléphone en jeu." value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info@phmc.health · tél. 50056" />
+                            <div className="form-group"><label>Moyen de la contacter</label><Form.Control name={`contact-${index}`} required data-guide="Comment la joindre : e-mail ou téléphone en jeu." value={line.contact} onChange={(e) => changeLine(index, 'contact', e.target.value)} placeholder="ex. info.phmc@mail.eyefind.fr · tél. 50056" />
                                 {(() => {
                                     const leader = leaderOfLine(line);
                                     const live = leader ? contactOf(leader.member) : '';

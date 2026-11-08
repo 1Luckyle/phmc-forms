@@ -31,6 +31,23 @@ BP 742
 LOS SANTOS, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]`;
 
+// Pied de page commun à tous les rapports : coordonnées du Pillbox Hill Medical Center. Ajouté à la fin du BBCode, une seule fois, par withPhmcFooter
+// (appelée là où le BBCode est produit : MainApp.getBBCodeContent), jamais dans chaque générateur.
+export const PHMC_FOOTER_MARK = 'Elgin Avenue/Strawberry Avenue, Pillbox Hill';
+export const phmcFooter = () => `[hr][/hr]
+[center][size=85][b]Pillbox Hill Medical Center[/b]
+${PHMC_FOOTER_MARK}, Los Santos, SA
+Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
+[url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
+
+// Formulaires qui portent déjà ce pied de page dans leur propre texte (courriels du PHMC) : rien n'est ajouté.
+const FORMS_WITH_OWN_FOOTER = [27, 35];
+export const withPhmcFooter = (bbCode, version) => {
+    const text = String(bbCode || '');
+    if (!text.trim() || FORMS_WITH_OWN_FOOTER.includes(Number(version)) || text.includes(PHMC_FOOTER_MARK)) return text;
+    return `${text.replace(/\s+$/, '')}\n${phmcFooter()}`;
+};
+
 // ─────────────────────────── Rapports du DMEC (Médecine légale) ───────────────────────────
 // Même vocabulaire que les dossiers médicaux (en-tête à deux cellules, bandeaux noirs, tableaux « étiquette : valeur »), pour que les rapports du
 // DMEC se lisent comme le reste des formulaires, aussi bien sur le forum (BBCode) que dans l'aperçu HTML.

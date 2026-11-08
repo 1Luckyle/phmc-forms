@@ -868,6 +868,7 @@ export const handleSaveReportAndNotify = async ({
     commitInfo,
     database,
     authorOverride,
+    ownerPatientId,
 }) => {
     // --- Step 1: Generate BBCode (nécessaire pour le payload sauvegardé) ---
     const bbCodeToCopy = getBBCodeContent();
@@ -887,7 +888,7 @@ export const handleSaveReportAndNotify = async ({
     // chemin, sauvegardés sous l'identité de qui enregistre (authorOverride :
     // le compte connecté, ou l'employé choisi par un admin) — voir
     // handleSaveReportWrapper dans MainApp.js.
-    const saveResult = await saveReport(authorOverride);
+    const saveResult = await saveReport(authorOverride, { ownerPatientId });
 
     if (!saveResult.success) {
         // Si saveReport() a fourni un message de validation précis, on l'affiche.

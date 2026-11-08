@@ -75,7 +75,7 @@ const ReleaseReportPicker = ({ formData, setFormData }) => {
         body = (
             <div style={smallStyle}>
                 Aucun rapport du personnel ne correspond à ces catégories{formData.StupidDateFrom || formData.StupidDateTo ? ' et à cette période' : ''}.
-                {categories.includes('Other') ? ' La demande « Autres dossiers » reste possible : précisez-les dans le champ prévu.' : ''}
+                {' '}À l'enregistrement, la demande est transmise à l'administration, qui la traite à la main.
             </div>
         );
     } else {
@@ -118,6 +118,7 @@ const ReleaseReportPicker = ({ formData, setFormData }) => {
             <div style={{ ...smallStyle, marginBottom: 6 }}>
                 Vous voyez le titre, la date et le médecin responsable de chaque rapport, pas son contenu. Une fois le formulaire enregistré, chaque médecin est prévenu et partage
                 les siens avec le patient ; un administrateur ou un chef de service peut tout partager si un soignant ne le fait pas.
+                {categories.includes('Other') && formData.MedicalRecordsReleaseOther ? ' Les « autres dossiers » décrits en texte sont traités à la main par l’administration.' : ''}
                 {selection.length > 0 && practitionersOf(selection).length > 0 ? ` Praticiens concernés : ${practitionersOf(selection).join(', ')}.` : ''}
             </div>
             {body}

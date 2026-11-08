@@ -99,6 +99,21 @@ describe('partage d’une demande', () => {
         expect(requestsVisibleTo([request], chief)).toHaveLength(1);
     });
 
+    test('une demande sans rapport précis est visible des admins et chefs de service seulement', () => {
+        const manual = { id: 'm1', patientNode: 'PHMC-1234', manuelle: true, statut: RELEASE_STATUS.PENDING, categories: ['Other'] };
+        expect(requestsVisibleTo([manual], chief)).toHaveLength(1);
+        expect(requestsVisibleTo([manual], { staffName: 'X', isAdmin: true, isChief: false })).toHaveLength(1);
+        expect(requestsVisibleTo([manual], alice)).toEqual([]);
+        expect(shareableItems(manual, chief)).toEqual([]);
+    });
+
+    test('une demande qui a aussi une partie manuelle reste en attente après le partage des rapports', async () => {
+        get.mockResolvedValue({ exists: () => true, val: () => ({ visibility: 'staff-only' }) });
+        update.mockClear();
+        await shareRequestItems({ ...request, manuelle: true }, chief, { author: 'Chloé Chef' });
+        expect(update.mock.calls[0][1]['releaseRequests/r1/statut']).toBeUndefined();
+    });
+
     test('partager ses rapports passe le rapport à « partagé » sans toucher à ceux des autres', async () => {
         get.mockResolvedValue({ exists: () => true, val: () => ({ visibility: 'staff-only' }) });
         update.mockClear();

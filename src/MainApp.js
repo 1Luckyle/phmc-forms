@@ -29,6 +29,8 @@ import { syncMinorFlag } from './utils/exemptions';
 import ExemptionStatusCard from './components/ExemptionStatusCard';
 import { syncStaffUids } from './utils/staffAdmin';
 import { normalizeBBCodeLineBreaks } from './utils/bbcodeLineBreaks';
+import { withPhmcFooter } from './phmc-bbcode-generators/shared/bbStyles';
+import { CIVIL_MEDICAL_VERSIONS } from './utils/formValidation';
 import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './utils/bbcodeToHtml';
 import ForumCopyNoticeModal, { isForumNoticeHidden } from './components/ForumCopyNoticeModal';
 import { useGitHubCommit } from './hooks/useGitHubCommit';
@@ -692,7 +694,9 @@ function MainApp({
                     agencyDataStore: agencyDataStore,
                 };
                 // Un retour à la ligne ET [br][/br] côte à côte faisaient deux sauts : on les fusionne (voir utils/bbcodeLineBreaks.js).
-                return normalizeBBCodeLineBreaks(definition.generator(generatorArgs));
+                const generated = definition.generator(generatorArgs);
+                // Pied de page PHMC sur tous les rapports (pas sur les candidatures, qui se postent telles quelles).
+                return normalizeBBCodeLineBreaks(definition.group === "PHMC Recruitment" ? generated : withPhmcFooter(generated, bbCodeVersion));
             }
         } else {
             Sentry.captureMessage(`No BBCode generator found for version: ${bbCodeVersion}`);
@@ -1014,7 +1018,7 @@ function MainApp({
     // sauvegarde sous l'identité réelle de qui enregistre, pas sous le nom
     // choisi dans le menu déroulant coronerEmployee/phmcEmployee du formulaire
     // ni sous un compartiment "CIVILIAN" invisible.
-    const runSaveReport = useCallback((authorOverride) => {
+    const runSaveReport = useCallback((authorOverride, ownerPatientId) => {
         handleSaveReportAndNotify({
             formData,
             bbCodeVersion,
@@ -1028,6 +1032,7 @@ function MainApp({
             commitInfo,
             database,
             authorOverride,
+            ownerPatientId,
         });
     }, [
         formData,
@@ -1078,8 +1083,14 @@ function MainApp({
         runSaveReport(authorName);
     }, [viewAs, currentEmployee, isAdmin, isCivilian, civilianProfile, employeeProfile, runSaveReport, showNotification]);
 
-    const handleConfirmSaveAsEmployee = useCallback((employeeName) => {
+    const handleConfirmSaveAsEmployee = useCallback((choice) => {
         setShowSaveAsEmployeeModal(false);
+        // Demande civile : la personne choisie est un COMPTE PATIENT (Civil ou du personnel), pas un employé rédacteur.
+        if (choice && typeof choice === 'object') {
+            runSaveReport(choice.author, choice.patientID);
+            return;
+        }
+        const employeeName = choice;
         runSaveReport(employeeName);
 
         // Prévient l'employé par mail Eyefind qu'un rapport a été sauvegardé sur
@@ -2794,6 +2805,7 @@ function MainApp({
                             show={showSaveAsEmployeeModal}
                             onHide={() => setShowSaveAsEmployeeModal(false)}
                             employeeOptions={combinedStaffOptions}
+                            patientMode={CIVIL_MEDICAL_VERSIONS.includes(Number(bbCodeVersion))}
                             onConfirm={handleConfirmSaveAsEmployee}
                         />
                     </div>

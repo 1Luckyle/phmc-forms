@@ -168,7 +168,9 @@ export const useReportManagement = (
     // getCurrentReportAuthor(formData), qui ne reflète que le nom
     // sélectionné dans le champ coronerEmployee/phmcEmployee du formulaire
     // (ou le nom du patient pour les anciens formulaires "civils").
-    async function saveReport(authorOverride) {
+    // options.ownerPatientId : un administrateur qui enregistre une demande civile pour un compte patient (voir SaveAsEmployeeModal) : le rapport est alors
+    // celui de CE patient (visible par lui), et non un rapport du personnel.
+    async function saveReport(authorOverride, options = {}) {
         // Un compte Civil ne peut sauvegarder que ses propres dossiers médicaux
         // civils ou candidatures — pas les formulaires réservés au personnel
         // (voir Lot 3 du plan Civil). Le personnel, lui, n'a toujours pas le
@@ -337,7 +339,7 @@ export const useReportManagement = (
             // sauvegarde du rapport lui-même.
             if (formData.patientID) {
                 try {
-                    const ownPatientId = isCivilian ? civilianProfile?.patientID : myPatientID;
+                    const ownPatientId = options.ownerPatientId || (isCivilian ? civilianProfile?.patientID : myPatientID);
                     const isOwnedByThisCivilian = !!ownPatientId
                         && normalizePatientId(ownPatientId) === normalizePatientId(formData.patientID);
                     await writeIndexEntry({
@@ -374,21 +376,28 @@ export const useReportManagement = (
                 } catch (invoiceError) {
                     console.warn('Could not record patient invoice:', invoiceError);
                 }
-                // Libération médicale avec des rapports retenus : la demande part avec le formulaire, chaque médecin concerné est prévenu et partage SES rapports.
-                if (Number(bbCodeVersion) === RELEASE_VERSION && Array.isArray(formData.releaseReports) && formData.releaseReports.length > 0) {
+                // Libération médicale : la demande part avec le formulaire. Avec des rapports retenus, chaque médecin concerné est prévenu et partage SES rapports ;
+                // sans rapport précis (ou pour « Autres dossiers »), l'administration est prévenue et la traite à la main.
+                if (Number(bbCodeVersion) === RELEASE_VERSION) {
                     try {
-                        const own = isCivilian;
+                        const own = isCivilian || !!options.ownerPatientId;
                         const created = await createReleaseRequest({
                             patientID: formData.patientID,
                             patientName: formData.patientName || [formData.patientFirstName, formData.patientMiddleName, formData.patientLastName].filter(Boolean).join(' '),
-                            requester: { uid: currentEmployee?.uid || '', name: own ? (civilianProfile ? `${civilianProfile.firstName || ''} ${civilianProfile.lastName || ''}`.trim() : currentAuthor) : (staffName || currentAuthor), role: own ? 'patient' : 'personnel' },
+                            requester: { uid: currentEmployee?.uid || '', name: own ? (isCivilian && civilianProfile ? `${civilianProfile.firstName || ''} ${civilianProfile.lastName || ''}`.trim() : currentAuthor) : (staffName || currentAuthor), role: own ? 'patient' : 'personnel' },
                             reportPath,
                             categories: formData.MedicalRecordsRelease,
                             from: formData.StupidDateFrom,
                             to: formData.StupidDateTo,
-                            selection: formData.releaseReports,
+                            selection: Array.isArray(formData.releaseReports) ? formData.releaseReports : [],
+                            otherText: Array.isArray(formData.MedicalRecordsRelease) && formData.MedicalRecordsRelease.includes('Other') ? formData.MedicalRecordsReleaseOther : '',
                         });
-                        if (created) showNotification(`Demande de divulgation transmise à : ${practitionerLabel(formData.releaseReports)}. Chaque médecin partage ses propres rapports avec le patient.`, 'info-circle', 9000);
+                        if (created) {
+                            const doctors = practitionerLabel(formData.releaseReports);
+                            showNotification(created.manuelle && !doctors
+                                ? "Demande de divulgation transmise à l'administration, qui la traitera."
+                                : `Demande de divulgation transmise à : ${doctors}. Chaque médecin partage ses propres rapports avec le patient.${created.manuelle ? ' Les autres dossiers demandés sont traités par l’administration.' : ''}`, 'info-circle', 9000);
+                        }
                     } catch (releaseError) {
                         console.warn('Could not create the release request:', releaseError);
                         showNotification("Le formulaire est enregistré, mais la demande de divulgation n'a pas pu être transmise aux médecins : prévenez un administrateur.", 'warning', 9000);

@@ -32,9 +32,6 @@ const MedicalRelease = ({
     purposeOptions,
     formatOptions, // Updated: Was PurposeMedicalInformationReleaseFormat
     medicalRecordOptions, // Updated: Was MedicalRecordsRelease
-    phmcGroupedOptions,
-    unrestrictedPhmcGroupedOptions,
-
 }) => {
     usePrices(); // se redessine si un admin change les tarifs
 
@@ -57,12 +54,6 @@ const MedicalRelease = ({
     const { isCivilian, civilianProfile } = useEmployeeAuth();
     const { filledByStaff } = useBillingRole(formData, setFormData);
     const minorGuard = useMinorTitleGuard(formData, setFormData);
-    // Praticien consulté : un personnel qui remplit pour un patient est lui-même le praticien (liste restreinte à lui) ; quand la personne est son propre
-    // patient (Civil, DMEC, soignant pour lui-même), elle choisit parmi tout le personnel PHMC.
-    // Seul le personnel soignant peut être « praticien consulté » (ni administration, ni polyvalent, ni DMEC).
-    const practitionerOptions = ((filledByStaff ? phmcGroupedOptions : unrestrictedPhmcGroupedOptions) || phmcGroupedOptions || [])
-        .map((group) => ({ ...group, options: group.options.filter((option) => !option.families || option.families.includes('soignant')) }))
-        .filter((group) => group.options.length > 0);
     // Praticien consulté déduit des rapports retenus : leurs médecins responsables (plusieurs si plusieurs soignants les ont créés). Tant qu'aucun rapport
     // n'est retenu, la personne choisit elle-même dans la liste ; la déduction automatique est repérée par `releasePractitionerAuto` pour pouvoir s'effacer
     // sans écraser un choix manuel.
@@ -320,49 +311,18 @@ const MedicalRelease = ({
         )}
             <ReleaseReportPicker formData={formData} setFormData={setFormData} />
             <Form.Label className="form-section-title">Praticien consulté</Form.Label>
-            {autoPractitioner ? (
-                <div className="p-2 border rounded" style={{ borderColor: '#30363d', background: '#0d1117' }} data-no-tip="1">
+            <div className="p-2 border rounded" style={{ borderColor: '#30363d', background: '#0d1117' }} data-no-tip="1">
+                {autoPractitioner ? (
                     <div><i className="fas fa-user-doctor me-2"></i><strong>{practitionersOf(retainedReports).join(', ')}</strong></div>
-                    <span className="helper-text">
-                        Rempli automatiquement d'après les rapports retenus ci-dessus : ce sont leurs médecins responsables. Retirez les rapports pour choisir un praticien vous-même.
-                    </span>
-                </div>
-            ) : (
-    <Select
-            name="phmcEmployee"
-            value={practitionerOptions
-                .flatMap(group => group.options)
-                .find(option => option.value === formData.phmcEmployee) || null}
-            onChange={(selectedOption) => {
-                handleChange({
-                    target: {
-                        name: 'phmcEmployee',
-                        value: selectedOption?.value || ''
-                    }
-                });
-                if (selectedOption) {
-                    setFormData(prev => ({
-                        ...prev,
-                        phmcSignature: selectedOption.signature || ''
-                    }));
-                } else {
-                    setFormData(prev => ({
-                        ...prev,
-                        phmcSignature: ''
-                    }));
-                }
-            }}
-            options={practitionerOptions}
-            isClearable
-            placeholder="Quel médecin vous a traité? (Vous pouvez taper pour rechercher!)"
-            className="form-control" 
-            styles={{
-                ...darkSelectStyles,
-                group: (base) => ({ ...base, paddingTop: 8, paddingBottom: 8 }),
-                groupHeading: (base) => ({ ...base, color: '#9aa7b4', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: 4 }),
-            }}
-        />
-            )}
+                ) : (
+                    <div style={{ color: '#8b949e' }}><i className="fas fa-user-doctor me-2"></i>Aucun praticien désigné pour l'instant</div>
+                )}
+                <span className="helper-text">
+                    {autoPractitioner
+                        ? "Rempli automatiquement d'après les rapports retenus ci-dessus : ce sont leurs médecins responsables, qui partagent chacun les leurs avec le patient."
+                        : "Le praticien se déduit des rapports retenus ci-dessus. Sans rapport précis (ou pour « Autres dossiers »), la demande est transmise à l'administration, qui la traite à la main."}
+                </span>
+            </div>
             <Form.Label className="form-section-title">Autorisation de divulgation des informations</Form.Label>
             <Form.Control
 type="date"

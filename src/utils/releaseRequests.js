@@ -8,6 +8,8 @@
 //   2. À l'enregistrement du formulaire, une DEMANDE est créée (releaseRequests/{id}) et chaque médecin concerné est notifié.
 //   3. Chaque médecin partage SES rapports (« Dossier Patient » → Demandes de divulgation) : le rapport passe à « partagé » et le patient le retrouve dans
 //      son dossier (il est notifié). Un administrateur ou un chef de service peut tout partager si un soignant ne le fait pas.
+//      Sans rapport précis (aucun rapport ne correspond, ou « Autres dossiers » décrits en texte), la demande n'a pas de médecin désigné : elle est signalée à
+//      l'administration (notification de groupe) et traitée à la main par un administrateur ou un chef de service (« manuelle »).
 //   4. Tant que le formulaire existe, la demande reste « en attente » ; s'il est supprimé (annulation), la demande est annulée.
 //
 // Stockage : releaseRequests/{id} = { patientNode, patientID, patientNom, demandeurUid, demandeurNom, demandeurRole, reportPath, categories, du, au, statut,
@@ -18,7 +20,7 @@ import { ref, get, set, update, push, query, orderByChild, equalTo } from 'fireb
 import { database } from '../firebase';
 import { canonicalPatientId } from './patientId';
 import { findPatientNodes, comprehensiveSanitize } from './patientRecords';
-import { notifyUser, findCivilianUidByPatientId, findStaffUidByNode } from './notifications';
+import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from './notifications';
 import { isDmecReportVersion } from './reportAccess';
 import { extraRanksOf, normalizeRank } from '../constants/ranks';
 
@@ -116,19 +118,29 @@ const itemsOf = (selection) => {
     return items;
 };
 
-export async function createReleaseRequest({ patientID, patientName, requester, reportPath, categories, from, to, selection }) {
+export async function createReleaseRequest({ patientID, patientName, requester, reportPath, categories, from, to, selection, otherText = '' }) {
     const node = canonicalPatientId(patientID);
     const elements = itemsOf(selection);
-    if (!node || Object.keys(elements).length === 0) return null;
+    if (!node) return null;
     const id = push(ref(database, 'releaseRequests')).key;
     const waiting = Object.values(elements).filter((item) => item.statut === ITEM_STATUS.WAITING).length;
+    const autres = String(otherText || '').trim().slice(0, 400);
+    // Partie à traiter à la main : aucun rapport précis, ou « Autres dossiers » décrits en texte.
+    const manuelle = Object.keys(elements).length === 0 || !!autres;
     const payload = {
         patientNode: node, patientID: node, patientNom: String(patientName || '').slice(0, 120),
         demandeurUid: requester?.uid || '', demandeurNom: String(requester?.name || '').slice(0, 120), demandeurRole: requester?.role === 'patient' ? 'patient' : 'personnel',
         reportPath: reportPath || '', categories: Array.isArray(categories) ? categories.slice(0, 10) : [], du: from || '', au: to || '',
-        statut: waiting > 0 ? RELEASE_STATUS.PENDING : RELEASE_STATUS.DONE, creeLe: Date.now(), elements,
+        statut: waiting > 0 || manuelle ? RELEASE_STATUS.PENDING : RELEASE_STATUS.DONE, creeLe: Date.now(),
+        ...(Object.keys(elements).length > 0 ? { elements } : {}),
+        ...(manuelle ? { manuelle: true } : {}),
+        ...(autres ? { autres } : {}),
     };
     await set(ref(database, `releaseRequests/${id}`), payload);
+    // Partie manuelle : l'administration est prévenue (les chefs de service la retrouvent dans le panneau du Dossier Patient).
+    if (manuelle) {
+        await notifyGroup('admin', { type: 'demande', titre: 'Demande de divulgation à traiter à la main', texte: `${payload.patientNom || node} : ${autres || 'aucun rapport précis'}`, lien: { cible: 'divulgation', id } });
+    }
     // Chaque médecin concerné est prévenu (au mieux : un échec ne bloque jamais l'enregistrement).
     const authors = practitionersOf(Object.values(elements).filter((item) => item.statut === ITEM_STATUS.WAITING).map((item) => ({ a: item.auteur })));
     await Promise.all(authors.map(async (name) => {
@@ -169,7 +181,7 @@ export const shareableItems = (request, viewer) => waitingItems(request).filter(
 
 // Demandes à montrer à cette personne : toutes pour un administrateur ou un chef de service, sinon celles qui contiennent un de SES rapports.
 export const requestsVisibleTo = (requests, viewer) => (requests || []).filter((request) => (viewer.isAdmin || viewer.isChief)
-    ? waitingItems(request).length > 0
+    ? (waitingItems(request).length > 0 || !!request.manuelle)
     : shareableItems(request, viewer).length > 0);
 
 // Partage les éléments que le lecteur a le droit de partager : le rapport passe à « partagé » dans le dossier du patient. Retourne { shared, removed, left }.
@@ -195,7 +207,8 @@ export async function shareRequestItems(request, viewer, { author = '' } = {}) {
         shared += 1;
     }
     const left = waitingItems(request).length - items.length;
-    if (items.length > 0 && left <= 0) updates[`releaseRequests/${request.id}/statut`] = RELEASE_STATUS.DONE;
+    // Une demande qui a aussi une partie à traiter à la main reste en attente jusqu'à « Marquer comme traitée ».
+    if (items.length > 0 && left <= 0 && !request.manuelle) updates[`releaseRequests/${request.id}/statut`] = RELEASE_STATUS.DONE;
     if (Object.keys(updates).length > 0) await update(ref(database), updates);
     if (shared > 0) {
         // Le patient est prévenu, ainsi que la personne qui a fait la demande si ce n'est pas lui.
@@ -207,6 +220,14 @@ export async function shareRequestItems(request, viewer, { author = '' } = {}) {
         }
     }
     return { shared, removed, left: Math.max(0, left) };
+}
+
+// Clôture une demande traitée à la main (administrateur ou chef de service) ; le patient en est informé.
+export async function completeReleaseRequest(request, by) {
+    await update(ref(database, `releaseRequests/${request.id}`), { statut: RELEASE_STATUS.DONE, traiteLe: Date.now(), traitePar: String(by || 'personnel').slice(0, 120) });
+    findCivilianUidByPatientId(request.patientNode).then((uid) => notifyUser(uid, {
+        type: 'statut', titre: 'Votre demande de divulgation a été traitée', texte: request.autres || undefined, lien: { cible: 'dossierPatient' },
+    }));
 }
 
 export const canCancelRequest = (request, { uid, isAdmin }) => !!isAdmin || (!!uid && request?.demandeurUid === uid);

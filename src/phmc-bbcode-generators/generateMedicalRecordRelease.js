@@ -23,7 +23,6 @@ const generateMedicalRecordRelease = (formData) => {
         patientDateOfBirth = NOT_FILLED,
         patientAddress = NOT_FILLED,
         patientEmail = NOT_FILLED,
-        phmcEmployee = NOT_FILLED,
         StupidDateFrom = NOT_FILLED,
         StupidDateTo = NOT_FILLED,
         paymentProofPhotos,
@@ -70,6 +69,8 @@ const generateMedicalRecordRelease = (formData) => {
 
     // Rapports retenus dans la liste des rapports disponibles : titre, date et médecin responsable (jamais leur contenu).
     const retained = (Array.isArray(formData.releaseReports) ? formData.releaseReports : []).filter((item) => item && item.t);
+    // Praticien consulté : uniquement les médecins responsables des rapports retenus ; sans rapport précis, c'est l'administration qui traite la demande.
+    const practitioners = [...new Set(retained.map((item) => String(item.a || '').trim()).filter(Boolean))].join(', ') || "À attribuer par l'administration";
     const retainedRows = retained.map((item) => `[tr][td] ${item.t} [/td][td] ${item.ts ? new Date(Number(item.ts)).toLocaleDateString('fr-FR') : NOT_FILLED} [/td][td] ${item.a || NOT_FILLED}`);
     const retainedBlock = retained.length > 0
         ? `\n${sectionBanner('Rapports retenus', { size: 115 })}\n[table]\n${retainedRows.join('\n')}\n[/table]`
@@ -109,7 +110,7 @@ ${sectionBanner(`Informations de divulgation`, { size: 115 })}
 [table][tr][td] Motif de la divulgation: [/td][td] ${checkbox(purpose === 'Further Treatment')} Traitement ultérieur / Suite de soins ${checkbox(purpose === 'Personal')} Usage personnel ${checkbox(purpose === 'Attorney')} Avocat / Client ${checkbox(purpose === 'Other')} Autre${patientMedInfoReleaseOther ? `: ${patientMedInfoReleaseOther}` : ''}
 [tr][td] Format de divulgation: [/td][td] ${checkbox(format === 'CopyofRecords')} Copie du dossier à récupérer ${checkbox(format === 'VerbalRelease')} Divulgation verbale (ex: conversation téléphonique) ${checkbox(format === 'ElectronicRelease')} Divulgation électronique (envoyée par courriel) ${checkbox(format === 'Other')} Autre${patientMedInfoFormatOther ? `: ${patientMedInfoFormatOther}` : ''}
 [tr][td] Période concernée: [/td][td] Du ${frDay(StupidDateFrom)} au ${frDay(StupidDateTo)}
-[tr][td] Praticien consulté: [/td][td] ${phmcEmployee}
+[tr][td] Praticien consulté: [/td][td] ${practitioners}
 [/table]
 ${sectionBanner(`Dossiers médicaux à divulguer`, { size: 115 })}
 [table][tr][td] ${checkbox(has('ERVisit'))} [b]Visite aux urgences[/b] (Notes des urgences, notes d'évolution, consultations, notes de procédure, résultats de tests)

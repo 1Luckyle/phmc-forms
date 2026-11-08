@@ -10,7 +10,7 @@ import { getFormLabel } from '../formDefinitions';
 import { logActivity } from '../utils/activityLog';
 import {
     loadPendingReleaseRequests, requestsVisibleTo, shareableItems, waitingItems, shareRequestItems, cancelReleaseRequest, canCancelRequest,
-    isServiceChief, ITEM_STATUS,
+    isServiceChief, completeReleaseRequest, ITEM_STATUS,
 } from '../utils/releaseRequests';
 
 const cardStyle = { border: '1px solid #30363d', borderRadius: 6, padding: '10px 12px', background: '#0d1117', marginBottom: 8 };
@@ -65,6 +65,19 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
         }
     };
 
+    const complete = async (request) => {
+        setBusyId(request.id);
+        try {
+            await completeReleaseRequest(request, staffName || 'admin');
+            showNotification('Demande marquée comme traitée : le patient en est informé.', 'check-circle');
+            await reload();
+        } catch (error) {
+            showNotification("Impossible de clôturer la demande.", 'error');
+        } finally {
+            setBusyId('');
+        }
+    };
+
     const cancel = async (request) => {
         if (!window.confirm(`Annuler cette demande de divulgation pour ${request.patientNom || request.patientNode} ? Les rapports déjà partagés le restent.`)) return;
         setBusyId(request.id);
@@ -107,15 +120,31 @@ const ReleaseRequestsPanel = ({ active, showNotification, onOpenPatient }) => {
                                         <Button size="sm" variant="outline-secondary" onClick={() => onOpenPatient && onOpenPatient(request.patientNode)}>
                                             <i className="fas fa-folder-open me-1"></i>Ouvrir le dossier
                                         </Button>
-                                        <Button size="sm" variant="primary" disabled={busyId === request.id || myCount === 0} onClick={() => share(request)}
-                                            title={everything ? 'Partage tous les rapports en attente de cette demande (administrateur / chef de service).' : 'Partage uniquement vos propres rapports de cette demande.'}>
-                                            <i className="fas fa-share-nodes me-1"></i>{everything ? `Tout partager (${myCount})` : `Partager mes rapports (${myCount})`}
-                                        </Button>
+                                        {request.manuelle && everything && (
+                                            <Button size="sm" variant="success" disabled={busyId === request.id} onClick={() => complete(request)}
+                                                title="À faire une fois la demande traitée à la main : elle disparaît de la liste et le patient est prévenu.">
+                                                <i className="fas fa-check me-1"></i>Marquer comme traitée
+                                            </Button>
+                                        )}
+                                        {allCount > 0 && (
+                                            <Button size="sm" variant="primary" disabled={busyId === request.id || myCount === 0} onClick={() => share(request)}
+                                                title={everything ? 'Partage tous les rapports en attente de cette demande (administrateur / chef de service).' : 'Partage uniquement vos propres rapports de cette demande.'}>
+                                                <i className="fas fa-share-nodes me-1"></i>{everything ? `Tout partager (${myCount})` : `Partager mes rapports (${myCount})`}
+                                            </Button>
+                                        )}
                                         {canCancelRequest(request, viewer) && (
                                             <Button size="sm" variant="outline-danger" disabled={busyId === request.id} onClick={() => cancel(request)}>Annuler</Button>
                                         )}
                                     </div>
                                 </div>
+                                {request.manuelle && (
+                                    <div className="mt-2 p-2 border rounded" style={{ borderColor: '#d29922', color: '#e3b341', fontSize: '0.85rem' }}>
+                                        <i className="fas fa-hand me-2"></i>
+                                        {items.length === 0 ? 'Demande sans rapport précis' : 'Partie à traiter à la main'}
+                                        {request.autres ? ` — « ${request.autres} »` : ''} : à traiter par l'administration ou un chef de service
+                                        ({(request.categories || []).join(', ') || 'catégories non précisées'}).
+                                    </div>
+                                )}
                                 {!everything && allCount > myCount && (
                                     <div style={{ ...mutedStyle, marginTop: 4 }}>{allCount - myCount} autre(s) rapport(s) de cette demande sont à partager par leurs médecins.</div>
                                 )}

@@ -57,4 +57,6 @@ test('la libération médicale liste les rapports retenus avec leur médecin, et
     expect(withReports).toContain('[tr][td] Protocole urgence 12/03 [/td][td] 12/03/2026 [/td][td] Alice Martin');
     expect(withReports).not.toMatch(/\n\n\n/);
     expect(generateMedicalRecordRelease(base)).not.toContain('Rapports retenus');
+    // Sans rapport retenu, aucun praticien n'est choisi à la main : la demande revient à l'administration.
+    expect(generateMedicalRecordRelease(base)).toContain("Praticien consulté: [/td][td] À attribuer par l'administration");
 });

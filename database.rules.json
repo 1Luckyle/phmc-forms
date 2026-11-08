@@ -969,7 +969,7 @@
       "$id": {
         ".read": "auth != null && root.child('civilians').child(auth.uid).child('patientID').val() === data.child('patientNode').val()",
         ".write": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.exists() && newData.child('demandeurUid').val() === auth.uid))",
-        ".validate": "!newData.exists() || (newData.hasChildren(['patientNode', 'statut', 'creeLe', 'elements']) && newData.child('statut').isString() && newData.child('creeLe').isNumber())"
+        ".validate": "!newData.exists() || (newData.hasChildren(['patientNode', 'statut', 'creeLe']) && newData.child('statut').isString() && newData.child('creeLe').isNumber())"
       }
     },
 
