@@ -32,7 +32,9 @@ const mergeIdentity = (prev, fields, identity, forcedKeys = []) => {
     return changed ? next : prev;
 };
 
-const ForMyselfBanner = ({ formData, setFormData, fields }) => {
+// `lockableKeys` : parmi ces clés, celles que le formulaire verrouille (par défaut toutes). Dossier Médical Basique / Avancé : seulement l'ID (il ne change jamais) et l'e-mail (il ne se
+// change que dans « Mon profil ») ; le reste de l'identité se modifie directement dans le formulaire et alimente le dossier (voir utils/dossierCore.js).
+const ForMyselfBanner = ({ formData, setFormData, fields, lockableKeys = LOCKED_KEYS }) => {
     const { isCivilian, civilianProfile, staffProfile, currentEmployee, myPatientID } = useEmployeeAuth();
     const { selfOnly, isCare, isStaff } = useBillingRole(formData, setFormData);
     const anchorRef = useRef(null);
@@ -46,10 +48,11 @@ const ForMyselfBanner = ({ formData, setFormData, fields }) => {
 
     const selfMode = !!identity && (isCivilian || selfOnly);
     const lockedFields = useMemo(
-        () => (selfMode ? Object.entries(fields).filter(([, key]) => LOCKED_KEYS.includes(key) && identity[key]).map(([field]) => field) : []),
-        [selfMode, fields, identity],
+        () => (selfMode ? Object.entries(fields).filter(([, key]) => lockableKeys.includes(key) && identity[key]).map(([field]) => field) : []),
+        [selfMode, fields, identity, lockableKeys],
     );
-    const lockedKeys = useMemo(() => LOCKED_KEYS.filter((key) => selfMode && identity?.[key]), [selfMode, identity]);
+    const lockedKeys = useMemo(() => lockableKeys.filter((key) => selfMode && identity?.[key]), [selfMode, identity, lockableKeys]);
+    const partialLock = lockableKeys.length < LOCKED_KEYS.length;
 
     // Verrou : posé sur le formulaire, appliqué champ par champ par FieldGuide (readOnly / désactivé + infobulle).
     const lockSignature = lockedFields.join(',');
@@ -57,11 +60,13 @@ const ForMyselfBanner = ({ formData, setFormData, fields }) => {
         const zone = anchorRef.current?.closest('[data-form-zone]');
         if (!zone || !lockSignature) return undefined;
         zone.setAttribute('data-self-lock', lockSignature);
-        zone.setAttribute('data-self-lock-hint', isCivilian
-            ? 'Information tirée de votre profil Civil : elle ne se modifie pas ici (demandez à un administrateur si elle est inexacte).'
-            : 'Information tirée de votre profil : pour la modifier, passez par « Mon profil » (menu Outils).');
+        zone.setAttribute('data-self-lock-hint', partialLock
+            ? "L'ID patient ne se modifie nulle part et l'adresse e-mail uniquement dans « Mon profil » (menu Outils)."
+            : (isCivilian
+                ? 'Information tirée de votre profil Civil : elle ne se modifie pas ici (demandez à un administrateur si elle est inexacte).'
+                : 'Information tirée de votre profil : pour la modifier, passez par « Mon profil » (menu Outils).'));
         return () => { zone.removeAttribute('data-self-lock'); zone.removeAttribute('data-self-lock-hint'); };
-    }, [lockSignature, isCivilian]);
+    }, [lockSignature, isCivilian, partialLock]);
 
     // Soi-même : pré-remplissage automatique, et les champs verrouillés reflètent toujours le profil.
     useEffect(() => {
@@ -105,7 +110,7 @@ const ForMyselfBanner = ({ formData, setFormData, fields }) => {
                 <Alert variant="info" className="py-2 mb-0 small">
                     <i className="fas fa-user-check me-2"></i>
                     <strong>Dossier pour vous-même :</strong> paiement à votre charge. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).
-                    {selfMode && ' Votre identité est reprise de votre profil et ne se modifie pas ici.'}
+                    {selfMode && (partialLock ? ' Votre ID et votre e-mail sont repris de votre profil ; le reste de votre identité se modifie directement ici et alimente votre dossier.' : ' Votre identité est reprise de votre profil et ne se modifie pas ici.')}
                 </Alert>
             ) : (
                 <div className="d-flex flex-wrap align-items-center gap-2">

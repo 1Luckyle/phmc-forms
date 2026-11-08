@@ -167,7 +167,7 @@ const MedicalRelease = ({
 
     return (
         <>
-        <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', date: 'dateOfBirth', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} />
+        <ForMyselfBanner formData={formData} setFormData={setFormData} fields={{ patientID: 'patientID', patientName: 'fullName', patientFirstName: 'firstName', patientMiddleName: 'middleName', patientLastName: 'lastName', date: 'dateOfBirth', patientAddress: 'address', patientPH: 'phone', patientEmail: 'email', patientDiscord: 'discord' }} lockableKeys={['patientID', 'email']} />
         <DossierStateBanner formData={formData} setFormData={setFormData} version={26} />
         <Form.Label className="form-section-title">Identité actuelle du patient</Form.Label>
         <PatientGeneralInfo
