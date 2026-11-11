@@ -19,6 +19,7 @@ import { ref, push, set, get, update, onValue, query, limitToLast } from 'fireba
 import { database, auth } from '../firebase';
 import { loadStaffMembers } from './staffAdmin';
 import { notifyUser } from './notifications';
+import { staffSignatureBlock, mailFooter, SIGNATURE_IMG_WIDTH } from '../phmc-bbcode-generators/shared/bbStyles';
 
 export const MAIL_LIMITS = { subject: 160, body: 20000, recipients: 30, preview: 200, name: 120 };
 export const MAILBOX_PAGE = 200;
@@ -123,7 +124,7 @@ const formatDateFr = (ms) => {
 export { formatDateFr };
 
 // Largeur d'affichage de la signature dans le message (pixels) ; la balise [img=largeur] n'existe pas sur le forum : on la retire à la copie du BBCode.
-export const SIGNATURE_WIDTH = 220;
+export const SIGNATURE_WIDTH = SIGNATURE_IMG_WIDTH;
 export const stripImgWidth = (bbcode) => String(bbcode || '').replace(/\[img=\d+\]/gi, '[img]');
 
 const safeHttps = (url) => (/^https:\/\/[^\s[\]]+$/i.test(String(url || '').trim()) ? String(url).trim() : '');
@@ -135,11 +136,8 @@ export const messageToEmailBbcode = (message, { fromName } = {}) => {
     const m = message || {};
     const dest = Object.values(m.dest || {}).join(', ');
     const signature = safeHttps(m.deSignature);
-    const lines = [
-        `[b][size=105]${escapeBbText(fromName || m.deNom || 'Employé PHMC')}[/size][/b]`,
-        `[size=85]${[m.deFonction, m.deService].filter(Boolean).map(escapeBbText).join('\n')}`,
-        '[/size]',
-    ].join('\n');
+    // Signature, nom, fonction et département de l'expéditeur : même bloc que le pied de page des rapports (shared/bbStyles.js).
+    const signatureBlock = staffSignatureBlock({ name: fromName || m.deNom || 'Employé PHMC', rank: m.deFonction, service: m.deService, signatureUrl: signature });
     return `[divbox=na][br][/br][imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b]
 [center][/center][br][/br]
 [center][size=150][b]${escapeBbText(m.objet || '(sans objet)')}[/b][/size][/center]
@@ -149,18 +147,9 @@ export const messageToEmailBbcode = (message, { fromName } = {}) => {
 [b]Le :[/b] ${formatDateFr(m.creeLe)}
 [hr][/hr][br][/br][list=none]
 ${m.corps || ''}
-${signature ? `\nRespectueusement,\n[img=${SIGNATURE_WIDTH}]${signature}[/img]\n` : ''}[/list][hr][/hr][list=none]
-${lines}
-
-[b]Pillbox Hill Medical Center[/b]
-[size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
-Téléphone: 50056
-Courriel: info.phmc@mail.eyefind.fr
-Site web: [url=https://phmc-tools.com]phmc-tools.com[/url]
-
-Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hill.Medical.Center?ref=qs]Pillbox Hill Medical Center[/url][/size]
-
-[size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/list][/divbox]`;
+[/list][br][/br]
+${signatureBlock}
+${mailFooter()}[/divbox]`;
 };
 
 // Document « email PHMC » de TOUTE une conversation : un seul en-tête, puis chaque message (du plus ancien au plus récent) avec son expéditeur,
@@ -187,14 +176,8 @@ ${signature ? `\nRespectueusement,\n[img=${SIGNATURE_WIDTH}]${signature}[/img]\n
 [center][i]Conversation de ${list.length} message${list.length > 1 ? 's' : ''}[/i][/center]
 [hr][/hr][br][/br][list=none]
 ${blocks.join('\n[hr][/hr]\n')}
-[/list][hr][/hr][list=none]
-[b]Pillbox Hill Medical Center[/b]
-[size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
-Téléphone: 50056
-Courriel: info.phmc@mail.eyefind.fr
-Site web: [url=https://phmc-tools.com]phmc-tools.com[/url][/size]
-
-[size=70][i]Le contenu de ces messages et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/list][/divbox]`;
+[/list]
+${mailFooter()}[/divbox]`;
 };
 
 // Titre d'une conversation exportée : « [Conversation] objet (N messages) - date du dernier message ».

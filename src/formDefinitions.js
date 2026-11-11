@@ -14,7 +14,7 @@ import {
     generateMedicalRecordRelease, generateBasicPatientFile, generateEmailPHMCEmail,
     generateConsultationNotesPBC, generatePsychEvalPHMC, generatePsychEvalPBC,
     generateAutopsy, generateCertificate, generateMedicalFileUpdate, generateMassFatality, generateDeathRecord,
-    generateSicknessEmail, generateFlightCertificate
+    generateSicknessEmail, generateFlightCertificate, generateExternalMail
 } from './phmc-bbcode-generators';
 import generatePhysician from './phmc-recruitment-generators/generatePhysician';
 import generatePsych from './phmc-recruitment-generators/generatePsych';
@@ -61,6 +61,7 @@ const MassFatality = lazy(() => import('./phmc-field-data/MassFatality'));
 const DeathRecord = lazy(() => import('./phmc-field-data/DeathRecord'));
 const SicknessEmail = lazy(() => import('./phmc-field-data/SicknessEmail'));
 const FlightCertificate = lazy(() => import('./phmc-field-data/FlightCertificate'));
+const ExternalMail = lazy(() => import('./phmc-field-data/ExternalMail'));
 
 // Lazy load recruitment field components
 const PhysicianFields = lazy(() => import('./phmc-civilian-fields/Physician'));
@@ -158,6 +159,8 @@ userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']
     { version: 35, name: "Certificat de Maladie", group: "PHMC", icon: emailIcon, generator: generateSicknessEmail, FieldComponent: SicknessEmail, titleKey: "certificatMaladie", sortOrder: 33, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] }, // No FieldComponent for this one
     // Certificat d'aptitude médicale au vol : réservé au personnel soignant (utils/formAccess.js : tout formulaire non listé = famille soignante + admins).
     { version: 41, name: "Certificat de Vol", group: "PHMC", icon: paperwork, generator: generateFlightCertificate, FieldComponent: FlightCertificate, titleKey: "certificatVol", sortOrder: 34, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    // Mail Externe : courrier modèle envoyé hors du site, ouvert à TOUT le personnel (utils/formAccess.js : SHARED_STAFF_FORM_VERSIONS). Aucun ID patient : rien n'est rangé dans un dossier patient.
+    { version: 42, name: "Mail Externe", group: "PHMC", icon: emailIcon, generator: generateExternalMail, FieldComponent: ExternalMail, titleKey: "mailExterne", sortOrder: 36, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
     {
         version: 50,
         name: "Postes Médicaux",

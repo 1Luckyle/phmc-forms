@@ -1,91 +1,40 @@
 // src/phmc-bbcode-generators/generateSicknessEmail.js
+//
+// Certificat de Maladie (formulaire 35) : courriel médical envoyé hors du site (employeur, école, assurance…). Mise en page des courriels du DMEC : logo, bandeau noir, tableau
+// « étiquette : valeur », texte, puis signature de la personne qui l'a rempli et pied de page commun des courriels (shared/bbStyles.js). Le texte vient de utils/medicalCertificates.js.
 import { toEmployerSafeSummary } from '../utils/employerSummary';
+import { buildCertificateContent, frDate } from '../utils/medicalCertificates';
+import { sectionBanner, infoTable, paragraph, staffSignatureBlock, mailFooter, PHMC_LOGO } from './shared/bbStyles';
 
 const generateSicknessEmail = (formData) => {
-    const {
-        emailPurpose, // 'Sickness Note' or 'Illness Confirmation'
-        emailRecipient, // Name of the person/entity receiving the email
-        patientName, // Name of the patient
-        dateOfVisit, // Date patient was seen at PHMC
-        sicknessStartDate, // Start date of sickness (for Sickness Note)
-        sicknessEndDate, // End date of sickness (for Sickness Note)
-        reasonForSickness, // Brief reason for sickness (for Sickness Note)
-        illnessCondition, // Diagnosed illness/condition (for Illness Confirmation)
-        confirmationPurpose, // Purpose of confirmation (for Illness Confirmation)
-        phmcEmployee, // The PHMC employee sending the email
-        phmcRank, // Rank of the PHMC employee
-        phmcEmployeeDepartment, // Department of the PHMC employee
-        phmcEmployeeSignatureImage, // Signature image URL
-        attachedReportSummary,
-    } = formData;
+    const f = formData || {};
+    const content = buildCertificateContent(f);
 
-    let subject = '';
-    let emailBody = '';
-
-    const formattedDateOfVisit = dateOfVisit ? new Date(dateOfVisit).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
-
-    if (emailPurpose === 'Sickness Note') {
-        subject = `RE: Certificat médical pour ${patientName || 'Patient'}`;
-        emailBody = `Cher(ère) ${emailRecipient || 'Destinataire'},
-
-Ce courriel sert de certificat médical pour ${patientName || 'le patient'} du ${sicknessStartDate || 'N/A'} au ${sicknessEndDate || 'N/A'}.
-
-${patientName || 'Le patient'} a été vu au Pillbox Hill Medical Center le ${formattedDateOfVisit} et a reçu conseil de se reposer en raison de ${reasonForSickness || 'une condition médicale'}.
-
-Nous anticipons que ${patientName || 'il/elle'} pourra reprendre ses activités normales après la période spécifiée.
-
-N'hésitez pas à nous contacter si vous avez besoin d'informations supplémentaires.`;
-    } else if (emailPurpose === 'Illness Confirmation') {
-        subject = `RE: Confirmation de maladie pour ${patientName || 'Patient'}`;
-        emailBody = `Cher(ère) ${emailRecipient || 'Destinataire'},
-
-Ce courriel confirme que ${patientName || 'le patient'} a été vu au Pillbox Hill Medical Center le ${formattedDateOfVisit}.
-
-${patientName || 'Le patient'} a été diagnostiqué avec ${illnessCondition || 'une condition médicale'}. Cette confirmation est fournie pour ${confirmationPurpose || 'ses dossiers'}.
-
-N'hésitez pas à nous contacter si vous avez besoin d'informations supplémentaires.`;
-    } else {
-        subject = 'Courriel PHMC - Objet manquant';
-        emailBody = 'Veuillez sélectionner un objet de courriel (Certificat médical ou Confirmation de maladie).';
-    }
     // Le certificat part chez un tiers : seul un résumé SIMPLIFIÉ d'un rapport accepté est joint
     // (filet de sécurité : un rapport complet, ancien brouillon ou contenu non reconnu n'est jamais imprimé).
-    const safeReportSummary = toEmployerSafeSummary(attachedReportSummary, { patientName });
+    const safeReportSummary = toEmployerSafeSummary(f.attachedReportSummary, { patientName: f.patientName });
     const reportSection = safeReportSummary
-        ? `\n\n[altspoiler=Résumé simplifié du rapport médical joint][quote]${safeReportSummary}[/quote][/altspoiler]`
+        ? `[altspoiler=Résumé simplifié du rapport médical joint][quote]${safeReportSummary}[/quote][/altspoiler]`
         : '';
 
-    const signatureBBCode = phmcEmployeeSignatureImage ? `[img]${phmcEmployeeSignatureImage.trim()}[/img]` : '';
+    // Signataire : la personne qui remplit le courriel (nom, rôle, service, signature). Anciens courriels : l'employé choisi et l'image de signature collée.
+    const signer = f.signer && f.signer.name ? f.signer : { name: f.phmcEmployee || 'Employé PHMC', rank: f.phmcRank || '', signatureUrl: f.phmcEmployeeSignatureImage || '' };
 
-    const bbCode = `[divbox=na][br][/br][imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] 
-[b][size=110]Pillbox Hill Medical Center[/size][/b] 
-[center][/center][br][/br]
-[center][size=130][/size][/center]
-[center][size=150][b]${subject}[/b][/size][/center]
+    const patientLine = [f.patientName, f.patientID ? `(${f.patientID})` : ''].filter(Boolean).join(' ') || 'N/A';
+    const table = infoTable([
+        [['Destinataire', f.emailRecipient || 'N/A'], ['Expéditeur', signer.name]],
+        [['Objet', content.subject]],
+        [['Patient', patientLine], ...(f.dateOfVisit ? [['Consultation', frDate(f.dateOfVisit)]] : [])],
+        ...content.rows.map((row) => [row]),
+    ]);
 
-[hr][/hr][br][/br][list=none]
-${emailBody}
-
-${reportSection}
-
-Respectueusement,
-${signatureBBCode} 
-[/list][hr][/hr][list=none]
-[b][size=105]${phmcEmployee || 'Employé PHMC'}[/size][/b]
-[size=85]${phmcRank || 'N/A'}
-[/size]
-
-[b]Pillbox Hill Medical Center[/b]
-[size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
-Téléphone: 50056
-Courriel: info.phmc@mail.eyefind.fr
-Site web: [url=https://phmc-tools.com]phmc-tools.com[/url]
-
-Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hill.Medical.Center?ref=qs]Pillbox Hill Medical Center[/url][/size]
-
-[size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/divbox]`;
-
-    return bbCode;
+    return `[divbox=white][center][img]${PHMC_LOGO}[/img][/center][/divbox]
+${sectionBanner('Courrier médical du Pillbox Hill Medical Center', { size: 115 })}
+${table}
+${paragraph(content.paragraphs.join('\n\n'))}${reportSection ? `\n${reportSection}` : ''}
+[br][/br]
+${staffSignatureBlock(signer)}
+${mailFooter()}`;
 };
 
 export default generateSicknessEmail;

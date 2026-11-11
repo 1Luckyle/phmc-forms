@@ -14,8 +14,20 @@ import { placeWithCity } from './places';
 
 // Fond médical qu'un formulaire de soins peut reprendre du dossier (jamais le motif, l'examen ni le diagnostic).
 export const CARE_BACKGROUND_FIELDS = ['patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine'];
-// Formulaires de soins concernés (ni dossier, ni libération, ni DMEC, ni courriels, ni candidatures).
+// Identité du patient reprise du dossier par les formulaires de soins : nom en trois champs, date de naissance (l'âge s'en déduit) et sexe.
+export const CARE_IDENTITY_FIELDS = ['patientFirstName', 'patientMiddleName', 'patientLastName', 'patientDateOfBirth'];
+// Formulaires de soins concernés (ni dossier, ni libération, ni DMEC, ni courriels, ni candidatures). 35 et 41 : certificats (identité seulement).
 export const CARE_PREFILL_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
+export const CARE_IDENTITY_ONLY_VERSIONS = [35, 41];
+
+// Sexe du dossier (« Homme », « Femme », « Autre ») → valeur de la liste « Sexe du patient » des formulaires de soins.
+export const careSexOf = (gender) => {
+    const value = String(gender || '').trim().toLowerCase();
+    if (!value) return '';
+    if (['homme', 'male', 'masculin'].includes(value)) return 'Male';
+    if (['femme', 'female', 'féminin', 'feminin'].includes(value)) return 'Female';
+    return 'Other';
+};
 
 const empty = (value) => (Array.isArray(value) ? value.length === 0 : String(value ?? '').trim() === '');
 
@@ -32,7 +44,11 @@ export const dossierPrefillPatch = (version, donnees = {}, formData = {}, knownF
         IDENTITY_FIELDS.forEach((field) => { take(field); take(field, NEW_KEY[field]); });
         [EMERGENCY_FIELDS, MEDICAL_FIELDS, MENTAL_FIELDS, FAMILY_FIELDS, SOCIAL_FIELDS, LIFESTYLE_FIELDS, DIRECTIVE_FIELDS].forEach((group) => group.forEach((field) => take(field)));
     } else if (CARE_PREFILL_VERSIONS.includes(number) && !isDossierVersion(number)) {
+        CARE_IDENTITY_FIELDS.forEach((field) => take(field));
+        if (known.has('patientSex') && !empty(donnees.patientGender)) wanted.patientSex = careSexOf(donnees.patientGender);
         CARE_BACKGROUND_FIELDS.forEach((field) => take(field));
+    } else if (CARE_IDENTITY_ONLY_VERSIONS.includes(number)) {
+        CARE_IDENTITY_FIELDS.forEach((field) => take(field));
     }
     const patch = {};
     Object.entries(wanted).forEach(([target, value]) => { if (empty(formData[target])) patch[target] = value; });

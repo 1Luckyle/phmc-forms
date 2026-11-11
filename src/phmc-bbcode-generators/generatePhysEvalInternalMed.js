@@ -1,4 +1,4 @@
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -13,10 +13,8 @@ const generatePhysEvalInternalMed = (formData) => {
         patientName = NOT_FILLED,
         patientID = '',
         date = NOT_FILLED,
-        lastName = NOT_FILLED,
         patientHeight = NOT_FILLED,
         patientWeight = NOT_FILLED,
-        phmcRank = NOT_FILLED,
         careerRisks = '',
         patientAllergies = '',
         patientMedicine = '',
@@ -31,7 +29,7 @@ const generatePhysEvalInternalMed = (formData) => {
 PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
-Signé: ${phmcRank} ${lastName}
+Signé: ${signedLine(formData)}
 ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: false })}${sectionBanner(`Mesures du patient`)}
 [table][tr][td][list=none][br][/br]Taille: ${patientHeight}

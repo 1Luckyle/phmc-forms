@@ -1,7 +1,11 @@
-import React from 'react';
-import { Form } from 'react-bootstrap';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Form, Alert } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
+import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
+import { careStaffOnly } from './shared/PhmcEmployeeSelect';
+import { darkSelectStyles } from './shared/selectStyles';
+import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 
 const ANESTHESIA_TYPE_OPTIONS = [
     { value: 'General', label: 'Anesthésie générale' },
@@ -11,197 +15,104 @@ const ANESTHESIA_TYPE_OPTIONS = [
     { value: 'None', label: 'Aucune anesthésie' },
 ];
 
-const Surgical = ({ // Renamed component to follow PascalCase convention
+const SURGEON_ROLE = 'Chirurgien(ne)';
+
+// Équipe chirurgicale. La personne qui remplit le rapport (« signataire », sélectionnée d'office, un administrateur choisit un soignant) le SIGNE :
+//   • si elle est chirurgien(ne), elle est le chirurgien principal ;
+//   • sinon (par exemple un(e) interne qui remplit le rapport à la place du chirurgien), elle est placée dans le personnel présent, et le chirurgien principal se choisit dans la liste :
+//     une copie du rapport lui est adressée (notification, puis « Récupérer une copie » dans Dossier Patient).
+// Chirurgien et personnel présent ne se choisissent que parmi le personnel soignant.
+const Surgical = ({
             formData,
             handleChange,
-            phmcGroupedOptions, // Added this prop
+            phmcGroupedOptions,
             unrestrictedPhmcGroupedOptions,
             setFormData,
-            phmcRank,
             patientConsent,
             complications,
             procedureGood,
         }) => {
+    const { isAdmin } = useEmployeeAuth();
+    const careOptions = useMemo(() => careStaffOnly(unrestrictedPhmcGroupedOptions), [unrestrictedPhmcGroupedOptions]);
+    const careFlat = useMemo(() => careOptions.flatMap((group) => group.options), [careOptions]);
+    const signerPool = useMemo(() => (isAdmin ? careStaffOnly(phmcGroupedOptions) : phmcGroupedOptions || []).flatMap((group) => group.options), [isAdmin, phmcGroupedOptions]);
+    const signer = formData.phmcEmployee || '';
+    const signerOption = signerPool.find((option) => option.value === signer) || null;
+    const signerIsSurgeon = !!signerOption && Array.isArray(signerOption.roles) && signerOption.roles.includes(SURGEON_ROLE);
+    const extraStaff = Array.isArray(formData.extraStaff) ? formData.extraStaff : [];
+    const autoAdded = useRef('');
+
+    // Signataire chirurgien : il est le chirurgien principal. Sinon, il rejoint le personnel présent (et celui qu'on avait ajouté d'office pour un signataire précédent en est retiré).
+    useEffect(() => {
+        if (!signer) return;
+        setFormData((prev) => {
+            let next = prev;
+            const current = Array.isArray(prev.extraStaff) ? prev.extraStaff : [];
+            if (autoAdded.current && autoAdded.current !== signer && current.includes(autoAdded.current)) {
+                next = { ...next, extraStaff: current.filter((name) => name !== autoAdded.current) };
+            }
+            if (signerIsSurgeon) {
+                if (next.surgeonEmployee !== signer) next = { ...next, surgeonEmployee: signer };
+                autoAdded.current = '';
+            } else {
+                const list = Array.isArray(next.extraStaff) ? next.extraStaff : [];
+                if (!list.includes(signer)) next = { ...next, extraStaff: [...list, signer] };
+                if (next.surgeonEmployee === signer) next = { ...next, surgeonEmployee: '' };
+                autoAdded.current = signer;
+            }
+            return next;
+        });
+    }, [signer, signerIsSurgeon, setFormData]);
+
+    const surgeonValue = careFlat.find((option) => option.value === formData.surgeonEmployee) || (formData.surgeonEmployee ? { value: formData.surgeonEmployee, label: formData.surgeonEmployee } : null);
+
     return (
     <>
-    <Form.Label className="form-section-title">Patient</Form.Label>
-    <Form.Label>Nom du patient / ID Patient</Form.Label>
-    <div style={{ display: 'flex', gap: '10px' }}>
-        <Form.Control
-                    type="text"
-                    name="patientName"
-                    value={formData.patientName}
-                    onChange={handleChange}
-                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                    className="form-control"
+    <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
+    <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
+    <AppointmentDateField formData={formData} handleChange={handleChange} />
 
-                />
-        <Form.Control
-                    type="text"
-                    name="patientID"
-                    value={formData.patientID}
-                    onChange={handleChange}
-                    placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
-                    className="form-control"
+    <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
-                />
-    </div>
+    <Form.Label className="form-section-title">Équipe chirurgicale</Form.Label>
+    <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} label="Identifiants de l'employé (il signe le rapport)" />
 
-        <PatientContextFields formData={formData} handleChange={handleChange} />
-
-        <Form.Label className="form-section-title">Date et équipe</Form.Label>
-        <Form.Label>Date du rendez-vous</Form.Label>
-        <Form.Control
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className="form-control"
-
-        />
-
-    <Form.Select
-                name="phmcRank"
-                value={formData.phmcRank || ''}
-                onChange={handleChange}
-                className="form-control"
-            >
-                <option value="" disabled>Fonction au sein du PHMC</option>
-                {phmcRank.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </Form.Select>
-
-
-
+    <Form.Label className="mt-2">Chirurgien principal</Form.Label>
     <Select
-        name="phmcEmployee"
-        value={phmcGroupedOptions
-            .flatMap(group => group.options)
-            .find(option => option.value === formData.phmcEmployee) || null}
-        onChange={(selectedOption) => {
-            const lastName = selectedOption ? selectedOption.lastName : '';
-            setFormData(prev => ({
-                ...prev,
-                phmcEmployee: selectedOption ? selectedOption.value : '',
-                lastName: lastName
-            }));
-        }}
-        options={phmcGroupedOptions}
-        isClearable
+        name="surgeonEmployee"
+        value={surgeonValue}
+        onChange={(selectedOption) => setFormData((prev) => ({ ...prev, surgeonEmployee: selectedOption ? selectedOption.value : '' }))}
+        options={careOptions}
+        isClearable={!signerIsSurgeon}
+        isDisabled={signerIsSurgeon}
         placeholder="Sélectionner un chirurgien. (Vous pouvez taper pour rechercher!)"
         className="form-control"
-        styles={{
-            control: (base) => ({
-                ...base,
-                backgroundColor: '#16202c',
-                color: '#eeeeeeb0',
-                borderColor: '#30363d',
-                '&:hover': {
-                    borderColor: '#30363d'
-                }
-            }),
-            menu: (base) => ({
-                ...base,
-                backgroundColor: '#16202c',
-                zIndex: 1000
-            }),
-            option: (base, state) => ({
-                ...base,
-                backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                color: '#eeeeeeb0'
-            }),
-            singleValue: (base) => ({
-                ...base,
-                color: '#eeeeeeb0'
-            }),
-            input: (base) => ({
-                ...base,
-                color: '#eeeeeeb0'
-            }),
-            placeholder: (base) => ({
-                ...base,
-                color: '#eeeeeeb0'
-            })
-        }}
+        styles={darkSelectStyles}
     />
-    <Form.Label></Form.Label>
+    {signerIsSurgeon && <span className="helper-text">Vous êtes chirurgien(ne) : vous êtes le chirurgien principal et vous signez le rapport.</span>}
+    {signer && !signerIsSurgeon && (
+        <Alert variant="info" className="py-2 small mt-2 mb-2" data-no-tip="1">
+            Vous n'êtes pas chirurgien(ne) : vous signez ce rapport et êtes ajouté(e) d'office au personnel présent. Une copie sera adressée au chirurgien choisi ci-dessus
+            (il la récupère depuis « Dossier Patient » : renseignez donc l'ID du patient).
+        </Alert>
+    )}
 
+    <Form.Label className="mt-2">Personnel présent</Form.Label>
     <Select
         isMulti
         name="extraStaff"
-        options={unrestrictedPhmcGroupedOptions.map(group => ({
-            label: group.label,
-            options: group.options.map(option => ({ value: option.value, label: option.label }))
-        }))}
-        value={Array.isArray(formData.extraStaff)
-            ? formData.extraStaff.map(staff => ({ value: staff, label: staff }))
-            : []}
+        options={careOptions.map((group) => ({ label: group.label, options: group.options.map((option) => ({ value: option.value, label: option.label })) }))}
+        value={extraStaff.map((staff) => ({ value: staff, label: staff }))}
         onChange={(selectedOptions) => {
-            const selectedValues = selectedOptions ? selectedOptions.map(option => option.value) : [];
-            handleChange({
-                target: {
-                    name: 'extraStaff',
-                    value: selectedValues
-                }
-            });
+            const selectedValues = selectedOptions ? selectedOptions.map((option) => option.value) : [];
+            // Le signataire non chirurgien reste dans le personnel présent : on ne peut pas le retirer.
+            if (signer && !signerIsSurgeon && !selectedValues.includes(signer)) selectedValues.push(signer);
+            handleChange({ target: { name: 'extraStaff', value: selectedValues } });
         }}
         className="form-control"
         placeholder="Entrer le personnel présent (( Laisser vide si aucun )) "
-        styles={{                                        
-            control: (base) => ({
-        ...base,
-        minHeight: '38px',
-        backgroundColor: '#16202c',
-        color: '#eeeeeeb0',
-        borderColor: '#6c757d',
-        '&:hover': {
-            borderColor: '#eeeeeeb0'
-        }
-    }),
-    menu: (base) => ({
-        ...base,
-        backgroundColor: '#16202c',
-        zIndex: 1000,
-        border: '1px solid #6c757d',
-        borderRadius: '0.375rem'
-    }),
-    option: (base, state) => ({
-        ...base,
-        backgroundColor: state.isFocused ? '#30363d' : '#16202c',
-        color: '#eeeeeeb0',
-        padding: '0.5rem 1rem',
-        '&:hover': {
-            backgroundColor: '#30363d'
-        }
-    }),
-    multiValue: (base) => ({
-        ...base,
-        backgroundColor: '#30363d',
-        color: '#eeeeeeb0'
-    }),
-    multiValueLabel: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    multiValueRemove: (base) => ({
-        ...base,
-        color: '#9aa7b4',
-        '&:hover': {
-            backgroundColor: '#dc3545',
-            color: '#fff'
-        }
-    }),
-    input: (base) => ({
-        ...base,
-        color: '#eeeeeeb0'
-    }),
-    placeholder: (base) => ({
-        ...base,
-        color: '#9aa7b4'
-    })
-}}
-/>                                
+        styles={darkSelectStyles}
+    />
     <Form.Label className="form-section-title">Enquête chirurgicale</Form.Label>
         <Form.Control
             as="textarea"

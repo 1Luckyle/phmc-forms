@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
-import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
+import CareFormHeader from './shared/CareFormHeader';
 
 const PhysEval = ({
             formData,
@@ -25,106 +25,9 @@ const PhysEval = ({
         }) => {
     return (
     <>
-                                <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
-                                <Form.Label>Nom du patient | ID Patient | Date:</Form.Label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
+                                <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
 
-                                <Form.Control
-                                    type="text"
-                                    name="patientName"
-                                    value={formData.patientName}
-                                    onChange={handleChange}
-                                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                                    className="form-control"
-                                />
-
-                                <Form.Control
-                                    type="text"
-                                    name="patientID"
-                                    value={formData.patientID}
-                                    onChange={handleChange}
-                                    placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
-                                    className="form-control"
-                                />
-
-                                <Form.Control
-                                    type="date"
-                                    name="date"
-                                    value={formData.date}
-                                    onChange={handleChange}
-                                    className="form-control"
-                                    
-                                /> </div>
-
-                                            <Form.Select
-                                            name="phmcRank"
-                                            value={formData.phmcRank}
-                                            onChange={handleChange}
-                                            className="form-control"
-                                        >
-                                            <option value="" disabled>Fonction au sein du PHMC</option>
-                                            {phmcRank.map((option) => (
-                                                <option key={option.value} value={option.value}>{option.label}</option>
-                                            ))}
-                                        </Form.Select>
-                                        <Form.Label>Identifiants de l'employé</Form.Label>
-
-                                <Select
-                                    name="phmcEmployee"
-                                    value={phmcGroupedOptions
-                                        .flatMap(group => group.options)
-                                        .find(option => option.value === formData.phmcEmployee) || null}
-onChange={(selectedOption) => {
-    handleSelectChange(selectedOption, { name: 'phmcEmployee' }); // Correct call to App.js handler
-
-    // eslint-disable-next-line no-unused-vars
-    const lastName = selectedOption ? selectedOption.lastName : '';
-    // This direct setFormData is redundant if handleSelectChange in App.js already updates these fields
-    setFormData(prev => ({
-        ...prev,
-        phmcEmployee: selectedOption ? selectedOption.value : '',
-        lastName: selectedOption ? selectedOption.lastName : '' 
-    }));
-}}
-                                    options={phmcGroupedOptions}
-                                    isClearable
-                                    placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-                                    className="form-control"
-                                    styles={{
-                                        control: (base) => ({
-                                            ...base,
-                                            backgroundColor: '#16202c',
-                                            color: '#eeeeeeb0',
-                                            borderColor: '#30363d',
-                                            '&:hover': {
-                                                borderColor: '#30363d'
-                                            }
-                                        }),
-                                        menu: (base) => ({
-                                            ...base,
-                                            backgroundColor: '#16202c',
-                                            zIndex: 1000
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                                            color: '#eeeeeeb0'
-                                        }),
-                                        singleValue: (base) => ({
-                                            ...base,
-                                            color: '#eeeeeeb0'
-                                        }),
-                                        input: (base) => ({
-                                            ...base,
-                                            color: '#eeeeeeb0'
-                                        }),
-                                        placeholder: (base) => ({
-                                            ...base,
-                                            color: '#eeeeeeb0'
-                                        })
-                                    }}
-                                />
-                                <PatientContextFields formData={formData} handleChange={handleChange} showHistory={false} />
+                                <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} showHistory={false} />
 
                                     <Form.Label className="form-section-title">Mesures du patient</Form.Label>
                                     <div style={{ display: 'flex', gap: '10px' }}>

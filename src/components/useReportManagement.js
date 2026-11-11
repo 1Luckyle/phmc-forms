@@ -526,7 +526,7 @@ Clé : ${sanitizedKey}`,
 
         const saveReportResult = await saveReport();
         if (saveReportResult.success) {
-            navigator.clipboard.writeText(bbCodeContent).then(() => {
+            navigator.clipboard.writeText(String(bbCodeContent).replace(/\[img=\d+\]/gi, '[img]')).then(() => {
                 showNotification('BBCode copied to clipboard and report saved!', 'success');
             }).catch(err => {
                 showNotification('Report saved, but failed to copy BBCode to clipboard.', 'warning');

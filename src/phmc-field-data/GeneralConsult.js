@@ -1,8 +1,8 @@
 import React from 'react';
-import { Form, InputGroup, Button} from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import Select from 'react-select';
-import ImagePreview from '../components/ImagePreview';
 import PatientContextFields from './shared/PatientContextFields';
+import CareFormHeader from './shared/CareFormHeader';
 
 // Valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
 const VITAL_VALUE_FIELDS = [
@@ -37,111 +37,15 @@ const GeneralConsult = ({
     assignedDepartment,
     followup,
     admission,
-    isUploading,
-    handleImageUpload,
     handleSelectChange
 }) => {
     return (
                             <> 
                                 <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
 
-                                <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    name="patientName"
-                                    value={formData.patientName}
-                                    onChange={handleChange}
-                                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                                    className="form-control"
-                                />
-                                <Form.Control
-                                    type="text"
-                                    name="patientID"
-                                    value={formData.patientID}
-                                    onChange={handleChange}
-                                    placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
-                                    className="form-control"
-                                    style={{ marginTop: '10px' }}
-                                />
+                                <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
 
-                                <Form.Label>Date:</Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    name="date"
-                                    value={formData.date}
-                                    onChange={handleChange}
-                                    className="form-control"
-                                />
-
-<Form.Select
-                                            name="phmcRank"
-                                            value={formData.phmcRank}
-                                            onChange={handleChange}
-                                            className="form-control"
-                                        >
-                                            <option value="" disabled>Fonction au sein du PHMC</option>
-                                            {phmcRank.map((option) => (
-                                                <option key={option.value} value={option.value}>{option.label}</option>
-                                            ))}
-                                        </Form.Select>
-                                        <Form.Label>Identifiants de l'employé</Form.Label>
-                                <Select
-                                    name="phmcEmployee"
-                                    value={phmcGroupedOptions
-                                        .flatMap(group => group.options)
-                                        .find(option => option.value === formData.phmcEmployee) || null}
-onChange={(selectedOption) => {
-    handleSelectChange(selectedOption, { name: 'phmcEmployee' }); // Correct call to App.js handler
-
-    // eslint-disable-next-line no-unused-vars
-    const lastName = selectedOption ? selectedOption.lastName : '';
-    // This direct setFormData is redundant if handleSelectChange in App.js already updates these fields
-    setFormData(prev => ({
-        ...prev,
-        phmcEmployee: selectedOption ? selectedOption.value : '',
-        lastName: selectedOption ? selectedOption.lastName : '' 
-    }));
-}}
-                                    options={phmcGroupedOptions}
-                                    isClearable
-                                    placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-                                    className="form-control"
-                                    styles={{
-                                        control: (base) => ({
-                                            ...base,
-                                            backgroundColor: '#16202c',
-                                            color: '#eeeeeeb0',
-                                            borderColor: '#30363d',
-                                            '&:hover': {
-                                                borderColor: '#30363d'
-                                            }
-                                        }),
-                                        menu: (base) => ({
-                                            ...base,
-                                            backgroundColor: '#16202c',
-                                            zIndex: 1000
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                                            color: '#eeeeeeb0'
-                                        }),
-                                        singleValue: (base) => ({
-                                            ...base,
-                                            color: '#eeeeeeb0'
-                                        }),
-                                        input: (base) => ({
-                                            ...base,
-                                            color: '#eeeeeeb0'
-                                        }),
-                                        placeholder: (base) => ({
-                                            ...base,
-                                            color: '#eeeeeeb0'
-                                        })
-                                    }}
-                                />
-
-                                <PatientContextFields formData={formData} handleChange={handleChange} />
+                                <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
                                 <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
                                 <Form.Control
@@ -455,68 +359,6 @@ onChange={(selectedOption) => {
                                         className="form-control"
                                     />
                                 )}
-
-                                <Form.Group className="mb-3 upload-container">
-                <InputGroup>
-                    <Form.Control
-                        as="textarea"
-                        name="scenePhotos"
-                        value={formData.scenePhotos}
-                        onChange={handleChange}
-                        rows="2"
-                        className="form-control"
-                        placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)"
-                        onPaste={(e) => { // Keep the paste logic
-                            const clipboardData = e.clipboardData || window.clipboardData;
-                            const pastedData = clipboardData.getData('text');
-                            const items = clipboardData.items;
-                            let hasImageItem = false;
-                            const urlRegex = /(https?:\/\/[^\s]+)/g;
-                            const containsUrl = urlRegex.test(pastedData);
-
-                            for (let i = 0; i < items.length; i++) {
-                                if (items[i].type.indexOf('image') !== -1) {
-                                    hasImageItem = true;
-                                    const file = items[i].getAsFile();
-                                    handleImageUpload({ target: { files: [file] } }, 'scenePhotos');
-                                    e.preventDefault();
-                                    break;
-                                }
-                            }
-                            if (containsUrl && !hasImageItem) {
-                                const currentValue = formData.scenePhotos || '';
-                                const cursorPos = e.target.selectionStart;
-                                const separator = currentValue && currentValue.trim().length > 0 ? ', ' : '';
-                                const newValue = currentValue.slice(0, cursorPos) +
-                                    (cursorPos > 0 ? separator : '') +
-                                    pastedData +
-                                    currentValue.slice(cursorPos);
-                                setFormData(prev => ({ ...prev, scenePhotos: newValue }));
-                                e.preventDefault();
-                            } else {
-                                console.log('No URL detected or image item present');
-                            }
-                        }}
-                    />
-                    <Button
-                        variant="success"
-                        disabled={isUploading}
-                        onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = 'image/*';
-                            input.multiple = true;
-                            input.onchange = (e) => handleImageUpload(e, 'scenePhotos');
-                            input.click();
-                        }}
-                    >
-                        <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i>
-                        {isUploading ? 'Téléchargement...' : 'Télécharger images'}
-                    </Button>
-                </InputGroup>
-                <ImagePreview imageUrls={formData.scenePhotos} />
-                <span className="helper-text">Télécharger une image du bon de prescription si applicable. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.</span>
-            </Form.Group>
 
                                 <Form.Select
                                 name="followup"

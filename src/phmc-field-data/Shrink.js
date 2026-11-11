@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form } from 'react-bootstrap'; 
-import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
+import CareFormHeader from './shared/CareFormHeader';
 
 const Shrink = ({
     formData,
@@ -26,100 +26,9 @@ const Shrink = ({
     return (
         <>
         <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
-        <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
-        <Form.Control
-            type="text"
-            name="patientName"
-            value={formData.patientName}
-            onChange={handleChange}
-            placeholder="Prénom & Nom du patient"
-            className="form-control"
-            />
-        <Form.Control
-            type="text"
-            name="patientID"
-            value={formData.patientID}
-            onChange={handleChange}
-            placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
-            className="form-control"
-            style={{ marginTop: '10px' }}
-            />
+        <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
 
-        <Form.Label>Date:</Form.Label>
-        <Form.Control
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className="form-control"
-            />
-
-<Form.Select
-                    name="phmcRank"
-                    value={formData.phmcRank}
-                    onChange={handleChange}
-                    className="form-control"
-                >
-                    <option value="" disabled>Fonction au sein du PHMC</option>
-                    {phmcRank.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </Form.Select>
-
-
-        <Select
-            name="phmcEmployee"
-            value={phmcGroupedOptions
-                .flatMap(group => group.options)
-                .find(option => option.value === formData.phmcEmployee) || null}
-            onChange={(selectedOption) => {
-                // eslint-disable-next-line no-unused-vars
-                const lastName = selectedOption ? selectedOption.lastName : '';
-                setFormData(prev => ({
-                    ...prev,
-                    phmcEmployee: selectedOption ? selectedOption.value : '',
-                    lastName: selectedOption ? selectedOption.lastName : '' // Use lastName from the selected option
-                }));
-            }}
-            options={phmcGroupedOptions}
-            isClearable
-            placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-            className="form-control"
-            styles={{
-                control: (base) => ({
-                    ...base,
-                    backgroundColor: '#16202c',
-                    color: '#eeeeeeb0',
-                    borderColor: '#30363d',
-                    '&:hover': {
-                        borderColor: '#30363d'
-                    }
-                }),
-                menu: (base) => ({
-                    ...base,
-                    backgroundColor: '#16202c',
-                    zIndex: 1000
-                }),
-                option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                    color: '#eeeeeeb0'
-                }),
-                singleValue: (base) => ({
-                    ...base,
-                    color: '#eeeeeeb0'
-                }),
-                input: (base) => ({
-                    ...base,
-                    color: '#eeeeeeb0'
-                }),
-                placeholder: (base) => ({
-                    ...base,
-                    color: '#eeeeeeb0'
-                })
-            }}
-        />
-        <PatientContextFields formData={formData} handleChange={handleChange} showHistory={false} />
+        <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} showHistory={false} />
         <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
                 <Form.Control
                 as="textarea"

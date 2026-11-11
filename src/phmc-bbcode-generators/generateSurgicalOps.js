@@ -3,7 +3,7 @@
 // silencieux qui pourrait passer pour un bug d'affichage). Le personnel
 // supplémentaire est explicitement optionnel ("laisser vide si aucun") et
 // garde une chaîne vide.
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 
 const NOT_FILLED = 'Non renseigné';
@@ -24,10 +24,8 @@ const generateSurgicalOps = (formData) => {
         patientID = '',
         patientSummaryConsultation = NOT_FILLED,
         patientAddress = NOT_FILLED,
-        phmcRank = NOT_FILLED,
         date = NOT_FILLED,
         patientSummary = NOT_FILLED,
-        lastName = NOT_FILLED,
         surgeryProcedures = NOT_FILLED
     } = formData;
     const extraStaffNames = Array.isArray(extraStaff) ? extraStaff.join(', ') : extraStaff;
@@ -37,15 +35,15 @@ const generateSurgicalOps = (formData) => {
 PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
-Signé: ${phmcRank} ${lastName}
+Signé: ${signedLine(formData)}
 
 ${phmcHeaderEnd()}
 ${sectionBanner(`Personnel`)}
 [table][tr][td]Chirurgien principal[/td][td]
-${phmcEmployee}
+${formData.surgeonEmployee || phmcEmployee}
 [/td][/tr]
-[tr][td]Personnel supplémentaire [i](laisser vide si aucun)[/i][/td][td]
-${extraStaff}
+[tr][td]Personnel présent [i](laisser vide si aucun)[/i][/td][td]
+${extraStaffNames}
 [/td][/tr][/table]
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Enquête chirurgicale`)}
 [table]

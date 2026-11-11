@@ -1,6 +1,6 @@
 import { translateResultValue } from '../constants/clinicalOptions';
 import { buildLabBBCode } from './shared/labResults';
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 
@@ -63,8 +63,6 @@ const generateEmergencyProtocol = (formData) => {
         } else {
             prescriptionImageBBCode = prescriptionImage.trim();
         }
-    } else {
-        prescriptionImageBBCode = 'N/A';
     }
 
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]PROTOCOLE D'URGENCE[/b]
@@ -74,7 +72,7 @@ ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
+Signé: ${signedLine(formData)}
 ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Arrivée: [/u] ${ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
@@ -117,9 +115,9 @@ ${patientProcedure || 'N/A'}
 [u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine || 'N/A'}
 [br][/br]
-${prescriptionImageBBCode}
+${prescriptionImageBBCode ? `${prescriptionImageBBCode}
 [br][/br]
-[u]Suivi: [/u][br][/br]
+` : ''}[u]Suivi: [/u][br][/br]
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)

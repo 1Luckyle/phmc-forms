@@ -1,4 +1,4 @@
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -7,12 +7,10 @@ const NOT_FILLED = 'Non renseigné';
 
 const generateMentalHealthPHMC = (formData) => {
         const {
-            lastName = NOT_FILLED,
             patientName = NOT_FILLED,
             patientID = '',
             date = NOT_FILLED,
             patientChiefComplaint = NOT_FILLED,
-            phmcRank = NOT_FILLED,
             patientNotes = NOT_FILLED,
             patientDiagnosis = NOT_FILLED,
             patientMedicine = NOT_FILLED,
@@ -24,7 +22,7 @@ const generateMentalHealthPHMC = (formData) => {
 PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
-Signé: ${phmcRank} ${lastName}
+Signé: ${signedLine(formData)}
 ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: true })}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]

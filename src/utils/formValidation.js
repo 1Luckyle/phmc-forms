@@ -28,6 +28,8 @@ import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { getFieldInfo } from '../constants/fieldInfo';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
+import { APPOINTMENT_DATE_VERSIONS } from './appointmentDate';
+import { validateMedicalCertificate } from './medicalCertificates';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
@@ -70,7 +72,9 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     });
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
-    if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de la visite : champ obligatoire.');
+    if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de consultation : champ obligatoire.');
+    // Certificat de maladie : les champs demandés dépendent du type de courrier (utils/medicalCertificates.js).
+    if (version === 35) validateMedicalCertificate(data).forEach((problem) => errors.push(problem));
     // Certificat de vol : classe, catégories, résultat de chaque examen de la classe, conclusion cohérente avec les examens (voir utils/flightCertificate.js).
     if (version === 41) validateFlightCertificate(data).forEach((problem) => errors.push(problem));
     if (version === 24 && !filled(data.patientFirstName) && !filled(data.patientLastName)) {
@@ -121,10 +125,11 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         errors.push('Sélectionnez au moins un élément du dossier médical à mettre à jour.');
     }
 
-    // Dates plausibles.
+    // Dates plausibles. Un rendez-vous (formulaires du personnel soignant) est au contraire dans le présent ou le futur : on ne les refuse pas pour être « dans le futur »
+    // (la saisie d'une date passée est refusée à la source, voir utils/appointmentDate.js).
     if (filled(data.date)) {
         const date = parseDate(data.date);
-        if (date && isFutureDate(date)) errors.push('Date : elle ne peut pas être dans le futur.');
+        if (date && !APPOINTMENT_DATE_VERSIONS.includes(version) && isFutureDate(date)) errors.push('Date : elle ne peut pas être dans le futur.');
         else if (date && isImplausiblyOld(date)) errors.push('Date : année invalide.');
     }
     if (filled(data.patientDateOfBirth)) {
@@ -147,6 +152,11 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         } else if (!looksLikePatientId(data.patientID)) {
             warnings.push(`L'ID patient « ${text(data.patientID)} » n'a pas la forme habituelle (ex. PHMC-2752 ou 2752).`);
         }
+    }
+
+    // Opération remplie par quelqu'un d'autre que le chirurgien : la copie qui lui est adressée se récupère dans le dossier du patient, donc il faut un ID patient.
+    if (version === 5 && filled(data.surgeonEmployee) && filled(data.phmcEmployee) && data.surgeonEmployee !== data.phmcEmployee && !filled(data.patientID)) {
+        warnings.push("Sans ID patient, le chirurgien choisi ne pourra pas récupérer la copie du rapport (elle passe par le dossier du patient).");
     }
 
     // Un Civil n'enregistre un dossier que sous son propre ID : jamais dans le dossier de quelqu'un d'autre.

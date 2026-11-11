@@ -1,5 +1,5 @@
 import { buildLabBBCode } from './shared/labResults';
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 
 const generateConsultationNotesPHMC = (formData) => {
@@ -54,7 +54,7 @@ ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signé: ${phmcRank || 'N/A'} ${lastName || 'N/A'}
+Signé: ${signedLine(formData)}
 ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Motif de la visite: [/u][br][/br]

@@ -111,6 +111,7 @@ const buildHelpers = (ctx = {}) => {
             phmcEmployee: phmcPick.value,
             phmcEmployeeLastName: phmcPick.lastName || '',
             lastName: phmcPick.lastName || '',
+            phmcRank: phmcPick.rank || '',
         }
         : {};
     const coronerPick = keepOrFirst(coronerOptions, formData.coronerEmployee);
@@ -668,21 +669,34 @@ const TEMPLATES = {
     // Certificat de Maladie
     35: (h) => ({
         ...h.phmc,
-        emailPurpose: 'Sickness Note',
+        // Arrêt de travail avec ITT : le type le plus complet (période, ITT calculée, sorties).
+        emailPurpose: 'Work Stoppage',
         emailRecipient: 'Direction des Ressources Humaines',
         patientName: h.patient.fullName,
         patientID: h.patient.id,
         dateOfVisit: h.today,
         sicknessStartDate: h.today,
         sicknessEndDate: h.daysFromToday(5),
+        certificateExit: 'Sorties autorisées',
         reasonForSickness: 'Grippe saisonnière avec forte fièvre.',
         illnessCondition: 'Repos complet recommandé.',
         confirmationPurpose: 'Justificatif pour l\'employeur.',
         attachedReportSummary: buildEmployerSummaryBBCode('consult', {
             facility: 'Centre médical Pillbox Hill', date: h.today.split('-').reverse().join('/'), admission: 'Non', followup: 'Recommandé',
         }),
-        phmcEmployeeSignatureImage: h.img(),
         SubmitDate: h.today,
+    }),
+
+    // Mail Externe (courrier envoyé hors du site)
+    42: (h) => ({
+        externalMailSubject: 'Confirmation de rendez-vous',
+        externalMailRecipient: 'Madame Dupont',
+        externalMailRecipientAddress: 'dupont@mail.eyefind.fr',
+        externalMailFonction: 'Médecin Titulaire',
+        externalMailService: 'Médecine interne',
+        externalMailBody: 'Bonjour,\n\nNous vous confirmons votre rendez-vous au Pillbox Hill Medical Center.\n\n[b]Merci de vous présenter 15 minutes à l\'avance.[/b]',
+        externalMailBodyHtml: '<div>Bonjour,</div><div><br></div><div>Nous vous confirmons votre rendez-vous au Pillbox Hill Medical Center.</div><div><br></div><div><b>Merci de vous présenter 15 minutes à l\'avance.</b></div>',
+        externalMailDate: h.today.split('-').reverse().join('/'),
     }),
 
     // Rapport Public de Décès
@@ -877,10 +891,22 @@ export const hasDebugTemplate = (version) => Object.prototype.hasOwnProperty.cal
 
 // Renvoie l'objet partiel à fusionner dans formData, ou null si la version n'a
 // pas de gabarit (ex. panneau de contrôle admin).
+// Formulaires du personnel soignant : le nom du patient se saisit en trois champs et la date de naissance remplace l'âge ; l'opération a aussi un chirurgien principal (le signataire).
+const CARE_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29, 35, 41];
 export const getDebugTemplate = (version, ctx) => {
     const build = TEMPLATES[version];
     if (!build) return null;
-    return build(buildHelpers(ctx));
+    const helpers = buildHelpers(ctx);
+    const template = build(helpers);
+    if (!CARE_VERSIONS.includes(Number(version))) return template;
+    return {
+        patientFirstName: helpers.patient.firstName,
+        patientMiddleName: helpers.patient.middleName,
+        patientLastName: helpers.patient.lastName,
+        ...(Number(version) === 35 ? {} : { patientDateOfBirth: helpers.patient.dob }),
+        ...(Number(version) === 5 ? { surgeonEmployee: template.phmcEmployee || '' } : {}),
+        ...template,
+    };
 };
 
 // Exposé pour les modales (création de compte, demandes, etc.) qui ont leur

@@ -403,6 +403,7 @@ const baseRelevantFields = (bbCodeVersion) => {
         case 35: // Certificat de maladie
             return [
                 'emailPurpose', 'emailRecipient', 'patientName', 'patientID', 'dateOfVisit',
+                'previousEndDate', 'returnDate', 'attendanceFrom', 'attendanceTo', 'certificateExit', 'certificateRestrictions', 'fitnessActivity', 'fitnessConclusion',
                 'sicknessStartDate', 'sicknessEndDate', 'reasonForSickness',
                 'illnessCondition', 'confirmationPurpose', 'attachedReportSummary',
                 'phmcEmployee', 'lastName', 'phmcRank', 'phmcEmployeeSignatureImage', 'SubmitDate',
@@ -466,8 +467,15 @@ const DMEC_EXTRA = {
     37: ['decedentFirstName', 'decedentMiddleName', 'decedentLastName', 'decedentTitle', 'placeOfDeathZip', 'placeOfDeathZipCity', 'causesOfDeath', 'causesOfDeathPresets', 'causesOfDeathFree'],
 };
 
+// Formulaires du personnel soignant : nom du patient en trois champs, date de naissance (l'âge en est déduit), et pour l'opération le chirurgien (distinct du signataire).
+const CARE_IDENTITY_EXTRA = ['patientFirstName', 'patientMiddleName', 'patientLastName', 'patientDateOfBirth', 'patientAgeYears', 'patientSex', 'phmcRank'];
+const CARE_EXTRA_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29, 35, 41];
+
 const getRelevantFields = (bbCodeVersion) => {
+    // Mail Externe : l'objet, le destinataire, l'expéditeur (fonction, département), le texte (BBCode et HTML de l'éditeur) et la date.
+    if (bbCodeVersion === 42) return ['externalMailSubject', 'externalMailRecipient', 'externalMailRecipientAddress', 'externalMailFonction', 'externalMailService', 'externalMailBody', 'externalMailBodyHtml', 'externalMailDate'];
     const base = baseRelevantFields(bbCodeVersion);
+    if (CARE_EXTRA_VERSIONS.includes(bbCodeVersion)) return [...new Set([...base, ...CARE_IDENTITY_EXTRA, ...(bbCodeVersion === 5 ? ['surgeonEmployee'] : [])])];
     if (DMEC_EXTRA[bbCodeVersion]) return [...new Set([...base, ...DMEC_EXTRA[bbCodeVersion], 'coronerPHNumber', 'coronerEmail'])];
     if (bbCodeVersion === 3 || bbCodeVersion === 25) return [...new Set(withPresetFields([...base, ...PATIENT_FILE_EXTRA]))];
     // Mise à jour : toutes les rubriques du dossier avancé peuvent être modifiées, donc tous leurs champs sont gardés.

@@ -1,49 +1,32 @@
-import React, { useState, useEffect } from 'react'; // Import useState
-import { getCachedSignatureUrl } from '../utils/userCreations';
+import React, { useState } from 'react';
 import { Form, InputGroup, Button, Alert } from 'react-bootstrap';
 import { prepareAttachedReport, ACCEPTED_REPORT_VERSIONS, ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
-import Select from 'react-select';
-import ImagePreview from '../components/ImagePreview';
+import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
+import {
+    CERTIFICATE_TYPE_LIST, EXIT_OPTIONS, FITNESS_OPTIONS, certificateType, needsField, inclusiveDays, ittLabel,
+} from '../utils/medicalCertificates';
 
 const SicknessEmail = ({
     formData,
     handleChange,
     setFormData,
     phmcGroupedOptions,
-    onAttachReportSummaryRequest, 
-    handleSelectChange,
+    onAttachReportSummaryRequest,
     showNotification
 }) => {
-    // New state to track if consent has been confirmed
+    // Le consentement du patient doit être confirmé avant de joindre un rapport.
     const [consentConfirmed, setConsentConfirmed] = useState(false);
     const notify = showNotification || (() => {});
-
-    // Ma signature (créée dans Carte de visite → Signature) : préremplie si le champ est vide.
-    useEffect(() => {
-        const mySignature = getCachedSignatureUrl();
-        if (mySignature && !formData.phmcEmployeeSignatureImage) {
-            setFormData(prev => (prev.phmcEmployeeSignatureImage ? prev : { ...prev, phmcEmployeeSignatureImage: mySignature }));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    // Le grade imprimé suit TOUJOURS le médecin sélectionné (il n'y a pas de champ grade dans ce formulaire :
-    // sans cela, un grade d'un autre formulaire resté en mémoire, ex. « Medical Student », était imprimé).
-    useEffect(() => {
-        const doctor = phmcGroupedOptions.flatMap(group => group.options).find(option => option.value === formData.phmcEmployee);
-        const rank = doctor?.rank || '';
-        if ((formData.phmcRank || '') !== rank) {
-            setFormData(prev => ({ ...prev, phmcRank: rank }));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.phmcEmployee, formData.phmcRank, phmcGroupedOptions]);
-    const applyMySignature = () => {
-        const mySignature = getCachedSignatureUrl();
-        if (!mySignature) {
-            notify('Vous n\'avez pas encore de signature : créez-la dans la boîte à outils → Carte de visite → onglet Signature.', 'warning');
-            return;
-        }
-        setFormData(prev => ({ ...prev, phmcEmployeeSignatureImage: mySignature }));
-    };
+    const type = certificateType(formData.emailPurpose);
+    const has = (field) => needsField(formData.emailPurpose, field);
+    const days = inclusiveDays(formData.sicknessStartDate, formData.sicknessEndDate);
+    const dateField = (name, label, extra = {}) => (
+        <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+            <Form.Label>{label}</Form.Label>
+            <Form.Control type="date" name={name} value={formData[name] || ''} onChange={handleChange} className="form-control" {...extra} />
+        </div>
+    );
+    const row = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
 
     // Vérifie qu'un contenu est bien un rapport ACCEPTÉ (d'après ses titres), du bon patient, puis
     // le remplace par son résumé simplifié. Retourne true si le rapport a été joint.
@@ -76,133 +59,93 @@ const SicknessEmail = ({
 
     return (
         <>
-            <Form.Label className="form-section-title">Type d'email</Form.Label>
+            <Form.Label className="form-section-title">Type de courrier</Form.Label>
             <Form.Group className="mb-3">
-                <Form.Label>Objet de l'email</Form.Label>
-                <Form.Select
-                    name="emailPurpose"
-                    value={formData.emailPurpose}
-                    onChange={handleChange}
-                    className="form-control"
-                >
-                    <option value="" disabled>Sélectionner le type d'email</option>
-                    <option value="Sickness Note">Certificat de maladie</option>
-                    <option value="Illness Confirmation">Confirmation de maladie</option>
+                <Form.Label>Objet du courrier</Form.Label>
+                <Form.Select name="emailPurpose" value={formData.emailPurpose || ''} onChange={handleChange} className="form-control">
+                    <option value="" disabled>Sélectionner le type de courrier</option>
+                    {CERTIFICATE_TYPE_LIST.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </Form.Select>
+                {type && <span className="helper-text">{type.hint}</span>}
             </Form.Group>
 
             <Form.Label className="form-section-title">Destinataire et patient</Form.Label>
             <Form.Group className="mb-3">
                 <Form.Label>Nom du destinataire</Form.Label>
-                <Form.Control
-                    type="text"
-                    name="emailRecipient"
-                    value={formData.emailRecipient}
-                    onChange={handleChange}
-                    placeholder="ex: Employeur, École, Individu"
-                    className="form-control"
-                />
+                <Form.Control type="text" name="emailRecipient" value={formData.emailRecipient || ''} onChange={handleChange} placeholder="ex: Employeur, École, Assurance, Individu" className="form-control" />
             </Form.Group>
+            <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
+            <span className="helper-text">L'ID patient classe le certificat dans le bon dossier. Laissez-le vide si inconnu, mais vérifiez qu'il correspond bien à ce patient.</span>
 
-            <Form.Group className="mb-3">
-                <Form.Label>Nom du patient</Form.Label>
-                <Form.Control
-                    type="text"
-                    name="patientName"
-                    value={formData.patientName}
-                    onChange={handleChange}
-                    placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                    className="form-control"
-                />
-            </Form.Group>
+            <Form.Label className="form-section-title">Consultation et période</Form.Label>
+            <AppointmentDateField formData={formData} handleChange={handleChange} name="dateOfVisit" label="Date de consultation du patient au PHMC" />
 
-            <Form.Group className="mb-3">
-                <Form.Label>ID du patient</Form.Label>
-                <Form.Control
-                    type="text"
-                    name="patientID"
-                    value={formData.patientID || ''}
-                    onChange={handleChange}
-                    placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
-                    className="form-control"
-                />
-                <span className="helper-text">
-                    Sert à classer le certificat dans le bon dossier patient. Laissez vide si inconnu — vérifiez qu'il correspond bien à ce patient.
-                </span>
-            </Form.Group>
-
-            <Form.Label className="form-section-title">Consultation et arrêt</Form.Label>
-            <Form.Group className="mb-3">
-                <Form.Label>Date de consultation du patient au PHMC</Form.Label>
-                <Form.Control
-                    type="date"
-                    name="dateOfVisit"
-                    value={formData.dateOfVisit}
-                    onChange={handleChange}
-                    className="form-control"
-                />
-            </Form.Group>
-
-            {formData.emailPurpose === 'Sickness Note' && (
+            {has('attendanceTimes') && (
+                <div style={row}>
+                    {dateField('attendanceFrom', 'Arrivée (heure)', { type: 'time' })}
+                    {dateField('attendanceTo', 'Départ (heure)', { type: 'time' })}
+                </div>
+            )}
+            {has('previousEnd') && <div style={row}>{dateField('previousEndDate', "Fin de l'arrêt précédent")}</div>}
+            {has('period') && (
                 <>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Date de début de la maladie</Form.Label>
-                        <Form.Control
-                            type="date"
-                            name="sicknessStartDate"
-                            value={formData.sicknessStartDate}
-                            onChange={handleChange}
-                            className="form-control"
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Date de fin de la maladie</Form.Label>
-                        <Form.Control
-                            type="date"
-                            name="sicknessEndDate"
-                            value={formData.sicknessEndDate}
-                            onChange={handleChange}
-                            className="form-control"
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Raison de la maladie (Bref)</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={2}
-                            name="reasonForSickness"
-                            value={formData.reasonForSickness}
-                            onChange={handleChange}
-                            placeholder="ex: Grippe, rhume, blessure mineure"
-                            className="form-control"
-                        />
-                    </Form.Group>
+                    <div style={row}>
+                        {dateField('sicknessStartDate', has('previousEnd') ? 'Début de la prolongation' : 'Date de début')}
+                        {dateField('sicknessEndDate', has('previousEnd') ? 'Fin de la prolongation' : 'Date de fin', { min: formData.sicknessStartDate || undefined })}
+                    </div>
+                    {has('itt') && (
+                        <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.6rem' }}>
+                            ITT calculée : <strong>{days ? ittLabel(days) : 'renseignez les deux dates'}</strong> (jour de début et de fin compris).
+                        </div>
+                    )}
                 </>
             )}
-
-            {formData.emailPurpose === 'Illness Confirmation' && (
+            {has('exit') && (
+                <Form.Group className="mb-3">
+                    <Form.Label>Sorties</Form.Label>
+                    <Form.Select name="certificateExit" value={formData.certificateExit || ''} onChange={handleChange} className="form-control">
+                        <option value="" disabled>Sorties autorisées ?</option>
+                        {EXIT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Form.Select>
+                </Form.Group>
+            )}
+            {has('returnDate') && <div style={row}>{dateField('returnDate', 'Reprise du travail le')}</div>}
+            {has('activity') && (
+                <Form.Group className="mb-3">
+                    <Form.Label>Activité concernée</Form.Label>
+                    <Form.Control type="text" name="fitnessActivity" value={formData.fitnessActivity || ''} onChange={handleChange} placeholder="ex: Sport en salle, formation de secourisme, stage" className="form-control" />
+                </Form.Group>
+            )}
+            {has('fitness') && (
+                <Form.Group className="mb-3">
+                    <Form.Label>Conclusion</Form.Label>
+                    <Form.Select name="fitnessConclusion" value={formData.fitnessConclusion || ''} onChange={handleChange} className="form-control">
+                        <option value="" disabled>Choisir la conclusion…</option>
+                        {FITNESS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Form.Select>
+                </Form.Group>
+            )}
+            {(has('restrictions') || formData.certificateExit === 'Sorties autorisées avec restrictions' || formData.fitnessConclusion === 'Apte avec restrictions') && (
+                <Form.Group className="mb-3">
+                    <Form.Label>{has('restrictions') ? 'Aménagements recommandés (facultatif)' : 'Restrictions'}</Form.Label>
+                    <Form.Control as="textarea" rows={2} name="certificateRestrictions" value={formData.certificateRestrictions || ''} onChange={handleChange} placeholder="ex: Sorties de 10 h à 12 h seulement ; pas de port de charges lourdes" className="form-control" />
+                </Form.Group>
+            )}
+            {has('reason') && (
+                <Form.Group className="mb-3">
+                    <Form.Label>Raison (brève, sans détail médical)</Form.Label>
+                    <Form.Control as="textarea" rows={2} name="reasonForSickness" value={formData.reasonForSickness || ''} onChange={handleChange} placeholder="ex: Grippe, blessure mineure, fatigue" className="form-control" />
+                </Form.Group>
+            )}
+            {has('condition') && (
                 <>
                     <Form.Group className="mb-3">
                         <Form.Label>Maladie/Condition diagnostiquée</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="illnessCondition"
-                            value={formData.illnessCondition}
-                            onChange={handleChange}
-                            placeholder="ex: Angine streptococcique, Bras fracturé, Trouble anxieux"
-                            className="form-control"
-                        />
+                        <Form.Control type="text" name="illnessCondition" value={formData.illnessCondition || ''} onChange={handleChange} placeholder="ex: Angine streptococcique, Bras fracturé, Trouble anxieux" className="form-control" />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Objet de la confirmation</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="confirmationPurpose"
-                            value={formData.confirmationPurpose}
-                            onChange={handleChange}
-                            placeholder="ex: Pour dossiers d'emploi, présence scolaire, réclamation d'assurance"
-                            className="form-control"
-                        />
+                        <Form.Control type="text" name="confirmationPurpose" value={formData.confirmationPurpose || ''} onChange={handleChange} placeholder="ex: Pour dossiers d'emploi, présence scolaire, réclamation d'assurance" className="form-control" />
                     </Form.Group>
                 </>
             )}
@@ -272,98 +215,8 @@ const SicknessEmail = ({
             </Form.Group>
 
             <Form.Label className="form-section-title">Expéditeur</Form.Label>
-            <Form.Group className="mb-3">
-                <Form.Label>Employé PHMC envoyant l'email</Form.Label>
-                <Select
-                    name="phmcEmployee"
-                    value={phmcGroupedOptions
-                        .flatMap(group => group.options)
-                        .find(option => option.value === formData.phmcEmployee) || null}
-                    onChange={(selectedOption, actionMeta) => { // <--- MODIFIED onChange
-                        handleSelectChange(selectedOption, actionMeta); 
-                    }}
-                    options={phmcGroupedOptions}
-                    isClearable
-                    placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-                    className="form-control"
-                    styles={{
-                        control: (base) => ({
-                            ...base,
-                            backgroundColor: '#16202c',
-                            color: '#eeeeeeb0',
-                            borderColor: '#30363d',
-                            '&:hover': { borderColor: '#30363d' }
-                        }),
-                        menu: (base) => ({
-                            ...base,
-                            backgroundColor: '#16202c',
-                            zIndex: 1000
-                        }),
-                        option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused ? 'Grey' : '#16202c',
-                            color: '#eeeeeeb0'
-                        }),
-                        singleValue: (base) => ({
-                            ...base,
-                            color: '#eeeeeeb0'
-                        }),
-                        input: (base) => ({
-                            ...base,
-                            color: '#eeeeeeb0'
-                        }),
-                        placeholder: (base) => ({
-                            ...base,
-                            color: '#eeeeeeb0'
-                        })
-                    }}
-                />
-            </Form.Group>
-
-            <Form.Group className="mb-3 upload-container">
-                <Form.Label>Image de signature de l'employé</Form.Label>
-                <InputGroup>
-                    <Form.Control
-                        as="textarea"
-                        rows={2}
-                        name="phmcEmployeeSignatureImage"
-                        value={formData.phmcEmployeeSignatureImage || ''}
-                        onChange={handleChange}
-                        placeholder="Image de signature de l'employé"
-                        className="form-control"
-                        onPaste={(e) => {
-                            const pastedData = (e.clipboardData || window.clipboardData).getData('text');
-                            if (/(https?:\/\/[^\s]+)/.test(pastedData)) {
-                                const currentValue = formData.phmcEmployeeSignatureImage || '';
-                                const cursorPos = e.target.selectionStart;
-                                const separator = currentValue && currentValue.trim().length > 0 ? ', ' : '';
-                                const newValue = currentValue.slice(0, cursorPos) +
-                                    (cursorPos > 0 ? separator : '') +
-                                    pastedData +
-                                    currentValue.slice(cursorPos);
-                                setFormData(prev => ({ ...prev, phmcEmployeeSignatureImage: newValue }));
-                                e.preventDefault();
-                            }
-                        }}
-                    />
-                    <Button variant="outline-primary" onClick={applyMySignature} title="Utiliser la signature créée dans Carte de visite → Signature">
-                        <i className="fas fa-signature"></i> Ma signature
-                    </Button>
-                </InputGroup>
-                <ImagePreview imageUrls={formData.phmcEmployeeSignatureImage} />
-                <span className="helper-text">
-                    Collez le lien ImgBB de votre signature, ou cliquez sur « Ma signature » pour utiliser celle enregistrée dans Carte de visite → Signature.
-                </span>
-            </Form.Group>
-                        <Form.Control
-            type="date"
-            name="SubmitDate"
-            value={formData.SubmitDate || new Date().toISOString().split('T')[0]}
-            onChange={handleChange}
-            readOnly 
-            className="form-control" 
-            />
-            
+            <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} label="Employé PHMC envoyant le courrier" />
+            <span className="helper-text">Le courrier est signé par la personne qui le remplit : sa signature, son nom et son rôle figurent au bas du document (la signature est créée automatiquement à l'enregistrement si vous n'en avez pas).</span>
         </>
     );
 };

@@ -1,4 +1,4 @@
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -11,8 +11,6 @@ const generatePsychEvalPBC = (formData) => {
         patientID = '',
         date = NOT_FILLED,
         Affect,
-        phmcRank = NOT_FILLED,
-        lastName = NOT_FILLED,
         patientChiefComplaint = NOT_FILLED,
         patientTriggers = NOT_FILLED,
         patientStress = NOT_FILLED,
@@ -46,7 +44,7 @@ const generatePsychEvalPBC = (formData) => {
     let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
 PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 Date: ${date}
-Signé: ${phmcRank} ${lastName}
+Signé: ${signedLine(formData)}
 [/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]
 PALETO BAY BLVD.
 BP 685

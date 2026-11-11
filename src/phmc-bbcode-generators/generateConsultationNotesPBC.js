@@ -1,5 +1,5 @@
 import { buildLabBBCode } from './shared/labResults';
-import { buildPatientContextBBCode } from './shared/patientContext';
+import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -28,7 +28,7 @@ PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 
-Signé: ${phmcRank} ${lastName}
+Signé: ${signedLine(formData)}
 [/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]
 PALETO BAY BLVD.
 BP 685

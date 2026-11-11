@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react'; // Added useMemo
-import { Form, Button, InputGroup } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
+import CareFormHeader from './shared/CareFormHeader';
 
 const ARRIVAL_MODE_OPTIONS = [
     { value: 'Walk-in', label: 'Par ses propres moyens' },
@@ -120,8 +121,6 @@ const EmergencyForm = ({
     bloodOxy,
     handleSelectChange,
     followup,
-    isUploading,
-    handleImageUpload,
     Imaging,
     XrayResults,
     ctResults,
@@ -205,69 +204,9 @@ const EmergencyForm = ({
         <>
             {/* ... (Your existing form fields up to the Findings section) ... */}
             <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
-            <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
-            <Form.Control
-                type="text"
-                name="patientName"
-                value={formData.patientName}
-                onChange={handleChange}
-                placeholder="Prénom (Deuxième Prénom) & Nom du patient"
-                className="form-control"
-            />
-            <Form.Control
-                type="text"
-                name="patientID"
-                value={formData.patientID}
-                onChange={handleChange}
-                placeholder="ID Patient (ex. PHMC-2752) : relie le rapport à son dossier"
-                className="form-control"
-                style={{ marginTop: '10px' }}
-            />
+            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
 
-            <Form.Label>Date:</Form.Label>
-            <Form.Control
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="form-control"
-            />
-
-            <Form.Select
-                name="phmcRank"
-                value={formData.phmcRank}
-                onChange={handleChange}
-                className="form-control"
-            >
-                <option value="" disabled>Fonction au sein du PHMC</option>
-                {phmcRank.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </Form.Select>
-            <Form.Label>Identifiants de l'employé</Form.Label>
-            <Select
-                name="phmcEmployee"
-                value={phmcGroupedOptions
-                    .flatMap(group => group.options)
-                    .find(option => option.value === formData.phmcEmployee) || null}
-                onChange={(selectedOption) => {
-                    handleSelectChange(selectedOption, { name: 'phmcEmployee' });
-                    const lastName = selectedOption ? selectedOption.lastName : '';
-                    setFormData(prev => ({
-                        ...prev,
-                        phmcEmployee: selectedOption ? selectedOption.value : '',
-                        lastName: lastName
-                    }));
-                }}
-                options={phmcGroupedOptions}
-                isClearable
-                placeholder="Sélectionner un médecin. (Vous pouvez taper pour rechercher!)"
-                className={`form-control p-0 `}
-                classNamePrefix="react-select"
-                styles={customSelectStyles}
-            />
-
-            <PatientContextFields formData={formData} handleChange={handleChange} allergiesRequired={false} />
+            <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} allergiesRequired={false} />
 
             <Form.Label className="form-section-title">Arrivée aux urgences</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -491,41 +430,6 @@ const EmergencyForm = ({
             </Form.Select>
             <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
                 <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Médicaments / traitements administrés ou prescrits, conseils verbaux et recommandations" className={`form-control mb-2 `} />
-                <Form.Group className="mb-2 upload-container">
-                    <InputGroup>
-                        <Form.Control as="textarea" rows={2} name="prescriptionImage" value={formData.prescriptionImage || ''} onChange={handleChange} placeholder="Coller l'URL ou télécharger une image du/des bon/s de prescription dans cette section à des fins d'archivage. (si applicable) (séparées par des virgules)" className={`form-control`}
-                            onPaste={(e) => {
-                                const clipboardData = e.clipboardData || window.clipboardData;
-                                const pastedData = clipboardData.getData('text');
-                                const items = clipboardData.items;
-                                let hasImageItem = false;
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                const containsUrl = urlRegex.test(pastedData);
-                                for (let i = 0; i < items.length; i++) {
-                                    if (items[i].type.indexOf('image') !== -1) {
-                                        hasImageItem = true;
-                                        const file = items[i].getAsFile();
-                                        handleImageUpload({ target: { files: [file] } }, 'prescriptionImage');
-                                        e.preventDefault();
-                                        break;
-                                    }
-                                }
-                                if (containsUrl && !hasImageItem) {
-                                    const currentValue = formData.prescriptionImage || '';
-                                    const cursorPos = e.target.selectionStart;
-                                    const separator = currentValue && currentValue.trim().length > 0 ? ', ' : '';
-                                    const newValue = currentValue.slice(0, cursorPos) + (cursorPos > 0 ? separator : '') + pastedData + currentValue.slice(cursorPos);
-                                    setFormData(prev => ({ ...prev, prescriptionImage: newValue }));
-                                    e.preventDefault();
-                                }
-                            }}
-                        />
-                        <Button variant="success" disabled={isUploading} onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.multiple = true; input.onchange = (e) => handleImageUpload(e, 'prescriptionImage'); input.click(); }}>
-                            <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {isUploading ? 'Téléchargement...' : 'Télécharger ordonnance'}
-                        </Button>
-                    </InputGroup>
-                    <span className="helper-text">Télécharger une image du bon de prescription si applicable. Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.</span>
-                </Form.Group>
                 {/* Le suivi se renseigne que le patient soit admis ou non (le BBCode l'imprime dans les deux cas). */}
                 <Form.Select name="followup" value={formData.followup || ''} onChange={handleChange} className="form-control">
                     <option value="" disabled>Suivi requis?</option>

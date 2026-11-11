@@ -25,6 +25,8 @@ import { FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { isDmecReportVersion } from '../utils/reportAccess';
 import useReportGovernance from '../hooks/useReportGovernance';
 import PublishedDeathReportsModal from './PublishedDeathReportsModal';
+import { ExternalMailShareDialog, SharedExternalMails } from './ExternalMailShare';
+import { isExternalMail, purgeMailShares } from '../utils/externalMails';
 
 const modalStyle = {
     position: 'fixed',
@@ -170,6 +172,8 @@ const SavedReportsModal = ({
     const { employeeProfile, currentEmployee, isAdmin, isCivilian, civilianProfile, staffName } = useEmployeeAuth();
     // Rapport Public de Décès / gel judiciaire : boutons, pastilles et fenêtres partagés avec « Dossier Patient » (hooks/useReportGovernance.js).
     const [showPublished, setShowPublished] = useState(false);
+    // Mail externe que son créateur est en train de partager avec d'autres membres du personnel (fenêtre de partage).
+    const [shareMailFor, setShareMailFor] = useState(null);
     // État de paiement des rapports payants (à payer / payé / sans paiement), visible du patient comme du médecin.
     const { invoiceOf } = useReportInvoices(reportsForSelectedUser, !!show);
     // Formulaire du dossier (Basique, Avancé, Mise à jour) APPLIQUÉ au dossier (15 minutes après son paiement) : il ne se supprime plus, même par son auteur du personnel ; seul un
@@ -515,6 +519,8 @@ const SavedReportsModal = ({
             .map(toDeletePayload);
         if (reportsToDelete.length === 0) { setSelectedReportKeys([]); return; }
         setSelectedReportKeys([]);
+        // Un mail externe partagé : ses partages sont retirés des listes de ses destinataires avant sa suppression.
+        await Promise.all(sortedReports.filter((r) => reportsToDelete.some((d) => d.key === r.key) && isExternalMail(r)).map((r) => purgeMailShares({ ownerNode: String(r.reportPath || '').split('/')[1] || myCopyKey, reportKey: r.key })));
         // Les règles (qui peut supprimer quoi) et les notifications sont gérées par le hook.
         await deleteReportsForUser(reportsToDelete, selectedEmployee.value);
     };
@@ -752,6 +758,15 @@ const SavedReportsModal = ({
                                 <i className="fas fa-copy me-1"></i>Récupérer une copie
                             </Button>
                         )}
+                        {isStaffViewer && isExternalMail(report) && !report.isCopy && !!myCopyKey && comprehensiveSanitize(report.authorName || '') === myCopyKey && (
+                            <Button
+                                size="sm" style={{ backgroundColor: '#8957e5', border: 'none' }} disabled={locked}
+                                title="Partager ce mail avec d'autres membres du personnel (vous en restez le seul propriétaire)"
+                                onClick={() => setShareMailFor(report)}
+                            >
+                                <i className="fas fa-share-nodes me-1"></i>Partager avec le personnel
+                            </Button>
+                        )}
                         {gov.buttons(report, { disabled: isAttachMode })}
                         {!(isCivilian && isAma) && <Button
                             variant="outline-danger" size="sm" className="ms-auto"
@@ -760,6 +775,7 @@ const SavedReportsModal = ({
                                     ? "⚠ Vous allez supprimer un formulaire AMA (refus de soins signé par un patient). C'est une action grave : elle sera consignée dans le journal d'activité avec un avertissement.\n\nSupprimer cet AMA ?"
                                     : 'Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible.';
                                 if (window.confirm(message)) {
+                                    if (isExternalMail(report)) await purgeMailShares({ ownerNode: String(report.reportPath || '').split('/')[1] || myCopyKey, reportKey: report.key });
                                     await deleteReportsForUser([toDeletePayload(report)], selectedEmployee.value);
                                 }
                             }}
@@ -790,6 +806,7 @@ const SavedReportsModal = ({
             <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
                 {forumNoticeModal}
                 <PublishedDeathReportsModal show={showPublished} onHide={() => setShowPublished(false)} showNotification={showNotification} />
+                <ExternalMailShareDialog show={!!shareMailFor} onHide={() => setShareMailFor(null)} report={shareMailFor} ownerNode={myCopyKey} fromName={staffAuthorNameForCopy} showNotification={showNotification} />
                 {gov.dialogs}
                 <button onClick={onHide} style={closeButtonStyle} aria-label="Close modal">&times;</button>
                 <div className="rpt-modal-head">
@@ -846,6 +863,7 @@ const SavedReportsModal = ({
                 )}
 
                 <div className="rpt-body">
+                    {isStaffViewer && !isAttachMode && !!myCopyKey && <SharedExternalMails myNode={myCopyKey} showNotification={showNotification} refreshKey={indexRefresh} />}
                     {isCoronerAttach && (
                         <div className="rpt-banner">
                             <strong>Pièce jointe d'un Email DMEC.</strong> Seuls les rapports de décès et de catastrophe mortelle (tuerie / accident de masse) sont

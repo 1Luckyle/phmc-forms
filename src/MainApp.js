@@ -29,7 +29,10 @@ import { syncMinorFlag } from './utils/exemptions';
 import ExemptionStatusCard from './components/ExemptionStatusCard';
 import { syncStaffUids } from './utils/staffAdmin';
 import { normalizeBBCodeLineBreaks } from './utils/bbcodeLineBreaks';
-import { withPhmcFooter } from './phmc-bbcode-generators/shared/bbStyles';
+import { withPhmcFooter, withStaffSignature, hasStaffSignatureFooter } from './phmc-bbcode-generators/shared/bbStyles';
+import useMySignature from './hooks/useMySignature';
+import FormChecklist from './components/FormChecklist';
+import { isRejectedAppointmentChange, APPOINTMENT_PAST_MESSAGE } from './utils/appointmentDate';
 import { CIVIL_MEDICAL_VERSIONS } from './utils/formValidation';
 import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './utils/bbcodeToHtml';
 import ForumCopyNoticeModal, { isForumNoticeHidden } from './components/ForumCopyNoticeModal';
@@ -62,7 +65,8 @@ import ViewAsBanner from './components/ViewAsBanner';
 import { getToolAccess } from './utils/viewAs';
 import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
-import { groupsFor } from './utils/notifications';
+import { groupsFor, notifyUser, findStaffUidByNode } from './utils/notifications';
+import { comprehensiveSanitize } from './utils/patientRecords';
 import useFormAccess from './hooks/useFormAccess';
 import useDossierPrefill, { useCandidaturePrefill } from './hooks/useDossierPrefill';
 import { staffIdentity } from './utils/knownPatient';
@@ -457,6 +461,8 @@ function MainApp({
     } = useWebhooks(formData, commitInfo, showNotification);
     // Get image upload functions
     const { isUploading, handleImageUpload, uploadImageDetailed } = useImageUpload(showNotification, setFormData);
+    // Signature du personnel connecté : posée par défaut au bas des rapports, créée à l'enregistrement si elle n'existe pas (voir utils/staffSignature.js).
+    const mySignature = useMySignature({ uid: currentEmployee?.uid, name: staffName, uploadImageDetailed, enabled: !!currentEmployee && !isCivilian });
     // Rafraîchit la copie locale de ma signature (proposée dans les formulaires qui la demandent).
     const myCreationsUid = currentEmployee?.uid || null;
     // Un admin qui se connecte resynchronise les droits « personnel » (staffUIDs) : rattrape les comptes ajoutés ou convertis par une autre voie.
@@ -506,7 +512,12 @@ function MainApp({
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
-        
+        // Date de rendez-vous : jamais dans le passé (utils/appointmentDate.js).
+        if (isRejectedAppointmentChange(bbCodeVersion, name, newValue)) {
+            showNotification(APPOINTMENT_PAST_MESSAGE, 'exclamation-circle');
+            return;
+        }
+
         setFormData(prev => {
             const newFormData = {
                 ...prev,
@@ -666,6 +677,24 @@ function MainApp({
         return () => clearTimeout(timer);
     }, []);
 
+    // Signataire du rapport = la personne qui le remplit : son nom, son rôle, son service et sa signature (créée à l'enregistrement si elle n'en a pas). Un rapport déjà enregistré garde
+    // son signataire d'origine (formData.signerName). Un administrateur qui remplit POUR un employé signe au nom de cet employé (sa signature image n'est connue que pour soi-même).
+    const resolveSigner = (data = formData) => {
+        if (data && data.signerName) {
+            return { name: data.signerName, rank: data.signerRank || '', service: data.signerService || '', signatureUrl: data.signerSignatureUrl || '' };
+        }
+        const chosen = String((data && (data.phmcEmployee || data.coronerEmployee)) || '').trim();
+        if (isAdmin && chosen && chosen.toLowerCase() !== String(staffName || '').trim().toLowerCase()) {
+            return { name: chosen, rank: (data && (data.phmcRank || data.coronerRank)) || '', service: '', signatureUrl: '' };
+        }
+        return {
+            name: staffName || '',
+            rank: staffProfile?.rank || staffProfile?.category || '',
+            service: staffProfile?.serviceDirige || '',
+            signatureUrl: mySignature.urlRef.current || '',
+        };
+    };
+
     const getBBCodeContent = () => {
         const definition = getFormDefinition(bbCodeVersion);
 
@@ -705,9 +734,10 @@ function MainApp({
                     agencyDataStore: agencyDataStore,
                 };
                 // Un retour à la ligne ET [br][/br] côte à côte faisaient deux sauts : on les fusionne (voir utils/bbcodeLineBreaks.js).
-                const generated = definition.generator(generatorArgs);
-                // Pied de page PHMC sur tous les rapports (pas sur les candidatures, qui se postent telles quelles).
-                return normalizeBBCodeLineBreaks(definition.group === "PHMC Recruitment" ? generated : withPhmcFooter(generated, bbCodeVersion));
+                const signer = resolveSigner(formData);
+                const generated = definition.generator({ ...generatorArgs, signer });
+                // Signature du personnel, puis pied de page PHMC sur tous les rapports (pas sur les candidatures, qui se postent telles quelles).
+                return normalizeBBCodeLineBreaks(definition.group === "PHMC Recruitment" ? generated : withPhmcFooter(withStaffSignature(generated, bbCodeVersion, signer), bbCodeVersion));
             }
         } else {
             Sentry.captureMessage(`No BBCode generator found for version: ${bbCodeVersion}`);
@@ -781,6 +811,17 @@ function MainApp({
                 filteredData[field] = formData[field];
             }
         });
+
+        // Signataire (nom, rôle, service, signature) : conservé avec le rapport pour qu'il garde le même pied de page quand on le rouvre.
+        if (hasStaffSignatureFooter(bbCodeVersion)) {
+            const signer = resolveSigner(formData);
+            if (signer.name) {
+                filteredData.signerName = signer.name;
+                filteredData.signerRank = signer.rank || '';
+                filteredData.signerService = signer.service || '';
+                filteredData.signerSignatureUrl = signer.signatureUrl || '';
+            }
+        }
 
         return filteredData;
     };
@@ -1029,6 +1070,32 @@ function MainApp({
     // sauvegarde sous l'identité réelle de qui enregistre, pas sous le nom
     // choisi dans le menu déroulant coronerEmployee/phmcEmployee du formulaire
     // ni sous un compartiment "CIVILIAN" invisible.
+    // Pas encore de signature ? Elle est créée à l'enregistrement (nom en police manuscrite, rangée dans « Mes créations ») AVANT de fabriquer le BBCode enregistré.
+    const saveReportWithSignature = async (...args) => {
+        if (!isCivilian && hasStaffSignatureFooter(bbCodeVersion) && !formData.signerName) {
+            const signer = resolveSigner(formData);
+            if (signer.name && !signer.signatureUrl && String(signer.name).trim().toLowerCase() === String(staffName || '').trim().toLowerCase()) {
+                const created = await mySignature.ensure();
+                if (created) showNotification('Votre signature a été créée automatiquement (modifiable dans la boîte à outils → Carte de visite & signature).', 'info-circle', 6000);
+            }
+        }
+        const result = await saveReport(...args);
+        // Opération chirurgicale remplie par quelqu'un d'autre que le chirurgien (ex. un(e) interne) : le chirurgien est prévenu et récupère sa copie dans Dossier Patient
+        // (les règles Firebase interdisent d'écrire directement dans les rapports d'un collègue).
+        if (result && result.success && Number(bbCodeVersion) === 5 && formData.surgeonEmployee && formData.surgeonEmployee !== formData.phmcEmployee) {
+            try {
+                const uid = await findStaffUidByNode(comprehensiveSanitize(formData.surgeonEmployee), comprehensiveSanitize);
+                await notifyUser(uid, {
+                    type: 'copie',
+                    titre: `${formData.phmcEmployee || staffName || 'Un collègue'} vous adresse un rapport chirurgical`,
+                    texte: `${formData.patientName || 'Patient'}${formData.patientID ? ` (${formData.patientID})` : ''} : récupérez-en une copie dans Dossier Patient.`,
+                    lien: { cible: 'dossierPatient' },
+                });
+            } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
+        }
+        return result;
+    };
+
     const runSaveReport = useCallback((authorOverride, ownerPatientId) => {
         handleSaveReportAndNotify({
             formData,
@@ -1036,7 +1103,7 @@ function MainApp({
             selectedAgencyGroup,
             getBBCodeContent,
             getFormDefinition,
-            saveReport,
+            saveReport: saveReportWithSignature,
             showNotification,
             handleAgencySelect,
             setLastWebhookIdentifier,
@@ -1051,6 +1118,7 @@ function MainApp({
         selectedAgencyGroup,
         getBBCodeContent,
         saveReport,
+        saveReportWithSignature,
         showNotification,
         handleAgencySelect,
         setLastWebhookIdentifier,
@@ -2251,6 +2319,8 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                     <p>Veuillez sélectionner une agence, puis un type de formulaire.</p>
                                 )}
                             </Suspense>
+                            {/* Ce qu'il reste à renseigner avant de pouvoir enregistrer (mêmes contrôles que l'enregistrement). */}
+                            {FieldComponent && currentEmployee && <FormChecklist version={bbCodeVersion} formData={formData} selectOptions={selectOptions} />}
                         </form>
                     </div>
                     

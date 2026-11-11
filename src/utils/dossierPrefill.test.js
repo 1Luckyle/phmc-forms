@@ -18,9 +18,23 @@ describe('pré-remplissage depuis le dossier', () => {
         const patch = dossierPrefillPatch(26, donnees, {}, fields('patientFirstName', 'patientFirstNameNew', 'patientPHNew', 'patientBloodType'));
         expect(patch).toEqual({ patientFirstName: 'Jean', patientFirstNameNew: 'Jean', patientPHNew: '555-0000', patientBloodType: 'A+' });
     });
-    test('formulaire de soins : seulement le fond médical (jamais ce qui se détermine en consultation)', () => {
+    test('formulaire de soins : identité du patient et fond médical (jamais ce qui se détermine en consultation)', () => {
         const patch = dossierPrefillPatch(20, donnees, {}, fields('patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine', 'patientBloodType', 'patientMental', 'patientFirstName'));
-        expect(patch).toEqual({ patientAllergies: 'Pénicilline', patientChronicDiseases: 'Asthme', patientCurrentMedicine: 'Ventoline' });
+        expect(patch).toEqual({ patientFirstName: 'Jean', patientAllergies: 'Pénicilline', patientChronicDiseases: 'Asthme', patientCurrentMedicine: 'Ventoline' });
+    });
+    test('formulaire de soins : date de naissance et sexe du dossier (« Homme » devient « Male »)', () => {
+        const withIdentity = { ...donnees, patientMiddleName: 'Michel', patientLastName: 'Testard', patientDateOfBirth: '1990-05-14', patientGender: 'Homme' };
+        const patch = dossierPrefillPatch(5, withIdentity, {}, fields('patientFirstName', 'patientMiddleName', 'patientLastName', 'patientDateOfBirth', 'patientSex'));
+        expect(patch).toEqual({ patientFirstName: 'Jean', patientMiddleName: 'Michel', patientLastName: 'Testard', patientDateOfBirth: '1990-05-14', patientSex: 'Male' });
+        expect(dossierPrefillPatch(5, { patientGender: 'Femme' }, {}, fields('patientSex'))).toEqual({ patientSex: 'Female' });
+        expect(dossierPrefillPatch(5, { patientGender: 'Autre' }, {}, fields('patientSex'))).toEqual({ patientSex: 'Other' });
+    });
+    test('certificats (maladie, vol) : identité seulement, pas de fond médical', () => {
+        const patch = dossierPrefillPatch(35, donnees, {}, fields('patientFirstName', 'patientAllergies'));
+        expect(patch).toEqual({ patientFirstName: 'Jean' });
+    });
+    test('un champ déjà rempli n’est jamais écrasé', () => {
+        expect(dossierPrefillPatch(6, donnees, { patientFirstName: 'Saisi' }, fields('patientFirstName'))).toEqual({});
     });
     test('un formulaire sans rapport avec le dossier (libération, DMEC) n’est pas touché', () => {
         expect(dossierPrefillPatch(24, donnees, {}, fields('patientAllergies'))).toEqual({});

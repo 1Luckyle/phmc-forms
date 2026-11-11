@@ -87,8 +87,7 @@ export const validateFlightCertificate = (formData) => {
     const cls = getFlightCertClass(f.flightCertClass);
     if (!cls) problems.push('Choisissez la classe du certificat.');
     if (!Array.isArray(f.flightCertCategories) || f.flightCertCategories.length === 0) problems.push('Choisissez au moins une catégorie de vol (avion, hélicoptère, hydravion).');
-    if (!String(f.patientName || '').trim()) problems.push('Indiquez le nom du patient.');
-    if (!f.date) problems.push('Indiquez la date de l\'examen.');
+    // Nom du patient, date de l'examen et employé : champs obligatoires communs (utils/formRulesCore.js).
     if (cls) {
         const missing = cls.exams.filter((exam) => !f[examResultKey(exam)]);
         if (missing.length) problems.push(`Renseignez le résultat de : ${missing.map((exam) => FLIGHT_CERT_EXAMS[exam].label).join(', ')}.`);

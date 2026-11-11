@@ -642,6 +642,20 @@
     // façon anonyme (abandonné, invisible depuis l'interface) — lecture encore
     // publique pour les anciennes données déjà présentes, mais plus aucune
     // nouvelle écriture anonyme n'y est permise.
+    // partagesRecus/{nœud du destinataire}/{id} : les Mails Externes (formulaire 42) que leur créateur a PARTAGÉS avec cette personne : { ownerNode, reportKey, titre, de, le }.
+    // Écrit par le CRÉATEUR (ownerNode = son propre nœud de rapports, noeudsRapports/{uid}) qui reste seul propriétaire : il retire le partage (ou supprime le mail) quand il veut.
+    // Lu par le destinataire (et les admins) ; le destinataire peut seulement retirer une ligne de SA liste. Le mail lui-même se lit par savedReports/{ownerNode}/{reportKey}
+    // tant que partageAvec/{son nœud} existe (règle de lecture de savedReports).
+    "partagesRecus": {
+      "$recipient": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('staffUIDs').child(auth.uid).val() === true && root.child('noeudsRapports').child(auth.uid).val() === $recipient))",
+        "$id": {
+          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('staffUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('ownerNode').val() === root.child('noeudsRapports').child(auth.uid).val()) || (!newData.exists() && (data.child('ownerNode').val() === root.child('noeudsRapports').child(auth.uid).val() || root.child('noeudsRapports').child(auth.uid).val() === $recipient)))))",
+          ".validate": "newData.hasChildren(['ownerNode', 'reportKey', 'titre', 'le'])"
+        }
+      }
+    },
+
     "savedReports": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       // Ancien compartiment anonyme : plus lu ni écrit par l'app → fermé (avant, .read: true l'exposait publiquement).
@@ -663,7 +677,7 @@
           // formulaires DMEC = DMEC_FORM_VERSIONS). Exception : un Rapport Public de Décès (37) PUBLIÉ par le DMEC, lisible par tout le
           // personnel ; la publication est prouvée par rapportsPublics/{clé}, que seuls le DMEC et les admins peuvent écrire. Un Civil
           // ne lit que le rapport qui porte SON ID patient.
-          ".read":  "auth != null && ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.child('data').child('patientID').exists() && ((root.child('soignantUIDs').child(auth.uid).val() === true && !(data.child('bbCodeVersion').val() === 1 || data.child('bbCodeVersion').val() === 2 || data.child('bbCodeVersion').val() === 4 || data.child('bbCodeVersion').val() === 8 || data.child('bbCodeVersion').val() === 11 || data.child('bbCodeVersion').val() === 37)) || (root.child('dmecUIDs').child(auth.uid).val() === true && (data.child('bbCodeVersion').val() === 1 || data.child('bbCodeVersion').val() === 2 || data.child('bbCodeVersion').val() === 4 || data.child('bbCodeVersion').val() === 8 || data.child('bbCodeVersion').val() === 11 || data.child('bbCodeVersion').val() === 37))))) || (root.child('staffUIDs').child(auth.uid).val() === true && data.child('bbCodeVersion').val() === 37 && root.child('rapportsPublics').child($reportKey).exists()))",
+          ".read":  "auth != null && ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.child('data').child('patientID').exists() && ((root.child('soignantUIDs').child(auth.uid).val() === true && !(data.child('bbCodeVersion').val() === 1 || data.child('bbCodeVersion').val() === 2 || data.child('bbCodeVersion').val() === 4 || data.child('bbCodeVersion').val() === 8 || data.child('bbCodeVersion').val() === 11 || data.child('bbCodeVersion').val() === 37)) || (root.child('dmecUIDs').child(auth.uid).val() === true && (data.child('bbCodeVersion').val() === 1 || data.child('bbCodeVersion').val() === 2 || data.child('bbCodeVersion').val() === 4 || data.child('bbCodeVersion').val() === 8 || data.child('bbCodeVersion').val() === 11 || data.child('bbCodeVersion').val() === 37))))) || (root.child('staffUIDs').child(auth.uid).val() === true && data.child('bbCodeVersion').val() === 37 && root.child('rapportsPublics').child($reportKey).exists()) || (root.child('staffUIDs').child(auth.uid).val() === true && data.child('bbCodeVersion').val() === 42 && data.child('partageAvec').child(root.child('noeudsRapports').child(auth.uid).val()).exists()))",
           // Écriture : admins sans restriction. Personnel : SON nœud seulement (noeudsRapports/{uid}, ou un ancien nom le temps d'un
           // renommage : noeudsAnciens) ; chez un collègue, on ne peut que (1) supprimer un rapport déjà « retiré » (ownerDeleted : nettoyage d'un
           // original orphelin quand sa dernière copie disparaît), (2) mettre à jour copiedFrom/reportPath et creatorName (voir plus bas : un

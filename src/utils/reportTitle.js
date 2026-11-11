@@ -74,6 +74,8 @@ export function buildReportTitle(version, formData = {}, formName = '') {
             return buildStandardReportKey(name, f.patientID, f.patientName, f.patientDateOfBirth);
         case 27: // Email interne : l'objet du message tient lieu d'identifiant
             return buildStandardReportKey(name, '', f.internalEmailSubject, todayFr());
+        case 42: // Mail externe : l'objet du courrier tient lieu d'identifiant (jamais d'ID patient)
+            return buildStandardReportKey(name, '', f.externalMailSubject, todayFr());
         case 40: // Formulaire AMA (EMS)
             return buildStandardReportKey(name, f.patientID, f.patientSignature, f.date);
         case 5: case 6: case 7: case 14: case 16: case 19: case 20: case 21:

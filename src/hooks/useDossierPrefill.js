@@ -8,28 +8,34 @@ import { database } from '../firebase';
 import { canonicalPatientId } from '../utils/patientId';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { dossierPrefillPatch, candidaturePrefillPatch } from '../utils/dossierPrefill';
+import { lookupDossier, isLookupId } from '../utils/dossierLookup';
 
 const useDossierPrefill = (bbCodeVersion, formData, setFormData) => {
     const done = useRef(new Set());
+    // Ce que ce pré-remplissage a écrit pour le patient précédent (champ → valeur) : si l'ID change, ces valeurs-là (et elles seules, si la personne ne les a pas retouchées) sont retirées
+    // avant de reprendre le dossier du nouveau patient, au lieu de rester collées sur le mauvais patient.
+    const applied = useRef(new Map());
     const patientNode = canonicalPatientId(formData?.patientID);
 
     useEffect(() => {
-        if (!patientNode || !/^PHMC-\d{3,}$/.test(patientNode) || !setFormData) return undefined;
+        if (!patientNode || !isLookupId(patientNode) || !setFormData) return undefined;
         const marker = `${bbCodeVersion}|${patientNode}`;
         if (done.current.has(marker)) return undefined;
         let cancelled = false;
         const timer = setTimeout(async () => {
-            try {
-                const snap = await get(ref(database, `dossiersPatients/${patientNode}/donnees`));
-                if (cancelled) return;
-                done.current.add(marker);
-                if (!snap.exists()) return;
-                const knownFields = Object.keys(VERSION_FIELDS[bbCodeVersion] || {});
-                setFormData((prev) => {
-                    const patch = dossierPrefillPatch(bbCodeVersion, snap.val(), prev, knownFields);
-                    return Object.keys(patch).length ? { ...prev, ...patch } : prev;
-                });
-            } catch (error) { /* dossier illisible (droits) : pas de pré-remplissage */ }
+            const { status, donnees } = await lookupDossier(patientNode);
+            if (cancelled || status === 'denied') return; // dossier illisible (droits) : pas de pré-remplissage
+            done.current.add(marker);
+            const previouslyApplied = new Map(applied.current);
+            const knownFields = Object.keys(VERSION_FIELDS[bbCodeVersion] || {});
+            setFormData((prev) => {
+                const base = { ...prev };
+                previouslyApplied.forEach((value, field) => { if (base[field] === value) base[field] = ''; });
+                const patch = status === 'found' ? dossierPrefillPatch(bbCodeVersion, donnees, base, knownFields) : {};
+                applied.current = new Map(Object.entries(patch));
+                const changed = previouslyApplied.size > 0 || Object.keys(patch).length > 0;
+                return changed ? { ...base, ...patch } : prev;
+            });
         }, 800);
         return () => { cancelled = true; clearTimeout(timer); };
     }, [bbCodeVersion, patientNode, setFormData]);

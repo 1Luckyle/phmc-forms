@@ -32,8 +32,8 @@ export const formThemeFor = (version) => {
     return undefined;
 };
 
-// Formulaires communs à tout le personnel : Note de Service (+ version PBC) et PHMC Email Interne.
-export const SHARED_STAFF_FORM_VERSIONS = [22, 23, 27];
+// Formulaires communs à tout le personnel : Note de Service (+ version PBC), PHMC Email Interne et Mail Externe.
+export const SHARED_STAFF_FORM_VERSIONS = [22, 23, 27, 42];
 
 // Panneau de contrôle admin (connexion admin) : réservé à la famille soignante (en plus des admins).
 const ADMIN_PANEL_VERSION = 999;

@@ -51,12 +51,45 @@ Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
 [url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
 
 // Formulaires qui portent déjà ce pied de page dans leur propre texte (courriels du PHMC) : rien n'est ajouté.
-const FORMS_WITH_OWN_FOOTER = [27, 35];
+const FORMS_WITH_OWN_FOOTER = [27, 35, 42];
 export const withPhmcFooter = (bbCode, version) => {
     const text = String(bbCode || '');
     if (!text.trim() || FORMS_WITH_OWN_FOOTER.includes(Number(version)) || text.includes(PHMC_FOOTER_MARK) || text.includes(PBC_FOOTER_MARK)) return text;
     return `${text.replace(/\s+$/, '')}\n${isPbcVersion(version) ? pbcFooter() : phmcFooter()}`;
 };
+
+// ─────────────────────────── Signature du personnel (pied de page par défaut) ───────────────────────────
+// Tout rapport du personnel (hors candidatures, dossiers Civils, courriels qui ont leur propre signature) se termine par la signature de la personne qui l'a rempli, puis par
+// son nom en gras, son rôle et son service, puis par le pied de page du centre. La signature est réduite à SIGNATURE_IMG_WIDTH pixels dans l'aperçu et le HTML ([img=largeur] est une
+// extension du site : elle est retirée à la copie du BBCode, voir notificationService.copyToClipboard).
+export const SIGNATURE_IMG_WIDTH = 200;
+const NO_SIGNATURE_VERSIONS = [3, 24, 25, 26, 27, 35, 40, 42, 50, 51, 52, 53, 54, 55, 999];
+export const hasStaffSignatureFooter = (version) => !NO_SIGNATURE_VERSIONS.includes(Number(version));
+// Un « [mot] » saisi dans un champ ne doit pas devenir une balise BBCode : crochets pleine largeur (même règle que la messagerie, utils/internalMail.js).
+export const escapeBbText = (text) => String(text || '').replace(/\[(\/?[a-z*][^\]\n]{0,60})\]/gi, '［$1］');
+const bbSafe = (value) => String(value || '').replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim();
+const httpsUrl = (value) => (/^https:\/\/[^\s[\]]+$/i.test(String(value || '').trim()) ? String(value).trim() : '');
+
+// signer : { name, rank, service, signatureUrl }. Sans nom : rien. Sans signature (pas encore créée) : le nom seul s'imprime.
+export const staffSignatureBlock = (signer = {}, { withGreeting = true } = {}) => {
+    const name = bbSafe(signer.name);
+    if (!name) return '';
+    const image = httpsUrl(signer.signatureUrl);
+    const details = [bbSafe(signer.rank), bbSafe(signer.service)].filter(Boolean).join('\n');
+    return `${withGreeting && image ? 'Respectueusement,\n' : ''}${image ? `[img=${SIGNATURE_IMG_WIDTH}]${image}[/img]\n` : ''}[hr][/hr]
+[b][size=105]${name}[/size][/b]${details ? `\n[size=85]${details}[/size]` : ''}`;
+};
+
+export const withStaffSignature = (bbCode, version, signer) => {
+    const text = String(bbCode || '');
+    if (!text.trim() || !hasStaffSignatureFooter(version) || !signer || !bbSafe(signer.name)) return text;
+    return `${text.replace(/\s+$/, '')}\n[br][/br]\n${staffSignatureBlock(signer)}`;
+};
+
+// Pied de page commun des COURRIELS (messagerie interne, certificat de maladie, mail externe) : même bloc que celui des rapports du DMEC, suivi de la mention de confidentialité.
+export const CONFIDENTIALITY_NOTICE = "Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.";
+export const mailFooter = ({ pbc = false } = {}) => `${pbc ? pbcFooter() : phmcFooter()}
+[center][size=70][i]${CONFIDENTIALITY_NOTICE}[/i][/size][/center]`;
 
 // ─────────────────────────── Rapports du DMEC (Médecine légale) ───────────────────────────
 // Même vocabulaire que les dossiers médicaux (en-tête à deux cellules, bandeaux noirs, tableaux « étiquette : valeur »), pour que les rapports du

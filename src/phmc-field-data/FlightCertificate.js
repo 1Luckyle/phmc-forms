@@ -1,59 +1,15 @@
-import React, { useEffect, useMemo } from 'react';
-import { Form, InputGroup, Button, Alert } from 'react-bootstrap';
-import Select from 'react-select';
-import ImagePreview from '../components/ImagePreview';
-import { getCachedSignatureUrl } from '../utils/userCreations';
-import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
+import React from 'react';
+import { Form, InputGroup, Alert } from 'react-bootstrap';
+import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
+import { todayIso } from '../utils/appointmentDate';
 import {
     FLIGHT_CERT_CLASSES, FLIGHT_CERT_CATEGORIES, FLIGHT_CERT_EXAMS, FLIGHT_CERT_RESULTS, FLIGHT_CERT_CONCLUSIONS,
-    getFlightCertClass, examResultKey, examValueKey, validityMonthsFor, validUntil, ageOn, validateFlightCertificate,
+    getFlightCertClass, examResultKey, examValueKey, validityMonthsFor, validUntil, ageOn,
 } from '../utils/flightCertificate';
 
-const selectStyles = {
-    control: (base) => ({ ...base, backgroundColor: '#16202c', color: '#eeeeeeb0', borderColor: '#30363d', '&:hover': { borderColor: '#30363d' } }),
-    menu: (base) => ({ ...base, backgroundColor: '#16202c', zIndex: 1000 }),
-    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'Grey' : '#16202c', color: '#eeeeeeb0' }),
-    singleValue: (base) => ({ ...base, color: '#eeeeeeb0' }),
-    input: (base) => ({ ...base, color: '#eeeeeeb0' }),
-    placeholder: (base) => ({ ...base, color: '#eeeeeeb0' }),
-};
-
-const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOptions, handleSelectChange, showNotification }) => {
-    const { staffName, isAdmin } = useEmployeeAuth();
-    const notify = showNotification || (() => {});
+const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOptions }) => {
     const cls = getFlightCertClass(formData.flightCertClass);
     const categories = Array.isArray(formData.flightCertCategories) ? formData.flightCertCategories : [];
-
-    const allOptions = useMemo(() => (phmcGroupedOptions || []).flatMap((group) => group.options), [phmcGroupedOptions]);
-    // Le certificat est signé par SOI-MÊME : le signataire est imposé (un administrateur peut en choisir un autre).
-    const myOption = useMemo(
-        () => allOptions.find((option) => staffName && String(option.value || '').trim().toLowerCase() === String(staffName).trim().toLowerCase()) || null,
-        [allOptions, staffName],
-    );
-    const lockedToMe = !!myOption && !isAdmin;
-
-    useEffect(() => {
-        if (lockedToMe && formData.phmcEmployee !== myOption.value) {
-            setFormData((prev) => ({ ...prev, phmcEmployee: myOption.value, lastName: myOption.lastName || '', phmcRank: myOption.rank || '' }));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lockedToMe, myOption, formData.phmcEmployee]);
-
-    // Le grade imprimé suit TOUJOURS le signataire sélectionné.
-    useEffect(() => {
-        const rank = allOptions.find((option) => option.value === formData.phmcEmployee)?.rank || '';
-        if ((formData.phmcRank || '') !== rank) setFormData((prev) => ({ ...prev, phmcRank: rank }));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.phmcEmployee, allOptions]);
-
-    // Ma signature (Carte de visite → Signature) : préremplie si le champ est vide.
-    useEffect(() => {
-        const mySignature = getCachedSignatureUrl();
-        if (mySignature && !formData.phmcEmployeeSignatureImage) {
-            setFormData((prev) => (prev.phmcEmployeeSignatureImage ? prev : { ...prev, phmcEmployeeSignatureImage: mySignature }));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     const toggleCategory = (category) => {
         setFormData((prev) => {
@@ -65,13 +21,6 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
     const months = validityMonthsFor(formData.flightCertClass, formData.patientDateOfBirth, formData.date);
     const until = validUntil(formData.date, months);
     const age = ageOn(formData.patientDateOfBirth, formData.date);
-    const problems = validateFlightCertificate(formData);
-
-    const applyMySignature = () => {
-        const mySignature = getCachedSignatureUrl();
-        if (!mySignature) { notify('Vous n\'avez pas encore de signature : créez-la dans la boîte à outils → Carte de visite → onglet Signature.', 'warning'); return; }
-        setFormData((prev) => ({ ...prev, phmcEmployeeSignatureImage: mySignature }));
-    };
 
     return (
         <>
@@ -98,23 +47,15 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
             </Form.Group>
 
             <Form.Label className="form-section-title">Patient et examen</Form.Label>
-            <Form.Group className="mb-3">
-                <Form.Label>Nom du patient *</Form.Label>
-                <Form.Control type="text" name="patientName" value={formData.patientName || ''} onChange={handleChange} placeholder="Prénom (Deuxième Prénom) & Nom du patient" className="form-control" required />
-            </Form.Group>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Group className="mb-3" style={{ flex: 1 }}>
-                    <Form.Label>ID du patient</Form.Label>
-                    <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ex. PHMC-2752" className="form-control" />
-                </Form.Group>
-                <Form.Group className="mb-3" style={{ flex: 1 }}>
+            <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     <Form.Label>Date de naissance du patient</Form.Label>
-                    <Form.Control type="date" name="patientDateOfBirth" value={formData.patientDateOfBirth || ''} onChange={handleChange} className="form-control" />
-                </Form.Group>
-                <Form.Group className="mb-3" style={{ flex: 1 }}>
-                    <Form.Label>Date de l'examen *</Form.Label>
-                    <Form.Control type="date" name="date" value={formData.date || ''} onChange={handleChange} className="form-control" required />
-                </Form.Group>
+                    <Form.Control type="date" name="patientDateOfBirth" value={formData.patientDateOfBirth || ''} max={todayIso()} onChange={handleChange} className="form-control" />
+                </div>
+                <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                    <AppointmentDateField formData={formData} handleChange={handleChange} label="Date de l'examen *" />
+                </div>
             </div>
 
             {cls && (
@@ -173,40 +114,9 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
                 </Alert>
             )}
 
-            <Form.Label className="form-section-title">Signature</Form.Label>
-            <Form.Group className="mb-3">
-                <Form.Label>Médecin signataire *</Form.Label>
-                <Select
-                    name="phmcEmployee"
-                    value={allOptions.find((option) => option.value === formData.phmcEmployee) || null}
-                    onChange={(selectedOption, actionMeta) => handleSelectChange(selectedOption, actionMeta)}
-                    options={phmcGroupedOptions}
-                    isClearable={!lockedToMe}
-                    isDisabled={lockedToMe}
-                    placeholder="Sélectionner un soignant. (Vous pouvez taper pour rechercher!)"
-                    className="form-control"
-                    styles={selectStyles}
-                />
-                {lockedToMe && <span className="helper-text">Le certificat est signé par vous : le signataire est imposé.</span>}
-            </Form.Group>
-
-            <Form.Group className="mb-3 upload-container">
-                <Form.Label>Image de signature</Form.Label>
-                <InputGroup>
-                    <Form.Control as="textarea" rows={2} name="phmcEmployeeSignatureImage" value={formData.phmcEmployeeSignatureImage || ''} onChange={handleChange} placeholder="Image de signature" className="form-control" />
-                    <Button variant="outline-primary" onClick={applyMySignature} title="Utiliser la signature créée dans Carte de visite → Signature">
-                        <i className="fas fa-signature"></i> Ma signature
-                    </Button>
-                </InputGroup>
-                <ImagePreview imageUrls={formData.phmcEmployeeSignatureImage} />
-            </Form.Group>
-
-            {problems.length > 0 && (
-                <Alert variant="warning" className="py-2 small">
-                    <strong>À compléter avant d'enregistrer :</strong>
-                    <ul className="mb-0">{problems.map((problem) => <li key={problem}>{problem}</li>)}</ul>
-                </Alert>
-            )}
+            <Form.Label className="form-section-title">Médecin signataire</Form.Label>
+            <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} label="Identifiants de l'employé *" />
+            <span className="helper-text">Le certificat est signé par la personne qui le remplit : sa signature, son nom et son rôle figurent au bas du document.</span>
         </>
     );
 };

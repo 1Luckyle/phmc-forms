@@ -21,10 +21,19 @@ export const withDmecOptions = (phmcGroups, coronerGroups) => [
 // Nom de famille d'un membre du personnel qui n'en porte pas (liste du DMEC) : le dernier mot de son nom.
 const lastNameOf = (option) => option.lastName || String(option.value || '').trim().split(/\s+/).slice(-1)[0] || '';
 
+// Personnel SOIGNANT seulement (formulaires de soins) : retire des groupes les membres qui n'ont aucun rôle de la famille soignante. Une option sans information de famille est gardée.
+export const careStaffOnly = (groups) => (groups || [])
+    .map((group) => ({ ...group, options: (group.options || []).filter((option) => !Array.isArray(option.families) || option.families.includes('soignant')) }))
+    .filter((group) => group.options.length > 0);
+
 const PhmcEmployeeSelect = ({
-    name = 'phmcEmployee', label = '', options = [], formData, setFormData, placeholder = 'Sélectionner un personnel. (Vous pouvez taper pour rechercher!)',
+    name = 'phmcEmployee', label = '', options: allOptions = [], formData, setFormData, placeholder = 'Sélectionner un personnel. (Vous pouvez taper pour rechercher!)', careOnly = false,
+    // Rôle de l'employé choisi : `rankField` reçoit son rôle (pour « Signé : rôle nom ») ; null pour ne pas le renseigner.
+    rankField = 'phmcRank',
 }) => {
     const { staffName, isAdmin } = useEmployeeAuth();
+    // Un administrateur peut choisir n'importe qui : pour un formulaire de soins, seulement du personnel soignant.
+    const options = careOnly && isAdmin ? careStaffOnly(allOptions) : allOptions;
     const flat = options.flatMap((group) => group.options);
     const mine = flat.find((option) => staffName && norm(option.value) === norm(staffName)) || null;
     const own = !isAdmin ? (mine || (flat.length === 1 ? flat[0] : null)) : null;
@@ -32,6 +41,7 @@ const PhmcEmployeeSelect = ({
 
     const choose = (option) => setFormData((prev) => ({
         ...prev, [name]: option ? option.value : '', phmcEmployeeLastName: option ? lastNameOf(option) : '', lastName: option ? lastNameOf(option) : '',
+        ...(rankField ? { [rankField]: option ? (option.rank || '') : '' } : {}),
     }));
 
     useEffect(() => {

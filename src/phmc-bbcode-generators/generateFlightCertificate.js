@@ -35,7 +35,6 @@ const generateFlightCertificate = (formData) => {
         ? `\n[b]Restrictions :[/b] ${f.flightCertRestrictions}\n`
         : '';
     const noteBlock = f.flightCertNote ? `\n[b]Observations :[/b] ${f.flightCertNote}\n` : '';
-    const signature = f.phmcEmployeeSignatureImage ? `[img]${String(f.phmcEmployeeSignatureImage).trim()}[/img]` : '';
 
     return `[divbox=white][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/divbox]
 [divbox=white][br][/br][center][size=150][b]CERTIFICAT D'APTITUDE MÉDICALE AU VOL[/b][/size]
@@ -62,9 +61,7 @@ ${restrictionsBlock}${noteBlock}
 
 [size=85][i]Ce certificat atteste uniquement de l'aptitude médicale au vol : il ne contient aucun diagnostic ni donnée médicale détaillée, couverts par le secret médical. Il ne remplace pas la licence de vol délivrée par la San Andreas Aviation Administration (SAAA).[/i][/size]
 
-${signature}
-[b]${f.phmcEmployee || 'Employé PHMC'}[/b]
-[size=85]${f.phmcRank || 'N/A'} — Pillbox Hill Medical Center[/size][/divbox]`;
+[/divbox]`;
 };
 
 export default generateFlightCertificate;

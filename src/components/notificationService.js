@@ -59,7 +59,8 @@ export const copyToClipboard = async (text, showNotification, successMessage) =>
     }
 
     try {
-        await navigator.clipboard.writeText(text);
+        // [img=largeur] (signature réduite dans l'aperçu) n'existe pas sur le forum : on la copie en [img] simple.
+        await navigator.clipboard.writeText(typeof text === 'string' ? text.replace(/\[img=\d+\]/gi, '[img]') : text);
         showNotification(successMessage, 'clipboard');
         return true;
     } catch (err) {
