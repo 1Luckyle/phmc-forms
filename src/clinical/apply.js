@@ -1,7 +1,8 @@
 // src/clinical/apply.js
 //
 // Passage des suggestions de l'assistant clinique aux champs du formulaire. Rien n'est jamais appliqué sans action du soignant, et par défaut un champ déjà rempli n'est pas écrasé.
-import { entryText, prescriptionText } from './engine';
+import { entryText, prescriptionText, addDaysIso } from './engine';
+import { todayIso } from '../utils/appointmentDate';
 import { addMinutes, examKeyOfImaging } from './context';
 
 const isEmpty = (value) => (Array.isArray(value) ? value.length === 0 : value === undefined || value === null || String(value).trim() === '');
@@ -73,11 +74,24 @@ export const applyPatch = (prev, patch, overwrite = false) => {
     return next;
 };
 
+/**
+ * Début par défaut d'un traitement mis sur l'ordonnance : le jour du rapport, ou LE LENDEMAIN quand le même médicament vient d'être administré (le patient l'a déjà reçu aujourd'hui).
+ * entries : la liste complète ; reportDate : date du rapport (aujourd'hui à défaut).
+ */
+export const defaultStartDate = (entry, entries, reportDate) => {
+    const date = addDaysIso(reportDate, 0) || todayIso();
+    const alreadyGiven = (Array.isArray(entries) ? entries : []).some((other) => other !== entry && other && other.medId === entry.medId && !other.prescribed);
+    return alreadyGiven ? addDaysIso(date, 1) : date;
+};
+
+/** Met une ligne sur l'ordonnance, avec sa date de début par défaut (celle déjà choisie est gardée). */
+export const prescribeEntry = (entry, entries, reportDate) => ({ ...entry, prescribed: true, startDate: entry.startDate || defaultStartDate(entry, entries, reportDate) });
+
 /** Ajoute les médicaments suggérés (sans doublon de médicament + voie) ; `overwrite` remplace toute la liste. */
 export const applyMeds = (prev, meds, overwrite = false, { prescribed = false } = {}) => {
     const current = Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : [];
     // `prescribed` : les médicaments ajoutés vont directement sur l'ordonnance (suites d'une opération).
-    const incoming = meds.map(({ forCondition, ...entry }) => (prescribed ? { ...entry, prescribed: true } : entry));
+    const incoming = meds.map(({ forCondition, ...entry }) => (prescribed ? prescribeEntry(entry, current, prev.date) : entry));
     if (overwrite) return { ...prev, clinicalMeds: incoming };
     const added = incoming.filter((entry) => !current.some((c) => c.medId === entry.medId && c.regimenId === entry.regimenId));
     return { ...prev, clinicalMeds: [...current, ...added] };

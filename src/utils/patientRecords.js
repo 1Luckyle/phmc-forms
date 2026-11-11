@@ -30,6 +30,7 @@ import {
 } from './patientId';
 import { isDossierVersion } from './dossierCore';
 import { careVisitSummary } from './careVisitSummary';
+import { prescriptionOfReport } from '../phmc-bbcode-generators/generatePrescription';
 
 export { canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId };
 
@@ -164,6 +165,7 @@ export async function loadPatientDossier(inputId, { canRead, onHidden } = {}) {
                     authorName: report.authorName,
                     creatorName: report.creatorName || report.originalAuthorName || entry.creatorName || report.authorName,
                     bbCode: report.bbCode,
+                    ordonnance: prescriptionOfReport(report), // { bbCode, title } si le rapport porte une ordonnance
                     imageUrl: report.imageUrl || report.data?.imageUrl || null,
                     patientID: canonicalPatientId(report.data?.patientID || node),
                 };

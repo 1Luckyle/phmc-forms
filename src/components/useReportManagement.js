@@ -25,6 +25,7 @@ import { isBillableVersion, computeBilling } from '../utils/patientBilling';
 import { loadDossierContext, dossierBlockMessage, spendDossierToken, enqueueDossierForm, isDossierVersion, canModifyForm } from '../utils/dossierPatient';
 import { hasToken, isContactOnlyUpdate } from '../utils/dossierCore';
 import { careVisitSummary } from '../utils/careVisitSummary';
+import { prescriptionOfReport } from '../phmc-bbcode-generators/generatePrescription';
 import { getFormAccess } from '../utils/formAccess';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from '../utils/notifications';
@@ -582,6 +583,7 @@ Clé : ${sanitizedKey}`,
                         timestamp: report.timestamp,
                         authorName: report.authorName,
                         bbCode: report.bbCode,
+                        ordonnance: prescriptionOfReport(report),
                         // Utilisé par les boutons "Partager avec le patient" /
                         // "Récupérer une copie" (Lot 5).
                         patientID: report.data?.patientID || null,
@@ -1033,6 +1035,7 @@ Clé : ${sanitizedKey}`,
                     timestamp: e.timestamp,
                     authorName: e.authorName,
                     bbCode: e.bbCode,
+                    ordonnance: e.ordonnance || null,
                     patientID: e.patientID || patientID,
                     patientNode: e.patientNode,
                     reportPath: e.reportPath,
@@ -1075,6 +1078,7 @@ Clé : ${sanitizedKey}`,
                     timestamp: e.timestamp,
                     authorName: e.authorName,
                     bbCode: e.bbCode,
+                    ordonnance: e.ordonnance || null,
                     patientID: e.patientID || patientID,
                     patientNode: e.patientNode,
                     reportPath: e.reportPath,

@@ -134,7 +134,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                 </div>
             )}
 
-            <ClinicalMedications formData={formData} setFormData={setFormData} patient={patient} tags={tags} vitals={vitals} />
+            <ClinicalMedications formData={formData} setFormData={setFormData} patient={patient} tags={tags} vitals={vitals} version={mode === 'consult' ? 20 : 19} />
         </>
     );
 };

@@ -13,6 +13,7 @@ import ReactDOM from 'react-dom';
 import { Dropdown } from 'react-bootstrap';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
+import { PrescriptionMenuSection } from './PrescriptionMenu';
 import { loadPatientDossier, reportTitleOf, reportCreatorOf, deleteReportWithRules } from '../utils/patientRecords';
 import { loadDossierContext, canModifyForm } from '../utils/dossierPatient';
 import { isDossierVersion } from '../utils/dossierCore';
@@ -161,7 +162,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                 {entries.map((entry) => (
                                     <React.Fragment key={entry.indexKey}>
                                     <tr>
-                                        <td style={tdStyle}>{entry.originalKey}</td>
+                                        <td style={tdStyle}>{entry.originalKey}{entry.ordonnance && <span className="badge bg-warning text-dark ms-2" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</span>}</td>
                                         <td style={tdStyle}>{reportCreatorOf(entry) || 'N/A'}</td>
                                         <td style={tdStyle}>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}</td>
                                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
@@ -201,6 +202,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                                             <Dropdown.Item onClick={() => exportDocument('png', entry)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => exportDocument('png-copy', entry)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>
+                                                            <PrescriptionMenuSection prescription={entry.ordonnance} showNotification={showNotification} />
                                                         </>
                                                     )}
                                                 </Dropdown.Menu>

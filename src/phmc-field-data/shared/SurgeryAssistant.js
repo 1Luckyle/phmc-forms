@@ -116,7 +116,7 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
                 </div>
             )}
 
-            <ClinicalMedications formData={formData} setFormData={setFormData} patient={patient} tags={NO_TAGS} vitals={vitals} title="Médicaments post-opératoires" />
+            <ClinicalMedications formData={formData} setFormData={setFormData} patient={patient} tags={NO_TAGS} vitals={vitals} title="Médicaments post-opératoires" version={5} />
         </>
     );
 };

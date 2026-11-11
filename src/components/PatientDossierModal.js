@@ -34,6 +34,7 @@ import {
 import useReportInvoices from '../hooks/useReportInvoices';
 import { formatMoney, INVOICE_STATUS_COLORS } from '../utils/patientBilling';
 import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar } from './Reports/ReportParts';
+import { PrescriptionMenuSection } from './PrescriptionMenu';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -446,6 +447,7 @@ const PatientDossierModal = ({
                         <Dropdown.Item onClick={() => exportDocument('png', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('png-copy', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
+                        <PrescriptionMenuSection prescription={entry.ordonnance} showNotification={showNotification} />
                     </>
                 )}
             </Dropdown.Menu>
@@ -497,6 +499,7 @@ const PatientDossierModal = ({
                         )}
                         <Pill color={visibility.color} title={visibility.hint}>{visibility.text}</Pill>
                         <PaymentPill invoice={invoice} />
+                        {root.ordonnance && <Pill color="#d29922" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</Pill>}
                         {gov.chips(root)}
                     </>
                 )}

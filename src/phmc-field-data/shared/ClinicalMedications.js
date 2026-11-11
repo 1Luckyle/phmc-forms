@@ -8,7 +8,12 @@ import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import { MEDICATIONS, MEDICATION_BY_ID, regimenOf } from '../../clinical/medications';
 import { doseOptions, checkList, newEntry, formatNumber } from '../../clinical/engine';
-import { prescriptionPlainText } from '../../clinical/apply';
+import { prescriptionPlainText, prescribeEntry, defaultStartDate } from '../../clinical/apply';
+import { addDaysIso } from '../../clinical/engine';
+import { todayIso } from '../../utils/appointmentDate';
+import generatePrescription, { prescriptionTitle } from '../../phmc-bbcode-generators/generatePrescription';
+import { PrescriptionMenu } from '../../components/PrescriptionMenu';
+import { ExpandToggle, ReportPreviewFrame } from '../../components/ReportExpansion';
 import { ASSISTANT_NAME } from '../../clinical/assistantName';
 
 const MED_OPTIONS = MEDICATIONS.map((m) => ({ value: m.id, label: `${m.name} — ${m.category}`, search: [m.name, m.category, ...(m.brands || [])].join(' ').toLowerCase() }));
@@ -21,18 +26,18 @@ const Messages = ({ messages }) => messages.filter((m) => m.level !== 'ok').map(
     </div>
 ));
 
-const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, title = 'Médicaments administrés ou prescrits' }) => {
+// version : formulaire qui porte la liste (19 urgences, 20 consultation, 5 opération) : logo, pied de page et libellé de l'ordonnance.
+const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, title = 'Médicaments administrés ou prescrits', version = 19 }) => {
     const entries = useMemo(() => (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []), [formData.clinicalMeds]);
-    const results = useMemo(() => checkList(entries, { patient, tags, vitals }), [entries, patient, tags, vitals]);
+    const reportDate = (formData.date && addDaysIso(formData.date, 0)) || todayIso();
+    const results = useMemo(() => checkList(entries, { patient, tags, vitals, date: reportDate }), [entries, patient, tags, vitals, reportDate]);
     const setEntries = (updater) => setFormData((prev) => ({ ...prev, clinicalMeds: updater(Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : []) }));
     const update = (index, patch) => setEntries((list) => list.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
     const remove = (index) => setEntries((list) => list.filter((_, i) => i !== index));
-    const [copied, setCopied] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
     const prescription = useMemo(() => prescriptionPlainText(formData), [formData]);
+    const prescriptionBb = useMemo(() => generatePrescription(formData, version), [formData, version]);
     const allPrescribed = entries.length > 0 && entries.every((entry) => entry.prescribed);
-    const copyPrescription = async () => {
-        try { await navigator.clipboard.writeText(prescription); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch (error) { setCopied(false); }
-    };
 
     const changeRegimen = (index, regimenId) => {
         const base = newEntry(entries[index].medId, patient, regimenId);
@@ -87,7 +92,15 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                             </div>
                         )}
                         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-                            <Form.Check type="checkbox" id={`rx-${index}`} className="small" label="Sur l'ordonnance (traitement à poursuivre après la sortie)" checked={!!entry.prescribed} onChange={(e) => update(index, { prescribed: e.target.checked })} />
+                            <Form.Check type="checkbox" id={`rx-${index}`} className="small" label="Sur l'ordonnance (traitement à poursuivre après la sortie)" checked={!!entry.prescribed} onChange={(e) => update(index, e.target.checked ? { prescribed: true, startDate: entry.startDate || defaultStartDate(entry, entries, reportDate) } : { prescribed: false })} />
+                            {entry.prescribed && (
+                                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <span className="small text-muted">Début</span>
+                                    <Form.Control type="date" value={entry.startDate || ''} onChange={(e) => update(index, { startDate: e.target.value })} title="Date de début du traitement" className="form-control" style={{ maxWidth: 160 }} />
+                                    <Button size="sm" variant={entry.startDate === reportDate ? 'primary' : 'outline-secondary'} onClick={() => update(index, { startDate: reportDate })} title="Le traitement commence le jour du rapport">Aujourd'hui</Button>
+                                    <Button size="sm" variant={entry.startDate === addDaysIso(reportDate, 1) ? 'primary' : 'outline-secondary'} onClick={() => update(index, { startDate: addDaysIso(reportDate, 1) })} title="Le traitement commence le lendemain (déjà administré aujourd'hui)">Demain</Button>
+                                </div>
+                            )}
                             {entry.prescribed && (
                                 <Form.Control type="number" min="1" max="90" value={entry.days ?? ''} onChange={(e) => update(index, { days: e.target.value === '' ? '' : Math.max(1, Math.min(90, Number(e.target.value))) })} placeholder="Durée (jours)" title="Durée du traitement, en jours" className="form-control" style={{ maxWidth: 150 }} />
                             )}
@@ -103,13 +116,15 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <strong><i className="fas fa-file-prescription me-1"></i>Ordonnance</strong>
                         <div style={{ display: 'flex', gap: 6 }}>
-                            {!allPrescribed && <Button size="sm" variant="outline-primary" onClick={() => setEntries((list) => list.map((entry) => ({ ...entry, prescribed: true })))}>Tout mettre sur l'ordonnance</Button>}
-                            {prescription && <Button size="sm" variant="outline-secondary" onClick={copyPrescription}><i className="fas fa-copy me-1"></i>{copied ? 'Copiée !' : "Copier l'ordonnance"}</Button>}
+                            {!allPrescribed && <Button size="sm" variant="outline-primary" onClick={() => setEntries((list) => list.map((entry) => prescribeEntry(entry, list, reportDate)))}>Tout mettre sur l'ordonnance</Button>}
+                            {prescriptionBb && <ExpandToggle open={previewOpen} onClick={() => setPreviewOpen((value) => !value)} label="Aperçu" title="Aperçu de l'ordonnance en document à part" />}
+                            {prescriptionBb && <PrescriptionMenu bbCode={prescriptionBb} title={prescriptionTitle(formData)} plainText={prescription} />}
                         </div>
                     </div>
                     {prescription
                         ? <pre className="small mb-0 mt-2" style={{ whiteSpace: 'pre-wrap', color: 'inherit', fontFamily: 'inherit' }}>{prescription}</pre>
                         : <div className="small text-muted mt-1">Cochez « Sur l'ordonnance » sur les médicaments à prescrire : {ASSISTANT_NAME} compose l'ordonnance (dose, voie, prises, durée), imprimée dans le rapport et prête à copier. Les autres sont notés comme administrés.</div>}
+                    {previewOpen && prescriptionBb && <div className="mt-2"><ReportPreviewFrame bbCode={prescriptionBb} title={prescriptionTitle(formData)} height={420} /></div>}
                 </div>
             )}
             <Select

@@ -193,6 +193,7 @@ export const checkList = (entries, ctx = {}) => {
     const listMessages = [];
     const byFamily = {};
     const dailyTotals = {};
+    const reportDay = dayNumber(ctx.date) ?? dayNumber(new Date().toISOString().slice(0, 10));
     list.forEach((entry) => {
         const med = MEDICATION_BY_ID[entry.medId];
         const regimen = regimenOf(entry.medId, entry.regimenId);
@@ -200,16 +201,32 @@ export const checkList = (entries, ctx = {}) => {
         (byFamily[med.family] = byFamily[med.family] || new Set()).add(med.id);
         if (!regimen.titration && regimen.maxDaily) {
             const key = `${med.id}|${regimen.unit}`;
-            dailyTotals[key] = dailyTotals[key] || { med, regimen, total: 0, lines: 0 };
-            dailyTotals[key].total += (Number(entry.dose) || 0) * Math.max(1, Number(entry.count) || 1);
-            dailyTotals[key].lines += 1;
+            dailyTotals[key] = dailyTotals[key] || { med, regimen, items: [] };
+            // Médicament administré : le jour du rapport. Ordonnance : de sa date de début (à défaut le jour du rapport) pour sa durée (à défaut un jour : on contrôle le premier jour).
+            const start = entry.prescribed && dayNumber(entry.startDate) !== null ? dayNumber(entry.startDate) - reportDay : 0;
+            const length = entry.prescribed ? Math.max(1, Math.floor(Number(entry.days)) || 1) : 1;
+            dailyTotals[key].items.push({ from: start, to: start + length - 1, perDay: (Number(entry.dose) || 0) * Math.max(1, Number(entry.count) || 1), prescribed: !!entry.prescribed });
         }
     });
     Object.entries(byFamily).forEach(([family, ids]) => {
         if (FAMILY_CAUTION[family] && ids.size > 1) listMessages.push({ level: 'warn', text: `Plusieurs ${FAMILY_CAUTION[family]} associés (${[...ids].map((id) => MEDICATION_BY_ID[id].name).join(', ')}) : association déconseillée.` });
     });
-    Object.values(dailyTotals).forEach(({ med, regimen, total, lines }) => {
-        if (lines > 1 && total > regimen.maxDaily) listMessages.push({ level: 'error', text: `${med.name} : ${formatDose(total, regimen.unit)} cumulés sur 24 h, au-dessus du maximum de ${formatDose(regimen.maxDaily, regimen.unit)}.` });
+    // Pour chaque jour couvert, on additionne les lignes qui s'y chevauchent : seul un vrai chevauchement (au moins deux lignes le même jour) dépasse le maximum.
+    Object.values(dailyTotals).forEach(({ med, regimen, items }) => {
+        if (items.length < 2) return;
+        const first = Math.min(...items.map((item) => item.from));
+        const last = Math.min(Math.max(...items.map((item) => item.to)), first + 400);
+        let worst = { total: 0, prescribed: false };
+        for (let day = first; day <= last; day += 1) {
+            const covering = items.filter((item) => item.from <= day && day <= item.to);
+            if (covering.length < 2) continue;
+            const total = covering.reduce((sum, item) => sum + item.perDay, 0);
+            if (total > worst.total) worst = { total, prescribed: covering.some((item) => item.prescribed) };
+        }
+        if (worst.total > regimen.maxDaily) {
+            const hint = worst.prescribed ? ' Si l\'un de ces traitements ne commence que plus tard (par exemple demain), indiquez sa date de début.' : '';
+            listMessages.push({ level: 'error', text: `${med.name} : ${formatDose(worst.total, regimen.unit)} cumulés sur 24 h, au-dessus du maximum de ${formatDose(regimen.maxDaily, regimen.unit)}.${hint}` });
+        }
     });
     return { entries: results, list: listMessages };
 };
@@ -224,11 +241,39 @@ export const newEntry = (medId, patient = {}, regimenId = '') => {
     return { medId, regimenId: choice.r.id, dose: opts.usual ?? '', count: 1, note: '' };
 };
 
-/** Ligne d'ORDONNANCE : le texte de la ligne, suivi de la durée du traitement (en jours) quand elle est renseignée. */
+// ───────────── Dates (calendrier, sans fuseau) ─────────────
+const dayNumber = (iso) => {
+    const text = String(iso || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+    return Math.floor(Date.UTC(Number(text.slice(0, 4)), Number(text.slice(5, 7)) - 1, Number(text.slice(8, 10))) / 86400000);
+};
+/** « 2026-11-11 » + 1 → « 2026-11-12 » ; '' si la date est invalide. */
+export const addDaysIso = (iso, days) => {
+    const day = dayNumber(iso);
+    return day === null ? '' : new Date((day + days) * 86400000).toISOString().slice(0, 10);
+};
+const frIso = (iso) => (dayNumber(iso) === null ? '' : String(iso).slice(0, 10).split('-').reverse().join('/'));
+
+/** Ligne d'ORDONNANCE : le texte de la ligne, avec sa date de début et la durée du traitement (en jours) quand elles sont renseignées. */
 export const prescriptionText = (entry) => {
     const base = entryText(entry);
+    if (!base) return '';
     const days = Math.floor(Number(entry?.days));
-    return base && days > 0 ? `${base}, pendant ${days} jour${days > 1 ? 's' : ''}` : base;
+    const start = frIso(entry?.startDate);
+    return `${base}${start ? `, à partir du ${start}` : ''}${days > 0 ? `, pendant ${days} jour${days > 1 ? 's' : ''}` : ''}`;
+};
+
+/** Les morceaux d'une ligne d'ordonnance (tableau de l'ordonnance) : { name, posology, note, start, days, end } ; null si la ligne est inutilisable. */
+export const prescriptionParts = (entry) => {
+    const med = MEDICATION_BY_ID[entry?.medId];
+    const regimen = regimenOf(entry?.medId, entry?.regimenId);
+    if (!med || !regimen) return null;
+    const count = Math.max(1, Number(entry.count) || 1);
+    const dose = Number.isFinite(Number(entry.dose)) && entry.dose !== '' ? formatDose(Number(entry.dose), regimen.unit) : 'dose à préciser';
+    const frequency = count > 1 ? `, ${count} prises/24 h${regimen.intervalHours >= 1 ? ` (toutes les ${formatNumber(regimen.intervalHours)} h)` : ''}` : '';
+    const days = Math.floor(Number(entry.days)) > 0 ? Math.floor(Number(entry.days)) : 0;
+    const startDate = dayNumber(entry.startDate) !== null ? String(entry.startDate).slice(0, 10) : '';
+    return { name: med.name, posology: `${dose} — ${regimen.route}${frequency}`, note: String(entry.note || '').trim(), start: startDate, days, end: startDate && days ? addDaysIso(startDate, days - 1) : '' };
 };
 
 /** Texte d'une ligne de prescription, tel qu'imprimé dans le rapport. */
@@ -354,7 +399,7 @@ export const clinicalWarnings = (formData = {}) => {
     if (!entries.length) return [];
     const patient = patientFromForm(formData);
     const conditions = conditionsOf(formData.clinicalConditions);
-    const ctx = { patient, vitals: vitalsFromForm(formData), tags: contextTags(conditions) };
+    const ctx = { patient, vitals: vitalsFromForm(formData), tags: contextTags(conditions), date: formData.date };
     const { entries: results, list } = checkList(entries, ctx);
     const lines = [];
     results.forEach((result, index) => {

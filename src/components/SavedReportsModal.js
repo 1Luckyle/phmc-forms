@@ -14,6 +14,7 @@ import useReportInvoices from '../hooks/useReportInvoices';
 import { INVOICE_STATUS_COLORS } from '../utils/patientBilling';
 import { isDossierVersion, formPhase } from '../utils/dossierCore';
 import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar, Pager } from './Reports/ReportParts';
+import { PrescriptionMenuSection } from './PrescriptionMenu';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -660,6 +661,7 @@ const SavedReportsModal = ({
                         <Dropdown.Item onClick={() => handleExportDocument('png', report)} disabled={!report.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('png-copy', report)} disabled={!report.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
+                        <PrescriptionMenuSection prescription={report.ordonnance} showNotification={showNotification} />
                     </>
                 )}
             </Dropdown.Menu>
@@ -712,6 +714,7 @@ const SavedReportsModal = ({
                         {alreadyShared && <Pill color="#58a6ff" title="Le patient voit déjà ce rapport dans son dossier">Partagé avec le patient</Pill>}
                         {iHaveCopy && <Pill color="#a371f7" title="Vous avez déjà récupéré une copie de ce rapport">Vous en avez une copie</Pill>}
                         {gov.chips(report)}
+                        {report.ordonnance && <Pill color="#d29922" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</Pill>}
                     </>
                 )}
                 actions={(

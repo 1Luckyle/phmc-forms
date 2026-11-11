@@ -296,6 +296,34 @@ describe('soignants : chirurgien et soignants supplémentaires', () => {
     });
 });
 
+describe('ordonnance dans la liste de médicaments', () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    const meds = [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }, { medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '' }];
+    const initial = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', date: '2026-11-11', patientName: 'Jean Test', patientID: 'PHMC-1', phmcEmployee: 'Dr. Interne', clinicalMeds: meds };
+
+    test("le début se choisit par médicament (« Demain » lève le dépassement) ; l'ordonnance a son menu et son aperçu", async () => {
+        render(<Harness Component={EmergencyForm} initial={{ ...initial, clinicalMeds: [meds[0], { ...meds[1], prescribed: true, startDate: '2026-11-11' }] }} extra={emergencyProps} />);
+        expect(screen.getByText(/cumulés sur 24 h/)).toBeTruthy();
+        expect(screen.getByText(/indiquez sa date de début/)).toBeTruthy();
+        await act(async () => { screen.getByText('Demain').click(); });
+        expect(stateOf().clinicalMeds[1].startDate).toBe('2026-11-12');
+        expect(screen.queryByText(/cumulés sur 24 h/)).toBeNull();
+        expect(screen.getByText("Copier l'ordonnance")).toBeTruthy();
+        await act(async () => { screen.getByText('Aperçu').click(); });
+        expect(document.querySelector('iframe')).toBeTruthy();
+    });
+
+    test("cocher « Sur l'ordonnance » pose la date de début par défaut : le lendemain pour un médicament déjà administré", async () => {
+        render(<Harness Component={EmergencyForm} initial={initial} extra={emergencyProps} />);
+        const boxes = document.querySelectorAll('input[type="checkbox"][id^="rx-"]');
+        expect(boxes).toHaveLength(2);
+        await act(async () => { fireEvent.click(boxes[1]); });
+        expect(stateOf().clinicalMeds[1]).toMatchObject({ prescribed: true, startDate: '2026-11-12' });
+    });
+});
+
+
 describe("assistant chirurgical de l'opération", () => {
     const props = {};
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
