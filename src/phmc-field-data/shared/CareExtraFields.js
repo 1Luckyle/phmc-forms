@@ -20,7 +20,7 @@ import {
 import { buildDeathSuggestion } from '../../clinical/death';
 import { applyPatch } from '../../clinical/apply';
 import { currentTime } from '../../clinical/context';
-import { ASSISTANT_NAME } from '../../clinical/assistantName';
+import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 
 const row = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
 const cell = (basis = 200) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
@@ -257,7 +257,7 @@ export const DeathFields = ({ formData, setFormData, handleChange, kind = 'emerg
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
                         <span className="small text-muted">Renseignez le décès : il figure en évidence dans le rapport et dans l'historique des soins du dossier.</span>
                         <Button size="sm" variant="outline-primary" onClick={suggest} title="Complète les champs vides d'après les motifs ou les interventions choisis (tout reste modifiable)">
-                            <i className="fas fa-wand-magic-sparkles me-1"></i>Préremplir avec {ASSISTANT_NAME}
+                            <i className="fas fa-wand-magic-sparkles me-1"></i>Préremplir avec {ASSISTANT_LABEL}
                         </Button>
                     </div>
                     <div style={row}>

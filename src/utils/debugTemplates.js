@@ -294,7 +294,7 @@ const patientContext = (h) => ({
 const consultBase = (h) => ({
     ...h.phmc,
     ...patientContext(h),
-    phmcRank: h.opt('phmcRank'),
+    phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
     patientName: h.patient.fullName,
     patientID: h.patient.id,
     date: h.today,
@@ -471,7 +471,7 @@ const TEMPLATES = {
     5: (h) => ({
         ...h.phmc,
         ...patientContext(h),
-        phmcRank: h.opt('phmcRank'),
+        phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
         extraStaff: h.extraStaff(2),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
@@ -794,7 +794,7 @@ function physEval(h) {
     return {
         ...h.phmc,
         ...patientContext(h),
-        phmcRank: h.opt('phmcRank'),
+        phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
         date: h.today,
@@ -822,7 +822,7 @@ function mentalHealth(h) {
     return {
         ...h.phmc,
         ...patientContext(h),
-        phmcRank: h.opt('phmcRank'),
+        phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
         date: h.today,
@@ -840,7 +840,7 @@ function shrink(h) {
     return {
         ...h.phmc,
         ...patientContext(h),
-        phmcRank: h.opt('phmcRank'),
+        phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
         date: h.today,

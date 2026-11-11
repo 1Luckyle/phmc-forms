@@ -14,7 +14,7 @@ import { todayIso } from '../../utils/appointmentDate';
 import generatePrescription, { prescriptionTitle } from '../../phmc-bbcode-generators/generatePrescription';
 import { PrescriptionMenu } from '../../components/PrescriptionMenu';
 import { ExpandToggle, ReportPreviewFrame } from '../../components/ReportExpansion';
-import { ASSISTANT_NAME } from '../../clinical/assistantName';
+import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 
 const MED_OPTIONS = MEDICATIONS.map((m) => ({ value: m.id, label: `${m.name} — ${m.category}`, search: [m.name, m.category, ...(m.brands || [])].join(' ').toLowerCase() }));
 const filterMeds = (option, input) => !input || option.data.search.includes(input.toLowerCase());
@@ -47,7 +47,7 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
     return (
         <>
             <Form.Label className="form-section-title">{title}</Form.Label>
-            {entries.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez {ASSISTANT_NAME} proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
+            {entries.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez {ASSISTANT_LABEL} proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
             {entries.map((entry, index) => {
                 const med = MEDICATION_BY_ID[entry.medId];
                 const regimen = regimenOf(entry.medId, entry.regimenId);
@@ -123,7 +123,7 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                     </div>
                     {prescription
                         ? <pre className="small mb-0 mt-2" style={{ whiteSpace: 'pre-wrap', color: 'inherit', fontFamily: 'inherit' }}>{prescription}</pre>
-                        : <div className="small text-muted mt-1">Cochez « Sur l'ordonnance » sur les médicaments à prescrire : {ASSISTANT_NAME} compose l'ordonnance (dose, voie, prises, durée), imprimée dans le rapport et prête à copier. Les autres sont notés comme administrés.</div>}
+                        : <div className="small text-muted mt-1">Cochez « Sur l'ordonnance » sur les médicaments à prescrire : {ASSISTANT_LABEL} compose l'ordonnance (dose, voie, prises, durée), imprimée dans le rapport et prête à copier. Les autres sont notés comme administrés.</div>}
                     {previewOpen && prescriptionBb && <div className="mt-2"><ReportPreviewFrame bbCode={prescriptionBb} title={prescriptionTitle(formData)} height={420} /></div>}
                 </div>
             )}

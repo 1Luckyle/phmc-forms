@@ -1,4 +1,5 @@
 import { sectionBanner } from './bbStyles';
+import { normalizeRank } from '../../constants/ranks';
 import { referralLinesBBCode, backgroundUpdatedBBCode } from './careExtras';
 const GENDER_LABELS = {
     Male: 'Masculin',
@@ -9,7 +10,7 @@ const GENDER_LABELS = {
 // Ligne « Signé : » de l'en-tête : le prénom et le nom de la personne qui signe le rapport (son créateur), suivis de son rôle. Les anciens rapports (rôle + nom de famille) restent lisibles.
 export const signedLine = (formData) => {
     const name = String(formData.phmcEmployee || formData.signerName || '').trim();
-    const rank = String(formData.phmcRank || formData.signerRank || '').trim();
+    const rank = normalizeRank(String(formData.phmcRank || formData.signerRank || '').trim());
     if (!name) return `${rank || 'N/A'} ${formData.lastName || 'N/A'}`.trim();
     return `${name}${rank ? ` — ${rank}` : ''}`;
 };

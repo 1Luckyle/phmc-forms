@@ -5,6 +5,7 @@
 // Chaque fonction produit exactement le BBCode qui était auparavant recopié dans les générateurs.
 
 import { isPbcVersion } from '../../utils/formAccess';
+import { normalizeRank } from '../../constants/ranks';
 
 export const BB_COLORS = {
     red: '#FF0000',     // chevron « > » des bandeaux (PHMC, DMEC)
@@ -87,7 +88,7 @@ export const staffSignatureBlock = (signer = {}, { withGreeting = true } = {}) =
     const name = bbSafe(signer.name);
     if (!name) return '';
     const image = httpsUrl(signer.signatureUrl);
-    const details = [bbSafe(signer.rank), bbSafe(signer.service)].filter(Boolean).join('\n');
+    const details = [bbSafe(normalizeRank(signer.rank)), bbSafe(signer.service)].filter(Boolean).join('\n');
     return `${withGreeting && image ? 'Respectueusement,\n' : ''}${image ? `[img=${SIGNATURE_IMG_WIDTH}]${image}[/img]\n` : ''}[hr][/hr]
 [b][size=105]${name}[/size][/b]${details ? `\n[size=85]${details}[/size]` : ''}`;
 };

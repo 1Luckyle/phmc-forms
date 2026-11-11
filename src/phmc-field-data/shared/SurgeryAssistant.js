@@ -7,7 +7,7 @@ import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import ClinicalMedications from './ClinicalMedications';
-import { ASSISTANT_NAME } from '../../clinical/assistantName';
+import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 import { PROCEDURE_GROUPS, PROCEDURE_BY_ID } from '../../clinical/procedures';
 import { buildSurgerySuggestions, SURGERY_SECTIONS } from '../../clinical/surgery';
 import { patientFromForm } from '../../clinical/engine';
@@ -71,9 +71,9 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
 
     return (
         <>
-            <Form.Label className="form-section-title">Assistant chirurgical <span className="text-muted" style={{ fontWeight: 400, textTransform: 'none' }}>· {ASSISTANT_NAME}</span></Form.Label>
+            <Form.Label className="form-section-title">Assistant chirurgical <span className="text-muted" style={{ fontWeight: 400, textTransform: 'none' }}>· {ASSISTANT_LABEL}</span></Form.Label>
             <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.6rem' }}>
-                Choisissez la ou les interventions : {ASSISTANT_NAME} propose l'indication, l'anesthésie avec ses doses calculées pour le patient, la durée, la classe ASA, la surveillance et les suites. Rien n'est écrit tant que vous ne cliquez pas, et tout reste modifiable.
+                Choisissez la ou les interventions : {ASSISTANT_LABEL} propose l'indication, l'anesthésie avec ses doses calculées pour le patient, la durée, la classe ASA, la surveillance et les suites. Rien n'est écrit tant que vous ne cliquez pas, et tout reste modifiable.
             </div>
             <div style={row}>
                 <div style={cell(120)}>

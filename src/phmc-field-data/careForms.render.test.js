@@ -292,7 +292,7 @@ describe('soignants : chirurgien et soignants supplémentaires', () => {
 
     test("l'assistant clinique porte son petit nom", () => {
         render(<Harness Component={EmergencyForm} initial={{}} extra={{ unrestrictedPhmcGroupedOptions: staff, admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] }} />);
-        expect(screen.getByText('· Pilou')).toBeTruthy();
+        expect(screen.getByText('· Pilou 💊')).toBeTruthy();
     });
 });
 
