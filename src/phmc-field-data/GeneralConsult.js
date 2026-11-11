@@ -51,7 +51,7 @@ const GeneralConsult = ({
 
                                 <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
-                                <ClinicalAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} mode="consult" />
+                                <ClinicalAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} mode="consult" bloodOxyOptions={bloodOxy} />
 
                                 <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
                                 <Form.Control

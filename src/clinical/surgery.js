@@ -5,8 +5,10 @@
 import { PROCEDURE_BY_ID } from './procedures';
 import { entryText, newEntry, checkPrescription, findTerm } from './engine';
 import { regimenOf } from './medications';
+import { suggestPatient, patientNotices } from './context';
 
 export const SURGERY_SECTIONS = [
+    { key: 'patient', label: 'Patient', hint: 'Complète les champs vides du patient : date de naissance et âge plausibles, sexe, allergies, antécédents et traitements habituels. Ne remplace jamais ce qui est saisi.' },
     { key: 'intervention', label: 'Intervention', hint: 'Diagnostic pré-opératoire, nom, caractère, type d\'anesthésie, durée et pertes sanguines.' },
     { key: 'anesthesia', label: 'Anesthésie', hint: 'Produits et doses d\'anesthésie calculés pour ce patient, et détails du réveil.' },
     { key: 'risk', label: 'Risque (ASA)', hint: 'Classe ASA estimée à partir du terrain (âge, corpulence, antécédents) et de l\'intervention.' },
@@ -92,7 +94,7 @@ const roundTo = (value, step) => Math.round(value / step) * step;
  * Tout ce que l'assistant propose pour les interventions choisies.
  * → null sans intervention ; sinon { procedures, fields (par section), postOpMeds, skipped, anesthesiaType }
  */
-export const buildSurgerySuggestions = ({ procedureIds, patient }) => {
+export const buildSurgerySuggestions = ({ procedureIds, patient, seed = '', formData = {} }) => {
     const procedures = procedureList(procedureIds);
     if (!procedures.length) return null;
     const ctx = { patient, vitals: {}, tags: new Set() };
@@ -146,6 +148,7 @@ export const buildSurgerySuggestions = ({ procedureIds, patient }) => {
     }));
 
     const fields = {
+        patient: suggestPatient({ ids: procedureIds, seed, formData }),
         intervention: {
             surgeryPreOpDiagnosis: unique(procedures.map((p) => p.indication)).join(' '),
             surgeryProcedures: procedures.map((p) => p.name).join(' + '),
@@ -159,5 +162,5 @@ export const buildSurgerySuggestions = ({ procedureIds, patient }) => {
         postop: { postOpMonitoring: monitoring, postOpExams: unique(procedures.map((p) => p.postOpExams)).join(' ') },
         summary: { patientSummary: summary, surgeryPostOpInstructions: unique(procedures.map((p) => p.instructions)).join(' ') },
     };
-    return { procedures, anesthesiaType: type, asa, duration, bloodLoss, monitoring, fields, postOpMeds, skipped };
+    return { procedures, anesthesiaType: type, asa, duration, bloodLoss, monitoring, fields, postOpMeds, skipped, notices: patientNotices({ ids: procedureIds, patient, label: 'cette intervention' }) };
 };

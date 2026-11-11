@@ -12,7 +12,8 @@ import { SEVERITIES } from '../../clinical/vitals';
 import { patientFromForm, buildSuggestions, conditionsOf, contextTags, historySuggestions } from '../../clinical/engine';
 import { MEDICATION_BY_ID } from '../../clinical/medications';
 import { vitalsFromForm } from '../../clinical/vitals';
-import { SECTIONS, sectionPatch, applyPatch, applyMeds, applyAll } from '../../clinical/apply';
+import { sectionsFor, applySection, applyAll } from '../../clinical/apply';
+import { currentTime, pickNumericOption } from '../../clinical/context';
 
 const GROUPED_OPTIONS = CONDITION_GROUPS.map((g) => ({ label: g.label, options: g.options.map((c) => ({ value: c.id, label: c.label, search: [c.label, ...(c.aliases || [])].join(' ').toLowerCase() })) }));
 const filterConditions = (option, input) => !input || option.data.search.includes(input.toLowerCase());
@@ -21,7 +22,7 @@ const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
 
 const VITAL_SUMMARY = [['FC', 'heartRateValue', 'bpm'], ['TA', 'bloodPressureValue', 'mmHg'], ['FR', 'respiratoryRateValue', '/min'], ['SpO2', 'spo2Value', '%'], ['T°', 'temperatureValue', '°C'], ['Glycémie', 'glucoseValue', 'g/L'], ['Glasgow', 'gcsScore', '/15']];
 
-const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emergency' }) => {
+const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emergency', bloodOxyOptions = [] }) => {
     const [overwrite, setOverwrite] = useState(false);
     const [done, setDone] = useState('');
     const patient = useMemo(
@@ -47,15 +48,23 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
     const selected = ids.map((id) => ({ value: id, label: CONDITION_BY_ID[id].label }));
     const setIds = (options) => { setDone(''); setFormData((prev) => ({ ...prev, clinicalConditions: (options || []).map((o) => o.value) })); };
 
+    // Valeurs connues seulement au moment du clic : l'heure, et la catégorie d'oxygène sanguin (liste de la base, choisie d'après la saturation proposée).
+    const extraFor = (sug, data) => ({ now: currentTime(), appointmentTime: data.appointmentTime || '', bloodOxy: pickNumericOption(bloodOxyOptions, sug.vitals.values.spo2) });
+    const sections = sectionsFor(mode);
     const apply = (key) => {
         if (!suggestions) return;
-        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite) : applyPatch(prev, sectionPatch(key, suggestions, mode), overwrite)));
-        setDone(`« ${SECTIONS.find((s) => s.key === key).label} » ${overwrite ? 'remplacé' : 'complété'}.`);
+        setFormData((prev) => applySection(prev, key, suggestions, { overwrite, mode, extra: extraFor(suggestions, prev) }));
+        setDone(`« ${sections.find((s) => s.key === key).label} » ${overwrite && key !== 'patient' ? 'remplacé' : 'complété'}.`);
     };
     const applyEverything = () => {
         if (!suggestions) return;
-        setFormData((prev) => applyAll(prev, suggestions, overwrite, mode));
-        setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
+        setFormData((prev) => {
+            // Le patient d'abord (âge, sexe) : constantes et doses sont ensuite recalculées pour lui.
+            const withPatient = applySection(prev, 'patient', suggestions, { mode });
+            const fresh = buildSuggestions({ conditionIds: ids, severity, patient: patientFromForm(withPatient), seed, formData: withPatient }) || suggestions;
+            return applyAll(withPatient, fresh, overwrite, mode, extraFor(fresh, withPatient));
+        });
+        setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés, patient complété seulement là où il était vide).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
     };
 
     return (
@@ -83,6 +92,9 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
             {patient.ageYears !== null && patient.ageYears < 15 && !patient.weightKg && (
                 <div className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.5rem' }}>Patient de moins de 15 ans : indiquez son poids, sinon les doses sont calculées sur un poids estimé.</div>
             )}
+            {suggestions && suggestions.notices.map((notice) => (
+                <div key={notice} className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.4rem' }}><i className="fas fa-triangle-exclamation me-1"></i>{notice}</div>
+            ))}
             <Form.Label>{mode === 'consult' ? 'Motifs de la consultation' : 'Motifs de prise en charge'} (choix multiple)</Form.Label>
             <Select
                 isMulti options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterConditions} styles={darkSelectStyles} className="form-control p-0"
@@ -100,7 +112,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                         {suggestions.skipped.length > 0 && <span style={{ color: '#e3b341' }}> Non proposés : {suggestions.skipped.map((s) => `${MEDICATION_BY_ID[s.medId]?.name || s.medId} (${s.reasons[0]})`).join(' ; ')}</span>}
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {SECTIONS.map((s) => <Button key={s.key} size="sm" variant="outline-primary" title={s.hint} onClick={() => apply(s.key)}>{s.label}</Button>)}
+                        {sections.map((s) => <Button key={s.key} size="sm" variant="outline-primary" title={s.hint} onClick={() => apply(s.key)}>{s.label}</Button>)}
                         <Button size="sm" variant="primary" onClick={applyEverything}><i className="fas fa-wand-magic-sparkles me-1"></i>Tout appliquer</Button>
                     </div>
                     <Form.Check type="checkbox" id="clinicalOverwrite" className="mt-2 small" label="Remplacer ce qui est déjà saisi (sinon seuls les champs vides sont complétés)" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />

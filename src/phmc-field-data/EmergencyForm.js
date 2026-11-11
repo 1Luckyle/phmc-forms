@@ -207,7 +207,7 @@ const EmergencyForm = ({
 
             <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} allergiesRequired={false} />
 
-            <ClinicalAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} />
+            <ClinicalAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} bloodOxyOptions={bloodOxy} />
 
             <Form.Label className="form-section-title">Arrivée aux urgences</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>

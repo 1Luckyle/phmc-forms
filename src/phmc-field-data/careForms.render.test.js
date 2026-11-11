@@ -389,3 +389,45 @@ describe('fond médical complété depuis une consultation', () => {
         expect(screen.getByText(/Notez l'allergène identifié/)).toBeTruthy();
     });
 });
+
+describe("assistant clinique : patient inconnu et champs complets", () => {
+    const oxy = [{ value: 'oxy-ok', label: 'Normal (≥ 95 %)' }, { value: 'oxy-low', label: 'Hypoxie (< 95 %)' }];
+    const props = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: oxy, Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+
+    test("sans âge ni sexe : remarques affichées, puis « Tout appliquer » complète le patient et tous les champs", async () => {
+        render(<Harness Component={EmergencyForm} initial={{ patientID: 'PHMC-2752', date: '2026-11-11', clinicalConditions: ['fracture_fermee'], clinicalSeverity: 'Moderate' }} extra={props} />);
+        expect(screen.getByText(/Date de naissance non renseignée/)).toBeTruthy();
+        expect(screen.getByText(/Sexe non renseigné/)).toBeTruthy();
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        const state = stateOf();
+        expect(state.patientDateOfBirth).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(['Male', 'Female']).toContain(state.patientSex);
+        expect(state.patientAllergies).toBe('Aucune connue');
+        expect(state.bloodOxy).toBe('oxy-ok');
+        expect(state).toMatchObject({ arrivalMode: 'Walk-in', lungs: 'patientNormal', pupils: 'patientPupilsNormal', ecg: 'patientSinusRhythm', sono: 'patientNormal', XrayResults: ['Displaced Fracture'] });
+        expect(state.arrivalTime).toMatch(/^\d{2}:\d{2}$/);
+        expect(state.careStartTime).toMatch(/^\d{2}:\d{2}$/);
+        expect(state.patientMedicine).toMatch(/Repos de la zone atteinte/);
+    });
+
+    test("le bouton « Patient » ne remplace jamais ce qui est saisi, même avec « Remplacer »", async () => {
+        render(<Harness Component={EmergencyForm} initial={{ patientID: 'PHMC-2752', date: '2026-11-11', patientSex: 'Female', patientAllergies: 'Pénicilline', clinicalConditions: ['asthme'] }} extra={props} />);
+        await act(async () => { screen.getByLabelText(/Remplacer ce qui est déjà saisi/).click(); });
+        await act(async () => { screen.getByText('Patient', { selector: 'button' }).click(); });
+        const state = stateOf();
+        expect(state).toMatchObject({ patientSex: 'Female', patientAllergies: 'Pénicilline', patientChronicDiseases: 'Asthme' });
+        expect(state.patientDateOfBirth).toBeTruthy();
+    });
+
+    test("sexe incompatible avec l'intervention : remarque dans l'assistant chirurgical", () => {
+        render(<Harness Component={Surgical} initial={{ patientAgeYears: '30', patientSex: 'Male', surgeryProcedureIds: ['cesarienne'] }} extra={{}} />);
+        expect(screen.getByText(/concerne un patient de sexe féminin/)).toBeTruthy();
+    });
+
+    test("la consultation n'a pas de bouton « Arrivée »", () => {
+        render(<Harness Component={GeneralConsult} initial={{ patientAgeYears: '30', clinicalConditions: ['asthme'] }} extra={{ ...props, assignedDepartment: [], departmentLarge: [] }} />);
+        expect(screen.queryByText('Arrivée', { selector: 'button' })).toBeNull();
+        expect(screen.getByText('Patient', { selector: 'button' })).toBeTruthy();
+    });
+});

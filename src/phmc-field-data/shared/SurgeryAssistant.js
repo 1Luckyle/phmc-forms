@@ -32,7 +32,13 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
         [formData.patientAgeYears, formData.patientDateOfBirth, formData.date, formData.patientSex, formData.patientWeight, formData.patientHeight, formData.patientAllergies, formData.patientChronicDiseases, formData.patientCurrentMedicine],
     );
     const ids = useMemo(() => (Array.isArray(formData.surgeryProcedureIds) ? formData.surgeryProcedureIds.filter((id) => PROCEDURE_BY_ID[id]) : []), [formData.surgeryProcedureIds]);
-    const suggestions = useMemo(() => buildSurgerySuggestions({ procedureIds: ids, patient }), [ids, patient]);
+    const seed = `${formData.patientID || ''}|${formData.date || ''}`;
+    const suggestions = useMemo(
+        () => buildSurgerySuggestions({ procedureIds: ids, patient, seed, formData }),
+        // formData ne sert qu'à la date pour la date de naissance proposée ; les champs du patient sont couverts par `patient`.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [ids, patient, seed, formData.date],
+    );
     const vitals = useMemo(() => vitalsFromForm(formData), [formData]);
 
     const selected = ids.map((id) => ({ value: id, label: PROCEDURE_BY_ID[id].label }));
@@ -40,14 +46,20 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
 
     const apply = (key) => {
         if (!suggestions) return;
-        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.postOpMeds, overwrite) : applyPatch(prev, suggestions.fields[key], overwrite)));
+        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.postOpMeds, overwrite) : applyPatch(prev, suggestions.fields[key], overwrite && key !== 'patient')));
         setDone(`« ${SURGERY_SECTIONS.find((s) => s.key === key).label} » ${overwrite ? 'remplacé' : 'complété'}.`);
     };
     const applyEverything = () => {
         if (!suggestions) return;
         setFormData((prev) => {
-            let next = prev;
-            SURGERY_SECTIONS.forEach(({ key }) => { next = key === 'meds' ? applyMeds(next, suggestions.postOpMeds, overwrite) : applyPatch(next, suggestions.fields[key], overwrite); });
+            // Le patient d'abord (âge, sexe) : l'anesthésie, les doses et le risque sont ensuite recalculés pour lui. Il n'est jamais remplacé, seulement complété.
+            const withPatient = applyPatch(prev, suggestions.fields.patient, false);
+            const fresh = buildSurgerySuggestions({ procedureIds: ids, patient: patientFromForm(withPatient), seed, formData: withPatient }) || suggestions;
+            let next = withPatient;
+            SURGERY_SECTIONS.forEach(({ key }) => {
+                if (key === 'patient') return;
+                next = key === 'meds' ? applyMeds(next, fresh.postOpMeds, overwrite) : applyPatch(next, fresh.fields[key], overwrite);
+            });
             return next;
         });
         setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
@@ -72,6 +84,9 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
             {patient.ageYears !== null && patient.ageYears < 15 && !patient.weightKg && (
                 <div className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.5rem' }}>Patient de moins de 15 ans : indiquez son poids, sinon les doses sont calculées sur un poids estimé.</div>
             )}
+            {suggestions && suggestions.notices.map((notice) => (
+                <div key={notice} className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.4rem' }}><i className="fas fa-triangle-exclamation me-1"></i>{notice}</div>
+            ))}
             <Form.Label>Interventions (choix multiple)</Form.Label>
             <Select
                 isMulti options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterProcedures} styles={darkSelectStyles} className="form-control p-0"

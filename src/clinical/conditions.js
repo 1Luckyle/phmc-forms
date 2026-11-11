@@ -119,7 +119,7 @@ const CARDIO = group('Cardio-vasculaire', [
     {
         id: 'arret_cardiaque', label: 'Arrêt cardio-respiratoire', aliases: ['arrêt cardiaque', 'ACR', 'réanimation', 'RCP'],
         vitalsOverride: { hr: 0, sbp: 0, dbp: 0, rr: 0, spo2: 0, gcs: 3 }, complaint: 'Patient inconscient, sans pouls ni respiration.', diagnosis: 'Arrêt cardio-respiratoire.',
-        findings: { esg: ALT, pupils: 'patientPupilsAbnormal' }, routineCare: ['Oxygen', 'Infusion'], admitAt: 0, followup: 'Recommended',
+        findings: { esg: ALT, pupils: 'patientPupilsAbnormal', ecg: 'patientArrhythmia' }, routineCare: ['Oxygen', 'Infusion'], admitAt: 0, followup: 'Recommended',
         steps: ['Massage cardiaque externe immédiat (100 à 120/min) et ventilation au ballon.', 'Défibrillateur dès que possible ; choc si rythme choquable.', 'Voie veineuse, adrénaline toutes les 3 à 5 minutes, amiodarone après le 3e choc.', 'Recherche d\'une cause réversible (hypoxie, hypovolémie, pneumothorax, toxiques…).'],
         meds: [['adrenaline', 'iv_acr', 0], ['amiodarone', 'iv_acr', 1], ['oxygene', 'masque', 0]],
     },

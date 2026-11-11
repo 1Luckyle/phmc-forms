@@ -7,6 +7,7 @@ import { CONDITION_BY_ID, HISTORY_HINTS } from './conditions';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
 import { missingBackgroundItems } from '../utils/dossierCore';
+import { suggestPatient, patientNotices, defaultFindings, arrivalModeFor, examResultsFor, ADVICE_BY_GROUP, ADVICE_ADMITTED } from './context';
 
 // ───────────── Texte et patient ─────────────
 const normalize = (value) => String(value ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/œ/g, 'oe').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -252,8 +253,10 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
     const tags = contextTags(conditions);
 
     const pick = (key) => conditions.map((c) => c.findings?.[key]).find(Boolean) || '';
-    const findings = { findings: pick('esg'), lungs: pick('lungs'), pupils: pick('pupils'), wounds: pick('wounds'), ecg: pick('ecg'), sono: pick('sono') };
-    Object.keys(findings).forEach((key) => { if (!findings[key]) delete findings[key]; });
+    // Constatations : celles du motif, complétées par des constatations sans particularité pour les autres (aucune liste n'est laissée vide).
+    const defaults = defaultFindings(sev.index);
+    const specified = { findings: pick('esg'), lungs: pick('lungs'), pupils: pick('pupils'), wounds: pick('wounds'), ecg: pick('ecg'), sono: pick('sono') };
+    const findings = Object.fromEntries(Object.entries(defaults).map(([key, fallback]) => [key, specified[key] || fallback]));
 
     const admitted = conditions.some((c) => c.admitAt !== null && c.admitAt !== undefined && sev.index >= c.admitAt);
     const surgical = sev.index >= 2 && conditions.some((c) => c.surgical);
@@ -276,6 +279,13 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         });
     });
 
+    // Résultats d'examens : seuls ceux des examens suggérés (imagerie) et de laboratoire.
+    const exams = examResultsFor(conditions.map((c) => c.id), sev.index);
+    const ids = conditions.map((c) => c.id);
+    const patientPatch = suggestPatient({ ids, seed, formData, chronic: historySuggestions(ids, patient).chronic });
+    const notices = patientNotices({ ids, patient });
+    const advice = admitted || surgical ? ADVICE_ADMITTED : ADVICE_BY_GROUP[conditions[0].group] || '';
+
     const single = conditions.length === 1;
     const procedure = conditions.map((c) => `${single ? '' : `${c.label} :\n`}${(c.steps || []).map((step) => `- ${step}`).join('\n')}`).join('\n\n');
     const text = {
@@ -284,11 +294,13 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         diagnosis: conditions[0].diagnosis,
         secondary: conditions.slice(1).map((c) => c.diagnosis).join(' ; '),
         procedure,
+        advice,
     };
     return {
         conditions, severity: sev,
         vitals: { values, categories, fields: vitalsFormFields(values) },
-        text, findings, imaging, routineCare,
+        text, findings, imaging, routineCare, exams, patientPatch, notices,
+        arrivalMode: arrivalModeFor(sev.index, tags),
         igu: sev.igu, admission: admitted ? 'Yes' : 'No',
         followup: conditions.some((c) => c.followup === 'Recommended') ? 'Recommended' : 'AsNeeded',
         destination, meds, skipped,

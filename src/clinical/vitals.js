@@ -42,6 +42,7 @@ const rngFrom = (seedText) => {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
 };
+export const seededRandom = (seedText) => rngFrom(seedText);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const round = (value, digits = 0) => { const k = 10 ** digits; return Math.round(value * k) / k; };
 
