@@ -619,7 +619,7 @@ await read("S1 ne lit pas les contestations (admins seulement)", false, 'S1', 'c
 await read("L'admin A lit toutes les contestations", true, 'A', 'contestationsDeces', withContest('en_attente'));
 
 
-// Compte Civil d'un patient déclaré décédé : lecture, contestation et notification aux admins seulement ; tout le reste est refusé. Le personnel n'est jamais concerné.
+// Compte d'un patient déclaré décédé (Civil ou personnel) : lecture, contestation et notification aux admins seulement ; tout le reste est refusé. Seuls les admins ne sont jamais concernés.
 console.log('--- compte Civil décédé : écritures bloquées ---');
 await write('[décédé] C ne crée plus de rapport', false, 'C', 'savedReports/Civil_Name_PHMC-1/c1', newReport('PHMC-1'));
 await write('[décédé] C ne modifie plus un rapport portant son ID', false, 'C', 'savedReports/S_Two/r1', { ...r1, bbCode: 'maj civil' });
@@ -631,8 +631,24 @@ await write('[décédé] C ne modifie plus son profil', false, 'C', 'civilians/C
 await read('[décédé] C lit toujours son dossier', true, 'C', 'dossiersPatients/PHMC-1', withDossier);
 await write('[décédé] C peut contester (contestationsDeces)', true, 'C', 'contestationsDeces/PHMC-1', { uid: 'C', message: 'Je suis bien vivant.', creeLe: 1, statut: 'en_attente' });
 await write('[décédé] C prévient les administrateurs de sa contestation', true, 'C', 'notificationsGroupes/admin/n1', { type: 'demande', titre: 'Contestation de décès : PHMC-1', texte: 'Je suis vivant', creeLe: Date.now(), deUid: 'C' });
-await write("[décédé] un membre du personnel qui est aussi patient décédé écrit toujours", true, 'S1', 'savedReports/S_One/x1', newReport(null), (data) => { data.civilians.S1 = { patientID: 'PHMC-6' }; data.patientsDecedes['PHMC-6'] = { depuis: 1, uid: 'D1' }; });
-await write("[décédé] un admin qui est aussi patient décédé écrit toujours", true, 'A', 'civilians/A/phone', '555-0101', (data) => { data.civilians.A = { patientID: 'PHMC-6' }; data.patientsDecedes['PHMC-6'] = { depuis: 1, uid: 'D1' }; });
+// Le personnel est bloqué comme un Civil : son ID patient (idsPatientParCompte, posé par la synchronisation admin) figure dans le registre des décès. Seuls les admins ne sont jamais touchés.
+const staffDead = (data) => { data.idsPatientParCompte = { S1: 'PHMC-6' }; data.patientsDecedes['PHMC-6'] = { depuis: 1, uid: 'D1' }; };
+const staffAlive = (data) => { data.idsPatientParCompte = { S1: 'PHMC-6' }; }; // même table, mais PHMC-6 n'est pas déclaré décédé (ou l'avis de décès a été levé)
+await write('[décédé] S1 (personnel) ne crée plus de rapport', false, 'S1', 'savedReports/S_One/x1', newReport(null), staffDead);
+await write("[décédé] S1 (personnel) n'écrit plus dans l'index des dossiers", false, 'S1', 'patientRecords/PHMC-5/nouv', { reportPath: 'x' }, staffDead);
+await write("[décédé] S1 (personnel) ne modifie plus un rapport qu'il a posé", false, 'S1', 'savedReports/S_One/x1/bbCode', 'maj', (data) => { staffDead(data); data.savedReports.S_One = { x1: { bbCodeVersion: 20, bbCode: 'a', data: { note: 'n' } } }; });
+await write('[décédé] S1 (personnel) peut contester', true, 'S1', 'contestationsDeces/PHMC-6', { uid: 'S1', message: 'Je suis bien vivant.', creeLe: 1, statut: 'en_attente' }, staffDead);
+await write('[décédé] S1 (personnel) prévient les administrateurs de sa contestation', true, 'S1', 'notificationsGroupes/admin/n1', { type: 'demande', titre: 'Contestation de décès : PHMC-6', creeLe: Date.now(), deUid: 'S1' }, staffDead);
+await read('[décédé] S1 (personnel) lit toujours sa contestation et son marqueur', true, 'S1', 'contestationsDeces/PHMC-6', (data) => { staffDead(data); data.contestationsDeces = { 'PHMC-6': { uid: 'S1', message: 'x', creeLe: 1, statut: 'en_attente' } }; });
+await read('[décédé] S2 ne lit pas la contestation de S1', false, 'S2', 'contestationsDeces/PHMC-6', (data) => { staffDead(data); data.contestationsDeces = { 'PHMC-6': { uid: 'S1', message: 'x', creeLe: 1, statut: 'en_attente' } }; });
+await write("[décédé] un admin dont le patient est déclaré décédé écrit toujours", true, 'A', 'civilians/A/phone', '555-0101', (data) => { data.civilians.A = { patientID: 'PHMC-6' }; data.idsPatientParCompte = { A: 'PHMC-6' }; data.patientsDecedes['PHMC-6'] = { depuis: 1, uid: 'D1' }; });
+await write("Avis de décès levé : le personnel écrit de nouveau", true, 'S1', 'savedReports/S_One/x1', newReport(null), staffAlive);
+await write("Avis de décès levé : le civil C écrit de nouveau", true, 'C', 'patientRecords/PHMC-1/nouv', { reportPath: 'x' }, (data) => { delete data.patientsDecedes['PHMC-1']; });
+await write("Après un décès contesté puis levé, une nouvelle contestation reste possible si le patient est redéclaré décédé", true, 'C', 'contestationsDeces/PHMC-1', { uid: 'C', message: 'Encore une erreur.', creeLe: 3, statut: 'en_attente' }, (data) => { data.contestationsDeces = { 'PHMC-1': { uid: 'C', message: 'x', creeLe: 1, statut: 'acceptee' } }; });
+await write('Table idsPatientParCompte : S1 ne se donne pas un ID patient', false, 'S1', 'idsPatientParCompte/S1', 'PHMC-77');
+await write('Table idsPatientParCompte : un admin la pose', true, 'A', 'idsPatientParCompte/S1', 'PHMC-77');
+await read('Table idsPatientParCompte : S1 lit la sienne', true, 'S1', 'idsPatientParCompte/S1', staffAlive);
+await read('Table idsPatientParCompte : S2 ne lit pas celle de S1', false, 'S2', 'idsPatientParCompte/S1', staffAlive);
 
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
 
-let mockAuth = { isCivilian: true, civilianProfile: { patientID: 'PHMC-1' }, logoutEmployee: () => {}, staffName: 'Dr. DMEC' };
+let mockAuth = { myPatientID: 'PHMC-1', realIsAdmin: false, logoutEmployee: () => {}, staffName: 'Dr. DMEC' };
 jest.mock('../contexts/EmployeeAuthContext', () => ({ useEmployeeAuth: () => mockAuth }));
 jest.mock('../firebase', () => ({ database: {}, auth: { currentUser: { uid: 'C' } } }));
 const mockListeners = {};
@@ -41,7 +41,7 @@ const emit = async (path, value) => { await act(async () => { mockListeners[path
 
 describe('patient déclaré décédé : page à la place du site', () => {
     beforeEach(() => {
-        mockAuth = { isCivilian: true, civilianProfile: { patientID: 'PHMC-1' }, logoutEmployee: jest.fn(), staffName: '' };
+        mockAuth = { myPatientID: 'PHMC-1', realIsAdmin: false, logoutEmployee: jest.fn(), staffName: '' };
         Object.keys(mockListeners).forEach((key) => delete mockListeners[key]);
         mockSet.mockReset();
         mockNotifyGroup.mockReset();
@@ -91,11 +91,37 @@ describe('patient déclaré décédé : page à la place du site', () => {
         expect(screen.getByText('Envoyer la contestation')).toBeTruthy();
     });
 
-    test('un compte du personnel ou un admin n’est jamais enfermé hors du site', async () => {
-        mockAuth = { isCivilian: false, civilianProfile: null, logoutEmployee: jest.fn(), staffName: 'Dr. X' };
+    test('le personnel est bloqué comme un Civil (ID patient de sa fiche) ; l’avis de décès levé rend le site', async () => {
+        mockAuth = { myPatientID: 'PHMC-5', realIsAdmin: false, logoutEmployee: jest.fn(), staffName: 'Dr. X' };
+        open();
+        await emit('patientsDecedes/PHMC-5', { depuis: 1, uid: 'D1' });
+        expect(screen.getByText('Vous avez été déclaré(e) décédé(e)')).toBeTruthy();
+        expect(screen.queryByText('Le site')).toBeNull();
+        await emit('patientsDecedes/PHMC-5', null);
+        expect(screen.getByText('Le site')).toBeTruthy();
+        expect(screen.queryByText('Vous avez été déclaré(e) décédé(e)')).toBeNull();
+    });
+
+    test('seuls les admins ne sont jamais enfermés hors du site (même si leur ID patient est déclaré décédé)', async () => {
+        mockAuth = { myPatientID: 'PHMC-5', realIsAdmin: true, logoutEmployee: jest.fn(), staffName: 'Admin' };
         open();
         expect(Object.keys(mockListeners)).toEqual([]);
         expect(screen.getByText('Le site')).toBeTruthy();
+    });
+
+    test('un compte sans ID patient n’est pas concerné', async () => {
+        mockAuth = { myPatientID: '', realIsAdmin: false, logoutEmployee: jest.fn(), staffName: '' };
+        open();
+        expect(Object.keys(mockListeners)).toEqual([]);
+        expect(screen.getByText('Le site')).toBeTruthy();
+    });
+
+    test('une ancienne contestation acceptée n’empêche pas de contester un nouveau décès', async () => {
+        open();
+        await emit('patientsDecedes/PHMC-1', { depuis: 9, uid: 'D1' });
+        await emit('contestationsDeces/PHMC-1', { uid: 'C', message: 'Erreur', creeLe: 2, statut: 'acceptee', reponse: 'Rétabli.' });
+        expect(screen.queryByText(/Rétabli./)).toBeNull();
+        expect(screen.getByText('Envoyer la contestation')).toBeTruthy();
     });
 });
 

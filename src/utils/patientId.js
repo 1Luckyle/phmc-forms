@@ -59,3 +59,13 @@ export const completePatientIdInput = (input) => {
     if (!raw.trim()) return raw;
     return canonicalPatientId(raw);
 };
+
+// ID patient d'un membre du PERSONNEL (fiche staff/phmc ou staff/coroner) : PHMC-{ID du personnage GTA World}, à défaut PHMC-{chiffres du badge}. Même calcul que myPatientID (EmployeeAuthContext) :
+// les règles Firebase s'en servent (idsPatientParCompte) pour bloquer un compte du personnel dont le patient est déclaré décédé.
+export const staffPatientId = (member) => {
+    if (!member) return '';
+    if (member.gtawCharacterId != null && String(member.gtawCharacterId).trim() !== '') return canonicalPatientId(`PHMC-${String(member.gtawCharacterId).trim()}`);
+    const badge = String(member.badge || '');
+    const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');
+    return digits ? canonicalPatientId(`PHMC-${digits}`) : '';
+};

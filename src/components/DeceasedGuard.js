@@ -1,8 +1,8 @@
 // src/components/DeceasedGuard.js
 //
-// Patient déclaré DÉCÉDÉ par le DMEC (patientsDecedes/{ID}) qui a un compte Civil : à la place du site, il arrive sur une page qui le lui indique. Il ne peut plus rien faire, sauf CONTESTER auprès
-// des administrateurs (contestationsDeces/{ID}) et se déconnecter. Un administrateur qui lui donne raison lève le blocage (le marqueur disparaît) : la page disparaît aussitôt.
-// Seuls les comptes Civils sont concernés : un compte du personnel ou admin n'est jamais enfermé hors du site (un décès déclaré par erreur se corrige par un administrateur).
+// Patient déclaré DÉCÉDÉ par le DMEC (patientsDecedes/{ID}) qui a un compte (Civil OU personnel) : à la place du site, il arrive sur une page qui le lui indique. Il ne peut plus rien faire, sauf CONTESTER auprès
+// des administrateurs (contestationsDeces/{ID}) et se déconnecter ; les règles Firebase refusent d'ailleurs toute écriture à ce compte. Un administrateur qui lui donne raison lève le blocage (le marqueur disparaît) :
+// la page disparaît aussitôt et plus rien n'est bloqué. Seuls les ADMINS ne sont jamais concernés (un décès déclaré par erreur contre un admin se corrige par un autre admin ou directement).
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import { ref, onValue, set } from 'firebase/database';
@@ -37,7 +37,8 @@ export const DeceasedPage = ({ patientID, marker, contest, onLogout }) => {
     const [message, setMessage] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
-    const canContest = !contest || contest.statut === 'rejetee';
+    // Contester est possible tant qu'aucune contestation n'est en attente (la précédente a été rejetée, ou acceptée puis le patient a de nouveau été déclaré décédé).
+    const canContest = !contest || contest.statut !== 'en_attente';
     const send = async () => {
         const text = message.trim();
         if (!text) { setError('Expliquez pourquoi vous contestez ce décès.'); return; }
@@ -89,8 +90,9 @@ export const DeceasedPage = ({ patientID, marker, contest, onLogout }) => {
 };
 
 const DeceasedGuard = ({ children }) => {
-    const { isCivilian, civilianProfile, logoutEmployee } = useEmployeeAuth();
-    const patientID = isCivilian && civilianProfile ? civilianProfile.patientID : '';
+    // myPatientID : ID du profil Civil, ou ID patient de la fiche du personnel. Un admin (le vrai, pas une simulation « visualiser en tant que ») n'est jamais bloqué.
+    const { myPatientID, realIsAdmin, logoutEmployee } = useEmployeeAuth();
+    const patientID = realIsAdmin ? '' : myPatientID || '';
     const { deceased, marker, contest } = useDeceasedStatus(patientID);
     if (patientID && deceased) return <DeceasedPage patientID={patientID} marker={marker} contest={contest} onLogout={() => { if (logoutEmployee) logoutEmployee(); }} />;
     return children;

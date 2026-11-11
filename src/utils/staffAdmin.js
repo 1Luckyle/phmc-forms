@@ -15,7 +15,7 @@ import { database, auth } from '../firebase';
 import { PHMC_RANKS, CORONER_RANKS, normalizeRank, getRoleInfo, familyOfRank, familyOfMember, familiesOfMember, extraRanksOf, cleanExtraRanks, sortKeyOfRank, canManageFireSafety, canManageDiscipline } from '../constants/ranks';
 import { getEmployeeDisplayName } from './employeeName';
 import { sendTemplatedMail } from './mailTemplates';
-import { canonicalPatientId } from './patientId';
+import { canonicalPatientId, staffPatientId } from './patientId';
 import { findPatientNodes } from './patientRecords';
 import { assertNoneFrozen } from './judicialFreeze';
 import { markAccountDeleted, clearDeletedMark, staffPatientIdOf } from './deletedAccounts';
@@ -410,10 +410,10 @@ export async function syncStaffUids() {
     const [phmcSnap, coronerSnap, ...currentSnaps] = await Promise.all([
         get(ref(database, 'staff/phmc')),
         get(ref(database, 'staff/coroner')),
-        ...['staffUIDs', 'soignantUIDs', 'dmecUIDs', 'gestionIncendieUIDs', 'disciplineUIDs', 'noeudsRapports', 'noeudsAnciens'].map((path) => get(ref(database, path)).catch(() => null)),
+        ...['staffUIDs', 'soignantUIDs', 'dmecUIDs', 'gestionIncendieUIDs', 'disciplineUIDs', 'noeudsRapports', 'noeudsAnciens', 'idsPatientParCompte'].map((path) => get(ref(database, path)).catch(() => null)),
     ]);
     const asArray = (value) => (!value ? [] : Array.isArray(value) ? value : Object.values(value));
-    const wanted = { staffUIDs: {}, soignantUIDs: {}, dmecUIDs: {}, gestionIncendieUIDs: {}, disciplineUIDs: {}, noeudsRapports: {}, noeudsAnciens: {} };
+    const wanted = { staffUIDs: {}, soignantUIDs: {}, dmecUIDs: {}, gestionIncendieUIDs: {}, disciplineUIDs: {}, noeudsRapports: {}, noeudsAnciens: {}, idsPatientParCompte: {} };
     [['phmc', phmcSnap], ['coroner', coronerSnap]].forEach(([service, snap]) => {
         asArray(snap.val()).forEach((entry) => {
             if (!entry || !entry.uid) return;
@@ -425,6 +425,9 @@ export async function syncStaffUids() {
             if (canManageDiscipline(entry)) wanted.disciplineUIDs[entry.uid] = true;
             const node = sanitizeNode(entry.name || [entry.firstName, entry.lastName].filter(Boolean).join(' '));
             if (node) wanted.noeudsRapports[entry.uid] = node;
+            // ID patient du compte : les règles bloquent un compte du personnel dont le patient est déclaré décédé.
+            const patientId = staffPatientId(entry);
+            if (patientId) wanted.idsPatientParCompte[entry.uid] = patientId;
         });
     });
     const staffUpdates = {};

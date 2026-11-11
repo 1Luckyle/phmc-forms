@@ -49,43 +49,43 @@
       "phmc": {
         "$key": {
           "name": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
           },
           "firstName": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
           },
           "lastName": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 40"
           },
           "phNumber": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "(newData.isString() && newData.val().length <= 40) || newData.isNumber()"
           },
           "discord": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "(newData.isString() && newData.val().length <= 64) || newData.isNumber()"
           },
           "middleName": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 40"
           },
           "address": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 150"
           },
           "zip": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 12"
           },
           "dateOfBirth": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
           },
           "gender": {
-            ".write": "auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('phmc').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && (newData.val() === 'Male' || newData.val() === 'Female' || newData.val() === 'Other')"
           }
         }
@@ -93,39 +93,39 @@
       "coroner": {
         "$key": {
           "name": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
           },
           "firstName": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
           },
           "phNumber": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "(newData.isString() && newData.val().length <= 40) || newData.isNumber()"
           },
           "discord": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "(newData.isString() && newData.val().length <= 64) || newData.isNumber()"
           },
           "middleName": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 40"
           },
           "address": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 150"
           },
           "zip": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().length <= 12"
           },
           "dateOfBirth": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
           },
           "gender": {
-            ".write": "auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid",
+            ".write": "(auth != null && root.child('staff').child('coroner').child($key).child('uid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.isString() && (newData.val() === 'Male' || newData.val() === 'Female' || newData.val() === 'Other')"
           }
         }
@@ -198,7 +198,17 @@
     "noeudsRapports": {
       "$uid": {
         ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && newData.isString() && newData.val().length <= 120 && (!root.child('savedReports').child(newData.val()).exists() || root.child('noeudsAnciens').child(auth.uid).child(newData.val()).exists())))"
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && newData.isString() && newData.val().length <= 120 && (!root.child('savedReports').child(newData.val()).exists() || root.child('noeudsAnciens').child(auth.uid).child(newData.val()).exists())))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
+      }
+    },
+
+    // idsPatientParCompte/{uid}: ID patient (PHMC-…) de ce compte DU PERSONNEL (numéro de badge ou ID du personnage GTA World, comme myPatientID côté application). Posé par les admins (syncStaffUids) ; sert à
+    // bloquer un membre du personnel dont le patient est déclaré décédé (patientsDecedes), exactement comme un compte Civil. Lisible par son titulaire.
+    "idsPatientParCompte": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 60)"
       }
     },
 
@@ -209,7 +219,7 @@
       "$uid": {
         ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$node": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && ((newData.val() === true && root.child('noeudsRapports').child(auth.uid).val() === $node) || !newData.exists())))"
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && ((newData.val() === true && root.child('noeudsRapports').child(auth.uid).val() === $node) || !newData.exists())))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -218,13 +228,13 @@
     // il enregistre un rapport de décès portant cet ID ; retiré par celui qui l'a posé (suppression de son rapport) ou par un admin
     // (déblocage). Tant qu'il existe, le personnel non DMEC ne peut plus rien enregistrer sur ce patient (voir savedReports) ; le dossier
     // reste consultable. Lecture : le personnel (pour afficher le message avant d'enregistrer) et le patient lui-même (compte Civil lié à cet ID : page « déclaré décédé »).
-    // COMPTE CIVIL D'UN PATIENT DÉCLARÉ DÉCÉDÉ : tant que le marqueur existe, ce compte n'écrit plus dans ses rapports (savedReports), son index (patientRecords), son dossier (dossiersEnAttente, jetonsDossier,
-    // signalementsDossier, signaturesPatients), ses factures, ses exemptions, ses demandes de divulgation ni son profil (civilians). Il garde seulement la lecture, sa contestation (contestationsDeces) et les
-    // notifications aux administrateurs. Le personnel et les admins ne sont jamais concernés. Condition ajoutée en fin de chaque règle d'écriture concernée (voir « !root.child('patientsDecedes')… »).
+    // COMPTE D'UN PATIENT DÉCLARÉ DÉCÉDÉ (compte Civil, ou membre du personnel dont l'ID patient figure dans idsPatientParCompte) : tant que le marqueur existe, ce compte ne peut plus RIEN écrire (rapports, dossier,
+    // messagerie, demandes, profil…). Il garde la lecture, sa contestation (contestationsDeces) et la notification aux administrateurs (notificationsGroupes/admin). Seuls les ADMINS ne sont jamais touchés. Dès que
+    // le marqueur disparaît (avis de décès levé), plus rien n'est bloqué. Condition ajoutée en fin de chaque règle d'écriture (voir « idsPatientParCompte »…).
     "patientsDecedes": {
       "$patientId": {
-        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
+        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('idsPatientParCompte').child(auth.uid).val() === $patientId))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['depuis', 'uid']) && newData.child('depuis').isNumber() && newData.child('uid').isString())"
       }
     },
@@ -235,7 +245,7 @@
     "identifiantsTemporaires": {
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$id": {
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && !data.exists() && newData.child('uid').val() === auth.uid))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && !data.exists() && newData.child('uid').val() === auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || ($id.matches(/^TMP-[A-Z2-9]{5}$/) && newData.hasChildren(['nom', 'creeLe', 'uid', 'statut']) && newData.child('nom').isString() && newData.child('nom').val().length <= 160 && newData.child('creeLe').isNumber() && newData.child('uid').isString() && (newData.child('statut').val() === 'temporaire' || (newData.child('statut').val() === 'attribue' && newData.child('idReel').isString())))"
       }
     },
@@ -247,7 +257,7 @@
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       ".indexOn": ["patientID", "statut"],
       "$cle": {
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('uid').val() === auth.uid && newData.child('statut').val() === 'a_traiter') || (data.exists() && data.child('uid').val() === auth.uid && data.child('statut').val() === 'a_traiter' && (!newData.exists() || newData.child('statut').val() === 'a_traiter')) || (data.exists() && root.child('dmecUIDs').child(auth.uid).val() === true))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('uid').val() === auth.uid && newData.child('statut').val() === 'a_traiter') || (data.exists() && data.child('uid').val() === auth.uid && data.child('statut').val() === 'a_traiter' && (!newData.exists() || newData.child('statut').val() === 'a_traiter')) || (data.exists() && root.child('dmecUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['patientID', 'uid', 'creeLe', 'statut', 'par']) && newData.child('patientID').isString() && newData.child('creeLe').isNumber() && (newData.child('statut').val() === 'a_traiter' || newData.child('statut').val() === 'traite'))"
       }
     },
@@ -257,8 +267,8 @@
     "contestationsDeces": {
       ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
       "$patientId": {
-        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && newData.child('uid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (!data.exists() || data.child('statut').val() === 'rejetee')))",
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('idsPatientParCompte').child(auth.uid).val() === $patientId))",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('idsPatientParCompte').child(auth.uid).val() === $patientId) && newData.child('uid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (!data.exists() || data.child('statut').val() !== 'en_attente')))",
         ".validate": "!newData.exists() || (newData.hasChildren(['uid', 'message', 'creeLe', 'statut']) && newData.child('message').isString() && newData.child('message').val().length > 0 && newData.child('message').val().length <= 2000 && newData.child('creeLe').isNumber() && (newData.child('statut').val() === 'en_attente' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'rejetee'))"
       }
     },
@@ -268,7 +278,7 @@
     "rapportsPublics": {
       ".read":  "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$reportKey": {
-        ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
+        ".write": "(auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['reportPath', 'uid', 'publieLe']) && newData.child('publieLe').isNumber())"
       }
     },
@@ -279,7 +289,7 @@
     "hommages": {
       ".read": true,
       "$reportKey": {
-        ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && root.child('rapportsPublics').child($reportKey).child('uid').val() === auth.uid))",
+        ".write": "(auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && root.child('rapportsPublics').child($reportKey).child('uid').val() === auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['titre', 'publieLe', 'bbCode']) && newData.child('titre').isString() && newData.child('titre').val().length <= 200 && newData.child('publieLe').isNumber() && newData.child('bbCode').isString() && newData.child('bbCode').val().length <= 100000 && (!newData.child('par').exists() || (newData.child('par').isString() && newData.child('par').val().length <= 120)))",
         "titre": {}, "publieLe": {}, "bbCode": {}, "par": {},
         "$other": { ".validate": false }
@@ -295,7 +305,7 @@
     "gelsJudiciaires": {
       ".read":  "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$reportKey": {
-        ".write": "auth != null && (((root.child('adminUIDs').child(auth.uid).val() === true || root.child('dmecUIDs').child(auth.uid).val() === true) && newData.child('actif').val() === true && newData.child('uid').val() === auth.uid && !data.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true && newData.child('actif').val() === true && newData.child('uid').val() === auth.uid && data.child('actif').val() === false && newData.child('precedents').exists()) || (root.child('adminUIDs').child(auth.uid).val() === true && data.child('actif').val() === true && newData.child('actif').val() === false))",
+        ".write": "(auth != null && (((root.child('adminUIDs').child(auth.uid).val() === true || root.child('dmecUIDs').child(auth.uid).val() === true) && newData.child('actif').val() === true && newData.child('uid').val() === auth.uid && !data.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true && newData.child('actif').val() === true && newData.child('uid').val() === auth.uid && data.child('actif').val() === false && newData.child('precedents').exists()) || (root.child('adminUIDs').child(auth.uid).val() === true && data.child('actif').val() === true && newData.child('actif').val() === false))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['reportPath', 'uid', 'depuis', 'actif', 'motif']) && newData.child('actif').isBoolean() && newData.child('depuis').isNumber() && newData.child('uid').isString() && newData.child('motif').isString() && newData.child('motif').val().length >= 3 && newData.child('motif').val().length <= 500 && (newData.child('actif').val() === true || (newData.child('levee').child('motif').isString() && newData.child('levee').child('motif').val().length >= 3 && newData.child('levee').child('motif').val().length <= 500))"
       }
     },
@@ -304,7 +314,7 @@
     // (comptes à part de chaque entité) : { lignes: [{ type, libelle, montant }], notes, ouverture, majLe, majPar }. Lecture et écriture : admins seulement (le nœud public adminSettings/transparence ne peut pas porter un brouillon).
     "brouillonsTransparence": {
       ".read":  "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('comptabiliteGestionnaires').child(auth.uid).val() === true)",
-      ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('comptabiliteGestionnaires').child(auth.uid).val() === true)",
+      ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('comptabiliteGestionnaires').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
       "$key": {
         ".validate": "$key.matches(/^((pharmacie|pharmacie-urgences)_)?[0-9]{4}-T[1-4]$/) && newData.hasChildren(['majLe']) && newData.child('majLe').isNumber() && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().length <= 1500)) && (!newData.child('ouverture').exists() || (newData.child('ouverture').isString() && newData.child('ouverture').val().length <= 30)) && (!newData.child('majPar').exists() || (newData.child('majPar').isString() && newData.child('majPar').val().length <= 120))",
         "lignes": {
@@ -323,7 +333,7 @@
       ".read":    "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (query.orderByChild === 'auteurUid' && query.equalTo === auth.uid))",
       ".indexOn": ["auteurUid"],
       "$id": {
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('auteurUid').val() === auth.uid && root.child('staffUIDs').child(auth.uid).val() === true))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('auteurUid').val() === auth.uid && root.child('staffUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['auteurUid', 'auteurNom', 'le', 'service', 'agent', 'type', 'baseLegale', 'decision']) && newData.child('auteurUid').isString() && newData.child('auteurNom').isString() && newData.child('auteurNom').val().length <= 120 && newData.child('le').isNumber() && newData.child('le').val() <= now + 3600000 && newData.child('service').isString() && newData.child('service').val().length > 0 && newData.child('service').val().length <= 80 && newData.child('agent').isString() && newData.child('agent').val().length > 0 && newData.child('agent').val().length <= 120 && (newData.child('type').val() === 'presence' || newData.child('type').val() === 'etat' || newData.child('type').val() === 'dossier' || newData.child('type').val() === 'prelevement' || newData.child('type').val() === 'identite_defunt' || newData.child('type').val() === 'autopsie' || newData.child('type').val() === 'certificat_deces' || newData.child('type').val() === 'prelevements_scelles' || newData.child('type').val() === 'restitution' || newData.child('type').val() === 'examen_vivant' || newData.child('type').val() === 'images' || newData.child('type').val() === 'autre') && (newData.child('baseLegale').val() === 'mandat' || newData.child('baseLegale').val() === 'consentement' || newData.child('baseLegale').val() === 'danger' || newData.child('baseLegale').val() === 'aucune') && (newData.child('decision').val() === 'remis' || newData.child('decision').val() === 'refuse' || newData.child('decision').val() === 'transmis') && (!newData.child('patientID').exists() || (newData.child('patientID').isString() && newData.child('patientID').val().length <= 40)) && (!newData.child('reference').exists() || (newData.child('reference').isString() && newData.child('reference').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))"
       }
     },
@@ -338,7 +348,7 @@
       ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true && root.child('adminSettings').child('debugMessagerieAdmin').child('enabled').val() === true",
       "$id": {
         ".read": "auth != null && (data.child('acces').child(auth.uid).val() === true || (root.child('adminUIDs').child(auth.uid).val() === true && root.child('adminSettings').child('debugMessagerieAdmin').child('enabled').val() === true))",
-        ".write": "auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "(auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "data.exists() || !newData.exists() || (newData.hasChildren(['deUid', 'deNom', 'objet', 'corps', 'creeLe', 'dest', 'acces', 'fil', 'deFonction', 'deService']) && newData.child('deUid').val() === auth.uid && newData.child('deNom').isString() && newData.child('deNom').val().length <= 120 && newData.child('objet').isString() && newData.child('objet').val().length > 0 && newData.child('objet').val().length <= 160 && newData.child('corps').isString() && newData.child('corps').val().length > 0 && newData.child('corps').val().length <= 20000 && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && newData.child('fil').isString() && newData.child('fil').val().length <= 60 && newData.child('dest').hasChildren() && newData.child('acces').child(auth.uid).val() === true)",
         "deUid": {}, "deNom": {}, "objet": {}, "corps": {}, "creeLe": {}, "fil": {},
         "reponseA": { ".validate": "newData.isString() && newData.val().length <= 60" },
@@ -357,7 +367,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$id": {
-          ".write": "auth != null && (auth.uid === $uid || (!data.exists() && newData.exists() && root.child('messagesInternes').child($id).child('deUid').val() === auth.uid && root.child('messagesInternes').child($id).child('acces').child($uid).val() === true))",
+          ".write": "(auth != null && (auth.uid === $uid || (!data.exists() && newData.exists() && root.child('messagesInternes').child($id).child('deUid').val() === auth.uid && root.child('messagesInternes').child($id).child('acces').child($uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['role', 'lu', 'le']) && (newData.child('role').val() === 'recu' || newData.child('role').val() === 'envoye') && newData.child('lu').isBoolean() && newData.child('le').isNumber() && newData.child('le').val() <= now + 3600000)",
           "role": {}, "lu": {}, "le": {},
           "objet": { ".validate": "newData.isString() && newData.val().length <= 160" },
@@ -378,7 +388,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$id": {
-          ".write": "auth != null && (auth.uid === $uid || (!data.exists() && newData.exists()))",
+          ".write": "(auth != null && (auth.uid === $uid || (!data.exists() && newData.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
           "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
           "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
@@ -403,7 +413,7 @@
       "recrutement": {
         ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
         "$id": {
-          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+          ".write": "(auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
           "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
           "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
@@ -413,7 +423,7 @@
       "incendie": {
         ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
         "$id": {
-          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true))",
+          ".write": "(auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
           "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
           "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
@@ -423,7 +433,7 @@
       "administration": {
         ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
         "$id": {
-          ".write": "auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true))",
+          ".write": "(auth != null && ((!data.exists() && newData.exists()) || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['type', 'titre', 'creeLe', 'deUid']) && newData.child('deUid').val() === auth.uid && newData.child('type').isString() && newData.child('type').val().length <= 40 && newData.child('titre').isString() && newData.child('titre').val().length > 0 && newData.child('titre').val().length <= 160 && (!newData.child('texte').exists() || (newData.child('texte').isString() && newData.child('texte').val().length <= 400)) && newData.child('creeLe').isNumber() && newData.child('creeLe').val() <= now + 3600000 && (!newData.child('lien').exists() || (newData.child('lien').hasChild('cible') && newData.child('lien').child('cible').isString() && newData.child('lien').child('cible').val().length <= 40)))",
           "type": {}, "titre": {}, "texte": {}, "creeLe": {}, "deUid": {},
           "lien": { "cible": {}, "section": { ".validate": "newData.isString() && newData.val().length <= 120" }, "id": { ".validate": "newData.isString() && newData.val().length <= 120" } },
@@ -436,7 +446,7 @@
     "notificationsLecture": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
+        ".write": "(auth != null && auth.uid === $uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         "luJusqua": { ".validate": "newData.isNumber()" },
         "groupesDepuis": { ".validate": "newData.isNumber()" },
         "lues": { "$cle": { ".validate": "newData.isBoolean()" } },
@@ -451,7 +461,7 @@
       ".read": "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
       "controles": {
         "$id": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['le', 'parUid', 'parNom', 'etage', 'items']) && newData.child('le').isNumber() && newData.child('parUid').isString() && newData.child('parNom').isString() && newData.child('parNom').val().length <= 120 && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 60 && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().length <= 500)))",
           "items": {
             "$item": {
@@ -462,13 +472,13 @@
       },
       "nonConformites": {
         "$id": {
-          ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('source').val() === 'signalement' && newData.child('statut').val() === 'ouverte' && newData.child('creePar').child('uid').val() === auth.uid))",
+          ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('source').val() === 'signalement' && newData.child('statut').val() === 'ouverte' && newData.child('creePar').child('uid').val() === auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['creeLe', 'creePar', 'etage', 'article', 'description', 'statut', 'source']) && newData.child('creeLe').isNumber() && newData.child('creePar').hasChildren(['uid', 'nom']) && newData.child('etage').isString() && newData.child('etage').val().length > 0 && newData.child('etage').val().length <= 120 && (newData.child('article').val() === '202' || newData.child('article').val() === '203' || newData.child('article').val() === '204' || newData.child('article').val() === '205' || newData.child('article').val() === '206' || newData.child('article').val() === '207' || newData.child('article').val() === '208' || newData.child('article').val() === 'autre') && newData.child('description').isString() && newData.child('description').val().length >= 5 && newData.child('description').val().length <= 500 && (newData.child('statut').val() === 'ouverte' || newData.child('statut').val() === 'resolue') && (newData.child('source').val() === 'controle' || newData.child('source').val() === 'signalement') && (!newData.child('responsable').exists() || (newData.child('responsable').isString() && newData.child('responsable').val().length <= 120)) && (!newData.child('echeance').exists() || newData.child('echeance').isNumber()) && (!newData.child('resolutionNote').exists() || (newData.child('resolutionNote').isString() && newData.child('resolutionNote').val().length <= 500)))"
         }
       },
       "exercices": {
         "$id": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['le', 'parUid', 'parNom', 'etage', 'participants', 'duree']) && newData.child('le').isNumber() && newData.child('etage').isString() && newData.child('etage').val().length <= 60 && newData.child('participants').isNumber() && newData.child('duree').isNumber() && (!newData.child('observations').exists() || (newData.child('observations').isString() && newData.child('observations').val().length <= 500)))",
           "participantsNoms": {
             "$i": { ".validate": "newData.isString() && newData.val().length <= 120" }
@@ -486,7 +496,7 @@
       "attributions": {
         ".read": "auth != null && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
         "$plaque": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true || (data.child('uid').val() === auth.uid && !newData.exists()))",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true || (data.child('uid').val() === auth.uid && !newData.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['uid', 'nom', 'depuis', 'demandeId']) && newData.child('uid').isString() && newData.child('nom').isString() && newData.child('nom').val().length <= 120 && newData.child('depuis').isNumber() && newData.child('demandeId').isString() && newData.child('demandeId').val().length <= 60)"
         }
       },
@@ -495,7 +505,7 @@
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
           "$id": {
-            ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true || (auth.uid === $uid && root.child('staffUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('statut').val() === 'en_attente') || (data.child('statut').val() === 'en_attente' && newData.child('statut').val() === 'annule' && newData.child('plaque').val() === data.child('plaque').val()) || (data.child('statut').val() === 'accepte' && newData.child('statut').val() === 'rendu' && newData.child('plaque').val() === data.child('plaque').val()))))",
+            ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true || (auth.uid === $uid && root.child('staffUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('statut').val() === 'en_attente') || (data.child('statut').val() === 'en_attente' && newData.child('statut').val() === 'annule' && newData.child('plaque').val() === data.child('plaque').val()) || (data.child('statut').val() === 'accepte' && newData.child('statut').val() === 'rendu' && newData.child('plaque').val() === data.child('plaque').val()))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "!newData.exists() || (newData.hasChildren(['demandeLe', 'demandeurUid', 'demandeurNom', 'plaque', 'motif', 'statut']) && newData.child('demandeurUid').val() === $uid && newData.child('demandeLe').isNumber() && newData.child('demandeurNom').isString() && newData.child('demandeurNom').val().length <= 120 && newData.child('plaque').isString() && newData.child('plaque').val().length > 0 && newData.child('plaque').val().length <= 20 && newData.child('motif').isString() && newData.child('motif').val().length >= 10 && newData.child('motif').val().length <= 500 && (newData.child('statut').val() === 'en_attente' || newData.child('statut').val() === 'accepte' || newData.child('statut').val() === 'refuse' || newData.child('statut').val() === 'annule' || newData.child('statut').val() === 'rendu' || newData.child('statut').val() === 'retire') && (!newData.child('lieu').exists() || (newData.child('lieu').isString() && newData.child('lieu').val().length <= 120)) && (!newData.child('decisionNote').exists() || (newData.child('decisionNote').isString() && newData.child('decisionNote').val().length <= 300)) && (!newData.child('finNote').exists() || (newData.child('finNote').isString() && newData.child('finNote').val().length <= 300)))",
             "demandeLe": {}, "demandeurUid": {}, "demandeurNom": {}, "plaque": {}, "motif": {}, "lieu": {}, "statut": {},
             "decisionLe": {}, "decisionParNom": {}, "decisionNote": {}, "finLe": {}, "finPar": {}, "finParNom": {}, "finNote": {},
@@ -529,7 +539,7 @@
     "userCreations": {
       "$uid": {
         ".read":  "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
-        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
+        ".write": "(auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -542,7 +552,7 @@
       ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
-        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
+        ".write": "(auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -554,7 +564,7 @@
     "imgbbDeleteQueue": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       "$entryId": {
-        ".write": "auth != null && ((!data.exists() && newData.exists()) || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".write": "(auth != null && ((!data.exists() && newData.exists()) || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['deleteUrl', 'queuedAt']) && newData.child('deleteUrl').isString() && newData.child('deleteUrl').val().matches(/^https:\\/\\/ibb\\.co\\/.+/)"
       }
     },
@@ -573,7 +583,7 @@
       // Directrice et l'Assistante de Direction (drapeau comptabiliteGestionnaires, posé par la fonction syncCctvAccess d'après le rôle), pas seulement
       // par les admins. La lecture reste publique (ces valeurs s'affichent à tous).
       "tarifs": {
-        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
+        ".write": "(auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       },
       // champsObligatoires/{version}/{champ}: true | false — champs rendus obligatoires (true) ou facultatifs (false) par les admins par-dessus le
       // minimum du code (src/utils/formRulesCore.js). Écriture : admins (règle du dessus). Lecture publique (les formulaires en ont besoin).
@@ -584,10 +594,10 @@
         }
       },
       "transparence": {
-        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true"
+        ".write": "(auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       },
       "grilleSalariale": {
-        ".write": "auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true",
+        ".write": "(auth != null && root.child('comptabiliteGestionnaires').child(auth.uid).val() === true) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         // 15 ÉCHELONS fixes, chacun avec son salaire à l'heure et à la semaine : { "1": { horaire, hebdo }, … "15": … }. Modifiés par les admins, la Directrice et
         // l'Assistante de Direction seulement (règle du dessus) : le salaire d'un échelon vaut pour tous les grades qui s'y trouvent.
         "echelons": {
@@ -602,7 +612,7 @@
         // ajouté avec un poste de recrutement) : jamais modifier ni supprimer l'échelon d'un grade, ni un salaire.
         "grades": {
           "$grade": {
-            ".write": "auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+            ".write": "(auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.hasChildren(['grade', 'echelon']) && newData.child('grade').isString() && newData.child('grade').val().length <= 80 && newData.child('echelon').isNumber() && newData.child('echelon').val() >= 1 && newData.child('echelon').val() <= 15 && newData.child('echelon').val() % 1 === 0",
             "grade": { ".validate": true },
             "echelon": { ".validate": true },
@@ -614,7 +624,7 @@
       // modification et suppression : admins seulement. La clé est le nom du rôle sans accent ni caractère interdit.
       "rolesPersonnalises": {
         "$key": {
-          ".write": "auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
+          ".write": "(auth != null && !data.exists() && newData.exists() && (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "$key.matches(/^[a-z0-9_]{1,60}$/) && newData.hasChildren(['value', 'pole', 'badgePrefix', 'filiere', 'creeLe']) && newData.child('value').isString() && newData.child('value').val().length >= 2 && newData.child('value').val().length <= 60 && (newData.child('pole').val() === 'soignant' || newData.child('pole').val() === 'administration' || newData.child('pole').val() === 'polyvalent' || newData.child('pole').val() === 'dmec') && newData.child('badgePrefix').isString() && newData.child('badgePrefix').val().matches(/^[A-Z]{1,4}$/) && newData.child('filiere').isString() && newData.child('filiere').val().length <= 60 && newData.child('creeLe').isNumber() && (!newData.child('creePar').exists() || (newData.child('creePar').isString() && newData.child('creePar').val().length <= 120))",
           "value": { ".validate": true },
           "pole": { ".validate": true },
@@ -654,7 +664,7 @@
       // existante (avant, ".write": true laissait n'importe qui vider tout le nœud ou remplacer la
       // demande d'un autre). Édition et suppression : admins uniquement.
       "$emailKey": {
-        ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.exists())",
+        ".write": "(root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.exists())) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['email', 'status']) && newData.child('email').isString() && newData.child('email').val().length <= 254 && newData.child('status').isString() && newData.child('status').val().length <= 40"
       }
     },
@@ -666,7 +676,7 @@
       // Écriture par clé : un employé CRÉE sa demande (il ne peut ni écraser ni supprimer celle d'un autre) ;
       // admins : édition/suppression. Avant, ".write": auth != null laissait écraser/vider tout le nœud.
       "$requestId": {
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.exists()))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['status', 'requestedBy']) && newData.child('status').isString() && newData.child('status').val().length <= 40 && newData.child('requestedBy').isString() && newData.child('requestedBy').val().length <= 120"
       }
     },
@@ -687,7 +697,7 @@
       "$patientId": {
         ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
         "$key": {
-          ".write": "auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+          ".write": "(auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.hasChildren(['par', 'creeLe']) && (newData.hasChild('champs') || newData.hasChild('ajouts'))"
         }
       }
@@ -701,7 +711,7 @@
       "$recipient": {
         ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('staffUIDs').child(auth.uid).val() === true && root.child('noeudsRapports').child(auth.uid).val() === $recipient))",
         "$id": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('staffUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('ownerNode').val() === root.child('noeudsRapports').child(auth.uid).val()) || (!newData.exists() && (data.child('ownerNode').val() === root.child('noeudsRapports').child(auth.uid).val() || root.child('noeudsRapports').child(auth.uid).val() === $recipient)))))",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('staffUIDs').child(auth.uid).val() === true && ((newData.exists() && newData.child('ownerNode').val() === root.child('noeudsRapports').child(auth.uid).val()) || (!newData.exists() && (data.child('ownerNode').val() === root.child('noeudsRapports').child(auth.uid).val() || root.child('noeudsRapports').child(auth.uid).val() === $recipient)))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.hasChildren(['ownerNode', 'reportKey', 'titre', 'le'])"
         }
       }
@@ -740,15 +750,15 @@
           // supprimer ce rapport ; il faut d'abord lever le gel (admin, avec un justificatif : voir gelsJudiciaires). LIMITE : le droit d'écriture
           // d'un admin sur le NŒUD entier (renommage, fusion de comptes : ligne « .write » de $userKey) l'emporte sur cette règle ; pour les
           // admins le gel est donc appliqué par l'application (deleteReportWithRules ; assertNoneFrozen avant chaque opération d'admin sur un nœud entier), pas par la base.
-          ".write": "(auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama' && !((data.child('bbCodeVersion').val() === 3 || data.child('bbCodeVersion').val() === 25 || data.child('bbCodeVersion').val() === 26) && (root.child('patientRecords').child(data.child('data').child('patientID').val()).child($reportKey).child('visibility').val() !== 'owner' || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() === 'paye' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('payeLe').val() < now - 900000) || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'a_payer' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'paye' && data.child('timestamp').val() < now - 900000)))))))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+          ".write": "(auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama' && !((data.child('bbCodeVersion').val() === 3 || data.child('bbCodeVersion').val() === 25 || data.child('bbCodeVersion').val() === 26) && (root.child('patientRecords').child(data.child('data').child('patientID').val()).child($reportKey).child('visibility').val() !== 'owner' || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() === 'paye' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('payeLe').val() < now - 900000) || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'a_payer' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'paye' && data.child('timestamp').val() < now - 900000)))))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           // Marqueurs que les renommages de fiche mettent à jour dans les COPIES d'un autre médecin (voir renameReportOwner).
           "copiedFrom": {
             "reportPath": {
-              ".write": "auth != null && root.child('staffUIDs').child(auth.uid).val() === true && newData.isString()"
+              ".write": "(auth != null && root.child('staffUIDs').child(auth.uid).val() === true && newData.isString()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
             }
           },
           "creatorName": {
-            ".write": "auth != null && root.child('staffUIDs').child(auth.uid).val() === true && newData.isString()"
+            ".write": "(auth != null && root.child('staffUIDs').child(auth.uid).val() === true && newData.isString()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
           }
         }
       }
@@ -771,13 +781,13 @@
       "logs": {
         ".read":  "auth != null",
         "$type": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('bingo').child('cards').child($type).child('paused').val() !== true)"
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('bingo').child('cards').child($type).child('paused').val() !== true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       },
       // Demandes de phrases — soumises par les connectés, lues par admin
       "phraseRequests": {
         ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
-        ".write": "auth != null"
+        ".write": "(auth != null) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -789,7 +799,7 @@
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       ".indexOn": ["ts", "cat"],
       "$logId": {
-        ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid)",
+        ".write": "(root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['ts', 'cat', 'act', 'msg', 'sev', 'by']) && newData.child('ts').isNumber() && newData.child('ts').val() <= now + 3600000 && newData.child('ts').val() >= now - 86400000 && newData.child('cat').isString() && newData.child('cat').val().length <= 40 && newData.child('act').isString() && newData.child('act').val().length <= 80 && newData.child('msg').isString() && newData.child('msg').val().length <= 400 && (!newData.child('det').exists() || (newData.child('det').isString() && newData.child('det').val().length <= 3000)) && (newData.child('sev').val() === 'info' || newData.child('sev').val() === 'success' || newData.child('sev').val() === 'warning' || newData.child('sev').val() === 'error')"
       }
     },
@@ -801,7 +811,7 @@
     "comptesSupprimes": {
       "$patientId": {
         ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || !newData.exists())"
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || !newData.exists())) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -813,7 +823,7 @@
       ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && ((!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('statut').val() === 'en_attente') || !newData.exists())))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (auth.uid === $uid && ((!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('statut').val() === 'en_attente') || !newData.exists())))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['demandeLe', 'nom', 'statut']) && newData.child('demandeLe').isNumber() && newData.child('nom').isString() && newData.child('nom').val().length <= 120 && newData.child('statut').val() === 'en_attente' && (!newData.child('motif').exists() || (newData.child('motif').isString() && newData.child('motif').val().length <= 500)) && (!newData.child('email').exists() || (newData.child('email').isString() && newData.child('email').val().length <= 200)) && (!newData.child('rang').exists() || (newData.child('rang').isString() && newData.child('rang').val().length <= 120)))",
         "demandeLe": {}, "nom": {}, "email": {}, "rang": {}, "motif": {}, "statut": {},
         "$other": { ".validate": false }
@@ -830,7 +840,7 @@
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && ((!data.exists() && newData.child('source').val() === 'mineur') || (data.child('source').val() === 'mineur' && !newData.exists()))))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && ((!data.exists() && newData.child('source').val() === 'mineur') || (data.child('source').val() === 'mineur' && !newData.exists()))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['statut', 'source', 'depuisLe']) && newData.child('statut').val() === 'active' && (newData.child('source').val() === 'mineur' || newData.child('source').val() === 'demande' || newData.child('source').val() === 'manuel') && newData.child('depuisLe').isNumber() && (!newData.child('parNom').exists() || (newData.child('parNom').isString() && newData.child('parNom').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))",
         "statut": {}, "source": {}, "depuisLe": {}, "parNom": {}, "note": {},
         "$other": { ".validate": false }
@@ -840,7 +850,7 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         ".read": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || data.child('demandeurUid').val() === auth.uid || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.child('demandeurUid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('staffUIDs').child(auth.uid).val() === true)) || (data.child('demandeurUid').val() === auth.uid && !newData.exists()))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.child('demandeurUid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('staffUIDs').child(auth.uid).val() === true)) || (data.child('demandeurUid').val() === auth.uid && !newData.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['patientID', 'patientNom', 'motif', 'demandeLe', 'demandeurUid', 'statut']) && newData.child('patientID').val() === $patientId && newData.child('patientNom').isString() && newData.child('patientNom').val().length <= 120 && (newData.child('motif').val() === 'faible_revenu' || newData.child('motif').val() === 'mineur' || newData.child('motif').val() === 'autre') && newData.child('demandeLe').isNumber() && newData.child('demandeurUid').isString() && newData.child('statut').val() === 'en_attente' && (!newData.child('demandeurNom').exists() || (newData.child('demandeurNom').isString() && newData.child('demandeurNom').val().length <= 120)) && (!newData.child('details').exists() || (newData.child('details').isString() && newData.child('details').val().length <= 500)) && (!newData.child('parSoignant').exists() || (newData.child('parSoignant').isString() && newData.child('parSoignant').val().length <= 120)) && (!newData.child('patientEmail').exists() || (newData.child('patientEmail').isString() && newData.child('patientEmail').val().length <= 200)))",
         "patientID": {}, "patientNom": {}, "motif": {}, "demandeLe": {}, "demandeurUid": {}, "demandeurNom": {}, "statut": {}, "details": {}, "parSoignant": {}, "patientEmail": {},
         "$other": { ".validate": false }
@@ -850,7 +860,7 @@
       "$patientId": {
         ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
         "$id": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.hasChildren(['type', 'parNom', 'le']) && (newData.child('type').val() === 'accordee' || newData.child('type').val() === 'refusee' || newData.child('type').val() === 'retiree') && newData.child('le').isNumber() && newData.child('parNom').isString() && (!newData.child('commentaire').exists() || (newData.child('commentaire').isString() && newData.child('commentaire').val().length <= 300))"
         }
       }
@@ -865,14 +875,14 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $uid && !newData.exists()))"
+        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $uid && !newData.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
     "demandesMobilite": {
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $uid && newData.child('statut').val() === 'en_attente' && (!data.exists() || data.child('statut').val() !== 'en_attente')))",
+        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $uid && newData.child('statut').val() === 'en_attente' && (!data.exists() || data.child('statut').val() !== 'en_attente')))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['statut', 'creeLe']) && (newData.child('statut').val() === 'en_attente' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'refusee' || newData.child('statut').val() === 'terminee')",
         "statut": { ".write": "auth != null && auth.uid === $uid && newData.val() === 'terminee' && data.val() === 'acceptee'" },
         "traiteLe": { ".write": "auth != null && auth.uid === $uid" }
@@ -900,7 +910,7 @@
       "$uid": {
         ".read":  "auth != null && (auth.uid === $uid || (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true))",
         "$requestId": {
-          ".write": "auth != null && auth.uid === $uid && newData.val() === true"
+          ".write": "(auth != null && auth.uid === $uid && newData.val() === true) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -909,7 +919,7 @@
       ".indexOn": ["ts", "statut", "by/uid"],
       "$requestId": {
         ".read":  "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || data.child('by/uid').val() === auth.uid)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('statut').val() === 'nouvelle' && !newData.child('reponses').exists()))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('statut').val() === 'nouvelle' && !newData.child('reponses').exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['ts', 'statut', 'titre', 'by', 'champs']) && newData.child('titre').isString() && newData.child('titre').val().length <= 200 && (newData.child('statut').val() === 'nouvelle' || newData.child('statut').val() === 'en_cours' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'refusee' || newData.child('statut').val() === 'cloturee')",
         "statut": { ".write": "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)" },
         "traitePar": { ".write": "auth != null && (root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)" },
@@ -920,14 +930,14 @@
         "titre": { ".write": "auth != null && (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours'))" },
         "historique": {
           "$historyId": {
-            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours')))",
+            ".write": "(auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && (root.child('cctvRequests').child($requestId).child('statut').val() === 'nouvelle' || root.child('cctvRequests').child($requestId).child('statut').val() === 'en_cours')))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.hasChildren(['ts', 'type', 'par'])"
           }
         },
         "maj": { ".write": "auth != null && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || auth.uid === data.parent().child('by/uid').val())" },
         "reponses": {
           "$replyId": {
-            ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && root.child('cctvRequests').child($requestId).child('statut').val() !== 'acceptee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'refusee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'cloturee'))",
+            ".write": "(auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && ((root.child('cctvGestionnaires').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true) || (root.child('cctvRequests').child($requestId).child('by/uid').val() === auth.uid && root.child('cctvRequests').child($requestId).child('statut').val() !== 'acceptee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'refusee' && root.child('cctvRequests').child($requestId).child('statut').val() !== 'cloturee'))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
           }
         }
@@ -940,7 +950,7 @@
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       ".indexOn": ["ts", "status", "type", "by/uid"],
       "$requestId": {
-        ".write": "root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('status').val() === 'nouveau')",
+        ".write": "(root.child('adminUIDs').child(auth.uid).val() === true || (auth != null && !data.exists() && newData.child('by/uid').val() === auth.uid && newData.child('status').val() === 'nouveau')) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['type', 'status', 'ts', 'title', 'by']) && (newData.child('type').val() === 'bug' || newData.child('type').val() === 'feature' || newData.child('type').val() === 'form') && (newData.child('status').val() === 'nouveau' || newData.child('status').val() === 'en_cours' || newData.child('status').val() === 'traite' || newData.child('status').val() === 'refuse') && newData.child('title').isString() && newData.child('title').val().length <= 200"
       }
     },
@@ -949,7 +959,7 @@
     "webhook_logs": {
       ".read":  "root.child('adminUIDs').child(auth.uid).val() === true",
       "$logId": {
-        ".write": "auth != null",
+        ".write": "(auth != null) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['type', 'timestamp']) && newData.child('type').isString() && newData.child('type').val().length <= 100 && newData.child('timestamp').isNumber()"
       }
     },
@@ -983,7 +993,7 @@
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "(auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())"
+        ".write": "(auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -1016,7 +1026,7 @@
         "$indexKey": {
           // Personnel : tout, SAUF créer une NOUVELLE entrée sur un patient décédé (patientsDecedes/{ID}) quand on n'est pas DMEC.
           // Civil : créer / modifier ; supprimer seulement une entrée « owner » (la sienne).
-          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.exists() || !newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !root.child('patientsDecedes').child($patientId).exists())) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (newData.exists() || data.child('visibility').val() === 'owner')))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())"
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.exists() || !newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !root.child('patientsDecedes').child($patientId).exists())) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (newData.exists() || data.child('visibility').val() === 'owner')))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -1036,7 +1046,7 @@
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$cle": {
-          ".write": "(auth != null && newData.exists() && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+          ".write": "(auth != null && newData.exists() && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['version', 'reportPath', 'creeLe', 'createur']) && newData.child('creeLe').isNumber() && (newData.child('createur').val() === 'patient' || newData.child('createur').val() === 'personnel'))"
         }
       }
@@ -1047,7 +1057,7 @@
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$kind": {
-          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) && data.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() === data.val() - 1))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) && data.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() === data.val() - 1))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 20)"
         }
       }
@@ -1058,7 +1068,7 @@
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$cle": {
-          ".write": "(auth != null && ((!data.exists() && newData.exists() && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) || root.child('adminUIDs').child(auth.uid).val() === true)) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+          ".write": "(auth != null && ((!data.exists() && newData.exists() && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) || root.child('adminUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "!newData.exists() || (newData.hasChildren(['creeLe']) && newData.child('creeLe').isNumber())"
         }
       }
@@ -1076,7 +1086,7 @@
       ".indexOn": ["statut"],
       "$id": {
         ".read": "auth != null && root.child('civilians').child(auth.uid).child('patientID').val() === data.child('patientNode').val()",
-        ".write": "(auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.exists() && newData.child('demandeurUid').val() === auth.uid))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+        ".write": "(auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.exists() && newData.child('demandeurUid').val() === auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['patientNode', 'statut', 'creeLe']) && newData.child('statut').isString() && newData.child('creeLe').isNumber())"
       }
     },
@@ -1104,7 +1114,7 @@
           // Suppression : admins ; recruteurs et candidats (pour LEURS candidatures)
           // uniquement tant que l'interrupteur Debug « suppression des candidatures » est
           // activé dans le panneau admin (adminSettings/debugDeleteApplications).
-          ".write": "auth != null && (newData.exists() ? (auth.uid === $applicantUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))"
+          ".write": "(auth != null && (newData.exists() ? (auth.uid === $applicantUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $applicantUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -1122,7 +1132,7 @@
       "$candidatUid": {
         ".read": "auth != null && auth.uid === $candidatUid",
         "$candidatureId": {
-          ".write": "auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))",
+          ".write": "(auth != null && (newData.exists() ? (auth.uid === $candidatUid || root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) : (root.child('adminUIDs').child(auth.uid).val() === true || (((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || auth.uid === $candidatUid) && root.child('adminSettings').child('debugDeleteApplications').child('enabled').val() === true)))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           // Un candidat ne peut poser que SES statuts (brouillon, soumise, retirée, en pause) ou garder celui qui est déjà là :
           // examen, entretien, acceptation et refus sont réservés aux recruteurs et aux admins.
           // Dès qu'un entretien est programmé (ou une décision rendue), le candidat ne peut plus modifier le contenu de sa candidature
@@ -1143,13 +1153,13 @@
         "$candidatureId": {
           "messages": {
             "$messageId": {
-              ".write": "auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)) && !root.child('echangesCandidature').child($candidatUid).child($candidatureId).child('ferme').exists() && (root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'en_examen' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_programme' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_effectue' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'acceptee')",
+              ".write": "(auth != null && !data.exists() && newData.child('par/uid').val() === auth.uid && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true)) && !root.child('echangesCandidature').child($candidatUid).child($candidatureId).child('ferme').exists() && (root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'en_examen' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_programme' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'entretien_effectue' || root.child('candidatures').child($candidatUid).child($candidatureId).child('statut').val() === 'acceptee')) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
               ".validate": "newData.hasChildren(['ts', 'par', 'texte']) && newData.child('texte').isString() && newData.child('texte').val().length >= 1 && newData.child('texte').val().length <= 4000"
             }
           },
           // Fermeture du fil : par un recruteur/admin, ou par le candidat lui-même (à la signature de son contrat) ; seuls eux la lèvent.
           "ferme": {
-            ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $candidatUid && !data.exists()))"
+            ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || (auth.uid === $candidatUid && !data.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
           }
         }
       }
@@ -1161,7 +1171,7 @@
       "$candidatUid": {
         "$candidatureId": {
           "$dechargeId": {
-            ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && !data.exists()",
+            ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && !data.exists()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
             ".validate": "newData.hasChildren(['ts', 'par', 'signature', 'texte'])"
           }
         }
@@ -1173,7 +1183,7 @@
     "signaturesPatients": {
       "$patientId": {
         ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && !data.exists()))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && !data.exists()))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || (newData.hasChildren(['url', 'creeLe']) && newData.child('url').isString() && newData.child('url').val().length <= 600)"
       }
     },
@@ -1182,7 +1192,7 @@
       "$candidatUid": {
         ".read": "auth != null && auth.uid === $candidatUid",
         "$candidatureId": {
-          ".write": "auth != null && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
+          ".write": "(auth != null && (auth.uid === $candidatUid || (root.child('adminUIDs').child(auth.uid).val() === true || root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.hasChildren(['ts', 'staff'])"
         }
       }
@@ -1222,7 +1232,7 @@
         // (ID patient de son profil). Empêche de lire les factures d'autrui par ID deviné.
         ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$factureId": {
-          ".write": "(auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true)) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
+          ".write": "(auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true)) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.hasChildren(['montant', 'statut', 'creeLe']) && newData.child('montant').isNumber() && (newData.child('statut').val() === 'a_payer' || newData.child('statut').val() === 'paye' || newData.child('statut').val() === 'sans_paiement')"
         }
       }
@@ -1233,7 +1243,7 @@
       ".read":  false,
       "$patientId": {
         "$factureId": {
-          ".write": "auth != null",
+          ".write": "(auth != null) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.isNumber()"
         }
       }
@@ -1277,17 +1287,17 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)",
       "$accordId": {
         ".read": "auth != null && data.child('partieUid').val() === auth.uid && data.child('statut').val() !== 'brouillon'",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['type', 'statut']) && (newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'envoye' || newData.child('statut').val() === 'signe' || newData.child('statut').val() === 'termine')",
         "statut": {
-          ".write": "auth != null && data.parent().child('partieUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()"
+          ".write": "(auth != null && data.parent().child('partieUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         },
         "signature": {
-          ".write": "auth != null && data.parent().child('partieUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists() && newData.child('signeParUid').val() === auth.uid",
+          ".write": "(auth != null && data.parent().child('partieUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists() && newData.child('signeParUid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "(newData.child('mode').val() === 'compte' && newData.child('signeParUid').val() === auth.uid && newData.parent().child('partieUid').val() === auth.uid && newData.child('url').val() === root.child('userCreations').child(auth.uid).child('signature').child('url').val() && (!newData.child('imageData').exists() || (newData.child('imageData').isString() && newData.child('imageData').val().length <= 300000))) || (newData.child('mode').val() === 'manuel' && newData.child('signeParNom').isString() && newData.child('preuve').isString())"
         },
         "signeLe": {
-          ".write": "auth != null && data.parent().child('partieUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists()"
+          ".write": "(auth != null && data.parent().child('partieUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -1295,7 +1305,7 @@
     "accordsParPartie": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)"
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('disciplineUIDs').child(auth.uid).val() === true)) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -1317,17 +1327,17 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) || root.child('disciplineUIDs').child(auth.uid).val() === true)",
       "$contractId": {
         ".read": "auth != null && data.child('employeUid').val() === auth.uid && data.child('statut').val() !== 'brouillon'",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid && !(data.child('champs').child('typeContrat').val() === 'convocation' || data.child('champs').child('typeContrat').val() === 'sanction' || data.child('champs').child('typeContrat').val() === 'fin') && !(newData.child('champs').child('typeContrat').val() === 'convocation' || newData.child('champs').child('typeContrat').val() === 'sanction' || newData.child('champs').child('typeContrat').val() === 'fin')) || (root.child('disciplineUIDs').child(auth.uid).val() === true && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid && (!data.exists() || (data.child('champs').child('typeContrat').val() === 'convocation' || data.child('champs').child('typeContrat').val() === 'sanction' || data.child('champs').child('typeContrat').val() === 'fin')) && (!newData.exists() || (newData.child('champs').child('typeContrat').val() === 'convocation' || newData.child('champs').child('typeContrat').val() === 'sanction' || newData.child('champs').child('typeContrat').val() === 'fin'))))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid && !(data.child('champs').child('typeContrat').val() === 'convocation' || data.child('champs').child('typeContrat').val() === 'sanction' || data.child('champs').child('typeContrat').val() === 'fin') && !(newData.child('champs').child('typeContrat').val() === 'convocation' || newData.child('champs').child('typeContrat').val() === 'sanction' || newData.child('champs').child('typeContrat').val() === 'fin')) || (root.child('disciplineUIDs').child(auth.uid).val() === true && newData.child('statut').val() !== 'signe' && (!data.exists() || data.child('statut').val() !== 'signe') && newData.child('employeUid').val() !== auth.uid && data.child('employeUid').val() !== auth.uid && (!data.exists() || (data.child('champs').child('typeContrat').val() === 'convocation' || data.child('champs').child('typeContrat').val() === 'sanction' || data.child('champs').child('typeContrat').val() === 'fin')) && (!newData.exists() || (newData.child('champs').child('typeContrat').val() === 'convocation' || newData.child('champs').child('typeContrat').val() === 'sanction' || newData.child('champs').child('typeContrat').val() === 'fin'))))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "newData.hasChildren(['employeUid', 'statut']) && (newData.child('statut').val() === 'brouillon' || newData.child('statut').val() === 'envoye' || newData.child('statut').val() === 'signe')",
         "statut": {
-          ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()"
+          ".write": "(auth != null && data.parent().child('employeUid').val() === auth.uid && data.val() === 'envoye' && newData.val() === 'signe' && newData.parent().child('signature').child('url').exists()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         },
         "signature": {
-          ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists() && newData.child('signeParUid').val() === auth.uid",
+          ".write": "(auth != null && data.parent().child('employeUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists() && newData.child('signeParUid').val() === auth.uid) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
           ".validate": "newData.child('url').val() === root.child('userCreations').child(auth.uid).child('signature').child('url').val() && (!newData.child('imageData').exists() || (newData.child('imageData').isString() && newData.child('imageData').val().length <= 300000))"
         },
         "signeLe": {
-          ".write": "auth != null && data.parent().child('employeUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists()"
+          ".write": "(auth != null && data.parent().child('employeUid').val() === auth.uid && data.parent().child('statut').val() === 'envoye' && !data.exists()) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -1339,7 +1349,7 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)",
         "$contractId": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid) || (root.child('disciplineUIDs').child(auth.uid).val() === true && $uid !== auth.uid))"
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid) || (root.child('disciplineUIDs').child(auth.uid).val() === true && $uid !== auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
         }
       }
     },
@@ -1351,7 +1361,7 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid))"
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true) && $uid !== auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     },
 
@@ -1370,7 +1380,7 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))"
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('recruteurs').child(auth.uid).val() === true || root.child('recruiterUIDs').child(auth.uid).val() === true))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))"
       }
     }
   }
