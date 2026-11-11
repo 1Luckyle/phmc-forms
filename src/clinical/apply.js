@@ -55,7 +55,7 @@ export const sectionPatch = (key, s, mode = 'emergency', extra = {}) => {
             return clean({ Imaging: s.imaging, ...results, lab: s.exams.lab });
         }
         case 'diagnosis': return clean({ patientDiagnosis: s.text.diagnosis, patientSecondaryDiagnosis: s.text.secondary || 'Aucun' });
-        case 'procedure': return clean(consult ? { patientProcedure: s.text.procedure } : { patientProcedure: s.text.procedure, routineCare: s.routineCare });
+        case 'procedure': return clean(consult || extra.deceased ? { patientProcedure: s.text.procedure } : { patientProcedure: s.text.procedure, routineCare: s.routineCare });
         case 'outcome': return clean(consult ? { admission: s.admission, followup: s.followup } : { admission: s.admission, followup: s.followup, dischargeDestination: s.destination, patientMedicine: s.text.advice });
         default: return {};
     }
@@ -102,7 +102,7 @@ export const applyMeds = (prev, meds, overwrite = false, { prescribed = false } 
 
 /** Applique UNE section. Le patient (identité, antécédents) n'est jamais remplacé, même avec `overwrite` : seuls ses champs vides sont complétés. */
 export const applySection = (prev, key, suggestions, { overwrite = false, mode = 'emergency', extra = {} } = {}) => (
-    key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite) : applyPatch(prev, sectionPatch(key, suggestions, mode, extra), overwrite && key !== 'patient')
+    key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite) : applyPatch(prev, sectionPatch(key, suggestions, mode, { ...extra, deceased: isDeceased(prev) }), overwrite && key !== 'patient')
 );
 
 /** Tout appliquer d'un coup. */

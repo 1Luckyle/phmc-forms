@@ -264,7 +264,7 @@ const Surgical = ({
 
         <DeathFields kind="surgery" formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
-        <Form.Label className="form-section-title">Rapport post-anesthésie</Form.Label>
+        <Form.Label className="form-section-title">{deceased ? 'Anesthésie administrée' : 'Rapport post-anesthésie'}</Form.Label>
         <Form.Control
             as="textarea"
             name="patientSummaryConsultation"

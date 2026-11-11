@@ -75,3 +75,40 @@ describe('patient décédé : aucune prescription, suite ni suivi', () => {
         expect(alive).toMatchObject({ admission: 'Yes', followup: 'Recommended', patientMedicine: 'Conseils de sortie' });
     });
 });
+
+describe('patient décédé : pas de soins systématiques ni d’orientation de sortie', () => {
+    const { emergencyExtrasBBCode } = require('../phmc-bbcode-generators/shared/careExtras');
+    const care = { careStartTime: '14:35', careEndTime: '15:12', routineCare: ['Oxygen', 'Infusion'], dischargeDestination: 'Death' };
+
+    test('BBCode : la durée de prise en charge reste, pas le reste', () => {
+        const alive = emergencyExtrasBBCode({ ...care, dischargeDestination: 'Home' });
+        expect(alive).toContain('Soins systématiques réalisés');
+        expect(alive).toContain('Orientation de sortie');
+        const dead = emergencyExtrasBBCode({ ...care, careDeceased: 'Yes' });
+        expect(dead).toContain('Prise en charge');
+        expect(dead).toContain('37 min');
+        expect(dead).not.toContain('Soins systématiques');
+        expect(dead).not.toContain('Orientation de sortie');
+    });
+
+    test('Pilou : la section « Procédure et soins » ne propose plus de soins systématiques', () => {
+        const suggestions = { patientPatch: {}, vitals: { fields: {}, categories: {} }, severity: { index: 3 }, text: { procedure: 'Massage cardiaque.' }, routineCare: ['Oxygen'], meds: [], findings: {}, imaging: [], exams: { lab: [] } };
+        const { applySection } = require('../clinical/apply');
+        expect(applySection({}, 'procedure', suggestions, { mode: 'emergency' })).toMatchObject({ patientProcedure: 'Massage cardiaque.', routineCare: ['Oxygen'] });
+        const dead = applySection({ careDeceased: 'Yes' }, 'procedure', suggestions, { mode: 'emergency' });
+        expect(dead.patientProcedure).toBe('Massage cardiaque.');
+        expect(dead.routineCare).toBeUndefined();
+    });
+});
+
+describe('opération : l’anesthésie administrée reste, sans « post-anesthésie » si le patient ne s’est pas réveillé', () => {
+    test('BBCode : bandeau « Anesthésie administrée » (produits et doses) au lieu de « Rapport post-anesthésie »', () => {
+        const alive = generateSurgicalOps(base);
+        expect(alive).toContain('Rapport post-anesthésie');
+        const bb = generateSurgicalOps(dead);
+        expect(bb).not.toContain('Rapport post-anesthésie');
+        expect(bb).toContain('Anesthésie administrée');
+        expect(bb).toContain("Type et dosage d'anesthésie administrée");
+        expect(bb).toContain('Anesthésie générale');
+    });
+});

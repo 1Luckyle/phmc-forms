@@ -115,12 +115,14 @@ export const emergencyContactBBCode = (f, blue = false) => {
 // ── Protocole d'urgence (lignes à insérer dans la cellule « Thérapie ») ──
 export const emergencyExtrasBBCode = (f) => {
     const minutes = minutesBetween(f.careStartTime, f.careEndTime);
+    // Patient décédé : ni soins systématiques, ni orientation de sortie (le décès a sa propre section) ; seule la durée de prise en charge reste.
+    const deceased = f.careDeceased === 'Yes';
     const destination = labelOf(DISCHARGE_DESTINATIONS, f.dischargeDestination) + (f.dischargeDestination === 'Transfer' && filled(f.transferTo) ? ` : ${text(f.transferTo)}` : '');
     const lines = joinLines([
-        line('Soins systématiques réalisés', multiLabels(ROUTINE_CARE, f.routineCare)),
+        deceased ? '' : line('Soins systématiques réalisés', multiLabels(ROUTINE_CARE, f.routineCare)),
         line('Prise en charge', filled(f.careStartTime) || filled(f.careEndTime)
             ? `${filled(f.careStartTime) ? `de ${text(f.careStartTime)}` : ''}${filled(f.careEndTime) ? ` à ${text(f.careEndTime)}` : ''}${minutes !== null ? ` (${durationLabel(minutes)})` : ''}`.trim() : ''),
-        line('Orientation de sortie', destination),
+        deceased ? '' : line('Orientation de sortie', destination),
     ]);
     return lines ? `${lines}\n[br][/br]\n` : '';
 };

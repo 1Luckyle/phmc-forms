@@ -80,7 +80,7 @@ ${formData.procedureGoodOptions === 'No' && formData.procedureGoodNo ? `[br][/br
 [/td][/tr]
 [/table]
 
-${sectionBanner(`Rapport post-anesthésie`)}
+${sectionBanner(deceased ? `Anesthésie administrée` : `Rapport post-anesthésie`)}
 [table]
 
 [tr][td]Type et dosage d'anesthésie administrée[/td][td] ${patientSummaryConsultation}

@@ -446,7 +446,7 @@ const EmergencyForm = ({
                 </div>
             )}
 
-            <EmergencyDischargeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
+            {!deceased && <EmergencyDischargeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />}
 
             <DeathFields kind="emergency" formData={formData} setFormData={setFormData} handleChange={handleChange} />
         </>

@@ -7,6 +7,7 @@ import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import ClinicalMedications from './ClinicalMedications';
+import { DeathSwitch } from './CareExtraFields';
 import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 import { PROCEDURE_GROUPS, PROCEDURE_BY_ID } from '../../clinical/procedures';
 import { buildSurgerySuggestions, SURGERY_SECTIONS } from '../../clinical/surgery';
@@ -95,6 +96,8 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
                     <Form.Control type="text" inputMode="numeric" name="patientHeight" value={formData.patientHeight || ''} onChange={handleChange} placeholder="ex. 178" className="form-control" />
                 </div>
             </div>
+            {/* Patient décédé pendant l'intervention : Pilou en tient compte (pas de suites ni d'ordonnance) et prépare le décès. */}
+            <DeathSwitch formData={formData} setFormData={setFormData} kind="surgery" />
             {patient.ageYears !== null && patient.ageYears < 15 && !patient.weightKg && (
                 <div className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.5rem' }}>Patient de moins de 15 ans : indiquez son poids, sinon les doses sont calculées sur un poids estimé.</div>
             )}

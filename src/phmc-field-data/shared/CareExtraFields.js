@@ -232,27 +232,37 @@ export const ConsultExtraFields = ({ formData, setFormData, handleChange, onPref
 );
 
 // ── Décès du patient (protocole d'urgence, opération) ──
-// L'interrupteur ouvre les champs du décès ; Pilou peut les préremplir (heure, cause, circonstances, réanimation, famille, destination du corps) d'après les motifs ou les interventions déjà choisis.
-// Aux urgences, l'orientation de sortie passe d'office à « Décès ».
+// L'interrupteur « patient décédé » est posé dans l'assistant Pilou (DeathSwitch) : Pilou en tient compte dans sa rédaction du rapport (ni orientation, ni ordonnance, ni suites) et peut préremplir le décès. Les champs du décès
+// (heure, cause, circonstances, réanimation, famille, destination du corps) n'apparaissent dans le formulaire (DeathFields) que lorsque le patient est décédé. Aux urgences, l'orientation de sortie passe d'office à « Décès ».
+export const setDeceased = (setFormData, kind, checked) => setFormData((prev) => {
+    const next = { ...prev, careDeceased: checked ? 'Yes' : '' };
+    if (kind === 'emergency') {
+        if (checked) next.dischargeDestination = 'Death';
+        else if (prev.dischargeDestination === 'Death') next.dischargeDestination = '';
+    }
+    return next;
+});
+
+export const DeathSwitch = ({ formData, setFormData, kind = 'emergency' }) => {
+    const deceased = formData.careDeceased === 'Yes';
+    return (
+        <div style={{ margin: '0.4rem 0 0.8rem' }} data-no-tip="1">
+            <Form.Check
+                type="switch" id="careDeceased" checked={deceased} onChange={(e) => setDeceased(setFormData, kind, e.target.checked)}
+                label={kind === 'surgery' ? "Le patient est décédé pendant l'intervention" : 'Le patient est décédé pendant la prise en charge'}
+            />
+            {deceased && <span className="helper-text">{ASSISTANT_LABEL} en tient compte : plus d'orientation, d'ordonnance ni de suites dans le rapport, et il prépare le décès (section « Décès du patient » plus bas).</span>}
+        </div>
+    );
+};
+
 export const DeathFields = ({ formData, setFormData, handleChange, kind = 'emergency' }) => {
     const deceased = formData.careDeceased === 'Yes';
-    const toggle = (checked) => setFormData((prev) => {
-        const next = { ...prev, careDeceased: checked ? 'Yes' : '' };
-        if (kind === 'emergency') {
-            if (checked) next.dischargeDestination = 'Death';
-            else if (prev.dischargeDestination === 'Death') next.dischargeDestination = '';
-        }
-        return next;
-    });
     const suggest = () => setFormData((prev) => applyPatch(prev, buildDeathSuggestion({ kind, formData: prev, now: currentTime() })));
+    if (!deceased) return null;
     return (
         <>
             <Form.Label className="form-section-title">Décès du patient</Form.Label>
-            <Form.Check
-                type="switch" id="careDeceased" checked={deceased} onChange={(e) => toggle(e.target.checked)}
-                label={kind === 'surgery' ? "Le patient est décédé pendant l'intervention" : 'Le patient est décédé pendant la prise en charge'}
-            />
-            {deceased && (
                 <div style={{ border: '1px solid #b62324', borderRadius: 8, padding: '0.7rem 0.8rem', marginTop: 8, background: '#1a0f12' }} data-no-tip="1">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
                         <span className="small text-muted">Renseignez le décès : il figure en évidence dans le rapport et dans l'historique des soins du dossier.</span>
@@ -273,7 +283,6 @@ export const DeathFields = ({ formData, setFormData, handleChange, kind = 'emerg
                     </div>
                     <Form.Control as="textarea" rows={2} name="careDeathResuscitationNote" value={formData.careDeathResuscitationNote || ''} onChange={handleChange} placeholder="Déroulé de la réanimation : manœuvres, médicaments, durée (facultatif)" className="form-control" />
                 </div>
-            )}
         </>
     );
 };

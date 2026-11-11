@@ -7,6 +7,7 @@ import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import ClinicalMedications from './ClinicalMedications';
+import { DeathSwitch } from './CareExtraFields';
 import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 import { CONDITION_GROUPS, CONDITION_BY_ID } from '../../clinical/conditions';
 import { SEVERITIES } from '../../clinical/vitals';
@@ -93,6 +94,8 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                     </Form.Select>
                 </div>
             </div>
+            {/* Patient décédé : Pilou en tient compte dans sa rédaction (pas d'orientation, d'ordonnance ni de suites) et prépare le décès. Urgences seulement. */}
+            {mode === 'emergency' && <DeathSwitch formData={formData} setFormData={setFormData} kind="emergency" />}
             {patient.ageYears !== null && patient.ageYears < 15 && !patient.weightKg && (
                 <div className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.5rem' }}>Patient de moins de 15 ans : indiquez son poids, sinon les doses sont calculées sur un poids estimé.</div>
             )}

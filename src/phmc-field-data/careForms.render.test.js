@@ -348,6 +348,7 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         expect(screen.getByPlaceholderText(/Consignes post-opératoires/)).toBeTruthy();
         expect(screen.getByText('Médicaments post-opératoires')).toBeTruthy();
         expect(screen.getByText('Résumé de la procédure et suites')).toBeTruthy();
+        expect(screen.getByText('Rapport post-anesthésie')).toBeTruthy();
     });
 
     test('opération avec un patient décédé : tout cela disparaît, le résumé de la procédure reste', () => {
@@ -359,6 +360,9 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         expect(screen.queryByText('Surveillance post-op')).toBeNull();
         expect(screen.getByText('Résumé de la procédure')).toBeTruthy();
         expect(screen.getByPlaceholderText("Type et dosage d'anesthésie administrée")).toBeTruthy();
+        // Pas de réveil : la section s'appelle « Anesthésie administrée » et garde le champ des produits et doses.
+        expect(screen.getByText('Anesthésie administrée')).toBeTruthy();
+        expect(screen.queryByText('Rapport post-anesthésie')).toBeNull();
     });
 
     test('urgences : un patient décédé n’a plus d’admission, de traitement à poursuivre, de suivi, d’orientation ni d’ordonnance', async () => {
@@ -377,7 +381,9 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         expect(screen.queryByText('Suivi requis?')).toBeNull();
         expect(screen.queryByPlaceholderText(/Autres traitements, conseils verbaux/)).toBeNull();
         expect(screen.queryByText('Orientation de sortie')).toBeNull();
-        expect(screen.getByText('Soins systématiques réalisés')).toBeTruthy();
+        // Ni orientation de sortie ni soins systématiques : tout le bloc « Sortie et soins systématiques » disparaît.
+        expect(screen.queryByText('Sortie et soins systématiques')).toBeNull();
+        expect(screen.queryByText('Soins systématiques réalisés')).toBeNull();
         // Aucune ordonnance : ni case, ni encadré ; la ligne déjà mise sur l'ordonnance est masquée, le médicament administré reste.
         expect(document.querySelectorAll('input[id^="rx-"]')).toHaveLength(0);
         expect(screen.queryByText("Tout mettre sur l'ordonnance")).toBeNull();
@@ -386,6 +392,43 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         expect(screen.queryByText('Kétoprofène')).toBeNull();
         // Pilou ne propose plus l'orientation (admission, suivi, conseils).
         expect(screen.queryByText('Orientation', { selector: 'button' })).toBeNull();
+    });
+});
+
+describe("interrupteur « patient décédé » : dans l'assistant Pilou", () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    test("urgences : l'interrupteur est dans la section Assistant clinique (avant « Arrivée aux urgences »), sans rubrique « Décès du patient » tant que le patient est vivant", () => {
+        render(<Harness Component={EmergencyForm} initial={{}} extra={emergencyProps} />);
+        const toggle = document.getElementById('careDeceased');
+        expect(toggle).toBeTruthy();
+        expect(after(screen.getByText('Assistant clinique'), toggle)).toBe(true);
+        expect(after(toggle, screen.getByText('Arrivée aux urgences'))).toBe(true);
+        expect(screen.queryByText('Décès du patient')).toBeNull();
+        expect(document.querySelector('input[name="careDeathTime"]')).toBeNull();
+    });
+
+    test("cocher : Pilou l'annonce, et la rubrique « Décès du patient » (champs) apparaît dans le formulaire", async () => {
+        render(<Harness Component={EmergencyForm} initial={{ phmcEmployee: 'Dr. Interne' }} extra={emergencyProps} />);
+        await act(async () => { fireEvent.click(document.getElementById('careDeceased')); });
+        expect(screen.getByText(/en tient compte/)).toBeTruthy();
+        expect(screen.getByText('Décès du patient')).toBeTruthy();
+        expect(document.querySelector('input[name="careDeathTime"]')).toBeTruthy();
+    });
+
+    test("opération : même interrupteur, dans l'assistant chirurgical", () => {
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne' }} />);
+        const toggle = document.getElementById('careDeceased');
+        expect(toggle).toBeTruthy();
+        expect(after(screen.getByText('Assistant chirurgical'), toggle)).toBe(true);
+        expect(after(toggle, screen.getByText('Enquête chirurgicale'))).toBe(true);
+    });
+
+    test("consultation générale : pas d'interrupteur (le décès ne concerne que les urgences et l'opération)", () => {
+        render(<Harness Component={GeneralConsult} initial={{}} extra={{ ...emergencyProps, assignedDepartment: [], departmentLarge: [] }} />);
+        expect(document.getElementById('careDeceased')).toBeNull();
     });
 });
 
