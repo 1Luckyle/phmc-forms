@@ -3,7 +3,7 @@
 // Assistant chirurgical : à partir d'une ou plusieurs interventions du catalogue (clinical/procedures.js) et du patient, propose le contenu du rapport d'opération :
 // diagnostic, nom, caractère, anesthésie (produits et doses calculés et contrôlés par le moteur), durée et pertes, classe ASA, surveillance post-opératoire, résumé, consignes, médicaments post-opératoires.
 import { PROCEDURE_BY_ID } from './procedures';
-import { entryText, newEntry, checkPrescription, findTerm } from './engine';
+import { entryText, newEntry, checkPrescription, findTerm, swapAntibiotic } from './engine';
 import { regimenOf } from './medications';
 import { suggestPatient, patientNotices } from './context';
 
@@ -112,10 +112,17 @@ export const buildSurgerySuggestions = ({ procedureIds, patient, seed = '', form
     const plan = built.plan;
     const lines = [...built.lines];
     if (procedures.some((p) => p.prophylaxis)) {
-        const entry = newEntry('cefazoline', patient, 'iv');
-        const result = entry && Number.isFinite(Number(entry.dose)) ? checkPrescription(entry, ctx) : { level: 'error', messages: [{ level: 'error', text: 'Dose non calculable.' }] };
-        if (result.level === 'error') skipped.push({ medId: 'cefazoline', reasons: result.messages.filter((m) => m.level === 'error').map((m) => m.text) });
-        else lines.push(`antibioprophylaxie avant l'incision : ${entryText(entry)}`);
+        // Allergie aux céphalosporines ou allergie sévère à la pénicilline : clindamycine (ou vancomycine) à la place de la céfazoline (déjà contrôlée par swapAntibiotic).
+        const swap = swapAntibiotic('cefazoline', patient, ctx);
+        if (swap) {
+            skipped.push(swap.skipped);
+            if (swap.entry) lines.push(`antibioprophylaxie avant l'incision : ${entryText(swap.entry)}${swap.entry.medId === 'vancomycine' ? ' (perfusion lente d\'au moins 60 minutes, à débuter avant l\'incision)' : ''}`);
+        } else {
+            const entry = newEntry('cefazoline', patient, 'iv');
+            const result = entry && Number.isFinite(Number(entry.dose)) ? checkPrescription(entry, ctx) : { level: 'error', messages: [{ level: 'error', text: 'Dose non calculable.' }] };
+            if (result.level === 'error') skipped.push({ medId: 'cefazoline', reasons: result.messages.filter((m) => m.level === 'error').map((m) => m.text) });
+            else lines.push(`antibioprophylaxie avant l'incision : ${entryText(entry)}`);
+        }
     }
     const anesthesiaText = `${plan.label}.${plan.extra ? ` ${plan.extra}` : ''}\n${lines.map((line) => `- ${line}`).join('\n')}`.trim();
 
@@ -138,6 +145,15 @@ export const buildSurgerySuggestions = ({ procedureIds, patient, seed = '', form
     const postOpMeds = [];
     procedures.forEach((p) => p.postOpMeds.forEach(([medId, regimenId]) => {
         if (postOpMeds.some((m) => m.medId === medId && m.regimenId === regimenId)) return;
+        const swapped = swapAntibiotic(medId, patient, ctx);
+        if (swapped) {
+            if (!skipped.some((s) => s.medId === medId)) skipped.push(swapped.skipped);
+            if (swapped.entry && !postOpMeds.some((m) => m.medId === swapped.entry.medId)) {
+                const altInterval = regimenOf(swapped.entry.medId, swapped.entry.regimenId)?.intervalHours || 0;
+                postOpMeds.push({ ...swapped.entry, count: altInterval >= 4 ? Math.min(4, Math.floor(24 / altInterval)) : 1 });
+            }
+            return;
+        }
         const entry = newEntry(medId, patient, regimenId);
         if (!entry || !Number.isFinite(Number(entry.dose))) { skipped.push({ medId, reasons: ['Non indiqué pour ce patient.'] }); return; }
         const interval = (regimenOf(medId, regimenId)?.intervalHours || 0);

@@ -32,7 +32,7 @@ import { normalizeBBCodeLineBreaks } from './utils/bbcodeLineBreaks';
 import { withPhmcFooter, withStaffSignature, hasStaffSignatureFooter } from './phmc-bbcode-generators/shared/bbStyles';
 import useMySignature from './hooks/useMySignature';
 import FormChecklist from './components/FormChecklist';
-import { isRejectedAppointmentChange, APPOINTMENT_PAST_MESSAGE } from './utils/appointmentDate';
+import { isRejectedAppointmentChange, APPOINTMENT_FUTURE_MESSAGE } from './utils/appointmentDate';
 import { CIVIL_MEDICAL_VERSIONS } from './utils/formValidation';
 import { bbcodeToHtmlDocument, buildHtmlFileName, downloadHtmlFile } from './utils/bbcodeToHtml';
 import ForumCopyNoticeModal, { isForumNoticeHidden } from './components/ForumCopyNoticeModal';
@@ -514,9 +514,9 @@ function MainApp({
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
-        // Date de rendez-vous : jamais dans le passé (utils/appointmentDate.js).
+        // Date de rendez-vous : jamais dans le futur (utils/appointmentDate.js).
         if (isRejectedAppointmentChange(bbCodeVersion, name, newValue)) {
-            showNotification(APPOINTMENT_PAST_MESSAGE, 'exclamation-circle');
+            showNotification(APPOINTMENT_FUTURE_MESSAGE, 'exclamation-circle');
             return;
         }
 

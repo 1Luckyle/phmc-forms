@@ -252,6 +252,13 @@ describe('suggestions pour des motifs', () => {
         expect(severe.igu).toBe('patientSeverePain');
     });
     test('les médicaments non sûrs pour ce patient ne sont pas proposés, avec la raison', () => {
+        // Plaie profonde : céfazoline proposée, remplacée par la clindamycine en cas d'allergie sévère à la pénicilline.
+        const plain = buildSuggestions({ conditionIds: ['plaie_profonde'], severity: 'Severe', patient: adult, seed: 'a' });
+        expect(plain.meds.some((m) => m.medId === 'cefazoline')).toBe(true);
+        const allergic = buildSuggestions({ conditionIds: ['plaie_profonde'], severity: 'Severe', patient: { ...adult, allergies: 'Pénicilline : réaction anaphylactique' }, seed: 'a' });
+        expect(allergic.meds.some((m) => m.medId === 'cefazoline')).toBe(false);
+        expect(allergic.meds.some((m) => m.medId === 'clindamycine')).toBe(true);
+        expect(allergic.skipped.find((x) => x.medId === 'cefazoline').reasons[0]).toMatch(/Clindamycine/);
         const s = buildSuggestions({ conditionIds: ['fracture_fermee'], severity: 'Moderate', patient: { ...adult, allergies: 'AINS' } });
         expect(s.meds.map((m) => m.medId)).toEqual(['paracetamol']);
         expect(s.skipped[0]).toMatchObject({ medId: 'ketoprofene' });

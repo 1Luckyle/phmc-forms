@@ -192,7 +192,7 @@ export const FIELD_INFO = {
     prescriptionImage: ["Image de prescription", "Collez l'URL d'une image du ou des bons de prescription, ou téléversez-la."],
 
     // ── Certificat de maladie ──
-    dateOfVisit: ["Date de consultation", "Date de la consultation du patient au PHMC (calendrier). Elle ne peut pas être dans le passé."],
+    dateOfVisit: ["Date de consultation", "Date de la consultation du patient au PHMC (calendrier). Elle ne peut pas être dans le futur."],
     appointmentTime: ["Heure du rendez-vous", "Heure du rendez-vous ou de la consultation (facultatif)."],
     referralReason: ["Motif d'adressage", "Comment le patient arrive : consultation spontanée, adressé par un médecin, par les secours, par les forces de l'ordre, suite d'une consultation, suivi programmé. " + SELECT],
     referralOther: ["Motif d'adressage (précision)", "Précisez le motif d'adressage « Autre »."],
@@ -266,7 +266,7 @@ export const FIELD_INFO = {
     illnessCondition: ["Maladie ou condition", "Maladie ou condition diagnostiquée."],
 
     // ── Dates génériques ──
-    date: ["Date", "Date du rapport ou de la consultation (calendrier). Pour un rendez-vous (formulaires de soins), elle ne peut pas être dans le passé ; ailleurs, pas dans le futur."],
+    date: ["Date", "Date du rapport ou de la consultation (calendrier). Elle ne peut pas être dans le futur."],
     dateTime: ["Date et heure", "Date et heure de l'événement (calendrier)."],
     SubmitDate: ["Date de l'autorisation", "Date de l'autorisation de divulgation (calendrier)."],
     StupidDateFrom: ["Début de la période", "Premier jour de la période de traitement concernée par la divulgation (calendrier)."],

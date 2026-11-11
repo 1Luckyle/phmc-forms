@@ -28,7 +28,6 @@ import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { getFieldInfo } from '../constants/fieldInfo';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
-import { APPOINTMENT_DATE_VERSIONS } from './appointmentDate';
 import { validateMedicalCertificate } from './medicalCertificates';
 import { validateCareExtras } from './careFormRules';
 import { clinicalWarnings } from '../clinical/engine';
@@ -131,11 +130,10 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         errors.push('Sélectionnez au moins un élément du dossier médical à mettre à jour.');
     }
 
-    // Dates plausibles. Un rendez-vous (formulaires du personnel soignant) est au contraire dans le présent ou le futur : on ne les refuse pas pour être « dans le futur »
-    // (la saisie d'une date passée est refusée à la source, voir utils/appointmentDate.js).
+    // Dates plausibles : jamais dans le futur, y compris la date de rendez-vous des formulaires du personnel soignant (refusée aussi à la saisie, voir utils/appointmentDate.js).
     if (filled(data.date)) {
         const date = parseDate(data.date);
-        if (date && !APPOINTMENT_DATE_VERSIONS.includes(version) && isFutureDate(date)) errors.push('Date : elle ne peut pas être dans le futur.');
+        if (date && isFutureDate(date)) errors.push('Date : elle ne peut pas être dans le futur.');
         else if (date && isImplausiblyOld(date)) errors.push('Date : année invalide.');
     }
     if (filled(data.patientDateOfBirth)) {

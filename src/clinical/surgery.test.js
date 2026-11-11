@@ -75,6 +75,50 @@ describe('suggestions chirurgicales', () => {
         expect(s.skipped.some((x) => x.medId === 'rocuronium')).toBe(true);
     });
 
+    describe('antibioprophylaxie et allergie aux bêta-lactamines', () => {
+        const prophylaxis = (allergies, patient = adult) => buildSurgerySuggestions({ procedureIds: ['appendicectomie'], patient: { ...patient, allergies } });
+        test('sans allergie ou allergie légère à la pénicilline : céfazoline conservée', () => {
+            expect(prophylaxis('').fields.anesthesia.patientSummaryConsultation).toContain('Céfazoline');
+            const light = prophylaxis('Pénicilline ; allergie légère aux piqûres de guêpe');
+            expect(light.fields.anesthesia.patientSummaryConsultation).toContain('Céfazoline');
+            expect(light.skipped.some((x) => x.medId === 'cefazoline')).toBe(false);
+        });
+        test('allergie sévère à la pénicilline : clindamycine, sans réaction croisée', () => {
+            const s = prophylaxis('Pénicilline (choc anaphylactique) ; aspirine');
+            const text = s.fields.anesthesia.patientSummaryConsultation;
+            expect(text).toContain('antibioprophylaxie avant l\'incision : Clindamycine 900 mg');
+            expect(text).not.toContain('Céfazoline');
+            expect(s.skipped.find((x) => x.medId === 'cefazoline').reasons[0]).toMatch(/Remplacée par Clindamycine/);
+            // Suites : la céfazoline de l'ordonnance est aussi remplacée.
+            const ex = buildSurgerySuggestions({ procedureIds: ['fixateur_externe'], patient: { ...adult, allergies: 'Pénicilline (choc anaphylactique)' } });
+            expect(ex.postOpMeds.some((m) => m.medId === 'cefazoline')).toBe(false);
+            expect(ex.postOpMeds.find((m) => m.medId === 'clindamycine')).toMatchObject({ regimenId: 'iv', count: 3 });
+        });
+        test('la gravité doit concerner la pénicilline, pas une autre allergie', () => {
+            expect(prophylaxis('Pénicilline ; allergie sévère aux arachides').fields.anesthesia.patientSummaryConsultation).toContain('Céfazoline');
+        });
+        test('allergie aux céphalosporines : clindamycine ; si colite à C. difficile : vancomycine 15 mg/kg en perfusion lente', () => {
+            expect(prophylaxis('Céphalosporines').fields.anesthesia.patientSummaryConsultation).toContain('Clindamycine');
+            const s = buildSurgerySuggestions({ procedureIds: ['appendicectomie'], patient: { ...adult, allergies: 'Céphalosporines', chronic: 'Colite à Clostridium difficile' } });
+            expect(s.fields.anesthesia.patientSummaryConsultation).toContain('Vancomycine 1 150 mg');
+            expect(s.fields.anesthesia.patientSummaryConsultation).toContain('perfusion lente');
+        });
+        test('allergie à la clindamycine ET aux céphalosporines : vancomycine ; enfant : dose au poids', () => {
+            expect(prophylaxis('Céphalosporines, clindamycine').fields.anesthesia.patientSummaryConsultation).toContain('Vancomycine');
+            expect(prophylaxis('Pénicilline (anaphylaxie)', child).fields.anesthesia.patientSummaryConsultation).toContain('Clindamycine 250 mg');
+        });
+        test('aucune alternative utilisable : signalé, pas de ligne', () => {
+            const s = prophylaxis('Céphalosporines, clindamycine, vancomycine');
+            expect(s.fields.anesthesia.patientSummaryConsultation).not.toMatch(/antibioprophylaxie/);
+            expect(s.skipped.find((x) => x.medId === 'cefazoline').reasons[0]).toMatch(/Aucune alternative/);
+        });
+        test('catalogue : doses cohérentes', () => {
+            expect(checkPrescription({ medId: 'clindamycine', regimenId: 'iv', dose: 900, count: 3 }, { patient: adult }).level).not.toBe('error');
+            expect(checkPrescription({ medId: 'clindamycine', regimenId: 'iv', dose: 900, count: 4 }, { patient: adult }).level).toBe('error');
+            expect(checkPrescription({ medId: 'vancomycine', regimenId: 'iv', dose: 2500, count: 1 }, { patient: adult }).level).toBe('error');
+        });
+    });
+
     test('terrain : ASA selon antécédents, corpulence et âge', () => {
         const p = PROCEDURES.filter((x) => x.id === 'appendicectomie');
         expect(estimateAsa(adult, p)).toBe('ASA1');

@@ -5,7 +5,7 @@
 //   • ID patient d'abord : dès qu'il est saisi, le nom, la date de naissance, le sexe et le fond médical sont repris du DOSSIER du patient (hooks/useDossierPrefill.js). Sans dossier,
 //     les champs restent vides (saisie à la main) et un encadré invite à faire créer le dossier ;
 //   • nom du patient en trois champs (prénom, deuxième prénom, nom), le nom complet se recompose tout seul ;
-//   • date du rendez-vous : jamais dans le passé (utils/appointmentDate.js) ;
+//   • date du rendez-vous : jamais dans le futur (utils/appointmentDate.js) ;
 //   • employé : on ne peut choisir que soi-même (un administrateur choisit n'importe quel SOIGNANT). Pas de « fonction » à choisir : le rôle suit l'employé, et le rapport est signé
 //     du prénom et du nom de la personne qui le remplit.
 import React from 'react';
@@ -63,7 +63,7 @@ export const AppointmentDateField = ({ formData, handleChange, name = 'date', la
     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
         <div style={{ flex: '1 1 200px', minWidth: 0 }}>
             <Form.Label>{label}</Form.Label>
-            <Form.Control type="date" name={name} value={formData[name] || ''} min={todayIso()} onChange={handleChange} className="form-control" />
+            <Form.Control type="date" name={name} value={formData[name] || ''} max={todayIso()} onChange={handleChange} className="form-control" />
         </div>
         {withTime && (
             <div style={{ flex: '0 1 170px', minWidth: 0 }}>

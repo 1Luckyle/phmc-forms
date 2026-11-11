@@ -52,14 +52,14 @@ const stateOf = () => JSON.parse(screen.getByTestId('state').textContent);
 describe('en-tête commun des formulaires de soins', () => {
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'missing', donnees: null }; });
 
-    test('évaluation physique : nom en trois champs, date non passée, employé verrouillé, plus de « Fonction »', async () => {
+    test('évaluation physique : nom en trois champs, date non future, employé verrouillé, plus de « Fonction »', async () => {
         render(<Harness Component={PhysEval} />);
         expect(screen.getByPlaceholderText('Prénom du patient')).toBeTruthy();
         expect(screen.getByPlaceholderText('Deuxième prénom')).toBeTruthy();
         expect(screen.getByPlaceholderText('Nom de famille')).toBeTruthy();
         expect(screen.queryByText('Fonction au sein du PHMC')).toBeNull();
         const date = screen.getByLabelText ? document.querySelector('input[name="date"]') : null;
-        expect(date.getAttribute('min')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(date.getAttribute('max')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
         await waitFor(() => expect(stateOf().phmcEmployee).toBe('Dr. Interne'));
         expect(stateOf().phmcRank).toBe('Interne en Médecine');
         // un patient sans dossier : encadré d'invitation

@@ -2,7 +2,7 @@
 //
 // Moteur de l'assistant clinique : doses proposées selon l'âge et le poids, contrôles de cohérence (dose maximale, cumul sur 24 h, allergies, antécédents, traitements en cours, constantes), et suggestions
 // complètes à partir de motifs de prise en charge. Pur (aucune dépendance React / Firebase) : tout est testé dans engine.test.js.
-import { MEDICATION_BY_ID, regimenOf } from './medications';
+import { MEDICATION_BY_ID, regimenOf, PENICILLIN_ALLERGY, CEPHALOSPORIN_ALLERGY } from './medications';
 import { CONDITION_BY_ID, HISTORY_HINTS } from './conditions';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
@@ -271,6 +271,12 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         (condition.meds || []).forEach(([medId, regimenId, minSeverity = 0]) => {
             if (sev.index < minSeverity) return;
             if (meds.some((m) => m.medId === medId && m.regimenId === regimenId)) return;
+            const swap = swapAntibiotic(medId, patient, checkCtx);
+            if (swap) {
+                if (!skipped.some((s) => s.medId === medId)) skipped.push(swap.skipped);
+                if (swap.entry && !meds.some((m) => m.medId === swap.entry.medId)) meds.push({ ...swap.entry, forCondition: condition.id });
+                return;
+            }
             const entry = newEntry(medId, patient, regimenId);
             if (!entry || !Number.isFinite(Number(entry.dose))) { skipped.push({ medId, reasons: [doseOptions(medId, regimenId, patient).unavailable || 'Dose non calculable.'] }); return; }
             const result = checkPrescription(entry, checkCtx);
@@ -305,6 +311,34 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         followup: conditions.some((c) => c.followup === 'Recommended') ? 'Recommended' : 'AsNeeded',
         destination, meds, skipped,
     };
+};
+
+// ───────────── Antibiotique de remplacement (allergie aux bêta-lactamines) ─────────────
+const SEVERE_ALLERGY_TERMS = ['choc', 'anaphylaxie', 'anaphylactique', 'quincke', 'sévère', 'severe', 'grave', 'bronchospasme', 'détresse respiratoire'];
+/** Allergie aux pénicillines / céphalosporines du patient : { penicillin, cephalosporin, severe } (« sévère » : choc, anaphylaxie… dans la même mention que la pénicilline). */
+export const betaLactamAllergy = (patient = {}) => {
+    const segments = String(patient.allergies || '').split(/[;\n]+/);
+    const cephalosporin = !!findTerm(patient.allergies, CEPHALOSPORIN_ALLERGY);
+    const penicillin = !!findTerm(patient.allergies, PENICILLIN_ALLERGY);
+    const severe = segments.some((segment) => (findTerm(segment, PENICILLIN_ALLERGY) || findTerm(segment, CEPHALOSPORIN_ALLERGY)) && findTerm(segment, SEVERE_ALLERGY_TERMS));
+    return { penicillin, cephalosporin, severe };
+};
+/**
+ * La céfazoline est remplacée (clindamycine, puis vancomycine) en cas d'allergie aux céphalosporines ou d'allergie SÉVÈRE à la pénicilline ; une allergie légère garde la céfazoline avec son avertissement.
+ * → null (pas de remplacement) ou { entry (null si aucune alternative utilisable), skipped: { medId, reasons } }.
+ */
+export const swapAntibiotic = (medId, patient, ctx = {}) => {
+    if (medId !== 'cefazoline') return null;
+    const allergy = betaLactamAllergy(patient);
+    if (!allergy.cephalosporin && !allergy.severe) return null;
+    const why = allergy.cephalosporin ? 'allergie aux céphalosporines' : 'allergie sévère à la pénicilline';
+    for (const altId of ['clindamycine', 'vancomycine']) {
+        const entry = newEntry(altId, patient, 'iv');
+        if (!entry || !Number.isFinite(Number(entry.dose))) continue;
+        if (checkPrescription(entry, { patient, vitals: ctx.vitals || {}, tags: ctx.tags || new Set() }).level === 'error') continue;
+        return { entry, skipped: { medId, reasons: [`Remplacée par ${MEDICATION_BY_ID[altId].name} (${why} : pas de réaction croisée).`] } };
+    }
+    return { entry: null, skipped: { medId, reasons: [`Aucune alternative utilisable (${why}).`] } };
 };
 
 /** Avertissements (non bloquants) d'un rapport : prescriptions incohérentes. */

@@ -19,8 +19,8 @@ const med = (id, name, family, rest) => ({ id, name, family, brands: [], allergy
 // Familles regroupées pour les alertes de doublon et d'allergie croisée.
 const OPIOID_ALLERGY = ['opioïde', 'opioïdes', 'opiacé', 'opiacés', 'morphine', 'codéine', 'tramadol', 'fentanyl', 'oxycodone'];
 const NSAID_ALLERGY = ['aine', 'ains', 'anti-inflammatoire', 'anti-inflammatoires', 'anti inflammatoire', 'ibuprofène', 'kétoprofène', 'aspirine', 'diclofénac', 'advil', 'nurofen', 'profénid'];
-const PENICILLIN_ALLERGY = ['pénicilline', 'pénicillines', 'amoxicilline', 'ampicilline', 'bêta-lactamine', 'bêta-lactamines', 'augmentin', 'clamoxyl', 'oracilline'];
-const CEPHALOSPORIN_ALLERGY = ['céphalosporine', 'céphalosporines', 'ceftriaxone', 'céfazoline', 'rocéphine'];
+export const PENICILLIN_ALLERGY = ['pénicilline', 'pénicillines', 'amoxicilline', 'ampicilline', 'bêta-lactamine', 'bêta-lactamines', 'augmentin', 'clamoxyl', 'oracilline'];
+export const CEPHALOSPORIN_ALLERGY = ['céphalosporine', 'céphalosporines', 'ceftriaxone', 'céfazoline', 'rocéphine'];
 const ANTICOAGULANTS = ['warfarine', 'coumadine', 'préviscan', 'fluindione', 'rivaroxaban', 'xarelto', 'apixaban', 'eliquis', 'dabigatran', 'héparine', 'énoxaparine', 'lovenox', 'clopidogrel', 'plavix', 'anticoagulant', 'anticoagulants', 'antiagrégant', 'antiagrégants'];
 const BENZODIAZEPINES = ['benzodiazépine', 'benzodiazépines', 'xanax', 'alprazolam', 'valium', 'diazépam', 'lexomil', 'bromazépam', 'lorazépam', 'temesta', 'tranxène', 'clonazépam', 'rivotril', 'midazolam'];
 const SEROTONINERGIC = ['sertraline', 'zoloft', 'fluoxétine', 'prozac', 'paroxétine', 'citalopram', 'escitalopram', 'venlafaxine', 'duloxétine', 'isrs', 'imao', 'antidépresseur', 'antidépresseurs'];
@@ -314,8 +314,20 @@ export const MEDICATIONS = [
     }),
     med('cefazoline', 'Céfazoline', 'cephalosporine', {
         category: 'Antibiotique (antibioprophylaxie)', allergy: [...CEPHALOSPORIN_ALLERGY],
-        crossAllergy: { terms: PENICILLIN_ALLERGY, level: 'warn', text: 'Allergie à la pénicilline : réaction croisée possible avec les céphalosporines (rare).' },
+        crossAllergy: { terms: PENICILLIN_ALLERGY, level: 'warn', text: 'Allergie à la pénicilline : réaction croisée possible avec les céphalosporines (rare). Si l\'allergie est sévère : clindamycine ou vancomycine.' },
         regimens: [R('iv', 'IV', 'mg', { adult: [1000, 2000, 2000], perKg: [25, 30, 50], maxSingle: 2000, intervalHours: 8, maxDaily: 6000, minAgeMonths: 1, note: 'Antibioprophylaxie : une injection avant le geste, puis toutes les 8 h si besoin.' })],
+    }),
+    // Alternatives à la céfazoline en cas d'allergie sévère aux pénicillines ou aux céphalosporines : aucune réaction croisée avec les bêta-lactamines.
+    med('clindamycine', 'Clindamycine', 'lincosamide', {
+        category: 'Antibiotique (antibioprophylaxie, alternative sans bêta-lactamine)', brands: ['Dalacine'], allergy: ['clindamycine', 'dalacine', 'lincosamide', 'lincosamides', 'lincomycine'],
+        contra: [{ terms: ['colite', 'colite pseudomembraneuse', 'clostridium difficile', 'diarrhée chronique'], level: 'error', text: 'Antécédent de colite à Clostridium difficile : clindamycine à éviter.' }],
+        regimens: [R('iv', 'IV', 'mg', { adult: [600, 900, 900], perKg: [10, 10, 10], maxSingle: 900, intervalHours: 8, maxDaily: 2700, maxDailyPerKg: 40, minAgeMonths: 1, note: 'Antibioprophylaxie : une perfusion de 30 minutes avant l\'incision, puis toutes les 8 h si besoin.' })],
+    }),
+    med('vancomycine', 'Vancomycine', 'glycopeptide', {
+        category: 'Antibiotique (antibioprophylaxie, alternative sans bêta-lactamine)', brands: ['Vancocine'], allergy: ['vancomycine', 'vancocine', 'glycopeptide', 'glycopeptides'],
+        contra: [{ terms: ['insuffisance rénale', 'insuffisance rénale sévère'], level: 'warn', text: 'Insuffisance rénale : néphrotoxique, espacer les prises et surveiller la créatinine.' }],
+        interacts: [{ terms: ['aminoside', 'aminosides', 'gentamicine', 'furosémide', 'lasilix'], level: 'warn', text: 'Autre médicament néphrotoxique ou ototoxique en cours : surveillance rapprochée.' }],
+        regimens: [R('iv', 'IV', 'mg', { weightBased: true, perKg: [10, 15, 15], maxSingle: 2000, intervalHours: 12, maxDaily: 4000, maxDailyPerKg: 60, minAgeMonths: 1, note: 'Perfusion lente d\'au moins 60 minutes (risque de « syndrome de l\'homme rouge » si trop rapide), à débuter 1 à 2 heures avant l\'incision.' })],
     }),
     med('azithromycine', 'Azithromycine', 'macrolide', {
         category: 'Antibiotique (macrolide)', brands: ['Zithromax'], allergy: ['macrolide', 'macrolides', 'azithromycine', 'zithromax', 'érythromycine'],
