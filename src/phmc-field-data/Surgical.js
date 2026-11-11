@@ -37,6 +37,10 @@ const Surgical = ({
     const { isAdmin } = useEmployeeAuth();
     const careOptions = useMemo(() => careStaffOnly(unrestrictedPhmcGroupedOptions), [unrestrictedPhmcGroupedOptions]);
     const careFlat = useMemo(() => careOptions.flatMap((group) => group.options), [careOptions]);
+    // Le chirurgien principal se choisit parmi les CHIRURGIENS seulement (pas tout le personnel soignant).
+    const surgeonOptions = useMemo(() => careOptions
+        .map((group) => ({ ...group, options: group.options.filter((option) => Array.isArray(option.roles) && option.roles.includes(SURGEON_ROLE)) }))
+        .filter((group) => group.options.length > 0), [careOptions]);
     const signerPool = useMemo(() => (isAdmin ? careStaffOnly(phmcGroupedOptions) : phmcGroupedOptions || []).flatMap((group) => group.options), [isAdmin, phmcGroupedOptions]);
     const signer = formData.phmcEmployee || '';
     const signerOption = signerPool.find((option) => option.value === signer) || null;
@@ -85,14 +89,17 @@ const Surgical = ({
         name="surgeonEmployee"
         value={surgeonValue}
         onChange={(selectedOption) => setFormData((prev) => ({ ...prev, surgeonEmployee: selectedOption ? selectedOption.value : '' }))}
-        options={careOptions}
+        options={surgeonOptions}
+        noOptionsMessage={() => 'Aucun chirurgien dans la liste du personnel'}
         isClearable={!signerIsSurgeon}
         isDisabled={signerIsSurgeon}
         placeholder="Sélectionner un chirurgien. (Vous pouvez taper pour rechercher!)"
         className="form-control"
         styles={darkSelectStyles}
     />
-    {signerIsSurgeon && <span className="helper-text">Vous êtes chirurgien(ne) : vous êtes le chirurgien principal et vous signez le rapport.</span>}
+    {signerIsSurgeon
+        ? <span className="helper-text">Vous êtes chirurgien(ne) : vous êtes le chirurgien principal et vous signez le rapport.</span>
+        : <span className="helper-text">Seuls les chirurgiens sont proposés.</span>}
     {signer && !signerIsSurgeon && (
         <Alert variant="info" className="py-2 small mt-2 mb-2" data-no-tip="1">
             Vous n'êtes pas chirurgien(ne) : vous signez ce rapport et êtes ajouté(e) d'office au personnel présent. Une copie sera adressée au chirurgien choisi ci-dessus
@@ -116,6 +123,7 @@ const Surgical = ({
         placeholder="Entrer le personnel présent (( Laisser vide si aucun )) "
         styles={darkSelectStyles}
     />
+    <span className="helper-text" data-no-tip="1">Chaque personne ajoutée est mentionnée dans le rapport et reçoit une notification qui l'invite à en récupérer une copie (renseignez l'ID du patient).</span>
     <SurgeryAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
     <Form.Label className="form-section-title">Enquête chirurgicale</Form.Label>

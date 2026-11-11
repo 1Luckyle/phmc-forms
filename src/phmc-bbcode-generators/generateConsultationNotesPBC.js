@@ -1,7 +1,7 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { consultExtrasBBCode, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
-import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
+import { BB_COLORS, careHeader, checkbox, sectionBanner } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -23,18 +23,11 @@ const generateConsultationNotesPBC = (formData) => {
                 patientNotes = NOT_FILLED,
             } = formData;
     
-            let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de consultation[/b]
-    
-PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
+            let bbCode = `${careHeader({ title: "Notes de consultation", pbc: true, lines: `PATIENT: ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
 
-Signé: ${signedLine(formData)}
-[/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CLINIQUE DE PALETO BAY[/b]
-PALETO BAY BLVD.
-BP 685
-PALETO BAY, SAN ANDREAS
-T: 50056[/size][/center][/table][/divbox]
+Signé: ${signedLine(formData)}` })}
 ${buildPatientContextBBCode(formData, { accentColor: '#0080FF' })}${sectionBanner(`Anamnèse`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none]${clinicalAnamnesisBBCode(formData)}[u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint}

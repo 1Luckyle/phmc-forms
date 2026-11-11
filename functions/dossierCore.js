@@ -39,7 +39,7 @@ export const EMERGENCY_FIELDS = [
     'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName',
     'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord',
 ];
-export const MEDICAL_FIELDS = ['patientBloodType', 'patientAllergies', 'patientCurrentMedicine', 'patientChronicDiseases', 'patientNotes'];
+export const MEDICAL_FIELDS = ['patientBloodType', 'patientWeight', 'patientHeight', 'patientAllergies', 'patientCurrentMedicine', 'patientChronicDiseases', 'patientNotes'];
 
 // Fond médical COMPLÉTÉ par le personnel soignant depuis une consultation (allergies, antécédents, traitements en cours) : uniquement des AJOUTS, jamais de suppression ni de correction
 // (corriger ou retirer une information passe par une mise à jour du dossier). Le client calcule les éléments à ajouter, le serveur (reconcileDossiers) les applique avec les mêmes règles.

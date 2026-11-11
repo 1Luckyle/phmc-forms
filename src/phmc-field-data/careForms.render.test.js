@@ -266,6 +266,36 @@ describe("assistant clinique de la consultation générale", () => {
     });
 });
 
+describe('soignants : chirurgien et soignants supplémentaires', () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const staff = [
+        { label: 'Chirurgien(ne)', options: [careOption('Dr. Surgeon', ['Chirurgien(ne)'])] },
+        { label: 'Médecin titulaire', options: [careOption('Dr. Medecin', ['Médecin titulaire'])] },
+    ];
+
+    test('le chirurgien principal se choisit parmi les chirurgiens seulement', () => {
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne' }} extra={{ unrestrictedPhmcGroupedOptions: staff }} />);
+        fireEvent.keyDown(screen.getByText(/Sélectionner un chirurgien/), { key: 'ArrowDown', keyCode: 40 });
+        expect(screen.getByText('Dr. Surgeon')).toBeTruthy();
+        expect(screen.queryByText('Dr. Medecin')).toBeNull();
+        expect(screen.getByText('Seuls les chirurgiens sont proposés.')).toBeTruthy();
+    });
+
+    test("protocole d'urgence : champ multi-sélection des soignants supplémentaires, sans le rédacteur", () => {
+        render(<Harness Component={EmergencyForm} initial={{ phmcEmployee: 'Dr. Interne', extraStaff: [] }} extra={{ unrestrictedPhmcGroupedOptions: staff, admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] }} />);
+        expect(screen.getByText('Autres soignants présents (facultatif)')).toBeTruthy();
+
+        fireEvent.keyDown(screen.getByText(/Ajouter les soignants qui ont participé/), { key: 'ArrowDown', keyCode: 40 });
+        expect(screen.getByText('Dr. Medecin')).toBeTruthy();
+        expect(screen.getByText('Dr. Surgeon')).toBeTruthy();
+    });
+
+    test("l'assistant clinique porte son petit nom", () => {
+        render(<Harness Component={EmergencyForm} initial={{}} extra={{ unrestrictedPhmcGroupedOptions: staff, admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] }} />);
+        expect(screen.getByText('· Pilou')).toBeTruthy();
+    });
+});
+
 describe("assistant chirurgical de l'opération", () => {
     const props = {};
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });

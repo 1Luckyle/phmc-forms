@@ -15,6 +15,9 @@ import { placeWithCity } from './places';
 
 // Fond médical qu'un formulaire de soins peut reprendre du dossier (jamais le motif, l'examen ni le diagnostic).
 export const CARE_BACKGROUND_FIELDS = ['patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine'];
+// Poids et taille du dossier : reprises par les formulaires de soins (l'assistant clinique en tire les doses). L'évaluation physique (6, 7) les affiche telles quelles : elles y portent leur unité.
+export const CARE_BODY_FIELDS = ['patientWeight', 'patientHeight'];
+const BODY_UNIT = { patientWeight: 'kg', patientHeight: 'cm' };
 // Identité du patient reprise du dossier par les formulaires de soins : nom en trois champs, date de naissance (l'âge s'en déduit) et sexe.
 export const CARE_IDENTITY_FIELDS = ['patientFirstName', 'patientMiddleName', 'patientLastName', 'patientDateOfBirth'];
 // Formulaires de soins concernés (ni dossier, ni libération, ni DMEC, ni courriels, ni candidatures). 35 et 41 : certificats (identité seulement).
@@ -50,6 +53,11 @@ export const dossierPrefillPatch = (version, donnees = {}, formData = {}, knownF
         if (MENTAL_HEALTH_VERSIONS.includes(number)) EMERGENCY_FIELDS.forEach((field) => take(field));
         if (known.has('patientSex') && !empty(donnees.patientGender)) wanted.patientSex = careSexOf(donnees.patientGender);
         CARE_BACKGROUND_FIELDS.forEach((field) => take(field));
+        CARE_BODY_FIELDS.forEach((field) => {
+            if (!known.has(field) || empty(donnees[field])) return;
+            const value = String(donnees[field]).trim();
+            wanted[field] = [6, 7].includes(number) && /^[\d.,]+$/.test(value) ? `${value} ${BODY_UNIT[field]}` : value;
+        });
     } else if (CARE_IDENTITY_ONLY_VERSIONS.includes(number)) {
         CARE_IDENTITY_FIELDS.forEach((field) => take(field));
     }

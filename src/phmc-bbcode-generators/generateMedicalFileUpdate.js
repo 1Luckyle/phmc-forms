@@ -1,5 +1,6 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
+import { bodyMeasuresText } from './shared/bodyMeasures';
 import { checkbox, sectionBanner } from './shared/bbStyles';
 import { titleLabel, withTitle } from '../utils/patientIdentity';
 import { placeWithCity } from '../utils/places';
@@ -122,6 +123,7 @@ ${sectionBanner(`Informations mises à jour`, { size: 115 })}
 [altspoiler=Nouvel historique médical]
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Groupe sanguin: [/td][td] ${checkbox(patientBloodType === 'A+')} A+ ${checkbox(patientBloodType === 'A-')} A- ${checkbox(patientBloodType === 'B+')} B+ ${checkbox(patientBloodType === 'B-')} B- ${checkbox(patientBloodType === 'O+')} O+ ${checkbox(patientBloodType === 'O-')} O- ${checkbox(patientBloodType === 'AB+')} AB+ ${checkbox(patientBloodType === 'AB-')} AB-
+[tr][td] Poids / taille: [/td][td] ${bodyMeasuresText(formData.patientWeight, formData.patientHeight)}
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
 [tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
 [tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}

@@ -11,7 +11,7 @@ import { minutesBetween, durationLabel, aptitudeValidUntil } from '../../utils/c
 import { CONDITION_BY_ID } from '../../clinical/conditions';
 import { severityOf } from '../../clinical/vitals';
 import { parseWeightKg, parseHeightCm } from '../../clinical/engine';
-import { clinicalMedLines } from '../../clinical/apply';
+import { clinicalMedLines, prescriptionLines } from '../../clinical/apply';
 
 const filled = (value) => (Array.isArray(value) ? value.length > 0 : String(value ?? '').trim() !== '');
 const text = (value) => String(value ?? '').trim();
@@ -60,9 +60,11 @@ ${[weight ? `${weight} kg` : '', height ? `${height} cm` : ''].filter(Boolean).j
 };
 export const postOpBBCode = (f, blue = false) => {
     const medLines = clinicalMedLines(f);
-    if (!filled(f.postOpMonitoring) && !filled(f.postOpExams) && !medLines.length) return '';
+    const rxLines = prescriptionLines(f);
+    if (!filled(f.postOpMonitoring) && !filled(f.postOpExams) && !medLines.length && !rxLines.length) return '';
     const rows = [
         medLines.length ? `[tr][td]Médicaments post-opératoires[/td][td]\n${medLines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[/td][/tr]` : '',
+        rxLines.length ? `[tr][td]Ordonnance${filled(f.phmcEmployee) ? ` (prescrite par ${text(f.phmcEmployee)})` : ''}[/td][td]\n${rxLines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[/td][/tr]` : '',
         filled(f.postOpMonitoring) ? `[tr][td]Lieu de surveillance[/td][td]\n${labelOf(POST_OP_MONITORING, f.postOpMonitoring)}\n[/td][/tr]` : '',
         filled(f.postOpExams) ? `[tr][td]Examens post-opératoires[/td][td]\n${text(f.postOpExams)}\n[/td][/tr]` : '',
     ].filter(Boolean).join('\n');
@@ -146,5 +148,11 @@ export const clinicalAnamnesisBBCode = (f) => {
 // Médicaments de la liste de l'assistant (dose, voie, prises), dans la thérapie.
 export const clinicalMedsBBCode = (f) => {
     const lines = clinicalMedLines(f);
-    return lines.length ? `[u]Médicaments administrés: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
+    const given = lines.length ? `[u]Médicaments administrés: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
+    return `${given}${prescriptionBBCode(f)}`;
+};
+// Ordonnance : les médicaments cochés « sur l'ordonnance » (dose, voie, prises, durée), avec le prescripteur.
+export const prescriptionBBCode = (f) => {
+    const lines = prescriptionLines(f);
+    return lines.length ? `[u]Ordonnance${filled(f.phmcEmployee) ? ` (prescrite par ${text(f.phmcEmployee)})` : ''}: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
 };

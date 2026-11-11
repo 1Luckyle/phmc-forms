@@ -203,7 +203,7 @@ const EmergencyForm = ({
         <>
             {/* ... (Your existing form fields up to the Findings section) ... */}
             <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
-            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
+            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} withExtraStaff />
 
             <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} allergiesRequired={false} />
 

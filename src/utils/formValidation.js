@@ -30,7 +30,8 @@ import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
 import { validateMedicalCertificate } from './medicalCertificates';
 import { validateCareExtras } from './careFormRules';
-import { clinicalWarnings } from '../clinical/engine';
+import { clinicalWarnings, parseWeightKg, parseHeightCm } from '../clinical/engine';
+import { reportCopyRecipients } from './reportCopyRecipients';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
@@ -74,6 +75,11 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
     if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de consultation : champ obligatoire.');
+    // Poids et taille du dossier médical (basique, avancé, section « Historique médical » de la mise à jour) : des valeurs lisibles (kg et cm).
+    if ([3, 25].includes(version) || (version === 26 && Array.isArray(data.UpdateMedicalFile) && data.UpdateMedicalFile.some((section) => section === 'Medical History' || section === 'MedicalHistory'))) {
+        if (filled(data.patientWeight) && parseWeightKg(data.patientWeight) === null) errors.push('Poids du patient : valeur invalide (en kilogrammes, par exemple 75).');
+        if (filled(data.patientHeight) && parseHeightCm(data.patientHeight) === null) errors.push('Taille du patient : valeur invalide (en centimètres, par exemple 178).');
+    }
     // Champs ajoutés aux formulaires de soins : conduite à tenir, contrainte, transfert, durée d'arrêt… (utils/careFormRules.js).
     validateCareExtras(version, data).forEach((problem) => errors.push(problem));
     // Assistant clinique du protocole d'urgence : prescriptions incohérentes (dose, allergie, traitement en cours…) → avertissements, jamais bloquants.
@@ -159,9 +165,9 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         }
     }
 
-    // Opération remplie par quelqu'un d'autre que le chirurgien : la copie qui lui est adressée se récupère dans le dossier du patient, donc il faut un ID patient.
-    if (version === 5 && filled(data.surgeonEmployee) && filled(data.phmcEmployee) && data.surgeonEmployee !== data.phmcEmployee && !filled(data.patientID)) {
-        warnings.push("Sans ID patient, le chirurgien choisi ne pourra pas récupérer la copie du rapport (elle passe par le dossier du patient).");
+    // Soignants mentionnés (chirurgien, personnel présent, soignants supplémentaires) : la copie qui leur est adressée se récupère dans le dossier du patient, donc il faut un ID patient.
+    if (reportCopyRecipients(version, data).length > 0 && !filled(data.patientID)) {
+        warnings.push("Sans ID patient, les soignants mentionnés dans ce rapport ne pourront pas en récupérer de copie (elle passe par le dossier du patient).");
     }
 
     // Un Civil n'enregistre un dossier que sous son propre ID : jamais dans le dossier de quelqu'un d'autre.

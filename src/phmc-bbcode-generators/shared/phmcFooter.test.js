@@ -2,6 +2,16 @@ import { withPhmcFooter, PHMC_FOOTER_MARK, PBC_FOOTER_MARK } from './bbStyles';
 import generateCommentaryNotePBC from '../generateCommentaryNotePBC';
 import generateCommentaryNotePHMC from '../generateCommentaryNotesPHMC';
 import { bbcodeToHtmlFragment } from '../../utils/bbcodeToHtml';
+import generateEmergencyProtocol from '../generateEmergencyProtocol';
+import generateSurgicalOps from '../generateSurgicalOps';
+import generatePsychEvalPHMC from '../generatePsychEvalPHMC';
+import generatePsychEvalPBC from '../generatePsychEvalPBC';
+import generatePhysEvalInternalMed from '../generatePhysEvalInternalMed';
+import generatePhysEvalInternalMedPBC from '../generatePhysEvalInternalMedPBC';
+import generateMentalHealthPHMC from '../generateMentalHealthPHMC';
+import generateMentalHealthPBC from '../generateMentalHealthPBC';
+import generateConsultationNotesPHMC from '../generateConsultationNotesPHMC';
+import generateConsultationNotesPBC from '../generateConsultationNotesPBC';
 
 describe('pied de page PHMC', () => {
     test('ajouté une seule fois à la fin d’un rapport', () => {
@@ -37,6 +47,26 @@ describe('pied de page PHMC', () => {
         expect(phmc).not.toContain('BP 742');
         expect(pbc).toContain('phmcpaletobaylogo.png');
         expect(phmc).toContain('/img/phmc.png');
+    });
+    test('en-tête des formulaires soignants : style des dossiers civils, un seul logo, sans coordonnées', () => {
+        const data = { phmcEmployee: 'Dr Test', date: '2026-11-08', patientName: 'Jean Test', patientID: 'PHMC-1', patientNotes: 'RAS', lastName: 'Test' };
+        const cases = [
+            [generateEmergencyProtocol, false, "PROTOCOLE D'URGENCE"], [generateSurgicalOps, false, 'RAPPORT CHIRURGICAL'],
+            [generatePsychEvalPHMC, false, 'NOTES DE SESSION'], [generatePsychEvalPBC, true, 'NOTES DE SESSION'],
+            [generatePhysEvalInternalMed, false, 'EXAMEN PHYSIQUE'], [generatePhysEvalInternalMedPBC, true, 'EXAMEN PHYSIQUE'],
+            [generateMentalHealthPHMC, false, 'NOTES DE SESSION'], [generateMentalHealthPBC, true, 'NOTES DE SESSION'],
+            [generateConsultationNotesPHMC, false, 'NOTES DE CONSULTATION'], [generateConsultationNotesPBC, true, 'NOTES DE CONSULTATION'],
+            [generateCommentaryNotePHMC, false, 'NOTES DE SERVICE'], [generateCommentaryNotePBC, true, 'NOTES DE SERVICE'],
+        ];
+        cases.forEach(([generate, pbc, title]) => {
+            const header = generate(data).split('[/divbox]')[0];
+            expect(header).toContain('[b]Informations du patient[/b]');
+            expect(header).toContain(`[b][size=150]${title}[/size][/b]`);
+            expect(header.match(/\[img\]/g)).toHaveLength(1);
+            expect(header).toContain(pbc ? 'phmcpaletobaylogo.png' : '/img/phmc.png');
+            expect(header.match(/\[td\]/g)).toHaveLength(2);
+            expect(header).not.toMatch(/BP 742|BP 685|50056|CENTRE MÉDICAL|CLINIQUE DE PALETO/);
+        });
     });
     test('s’affiche dans l’aperçu HTML', () => {
         const html = bbcodeToHtmlFragment(withPhmcFooter('[b]Rapport[/b]', 3));

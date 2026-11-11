@@ -29,6 +29,7 @@ import {
     canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId,
 } from './patientId';
 import { isDossierVersion } from './dossierCore';
+import { careVisitSummary } from './careVisitSummary';
 
 export { canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId };
 
@@ -497,6 +498,7 @@ export async function reindexPatientRecords({ onProgress } = {}) {
                     patientName: report.data?.patientName ?? null,
                     copiedFrom: report.copiedFrom ?? null,
                     timestamp: report.timestamp ?? Date.now(),
+                    ...(careVisitSummary(report.bbCodeVersion, report.data) ? { resume: careVisitSummary(report.bbCodeVersion, report.data) } : {}),
                 };
                 stats.created++;
             } else {
@@ -504,6 +506,11 @@ export async function reindexPatientRecords({ onProgress } = {}) {
                     updates[`patientRecords/${patientNode}/${reportKey}/reportPath`] = reportPath;
                     updates[`patientRecords/${patientNode}/${reportKey}/authorName`] = report.authorName ?? entry.authorName ?? '';
                     stats.repaired++;
+                }
+                // Anciens rapports de soins : le résumé de l'historique des soins du dossier médical.
+                if (!entry.resume && !entry.copiedFrom && report.data) {
+                    const resume = careVisitSummary(report.bbCodeVersion, report.data);
+                    if (resume) updates[`patientRecords/${patientNode}/${reportKey}/resume`] = resume;
                 }
                 // Les anciennes entrées n'ont pas le nom du patient : il alimente la liste de recherche.
                 if (!entry.patientName && report.data?.patientName) {

@@ -24,14 +24,26 @@ export const sectionBanner = (title, { accent = BB_COLORS.red, size = null } = {
     return `[divboxcolor=black][center]${size ? `[size=${size}]${content}[/size]` : content}[/center][/divboxcolor]`;
 };
 
-// Fin de l'en-tête des formulaires PHMC (logo + bloc d'adresse du centre médical). À placer juste après
-// la première cellule de l'en-tête (titre, patient, date…), dans la table ouverte par le générateur :
-//   [table][tr][td][center]…première cellule…${phmcHeaderEnd()}
+// Fin de l'en-tête des CONTRATS (logo + bloc d'adresse du centre médical), à placer juste après la première cellule dans la table ouverte par le générateur.
+// Les formulaires soignants utilisent careHeader (ci-dessous), sans coordonnées.
 export const phmcHeaderEnd = () => `[/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][td][center][br][/br][br][/br][size=100][b]CENTRE MÉDICAL PILLBOX HILL[/b]
 ELGIN AVE. / STRAWBERRY AVE.
 BP 742
 LOS SANTOS, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]`;
+
+// En-tête des formulaires soignants : même style que celui des dossiers civils (deux cellules : à gauche l'étiquette et les informations du patient,
+// à droite le logo et le titre du formulaire en grand). Un seul logo : celui de la clinique de Paleto Bay (pbc) ou celui du PHMC. Les coordonnées
+// du centre ne sont pas dans l'en-tête : elles sont au pied de page (withPhmcFooter).
+//   careHeader({ title: "Protocole d'urgence", lines: `PATIENT : …\nDate : …`, pbc: false })
+export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
+export const PBC_LOGO = 'https://phmc-tools.com/img/phmcpaletobaylogo.png';
+export const careHeader = ({ title, lines = '', pbc = false }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Informations du patient[/b]
+
+[size=110]${lines}[/size]
+
+[/center][td][center][img]${pbc ? PBC_LOGO : PHMC_LOGO}[/img]
+[b][size=150]${String(title).toUpperCase()}[/size][/b][/center][/table][/divbox]`;
 
 // Pied de page commun à tous les rapports : coordonnées du Pillbox Hill Medical Center. Ajouté à la fin du BBCode, une seule fois, par withPhmcFooter
 // (appelée là où le BBCode est produit : MainApp.getBBCodeContent), jamais dans chaque générateur.
@@ -95,7 +107,6 @@ export const mailFooter = ({ pbc = false } = {}) => `${pbc ? pbcFooter() : phmcF
 // Même vocabulaire que les dossiers médicaux (en-tête à deux cellules, bandeaux noirs, tableaux « étiquette : valeur »), pour que les rapports du
 // DMEC se lisent comme le reste des formulaires, aussi bien sur le forum (BBCode) que dans l'aperçu HTML.
 
-export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
 // Sceau du DMEC seul (public/img/dmec-seal.png). L'ancienne image ItaoQkO.webp montrait aussi celui du Comté.
 export const DMEC_LOGO = 'https://phmc-tools.com/img/dmec-seal.png';
 // Même sceau en petit (public/img/dmec-seal-small.png) : à côté du logo PHMC dans l'en-tête des rapports du DMEC, comme le logo de Paleto Bay à côté de celui du PHMC.

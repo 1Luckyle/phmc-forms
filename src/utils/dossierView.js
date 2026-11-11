@@ -3,7 +3,8 @@
 // Affichage du dossier patient (« Mon profil ») au format des dossiers du PHMC : on réutilise la mise en page du Dossier Médical Avancé (bandeaux de section, tableaux
 // à deux colonnes, en-tête PHMC), sans ses parties de formulaire (signature, clause de non-responsabilité, paiement), avec le pied de page de l'hôpital.
 import generateAdvancedPatientFile from '../phmc-bbcode-generators/generateAdvancedPatientFile';
-import { withPhmcFooter } from '../phmc-bbcode-generators/shared/bbStyles';
+import { withPhmcFooter, sectionBanner, escapeBbText } from '../phmc-bbcode-generators/shared/bbStyles';
+import { CARE_VISIT_LABELS, CARE_VISIT_FIELDS } from './careVisitSummary';
 import { frDay } from './reportTitle';
 
 const FULL_NAME_PARTS = ['patientFirstName', 'patientMiddleName', 'patientLastName'];
@@ -16,7 +17,22 @@ export const mergeDossierValues = (donnees = {}, identity = {}) => {
     return merged;
 };
 
-export const dossierBbCode = (donnees = {}, identity = {}) => {
+// Section « Historique des soins » : un bloc par passage (date, type, soignant, résumé), les plus récents d'abord. Vide sans passage.
+const MAX_VISITS = 25;
+export const careVisitsBBCode = (visits = []) => {
+    const list = (Array.isArray(visits) ? visits : []).slice(0, MAX_VISITS);
+    if (!list.length) return '';
+    const rows = list.map((visit) => {
+        const resume = visit.resume || {};
+        const details = CARE_VISIT_FIELDS.filter(([key]) => resume[key]).map(([key, label]) => `[i]${label} :[/i] ${escapeBbText(resume[key])}`);
+        const head = `[b]${CARE_VISIT_LABELS[visit.version] || 'Soins'}[/b]${visit.author ? ` (${escapeBbText(visit.author)})` : ''}`;
+        return `[tr][td] ${frDay(visit.date) || '—'} [/td][td] ${[head, ...details].join('\n')} [/td]`;
+    });
+    return `\n${sectionBanner('Historique des soins', { size: 115 })}\n[table]\n${rows.join('\n')}\n[/table]`;
+};
+
+// options.visits : passages de l'historique des soins (utils/careVisitSummary.js).
+export const dossierBbCode = (donnees = {}, identity = {}, { visits = [] } = {}) => {
     const values = mergeDossierValues(donnees, identity);
     const patientName = FULL_NAME_PARTS.map((key) => values[key]).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
     const source = {
@@ -33,7 +49,7 @@ export const dossierBbCode = (donnees = {}, identity = {}) => {
     }
     // La signature des directives anticipées n'a pas de sens dans une simple consultation.
     text = text.replace(/\n*Signature: \[i\]\[u\][^\n]*\[\/u\]\[\/i\]\nDate: [^\n]*?(?=\[\/divbox\])/, '');
-    return withPhmcFooter(text, 3);
+    return withPhmcFooter(`${text.replace(/\s+$/, '')}${careVisitsBBCode(visits)}`, 3);
 };
 
 export const formatDossierDate = (ms) => (ms ? frDay(new Date(Number(ms)).toISOString().slice(0, 10)) : '');

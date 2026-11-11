@@ -8,12 +8,14 @@
 //   • date du rendez-vous : jamais dans le futur (utils/appointmentDate.js) ;
 //   • employé : on ne peut choisir que soi-même (un administrateur choisit n'importe quel SOIGNANT). Pas de « fonction » à choisir : le rôle suit l'employé, et le rapport est signé
 //     du prénom et du nom de la personne qui le remplit.
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Form } from 'react-bootstrap';
+import Select from 'react-select';
 import usePatientNameParts from '../../hooks/usePatientNameParts';
 import { usePatientDossier } from '../../utils/dossierLookup';
 import { todayIso } from '../../utils/appointmentDate';
-import PhmcEmployeeSelect from './PhmcEmployeeSelect';
+import PhmcEmployeeSelect, { careStaffOnly } from './PhmcEmployeeSelect';
+import { darkSelectStyles } from './selectStyles';
 import { ReferralFields } from './CareExtraFields';
 
 const rowStyle = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
@@ -79,13 +81,41 @@ export const CareEmployeeField = ({ formData, setFormData, options, label = "Ide
     <PhmcEmployeeSelect name={name} label={label} options={options} formData={formData} setFormData={setFormData} careOnly placeholder={placeholder} rankField={rankField} />
 );
 
-const CareFormHeader = ({ formData, setFormData, handleChange, phmcGroupedOptions, unrestrictedPhmcGroupedOptions, sectionTitle = 'Patient et rendez-vous', dateLabel = 'Date du rendez-vous', dateName = 'date' }) => (
+// Soignants supplémentaires (multi-sélection, personnel soignant seulement) sous celui qui rédige le rapport : ils sont cités dans le rapport et reçoivent une notification qui les invite
+// à en récupérer une copie (utils/reportCopyRecipients.js). Le rédacteur ne se propose pas lui-même.
+export const ExtraStaffField = ({ formData, setFormData, options, label = 'Autres soignants présents (facultatif)' }) => {
+    const signer = formData.phmcEmployee || '';
+    const groups = useMemo(() => careStaffOnly(options)
+        .map((group) => ({ label: group.label, options: group.options.filter((option) => option.value !== signer).map((option) => ({ value: option.value, label: option.label })) }))
+        .filter((group) => group.options.length > 0), [options, signer]);
+    const selected = (Array.isArray(formData.extraStaff) ? formData.extraStaff : []).filter((name) => name !== signer);
+    return (
+        <>
+            <Form.Label className="mt-2">{label}</Form.Label>
+            <Select
+                isMulti
+                name="extraStaff"
+                options={groups}
+                value={selected.map((name) => ({ value: name, label: name }))}
+                onChange={(chosen) => setFormData((prev) => ({ ...prev, extraStaff: chosen ? chosen.map((option) => option.value) : [] }))}
+                placeholder="Ajouter les soignants qui ont participé (Multi-sélection | Vous pouvez taper pour rechercher!)"
+                noOptionsMessage={() => 'Aucun soignant trouvé'}
+                className="form-control"
+                styles={darkSelectStyles}
+            />
+            <span className="helper-text" data-no-tip="1">Chaque personne ajoutée est mentionnée dans le rapport et reçoit une notification qui l'invite à en récupérer une copie (renseignez l'ID du patient).</span>
+        </>
+    );
+};
+
+const CareFormHeader = ({ formData, setFormData, handleChange, phmcGroupedOptions, unrestrictedPhmcGroupedOptions, sectionTitle = 'Patient et rendez-vous', dateLabel = 'Date du rendez-vous', dateName = 'date', withExtraStaff = false }) => (
     <>
         <Form.Label className="form-section-title">{sectionTitle}</Form.Label>
         <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
         <AppointmentDateField formData={formData} handleChange={handleChange} name={dateName} label={dateLabel} withTime />
         <ReferralFields formData={formData} setFormData={setFormData} handleChange={handleChange} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
         <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} />
+        {withExtraStaff && <ExtraStaffField formData={formData} setFormData={setFormData} options={unrestrictedPhmcGroupedOptions} />}
     </>
 );
 

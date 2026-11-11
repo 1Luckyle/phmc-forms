@@ -41,7 +41,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet',
                 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther',
                 'dnrOther', 'decedentOOC', 'maritalStatus', 'numberChildren', 'financialStatus', 'dnr', 'dnrOrder', 'attorney',
-                'patientBloodType', 'patientEmail',
+                'patientBloodType', 'patientWeight', 'patientHeight', 'patientEmail',
             ];
         case 4: // Autopsy Report
             return [
@@ -265,7 +265,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientNotes',
                 'date',
                 'patientID',
-                'patientBloodType',
+                'patientBloodType', 'patientWeight', 'patientHeight',
                 'patientDateOfBirth', 'patientEmail',
             ];
         case 26: // Patient File - Advanced
@@ -287,7 +287,7 @@ const baseRelevantFields = (bbCodeVersion) => {
                 'patientNotes',
                 'date',
                 'patientID',
-                'patientBloodType',
+                'patientBloodType', 'patientWeight', 'patientHeight',
                 'patientTitleOptions', 'patientEmail', 'patientDateOfBirth', 'UpdateMedicalFile', 'patientTitleNew', 'patientNameNew', 'patientDateOfBirthNew', 'patientAddressNew', 'patientGenderNew', 'patientRaceNew', 'patientPHNew', 'patientDiscordNew', 'patientMental', 'patientTherapy', 'patientTriggers', 'patientSupport', 'patientHarm', 'patientFam', 'patientGenetic', 'patientFamSocial', 'maritalStatus', 'numberChildren', 'patientReligion', 'financialStatus', 'patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet', 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther', 'dnr', 'dnrOrder', 'dnrOther', 'attorney', 'attorneyName', 'attorneyRelation', 'attorneyPH',
             ];
         case 27: // Email Forms
@@ -477,7 +477,7 @@ const CARE_COMMON_EXTRA = ['appointmentTime', 'referralReason', 'referralOther',
 const SURGERY_EXTRA = ['surgeonEmployee', 'surgeryCharacter', 'surgeryAsa', 'postOpMonitoring', 'postOpExams', 'patientWeight', 'patientHeight', 'surgeryProcedureIds', 'clinicalMeds'];
 const APTITUDE_EXTRA = ['evalReason', 'aptitudeConclusion', 'aptitudeRestrictions', 'aptitudeValidityMonths', 'visualAcuity', 'hearingValue', 'vaccinationState', 'vaccinationNote'];
 const MENTAL_EXTRA = ['riskSuicide', 'riskDanger', 'riskAction', 'riskActionNote', 'involuntaryHold', 'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord'];
-const EMERGENCY_EXTRA = ['careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare', 'patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds'];
+const EMERGENCY_EXTRA = ['extraStaff', 'careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare', 'patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds'];
 const CLINICAL_EXTRA = ['patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds'];
 const CONSULT_EXTRA = ['orientedService', 'orientedServiceOther', 'examsOrdered', 'examsOrderedNote', 'workStoppage', 'workStoppageDays', ...CLINICAL_EXTRA];
 const CARE_VERSION_EXTRA = {

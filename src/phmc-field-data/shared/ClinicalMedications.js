@@ -2,12 +2,14 @@
 //
 // Liste des médicaments administrés ou prescrits d'un rapport de soins : choix du médicament, de la voie, de la dose (valeurs proposées pour CE patient selon son âge et son poids), du nombre de prises,
 // avec les contrôles de cohérence en direct (dose maximale, allergie, traitement en cours…). Les alertes informent, elles ne bloquent pas l'enregistrement.
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import { MEDICATIONS, MEDICATION_BY_ID, regimenOf } from '../../clinical/medications';
 import { doseOptions, checkList, newEntry, formatNumber } from '../../clinical/engine';
+import { prescriptionPlainText } from '../../clinical/apply';
+import { ASSISTANT_NAME } from '../../clinical/assistantName';
 
 const MED_OPTIONS = MEDICATIONS.map((m) => ({ value: m.id, label: `${m.name} — ${m.category}`, search: [m.name, m.category, ...(m.brands || [])].join(' ').toLowerCase() }));
 const filterMeds = (option, input) => !input || option.data.search.includes(input.toLowerCase());
@@ -25,6 +27,12 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
     const setEntries = (updater) => setFormData((prev) => ({ ...prev, clinicalMeds: updater(Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : []) }));
     const update = (index, patch) => setEntries((list) => list.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
     const remove = (index) => setEntries((list) => list.filter((_, i) => i !== index));
+    const [copied, setCopied] = useState(false);
+    const prescription = useMemo(() => prescriptionPlainText(formData), [formData]);
+    const allPrescribed = entries.length > 0 && entries.every((entry) => entry.prescribed);
+    const copyPrescription = async () => {
+        try { await navigator.clipboard.writeText(prescription); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch (error) { setCopied(false); }
+    };
 
     const changeRegimen = (index, regimenId) => {
         const base = newEntry(entries[index].medId, patient, regimenId);
@@ -34,7 +42,7 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
     return (
         <>
             <Form.Label className="form-section-title">{title}</Form.Label>
-            {entries.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez l'assistant proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
+            {entries.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez {ASSISTANT_NAME} proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
             {entries.map((entry, index) => {
                 const med = MEDICATION_BY_ID[entry.medId];
                 const regimen = regimenOf(entry.medId, entry.regimenId);
@@ -78,12 +86,32 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                                 ))}
                             </div>
                         )}
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+                            <Form.Check type="checkbox" id={`rx-${index}`} className="small" label="Sur l'ordonnance (traitement à poursuivre après la sortie)" checked={!!entry.prescribed} onChange={(e) => update(index, { prescribed: e.target.checked })} />
+                            {entry.prescribed && (
+                                <Form.Control type="number" min="1" max="90" value={entry.days ?? ''} onChange={(e) => update(index, { days: e.target.value === '' ? '' : Math.max(1, Math.min(90, Number(e.target.value))) })} placeholder="Durée (jours)" title="Durée du traitement, en jours" className="form-control" style={{ maxWidth: 150 }} />
+                            )}
+                        </div>
                         {regimen.note && <div className="small text-muted" style={{ marginTop: 4 }}>{regimen.note}{regimen.maxDaily ? ` Maximum ${formatNumber(regimen.maxDaily)} ${regimen.unit}/24 h.` : ''}</div>}
                         <Messages messages={result.messages} />
                     </div>
                 );
             })}
             <Messages messages={results.list} />
+            {entries.length > 0 && (
+                <div style={{ border: '1px solid #30363d', borderRadius: 8, padding: '0.6rem 0.75rem', margin: '0.4rem 0 0.6rem', background: '#101923' }} data-no-tip="1">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <strong><i className="fas fa-file-prescription me-1"></i>Ordonnance</strong>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            {!allPrescribed && <Button size="sm" variant="outline-primary" onClick={() => setEntries((list) => list.map((entry) => ({ ...entry, prescribed: true })))}>Tout mettre sur l'ordonnance</Button>}
+                            {prescription && <Button size="sm" variant="outline-secondary" onClick={copyPrescription}><i className="fas fa-copy me-1"></i>{copied ? 'Copiée !' : "Copier l'ordonnance"}</Button>}
+                        </div>
+                    </div>
+                    {prescription
+                        ? <pre className="small mb-0 mt-2" style={{ whiteSpace: 'pre-wrap', color: 'inherit', fontFamily: 'inherit' }}>{prescription}</pre>
+                        : <div className="small text-muted mt-1">Cochez « Sur l'ordonnance » sur les médicaments à prescrire : {ASSISTANT_NAME} compose l'ordonnance (dose, voie, prises, durée), imprimée dans le rapport et prête à copier. Les autres sont notés comme administrés.</div>}
+                </div>
+            )}
             <Select
                 options={MED_OPTIONS} filterOption={filterMeds} styles={darkSelectStyles} className="form-control p-0 mt-2" value={null} placeholder="Ajouter un médicament… (nom, marque ou classe)"
                 noOptionsMessage={() => 'Aucun médicament trouvé'}

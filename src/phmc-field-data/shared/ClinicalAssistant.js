@@ -7,6 +7,7 @@ import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import ClinicalMedications from './ClinicalMedications';
+import { ASSISTANT_NAME } from '../../clinical/assistantName';
 import { CONDITION_GROUPS, CONDITION_BY_ID } from '../../clinical/conditions';
 import { SEVERITIES } from '../../clinical/vitals';
 import { patientFromForm, buildSuggestions, conditionsOf, contextTags, historySuggestions } from '../../clinical/engine';
@@ -69,9 +70,9 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
 
     return (
         <>
-            <Form.Label className="form-section-title">Assistant clinique</Form.Label>
+            <Form.Label className="form-section-title">Assistant clinique <span className="text-muted" style={{ fontWeight: 400, textTransform: 'none' }}>· {ASSISTANT_NAME}</span></Form.Label>
             <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.6rem' }}>
-                Indiquez le poids, la taille et le ou les motifs {mode === 'consult' ? 'de la consultation' : 'de prise en charge'} : l'assistant propose constantes, diagnostic, {mode === 'consult' ? 'plan de traitement, examens' : 'procédure'} et médicaments adaptés au patient. Rien n'est écrit tant que vous ne cliquez pas, et tout reste modifiable.
+                Indiquez le poids, la taille et le ou les motifs {mode === 'consult' ? 'de la consultation' : 'de prise en charge'} : {ASSISTANT_NAME} propose constantes, diagnostic, {mode === 'consult' ? 'plan de traitement, examens' : 'procédure'} et médicaments adaptés au patient. Rien n'est écrit tant que vous ne cliquez pas, et tout reste modifiable.
             </div>
             <div style={row}>
                 <div style={cell(120)}>

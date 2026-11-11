@@ -1,4 +1,4 @@
-import { checkbox, sectionBanner } from './shared/bbStyles';
+import { careHeader, checkbox, sectionBanner } from './shared/bbStyles';
 import { allNoteDepartments } from '../constants/clinicalOptions';
 import { titleLabel } from '../utils/patientIdentity';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -15,13 +15,9 @@ const generateCommentaryNotePHMC = (formData) => {
                     patientID = '',
                 } = formData;
 
-                let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]
+                let bbCode = `${careHeader({ title: "Notes de service", pbc: false, lines: `PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join(' ')}${patientID ? ` (ID: ${patientID})` : ''}
 
-PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join(' ')}${patientID ? ` (ID: ${patientID})` : ''}
-
-Date: ${date}
-
-[/center][td][center][img]https://phmc-tools.com/img/phmc.png[/img][/center][/table][/divbox]
+Date: ${date}` })}
 ${sectionBanner(`Note de commentaire`)}
 [table][tr][td][left][list=none][u]Identifiants de l'employé: [/u][br][/br]
 ${phmcEmployee}

@@ -224,6 +224,13 @@ export const newEntry = (medId, patient = {}, regimenId = '') => {
     return { medId, regimenId: choice.r.id, dose: opts.usual ?? '', count: 1, note: '' };
 };
 
+/** Ligne d'ORDONNANCE : le texte de la ligne, suivi de la durée du traitement (en jours) quand elle est renseignée. */
+export const prescriptionText = (entry) => {
+    const base = entryText(entry);
+    const days = Math.floor(Number(entry?.days));
+    return base && days > 0 ? `${base}, pendant ${days} jour${days > 1 ? 's' : ''}` : base;
+};
+
 /** Texte d'une ligne de prescription, tel qu'imprimé dans le rapport. */
 export const entryText = (entry) => {
     const med = MEDICATION_BY_ID[entry?.medId];

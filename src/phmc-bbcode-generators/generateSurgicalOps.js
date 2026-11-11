@@ -4,7 +4,7 @@
 // supplémentaire est explicitement optionnel ("laisser vide si aucun") et
 // garde une chaîne vide.
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
-import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 import { surgeryRowsBBCode, postOpBBCode } from './shared/careExtras';
 
 const NOT_FILLED = 'Non renseigné';
@@ -31,14 +31,10 @@ const generateSurgicalOps = (formData) => {
     } = formData;
     const extraStaffNames = Array.isArray(extraStaff) ? extraStaff.join(', ') : extraStaff;
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]RAPPORT CHIRURGICAL[/b]
-
-PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
+    let bbCode = `${careHeader({ title: "RAPPORT CHIRURGICAL", pbc: false, lines: `PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
-Signé: ${signedLine(formData)}
-
-${phmcHeaderEnd()}
+Signé: ${signedLine(formData)}` })}
 ${sectionBanner(`Personnel`)}
 [table][tr][td]Chirurgien principal[/td][td]
 ${formData.surgeonEmployee || phmcEmployee}

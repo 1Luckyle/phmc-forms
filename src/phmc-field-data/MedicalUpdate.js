@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import BodyMeasureFields from './shared/BodyMeasureFields';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
@@ -235,6 +236,7 @@ const MedicalRelease = ({
                             ))}
                         </Form.Select>
                     </div>
+                    <BodyMeasureFields formData={formData} handleChange={handleChange} />
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} />
                         <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} />

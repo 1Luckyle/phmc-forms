@@ -1,6 +1,6 @@
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { riskBBCode, emergencyContactBBCode } from './shared/careExtras';
-import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -18,13 +18,10 @@ const generateMentalHealthPHMC = (formData) => {
             patientProcedure = NOT_FILLED,
         } = formData;
 
-        let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de session[/b]
-
-PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
+        let bbCode = `${careHeader({ title: "Notes de session", pbc: false, lines: `PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
-Signé: ${signedLine(formData)}
-${phmcHeaderEnd()}
+Signé: ${signedLine(formData)}` })}
 ${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: true })}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint}

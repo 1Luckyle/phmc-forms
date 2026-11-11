@@ -2,8 +2,16 @@ import { translateResultValue } from '../constants/clinicalOptions';
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
-import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
+
+// Soignants supplémentaires cités dans l'en-tête (le rédacteur, qui signe, n'y figure pas deux fois).
+const extraStaffLine = (formData) => {
+    const names = (Array.isArray(formData.extraStaff) ? formData.extraStaff : []).map((name) => String(name || '').trim()).filter((name) => name && name !== formData.phmcEmployee);
+    return names.length ? `
+
+Avec: ${names.join(', ')}` : '';
+};
 
 const generateEmergencyProtocol = (formData) => {
     const {
@@ -66,15 +74,12 @@ const generateEmergencyProtocol = (formData) => {
         }
     }
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]PROTOCOLE D'URGENCE[/b]
-
-PATIENT: ${patientName || 'N/A'}
+    let bbCode = `${careHeader({ title: "PROTOCOLE D'URGENCE", pbc: false, lines: `PATIENT: ${patientName || 'N/A'}
 ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signé: ${signedLine(formData)}
-${phmcHeaderEnd()}
+Signé: ${signedLine(formData)}${extraStaffLine(formData)}` })}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Arrivée: [/u] ${arrivalModeLabel(formData.arrivalMode) || ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
 [br][/br]

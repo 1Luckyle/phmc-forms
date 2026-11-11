@@ -117,7 +117,7 @@ export const FIELD_INFO = {
     departmentLarge: ["Département", "Département du PHMC concerné. " + SELECT],
     assignedDepartment: ["Département assigné", SELECT],
     paletoClinicDepartment: ["Département (clinique de Paleto)", SELECT],
-    extraStaff: ["Personnel présent", "Autre personnel soignant présent pendant l'intervention (laisser vide si aucun). " + SELECT],
+    extraStaff: ["Personnel présent", "Autres soignants présents (laisser vide si aucun) : ils sont cités dans le rapport et reçoivent une notification qui les invite à en récupérer une copie dans Dossier Patient. " + SELECT],
     patientChiefComplaint: ["Motif et constatations", "Motif de la venue du patient et constatations principales."],
     patientVisitReason: ["Problème présenté", "Problème pour lequel le patient consulte."],
     patientSymptoms: ["Apparition et durée des symptômes", "Quand les symptômes sont apparus et depuis combien de temps."],
@@ -164,8 +164,8 @@ export const FIELD_INFO = {
     CombinedImagingResults: ["Résultats d'imagerie", "Résultats des examens d'imagerie."],
     RadiologyResult: ["Résultat de radiologie", "Résultat de l'examen de radiologie."],
     BodyMassIndex: ["Indice de masse corporelle", "IMC du patient : choisissez la tranche."],
-    patientHeight: ["Taille du patient", "Taille du patient (par exemple 1,80 m)."],
-    patientWeight: ["Poids du patient", "Poids du patient (par exemple 80 kg)."],
+    patientHeight: ["Taille du patient", "Taille du patient en centimètres (par exemple 178 ; « 1,80 » est compris comme 180 cm). Conservée dans le dossier médical, elle est reprise automatiquement dans les formulaires de soins."],
+    patientWeight: ["Poids du patient", "Poids du patient en kilogrammes (par exemple 80). Conservé dans le dossier médical, il est repris automatiquement dans les formulaires de soins (doses calculées au poids)."],
     wounds: ["Blessures", "Blessures constatées : choisissez dans la liste."],
 
     // ── Santé mentale (EEM) ──

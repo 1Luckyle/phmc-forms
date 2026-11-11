@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BodyMeasureFields from './shared/BodyMeasureFields';
 import { Form, Button } from 'react-bootstrap';
 import './phmc-tooltips.css';
 import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
@@ -161,6 +162,7 @@ const BasicPatientFile = ({
                             ))}
                         </Form.Select>
                     </div>
+                    <BodyMeasureFields formData={formData} handleChange={handleChange} />
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientAllergies} />
                         <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} />

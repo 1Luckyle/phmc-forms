@@ -66,6 +66,7 @@ import { getToolAccess } from './utils/viewAs';
 import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
 import { groupsFor, notifyUser, findStaffUidByNode } from './utils/notifications';
+import { reportCopyRecipients, copyNotificationContent } from './utils/reportCopyRecipients';
 import { comprehensiveSanitize } from './utils/patientRecords';
 import { queueDossierUpdate, hasDossierUpdateRules } from './utils/emergencyContactUpdates';
 import { MENTAL_HEALTH_VERSIONS } from './constants/careFormOptions';
@@ -1101,18 +1102,15 @@ function MainApp({
             }
         }
         const result = await saveReport(...args);
-        // Opération chirurgicale remplie par quelqu'un d'autre que le chirurgien (ex. un(e) interne) : le chirurgien est prévenu et récupère sa copie dans Dossier Patient
-        // (les règles Firebase interdisent d'écrire directement dans les rapports d'un collègue).
-        if (result && result.success && Number(bbCodeVersion) === 5 && formData.surgeonEmployee && formData.surgeonEmployee !== formData.phmcEmployee) {
-            try {
-                const uid = await findStaffUidByNode(comprehensiveSanitize(formData.surgeonEmployee), comprehensiveSanitize);
-                await notifyUser(uid, {
-                    type: 'copie',
-                    titre: `${formData.phmcEmployee || staffName || 'Un collègue'} vous adresse un rapport chirurgical`,
-                    texte: `${formData.patientName || 'Patient'}${formData.patientID ? ` (${formData.patientID})` : ''} : récupérez-en une copie dans Dossier Patient.`,
-                    lien: { cible: 'dossierPatient' },
-                });
-            } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
+        // Soignants mentionnés dans le rapport sans l'avoir rédigé (chirurgien et personnel présent d'une opération, soignants supplémentaires d'un protocole d'urgence) :
+        // chacun est prévenu et récupère sa copie dans Dossier Patient (les règles Firebase interdisent d'écrire directement dans les rapports d'un collègue).
+        if (result && result.success) {
+            for (const recipient of reportCopyRecipients(bbCodeVersion, formData)) {
+                try {
+                    const uid = await findStaffUidByNode(comprehensiveSanitize(recipient.name), comprehensiveSanitize);
+                    await notifyUser(uid, { type: 'copie', ...copyNotificationContent(bbCodeVersion, formData, recipient, staffName), lien: { cible: 'dossierPatient' } });
+                } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
+            }
         }
         // Contact d'urgence modifié (santé mentale) et allergies, antécédents ou traitements oubliés (consultations) : le dossier du patient est mis à jour par le serveur, sous une minute.
         if (result && result.success && hasDossierUpdateRules(bbCodeVersion) && formData.patientID) {

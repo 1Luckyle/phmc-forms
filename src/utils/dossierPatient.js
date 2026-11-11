@@ -8,6 +8,7 @@ import { database } from '../firebase';
 import { canonicalPatientId } from './patientId';
 import { findPatientNodes, comprehensiveSanitize } from './patientRecords';
 import { loadPatientInvoices } from './patientInvoices';
+import { careVisitsFromIndex } from './careVisitSummary';
 import { staffNameParts } from './staffAdmin';
 import {
     isDossierVersion, dossierKindOf, formPhase, dossierAccess, canModifyForm, hasToken, emptyTokens,
@@ -86,7 +87,7 @@ export async function loadAccountIdentity(patientID) {
 
 export async function loadDossierContext(patientID, now = Date.now(), self = null) {
     const patientNode = canonicalPatientId(patientID);
-    if (!patientNode) return { patientNode: '', dossier: null, tokens: emptyTokens(), forms: [], access: dossierAccess({}) };
+    if (!patientNode) return { patientNode: '', dossier: null, tokens: emptyTokens(), forms: [], visits: [], access: dossierAccess({}) };
     const [dossierSnap, tokensSnap, nodes, invoices] = await Promise.all([
         get(ref(database, `dossiersPatients/${patientNode}`)).catch(() => null),
         get(ref(database, `jetonsDossier/${patientNode}`)).catch(() => null),
@@ -95,10 +96,12 @@ export async function loadDossierContext(patientID, now = Date.now(), self = nul
     ]);
     const invoiceById = Object.fromEntries((invoices || []).map((invoice) => [invoice.id, invoice]));
     const byKey = new Map();
+    const indexByKey = {};
     for (const node of nodes) {
         let snap;
         try { snap = await get(ref(database, `patientRecords/${node}`)); } catch (error) { continue; }
         Object.entries(snap.val() || {}).forEach(([key, entry]) => {
+            if (entry && !indexByKey[key]) indexByKey[key] = entry;
             if (!entry || !entry.reportPath || entry.copiedFrom || entry.ownerDeleted || !isDossierVersion(entry.bbCodeVersion) || byKey.has(key)) return;
             byKey.set(key, { key, entry });
         });
@@ -119,7 +122,8 @@ export async function loadDossierContext(patientID, now = Date.now(), self = nul
     }).sort((a, b) => b.timestamp - a.timestamp);
     const dossier = dossierSnap && dossierSnap.exists() ? dossierSnap.val() : null;
     const tokens = { ...emptyTokens(), ...((tokensSnap && tokensSnap.val()) || {}) };
-    return { patientNode, dossier, tokens, forms, access: dossierAccess({ forms, dossier }) };
+    // Historique des soins : urgences, consultations, opérations dont le rapport existe encore (supprimer le rapport le retire du dossier).
+    return { patientNode, dossier, tokens, forms, visits: careVisitsFromIndex(indexByKey), access: dossierAccess({ forms, dossier }) };
 }
 
 // Message clair quand un formulaire de dossier ne peut pas être créé ; '' si c'est permis.

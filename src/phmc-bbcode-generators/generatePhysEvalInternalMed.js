@@ -1,6 +1,6 @@
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { aptitudeBBCode } from './shared/careExtras';
-import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage). Les champs qui ne
@@ -25,13 +25,10 @@ const generatePhysEvalInternalMed = (formData) => {
         patientImpairments = '',
     } = formData;
 
-        let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]EXAMEN PHYSIQUE[/b]
-
-PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
+        let bbCode = `${careHeader({ title: "EXAMEN PHYSIQUE", pbc: false, lines: `PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
 
 Date: ${date}
-Signé: ${signedLine(formData)}
-${phmcHeaderEnd()}
+Signé: ${signedLine(formData)}` })}
 ${buildPatientContextBBCode(formData, { accentColor: '#FF0000', showHistory: false })}${sectionBanner(`Mesures du patient`)}
 [table][tr][td][list=none][br][/br]Taille: ${patientHeight}
 [br][/br]

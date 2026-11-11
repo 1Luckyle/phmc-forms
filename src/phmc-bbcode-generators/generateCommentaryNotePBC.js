@@ -1,4 +1,4 @@
-import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
+import { BB_COLORS, careHeader, checkbox, sectionBanner } from './shared/bbStyles';
 import { titleLabel } from '../utils/patientIdentity';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -14,13 +14,9 @@ const generateCommentaryNotePBC = (formData) => {
         patientNotes = NOT_FILLED
     } = formData;
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de service[/b]
+    let bbCode = `${careHeader({ title: "Notes de service", pbc: true, lines: `PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join(' ')}${patientID ? ` (ID: ${patientID})` : ''}
 
-PATIENT: ${[titleLabel(formData.patientTitle), patientName].filter(Boolean).join(' ')}${patientID ? ` (ID: ${patientID})` : ''}
-
-Date: ${date}
-
-[/center][td][center][img]https://phmc-tools.com/img/phmcpaletobaylogo.png[/img][/center][/table][/divbox]
+Date: ${date}` })}
 ${sectionBanner(`Note de commentaire`, { accent: BB_COLORS.blue })}
 [table][tr][td][left][list=none][u]Identifiants de l'employé: [/u][br][/br]
 ${phmcEmployee}

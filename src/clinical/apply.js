@@ -1,7 +1,7 @@
 // src/clinical/apply.js
 //
 // Passage des suggestions de l'assistant clinique aux champs du formulaire. Rien n'est jamais appliqué sans action du soignant, et par défaut un champ déjà rempli n'est pas écrasé.
-import { entryText } from './engine';
+import { entryText, prescriptionText } from './engine';
 import { addMinutes, examKeyOfImaging } from './context';
 
 const isEmpty = (value) => (Array.isArray(value) ? value.length === 0 : value === undefined || value === null || String(value).trim() === '');
@@ -74,9 +74,10 @@ export const applyPatch = (prev, patch, overwrite = false) => {
 };
 
 /** Ajoute les médicaments suggérés (sans doublon de médicament + voie) ; `overwrite` remplace toute la liste. */
-export const applyMeds = (prev, meds, overwrite = false) => {
+export const applyMeds = (prev, meds, overwrite = false, { prescribed = false } = {}) => {
     const current = Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : [];
-    const incoming = meds.map(({ forCondition, ...entry }) => entry);
+    // `prescribed` : les médicaments ajoutés vont directement sur l'ordonnance (suites d'une opération).
+    const incoming = meds.map(({ forCondition, ...entry }) => (prescribed ? { ...entry, prescribed: true } : entry));
     if (overwrite) return { ...prev, clinicalMeds: incoming };
     const added = incoming.filter((entry) => !current.some((c) => c.medId === entry.medId && c.regimenId === entry.regimenId));
     return { ...prev, clinicalMeds: [...current, ...added] };
@@ -92,5 +93,20 @@ export const applyAll = (prev, suggestions, overwrite = false, mode = 'emergency
     sectionsFor(mode).reduce((next, { key }) => applySection(next, key, suggestions, { overwrite, mode, extra }), prev)
 );
 
-/** Lignes imprimées « Médicaments administrés » (vide si rien). */
-export const clinicalMedLines = (formData) => (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []).map(entryText).filter(Boolean);
+const medEntries = (formData) => (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []);
+
+/** Lignes imprimées « Médicaments administrés » (vide si rien) : ceux qui ne sont pas sur l'ordonnance. */
+export const clinicalMedLines = (formData) => medEntries(formData).filter((entry) => !entry?.prescribed).map(entryText).filter(Boolean);
+
+/** Lignes de l'ORDONNANCE : les médicaments cochés « sur l'ordonnance », avec leur durée. */
+export const prescriptionLines = (formData) => medEntries(formData).filter((entry) => entry?.prescribed).map(prescriptionText).filter(Boolean);
+
+/** Ordonnance en texte brut, à recopier telle quelle (en jeu, sur le forum…). Vide si aucun médicament n'est sur l'ordonnance. */
+export const prescriptionPlainText = (formData) => {
+    const lines = prescriptionLines(formData);
+    if (!lines.length) return '';
+    const who = [String(formData.patientName || '').trim(), String(formData.patientID || '').trim() ? `(${String(formData.patientID).trim()})` : ''].filter(Boolean).join(' ');
+    const head = ['ORDONNANCE', who && `Patient : ${who}`, String(formData.date || '').trim() && `Date : ${String(formData.date).trim()}`].filter(Boolean).join('\n');
+    const by = String(formData.phmcEmployee || '').trim();
+    return `${head}\n\n${lines.map((l) => `• ${l}`).join('\n')}${by ? `\n\nPrescripteur : ${by}` : ''}`;
+};

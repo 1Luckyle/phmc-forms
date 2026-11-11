@@ -1,7 +1,7 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { consultExtrasBBCode, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
-import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 
 const generateConsultationNotesPHMC = (formData) => {
     const {
@@ -48,15 +48,12 @@ const generateConsultationNotesPHMC = (formData) => {
     // --- End Custom Handling ---
 
 
-    let bbCode = `[divbox=white][table][tr][td][center][br][/br][br][/br][b]Notes de consultation[/b]
-
-PATIENT: ${patientName || 'N/A'}
+    let bbCode = `${careHeader({ title: "Notes de consultation", pbc: false, lines: `PATIENT: ${patientName || 'N/A'}
 ID PATIENT: ${patientID || 'N/A'}
 
 Date: ${date || 'N/A'}
 
-Signé: ${signedLine(formData)}
-${phmcHeaderEnd()}
+Signé: ${signedLine(formData)}` })}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none]${clinicalAnamnesisBBCode(formData)}[u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}

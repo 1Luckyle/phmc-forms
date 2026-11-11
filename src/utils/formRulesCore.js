@@ -13,7 +13,7 @@ import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 export const DEFAULT_REQUIRED = {
     1: ['decedentOOC', 'dateTime'],
     2: ['coronerEmployee', 'requestingOfficer'],
-    3: ['patientFirstName', 'patientLastName', 'patientDateOfBirth', 'patientEmail', 'patientID'],
+    3: ['patientFirstName', 'patientLastName', 'patientDateOfBirth', 'patientEmail', 'patientID', 'patientWeight', 'patientHeight'],
     4: ['decedentFirstName', 'decedentLastName', 'decedentOOC', 'autopsyDate'],
     5: ['patientName', 'patientID', 'date', 'phmcEmployee', 'surgeonEmployee'],
     6: ['patientName', 'patientID', 'date', 'phmcEmployee'],
@@ -28,7 +28,7 @@ export const DEFAULT_REQUIRED = {
     22: ['patientName', 'date'],
     23: ['patientName', 'date'],
     24: ['patientEmail', 'patientID'],
-    25: ['patientFirstName', 'patientLastName', 'patientDateOfBirth', 'patientEmail', 'patientID'],
+    25: ['patientFirstName', 'patientLastName', 'patientDateOfBirth', 'patientEmail', 'patientID', 'patientWeight', 'patientHeight'],
     26: ['patientFirstName', 'patientLastName', 'date', 'patientEmail', 'patientID'],
     27: ['internalEmailSubject', 'internalEmailRecipient'],
     28: ['patientName', 'patientID', 'date', 'phmcEmployee'],

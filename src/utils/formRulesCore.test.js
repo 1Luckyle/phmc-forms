@@ -68,7 +68,7 @@ describe('titres des rapports', () => {
 
 describe('titre « Mineur » obligatoire', () => {
     const recent = (years) => { const d = new Date(); d.setFullYear(d.getFullYear() - years); return d.toISOString().slice(0, 10); };
-    const base = { patientFirstName: 'A', patientLastName: 'B', patientEmail: 'a@b.fr', patientID: '2752' };
+    const base = { patientFirstName: 'A', patientLastName: 'B', patientEmail: 'a@b.fr', patientID: '2752', patientWeight: '60', patientHeight: '170' };
     test('un patient de moins de 18 ans sans le titre « Mineur » ne peut pas être enregistré', () => {
         const errors = validateReport(25, { ...base, patientDateOfBirth: recent(10), patientTitle: 'Mr' }).errors;
         expect(errors.join(' ')).toMatch(/obligatoirement le titre « Mineur »/);
@@ -76,6 +76,23 @@ describe('titre « Mineur » obligatoire', () => {
     });
     test('un adulte ne peut pas avoir le titre « Mineur »', () => {
         expect(validateReport(25, { ...base, patientDateOfBirth: recent(30), patientTitle: 'Mineur' }).errors.join(' ')).toMatch(/moins de 18 ans/);
+    });
+});
+
+describe('poids et taille du dossier médical', () => {
+    const base = { patientFirstName: 'A', patientLastName: 'B', patientEmail: 'a@b.fr', patientID: '2752', patientDateOfBirth: '1990-01-01', patientTitle: 'Mr' };
+    test('obligatoires dans le dossier basique et avancé, lisibles en kg et en cm', () => {
+        [25, 3].forEach((version) => {
+            expect(validateReport(version, base).errors.join(' ')).toMatch(/Poids du patient : champ obligatoire[\s\S]*Taille du patient : champ obligatoire/);
+            expect(validateReport(version, { ...base, patientWeight: '75 kg', patientHeight: '1,78' }).errors.join(' ')).not.toMatch(/Poids|Taille/);
+            expect(validateReport(version, { ...base, patientWeight: 'lourd', patientHeight: '5000' }).errors.join(' ')).toMatch(/Poids du patient : valeur invalide[\s\S]*Taille du patient : valeur invalide/);
+        });
+    });
+    test('facultatifs dans la mise à jour, contrôlés seulement avec la section « Historique médical »', () => {
+        const update = { patientFirstName: 'A', patientLastName: 'B', date: '2026-01-01', patientEmail: 'a@b.fr', patientID: '2752', UpdateMedicalFile: ['Medical History'] };
+        expect(validateReport(26, update).errors.join(' ')).not.toMatch(/Poids|Taille/);
+        expect(validateReport(26, { ...update, patientWeight: '0' }).errors.join(' ')).toMatch(/Poids du patient : valeur invalide/);
+        expect(validateReport(26, { ...update, UpdateMedicalFile: ['EmergencyContact'], patientWeight: '0' }).errors.join(' ')).not.toMatch(/Poids/);
     });
 });
 

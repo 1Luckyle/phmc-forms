@@ -362,6 +362,7 @@ const PatientDossierModal = ({
         await deleteReportsForUser(targets.map(toDeletePayload), staffAuthorNameForCopy, { skipReload: true });
         setSelectedKeys([]);
         await handleSearch(searchedPatientId);
+        setDossierRefresh((n) => n + 1); // un rapport de soins supprimé disparaît de l'historique des soins du dossier
     };
 
     const handleLoad = (entry) => {

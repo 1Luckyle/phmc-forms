@@ -1,5 +1,6 @@
 import { staffPaymentLine } from '../utils/patientBilling';
 import withoutBlanks from './shared/withoutBlanks';
+import { bodyMeasuresText } from './shared/bodyMeasures';
 import { checkbox, sectionBanner } from './shared/bbStyles';
 import { titleLabel, withTitle } from '../utils/patientIdentity';
 import { placeWithCity } from '../utils/places';
@@ -66,6 +67,7 @@ ${sectionBanner(`Contact d'urgence`, { size: 115 })}
 ${sectionBanner(`Historique médical`, { size: 115 })}
 [table][tr][td][b][size=105]Historique passé[/size][/b][/td][td]
 [tr][td] Groupe sanguin: [/td][td] ${checkbox(formData.patientBloodType === 'A+')} A+ ${checkbox(formData.patientBloodType === 'A-')} A- ${checkbox(formData.patientBloodType === 'B+')} B+ ${checkbox(formData.patientBloodType === 'B-')} B- ${checkbox(formData.patientBloodType === 'O+')} O+ ${checkbox(formData.patientBloodType === 'O-')} O- ${checkbox(formData.patientBloodType === 'AB+')} AB+ ${checkbox(formData.patientBloodType === 'AB-')} AB-
+[tr][td] Poids / taille: [/td][td] ${bodyMeasuresText(formData.patientWeight, formData.patientHeight)}
 [tr][td] Allergies connues: [/td][td] ${patientAllergies}
 [tr][td] Médicaments actuels: [/td][td] ${patientCurrentMedicine}
 [tr][td] Maladies chroniques: [/td][td] ${patientChronicDiseases}

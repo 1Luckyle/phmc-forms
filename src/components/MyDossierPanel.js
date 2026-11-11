@@ -61,7 +61,7 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
         return () => { cancelled = true; };
     }, [staffView, patientID, refreshKey]);
     const shownIdentity = staffView ? accountIdentity : identity;
-    const bbCode = useMemo(() => (context && context.dossier && context.dossier.donnees ? dossierBbCode(context.dossier.donnees, { patientID: context.patientNode, ...shownIdentity }) : ''), [context, shownIdentity]);
+    const bbCode = useMemo(() => (context && context.dossier && context.dossier.donnees ? dossierBbCode(context.dossier.donnees, { patientID: context.patientNode, ...shownIdentity }, { visits: context.visits }) : ''), [context, shownIdentity]);
     const exportTitle = `Dossier médical - ${context ? context.patientNode : patientID}`;
     const notify = (message, icon = 'info-circle') => { if (showNotification) showNotification(message, icon, 7000); };
 

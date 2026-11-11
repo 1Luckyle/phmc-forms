@@ -24,6 +24,7 @@ import { isCareStaff } from '../hooks/useBillingRole';
 import { isBillableVersion, computeBilling } from '../utils/patientBilling';
 import { loadDossierContext, dossierBlockMessage, spendDossierToken, enqueueDossierForm, isDossierVersion, canModifyForm } from '../utils/dossierPatient';
 import { hasToken, isContactOnlyUpdate } from '../utils/dossierCore';
+import { careVisitSummary } from '../utils/careVisitSummary';
 import { getFormAccess } from '../utils/formAccess';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from '../utils/notifications';
@@ -399,6 +400,8 @@ export const useReportManagement = (
                             // Mise à jour de simples coordonnées : gratuite et appliquée tout de suite par le serveur ; jeton gratuit dépensé : repris pour le rendre si le formulaire est supprimé.
                             ...(Number(bbCodeVersion) === 26 && isContactOnlyUpdate(formData) ? { dossierImmediat: true } : {}),
                             ...(dossierToken ? { dossierJeton: true } : {}),
+                            // Passage aux urgences, consultation, opération : un résumé alimente l'historique des soins du dossier médical (utils/careVisitSummary.js).
+                            ...(careVisitSummary(bbCodeVersion, formData) ? { resume: careVisitSummary(bbCodeVersion, formData) } : {}),
                             ...(formData.dossierSansCompte === true && !isOwnedByThisCivilian ? { dossierSansCompte: true } : {}),
                         },
                     });

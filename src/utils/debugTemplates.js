@@ -243,6 +243,7 @@ const patientBasic = (h) => ({
     patientEmergencyContactNumber: '555-0199',
     patientEmergencyContactDiscord: 'marie.testard',
     patientBloodType: h.opt('patientBloodType', 0, 'O+'),
+    patientWeight: '75', patientHeight: '178',
     ...presetFill('patientAllergies', 2, 'Allergie légère aux piqûres de guêpe.'),
     ...presetFill('patientCurrentMedicine', 2),
     ...presetFill('patientChronicDiseases', 2),
@@ -906,18 +907,18 @@ const careExtras = (version, h) => {
     const consult = {
         orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3',
         patientWeight: '75', patientHeight: '178', clinicalConditions: ['migraine'], clinicalSeverity: 'Mild',
-        clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '' }],
+        clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }],
     };
     const extras = {
         5: {
             surgeonEmployee: h.phmc.phmcEmployee || '', surgeryCharacter: 'Urgent', surgeryAsa: 'ASA2', postOpMonitoring: 'RecoveryRoom', postOpExams: 'Radiographie de contrôle.',
-            patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['osteosynthese_membre'], clinicalMeds: [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }],
+            patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['osteosynthese_membre'], clinicalMeds: [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }, { medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }],
         },
         6: aptitude, 7: aptitude, 14: mental, 16: mental, 28: mental, 29: mental,
         19: {
-            careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
+            extraStaff: h.extraStaff(1), careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
             patientWeight: '75', patientHeight: '178', clinicalConditions: ['fracture_fermee', 'plaie_superficielle'], clinicalSeverity: 'Moderate',
-            clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 1, note: '' }, { medId: 'vaccin_tetanique', regimenId: 'im', dose: 0.5, count: 1, note: 'Rappel' }],
+            clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }, { medId: 'vaccin_tetanique', regimenId: 'im', dose: 0.5, count: 1, note: 'Rappel' }],
         },
         20: { ...consult },
         21: { ...consult },
