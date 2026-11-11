@@ -15,9 +15,16 @@ const useDossierPrefill = (bbCodeVersion, formData, setFormData) => {
     // Ce que ce pré-remplissage a écrit pour le patient précédent (champ → valeur) : si l'ID change, ces valeurs-là (et elles seules, si la personne ne les a pas retouchées) sont retirées
     // avant de reprendre le dossier du nouveau patient, au lieu de rester collées sur le mauvais patient.
     const applied = useRef(new Map());
+    const lastNode = useRef('');
     const patientNode = canonicalPatientId(formData?.patientID);
 
     useEffect(() => {
+        // L'ID a changé ou a été vidé (« Vider le formulaire », autre patient, retour au premier) : le prochain ID saisi doit reprendre son dossier, même s'il a déjà été repris plus tôt.
+        if (lastNode.current !== patientNode) {
+            done.current.clear();
+            if (!patientNode) applied.current = new Map();
+            lastNode.current = patientNode;
+        }
         if (!patientNode || !isLookupId(patientNode) || !setFormData) return undefined;
         const marker = `${bbCodeVersion}|${patientNode}`;
         if (done.current.has(marker)) return undefined;

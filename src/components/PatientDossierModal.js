@@ -127,6 +127,7 @@ const PatientDossierModal = ({
 
     const [selectedPatientOption, setSelectedPatientOption] = useState(null);
     const [showDossierEditor, setShowDossierEditor] = useState(false);
+    const [dossierRefresh, setDossierRefresh] = useState(0);
     const [patientOptions, setPatientOptions] = useState([]);
     const [isLoadingPatients, setIsLoadingPatients] = useState(false);
     const [searchedPatientId, setSearchedPatientId] = useState(null);
@@ -622,11 +623,11 @@ const PatientDossierModal = ({
                 <div className="rpt-body">
                     {searchedPatientId && (
                         <div className="mb-3" data-no-mark>
-                            <MyDossierPanel patientID={searchedPatientId} staffView showNotification={showNotification} />
+                            <MyDossierPanel patientID={searchedPatientId} staffView showNotification={showNotification} refreshKey={dossierRefresh} />
                             {isAdmin && (
                                 <div className="mt-2">
                                     <Button size="sm" variant="outline-warning" onClick={() => setShowDossierEditor(true)}><i className="fas fa-pen-to-square me-1"></i>Corriger le dossier (admin)</Button>
-                                    <AdminDossierEditor show={showDossierEditor} onHide={() => setShowDossierEditor(false)} patientID={searchedPatientId} adminName={staffName} showNotification={showNotification} />
+                                    <AdminDossierEditor show={showDossierEditor} onHide={() => setShowDossierEditor(false)} patientID={searchedPatientId} adminName={staffName} showNotification={showNotification} onSaved={() => setDossierRefresh((n) => n + 1)} />
                                 </div>
                             )}
                         </div>

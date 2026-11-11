@@ -32,7 +32,7 @@ const minutesLeft = (lockAt, now) => Math.max(0, Math.ceil((lockAt - now) / 6000
 
 // identity : champs d'identité du compte (profil) qui priment sur le dossier : { patientFirstName, patientPH, ..., patientEmail }.
 // staffView : le personnel consulte le dossier d'un patient (« Dossier Patient ») : mêmes informations, formulées pour lui, sans les actions réservées au patient.
-const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm, staffView = false }) => {
+const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm, staffView = false, refreshKey = 0 }) => {
     const { isCivilian, isAdmin, staffName, myPatientID } = useEmployeeAuth();
     const [context, setContext] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -47,7 +47,8 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
         setLoading(true);
         try { setContext(await loadDossierContext(patientID, Date.now(), staffView ? null : { myPatientID, staffName })); } catch (error) { setContext(null); } finally { setLoading(false); }
     }, [patientID, staffView, myPatientID, staffName]);
-    useEffect(() => { reload(); }, [reload]);
+    // refreshKey : le parent a modifié le dossier (correction administrateur) : on le relit.
+    useEffect(() => { reload(); }, [reload, refreshKey]);
     // Le compte à rebours des 15 minutes se met à jour chaque 30 secondes.
     useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
 
@@ -58,7 +59,7 @@ const MyDossierPanel = ({ patientID, identity = {}, showNotification, onLoadForm
         if (!staffView || !patientID) { setAccountIdentity({}); return undefined; }
         loadAccountIdentity(patientID).then((found) => { if (!cancelled) setAccountIdentity(found); });
         return () => { cancelled = true; };
-    }, [staffView, patientID]);
+    }, [staffView, patientID, refreshKey]);
     const shownIdentity = staffView ? accountIdentity : identity;
     const bbCode = useMemo(() => (context && context.dossier && context.dossier.donnees ? dossierBbCode(context.dossier.donnees, { patientID: context.patientNode, ...shownIdentity }) : ''), [context, shownIdentity]);
     const exportTitle = `Dossier médical - ${context ? context.patientNode : patientID}`;

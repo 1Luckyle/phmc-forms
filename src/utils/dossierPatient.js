@@ -46,6 +46,19 @@ export async function loadStaffByPatientNode() {
     return found;
 }
 
+// Chemin de la fiche du personnel liée à un ID patient (ex. « staff/coroner/-P53a… »), ou '' : sert à reporter une correction d'administrateur sur la fiche qui prime dans l'aperçu.
+export async function findStaffPathByPatientNode(patientID) {
+    const wanted = canonicalPatientId(patientID);
+    if (!wanted) return '';
+    for (const path of ['staff/phmc', 'staff/coroner']) {
+        let members = {};
+        try { members = (await get(ref(database, path))).val() || {}; } catch (error) { continue; }
+        const key = Object.keys(members).find((k) => members[k] && canonicalPatientId(staffPatientNode(members[k])) === wanted);
+        if (key !== undefined) return `${path}/${key}`;
+    }
+    return '';
+}
+
 export async function loadAccountIdentity(patientID) {
     const patientNode = canonicalPatientId(patientID);
     if (!patientNode) return {};
