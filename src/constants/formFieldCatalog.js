@@ -51,7 +51,7 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         surgeryCharacter: 'select', surgeryAsa: 'select', postOpMonitoring: 'select', postOpExams: 'textarea',
-        patientWeight: 'text', patientHeight: 'text', surgeryProcedureIds: 'select', clinicalMeds: 'textarea', careDeceased: 'select', careDeathTime: 'time', careDeathCause: 'textarea', careDeathManner: 'select', careDeathResuscitation: 'select', careDeathResuscitationNote: 'textarea', careDeathFamily: 'select', careDeathBody: 'select',
+        patientWeight: 'text', patientHeight: 'text', surgeryProcedureIds: 'select', clinicalMeds: 'textarea', careStartTime: 'time', careEndTime: 'time', careDeceased: 'select', careDeathTime: 'time', careDeathCause: 'textarea', careDeathManner: 'select', careDeathResuscitation: 'select', careDeathResuscitationNote: 'textarea', careDeathFamily: 'select', careDeathBody: 'select',
     },
     6: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -115,7 +115,7 @@ export const VERSION_FIELDS = {
         patientMedicine: 'textarea', prescriptionImage: 'textarea', followup: 'select', patientDateOfBirth: 'date', patientAgeYears: 'number',
         patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea', patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
-        careStartTime: 'time', careEndTime: 'time', dischargeDestination: 'select', transferTo: 'text', routineCare: 'select',
+        careStartTime: 'time', careEndTime: 'time', injuryDetails: 'select', injuryMutilations: 'select', injuryNote: 'text', dischargeDestination: 'select', transferTo: 'text', routineCare: 'select',
         patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
     },
     20: {

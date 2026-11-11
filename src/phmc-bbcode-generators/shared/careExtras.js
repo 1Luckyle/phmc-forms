@@ -9,6 +9,7 @@ import {
 } from '../../constants/careFormOptions';
 import { minutesBetween, durationLabel, aptitudeValidUntil } from '../../utils/careFormRules';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
+import { injuryLines, mutilationLabels } from '../../clinical/injuries';
 import { severityOf } from '../../clinical/vitals';
 import { parseWeightKg, parseHeightCm } from '../../clinical/engine';
 import { clinicalMedLines, prescriptionLines } from '../../clinical/apply';
@@ -54,6 +55,11 @@ export const surgeryRowsBBCode = (f) => {
     if (weight || height) rows.push(`[tr][td]Poids / taille du patient[/td][td]
 ${[weight ? `${weight} kg` : '', height ? `${height} cm` : ''].filter(Boolean).join(' / ')}
 [/td][/tr]`);
+    if (filled(f.careStartTime) || filled(f.careEndTime)) {
+        const minutes = minutesBetween(f.careStartTime, f.careEndTime);
+        const span = `${filled(f.careStartTime) ? `de ${text(f.careStartTime)}` : ''}${filled(f.careEndTime) ? ` à ${text(f.careEndTime)}` : ''}${minutes !== null ? ` (${durationLabel(minutes)})` : ''}`.trim();
+        rows.push(`[tr][td]Prise en charge[/td][td]\n${span}\n[/td][/tr]`);
+    }
     if (filled(f.surgeryCharacter)) rows.push(`[tr][td]Caractère de l'intervention[/td][td]\n${labelOf(SURGERY_CHARACTERS, f.surgeryCharacter)}\n[/td][/tr]`);
     if (filled(f.surgeryAsa)) rows.push(`[tr][td]Classification ASA (risque anesthésique)[/td][td]\n${labelOf(ASA_CLASSES, f.surgeryAsa)}\n[/td][/tr]`);
     return rows.length ? `\n${rows.join('\n')}\n` : '';
@@ -142,8 +148,12 @@ export const clinicalAnamnesisBBCode = (f) => {
     const labels = (Array.isArray(f.clinicalConditions) ? f.clinicalConditions : []).map((id) => CONDITION_BY_ID[id]?.label).filter(Boolean);
     const weight = parseWeightKg(f.patientWeight);
     const height = parseHeightCm(f.patientHeight);
+    // Localisation, nombre et mutilations des blessures, en précision des motifs.
+    const injuryRows = [...injuryLines(f), mutilationLabels(f).length ? `Mutilation(s) : ${mutilationLabels(f).join(', ')}` : '', text(f.injuryNote)].filter(Boolean);
+    const injuryBlock = injuryRows.length ? `[u]Localisation des blessures: [/u][br][/br]\n${injuryRows.map((row) => `• ${row}`).join('\n[br][/br]')}` : '';
     const body = [
         labels.length ? line('Motifs de prise en charge', `${labels.join(', ')} (gravité : ${severityOf(f.clinicalSeverity).label.toLowerCase()})`) : '',
+        injuryBlock,
         weight || height ? line('Poids / taille', [weight ? `${weight} kg` : '', height ? `${height} cm` : ''].filter(Boolean).join(' / ')) : '',
     ].filter(Boolean);
     return body.length ? `${body.join('\n[br][/br]')}\n[br][/br]\n` : '';

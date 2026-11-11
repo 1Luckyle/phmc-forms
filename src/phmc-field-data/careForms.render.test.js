@@ -496,6 +496,87 @@ describe("opération : Pilou remplit toute l'enquête chirurgicale, et la liste 
     });
 });
 
+describe('urgences : précisions sur les blessures, sous les motifs et avant Pilou', () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    const base = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', patientHeight: '178', clinicalSeverity: 'Severe', patientID: 'PHMC-2752', date: '2026-11-11', phmcEmployee: 'Dr. Interne' };
+    const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    test("le bloc n'apparaît que pour un motif de blessure, juste sous les motifs et avant les suggestions de Pilou", () => {
+        const { unmount } = render(<Harness Component={EmergencyForm} initial={{ ...base, clinicalConditions: ['asthme'] }} extra={emergencyProps} />);
+        expect(screen.queryByText('Précisions sur les blessures')).toBeNull();
+        unmount();
+        render(<Harness Component={EmergencyForm} initial={{ ...base, clinicalConditions: ['plaie_arme_feu', 'fracture_fermee'] }} extra={emergencyProps} />);
+        const block = screen.getByText('Précisions sur les blessures');
+        expect(after(screen.getByText(/Motifs de prise en charge/), block)).toBe(true);
+        expect(after(block, screen.getByText(/Suggestions/))).toBe(true);
+        expect(screen.getByText('Plaie par arme à feu', { selector: 'strong' })).toBeTruthy();
+        expect(screen.getByText("Fracture fermée d'un membre", { selector: 'strong' })).toBeTruthy();
+        expect(screen.getByText("Nombre d'impacts")).toBeTruthy();
+        expect(screen.getByText('Nombre de fractures')).toBeTruthy();
+        // Le trajet du projectile ne concerne que la balle.
+        expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(1);
+        expect(screen.getByText('Mutilations et atteintes associées')).toBeTruthy();
+    });
+
+    test('nombre, côté et trajet se saisissent par blessure ; les mutilations et la précision libre sont enregistrées', async () => {
+        render(<Harness Component={EmergencyForm} initial={{ ...base, clinicalConditions: ['plaie_arme_feu'] }} extra={emergencyProps} />);
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryCount-plaie_arme_feu"]'), { target: { value: '2' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injurySide-plaie_arme_feu"]'), { target: { value: 'Right' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryTrajectory-plaie_arme_feu"]'), { target: { value: 'Lodged' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('input[name="injuryNote-plaie_arme_feu"]'), { target: { value: 'Saignement actif' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('input[name="injuryNote"]'), { target: { value: 'Agression au bar.' } }); });
+        const entry = stateOf().injuryDetails.find((e) => e.conditionId === 'plaie_arme_feu');
+        expect(entry).toMatchObject({ count: '2', side: 'Right', trajectory: 'Lodged', note: 'Saignement actif' });
+        expect(stateOf().injuryNote).toBe('Agression au bar.');
+    });
+
+    test('Pilou reprend la localisation et les mutilations dans la plainte, le diagnostic et les soins', async () => {
+        render(<Harness Component={EmergencyForm} initial={{
+            ...base, clinicalConditions: ['plaie_arme_feu'], injuryMutilations: ['teeth', 'eye'],
+            injuryDetails: [{ conditionId: 'plaie_arme_feu', regions: ['cuisse', 'abdomen'], side: 'Right', count: '2', trajectory: 'Lodged', note: '' }],
+        }} extra={emergencyProps} />);
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        const state = stateOf();
+        expect(state.patientChiefComplaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle ; localisation : cuisse et abdomen (côté droit) ; balle logée.');
+        expect(state.patientChiefComplaint).toContain('Mutilation(s) : perte de dent(s)');
+        expect(state.patientDiagnosis).toContain('Localisation : Plaie par arme à feu : 2 impacts de balle');
+        expect(state.patientSecondaryDiagnosis).toContain('Mutilation(s) : perte de dent(s)');
+        expect(state.patientProcedure).toContain('Mutilations :');
+        expect(state.patientProcedure).toContain('Protection de l\'œil par une coque rigide');
+    });
+
+    test('consultation générale : pas de bloc de blessures', () => {
+        render(<Harness Component={GeneralConsult} initial={{ ...base, clinicalConditions: ['plaie_arme_feu'] }} extra={{ ...emergencyProps, assignedDepartment: [], departmentLarge: [] }} />);
+        expect(screen.queryByText('Précisions sur les blessures')).toBeNull();
+    });
+});
+
+describe('opération : durée de prise en charge', () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+
+    test('les mêmes champs que les urgences : heure de prise en charge, heure de fin et durée calculée', () => {
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne', careStartTime: '13:30', careEndTime: '16:10' }} />);
+        expect(screen.getByText('Temps de prise en charge')).toBeTruthy();
+        expect(document.querySelector('input[name="careStartTime"]').value).toBe('13:30');
+        expect(document.querySelector('input[name="careEndTime"]').value).toBe('16:10');
+        expect(screen.getByDisplayValue('2 h 40 min')).toBeTruthy();
+    });
+
+    test('la rubrique est avant l’enquête chirurgicale ; Pilou propose les heures d’après l’heure du rendez-vous sans écraser une saisie', async () => {
+        const { unmount } = render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne' }} />);
+        const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+        expect(after(screen.getByText('Temps de prise en charge'), screen.getByText('Enquête chirurgicale'))).toBe(true);
+        unmount();
+        const patient = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['appendicectomie'], patientID: 'PHMC-2752', date: '2026-11-11', phmcEmployee: 'Dr. Interne', appointmentTime: '14:00' };
+        render(<Harness Component={Surgical} initial={patient} />);
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        expect(stateOf().careStartTime).toBe('14:00');
+        expect(stateOf().careEndTime).toMatch(/^\d{2}:\d{2}$/);
+        expect(stateOf().careEndTime).not.toBe('14:00');
+    });
+});
+
 describe('ordonnance dans la liste de médicaments', () => {
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
     const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };

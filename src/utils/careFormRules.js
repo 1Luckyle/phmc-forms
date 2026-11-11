@@ -103,6 +103,7 @@ export const validateCareExtras = (version, data = {}) => {
     }
     if (number === 5) {
         if (f.surgeryDuration && !/^\d+$/.test(String(f.surgeryDuration).trim())) problems.push("Durée de l'intervention : indiquez un nombre de minutes.");
+        if (f.careStartTime && f.careEndTime && minutesBetween(f.careStartTime, f.careEndTime) > 12 * 60) problems.push('La prise en charge dépasse 12 heures : vérifiez les heures de début et de fin.');
     }
     if (number === 6 || number === 7) {
         if (f.aptitudeConclusion === 'Apte avec restrictions' && !norm(f.aptitudeRestrictions)) problems.push("Précisez les restrictions d'aptitude.");

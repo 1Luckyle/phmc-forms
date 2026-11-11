@@ -911,12 +911,15 @@ const careExtras = (version, h) => {
     };
     const extras = {
         5: {
-            surgeonEmployee: h.phmc.phmcEmployee || '', surgeryCharacter: 'Urgent', surgeryAsa: 'ASA2', postOpMonitoring: 'RecoveryRoom', postOpExams: 'Radiographie de contrôle.',
+            careStartTime: '13:30', careEndTime: '16:10', surgeonEmployee: h.phmc.phmcEmployee || '', surgeryCharacter: 'Urgent', surgeryAsa: 'ASA2', postOpMonitoring: 'RecoveryRoom', postOpExams: 'Radiographie de contrôle.',
             patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['osteosynthese_membre'], clinicalMeds: [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }, { medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }],
         },
         6: aptitude, 7: aptitude, 14: mental, 16: mental, 28: mental, 29: mental,
         19: {
-            extraStaff: h.extraStaff(1), careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
+            extraStaff: h.extraStaff(1),
+            injuryDetails: [{ conditionId: 'fracture_fermee', regions: ['avant_bras', 'poignet'], side: 'Right', count: '1', note: 'Déformation en dos de fourchette.' }, { conditionId: 'plaie_superficielle', regions: ['main'], side: 'Right', count: '2', note: '' }],
+            injuryMutilations: [], injuryNote: 'Chute de deux mètres, réception sur la main droite.',
+            careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
             patientWeight: '75', patientHeight: '178', clinicalConditions: ['fracture_fermee', 'plaie_superficielle'], clinicalSeverity: 'Moderate',
             clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }, { medId: 'vaccin_tetanique', regimenId: 'im', dose: 0.5, count: 1, note: 'Rappel' }],
         },

@@ -4,6 +4,7 @@
 // complètes à partir de motifs de prise en charge. Pur (aucune dépendance React / Firebase) : tout est testé dans engine.test.js.
 import { MEDICATION_BY_ID, regimenOf, PENICILLIN_ALLERGY, CEPHALOSPORIN_ALLERGY } from './medications';
 import { CONDITION_BY_ID, HISTORY_HINTS } from './conditions';
+import { injuryLines, mutilationLabels, mutilationCareSteps } from './injuries';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
 import { missingBackgroundItems } from '../utils/dossierCore';
@@ -346,12 +347,17 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
 
     const single = conditions.length === 1;
     const procedure = conditions.map((c) => `${single ? '' : `${c.label} :\n`}${(c.steps || []).map((step) => `- ${step}`).join('\n')}`).join('\n\n');
+    // Localisation, nombre et mutilations saisis par le soignant (sous les motifs) : repris dans la plainte, les diagnostics et les soins.
+    const injuries = injuryLines(formData).join(' ; ');
+    const mutilations = mutilationLabels(formData);
+    const mutilationSentence = mutilations.length ? `Mutilation(s) : ${mutilations.map((label) => label.charAt(0).toLowerCase() + label.slice(1)).join(', ')}.` : '';
+    const mutilationCare = mutilationCareSteps(formData);
     const text = {
-        complaint: conditions.map((c) => c.complaint).filter(Boolean).join(' ; '),
+        complaint: [conditions.map((c) => c.complaint).filter(Boolean).join(' ; '), injuries ? `Lésions : ${injuries}.` : '', mutilationSentence].filter(Boolean).join(' '),
         mechanism: conditions.map((c) => c.mechanism).find(Boolean) || '',
-        diagnosis: conditions[0].diagnosis,
-        secondary: conditions.slice(1).map((c) => c.diagnosis).join(' ; '),
-        procedure,
+        diagnosis: [conditions[0].diagnosis, injuries ? `Localisation : ${injuries}.` : ''].filter(Boolean).join(' '),
+        secondary: [conditions.slice(1).map((c) => c.diagnosis).join(' ; '), mutilationSentence].filter(Boolean).join(' ; '),
+        procedure: [procedure, mutilationCare.length ? `Mutilations :\n${mutilationCare.map((step) => `- ${step}`).join('\n')}` : ''].filter(Boolean).join('\n\n'),
         advice,
     };
     return {

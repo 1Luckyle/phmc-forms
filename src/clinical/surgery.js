@@ -6,7 +6,7 @@ import { PROCEDURE_BY_ID } from './procedures';
 import { entryText, newEntry, checkPrescription, findTerm, swapAntibiotic } from './engine';
 import { surgeryDeathBundle } from './death';
 import { regimenOf } from './medications';
-import { suggestPatient, patientNotices } from './context';
+import { suggestPatient, patientNotices, addMinutes } from './context';
 
 export const SURGERY_SECTIONS = [
     { key: 'patient', label: 'Patient', hint: 'Complète les champs vides du patient : date de naissance et âge plausibles, sexe, allergies, antécédents et traitements habituels. Ne remplace jamais ce qui est saisi.' },
@@ -175,6 +175,7 @@ export const buildSurgerySuggestions = ({ procedureIds, patient, seed = '', form
             surgeryAnesthesiaType: type,
             surgeryDuration: String(duration),
             surgeryBloodLoss: String(bloodLoss),
+            ...(/^\d{1,2}:\d{2}$/.test(String((formData && formData.appointmentTime) || '')) ? { careStartTime: formData.appointmentTime, careEndTime: addMinutes(formData.appointmentTime, duration + 45) } : {}),
             // Enquête chirurgicale : consentement, complications et réussite de la procédure (un patient décédé : complication fatale et procédure non aboutie, avec leur détail).
             patientConsentOption: 'Yes',
             patientComplicationOptions: death ? 'Yes' : 'No',

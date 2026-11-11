@@ -6,12 +6,13 @@
 // Les formulaires de santé mentale n'en font pas partie : leur contenu reste confidentiel.
 import { DISCHARGE_DESTINATIONS, ORIENTED_SERVICES, DEATH_VERSIONS, labelOf } from '../constants/careFormOptions';
 import { MEDICATION_BY_ID } from '../clinical/medications';
+import { injurySummary } from '../clinical/injuries';
 
 export const CARE_VISIT_VERSIONS = [5, 19, 20, 21];
 export const CARE_VISIT_LABELS = { 5: 'Opération chirurgicale', 19: "Protocole d'urgence", 20: 'Consultation générale', 21: 'Consultation générale' };
 // Intitulés des lignes du résumé, dans l'ordre d'affichage.
 export const CARE_VISIT_FIELDS = [
-    ['deces', 'Décès'], ['intervention', 'Intervention'], ['indication', 'Indication'], ['anesthesie', 'Anesthésie'], ['motif', 'Motif'], ['diagnostic', 'Diagnostic'], ['soins', 'Soins'],
+    ['deces', 'Décès'], ['intervention', 'Intervention'], ['indication', 'Indication'], ['anesthesie', 'Anesthésie'], ['motif', 'Motif'], ['lesions', 'Lésions'], ['diagnostic', 'Diagnostic'], ['soins', 'Soins'],
     ['complications', 'Complications'], ['resultat', 'Résultat'], ['traitement', 'Traitement'], ['sortie', 'Orientation'],
 ];
 
@@ -42,6 +43,7 @@ export const careVisitSummary = (version, formData = {}) => {
     } else if (number === 19) {
         fields = {
             motif: clean(f.patientChiefComplaint),
+            lesions: clean(injurySummary(f), 300),
             diagnostic: diagnosis,
             soins: clean(f.patientProcedure, 300),
             traitement: medicationNames(f),

@@ -8,6 +8,7 @@ import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
 import ClinicalMedications from './ClinicalMedications';
 import { DeathSwitch } from './CareExtraFields';
+import InjuryDetails from './InjuryDetails';
 import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 import { CONDITION_GROUPS, CONDITION_BY_ID } from '../../clinical/conditions';
 import { SEVERITIES } from '../../clinical/vitals';
@@ -41,7 +42,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
         () => buildSuggestions({ conditionIds: ids, severity, patient, seed, formData }),
         // formData ne sert qu'aux contrôles des médicaments proposés ; les champs lus (constantes saisies) sont couverts par `patient` et la graine à ce stade.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [ids, severity, patient, seed],
+        [ids, severity, patient, seed, formData.injuryDetails, formData.injuryMutilations, formData.injuryNote],
     );
     const tags = useMemo(() => contextTags(conditionsOf(ids)), [ids]);
     const history = useMemo(() => historySuggestions(ids, patient), [ids, patient]);
@@ -107,6 +108,9 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                 isMulti options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterConditions} styles={darkSelectStyles} className="form-control p-0"
                 placeholder="Fracture, brûlure, asthme, surdose… (nom ou synonyme)" noOptionsMessage={() => 'Aucun motif trouvé'}
             />
+
+            {/* Localisation, nombre et mutilations des blessures : à renseigner AVANT que Pilou rédige (urgences seulement). */}
+            {mode === 'emergency' && <InjuryDetails formData={formData} setFormData={setFormData} ids={ids} />}
 
             {suggestions && (
                 <div style={{ border: '1px solid #30363d', borderRadius: 8, padding: '0.7rem 0.8rem', marginTop: '0.7rem', background: '#101923' }}>

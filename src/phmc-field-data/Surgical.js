@@ -3,7 +3,7 @@ import { Form, Alert } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
-import { ReferralFields, SurgeryCharacterFields, PostOpFields, DeathFields } from './shared/CareExtraFields';
+import { ReferralFields, SurgeryCharacterFields, PostOpFields, DeathFields, EmergencyTimingFields } from './shared/CareExtraFields';
 import SurgeryAssistant from './shared/SurgeryAssistant';
 import { careStaffOnly } from './shared/PhmcEmployeeSelect';
 import { darkSelectStyles } from './shared/selectStyles';
@@ -129,6 +129,9 @@ const Surgical = ({
     />
     <span className="helper-text" data-no-tip="1">Chaque personne ajoutée est mentionnée dans le rapport et reçoit une notification qui l'invite à en récupérer une copie (renseignez l'ID du patient).</span>
     <SurgeryAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} />
+
+    {/* Durée de prise en charge, comme dans le protocole d'urgence (heure de prise en charge, heure de fin, durée). */}
+    <EmergencyTimingFields formData={formData} handleChange={handleChange} />
 
     <Form.Label className="form-section-title">Enquête chirurgicale</Form.Label>
     <SurgeryCharacterFields formData={formData} handleChange={handleChange} />

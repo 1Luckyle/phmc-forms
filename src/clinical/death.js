@@ -6,6 +6,7 @@ import { CONDITION_BY_ID } from './conditions';
 import { PROCEDURE_BY_ID } from './procedures';
 import { SURGERY_DEATH_MANNERS } from '../constants/careFormOptions';
 import { minutesBetween } from '../utils/careFormRules';
+import { injurySummary } from './injuries';
 
 const VIOLENT = ['plaie_arme_feu', 'plaie_arme_blanche'];
 const INTOXICATION = ['surdose_opioides', 'surdose_benzo', 'surdose_stimulants', 'intox_alcool', 'intox_paracetamol', 'intox_fumees'];
@@ -76,7 +77,7 @@ export const surgeryDeathBundle = ({ formData = {}, now = '' } = {}) => {
     const manner = surgeryDeathMannerOf(formData, procedures);
     const names = procedures.length ? procedures.map((p) => p.label).join(', ') : String(formData.surgeryProcedures || '').trim();
     const loss = Number(formData.surgeryBloodLoss) || procedures.reduce((total, p) => total + (p.bloodLoss || 0), 0);
-    const time = frTime(formData.careDeathTime) || frTime(now);
+    const time = frTime(formData.careDeathTime) || frTime(formData.careEndTime) || frTime(now);
     const anesthesia = ANESTHESIA_LABEL[formData.surgeryAnesthesiaType];
     const opening = `Décès survenu au cours de l'intervention${names ? ` (${lower(names)})` : ''}${anesthesia ? `, sous ${anesthesia}` : ''}${time ? `, constaté à ${time}` : ''}.`;
     const reason = SURGERY_CAUSE[manner]({ loss: loss ? Math.round(loss) : 0, chronic: String(formData.patientChronicDiseases || '').trim(), asa: String(formData.surgeryAsa || '').replace('ASA', 'ASA ') });
@@ -129,7 +130,7 @@ export const buildDeathSuggestion = ({ kind = 'emergency', formData = {}, now = 
         cause = bundle.cause;
         manner = bundle.manner;
         note = bundle.resuscitation;
-        time = frTime(now);
+        time = frTime(formData.careEndTime) || frTime(now);
     } else {
         const ids = Array.isArray(formData.clinicalConditions) ? formData.clinicalConditions.filter((id) => CONDITION_BY_ID[id]) : [];
         const tags = tagsOf(ids);
@@ -140,8 +141,10 @@ export const buildDeathSuggestion = ({ kind = 'emergency', formData = {}, now = 
         const arrival = frTime(formData.arrivalTime) || frTime(formData.careStartTime);
         const minutes = minutesBetween(formData.careStartTime, formData.careEndTime);
         const when = `Décès constaté${time ? ` à ${time}` : ''}${arrival ? `, après une arrivée à ${arrival}` : ''}${minutes ? ` (prise en charge de ${minutes} minutes)` : ''}.`;
+        const injuries = injurySummary(formData);
+        const lesions = injuries ? ` Lésions : ${injuries}.` : '';
         if (labels.length) {
-            cause = `${when} Prise en charge pour : ${lower(labels.join(', '))}${mechanism ? ` (${lower(trimDot(mechanism))})` : ''}. ${emergencyEvolution(ids, tags)}.`;
+            cause = `${when} Prise en charge pour : ${lower(labels.join(', '))}${mechanism ? ` (${lower(trimDot(mechanism))})` : ''}.${lesions} ${emergencyEvolution(ids, tags)}.`;
         } else if (String(formData.patientDiagnosis || '').trim()) {
             cause = `${when} Décès dans les suites de : ${lower(trimDot(formData.patientDiagnosis))}.`;
         }
