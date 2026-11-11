@@ -3,6 +3,8 @@ import { Form } from 'react-bootstrap';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
 import { RiskFields, EmergencyContactSection } from './shared/CareExtraFields';
+import PresetTextField from './shared/PresetTextField';
+import { MENTAL_HEALTH_PRESETS } from '../constants/careFormPresets';
 
 const MentalHealth = ({
     formData,
@@ -23,38 +25,14 @@ const MentalHealth = ({
             <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
             <Form.Label className="form-section-title">Motif et constatations</Form.Label>
-            <Form.Control
-                as="textarea"
-                name="patientChiefComplaint"
-                value={formData.patientChiefComplaint || ''}
-                onChange={handleChange}
-                placeholder="Plainte principale du patient"
-                rows="2"
-                className="form-control"
-            />
-            <Form.Control
-                as="textarea"
-                rows="3"
-                name="patientNotes"
-                value={formData.patientNotes || ''}
-                onChange={handleChange}
-                placeholder="Notes de session / observations du patient"
-                className="form-control"
-            />
+            <PresetTextField name="patientChiefComplaint" formData={formData} setFormData={setFormData} presets={MENTAL_HEALTH_PRESETS.patientChiefComplaint} placeholder="Plainte principale du patient" rows={2} />
+            <PresetTextField name="patientNotes" formData={formData} setFormData={setFormData} presets={MENTAL_HEALTH_PRESETS.patientNotes} placeholder="Notes de session / observations du patient" rows={3} />
 
             <RiskFields formData={formData} handleChange={handleChange} />
             <EmergencyContactSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
             <Form.Label className="form-section-title">Diagnostic de sortie</Form.Label>
-            <Form.Control
-                as="textarea"
-                name="patientDiagnosis"
-                value={formData.patientDiagnosis || ''}
-                onChange={handleChange}
-                placeholder="Diagnostic"
-                rows="2"
-                className="form-control"
-            />
+            <PresetTextField name="patientDiagnosis" formData={formData} setFormData={setFormData} presets={MENTAL_HEALTH_PRESETS.patientDiagnosis} placeholder="Diagnostic" rows={2} />
 
             <Form.Label className="form-section-title">Thérapie et suivi</Form.Label>
             <Form.Select
@@ -68,24 +46,8 @@ const MentalHealth = ({
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
-            <Form.Control
-                as="textarea"
-                name="patientProcedure"
-                value={formData.patientProcedure || ''}
-                onChange={handleChange}
-                placeholder="Procédure(s) effectuée(s) / mise(s) en place"
-                rows="2"
-                className="form-control"
-            />
-            <Form.Control
-                as="textarea"
-                name="patientMedicine"
-                value={formData.patientMedicine || ''}
-                onChange={handleChange}
-                placeholder="Médicament(s) prescrit(s) / administré(s)"
-                rows="2"
-                className="form-control"
-            />
+            <PresetTextField name="patientProcedure" formData={formData} setFormData={setFormData} presets={MENTAL_HEALTH_PRESETS.patientProcedure} placeholder="Procédure(s) effectuée(s) / mise(s) en place" rows={2} />
+            <PresetTextField name="patientMedicine" formData={formData} setFormData={setFormData} presets={MENTAL_HEALTH_PRESETS.patientMedicine} placeholder="Médicament(s) prescrit(s) / administré(s)" rows={2} />
             <Form.Select
                 name="followup"
                 value={formData.followup || ''}

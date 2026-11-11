@@ -1,4 +1,5 @@
 import { HISTORY_PRESETS } from '../constants/historyPresets';
+import { carePresetFieldsOf } from '../constants/careFormPresets';
 
 // Champs communs aux formulaires cliniques (voir PatientContextFields) et
 // valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
@@ -487,7 +488,7 @@ const getRelevantFields = (bbCodeVersion) => {
     // Mail Externe : l'objet, le destinataire, l'expéditeur (fonction, département), le texte (BBCode et HTML de l'éditeur) et la date.
     if (bbCodeVersion === 42) return ['externalMailSubject', 'externalMailRecipient', 'externalMailRecipientAddress', 'externalMailFonction', 'externalMailService', 'externalMailBody', 'externalMailBodyHtml', 'externalMailDate'];
     const base = baseRelevantFields(bbCodeVersion);
-    if (CARE_EXTRA_VERSIONS.includes(bbCodeVersion)) return [...new Set([...base, ...CARE_IDENTITY_EXTRA, ...(CARE_REPORT_VERSIONS.includes(bbCodeVersion) ? CARE_COMMON_EXTRA : []), ...(CARE_VERSION_EXTRA[bbCodeVersion] || [])])];
+    if (CARE_EXTRA_VERSIONS.includes(bbCodeVersion)) return [...new Set([...base, ...CARE_IDENTITY_EXTRA, ...(CARE_REPORT_VERSIONS.includes(bbCodeVersion) ? CARE_COMMON_EXTRA : []), ...(CARE_VERSION_EXTRA[bbCodeVersion] || []), ...carePresetFieldsOf(bbCodeVersion)])];
     if (DMEC_EXTRA[bbCodeVersion]) return [...new Set([...base, ...DMEC_EXTRA[bbCodeVersion], 'coronerPHNumber', 'coronerEmail'])];
     if (bbCodeVersion === 3 || bbCodeVersion === 25) return [...new Set(withPresetFields([...base, ...PATIENT_FILE_EXTRA]))];
     // Mise à jour : toutes les rubriques du dossier avancé peuvent être modifiées, donc tous leurs champs sont gardés.

@@ -3,7 +3,7 @@
 // Règles pures des champs ajoutés aux formulaires de soins (voir constants/careFormOptions.js) : durée de prise en charge, validité d'une aptitude, changement du contact d'urgence,
 // contrôles avant enregistrement. Testé dans careFormRules.test.js.
 import { validUntil } from './flightCertificate';
-import { RISK_NEEDING_ACTION, MENTAL_HEALTH_VERSIONS, DEFAULT_APTITUDE_MONTHS } from '../constants/careFormOptions';
+import { RISK_NEEDING_ACTION, MENTAL_HEALTH_VERSIONS, DEFAULT_APTITUDE_MONTHS, EVAL_REASONS, labelOf } from '../constants/careFormOptions';
 
 const TIME = /^(\d{1,2}):(\d{2})$/;
 export const minutesOfTime = (value) => {
@@ -29,6 +29,28 @@ export const durationLabel = (minutes) => {
 export const aptitudeValidUntil = (data = {}) => {
     if (data.aptitudeConclusion === 'Inapte') return '';
     return validUntil(data.date, Number(data.aptitudeValidityMonths) || DEFAULT_APTITUDE_MONTHS);
+};
+
+const frDateOf = (iso) => String(iso || '').split('-').reverse().join('/');
+/**
+ * Déclaration d'évaluation proposée d'après la conclusion d'aptitude (motif, conclusion, restrictions, validité, vaccinations). '' tant qu'aucune conclusion n'est choisie.
+ * Le soignant la relit et la complète : elle ne remplace jamais un texte déjà écrit sans son accord.
+ */
+export const aptitudeStatement = (data = {}) => {
+    const conclusion = data.aptitudeConclusion;
+    if (!conclusion) return '';
+    const reason = labelOf(EVAL_REASONS, data.evalReason).toLowerCase();
+    const until = aptitudeValidUntil(data);
+    const restrictions = String(data.aptitudeRestrictions || '').trim();
+    const months = Number(data.aptitudeValidityMonths) || DEFAULT_APTITUDE_MONTHS;
+    const lines = [reason ? `Évaluation réalisée dans le cadre d'une visite d'aptitude (${reason}).` : "Évaluation réalisée dans le cadre d'une visite d'aptitude."];
+    lines.push('Examen clinique complet et recueil des antécédents effectués ce jour.');
+    if (conclusion === 'Apte') lines.push("L'examen ne met en évidence aucune contre-indication : le patient est déclaré APTE.");
+    else if (conclusion === 'Apte avec restrictions') lines.push(`Le patient est déclaré APTE sous réserve des restrictions suivantes : ${restrictions || 'à préciser'}.`);
+    else lines.push("Le patient est déclaré INAPTE à ce stade. Une nouvelle évaluation pourra être programmée après prise en charge adaptée.");
+    if (conclusion !== 'Inapte' && until) lines.push(`Cette aptitude est valable ${months} mois, jusqu'au ${frDateOf(until)}.`);
+    if (data.vaccinationState === 'No') lines.push(`Vaccinations à compléter${String(data.vaccinationNote || '').trim() ? ` : ${String(data.vaccinationNote).trim()}` : ''}.`);
+    return lines.join('\n');
 };
 
 // Champs du contact d'urgence du dossier (voir utils/dossierCore.js : EMERGENCY_FIELDS).

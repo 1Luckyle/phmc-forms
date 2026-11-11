@@ -1,7 +1,7 @@
 // Formulaires du personnel soignant : en-tête commun, équipe chirurgicale, certificats, mail externe. Rendu réel (jsdom) avec une identité simulée : repère les erreurs d'exécution
 // (effets, listes verrouillées, bandeaux) que la compilation ne voit pas.
 import React, { useState } from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 
 let mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null };
 jest.mock('../contexts/EmployeeAuthContext', () => ({ useEmployeeAuth: () => mockAuth }));
@@ -26,6 +26,7 @@ const PhysEval = require('./PhysEvalPHMC').default;
 const MentalHealth = require('./MentalHealth').default;
 const EmergencyForm = require('./EmergencyForm').default;
 const GeneralConsult = require('./GeneralConsult').default;
+const Shrink = require('./Shrink').default;
 
 const careOption = (name, roles) => ({ value: name, label: name, rank: roles[0], roles, families: ['soignant'], lastName: name.split(' ').pop() });
 const phmcGroups = [{ label: 'Interne en Médecine', options: [careOption('Dr. Interne', ['Interne en Médecine'])] }];
@@ -300,5 +301,50 @@ describe("assistant chirurgical de l'opération", () => {
         const state = stateOf();
         expect(state.surgeryAsa).toBe('ASA1');
         expect(state.surgeryAnesthesiaType).toBeUndefined();
+    });
+});
+
+describe('choix par défaut des formulaires de consultation', () => {
+    const props = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], Appearance: [], Behavior: [], Speech: [], Mood: [], Affect: [], ThoughtProcess: [], ThoughtContent: [], Insight: [], Cognition: [], Risk: [], BodyMassIndex: [], temperature: [], heartRate: [], breathing: [], bloodPressure: [], patientJob: [], patientJobRisks: [], patientAllergiesRisk: [], patientMedicineRegular: [], patientOther: [], predisposition: [] };
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const typeInto = (name, value) => act(() => { fireEvent.change(document.querySelector(`textarea[name="${name}"]`), { target: { value } }); });
+
+    test('évaluation physique : listes de choix sur les champs libres, texte libre regroupé', () => {
+        render(<Harness Component={PhysEval} initial={{ patientJob: 'Yes', patientJobRisks: 'Yes', patientAllergiesRisk: 'Yes', patientMedicineRegular: 'Yes', patientOther: 'Yes' }} extra={props} />);
+        ['patientCareer', 'careerRisks', 'patientAllergies', 'patientMedicine', 'patientImpairments'].forEach((name) => expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeTruthy());
+        expect(document.querySelector('textarea[name="patientSummary"]')).toBeTruthy();
+        typeInto('patientImpairmentsFree', 'Verres correcteurs');
+        expect(stateOf()).toMatchObject({ patientImpairments: 'Verres correcteurs', patientImpairmentsFree: 'Verres correcteurs', patientImpairmentsPresets: [] });
+    });
+
+    test('évaluation physique : constantes normales en un clic', async () => {
+        render(<Harness Component={PhysEval} extra={props} />);
+        await act(async () => { screen.getByText('Constantes normales').click(); });
+        expect(stateOf()).toMatchObject({ temperature: 'patientTempNormal', heartRate: 'patientHeartRateNormal', breathing: 'patientBreathingNormal', bloodPressure: 'patientBloodPressureNormal' });
+    });
+
+    test("évaluation physique : déclaration type d'après la conclusion, désactivée sans conclusion", async () => {
+        const { unmount } = render(<Harness Component={PhysEval} extra={props} />);
+        expect(screen.getByText('Proposer une déclaration').closest('button').disabled).toBe(true);
+        unmount();
+        render(<Harness Component={PhysEval} initial={{ aptitudeConclusion: 'Apte', evalReason: 'Renewal', date: '2026-11-11', aptitudeValidityMonths: '12' }} extra={props} />);
+        await act(async () => { screen.getByText('Proposer une déclaration').click(); });
+        expect(stateOf().patientSummary).toContain('déclaré APTE');
+        expect(stateOf().patientSummary).toContain('(renouvellement)');
+    });
+
+    test('consultation psychiatrique : motif, notes, diagnostic, procédure et médicaments à choix', () => {
+        render(<Harness Component={MentalHealth} extra={props} />);
+        ['patientChiefComplaint', 'patientNotes', 'patientDiagnosis', 'patientProcedure', 'patientMedicine'].forEach((name) => expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeTruthy());
+        typeInto('patientMedicineFree', 'Sertraline 50 mg le matin');
+        expect(stateOf().patientMedicine).toBe('Sertraline 50 mg le matin');
+    });
+
+    test('évaluation psychologique : tous les champs libres ont leurs choix par défaut', () => {
+        render(<Harness Component={Shrink} extra={props} />);
+        expect(document.querySelectorAll('.preset-select').length).toBeGreaterThanOrEqual(26);
+        expect(document.querySelector('textarea[name="patientSafetyFree"]')).toBeTruthy();
+        typeInto('patientSafetyFree', 'Voisin joignable');
+        expect(stateOf()).toMatchObject({ patientSafety: 'Voisin joignable' });
     });
 });

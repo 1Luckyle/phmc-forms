@@ -3,6 +3,9 @@ import { Form } from 'react-bootstrap';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
 import { AptitudeFields } from './shared/CareExtraFields';
+import { aptitudeStatement } from '../utils/careFormRules';
+import PresetTextField from './shared/PresetTextField';
+import { PHYS_EVAL_PRESETS } from '../constants/careFormPresets';
 
 const PhysEval = ({
             formData,
@@ -68,6 +71,12 @@ const PhysEval = ({
 
 
                                     <Form.Label className="form-section-title">Signes vitaux</Form.Label>
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                        <button type="button" className="btn btn-sm btn-outline-primary" title="Renseigne des constantes normales (température, pouls, respiration, tension) : à ajuster ensuite si besoin"
+                                            onClick={() => setFormData((prev) => ({ ...prev, temperature: 'patientTempNormal', heartRate: 'patientHeartRateNormal', breathing: 'patientBreathingNormal', bloodPressure: 'patientBloodPressureNormal' }))}>
+                                            <i className="fas fa-heart-pulse me-1"></i>Constantes normales
+                                        </button>
+                                    </div>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     <Form.Select
                                         name="temperature"
@@ -188,48 +197,16 @@ const PhysEval = ({
 </div>
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                     {formData.patientJob === 'Yes' && (
-                                    <Form.Control
-                                    as="textarea"
-                                    rows="2"
-                                    name="patientCareer"
-                                    value={formData.patientCareer}
-                                    onChange={handleChange}
-                                    placeholder="Emploi du patient"
-                                    className="form-control"
-                                    />
+                                    <PresetTextField name="patientCareer" formData={formData} setFormData={setFormData} presets={PHYS_EVAL_PRESETS.patientCareer} placeholder="Emploi du patient" rows={2} />
                                 )}
                                     {formData.patientJob === 'No' && (
-                                    <Form.Control
-                                    as="textarea"
-                                    rows="2"
-                                    name="patientcareerNo"
-                                    value={formData.patientcareerNo}
-                                    onChange={handleChange}
-                                    placeholder="Description de l'activité sans emploi"
-                                    className="form-control"
-                                    />
+                                    <PresetTextField name="patientcareerNo" formData={formData} setFormData={setFormData} presets={PHYS_EVAL_PRESETS.patientcareerNo} placeholder="Description de l'activité sans emploi" rows={2} />
                                 )} 
                                     {formData.patientJobRisks === 'Yes' && (
-                                    <Form.Control
-                                    as="textarea"
-                                    rows="2"
-                                    name="careerRisks"
-                                    value={formData.careerRisks}
-                                    onChange={handleChange}
-                                    placeholder="Risques professionnels du patient"
-                                    className="form-control"
-                                    />
+                                    <PresetTextField name="careerRisks" formData={formData} setFormData={setFormData} presets={PHYS_EVAL_PRESETS.careerRisks} placeholder="Risques professionnels du patient" rows={2} />
                                 )} 
                                   {formData.patientAllergiesRisk === 'Yes' && (
-                                    <Form.Control
-                                    as="textarea"
-                                    rows="2"
-                                    name="patientAllergies"
-                                    value={formData.patientAllergies}
-                                    onChange={handleChange}
-                                    placeholder="Risques d'allergies du patient"
-                                    className="form-control"
-                                    />
+                                    <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={PHYS_EVAL_PRESETS.patientAllergies} placeholder="Risques d'allergies du patient" rows={2} />
                                 )} 
 
                                 </div>
@@ -287,26 +264,10 @@ const PhysEval = ({
                                     <div style={{ display: 'flex', gap: '10px' }}>
 
                                     {formData.patientMedicineRegular === 'Yes' && (
-                                    <Form.Control
-                                    as="textarea"
-                                    rows="2"
-                                    name="patientMedicine"
-                                    value={formData.patientMedicine}
-                                    onChange={handleChange}
-                                    placeholder="Quel(s) médicament(s) le patient prend-il actuellement?"
-                                    className="form-control"
-                                    />
+                                    <PresetTextField name="patientMedicine" formData={formData} setFormData={setFormData} presets={PHYS_EVAL_PRESETS.patientMedicine} placeholder="Quel(s) médicament(s) le patient prend-il actuellement?" rows={2} />
                                 )} 
                                     {formData.patientOther === 'Yes' && (
-                                    <Form.Control
-                                    as="textarea"
-                                    rows="2"
-                                    name="patientImpairments"
-                                    value={formData.patientImpairments}
-                                    onChange={handleChange}
-                                    placeholder="Déficiences du patient"
-                                    className="form-control"
-                                    />
+                                    <PresetTextField name="patientImpairments" formData={formData} setFormData={setFormData} presets={PHYS_EVAL_PRESETS.patientImpairments} placeholder="Déficiences du patient" rows={2} />
                                 )} </div>
                                         <Form.Control
                                         as="textarea"
@@ -317,6 +278,17 @@ const PhysEval = ({
                                         className="form-control"
                                         placeholder="Déclaration d'évaluation"
                                     />
+                                    <div style={{ marginTop: '0.4rem' }}>
+                                        <button type="button" className="btn btn-sm btn-outline-primary" disabled={!formData.aptitudeConclusion}
+                                            title={formData.aptitudeConclusion ? "Propose une déclaration d'après la conclusion d'aptitude choisie plus bas" : "Choisissez d'abord la conclusion d'aptitude plus bas"}
+                                            onClick={() => {
+                                                const text = aptitudeStatement(formData);
+                                                if (formData.patientSummary && String(formData.patientSummary).trim() && !window.confirm('Remplacer la déclaration déjà saisie ?')) return;
+                                                setFormData((prev) => ({ ...prev, patientSummary: text }));
+                                            }}>
+                                            <i className="fas fa-wand-magic-sparkles me-1"></i>Proposer une déclaration
+                                        </button>
+                                    </div>
                                 </Form.Group>
                                 <AptitudeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
                             </>

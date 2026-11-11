@@ -3,6 +3,8 @@ import { Form } from 'react-bootstrap';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
 import { RiskFields, EmergencyContactSection } from './shared/CareExtraFields';
+import PresetTextField from './shared/PresetTextField';
+import { PSYCH_EVAL_PRESETS } from '../constants/careFormPresets';
 
 const Shrink = ({
     formData,
@@ -32,60 +34,16 @@ const Shrink = ({
 
         <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} showHistory={false} />
         <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
-                <Form.Control
-                as="textarea"
-                name="patientChiefComplaint"
-                value={formData.patientChiefComplaint}
-                onChange={handleChange}
-                placeholder="Plainte principale du patient"
-                rows="3"
-                className="form-control"
-                />
+                <PresetTextField name="patientChiefComplaint" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientChiefComplaint} placeholder="Plainte principale du patient" rows={3} />
 
             <Form.Label className="form-section-title">Problème présenté</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    as="textarea"
-                    rows="2"
-                    name="patientVisitReason"
-                    value={formData.patientVisitReason}
-                    onChange={handleChange}
-                    placeholder="Description du problème (ex: anxiété, dépression)"
-                    className="form-control"
-
-                />
-                <Form.Control
-                    as="textarea"
-                    rows="2"
-                    name="patientSymptoms"
-                    value={formData.patientSymptoms}
-                    onChange={handleChange}
-                    placeholder="Apparition et durée des symptômes"
-                    className="form-control"
-
-                />
+                <PresetTextField name="patientVisitReason" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientVisitReason} placeholder="Description du problème (ex: anxiété, dépression)" rows={2} />
+                <PresetTextField name="patientSymptoms" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientSymptoms} placeholder="Apparition et durée des symptômes" rows={2} />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    as="textarea"
-                    rows="2"
-                    name="patientTriggers"
-                    value={formData.patientTriggers}
-                    onChange={handleChange}
-                    placeholder="Déclencheurs ou facteurs de stress"
-                    className="form-control"
-
-                />
-                <Form.Control
-                    as="textarea"
-                    rows="2"
-                    name="patientStress"
-                    value={formData.patientStress}
-                    onChange={handleChange}
-                    placeholder="Impact sur la vie quotidienne"
-                    className="form-control"
-
-                />
+                <PresetTextField name="patientTriggers" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientTriggers} placeholder="Déclencheurs ou facteurs de stress" rows={2} />
+                <PresetTextField name="patientStress" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientStress} placeholder="Impact sur la vie quotidienne" rows={2} />
             </div>
 
             <Form.Label className="form-section-title">Examen de l'état mental (EEM)</Form.Label>
@@ -197,145 +155,33 @@ const Shrink = ({
                     </div>
                     <Form.Label className="form-section-title">Historique psychiatrique</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Control
-                as="textarea"
-                name="patientTreatment"
-                value={formData.patientTreatment}
-                onChange={handleChange}
-                placeholder="Diagnostics et traitements psychiatriques antérieurs"
-                rows="3"
-                className="form-control"
-                />
-                <Form.Control
-                as="textarea"
-                name="patientMedicalRecord"
-                value={formData.patientMedicalRecord}
-                onChange={handleChange}
-                placeholder="Hospitalisations"
-                rows="3"
-                className="form-control"
-                                />
+            <PresetTextField name="patientTreatment" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientTreatment} placeholder="Diagnostics et traitements psychiatriques antérieurs" rows={3} />
+                <PresetTextField name="patientMedicalRecord" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientMedicalRecord} placeholder="Hospitalisations" rows={3} />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Control
-                as="textarea"
-                name="patientFamily"
-                value={formData.patientFamily}
-                onChange={handleChange}
-                placeholder="Historique psychiatrique familial"
-                rows="3"
-                className="form-control"
-                 />
-                <Form.Control
-                as="textarea"
-                name="patientJobRisks"
-                value={formData.patientJobRisks}
-                onChange={handleChange}
-                placeholder="Historique d'automutilation ou tentatives de suicide"
-                rows="3"
-                className="form-control"
-                                />
+            <PresetTextField name="patientFamily" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientFamily} placeholder="Historique psychiatrique familial" rows={3} />
+                <PresetTextField name="patientJobRisks" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientJobRisks} placeholder="Historique d'automutilation ou tentatives de suicide" rows={3} />
                 </div>
                 <Form.Label className="form-section-title">Historique médical</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Control
-                as="textarea"
-                name="patientCondition"
-                value={formData.patientCondition}
-                onChange={handleChange}
-                placeholder="Conditions médicales actuelles et passées"
-                rows="3"
-                className="form-control"
-                 />
-                <Form.Control
-                as="textarea"
-                name="patientChronicDiseases"
-                value={formData.patientChronicDiseases}
-                onChange={handleChange}
-                placeholder="Médicaments (y compris psychiatriques et non psychiatriques)"
-                rows="3"
-                className="form-control"
-                />
-                <Form.Control
-                as="textarea"
-                name="patientAllergies"
-                value={formData.patientAllergies}
-                onChange={handleChange}
-                placeholder="Allergies du patient"
-                rows="3"
-                className="form-control"
-                />
+            <PresetTextField name="patientCondition" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientCondition} placeholder="Conditions médicales actuelles et passées" rows={3} />
+                <PresetTextField name="patientChronicDiseases" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientChronicDiseases} placeholder="Médicaments (y compris psychiatriques et non psychiatriques)" rows={3} />
+                <PresetTextField name="patientAllergies" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientAllergies} placeholder="Allergies du patient" rows={3} />
             </div>
             <Form.Label className="form-section-title">Historique d'abus de substances</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientDrugs"
-                value={formData.patientDrugs}
-                onChange={handleChange}
-                placeholder="Consommation d'alcool, drogues, nicotine et autres substances"
-                className="form-control"
-                 />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientDrugsUsage"
-                value={formData.patientDrugsUsage}
-                onChange={handleChange}
-                placeholder="Fréquence et durée de consommation"
-                className="form-control"
-                />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientMental"
-                value={formData.patientMental}
-                onChange={handleChange}
-                placeholder="Impact sur la santé mentale"
-                className="form-control"
-                />
+            <PresetTextField name="patientDrugs" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientDrugs} placeholder="Consommation d'alcool, drogues, nicotine et autres substances" rows={2} />
+                <PresetTextField name="patientDrugsUsage" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientDrugsUsage} placeholder="Fréquence et durée de consommation" rows={2} />
+                <PresetTextField name="patientMental" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientMental} placeholder="Impact sur la santé mentale" rows={2} />
             </div>
             <Form.Label className="form-section-title">Historique psychosocial</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientFam"
-                value={formData.patientFam}
-                onChange={handleChange}
-                placeholder="Enfance et contexte familial"
-                className="form-control"
-                 />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientJob"
-                value={formData.patientJob}
-                onChange={handleChange}
-                placeholder="Historique d'éducation et d'emploi"
-                className="form-control"
-                />
+            <PresetTextField name="patientFam" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientFam} placeholder="Enfance et contexte familial" rows={2} />
+                <PresetTextField name="patientJob" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientJob} placeholder="Historique d'éducation et d'emploi" rows={2} />
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientRelationship"
-                value={formData.patientRelationship}
-                onChange={handleChange}
-                placeholder="Relations et système de soutien social"
-                className="form-control"
-                />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientLegal"
-                value={formData.patientLegal}
-                onChange={handleChange}
-                placeholder="Problèmes juridiques"
-                className="form-control"
-                />
+                <PresetTextField name="patientRelationship" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientRelationship} placeholder="Relations et système de soutien social" rows={2} />
+                <PresetTextField name="patientLegal" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientLegal} placeholder="Problèmes juridiques" rows={2} />
             </div>
             <Form.Label className="form-section-title">Évaluation des risques</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -350,43 +196,19 @@ const Shrink = ({
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientRiskAssessment"
-                value={formData.patientRiskAssessment}
-                onChange={handleChange}
-                placeholder="Détails de l'évaluation des risques"
-                className="form-control"
-                />
+                <PresetTextField name="patientRiskAssessment" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientRiskAssessment} placeholder="Détails de l'évaluation des risques" rows={2} />
                 </div>
                 <RiskFields formData={formData} handleChange={handleChange} />
                 <EmergencyContactSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
                 <Form.Label className="form-section-title">Constatations</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientFindings"
-                value={formData.patientFindings}
-                onChange={handleChange}
-                placeholder="Notes / Constatations du patient"
-                className="form-control"
-                />
+                <PresetTextField name="patientFindings" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientFindings} placeholder="Notes / Constatations du patient" rows={2} />
                 </div>
 
                 <Form.Label className="form-section-title">Diagnostic de sortie</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientDiagnosis"
-                value={formData.patientDiagnosis}
-                onChange={handleChange}
-                placeholder="Diagnostic principal"
-                className="form-control"
-                />
+                <PresetTextField name="patientDiagnosis" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientDiagnosis} placeholder="Diagnostic principal" rows={2} />
                 </div>
                 <Form.Label className="form-section-title">Thérapie</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -401,24 +223,8 @@ const Shrink = ({
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </Form.Select>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientTreatmentPlan"
-                value={formData.patientTreatmentPlan}
-                onChange={handleChange}
-                placeholder="Plan de traitement"
-                className="form-control"
-                />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientTherapyMedicine"
-                value={formData.patientTherapyMedicine}
-                onChange={handleChange}
-                placeholder="Médicaments"
-                className="form-control"
-                />
+                <PresetTextField name="patientTreatmentPlan" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientTreatmentPlan} placeholder="Plan de traitement" rows={2} />
+                <PresetTextField name="patientTherapyMedicine" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientTherapyMedicine} placeholder="Médicaments" rows={2} />
                 <Form.Select
                 name="followup"
                 value={formData.followup}
@@ -434,45 +240,11 @@ const Shrink = ({
                 </div>
                 <Form.Label className="form-section-title">Plan de traitement / Recommandations</Form.Label>
         <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientTreatmentMedicine"
-                value={formData.patientTreatmentMedicine}
-                onChange={handleChange}
-                placeholder="Médicaments"
-                className="form-control"
-
-                />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientTherapy"
-                value={formData.patientTherapy}
-                onChange={handleChange}
-                placeholder="Thérapie (ex: TCC, TCD)"
-                className="form-control"
-                /></div> 
+                <PresetTextField name="patientTreatmentMedicine" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientTreatmentMedicine} placeholder="Médicaments" rows={2} />
+                <PresetTextField name="patientTherapy" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientTherapy} placeholder="Thérapie (ex: TCC, TCD)" rows={2} /></div> 
             <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientFollowUp"
-                value={formData.patientFollowUp}
-                onChange={handleChange}
-                placeholder="Rendez-vous de suivi"
-                className="form-control"
-
-                />
-                <Form.Control
-                as="textarea"
-                rows="2"
-                name="patientSafety"
-                value={formData.patientSafety}
-                onChange={handleChange}
-                placeholder="Planification de la sécurité (si à risque)"
-                className="form-control"
-                />
+                <PresetTextField name="patientFollowUp" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientFollowUp} placeholder="Rendez-vous de suivi" rows={2} />
+                <PresetTextField name="patientSafety" formData={formData} setFormData={setFormData} presets={PSYCH_EVAL_PRESETS.patientSafety} placeholder="Planification de la sécurité (si à risque)" rows={2} />
 
                 </div>
 
