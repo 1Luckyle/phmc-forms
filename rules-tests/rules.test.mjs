@@ -44,8 +44,11 @@ let failures = 0;
 let total = 0;
 
 // seedFn (facultatif) : modifie une copie du jeu de données avant le scénario.
+const DEATH_SCENARIO = /décédé|décès|marqueur/i;
 const scenario = async (label, expected, { as, op, path, value }, seedFn) => {
     const data = clone(SEED);
+    // Le civil C (PHMC-1) est vivant dans les scénarios ordinaires : le marqueur de décès de PHMC-1 ne sert qu'aux tests du personnel et aux scénarios de décès.
+    if (as === 'C' && !DEATH_SCENARIO.test(label)) delete data.patientsDecedes['PHMC-1'];
     if (seedFn) seedFn(data);
     await env.clearDatabase();
     await env.withSecurityRulesDisabled(async (context) => { await context.database().ref().set(data); });
@@ -168,7 +171,6 @@ await write('A libère la fiche', true, 'A', 'patientsDecedes/PHMC-1', null);
 await write('D2 n écrase pas le marqueur existant', false, 'D2', 'patientsDecedes/PHMC-1', { depuis: 9, uid: 'D2' });
 await write('Marqueur de décès sans champ « depuis » refusé', false, 'D1', 'patientsDecedes/PHMC-8', { uid: 'D1' });
 await read('S1 lit le marqueur de décès', true, 'S1', 'patientsDecedes/PHMC-1');
-await read('Civil C ne lit pas le marqueur', false, 'C', 'patientsDecedes/PHMC-1');
 const pubRow = (uid) => ({ reportPath: 'savedReports/D_One/unpub', uid, publieLe: 3 });
 await write('D1 publie (uid = lui)', true, 'D1', 'rapportsPublics/unpub', pubRow('D1'));
 await write('S1 ne publie pas', false, 'S1', 'rapportsPublics/unpub', pubRow('S1'));
@@ -570,6 +572,67 @@ await write('Une demande sans champs est refusée', false, 'S1', 'contactsUrgenc
 await write("S1 pose une demande d'ajouts au fond médical (sans contact)", true, 'S1', 'contactsUrgenceMaj/PHMC-1/req3', { ajouts: { patientAllergies: ['Latex'] }, par: 'S1', titre: 'Consultation', creeLe: Date.now() });
 await write('Une demande sans champs ni ajouts est refusée', false, 'S1', 'contactsUrgenceMaj/PHMC-1/req4', { par: 'S1', titre: 'x', creeLe: 1 });
 await read('S1 ne relit pas les demandes (admin et serveur seulement)', false, 'S1', 'contactsUrgenceMaj/PHMC-1', (data) => { data.contactsUrgenceMaj = { 'PHMC-1': { req1: contactRequest } }; });
+
+// Décès : marqueur lu par le patient, identifiants temporaires du DMEC, décès signalés, contestations.
+console.log('--- décès : identifiants temporaires, décès signalés, contestations ---');
+await read('Le civil C lit SON marqueur de décès (page « déclaré décédé »)', true, 'C', 'patientsDecedes/PHMC-1');
+await read("Le civil C ne lit pas le marqueur d'un autre patient", false, 'C', 'patientsDecedes/PHMC-2');
+await write('Le civil C ne pose pas de marqueur de décès', false, 'C', 'patientsDecedes/PHMC-9', { depuis: 1, uid: 'C' });
+
+const tmp = { nom: 'Inconnu (corps non identifié)', creeLe: 1, uid: 'D1', statut: 'temporaire' };
+const withTmp = (data) => { data.identifiantsTemporaires = { 'TMP-ABCDE': tmp }; };
+await write('D1 (DMEC) crée un ID temporaire', true, 'D1', 'identifiantsTemporaires/TMP-ABCDE', tmp);
+await write('S1 (soignant) ne crée pas d ID temporaire', false, 'S1', 'identifiantsTemporaires/TMP-ABCDE', { ...tmp, uid: 'S1' });
+await write('D1 ne crée pas un ID temporaire au nom de D2', false, 'D1', 'identifiantsTemporaires/TMP-ABCDE', { ...tmp, uid: 'D2' });
+await write("D1 ne crée pas un ID qui n a pas la forme TMP-XXXXX", false, 'D1', 'identifiantsTemporaires/PHMC-1', tmp);
+await write("D1 n écrase pas un ID temporaire existant", false, 'D1', 'identifiantsTemporaires/TMP-ABCDE', { ...tmp, nom: 'autre' }, withTmp);
+await write("D2 n attribue pas l ID temporaire (réservé aux admins)", false, 'D2', 'identifiantsTemporaires/TMP-ABCDE', { ...tmp, statut: 'attribue', idReel: 'PHMC-7' }, withTmp);
+await write("L'admin A attribue l ID temporaire à un ID réel", true, 'A', 'identifiantsTemporaires/TMP-ABCDE', { ...tmp, statut: 'attribue', idReel: 'PHMC-7' }, withTmp);
+await write("Un ID attribué sans ID réel est refusé", false, 'A', 'identifiantsTemporaires/TMP-ABCDE', { ...tmp, statut: 'attribue' }, withTmp);
+await read('S1 lit les identifiants temporaires', true, 'S1', 'identifiantsTemporaires', withTmp);
+await read('Le civil C ne lit pas les identifiants temporaires', false, 'C', 'identifiantsTemporaires', withTmp);
+
+const signal = { patientID: 'PHMC-2', patientName: 'Jean Test', kind: 'urgence', date: '2026-11-11', heure: '15:12', par: 'S1', uid: 'S1', creeLe: 1, statut: 'a_traiter' };
+const withSignal = (data) => { data.decesSignales = { sig1: signal }; };
+await write('S1 signale un décès (clé du rapport de soins)', true, 'S1', 'decesSignales/sig1', signal);
+await write('S1 ne signale pas un décès au nom de S2', false, 'S1', 'decesSignales/sig1', { ...signal, uid: 'S2' });
+await write('Le civil C ne signale pas de décès', false, 'C', 'decesSignales/sig1', { ...signal, uid: 'C' });
+await write("S1 ne crée pas une fiche déjà traitée", false, 'S1', 'decesSignales/sig1', { ...signal, statut: 'traite' });
+await read('D1 (DMEC) lit les décès signalés', true, 'D1', 'decesSignales', withSignal);
+await read('Le civil C ne lit pas les décès signalés', false, 'C', 'decesSignales', withSignal);
+await write('S1 retire sa propre fiche tant qu elle est à traiter', true, 'S1', 'decesSignales/sig1', null, withSignal);
+await write('S2 ne retire pas la fiche de S1', false, 'S2', 'decesSignales/sig1', null, withSignal);
+await write('S1 ne la passe pas lui-même en « traité »', false, 'S1', 'decesSignales/sig1', { ...signal, statut: 'traite' }, withSignal);
+await write('D1 (DMEC) la passe en « traité »', true, 'D1', 'decesSignales/sig1', { ...signal, statut: 'traite', traiteLe: 2, traitePar: 'D1', rapportDmec: 'savedReports/D_One/d9' }, withSignal);
+
+const contest = { uid: 'C', message: 'Je suis bien vivant.', creeLe: 1, statut: 'en_attente' };
+const withContest = (status) => (data) => { data.contestationsDeces = { 'PHMC-1': { ...contest, statut: status } }; };
+await write('Le civil C conteste SON décès', true, 'C', 'contestationsDeces/PHMC-1', contest);
+await write("Le civil C ne conteste pas le décès d'un autre patient", false, 'C', 'contestationsDeces/PHMC-2', contest);
+await write('Une contestation vide est refusée', false, 'C', 'contestationsDeces/PHMC-1', { ...contest, message: '' });
+await write('Le civil C ne se déclare pas lui-même « accepté »', false, 'C', 'contestationsDeces/PHMC-1', { ...contest, statut: 'acceptee' });
+await write('Le civil C ne réécrit pas une contestation en attente', false, 'C', 'contestationsDeces/PHMC-1', { ...contest, message: 'autre' }, withContest('en_attente'));
+await write('Le civil C peut recontester après un rejet', true, 'C', 'contestationsDeces/PHMC-1', { ...contest, message: 'Voici une preuve.' }, withContest('rejetee'));
+await write("L'admin A répond à la contestation", true, 'A', 'contestationsDeces/PHMC-1', { ...contest, statut: 'rejetee', reponse: 'Décès confirmé.', traiteLe: 2, traitePar: 'A' }, withContest('en_attente'));
+await read('Le civil C lit sa contestation et la réponse', true, 'C', 'contestationsDeces/PHMC-1', withContest('en_attente'));
+await read("S1 ne lit pas les contestations (admins seulement)", false, 'S1', 'contestationsDeces/PHMC-1', withContest('en_attente'));
+await read("L'admin A lit toutes les contestations", true, 'A', 'contestationsDeces', withContest('en_attente'));
+
+
+// Compte Civil d'un patient déclaré décédé : lecture, contestation et notification aux admins seulement ; tout le reste est refusé. Le personnel n'est jamais concerné.
+console.log('--- compte Civil décédé : écritures bloquées ---');
+await write('[décédé] C ne crée plus de rapport', false, 'C', 'savedReports/Civil_Name_PHMC-1/c1', newReport('PHMC-1'));
+await write('[décédé] C ne modifie plus un rapport portant son ID', false, 'C', 'savedReports/S_Two/r1', { ...r1, bbCode: 'maj civil' });
+await write("[décédé] C n'écrit plus dans l'index des dossiers", false, 'C', 'patientRecords/PHMC-1/nouv', { reportPath: 'x' });
+await write('[décédé] C ne met plus de formulaire en file pour son dossier', false, 'C', 'dossiersEnAttente/PHMC-1/d1', { version: 25, reportPath: 'savedReports/Civil_Name_PHMC-1/d1', creeLe: Date.now(), createur: 'patient' }, withDossier);
+await write('[décédé] C ne dépense plus de jeton', false, 'C', 'jetonsDossier/PHMC-1/basique', 0, withDossier);
+await write('[décédé] C ne signale plus d erreur sur son dossier', false, 'C', 'signalementsDossier/PHMC-1/d1', { creeLe: Date.now() }, withDossier);
+await write('[décédé] C ne modifie plus son profil', false, 'C', 'civilians/C/phone', '555-0100');
+await read('[décédé] C lit toujours son dossier', true, 'C', 'dossiersPatients/PHMC-1', withDossier);
+await write('[décédé] C peut contester (contestationsDeces)', true, 'C', 'contestationsDeces/PHMC-1', { uid: 'C', message: 'Je suis bien vivant.', creeLe: 1, statut: 'en_attente' });
+await write('[décédé] C prévient les administrateurs de sa contestation', true, 'C', 'notificationsGroupes/admin/n1', { type: 'demande', titre: 'Contestation de décès : PHMC-1', texte: 'Je suis vivant', creeLe: Date.now(), deUid: 'C' });
+await write("[décédé] un membre du personnel qui est aussi patient décédé écrit toujours", true, 'S1', 'savedReports/S_One/x1', newReport(null), (data) => { data.civilians.S1 = { patientID: 'PHMC-6' }; data.patientsDecedes['PHMC-6'] = { depuis: 1, uid: 'D1' }; });
+await write("[décédé] un admin qui est aussi patient décédé écrit toujours", true, 'A', 'civilians/A/phone', '555-0101', (data) => { data.civilians.A = { patientID: 'PHMC-6' }; data.patientsDecedes['PHMC-6'] = { depuis: 1, uid: 'D1' }; });
 
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);

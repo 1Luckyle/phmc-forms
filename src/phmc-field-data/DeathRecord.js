@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TemporaryIdPicker from './shared/TemporaryIdPicker';
 import { Form } from 'react-bootstrap';
 import { database } from '../firebase';
 import { ref, get } from 'firebase/database';
@@ -117,6 +118,7 @@ const DeathRecord = ({
                             <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient" className="form-control" />
                         )}
                     </div>
+            <TemporaryIdPicker formData={formData} setFormData={setFormData} />
                     <Form.Label>Date du décès</Form.Label>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Control type="date" name="dateOfDeath" value={formData.dateOfDeath} onChange={handleChange} className="form-control" />

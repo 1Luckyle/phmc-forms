@@ -30,6 +30,7 @@ import {
 } from './patientId';
 import { isDossierVersion } from './dossierCore';
 import { careVisitSummary } from './careVisitSummary';
+import { retractDeathSignal } from './deathSignals';
 import { prescriptionOfReport } from '../phmc-bbcode-generators/generatePrescription';
 
 export { canonicalPatientId, normalizePatientId, patientIdCandidates, samePatientId };
@@ -370,6 +371,7 @@ export async function deleteReportWithRules(report, viewer) {
         if (reportPath) await remove(ref(database, reportPath));
         if (indexRef) await removeIndexEntry(indexRef);
         await releaseDeath();
+        if (viewer.role !== 'civil') await retractDeathSignal(indexKey);
     };
     // « Retiré » : le rapport reste en base pour les médecins qui en ont une copie.
     const hide = async () => {
@@ -377,6 +379,7 @@ export async function deleteReportWithRules(report, viewer) {
         if (reportPath) await update(ref(database, reportPath), { ownerDeleted: true });
         if (indexRef) await update(indexRef, { ownerDeleted: true });
         await releaseDeath();
+        if (viewer.role !== 'civil') await retractDeathSignal(indexKey);
     };
 
     const isAma = report.kind === 'ama' || indexEntry?.kind === 'ama';

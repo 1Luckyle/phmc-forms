@@ -51,6 +51,8 @@ import { FREEZE_MESSAGE } from '../utils/judicialFreeze';
 import { loadDeathLock, loadPublishedKeys, unlockPatient } from '../utils/deathReports';
 import ReleaseRequestsPanel from './ReleaseRequestsPanel';
 import MyDossierPanel from './MyDossierPanel';
+import DeathSignalBanner from './DeathSignalBanner';
+import { resolvePatientIdAlias } from '../utils/temporaryIds';
 import AdminDossierEditor from './AdminDossierEditor';
 import { loadStaffByPatientNode } from '../utils/dossierPatient';
 import { staffNameParts } from '../utils/staffAdmin';
@@ -110,7 +112,7 @@ const visibilityInfo = (entry) => {
 
 const PatientDossierModal = ({
     show, onHide, showNotification, copyReportToOwnAccount, shareReportWithPatient,
-    loadReport, deleteReportsForUser, initialPatientId = '',
+    loadReport, deleteReportsForUser, initialPatientId = '', onCreateDeathReport,
 }) => {
     const { isAdmin, employeeProfile, staffName, staffProfile } = useEmployeeAuth();
     const isStaffViewer = isAdmin || !!employeeProfile;
@@ -133,6 +135,7 @@ const PatientDossierModal = ({
     const [patientOptions, setPatientOptions] = useState([]);
     const [isLoadingPatients, setIsLoadingPatients] = useState(false);
     const [searchedPatientId, setSearchedPatientId] = useState(null);
+    const [aliasNotice, setAliasNotice] = useState(null);
     // Marqueur « compte supprimé » du patient affiché (ancien membre du personnel ou compte Civil supprimé).
     const [deletedMark, setDeletedMark] = useState(null);
     // Patient déclaré DÉCÉDÉ par le DMEC (patientsDecedes) : le dossier reste consultable, mais le personnel non DMEC n'y enregistre plus rien.
@@ -224,7 +227,13 @@ const PatientDossierModal = ({
             showNotification('Veuillez sélectionner ou saisir un ID patient.', 'warning');
             return;
         }
-        const canonical = canonicalPatientId(patientId);
+        // Un ancien ID temporaire (DMEC) déjà attribué mène au dossier de l'ID réel : ses rapports y ont été transférés.
+        let canonical = canonicalPatientId(patientId);
+        try {
+            const resolved = await resolvePatientIdAlias(canonical);
+            setAliasNotice(resolved.from ? resolved : null);
+            canonical = resolved.id;
+        } catch (error) { setAliasNotice(null); }
         if ((recentlyViewed.get(canonical) || 0) < Date.now() - 15 * 60 * 1000) {
             recentlyViewed.set(canonical, Date.now());
             logActivity({ category: 'rapports', action: 'dossier_viewed', summary: `Dossier patient consulté : ${canonical}`, target: canonical });
@@ -629,6 +638,12 @@ const PatientDossierModal = ({
                 <div className="rpt-body">
                     {searchedPatientId && (
                         <div className="mb-3" data-no-mark>
+                            {aliasNotice && (
+                                <div className="alert alert-info py-2 small mb-2" data-no-tip="1">
+                                    <i className="fas fa-id-badge me-2"></i>L'ID temporaire <strong>{aliasNotice.from}</strong> a été attribué à <strong>{aliasNotice.id}</strong> : voici son dossier.
+                                </div>
+                            )}
+                            <DeathSignalBanner patientID={searchedPatientId} onCreate={onCreateDeathReport} refreshKey={dossierRefresh} />
                             <MyDossierPanel patientID={searchedPatientId} staffView showNotification={showNotification} refreshKey={dossierRefresh} />
                             {isAdmin && (
                                 <div className="mt-2">

@@ -19,6 +19,7 @@ import TransparencyPage from './components/Transparency/TransparencyPage';
 import MemorialPage from './components/Memorial/MemorialPage';
 import HospitalPlanPage from './components/Directory/HospitalPlanPage';
 import ReportLinkPage from './components/ReportLinkPage';
+import DeceasedGuard from './components/DeceasedGuard';
 
 function App() {
     const [formData, setFormData] = useState({});
@@ -303,6 +304,7 @@ const initialFormData = {
                         <AuthProvider>
                             <FieldGuide />
                             <Router>
+                                <DeceasedGuard>
                                 <Routes>
                                     <Route path="/" element={<MainApp formData={formData} setFormData={setFormData} lastWebhookIdentifier={lastWebhookIdentifier} setLastWebhookIdentifier={setLastWebhookIdentifier} initialFormData={initialFormData} showNotification={showNotification} removeNotification={removeNotification} setShowAdblockNotification={setShowAdblockNotification} />} />
                                     <Route path="/reset-password" element={<PasswordResetHandler />} />
@@ -316,6 +318,7 @@ const initialFormData = {
                                     <Route path="/admin" element={<ProtectedRoute><Admin formData={formData} setFormData={setFormData} showNotification={showNotification} /></ProtectedRoute>} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
+                                </DeceasedGuard>
                             </Router>
                         </AuthProvider>
                     </NotificationProvider>

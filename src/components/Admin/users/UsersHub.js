@@ -14,6 +14,7 @@ import './UsersHub.css';
 import UserStats from '../UserStats';
 import EmailChangeFlow from '../../EmailChangeFlow';
 import AdminReportsTools from '../AdminReportsTools';
+import AdminDeathTools from '../AdminDeathTools';
 import RankMigrationPanel from './RankMigrationPanel';
 import PersonnelFileDialog from '../../Contracts/PersonnelFileDialog';
 import { sendAdminActionWebhook } from '../adminUtils';
@@ -618,6 +619,8 @@ const UsersHub = ({ currentUser, showNotification, onOpenMigrationTools, initial
                                     </Button>
                                 </div>
                                 <AdminReportsTools showNotification={showNotification} />
+                                <hr />
+                                <AdminDeathTools showNotification={showNotification} />
                                 <hr />
                                 <UserStats currentUser={currentUser} />
                             </>

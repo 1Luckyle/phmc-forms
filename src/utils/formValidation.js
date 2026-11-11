@@ -41,7 +41,7 @@ export const isValidEmail = (value) => EMAIL_REGEX.test(text(value));
 // Numéro de téléphone RP : au moins 3 chiffres (formats « 555-0142 », « 5550142 », « 555 0142 »…).
 export const isValidPhone = (value) => (text(value).match(/\d/g) || []).length >= 3 && /^[\d\s().+-]+$/.test(text(value));
 // ID patient reconnaissable : « 2752 », « PHMC-2752 », « phmc 2752 ».
-export const looksLikePatientId = (value) => /^(PHMC[-_ ]?)?\d{3,7}$/i.test(text(value));
+export const looksLikePatientId = (value) => /^(PHMC[-_ ]?)?\d{3,7}$/i.test(text(value)) || /^TMP-[A-Z2-9]{5}$/i.test(text(value));
 
 const parseDate = (value) => {
     const date = new Date(text(value));

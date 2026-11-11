@@ -1,4 +1,6 @@
 import React, { useState, useEffect} from 'react'; // Import useEffect
+import DeathSignalPicker from './shared/DeathSignalPicker';
+import TemporaryIdPicker from './shared/TemporaryIdPicker';
 import { Form, Button, InputGroup } from 'react-bootstrap';
 import ImagePreview from '../components/ImagePreview';
 import DecedentDetailsFields from './shared/DecedentDetailsFields';
@@ -142,6 +144,7 @@ useEffect(() => {
             )}
             <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
 
+            <DeathSignalPicker formData={formData} setFormData={setFormData} />
             <Form.Label className="form-section-title">Défunt</Form.Label>
             <DoeChoice formData={formData} setFormData={setFormData} fields={DECEDENT_FIELDS} showMassFatality />
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -154,6 +157,7 @@ useEffect(() => {
                 <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
                 <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
             </div>
+            <TemporaryIdPicker formData={formData} setFormData={setFormData} />
             <DecedentDetailsFields formData={formData} handleChange={handleChange} />
 
             <Form.Label className="form-section-title">Circonstances du décès</Form.Label>

@@ -187,6 +187,8 @@ export const getToolAccess = (identity) => {
         bingo: isStaffMember,
         savedReports: !!currentEmployee,
         patientDossier: !isCivilian && !!(isAdmin || (currentEmployee && (!staffProfile || careOrDmec))),
+        // Décès signalés par les soignants (fiches pour établir le rapport de décès) : le DMEC et les admins.
+        deathSignals: !isCivilian && !!(isAdmin || (currentEmployee && families.includes('dmec'))),
         recruitment: !!canManageRecruitment,
         // Annuaire (consultation seule) : le personnel et les admins.
         directory: isStaffMember || !!isAdmin,
@@ -224,6 +226,7 @@ export const TOOL_ACCESS_LABELS = {
     bingo: 'Bingo',
     savedReports: 'Rapports enregistrés',
     patientDossier: 'Dossier Patient',
+    deathSignals: 'Décès signalés',
     recruitment: 'Gestion du recrutement',
     directory: "Annuaire & plan de l'hôpital (consultation seule)",
     lawEnforcement: "Demandes des forces de l'ordre",

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import TemporaryIdPicker from './shared/TemporaryIdPicker';
 import { Form, Button, InputGroup } from 'react-bootstrap';
 import AutopsyDiagramModal from '../components/AutopsyDiagramModal';
 import * as Sentry from "@sentry/react";
@@ -177,6 +178,7 @@ const Autopsy = ({
                     className="form-control"
                 />
             </div>
+            <TemporaryIdPicker formData={formData} setFormData={setFormData} />
             <DecedentDetailsFields formData={formData} handleChange={handleChange} showMeasures />
             <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
             <Form.Label>Lieu du décès</Form.Label>

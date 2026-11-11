@@ -510,7 +510,7 @@ Clé : ${sanitizedKey}`,
                 severity: 'success',
             });
 
-            return { success: true }; // Indicate success
+            return { success: true, reportPath, indexKey: sanitizedKey }; // Indicate success
 
         } catch (error) {
             console.error("Error saving report to Firebase:", error);

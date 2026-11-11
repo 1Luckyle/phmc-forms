@@ -37,6 +37,7 @@ export const NOTIFICATION_TYPES = {
     incendie: { icon: 'fa-fire-extinguisher', color: '#ff7b72' },
     compte: { icon: 'fa-user-gear', color: '#79c0ff' },
     cctv: { icon: 'fa-video', color: '#79c0ff' },
+    deces: { icon: 'fa-file-medical', color: '#ff7b72' },
 };
 
 const FEED_LIMIT = 60;

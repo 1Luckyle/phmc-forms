@@ -217,12 +217,49 @@
     // Patients déclarés DÉCÉDÉS : patientsDecedes/{ID patient canonique}: { depuis, uid, par, rapport }. Posé par le DMEC (ou un admin) quand
     // il enregistre un rapport de décès portant cet ID ; retiré par celui qui l'a posé (suppression de son rapport) ou par un admin
     // (déblocage). Tant qu'il existe, le personnel non DMEC ne peut plus rien enregistrer sur ce patient (voir savedReports) ; le dossier
-    // reste consultable. Lecture : le personnel (pour afficher le message avant d'enregistrer).
+    // reste consultable. Lecture : le personnel (pour afficher le message avant d'enregistrer) et le patient lui-même (compte Civil lié à cet ID : page « déclaré décédé »).
+    // COMPTE CIVIL D'UN PATIENT DÉCLARÉ DÉCÉDÉ : tant que le marqueur existe, ce compte n'écrit plus dans ses rapports (savedReports), son index (patientRecords), son dossier (dossiersEnAttente, jetonsDossier,
+    // signalementsDossier, signaturesPatients), ses factures, ses exemptions, ses demandes de divulgation ni son profil (civilians). Il garde seulement la lecture, sa contestation (contestationsDeces) et les
+    // notifications aux administrateurs. Le personnel et les admins ne sont jamais concernés. Condition ajoutée en fin de chaque règle d'écriture concernée (voir « !root.child('patientsDecedes')… »).
     "patientsDecedes": {
       "$patientId": {
-        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+        ".read":  "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && ((!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && data.child('uid').val() === auth.uid))))",
         ".validate": "!newData.exists() || (newData.hasChildren(['depuis', 'uid']) && newData.child('depuis').isNumber() && newData.child('uid').isString())"
+      }
+    },
+
+    // IDENTIFIANTS TEMPORAIRES (DMEC) : identifiantsTemporaires/{TMP-XXXXX}: { nom, creeLe, uid, par?, statut: 'temporaire' | 'attribue', idReel?, attribueLe?, attribuePar? }.
+    // Un défunt sans ID patient reçoit un ID temporaire pour que plusieurs rapports DMEC puissent être liés à la même personne. Créé par le DMEC (ou un admin), jamais écrasé ;
+    // seul un ADMIN l'attribue (statut « attribue » + idReel : les rapports sont alors transférés sur l'ID réel) ou le supprime. Lecture : le personnel.
+    "identifiantsTemporaires": {
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+      "$id": {
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && !data.exists() && newData.child('uid').val() === auth.uid))",
+        ".validate": "!newData.exists() || ($id.matches(/^TMP-[A-Z2-9]{5}$/) && newData.hasChildren(['nom', 'creeLe', 'uid', 'statut']) && newData.child('nom').isString() && newData.child('nom').val().length <= 160 && newData.child('creeLe').isNumber() && newData.child('uid').isString() && (newData.child('statut').val() === 'temporaire' || (newData.child('statut').val() === 'attribue' && newData.child('idReel').isString())))"
+      }
+    },
+
+    // DÉCÈS SIGNALÉS : decesSignales/{clé du rapport de soins}: { patientID, patientName, kind: 'urgence' | 'chirurgie', date, heure?, cause?, nature?, reanimation?, destination?, par, uid, creeLe, statut: 'a_traiter' | 'traite',
+    // traiteLe?, traitePar?, rapportDmec? }. Posé à l'enregistrement d'un rapport de soins (urgences, opération) dont le patient est décédé : le DMEC, qui ne peut pas lire ce rapport (cloisonnement soignants / DMEC),
+    // y trouve l'essentiel pour établir son rapport de décès. Le soignant qui l'a posé le modifie ou le retire tant qu'il est à traiter ; le DMEC le passe à « traite » ; un admin fait tout. Lecture : le personnel.
+    "decesSignales": {
+      ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
+      ".indexOn": ["patientID", "statut"],
+      "$cle": {
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (!data.exists() && root.child('staffUIDs').child(auth.uid).val() === true && newData.child('uid').val() === auth.uid && newData.child('statut').val() === 'a_traiter') || (data.exists() && data.child('uid').val() === auth.uid && data.child('statut').val() === 'a_traiter' && (!newData.exists() || newData.child('statut').val() === 'a_traiter')) || (data.exists() && root.child('dmecUIDs').child(auth.uid).val() === true))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['patientID', 'uid', 'creeLe', 'statut', 'par']) && newData.child('patientID').isString() && newData.child('creeLe').isNumber() && (newData.child('statut').val() === 'a_traiter' || newData.child('statut').val() === 'traite'))"
+      }
+    },
+
+    // CONTESTATION d'un décès par le patient lui-même : contestationsDeces/{ID patient}: { uid, message, creeLe, statut: 'en_attente' | 'acceptee' | 'rejetee', reponse?, traiteLe?, traitePar? }. Un compte Civil déclaré décédé (patientsDecedes)
+    // n'a plus accès au site que pour lire ce statut et contester ; il écrit sa contestation (une seule à la fois : une nouvelle n'est possible qu'après un rejet). Les admins la lisent et y répondent (débloquer ou rejeter).
+    "contestationsDeces": {
+      ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+      "$patientId": {
+        ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && newData.child('uid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (!data.exists() || data.child('statut').val() === 'rejetee')))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['uid', 'message', 'creeLe', 'statut']) && newData.child('message').isString() && newData.child('message').val().length > 0 && newData.child('message').val().length <= 2000 && newData.child('creeLe').isNumber() && (newData.child('statut').val() === 'en_attente' || newData.child('statut').val() === 'acceptee' || newData.child('statut').val() === 'rejetee'))"
       }
     },
 
@@ -703,7 +740,7 @@
           // supprimer ce rapport ; il faut d'abord lever le gel (admin, avec un justificatif : voir gelsJudiciaires). LIMITE : le droit d'écriture
           // d'un admin sur le NŒUD entier (renommage, fusion de comptes : ligne « .write » de $userKey) l'emporte sur cette règle ; pour les
           // admins le gel est donc appliqué par l'application (deleteReportWithRules ; assertNoneFrozen avant chaque opération d'admin sur un nœud entier), pas par la base.
-          ".write": "auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama' && !((data.child('bbCodeVersion').val() === 3 || data.child('bbCodeVersion').val() === 25 || data.child('bbCodeVersion').val() === 26) && (root.child('patientRecords').child(data.child('data').child('patientID').val()).child($reportKey).child('visibility').val() !== 'owner' || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() === 'paye' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('payeLe').val() < now - 900000) || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'a_payer' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'paye' && data.child('timestamp').val() < now - 900000)))))))",
+          ".write": "(auth != null && !(root.child('gelsJudiciaires').child($reportKey).child('actif').val() === true) && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (((root.child('noeudsRapports').child(auth.uid).val() === $userKey || root.child('noeudsAnciens').child(auth.uid).child($userKey).exists()) && (!newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !(newData.child('data').child('patientID').exists() && root.child('patientsDecedes').child(newData.child('data').child('patientID').val()).exists()) || (data.exists() && newData.child('bbCode').val() === data.child('bbCode').val()))) || (!newData.exists() && data.child('ownerDeleted').val() === true))) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (!data.exists() || ((data.child('data').child('patientID').exists() && data.child('data').child('patientID').val() === root.child('civilians').child(auth.uid).child('patientID').val()) && data.child('kind').val() !== 'ama' && !((data.child('bbCodeVersion').val() === 3 || data.child('bbCodeVersion').val() === 25 || data.child('bbCodeVersion').val() === 26) && (root.child('patientRecords').child(data.child('data').child('patientID').val()).child($reportKey).child('visibility').val() !== 'owner' || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() === 'paye' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('payeLe').val() < now - 900000) || (root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'a_payer' && root.child('facturesPatients').child(data.child('data').child('patientID').val()).child($reportKey).child('statut').val() !== 'paye' && data.child('timestamp').val() < now - 900000)))))))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
           // Marqueurs que les renommages de fiche mettent à jour dans les COPIES d'un autre médecin (voir renameReportOwner).
           "copiedFrom": {
             "reportPath": {
@@ -793,7 +830,7 @@
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && ((!data.exists() && newData.child('source').val() === 'mineur') || (data.child('source').val() === 'mineur' && !newData.exists()))))",
+        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && ((!data.exists() && newData.child('source').val() === 'mineur') || (data.child('source').val() === 'mineur' && !newData.exists()))))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
         ".validate": "!newData.exists() || (newData.hasChildren(['statut', 'source', 'depuisLe']) && newData.child('statut').val() === 'active' && (newData.child('source').val() === 'mineur' || newData.child('source').val() === 'demande' || newData.child('source').val() === 'manuel') && newData.child('depuisLe').isNumber() && (!newData.child('parNom').exists() || (newData.child('parNom').isString() && newData.child('parNom').val().length <= 120)) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 300)))",
         "statut": {}, "source": {}, "depuisLe": {}, "parNom": {}, "note": {},
         "$other": { ".validate": false }
@@ -803,7 +840,7 @@
       ".read": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true)",
       "$patientId": {
         ".read": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || data.child('demandeurUid').val() === auth.uid || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.child('demandeurUid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('staffUIDs').child(auth.uid).val() === true)) || (data.child('demandeurUid').val() === auth.uid && !newData.exists()))",
+        ".write": "(auth != null && ((root.child('adminUIDs').child(auth.uid).val() === true || root.child('gestionIncendieUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.child('demandeurUid').val() === auth.uid && newData.child('statut').val() === 'en_attente' && (root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || root.child('staffUIDs').child(auth.uid).val() === true)) || (data.child('demandeurUid').val() === auth.uid && !newData.exists()))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
         ".validate": "!newData.exists() || (newData.hasChildren(['patientID', 'patientNom', 'motif', 'demandeLe', 'demandeurUid', 'statut']) && newData.child('patientID').val() === $patientId && newData.child('patientNom').isString() && newData.child('patientNom').val().length <= 120 && (newData.child('motif').val() === 'faible_revenu' || newData.child('motif').val() === 'mineur' || newData.child('motif').val() === 'autre') && newData.child('demandeLe').isNumber() && newData.child('demandeurUid').isString() && newData.child('statut').val() === 'en_attente' && (!newData.child('demandeurNom').exists() || (newData.child('demandeurNom').isString() && newData.child('demandeurNom').val().length <= 120)) && (!newData.child('details').exists() || (newData.child('details').isString() && newData.child('details').val().length <= 500)) && (!newData.child('parSoignant').exists() || (newData.child('parSoignant').isString() && newData.child('parSoignant').val().length <= 120)) && (!newData.child('patientEmail').exists() || (newData.child('patientEmail').isString() && newData.child('patientEmail').val().length <= 200)))",
         "patientID": {}, "patientNom": {}, "motif": {}, "demandeLe": {}, "demandeurUid": {}, "demandeurNom": {}, "statut": {}, "details": {}, "parSoignant": {}, "patientEmail": {},
         "$other": { ".validate": false }
@@ -946,7 +983,7 @@
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)"
+        ".write": "(auth != null && (auth.uid === $uid || root.child('adminUIDs').child(auth.uid).val() === true)) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())"
       }
     },
 
@@ -979,7 +1016,7 @@
         "$indexKey": {
           // Personnel : tout, SAUF créer une NOUVELLE entrée sur un patient décédé (patientsDecedes/{ID}) quand on n'est pas DMEC.
           // Civil : créer / modifier ; supprimer seulement une entrée « owner » (la sienne).
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.exists() || !newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !root.child('patientsDecedes').child($patientId).exists())) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (newData.exists() || data.child('visibility').val() === 'owner')))"
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (data.exists() || !newData.exists() || root.child('dmecUIDs').child(auth.uid).val() === true || !root.child('patientsDecedes').child($patientId).exists())) || (!(!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && (newData.exists() || data.child('visibility').val() === 'owner')))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())"
         }
       }
     },
@@ -999,7 +1036,7 @@
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$cle": {
-          ".write": "auth != null && newData.exists() && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
+          ".write": "(auth != null && newData.exists() && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
           ".validate": "!newData.exists() || (newData.hasChildren(['version', 'reportPath', 'creeLe', 'createur']) && newData.child('creeLe').isNumber() && (newData.child('createur').val() === 'patient' || newData.child('createur').val() === 'personnel'))"
         }
       }
@@ -1010,7 +1047,7 @@
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$kind": {
-          ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) && data.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() === data.val() - 1))",
+          ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) && data.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() === data.val() - 1))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
           ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 20)"
         }
       }
@@ -1021,7 +1058,7 @@
       "$patientId": {
         ".read": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$cle": {
-          ".write": "auth != null && ((!data.exists() && newData.exists() && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) || root.child('adminUIDs').child(auth.uid).val() === true)",
+          ".write": "(auth != null && ((!data.exists() && newData.exists() && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId) || root.child('adminUIDs').child(auth.uid).val() === true)) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
           ".validate": "!newData.exists() || (newData.hasChildren(['creeLe']) && newData.child('creeLe').isNumber())"
         }
       }
@@ -1039,7 +1076,7 @@
       ".indexOn": ["statut"],
       "$id": {
         ".read": "auth != null && root.child('civilians').child(auth.uid).child('patientID').val() === data.child('patientNode').val()",
-        ".write": "auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.exists() && newData.child('demandeurUid').val() === auth.uid))",
+        ".write": "(auth != null && (((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true) || (!data.exists() && newData.exists() && newData.child('demandeurUid').val() === auth.uid))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
         ".validate": "!newData.exists() || (newData.hasChildren(['patientNode', 'statut', 'creeLe']) && newData.child('statut').isString() && newData.child('creeLe').isNumber())"
       }
     },
@@ -1136,7 +1173,7 @@
     "signaturesPatients": {
       "$patientId": {
         ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
-        ".write": "auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && !data.exists()))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId || ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) && !data.exists()))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
         ".validate": "!newData.exists() || (newData.hasChildren(['url', 'creeLe']) && newData.child('url').isString() && newData.child('url').val().length <= 600)"
       }
     },
@@ -1185,7 +1222,7 @@
         // (ID patient de son profil). Empêche de lire les factures d'autrui par ID deviné.
         ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true || root.child('civilians').child(auth.uid).child('patientID').val() === $patientId)",
         "$factureId": {
-          ".write": "auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true)) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))",
+          ".write": "(auth != null && (newData.exists() ? ((!data.exists() && newData.child('statut').val() !== 'paye') || ((root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true)) && ((data.child('statut').val() === 'paye') === (newData.child('statut').val() === 'paye')))) : (root.child('adminUIDs').child(auth.uid).val() === true || (!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || (data.child('statut').val() !== 'paye' && root.child('civilians').child(auth.uid).child('patientID').val() === $patientId && root.child('patientRecords').child($patientId).child($factureId).child('visibility').val() === 'owner')))) && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true || !root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists())",
           ".validate": "newData.hasChildren(['montant', 'statut', 'creeLe']) && newData.child('montant').isNumber() && (newData.child('statut').val() === 'a_payer' || newData.child('statut').val() === 'paye' || newData.child('statut').val() === 'sans_paiement')"
         }
       }

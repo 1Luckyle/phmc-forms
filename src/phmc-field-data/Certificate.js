@@ -1,5 +1,6 @@
 // src/phmc-field-data/Certificate.js
 import React from 'react';
+import TemporaryIdPicker from './shared/TemporaryIdPicker';
 import { Form } from 'react-bootstrap';
 import CoronerSelect from './shared/CoronerSelect';
 import NameFields from './shared/NameFields';
@@ -36,6 +37,7 @@ const Certificate = ({
                     placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" className="form-control"
                 />
             </div>
+            <TemporaryIdPicker formData={formData} setFormData={setFormData} />
             <Form.Label>Âge du défunt | Date de naissance (si disponible)</Form.Label>
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <Form.Control

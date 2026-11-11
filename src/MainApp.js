@@ -46,6 +46,8 @@ import { useEmployeeSelector } from './hooks/useEmployeeSelector';
 import DebugFillButton from './components/DebugFillButton';
 import { getDebugTemplate, hasDebugTemplate, DEBUG_DEATH_VERSIONS } from './utils/debugTemplates';
 import { peekPendingReportLink, clearPendingReportLink } from './utils/reportLinks';
+import { syncDeathSignal, markDeathSignalTreated, deathSignalToDmecForm } from './utils/deathSignals';
+import DeathSignalsModal from './components/DeathSignalsModal';
 import useAutoGrowTextareas from './hooks/useAutoGrowTextareas';
 // logos
 import email from './assets/email.png'
@@ -224,6 +226,8 @@ function MainApp({
     // Outil personnel "Dossier Patient" (Lot 5) : recherche par ID patient,
     // voir PatientDossierModal.js.
     const [showPatientDossierModal, setShowPatientDossierModal] = useState(false);
+    // Décès signalés par les soignants (DMEC, admins) : fiches pour établir le rapport de décès (utils/deathSignals.js).
+    const [showDeathSignals, setShowDeathSignals] = useState(false);
     const [showDirectory, setShowDirectory] = useState(false);
     // Messagerie interne du personnel : boîte écoutée en direct (badge du menu), fenêtre ouverte depuis le menu ou une notification.
     const [showMessaging, setShowMessaging] = useState(false);
@@ -271,6 +275,7 @@ function MainApp({
             case 'contrats': setShowMyContracts(true); break;
             case 'dossierPatient': setShowMyPatientFile(true); break;
             case 'divulgation': if (toolAccess.patientDossier) setShowPatientDossierModal(true); break;
+            case 'decesSignales': if (toolAccess.deathSignals) setShowDeathSignals(true); break;
             case 'rapports': setShowSavedReports(true); break;
             case 'incendie': if (toolAccess.fireManage) setShowFireManage(true); break;
             case 'takehome': if (toolAccess.takeHome) { setTakeHomeTab(lien.section === 'manage' && toolAccess.takeHomeManage ? 'manage' : 'mine'); setShowTakeHome(true); } break;
@@ -556,6 +561,12 @@ function MainApp({
             certificateExit: prev.certificateExit || 'Sorties autorisées',
         }));
         handleAgencySelect(35);
+    };
+
+    // Décès signalé par les soignants : ouvre « Services de Médecine Légale » prérempli. Le rapport reste lié à la fiche par sa clé (deathSignalKey) : l'enregistrer la marque « traitée ».
+    const handleCreateDeathReport = (signal) => {
+        setFormData((prev) => ({ ...prev, ...deathSignalToDmecForm(signal), deathSignalKey: signal.key }));
+        handleAgencySelect(1);
     };
 
     const handleSelectChange = (selectedOption, action) => {
@@ -1119,6 +1130,17 @@ function MainApp({
                     await notifyUser(uid, { type: 'copie', ...copyNotificationContent(bbCodeVersion, formData, recipient, staffName), lien: { cible: 'dossierPatient' } });
                 } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
             }
+        }
+        // Décès : un rapport de soins (urgences, opération) dont le patient est décédé pose une fiche pour le DMEC (corrigée ou retirée quand on corrige le rapport) ; le rapport de décès du DMEC créé
+        // à partir de cette fiche la marque « traitée » (utils/deathSignals.js).
+        if (result && result.success && result.indexKey) {
+            try {
+                if ([5, 19].includes(Number(bbCodeVersion))) {
+                    const outcome = await syncDeathSignal({ key: result.indexKey, version: bbCodeVersion, formData, authorName: staffName });
+                    if (outcome === 'publiee') showNotification('Décès signalé au DMEC : il pourra établir son rapport de décès.', 'info-circle', 7000);
+                }
+                if (Number(bbCodeVersion) === 1 && formData.deathSignalKey) await markDeathSignalTreated(formData.deathSignalKey, { reportPath: result.reportPath, byName: staffName });
+            } catch (deathSignalError) { /* au mieux : l'enregistrement a réussi */ }
         }
         // Contact d'urgence modifié (santé mentale) et allergies, antécédents ou traitements oubliés (consultations) : le dossier du patient est mis à jour par le serveur, sous une minute.
         if (result && result.success && hasDossierUpdateRules(bbCodeVersion) && formData.patientID) {
@@ -2001,6 +2023,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                                         // Sans compte connecté il n'y a aucun rapport à retrouver : on ne l'affiche pas.
                                                         toolAccess.savedReports && { key: 'saved', icon: 'fas fa-save', label: savedReportsButtonLabel, onClick: closeAnd(toggleSavedReports) },
                                                         toolAccess.patientDossier && { key: 'dossier', icon: 'fas fa-folder-open', label: 'Dossier Patient', onClick: closeAnd(() => setShowPatientDossierModal(true)) },
+                                                        toolAccess.deathSignals && { key: 'deathSignals', icon: 'fas fa-file-medical', label: 'Décès signalés', onClick: closeAnd(() => setShowDeathSignals(true)) },
                                                     ],
                                                 },
                                                 {
@@ -2864,7 +2887,9 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             copyReportToOwnAccount={copyReportToOwnAccount}
                             loadReport={loadReportForUser}
                             deleteReportsForUser={deleteReportsForUser}
+                            onCreateDeathReport={toolAccess.deathSignals ? handleCreateDeathReport : undefined}
                         />
+                        <DeathSignalsModal show={showDeathSignals} onHide={() => setShowDeathSignals(false)} onCreateReport={handleCreateDeathReport} />
                         <RecruitmentManager
                             show={showRecruitmentManager}
                             initialSearch={directoryApplicantSearch}
