@@ -26,13 +26,14 @@ import { loadDossierContext, dossierBlockMessage, spendDossierToken, enqueueDoss
 import { hasToken, isContactOnlyUpdate } from '../utils/dossierCore';
 import { careVisitSummary } from '../utils/careVisitSummary';
 import { prescriptionOfReport } from '../phmc-bbcode-generators/generatePrescription';
+import { prescriptionNoticeFor } from '../utils/prescriptionNotice';
 import { getFormAccess } from '../utils/formAccess';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { notifyUser, notifyGroup, findCivilianUidByPatientId, findStaffUidByNode } from '../utils/notifications';
 import { readFamiliesOf, locksPatient } from '../utils/reportAccess';
 import { loadDeathLock, declareDeath, DEATH_LOCK_MESSAGE } from '../utils/deathReports';
 import {
-    normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier,
+    normalizePatientId, findPatientNodes, writeIndexEntry, deleteReportWithRules, loadPatientDossier, sharedPrescriptionEntries,
     comprehensiveSanitize as sanitizeAuthorKey, reportTitleOf,
 } from '../utils/patientRecords';
 
@@ -408,6 +409,14 @@ export const useReportManagement = (
                     });
                 } catch (indexError) {
                     console.warn('Could not index report under patientRecords:', indexError);
+                }
+
+                // Ordonnance remise : le patient la reçoit d'office dans son dossier (même si le rapport ne lui est pas partagé) et en est averti. Au mieux : jamais bloquant.
+                try {
+                    const notice = prescriptionNoticeFor({ data: formData, bbCodeVersion }, { byPatient: isOwnedByThisCivilian });
+                    if (notice) findCivilianUidByPatientId(formData.patientID).then((uid) => notifyUser(uid, notice));
+                } catch (noticeError) {
+                    console.warn('Could not notify the patient of the prescription:', noticeError);
                 }
 
                 // Facturation : les 4 formulaires médicaux civils payants créent une facture au nom du patient
@@ -1022,8 +1031,7 @@ Clé : ${sanitizedKey}`,
             // Retrouve l'index quelle que soit la façon dont l'ID a été saisi (PHMC-1234,
             // phmc-1234, 1234…), puis ne garde que ce que le personnel a PARTAGÉ.
             const dossier = await loadPatientDossier(patientID);
-            const validShared = dossier
-                .filter((e) => e.visibility === 'shared' && !e.ownerDeleted)
+            const validShared = [...dossier.filter((e) => e.visibility === 'shared' && !e.ownerDeleted), ...sharedPrescriptionEntries(dossier)]
                 .map((e) => ({
                     key: e.indexKey,
                     originalKey: e.originalKey,
@@ -1036,6 +1044,8 @@ Clé : ${sanitizedKey}`,
                     authorName: e.authorName,
                     bbCode: e.bbCode,
                     ordonnance: e.ordonnance || null,
+                    prescriptionOnly: !!e.prescriptionOnly,
+                    plainText: e.plainText || '',
                     patientID: e.patientID || patientID,
                     patientNode: e.patientNode,
                     reportPath: e.reportPath,
@@ -1063,8 +1073,7 @@ Clé : ${sanitizedKey}`,
         setSelectedUserForSavedReports(null);
         try {
             const dossier = await loadPatientDossier(patientID);
-            const entries = dossier
-                .filter((e) => (e.visibility === 'owner' || e.visibility === 'shared') && !e.ownerDeleted)
+            const entries = [...dossier.filter((e) => (e.visibility === 'owner' || e.visibility === 'shared') && !e.ownerDeleted), ...sharedPrescriptionEntries(dossier)]
                 .map((e) => ({
                     key: e.indexKey,
                     originalKey: e.originalKey,
@@ -1079,10 +1088,12 @@ Clé : ${sanitizedKey}`,
                     authorName: e.authorName,
                     bbCode: e.bbCode,
                     ordonnance: e.ordonnance || null,
+                    prescriptionOnly: !!e.prescriptionOnly,
+                    plainText: e.plainText || '',
                     patientID: e.patientID || patientID,
                     patientNode: e.patientNode,
                     reportPath: e.reportPath,
-                    sharedByStaff: e.visibility === 'shared',
+                    sharedByStaff: e.visibility === 'shared' || !!e.prescriptionOnly,
                 }));
             entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             setSavedReports(entries);

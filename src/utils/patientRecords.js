@@ -180,6 +180,23 @@ export async function loadPatientDossier(inputId, { canRead, onHidden } = {}) {
     return entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
 
+// L'ORDONNANCE d'un rapport est toujours partagée avec le patient, même quand le rapport lui-même ne l'est pas (visibility 'staff-only') : il ne voit alors que l'ordonnance — son titre, son aperçu, ses exports
+// et son texte brut — jamais le compte rendu. Une ligne « ordonnance seule » reprend les champs du rapport, avec prescriptionOnly: true, l'ordonnance à la place du rapport, et aucun lien vers le rapport.
+// Les rapports déjà partagés (ou créés par le patient) gardent leur ligne habituelle et leur rubrique « Ordonnance de ce rapport ».
+export const sharedPrescriptionEntries = (dossier) => (Array.isArray(dossier) ? dossier : [])
+    .filter((entry) => entry && entry.ordonnance && entry.ordonnance.bbCode && entry.visibility === 'staff-only' && !entry.copiedFrom && !entry.ownerDeleted)
+    .map((entry) => ({
+        ...entry,
+        prescriptionOnly: true,
+        kind: null,
+        originalKey: entry.ordonnance.title,
+        title: entry.ordonnance.title,
+        bbCode: entry.ordonnance.bbCode,
+        plainText: entry.ordonnance.plainText || '',
+        ordonnance: null,
+        imageUrl: null,
+    }));
+
 // Regroupe un rapport et ses copies : UNE ligne par rapport d'origine, avec la liste des
 // médecins qui en ont une copie. Évite d'afficher le même contenu plusieurs fois.
 //   → [{ root, copies: [entry…], copiers: [{ name, nodeKey, entry|null }…] }]

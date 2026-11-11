@@ -6,6 +6,7 @@
 import { careHeader, sectionBanner, withPhmcFooter, escapeBbText } from './shared/bbStyles';
 import { signedLine } from './shared/patientContext';
 import { prescriptionParts } from '../clinical/engine';
+import { prescriptionPlainText } from '../clinical/apply';
 import { frDay } from '../utils/reportTitle';
 import { isPbcVersion } from '../utils/formAccess';
 import { CARE_VISIT_LABELS } from '../utils/careVisitSummary';
@@ -50,11 +51,11 @@ ${body}
 
 export default generatePrescription;
 
-/** Ordonnance d'un rapport enregistré ({ data, bbCodeVersion }) : { bbCode, title } ou null s'il n'en porte pas. */
+/** Ordonnance d'un rapport enregistré ({ data, bbCodeVersion }) : { bbCode, title, plainText } ou null s'il n'en porte pas. */
 export const prescriptionOfReport = (report) => {
     const data = report && report.data;
     if (!data || !hasPrescription(data)) return null;
     const version = Number(report.bbCodeVersion) || 19;
     const bbCode = generatePrescription(data, version);
-    return bbCode ? { bbCode, title: prescriptionTitle(data) } : null;
+    return bbCode ? { bbCode, title: prescriptionTitle(data), plainText: prescriptionPlainText(data) } : null;
 };

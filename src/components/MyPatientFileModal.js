@@ -13,9 +13,9 @@ import ReactDOM from 'react-dom';
 import { Dropdown } from 'react-bootstrap';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
-import { PrescriptionMenuSection } from './PrescriptionMenu';
+import { PrescriptionMenuSection, PrescriptionItems } from './PrescriptionMenu';
 import { reportLinkUrl, linkTargetOf } from '../utils/reportLinks';
-import { loadPatientDossier, reportTitleOf, reportCreatorOf, deleteReportWithRules } from '../utils/patientRecords';
+import { loadPatientDossier, sharedPrescriptionEntries, reportTitleOf, reportCreatorOf, deleteReportWithRules } from '../utils/patientRecords';
 import { loadDossierContext, canModifyForm } from '../utils/dossierPatient';
 import { isDossierVersion } from '../utils/dossierCore';
 import MyDossierPanel from './MyDossierPanel';
@@ -63,8 +63,9 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
             const dossier = await loadPatientDossier(myPatientID);
             // Ce que le patient voit : ce que ses soignants ont partagé, et ce qu'il a créé
             // lui-même ; jamais les copies de médecins ni ce que le créateur a retiré.
-            setEntries(dossier.filter((e) => !e.copiedFrom && !e.ownerDeleted
-                && (e.visibility === 'shared' || e.visibility === 'owner')));
+            // + l'ordonnance de chaque rapport pas encore partagé : elle lui est toujours remise (ordonnance seule, sans le compte rendu).
+            setEntries([...dossier.filter((e) => !e.copiedFrom && !e.ownerDeleted && (e.visibility === 'shared' || e.visibility === 'owner')), ...sharedPrescriptionEntries(dossier)]
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
             try {
                 const context = await loadDossierContext(myPatientID, Date.now(), { myPatientID, staffName });
                 setDossierForms(Object.fromEntries(context.forms.map((form) => [form.key, form])));
@@ -163,7 +164,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                 {entries.map((entry) => (
                                     <React.Fragment key={entry.indexKey}>
                                     <tr>
-                                        <td style={tdStyle}>{entry.originalKey}{entry.ordonnance && <span className="badge bg-warning text-dark ms-2" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</span>}</td>
+                                        <td style={tdStyle}>{entry.originalKey}{entry.prescriptionOnly && <span className="badge bg-warning text-dark ms-2" title="Ordonnance remise par votre soignant"><i className="fas fa-file-prescription me-1"></i>Ordonnance</span>}{entry.ordonnance && <span className="badge bg-warning text-dark ms-2" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</span>}</td>
                                         <td style={tdStyle}>{reportCreatorOf(entry) || 'N/A'}</td>
                                         <td style={tdStyle}>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}</td>
                                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
@@ -184,7 +185,9 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                             <Dropdown className="d-inline-block">
                                                 <Dropdown.Toggle size="sm" variant="secondary">Copier</Dropdown.Toggle>
                                                 <Dropdown.Menu className="dossier-menu" popperConfig={{ strategy: 'fixed' }}>
-                                                    {entry.kind === 'ama' && !entry.bbCode ? (
+                                                    {entry.prescriptionOnly ? (
+                                                        <PrescriptionItems bbCode={entry.bbCode} title={entry.title} plainText={entry.plainText} showNotification={showNotification} />
+                                                    ) : entry.kind === 'ama' && !entry.bbCode ? (
                                                         <>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>
                                                             <Dropdown.Item disabled={!entry.imageUrl} onClick={() => copy(entry.imageUrl, "Lien de l'image copié !")}>Copier le lien de l'image</Dropdown.Item>

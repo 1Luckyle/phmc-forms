@@ -18,7 +18,7 @@ const useNotifier = (provided) => {
     return provided || (context && context.showNotification) || (() => {});
 };
 
-const Items = ({ bbCode, title, showNotification, plainText = '' }) => {
+export const PrescriptionItems = ({ bbCode, title, showNotification, plainText = '' }) => {
     const { bbcodeEnabled } = useSiteConfig();
     const notify = useNotifier(showNotification);
     return (
@@ -39,7 +39,7 @@ export const PrescriptionMenu = ({ bbCode, title, plainText = '', showNotificati
     <Dropdown className="d-inline-block">
         <Dropdown.Toggle size="sm" variant="outline-secondary"><i className="fas fa-copy me-1"></i>Copier l'ordonnance</Dropdown.Toggle>
         <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-            <Items bbCode={bbCode} title={title} plainText={plainText} showNotification={showNotification} />
+            <PrescriptionItems bbCode={bbCode} title={title} plainText={plainText} showNotification={showNotification} />
         </Dropdown.Menu>
     </Dropdown>
 );
@@ -51,7 +51,7 @@ export const PrescriptionMenuSection = ({ prescription, showNotification }) => {
         <>
             <Dropdown.Divider />
             <Dropdown.Header><i className="fas fa-file-prescription me-1"></i>Ordonnance de ce rapport</Dropdown.Header>
-            <Items bbCode={prescription.bbCode} title={prescription.title} showNotification={showNotification} />
+            <PrescriptionItems bbCode={prescription.bbCode} title={prescription.title} plainText={prescription.plainText} showNotification={showNotification} />
         </>
     );
 };

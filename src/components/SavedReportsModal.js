@@ -14,7 +14,7 @@ import useReportInvoices from '../hooks/useReportInvoices';
 import { INVOICE_STATUS_COLORS } from '../utils/patientBilling';
 import { isDossierVersion, formPhase } from '../utils/dossierCore';
 import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar, Pager } from './Reports/ReportParts';
-import { PrescriptionMenuSection } from './PrescriptionMenu';
+import { PrescriptionMenuSection, PrescriptionItems } from './PrescriptionMenu';
 import { reportLinkUrl, linkTargetOf } from '../utils/reportLinks';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
@@ -641,7 +641,9 @@ const SavedReportsModal = ({
                 Copier
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
-                {report.kind === 'ama' && !report.bbCode ? (
+                {report.prescriptionOnly ? (
+                    <PrescriptionItems bbCode={report.bbCode} title={report.title || report.originalKey} plainText={report.plainText} showNotification={showNotification} />
+                ) : report.kind === 'ama' && !report.bbCode ? (
                     <>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyImageLink(report)} disabled={!report.imageUrl}>
@@ -716,7 +718,8 @@ const SavedReportsModal = ({
                         {alreadyShared && <Pill color="#58a6ff" title="Le patient voit déjà ce rapport dans son dossier">Partagé avec le patient</Pill>}
                         {iHaveCopy && <Pill color="#a371f7" title="Vous avez déjà récupéré une copie de ce rapport">Vous en avez une copie</Pill>}
                         {gov.chips(report)}
-                        {report.ordonnance && <Pill color="#d29922" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</Pill>}
+                        {report.prescriptionOnly && <Pill color="#d29922" title="Votre soignant vous a remis cette ordonnance"><i className="fas fa-file-prescription me-1"></i>Ordonnance</Pill>}
+                        {report.ordonnance && <Pill color="#d29922" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport ». Le patient la reçoit d'office dans son dossier, même si le rapport ne lui est pas partagé."><i className="fas fa-file-prescription me-1"></i>Ordonnance</Pill>}
                     </>
                 )}
                 actions={(
