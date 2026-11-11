@@ -1,6 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
-import { consultExtrasBBCode } from './shared/careExtras';
+import { consultExtrasBBCode, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 
 const generateConsultationNotesPHMC = (formData) => {
@@ -58,7 +58,7 @@ Date: ${date || 'N/A'}
 Signé: ${signedLine(formData)}
 ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
-[table][tr][td][left][list=none][u]Motif de la visite: [/u][br][/br]
+[table][tr][td][left][list=none]${clinicalAnamnesisBBCode(formData)}[u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
 [br][/br]
 [u]Département assigné: [/u][br][/br]
@@ -93,7 +93,7 @@ ${checkbox(formData.admission === 'No')} Non
 [u]Plan de traitement/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-[u]Médicaments/Traitements: [/u][br][/br]
+${clinicalMedsBBCode(formData)}[u]Médicaments/Traitements: [/u][br][/br]
 ${medicationBBCode} 
 [br][/br]
 ${consultExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]

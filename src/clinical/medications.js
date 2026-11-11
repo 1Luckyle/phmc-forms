@@ -364,6 +364,33 @@ export const MEDICATIONS = [
         category: 'Anesthésie locale', brands: ['Xylocaïne'], allergy: ['lidocaïne', 'xylocaïne', 'anesthésique local', 'anesthésiques locaux', 'bupivacaïne', 'novocaïne'],
         regimens: [R('infiltration', 'Infiltration locale', 'mL', { adult: [2, 5, 20], perKg: [0.1, 0.2, 0.45], maxSingle: 30, titration: true, note: 'Sans adrénaline : 4,5 mg/kg au plus (1 mL = 10 mg). Aspirer avant d\'injecter.' })],
     }),
+    // ── Anesthésie (bloc opératoire) ──
+    med('propofol', 'Propofol', 'anesthesique', {
+        category: 'Anesthésique général (induction)', brands: ['Diprivan'], allergy: ['propofol', 'diprivan', 'soja', 'arachide', 'oeuf'],
+        avoidTags: { choc: ['warn', 'État de choc : le propofol fait chuter la tension, réduire la dose ou préférer la kétamine.'] },
+        vitalsWarn: [{ when: (v) => v.sbp !== null && v.sbp < 90, level: 'warn', text: 'Tension basse : réduire la dose de propofol.' }],
+        regimens: [R('iv_induction', 'IV (induction)', 'mg', { weightBased: true, perKg: [1.5, 2, 2.5], maxSingle: 300, titration: true, minAgeMonths: 1, note: 'Injection lente jusqu\'à la perte de conscience ; entretien en perfusion continue.' })],
+    }),
+    med('rocuronium', 'Rocuronium', 'curare', {
+        category: 'Curare (intubation)', brands: ['Esmeron'], allergy: ['rocuronium', 'esmeron', 'curare', 'curares', 'myorelaxant', 'myorelaxants'],
+        contra: [{ terms: ['myasthénie'], level: 'error', text: 'Myasthénie : curare contre-indiqué.' }],
+        regimens: [R('iv', 'IV', 'mg', { weightBased: true, perKg: [0.45, 0.6, 1.2], maxSingle: 150, titration: true, minAgeMonths: 1, note: 'Après perte de conscience ; ventilation contrôlée obligatoire.' })],
+    }),
+    med('sugammadex', 'Sugammadex', 'antidote', {
+        category: 'Décurarisation', brands: ['Bridion'], allergy: ['sugammadex', 'bridion'],
+        contra: [{ terms: ['insuffisance rénale sévère', 'dialyse'], level: 'warn', text: 'Insuffisance rénale sévère : sugammadex déconseillé.' }],
+        regimens: [R('iv', 'IV', 'mg', { weightBased: true, perKg: [2, 2, 4], maxSingle: 400, titration: true, minAgeYears: 2, note: 'En fin d\'intervention pour lever le bloc neuromusculaire.' })],
+    }),
+    med('bupivacaine', 'Bupivacaïne', 'anesthesique_local', {
+        category: 'Anesthésique local (rachianesthésie, blocs)', brands: ['Marcaïne'], allergy: ['bupivacaïne', 'marcaïne', 'anesthésique local', 'anesthésiques locaux', 'lidocaïne', 'xylocaïne'],
+        contra: [{ terms: ['anticoagulant', 'anticoagulants', 'trouble de la coagulation', 'hémophilie'], level: 'warn', text: 'Trouble de la coagulation ou anticoagulant : rachianesthésie et blocs profonds à discuter.' }],
+        interacts: [{ terms: ANTICOAGULANTS, level: 'warn', text: 'Anticoagulant en cours : risque d\'hématome compressif après rachianesthésie.' }],
+        avoidTags: { choc: ['error', 'État de choc : rachianesthésie contre-indiquée (chute de tension).'] },
+        regimens: [
+            R('spinale', 'Rachianesthésie', 'mg', { adult: [8, 12, 15], maxSingle: 20, titration: true, minAgeYears: 15, note: 'Bupivacaïne hyperbare 0,5 %, position assise ou latérale ; réservé à l\'adulte.' }),
+            R('bloc', 'Bloc nerveux / infiltration', 'mg', { adult: [50, 100, 150], perKg: [1, 2, 2], maxSingle: 150, titration: true, minAgeMonths: 12, note: 'Plafond 2 mg/kg (150 mg), sans adrénaline ; aspirer avant d\'injecter.' }),
+        ],
+    }),
 ];
 
 export const MEDICATION_BY_ID = Object.fromEntries(MEDICATIONS.map((m) => [m.id, m]));

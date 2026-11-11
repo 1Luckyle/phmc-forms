@@ -21,7 +21,7 @@ const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
 
 const VITAL_SUMMARY = [['FC', 'heartRateValue', 'bpm'], ['TA', 'bloodPressureValue', 'mmHg'], ['FR', 'respiratoryRateValue', '/min'], ['SpO2', 'spo2Value', '%'], ['T°', 'temperatureValue', '°C'], ['Glycémie', 'glucoseValue', 'g/L'], ['Glasgow', 'gcsScore', '/15']];
 
-const ClinicalAssistant = ({ formData, setFormData, handleChange }) => {
+const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emergency' }) => {
     const [overwrite, setOverwrite] = useState(false);
     const [done, setDone] = useState('');
     const patient = useMemo(
@@ -47,12 +47,12 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange }) => {
 
     const apply = (key) => {
         if (!suggestions) return;
-        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite) : applyPatch(prev, sectionPatch(key, suggestions), overwrite)));
+        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite) : applyPatch(prev, sectionPatch(key, suggestions, mode), overwrite)));
         setDone(`« ${SECTIONS.find((s) => s.key === key).label} » ${overwrite ? 'remplacé' : 'complété'}.`);
     };
     const applyEverything = () => {
         if (!suggestions) return;
-        setFormData((prev) => applyAll(prev, suggestions, overwrite));
+        setFormData((prev) => applyAll(prev, suggestions, overwrite, mode));
         setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
     };
 
@@ -60,7 +60,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange }) => {
         <>
             <Form.Label className="form-section-title">Assistant clinique</Form.Label>
             <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.6rem' }}>
-                Indiquez le poids, la taille et le ou les motifs de prise en charge : l'assistant propose constantes, diagnostic, procédure et médicaments adaptés au patient. Rien n'est écrit tant que vous ne cliquez pas, et tout reste modifiable.
+                Indiquez le poids, la taille et le ou les motifs {mode === 'consult' ? 'de la consultation' : 'de prise en charge'} : l'assistant propose constantes, diagnostic, {mode === 'consult' ? 'plan de traitement, examens' : 'procédure'} et médicaments adaptés au patient. Rien n'est écrit tant que vous ne cliquez pas, et tout reste modifiable.
             </div>
             <div style={row}>
                 <div style={cell(120)}>
@@ -81,7 +81,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange }) => {
             {patient.ageYears !== null && patient.ageYears < 15 && !patient.weightKg && (
                 <div className="helper-text" data-no-tip="1" style={{ color: '#e3b341', marginBottom: '0.5rem' }}>Patient de moins de 15 ans : indiquez son poids, sinon les doses sont calculées sur un poids estimé.</div>
             )}
-            <Form.Label>Motifs de prise en charge (choix multiple)</Form.Label>
+            <Form.Label>{mode === 'consult' ? 'Motifs de la consultation' : 'Motifs de prise en charge'} (choix multiple)</Form.Label>
             <Select
                 isMulti options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterConditions} styles={darkSelectStyles} className="form-control p-0"
                 placeholder="Fracture, brûlure, asthme, surdose… (nom ou synonyme)" noOptionsMessage={() => 'Aucun motif trouvé'}

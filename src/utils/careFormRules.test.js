@@ -7,6 +7,7 @@ import generateMentalHealthPHMC from '../phmc-bbcode-generators/generateMentalHe
 import generatePsychEvalPBC from '../phmc-bbcode-generators/generatePsychEvalPBC';
 import generateEmergencyProtocol from '../phmc-bbcode-generators/generateEmergencyProtocol';
 import generateConsultationNotesPHMC from '../phmc-bbcode-generators/generateConsultationNotesPHMC';
+import generateConsultationNotesPBC from '../phmc-bbcode-generators/generateConsultationNotesPBC';
 
 describe('règles des champs ajoutés aux formulaires de soins', () => {
     test('durée de prise en charge, y compris quand elle passe minuit', () => {
@@ -81,6 +82,11 @@ describe('BBCode des champs ajoutés', () => {
         expect(bb).toContain('Surveillance post-opératoire');
         expect(bb).toContain('Soins intensifs / réanimation');
         expect(bb).toContain('Radio de contrôle');
+        const assisted = generateSurgicalOps({ ...base, patientWeight: '75', patientHeight: '178', clinicalMeds: [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }], postOpMonitoring: 'RecoveryRoom' });
+        expect(assisted).toContain('Poids / taille du patient');
+        expect(assisted).toContain('75 kg / 178 cm');
+        expect(assisted).toContain('Médicaments post-opératoires');
+        expect(assisted).toContain('• Paracétamol 1 000 mg — IV, 4 prises/24 h (toutes les 6 h)');
     });
 
     test("évaluation physique : conclusion d'aptitude avec restrictions et validité", () => {
@@ -134,5 +140,12 @@ describe('BBCode des champs ajoutés', () => {
         const old = generateEmergencyProtocol(base);
         expect(old).not.toContain('Motifs de prise en charge');
         expect(old).not.toContain('Médicaments administrés');
+    });
+    test("consultation générale : motifs, poids et médicaments de l'assistant (PHMC et PBC)", () => {
+        const data = { ...base, patientChiefComplaint: 'Douleur', patientWeight: '60', clinicalConditions: ['migraine'], clinicalSeverity: 'Mild', clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 2, note: '' }] };
+        [generateConsultationNotesPHMC(data), generateConsultationNotesPBC({ ...data, patientName: 'Jean Testard', patientDiagnosis: 'x', patientSecondaryDiagnosis: 'x', patientProcedure: 'x', patientNotes: 'x', patientMedicine: 'x' })].forEach((bb) => {
+            expect(bb).toContain('[u]Motifs de prise en charge: [/u] Migraine / céphalée (gravité : légère)');
+            expect(bb).toContain('• Paracétamol 1 000 mg — PO, 2 prises/24 h (toutes les 6 h)');
+        });
     });
 });

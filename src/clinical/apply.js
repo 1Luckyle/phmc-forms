@@ -16,16 +16,23 @@ export const SECTIONS = [
     { key: 'outcome', label: 'Orientation', hint: 'Admission, suivi et orientation de sortie.' },
 ];
 
-/** Champs simples (hors médicaments) que chaque section écrit : { champ: valeur }. */
-export const sectionPatch = (key, s) => {
+// Imagerie suggérée → examens à prescrire de la consultation générale (constants/careFormOptions.js : EXAMS_ORDERED).
+const EXAM_OF_IMAGING = { XRay: 'Xray', CTScan: 'Ct', MRI: 'Mri', Ultrasound: 'Ultrasound' };
+
+/**
+ * Champs simples (hors médicaments) que chaque section écrit : { champ: valeur }.
+ * mode 'emergency' : protocole d'urgence ; 'consult' : consultation générale (pas d'indice de gravité, d'imagerie réalisée, de soins systématiques ni d'orientation de sortie ; les examens à faire sont prescrits).
+ */
+export const sectionPatch = (key, s, mode = 'emergency') => {
+    const consult = mode === 'consult';
     const clean = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => !isEmpty(v)));
     switch (key) {
         case 'vitals': return { ...s.vitals.fields, ...s.vitals.categories };
-        case 'anamnesis': return clean({ patientChiefComplaint: s.text.complaint, patientInjuryMechanism: s.text.mechanism, painLevel: s.igu });
+        case 'anamnesis': return clean(consult ? { patientChiefComplaint: s.text.complaint } : { patientChiefComplaint: s.text.complaint, patientInjuryMechanism: s.text.mechanism, painLevel: s.igu });
         case 'findings': return clean(s.findings);
         case 'diagnosis': return clean({ patientDiagnosis: s.text.diagnosis, patientSecondaryDiagnosis: s.text.secondary || 'Aucun' });
-        case 'procedure': return clean({ patientProcedure: s.text.procedure, Imaging: s.imaging, routineCare: s.routineCare });
-        case 'outcome': return clean({ admission: s.admission, followup: s.followup, dischargeDestination: s.destination });
+        case 'procedure': return clean(consult ? { patientProcedure: s.text.procedure, examsOrdered: s.imaging.map((type) => EXAM_OF_IMAGING[type]).filter(Boolean) } : { patientProcedure: s.text.procedure, Imaging: s.imaging, routineCare: s.routineCare });
+        case 'outcome': return clean(consult ? { admission: s.admission, followup: s.followup } : { admission: s.admission, followup: s.followup, dischargeDestination: s.destination });
         default: return {};
     }
 };
@@ -56,10 +63,10 @@ export const applyMeds = (prev, meds, overwrite = false) => {
 };
 
 /** Tout appliquer d'un coup. */
-export const applyAll = (prev, suggestions, overwrite = false) => {
+export const applyAll = (prev, suggestions, overwrite = false, mode = 'emergency') => {
     let next = prev;
     SECTIONS.forEach(({ key }) => {
-        next = key === 'meds' ? applyMeds(next, suggestions.meds, overwrite) : applyPatch(next, sectionPatch(key, suggestions), overwrite);
+        next = key === 'meds' ? applyMeds(next, suggestions.meds, overwrite) : applyPatch(next, sectionPatch(key, suggestions, mode), overwrite);
     });
     return next;
 };

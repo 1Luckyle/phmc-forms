@@ -19,7 +19,7 @@ const Messages = ({ messages }) => messages.filter((m) => m.level !== 'ok').map(
     </div>
 ));
 
-const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals }) => {
+const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, title = 'Médicaments administrés ou prescrits' }) => {
     const entries = useMemo(() => (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []), [formData.clinicalMeds]);
     const results = useMemo(() => checkList(entries, { patient, tags, vitals }), [entries, patient, tags, vitals]);
     const setEntries = (updater) => setFormData((prev) => ({ ...prev, clinicalMeds: updater(Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : []) }));
@@ -33,7 +33,7 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals }) =
 
     return (
         <>
-            <Form.Label className="form-section-title">Médicaments administrés ou prescrits</Form.Label>
+            <Form.Label className="form-section-title">{title}</Form.Label>
             {entries.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez l'assistant proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
             {entries.map((entry, index) => {
                 const med = MEDICATION_BY_ID[entry.medId];

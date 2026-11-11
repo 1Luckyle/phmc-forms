@@ -902,16 +902,24 @@ const careExtras = (version, h) => {
     };
     const mental = { riskSuicide: 'Low', riskDanger: 'None', riskAction: 'CloseFollowUp', riskActionNote: 'Revoir sous une semaine.', involuntaryHold: 'No', ...emergencyContact };
     const aptitude = { evalReason: 'Renewal', aptitudeConclusion: 'Apte avec restrictions', aptitudeRestrictions: 'Port de verres correcteurs.', aptitudeValidityMonths: '12', visualAcuity: '10/10 corrigée', hearingValue: 'Normale', vaccinationState: 'Yes' };
+    const consult = {
+        orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3',
+        patientWeight: '75', patientHeight: '178', clinicalConditions: ['migraine'], clinicalSeverity: 'Mild',
+        clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '' }],
+    };
     const extras = {
-        5: { surgeonEmployee: h.phmc.phmcEmployee || '', surgeryCharacter: 'Urgent', surgeryAsa: 'ASA2', postOpMonitoring: 'RecoveryRoom', postOpExams: 'Radiographie de contrôle.' },
+        5: {
+            surgeonEmployee: h.phmc.phmcEmployee || '', surgeryCharacter: 'Urgent', surgeryAsa: 'ASA2', postOpMonitoring: 'RecoveryRoom', postOpExams: 'Radiographie de contrôle.',
+            patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['osteosynthese_membre'], clinicalMeds: [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }],
+        },
         6: aptitude, 7: aptitude, 14: mental, 16: mental, 28: mental, 29: mental,
         19: {
             careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
             patientWeight: '75', patientHeight: '178', clinicalConditions: ['fracture_fermee', 'plaie_superficielle'], clinicalSeverity: 'Moderate',
             clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 1, note: '' }, { medId: 'vaccin_tetanique', regimenId: 'im', dose: 0.5, count: 1, note: 'Rappel' }],
         },
-        20: { orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3' },
-        21: { orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3' },
+        20: { ...consult },
+        21: { ...consult },
     };
     return Number(version) === 35 || Number(version) === 41 ? {} : { ...common, ...(extras[version] || {}) };
 };

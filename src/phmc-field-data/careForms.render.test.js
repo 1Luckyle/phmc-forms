@@ -242,3 +242,63 @@ describe("assistant clinique du protocole d'urgence", () => {
         expect(screen.getByText(/moins de 15 ans/)).toBeTruthy();
     });
 });
+
+describe("assistant clinique de la consultation générale", () => {
+    const props = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], assignedDepartment: [], departmentLarge: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const patient = { patientAgeYears: '35', patientSex: 'Female', patientWeight: '60', patientHeight: '165', clinicalConditions: ['entorse_luxation'], clinicalSeverity: 'Moderate', patientID: 'PHMC-2752', date: '2026-11-11' };
+
+    test("les motifs proposent plan, examens à prescrire et médicaments, sans champs propres aux urgences", async () => {
+        render(<Harness Component={GeneralConsult} initial={patient} extra={props} />);
+        expect(screen.getByText('Motifs de la consultation (choix multiple)')).toBeTruthy();
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        const state = stateOf();
+        expect(state.patientChiefComplaint).toMatch(/Douleur articulaire/);
+        expect(state.patientProcedure).toMatch(/- /);
+        expect(state.examsOrdered).toEqual(['Xray']);
+        expect(state.clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol', 'ibuprofene']);
+        expect(state.Imaging).toBeUndefined();
+        expect(state.routineCare).toBeUndefined();
+        expect(state.painLevel).toBeUndefined();
+        expect(state.dischargeDestination).toBeUndefined();
+        expect(state.admission).toBe('No');
+    });
+});
+
+describe("assistant chirurgical de l'opération", () => {
+    const props = {};
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const patient = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['appendicectomie'], patientID: 'PHMC-2752', date: '2026-11-11' };
+
+    test('sans intervention : poids, taille et liste de médicaments post-opératoires, aucune suggestion', () => {
+        render(<Harness Component={Surgical} initial={{ patientAgeYears: '35' }} extra={props} />);
+        expect(screen.getByText('Assistant chirurgical')).toBeTruthy();
+        expect(screen.queryByText('Tout appliquer')).toBeNull();
+        expect(screen.getByText('Médicaments post-opératoires')).toBeTruthy();
+    });
+
+    test("une intervention propose l'anesthésie dosée et les suites, appliquées au clic sans écraser un champ rempli", async () => {
+        render(<Harness Component={Surgical} initial={{ ...patient, surgeryProcedures: 'Nom du chirurgien' }} extra={props} />);
+        expect(screen.getByText(/Suggestions/)).toBeTruthy();
+        expect(stateOf().surgeryAnesthesiaType).toBeUndefined();
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        const state = stateOf();
+        expect(state.surgeryProcedures).toBe('Nom du chirurgien');
+        expect(state.surgeryPreOpDiagnosis).toBe('Appendicite aiguë.');
+        expect(state.surgeryAnesthesiaType).toBe('General');
+        expect(state.surgeryDuration).toBe('45');
+        expect(state.surgeryAsa).toBe('ASA1');
+        expect(state.postOpMonitoring).toBe('RecoveryRoom');
+        expect(state.patientSummaryConsultation).toContain('Propofol 150 mg');
+        expect(state.patientSummary).toMatch(/Cœlioscopie/);
+        expect(state.clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol', 'ketoprofene', 'ondansetron']);
+    });
+
+    test('un bouton applique une seule section', async () => {
+        render(<Harness Component={Surgical} initial={patient} extra={props} />);
+        await act(async () => { screen.getByText('Risque (ASA)', { selector: 'button' }).click(); });
+        const state = stateOf();
+        expect(state.surgeryAsa).toBe('ASA1');
+        expect(state.surgeryAnesthesiaType).toBeUndefined();
+    });
+});

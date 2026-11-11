@@ -1,6 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
-import { consultExtrasBBCode } from './shared/careExtras';
+import { consultExtrasBBCode, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
 import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -36,7 +36,7 @@ BP 685
 PALETO BAY, SAN ANDREAS
 T: 50056[/size][/center][/table][/divbox]
 ${buildPatientContextBBCode(formData, { accentColor: '#0080FF' })}${sectionBanner(`Anamnèse`, { accent: BB_COLORS.blue })}
-[table][tr][td][left][list=none][u]Motif de la visite: [/u][br][/br]
+[table][tr][td][left][list=none]${clinicalAnamnesisBBCode(formData)}[u]Motif de la visite: [/u][br][/br]
 ${patientChiefComplaint}
 [br][/br]
 [u]Département assigné: [/u][br][/br]
@@ -72,7 +72,7 @@ ${patientProcedure}
 [u]Notes supplémentaires: [/u][br][/br]
 ${patientNotes}
 [br][/br]
-[u]Médicaments/Traitements: [/u][br][/br]
+${clinicalMedsBBCode(formData)}[u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine}
 [br][/br]
 ${consultExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]

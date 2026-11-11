@@ -51,6 +51,7 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         surgeryCharacter: 'select', surgeryAsa: 'select', postOpMonitoring: 'select', postOpExams: 'textarea',
+        patientWeight: 'text', patientHeight: 'text', surgeryProcedureIds: 'select', clinicalMeds: 'textarea',
     },
     6: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -129,6 +130,7 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         orientedService: 'select', orientedServiceOther: 'text', examsOrdered: 'select', examsOrderedNote: 'text', workStoppage: 'select', workStoppageDays: 'number',
+        patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
     },
     21: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -142,6 +144,7 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         orientedService: 'select', orientedServiceOther: 'text', examsOrdered: 'select', examsOrderedNote: 'text', workStoppage: 'select', workStoppageDays: 'number',
+        patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
     },
     22: {
         patientTitle: 'select', patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',

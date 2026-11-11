@@ -221,6 +221,7 @@ export const FIELD_INFO = {
     dischargeDestination: ["Orientation de sortie", "Où va le patient à la fin de la prise en charge : domicile, box de surveillance, salle de réveil, bloc, hospitalisation, transfert, décès. " + SELECT],
     transferTo: ["Établissement de transfert", "Établissement vers lequel le patient est transféré."],
     clinicalConditions: ["Motifs de prise en charge", "Motifs choisis dans l'assistant clinique (fracture, brûlure, asthme, surdose…) : ils servent à proposer constantes, diagnostic, procédure et médicaments. Choix multiple."],
+    surgeryProcedureIds: ["Interventions (assistant chirurgical)", "Interventions choisies dans l'assistant chirurgical : elles servent à proposer l'indication, l'anesthésie et ses doses, la durée, la classe ASA, la surveillance et les consignes. Choix multiple."],
     clinicalSeverity: ["Gravité", "Gravité de la situation (légère, modérée, sévère, critique) : elle ajuste les constantes proposées, l'indice de gravité d'urgence et l'orientation. " + SELECT],
     clinicalMeds: ["Médicaments administrés ou prescrits", "Liste des médicaments avec voie, dose calculée pour l'âge et le poids du patient, et nombre de prises sur 24 h. Les alertes (dose maximale, allergie, traitement en cours) ne bloquent pas l'enregistrement."],
     routineCare: ["Soins systématiques", "Soins systématiques réalisés : antitétanique, antalgie, pansement, immobilisation, perfusion, oxygène… (choix multiple)."],

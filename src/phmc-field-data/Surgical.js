@@ -4,6 +4,7 @@ import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
 import { ReferralFields, SurgeryCharacterFields, PostOpFields } from './shared/CareExtraFields';
+import SurgeryAssistant from './shared/SurgeryAssistant';
 import { careStaffOnly } from './shared/PhmcEmployeeSelect';
 import { darkSelectStyles } from './shared/selectStyles';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
@@ -115,6 +116,8 @@ const Surgical = ({
         placeholder="Entrer le personnel présent (( Laisser vide si aucun )) "
         styles={darkSelectStyles}
     />
+    <SurgeryAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} />
+
     <Form.Label className="form-section-title">Enquête chirurgicale</Form.Label>
     <SurgeryCharacterFields formData={formData} handleChange={handleChange} />
         <Form.Control

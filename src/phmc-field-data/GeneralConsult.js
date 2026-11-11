@@ -4,6 +4,7 @@ import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
 import { ConsultExtraFields } from './shared/CareExtraFields';
+import ClinicalAssistant from './shared/ClinicalAssistant';
 
 // Valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
 const VITAL_VALUE_FIELDS = [
@@ -49,6 +50,8 @@ const GeneralConsult = ({
                                 <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
                                 <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
+
+                                <ClinicalAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} mode="consult" />
 
                                 <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
                                 <Form.Control
@@ -348,7 +351,7 @@ const GeneralConsult = ({
                                     value={formData.patientMedicine || ''}
                                     onChange={handleChange}
                                     rows="2"
-                                    placeholder="Médicaments prescrits ou administrés (nom, dosage, durée)"
+                                    placeholder="Autres médicaments ou traitements (les médicaments avec dose se saisissent dans la liste de l'assistant clinique)"
                                     className="form-control"
                                 />
                                 {bbCodeVersion === 21 && (

@@ -78,7 +78,7 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     // Champs ajoutés aux formulaires de soins : conduite à tenir, contrainte, transfert, durée d'arrêt… (utils/careFormRules.js).
     validateCareExtras(version, data).forEach((problem) => errors.push(problem));
     // Assistant clinique du protocole d'urgence : prescriptions incohérentes (dose, allergie, traitement en cours…) → avertissements, jamais bloquants.
-    if (version === 19) clinicalWarnings(data).forEach((warning) => warnings.push(warning));
+    if ([5, 19, 20, 21].includes(version)) clinicalWarnings(data).forEach((warning) => warnings.push(warning));
     // Certificat de maladie : les champs demandés dépendent du type de courrier (utils/medicalCertificates.js).
     if (version === 35) validateMedicalCertificate(data).forEach((problem) => errors.push(problem));
     // Certificat de vol : classe, catégories, résultat de chaque examen de la classe, conclusion cohérente avec les examens (voir utils/flightCertificate.js).

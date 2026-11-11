@@ -49,13 +49,20 @@ export const backgroundUpdatedBBCode = (f) => {
 // ── Opération chirurgicale ──
 export const surgeryRowsBBCode = (f) => {
     const rows = [];
+    const weight = parseWeightKg(f.patientWeight);
+    const height = parseHeightCm(f.patientHeight);
+    if (weight || height) rows.push(`[tr][td]Poids / taille du patient[/td][td]
+${[weight ? `${weight} kg` : '', height ? `${height} cm` : ''].filter(Boolean).join(' / ')}
+[/td][/tr]`);
     if (filled(f.surgeryCharacter)) rows.push(`[tr][td]Caractère de l'intervention[/td][td]\n${labelOf(SURGERY_CHARACTERS, f.surgeryCharacter)}\n[/td][/tr]`);
     if (filled(f.surgeryAsa)) rows.push(`[tr][td]Classification ASA (risque anesthésique)[/td][td]\n${labelOf(ASA_CLASSES, f.surgeryAsa)}\n[/td][/tr]`);
     return rows.length ? `\n${rows.join('\n')}\n` : '';
 };
 export const postOpBBCode = (f, blue = false) => {
-    if (!filled(f.postOpMonitoring) && !filled(f.postOpExams)) return '';
+    const medLines = clinicalMedLines(f);
+    if (!filled(f.postOpMonitoring) && !filled(f.postOpExams) && !medLines.length) return '';
     const rows = [
+        medLines.length ? `[tr][td]Médicaments post-opératoires[/td][td]\n${medLines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[/td][/tr]` : '',
         filled(f.postOpMonitoring) ? `[tr][td]Lieu de surveillance[/td][td]\n${labelOf(POST_OP_MONITORING, f.postOpMonitoring)}\n[/td][/tr]` : '',
         filled(f.postOpExams) ? `[tr][td]Examens post-opératoires[/td][td]\n${text(f.postOpExams)}\n[/td][/tr]` : '',
     ].filter(Boolean).join('\n');
