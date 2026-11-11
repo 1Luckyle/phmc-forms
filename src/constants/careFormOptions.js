@@ -111,3 +111,21 @@ export const EXAMS_ORDERED = list([
     ['Xray', 'Radiographie'], ['Ct', 'Scanner'], ['Mri', 'IRM'], ['Ultrasound', 'Échographie'], ['Blood', 'Bilan sanguin'],
     ['Urine', "Analyse d'urine"], ['Ecg', 'ECG'], ['Toxicology', 'Dépistage toxicologique'], ['Other', 'Autre examen'],
 ]);
+
+// ── Décès du patient pendant la prise en charge (protocole d'urgence, opération) ──
+export const DEATH_MANNERS = list([
+    ['Natural', 'Mort naturelle (maladie)'], ['Accidental', 'Mort accidentelle'], ['Violent', 'Mort violente ou suspecte'],
+    ['Intoxication', 'Intoxication'], ['Undetermined', 'Circonstances indéterminées'],
+]);
+export const DEATH_RESUSCITATION = list([
+    ['Attempted', 'Réanimation tentée, sans succès'], ['NotAttempted', 'Réanimation non tentée (état incompatible avec la vie)'], ['Declined', 'Non réanimé (directive anticipée ou refus)'],
+]);
+export const DEATH_FAMILY = list([
+    ['Informed', 'Proche prévenu'], ['ToInform', 'Proche à prévenir'], ['NoContact', 'Aucun proche identifié'],
+]);
+export const DEATH_BODY = list([
+    ['Morgue', 'Morgue du PHMC'], ['Coroner', 'DMEC (médecine légale)'], ['Family', 'Remis à la famille'],
+]);
+// Champs du décès : `careDeceased` = 'Yes' quand le patient est décédé, les autres ne comptent alors.
+export const DEATH_FIELDS = ['careDeceased', 'careDeathTime', 'careDeathCause', 'careDeathManner', 'careDeathResuscitation', 'careDeathResuscitationNote', 'careDeathFamily', 'careDeathBody'];
+export const DEATH_VERSIONS = [5, 19];

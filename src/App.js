@@ -18,6 +18,7 @@ import FleecaPaymentSuccess from './components/FleecaPaymentSuccess';
 import TransparencyPage from './components/Transparency/TransparencyPage';
 import MemorialPage from './components/Memorial/MemorialPage';
 import HospitalPlanPage from './components/Directory/HospitalPlanPage';
+import ReportLinkPage from './components/ReportLinkPage';
 
 function App() {
     const [formData, setFormData] = useState({});
@@ -309,6 +310,7 @@ const initialFormData = {
                                     <Route path="/transparence" element={<TransparencyPage />} />
                                     <Route path="/hommage" element={<MemorialPage />} />
                                     <Route path="/plan" element={<HospitalPlanPage />} />
+                                    <Route path="/rapport/:node/:key" element={<ReportLinkPage />} />
                                     <Route path="/login" element={<GtaLogin />} />
                                     <Route path="/auth/gta/callback" element={<GtaCallback />} />
                                     <Route path="/admin" element={<ProtectedRoute><Admin formData={formData} setFormData={setFormData} showNotification={showNotification} /></ProtectedRoute>} />

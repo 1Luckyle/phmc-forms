@@ -3,7 +3,7 @@ import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
-import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
+import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, clinicalMedsBBCode, deathBBCode } from './shared/careExtras';
 
 // Soignants supplémentaires cités dans l'en-tête (le rédacteur, qui signe, n'y figure pas deux fois).
 const extraStaffLine = (formData) => {
@@ -128,7 +128,8 @@ ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
 
-[/left][/list][/table]`;
+[/left][/list][/table]
+${deathBBCode(formData)}`;
     return bbCode;
 };
 

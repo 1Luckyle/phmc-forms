@@ -925,7 +925,25 @@ const careExtras = (version, h) => {
     };
     return Number(version) === 35 || Number(version) === 41 ? {} : { ...common, ...(extras[version] || {}) };
 };
-export const getDebugTemplate = (version, ctx) => {
+// Opération (5) et protocole d'urgence (19) : deux scénarios à tester, le patient vit (par défaut) ou décède pendant la prise en charge.
+export const DEBUG_DEATH_VERSIONS = [5, 19];
+const deathScenario = (version, scenario) => {
+    if (!DEBUG_DEATH_VERSIONS.includes(version)) return {};
+    if (scenario !== 'death') return { careDeceased: '' };
+    const surgery = version === 5;
+    return {
+        careDeceased: 'Yes',
+        careDeathTime: '15:12',
+        careDeathCause: surgery ? "[TEST] Arrêt cardio-circulatoire peropératoire sur hémorragie massive non contrôlée." : '[TEST] Décès consécutif à un polytraumatisme avec choc hémorragique réfractaire.',
+        careDeathManner: surgery ? 'Undetermined' : 'Accidental',
+        careDeathResuscitation: 'Attempted',
+        careDeathResuscitationNote: '[TEST] Massage cardiaque, intubation et adrénaline pendant 25 minutes, sans retour à une activité circulatoire spontanée.',
+        careDeathFamily: 'ToInform',
+        careDeathBody: 'Coroner',
+        ...(surgery ? {} : { dischargeDestination: 'Death', admission: 'No' }),
+    };
+};
+export const getDebugTemplate = (version, ctx, scenario = '') => {
     const build = TEMPLATES[version];
     if (!build) return null;
     const helpers = buildHelpers(ctx);
@@ -938,6 +956,7 @@ export const getDebugTemplate = (version, ctx) => {
         ...(Number(version) === 35 ? {} : { patientDateOfBirth: helpers.patient.dob }),
         ...careExtras(Number(version), helpers),
         ...template,
+        ...deathScenario(Number(version), scenario),
     };
 };
 

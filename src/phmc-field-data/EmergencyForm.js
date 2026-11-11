@@ -3,7 +3,7 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
-import { EmergencyTimingFields, EmergencyDischargeFields } from './shared/CareExtraFields';
+import { EmergencyTimingFields, EmergencyDischargeFields, DeathFields } from './shared/CareExtraFields';
 import ClinicalAssistant from './shared/ClinicalAssistant';
 import { ARRIVAL_MODES } from '../constants/careFormOptions';
 
@@ -441,6 +441,8 @@ const EmergencyForm = ({
             </div>
 
             <EmergencyDischargeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
+
+            <DeathFields kind="emergency" formData={formData} setFormData={setFormData} handleChange={handleChange} />
         </>
     );
 };

@@ -35,6 +35,7 @@ import useReportInvoices from '../hooks/useReportInvoices';
 import { formatMoney, INVOICE_STATUS_COLORS } from '../utils/patientBilling';
 import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar } from './Reports/ReportParts';
 import { PrescriptionMenuSection } from './PrescriptionMenu';
+import { reportLinkUrl, linkTargetOf } from '../utils/reportLinks';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -447,6 +448,7 @@ const PatientDossierModal = ({
                         <Dropdown.Item onClick={() => exportDocument('png', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => exportDocument('png-copy', entry.bbCode, reportTitleOf(entry) || entry.originalKey)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => copyText(reportTitleOf(entry), 'Titre copié !', 'Aucun titre trouvé.')}>Copier le titre</Dropdown.Item>
+                        <Dropdown.Item onClick={() => copyText(reportLinkUrl(linkTargetOf(entry)), 'Lien copié !', 'Aucun lien pour ce rapport.')} disabled={!reportLinkUrl(linkTargetOf(entry))} title="Lien direct vers ce rapport : la personne qui l'ouvre doit être connectée et avoir les accès">Copier le lien du rapport</Dropdown.Item>
                         <PrescriptionMenuSection prescription={entry.ordonnance} showNotification={showNotification} />
                     </>
                 )}

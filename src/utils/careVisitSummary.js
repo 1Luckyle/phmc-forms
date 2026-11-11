@@ -4,14 +4,14 @@
 // Le résumé est rangé sur l'entrée d'index du rapport (patientRecords/{ID patient}/{clé}/resume), à chaque enregistrement ; le dossier le LIT depuis l'index. Conséquence voulue : corriger
 // le rapport met le résumé à jour, et supprimer le rapport (ou le retirer) le fait disparaître du dossier, sans aucune autre opération (l'entrée d'index disparaît avec lui).
 // Les formulaires de santé mentale n'en font pas partie : leur contenu reste confidentiel.
-import { DISCHARGE_DESTINATIONS, ORIENTED_SERVICES, labelOf } from '../constants/careFormOptions';
+import { DISCHARGE_DESTINATIONS, ORIENTED_SERVICES, DEATH_VERSIONS, labelOf } from '../constants/careFormOptions';
 import { MEDICATION_BY_ID } from '../clinical/medications';
 
 export const CARE_VISIT_VERSIONS = [5, 19, 20, 21];
 export const CARE_VISIT_LABELS = { 5: 'Opération chirurgicale', 19: "Protocole d'urgence", 20: 'Consultation générale', 21: 'Consultation générale' };
 // Intitulés des lignes du résumé, dans l'ordre d'affichage.
 export const CARE_VISIT_FIELDS = [
-    ['intervention', 'Intervention'], ['indication', 'Indication'], ['anesthesie', 'Anesthésie'], ['motif', 'Motif'], ['diagnostic', 'Diagnostic'], ['soins', 'Soins'],
+    ['deces', 'Décès'], ['intervention', 'Intervention'], ['indication', 'Indication'], ['anesthesie', 'Anesthésie'], ['motif', 'Motif'], ['diagnostic', 'Diagnostic'], ['soins', 'Soins'],
     ['complications', 'Complications'], ['resultat', 'Résultat'], ['traitement', 'Traitement'], ['sortie', 'Orientation'],
 ];
 
@@ -54,6 +54,10 @@ export const careVisitSummary = (version, formData = {}) => {
             traitement: medicationNames(f),
             sortie: labelOf(ORIENTED_SERVICES, f.orientedService),
         };
+    }
+    if (DEATH_VERSIONS.includes(number) && f.careDeceased === 'Yes') {
+        const time = /^\d{1,2}:\d{2}$/.test(String(f.careDeathTime || '')) ? `à ${f.careDeathTime}` : '';
+        fields.deces = [`Patient décédé${time ? ` ${time}` : ''}`, clean(f.careDeathCause, 160)].filter(Boolean).join(' : ');
     }
     const date = /^\d{4}-\d{2}-\d{2}/.test(String(f.date || '')) ? String(f.date).slice(0, 10) : '';
     const resume = { ...(date ? { date } : {}) };

@@ -14,6 +14,7 @@ import { Dropdown } from 'react-bootstrap';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { copyToClipboard } from './notificationService';
 import { PrescriptionMenuSection } from './PrescriptionMenu';
+import { reportLinkUrl, linkTargetOf } from '../utils/reportLinks';
 import { loadPatientDossier, reportTitleOf, reportCreatorOf, deleteReportWithRules } from '../utils/patientRecords';
 import { loadDossierContext, canModifyForm } from '../utils/dossierPatient';
 import { isDossierVersion } from '../utils/dossierCore';
@@ -202,6 +203,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                                             <Dropdown.Item onClick={() => exportDocument('png', entry)} disabled={!entry.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => exportDocument('png-copy', entry)} disabled={!entry.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => copy(reportTitleOf(entry), 'Titre copié !')}>Copier le titre</Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => copy(reportLinkUrl(linkTargetOf(entry)), 'Lien copié !')} disabled={!reportLinkUrl(linkTargetOf(entry))} title="Lien direct vers ce rapport : la personne qui l'ouvre doit être connectée et avoir les accès">Copier le lien du rapport</Dropdown.Item>
                                                             <PrescriptionMenuSection prescription={entry.ordonnance} showNotification={showNotification} />
                                                         </>
                                                     )}

@@ -5,7 +5,7 @@
 // garde une chaîne vide.
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
-import { surgeryRowsBBCode, postOpBBCode } from './shared/careExtras';
+import { surgeryRowsBBCode, postOpBBCode, deathBBCode } from './shared/careExtras';
 
 const NOT_FILLED = 'Non renseigné';
 
@@ -89,7 +89,7 @@ ${sectionBanner(`Rapport post-anesthésie`)}
 
 [/table]
 
-${postOpBBCode(formData)}${sectionBanner(`Résumé de la procédure chirurgicale`)}
+${deathBBCode(formData)}${postOpBBCode(formData)}${sectionBanner(`Résumé de la procédure chirurgicale`)}
 [table]
 
 [tr][td]

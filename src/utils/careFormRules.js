@@ -4,7 +4,7 @@
 // contrôles avant enregistrement. Testé dans careFormRules.test.js.
 import { validUntil } from './flightCertificate';
 import { BACKGROUND_UPDATE_FIELDS, missingBackgroundItems } from './dossierCore';
-import { RISK_NEEDING_ACTION, MENTAL_HEALTH_VERSIONS, DEFAULT_APTITUDE_MONTHS, EVAL_REASONS, labelOf } from '../constants/careFormOptions';
+import { DEATH_VERSIONS, RISK_NEEDING_ACTION, MENTAL_HEALTH_VERSIONS, DEFAULT_APTITUDE_MONTHS, EVAL_REASONS, labelOf } from '../constants/careFormOptions';
 
 const TIME = /^(\d{1,2}):(\d{2})$/;
 export const minutesOfTime = (value) => {
@@ -94,6 +94,13 @@ export const validateCareExtras = (version, data = {}) => {
     const number = Number(version);
     const f = data || {};
     const problems = [];
+    if (DEATH_VERSIONS.includes(number) && f.careDeceased === 'Yes') {
+        if (!TIME.test(norm(f.careDeathTime))) problems.push("Décès : indiquez l'heure du décès.");
+        if (!norm(f.careDeathCause)) problems.push('Décès : indiquez la cause ou les circonstances du décès.');
+        if (!f.careDeathManner) problems.push("Décès : choisissez la nature du décès (naturelle, accidentelle…).");
+        if (!f.careDeathResuscitation) problems.push('Décès : indiquez si une réanimation a été tentée.');
+        if (!f.careDeathBody) problems.push('Décès : indiquez la destination du corps.');
+    }
     if (number === 5) {
         if (f.surgeryDuration && !/^\d+$/.test(String(f.surgeryDuration).trim())) problems.push("Durée de l'intervention : indiquez un nombre de minutes.");
     }

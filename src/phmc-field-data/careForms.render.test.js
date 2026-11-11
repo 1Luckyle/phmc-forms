@@ -296,6 +296,35 @@ describe('soignants : chirurgien et soignants supplémentaires', () => {
     });
 });
 
+describe('décès du patient (urgences, opération)', () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+
+    test("urgences : l'interrupteur ouvre les champs du décès et passe l'orientation de sortie à « Décès » ; Pilou préremplit d'après les motifs", async () => {
+        render(<Harness Component={EmergencyForm} initial={{ patientAgeYears: '35', patientSex: 'Male', clinicalConditions: ['polytraumatisme'], clinicalSeverity: 'Critical', careEndTime: '15:20', phmcEmployee: 'Dr. Interne' }} extra={emergencyProps} />);
+        expect(document.querySelector('input[name="careDeathTime"]')).toBeNull();
+        await act(async () => { fireEvent.click(document.getElementById('careDeceased')); });
+        expect(stateOf()).toMatchObject({ careDeceased: 'Yes', dischargeDestination: 'Death' });
+        expect(document.querySelector('input[name="careDeathTime"]')).toBeTruthy();
+        await act(async () => { screen.getByText(/Préremplir avec Pilou/).click(); });
+        const state = stateOf();
+        expect(state).toMatchObject({ careDeathTime: '15:20', careDeathManner: 'Accidental', careDeathResuscitation: 'Attempted', careDeathBody: 'Coroner' });
+        expect(state.careDeathCause).toMatch(/polytraumatisme/);
+        // Décocher referme les champs et rend l'orientation.
+        await act(async () => { fireEvent.click(document.getElementById('careDeceased')); });
+        expect(stateOf()).toMatchObject({ careDeceased: '', dischargeDestination: '' });
+        expect(document.querySelector('input[name="careDeathTime"]')).toBeNull();
+    });
+
+    test("opération : même bloc, Pilou propose la cause d'après l'intervention choisie ; un texte déjà écrit n'est pas écrasé", async () => {
+        render(<Harness Component={Surgical} initial={{ surgeryProcedureIds: ['appendicectomie'], phmcEmployee: 'Dr. Interne', careDeceased: 'Yes', careDeathCause: 'Cause déjà saisie.' }} />);
+        await act(async () => { screen.getByText(/Préremplir avec Pilou/).click(); });
+        const state = stateOf();
+        expect(state.careDeathCause).toBe('Cause déjà saisie.');
+        expect(state).toMatchObject({ careDeathManner: 'Undetermined', careDeathBody: 'Coroner' });
+    });
+});
+
 describe('ordonnance dans la liste de médicaments', () => {
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
     const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };

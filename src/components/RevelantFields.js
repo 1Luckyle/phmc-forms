@@ -1,4 +1,5 @@
 import { HISTORY_PRESETS } from '../constants/historyPresets';
+import { DEATH_FIELDS } from '../constants/careFormOptions';
 import { carePresetFieldsOf } from '../constants/careFormPresets';
 
 // Champs communs aux formulaires cliniques (voir PatientContextFields) et
@@ -474,10 +475,10 @@ const CARE_EXTRA_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29, 35, 41];
 // Champs ajoutés (adressage, accompagnant, mise à jour du fond médical) à tous les rapports de soins, puis ceux propres à chaque formulaire.
 const CARE_REPORT_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
 const CARE_COMMON_EXTRA = ['appointmentTime', 'referralReason', 'referralOther', 'referringDoctor', 'companionName', 'companionRelation', 'patientBackgroundUpdated'];
-const SURGERY_EXTRA = ['surgeonEmployee', 'surgeryCharacter', 'surgeryAsa', 'postOpMonitoring', 'postOpExams', 'patientWeight', 'patientHeight', 'surgeryProcedureIds', 'clinicalMeds'];
+const SURGERY_EXTRA = ['surgeonEmployee', 'surgeryCharacter', 'surgeryAsa', 'postOpMonitoring', 'postOpExams', 'patientWeight', 'patientHeight', 'surgeryProcedureIds', 'clinicalMeds', ...DEATH_FIELDS];
 const APTITUDE_EXTRA = ['evalReason', 'aptitudeConclusion', 'aptitudeRestrictions', 'aptitudeValidityMonths', 'visualAcuity', 'hearingValue', 'vaccinationState', 'vaccinationNote'];
 const MENTAL_EXTRA = ['riskSuicide', 'riskDanger', 'riskAction', 'riskActionNote', 'involuntaryHold', 'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord'];
-const EMERGENCY_EXTRA = ['extraStaff', 'careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare', 'patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds'];
+const EMERGENCY_EXTRA = ['extraStaff', 'careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare', 'patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds', ...DEATH_FIELDS];
 const CLINICAL_EXTRA = ['patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds'];
 const CONSULT_EXTRA = ['orientedService', 'orientedServiceOther', 'examsOrdered', 'examsOrderedNote', 'workStoppage', 'workStoppageDays', ...CLINICAL_EXTRA];
 const CARE_VERSION_EXTRA = {

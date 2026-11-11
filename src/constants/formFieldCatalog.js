@@ -51,7 +51,7 @@ export const VERSION_FIELDS = {
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         surgeryCharacter: 'select', surgeryAsa: 'select', postOpMonitoring: 'select', postOpExams: 'textarea',
-        patientWeight: 'text', patientHeight: 'text', surgeryProcedureIds: 'select', clinicalMeds: 'textarea',
+        patientWeight: 'text', patientHeight: 'text', surgeryProcedureIds: 'select', clinicalMeds: 'textarea', careDeceased: 'select', careDeathTime: 'time', careDeathCause: 'textarea', careDeathManner: 'select', careDeathResuscitation: 'select', careDeathResuscitationNote: 'textarea', careDeathFamily: 'select', careDeathBody: 'select',
     },
     6: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -106,7 +106,7 @@ export const VERSION_FIELDS = {
     },
     19: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
-        phmcEmployee: 'select', extraStaff: 'select', arrivalMode: 'time', arrivalTime: 'time', patientChiefComplaint: 'textarea',
+        phmcEmployee: 'select', extraStaff: 'select', careDeceased: 'select', careDeathTime: 'time', careDeathCause: 'textarea', careDeathManner: 'select', careDeathResuscitation: 'select', careDeathResuscitationNote: 'textarea', careDeathFamily: 'select', careDeathBody: 'select', arrivalMode: 'time', arrivalTime: 'time', patientChiefComplaint: 'textarea',
         patientInjuryMechanism: 'textarea', painLevel: 'select', temperature: 'select', heartRate: 'select',
         breathing: 'select', bloodPressure: 'select', bloodOxy: 'select', findings: 'select',
         lungs: 'select', pupils: 'select', wounds: 'select', ecg: 'select',

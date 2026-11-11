@@ -44,7 +44,8 @@ import { useEmployeeAuth } from './contexts/EmployeeAuthContext';
 import useMailbox from './hooks/useMailbox';
 import { useEmployeeSelector } from './hooks/useEmployeeSelector';
 import DebugFillButton from './components/DebugFillButton';
-import { getDebugTemplate, hasDebugTemplate } from './utils/debugTemplates';
+import { getDebugTemplate, hasDebugTemplate, DEBUG_DEATH_VERSIONS } from './utils/debugTemplates';
+import { peekPendingReportLink, clearPendingReportLink } from './utils/reportLinks';
 import useAutoGrowTextareas from './hooks/useAutoGrowTextareas';
 // logos
 import email from './assets/email.png'
@@ -196,6 +197,13 @@ function MainApp({
     // Ce que la personne (ou le profil simulé par un admin) voit dans la Boîte à outils : une seule définition, voir utils/viewAs.js.
     const toolAccess = getToolAccess({ currentEmployee, employeeProfile, staffProfile, isAdmin, isRecruiter, isContractCandidate, hasAdminDocuments, isCivilian, staffName, canUseAma, canManageRecruitment });
     const [showLoginModal, setShowLoginModal] = useState(false);
+    // Lien direct vers un rapport (#/rapport/…) ouvert sans être connecté : la connexion est proposée, et une fois connecté on retourne tout seul au rapport (voir utils/reportLinks.js).
+    useEffect(() => {
+        if (authLoading) return;
+        const pending = peekPendingReportLink();
+        if (!pending) return;
+        if (currentEmployee || civilianProfile) { clearPendingReportLink(); navigate(pending); } else setShowLoginModal(true);
+    }, [authLoading, currentEmployee, civilianProfile, navigate]);
     // Vidéosurveillance : le menu (envoyer / suivre / traiter) et, depuis lui, le formulaire de nouvelle demande.
     const [showCctvHub, setShowCctvHub] = useState(false);
     const [cctvHubTab, setCctvHubTab] = useState('mine');
@@ -1490,7 +1498,8 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
     // courant avec un gabarit de test. Les employés sont choisis parmi les
     // listes déjà filtrées par useEmployeeSelector, donc un employé restreint
     // reste « lui-même » (utile pour tester les permissions).
-    const handleDebugFill = () => {
+    // scenario « death » : patient décédé (opération, protocole d'urgence). Le clic du bouton transmet un événement : tout autre argument = scénario par défaut.
+    const handleDebugFill = (scenario) => {
         const flatten = (groups) => (groups || []).flatMap((g) => g.options || []);
         const template = getDebugTemplate(bbCodeVersion, {
             selectOptions,
@@ -1500,7 +1509,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
             coronerOptions: flatten(coronerGroupedOptions),
             unrestrictedPhmcOptions: flatten(unrestrictedPhmcGroupedOptions),
             unrestrictedCoronerOptions: flatten(unrestrictedCoronerGroupedOptions),
-        });
+        }, scenario === 'death' ? 'death' : '');
         if (!template) {
             showNotification('Aucun gabarit de debug pour ce formulaire.', 'info-circle');
             return;
@@ -2191,7 +2200,10 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
 
                             {/* Mode debug : visible seulement si un admin l'a activé (voir DebugContext). */}
                             {FieldComponent && currentEmployee && hasDebugTemplate(bbCodeVersion) && (
-                                <DebugFillButton onFill={handleDebugFill} className="changelog-button" />
+                                <DebugFillButton onFill={handleDebugFill} className="changelog-button" label={DEBUG_DEATH_VERSIONS.includes(bbCodeVersion) ? 'Remplir (debug) : patient vivant' : undefined} />
+                            )}
+                            {FieldComponent && currentEmployee && DEBUG_DEATH_VERSIONS.includes(bbCodeVersion) && (
+                                <DebugFillButton onFill={() => handleDebugFill('death')} className="changelog-button" label="Remplir (debug) : patient décédé" />
                             )}
                         </div>
 

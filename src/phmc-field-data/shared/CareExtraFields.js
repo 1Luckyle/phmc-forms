@@ -15,7 +15,12 @@ import { emergencyContactChanges, aptitudeValidUntil, minutesBetween, durationLa
 import {
     REFERRAL_REASONS, SURGERY_CHARACTERS, ASA_CLASSES, POST_OP_MONITORING, EVAL_REASONS, APTITUDE_CONCLUSIONS, APTITUDE_VALIDITY_MONTHS, DEFAULT_APTITUDE_MONTHS, VACCINATION_STATES,
     RISK_LEVELS, RISK_ACTIONS, INVOLUNTARY_HOLDS, ARRIVAL_MODES, DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, RISK_NEEDING_ACTION,
+    DEATH_MANNERS, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
 } from '../../constants/careFormOptions';
+import { buildDeathSuggestion } from '../../clinical/death';
+import { applyPatch } from '../../clinical/apply';
+import { currentTime } from '../../clinical/context';
+import { ASSISTANT_NAME } from '../../clinical/assistantName';
 
 const row = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
 const cell = (basis = 200) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
@@ -225,3 +230,50 @@ export const ConsultExtraFields = ({ formData, setFormData, handleChange, onPref
         </div>
     </>
 );
+
+// ── Décès du patient (protocole d'urgence, opération) ──
+// L'interrupteur ouvre les champs du décès ; Pilou peut les préremplir (heure, cause, circonstances, réanimation, famille, destination du corps) d'après les motifs ou les interventions déjà choisis.
+// Aux urgences, l'orientation de sortie passe d'office à « Décès ».
+export const DeathFields = ({ formData, setFormData, handleChange, kind = 'emergency' }) => {
+    const deceased = formData.careDeceased === 'Yes';
+    const toggle = (checked) => setFormData((prev) => {
+        const next = { ...prev, careDeceased: checked ? 'Yes' : '' };
+        if (kind === 'emergency') {
+            if (checked) next.dischargeDestination = 'Death';
+            else if (prev.dischargeDestination === 'Death') next.dischargeDestination = '';
+        }
+        return next;
+    });
+    const suggest = () => setFormData((prev) => applyPatch(prev, buildDeathSuggestion({ kind, formData: prev, now: currentTime() })));
+    return (
+        <>
+            <Form.Label className="form-section-title">Décès du patient</Form.Label>
+            <Form.Check
+                type="switch" id="careDeceased" checked={deceased} onChange={(e) => toggle(e.target.checked)}
+                label={kind === 'surgery' ? "Le patient est décédé pendant l'intervention" : 'Le patient est décédé pendant la prise en charge'}
+            />
+            {deceased && (
+                <div style={{ border: '1px solid #b62324', borderRadius: 8, padding: '0.7rem 0.8rem', marginTop: 8, background: '#1a0f12' }} data-no-tip="1">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+                        <span className="small text-muted">Renseignez le décès : il figure en évidence dans le rapport et dans l'historique des soins du dossier.</span>
+                        <Button size="sm" variant="outline-primary" onClick={suggest} title="Complète les champs vides d'après les motifs ou les interventions choisis (tout reste modifiable)">
+                            <i className="fas fa-wand-magic-sparkles me-1"></i>Préremplir avec {ASSISTANT_NAME}
+                        </Button>
+                    </div>
+                    <div style={row}>
+                        <Field label="Heure du décès" basis={140}><Form.Control type="time" name="careDeathTime" value={formData.careDeathTime || ''} onChange={handleChange} className="form-control" /></Field>
+                        <Field label="Circonstances" basis={260}><Choice name="careDeathManner" formData={formData} handleChange={handleChange} options={DEATH_MANNERS} placeholder="Nature du décès" /></Field>
+                        <Field label="Destination du corps" basis={240}><Choice name="careDeathBody" formData={formData} handleChange={handleChange} options={DEATH_BODY} placeholder="Où est conduit le corps ?" /></Field>
+                    </div>
+                    <Form.Label>Cause et circonstances du décès</Form.Label>
+                    <Form.Control as="textarea" rows={2} name="careDeathCause" value={formData.careDeathCause || ''} onChange={handleChange} placeholder="Cause du décès et ce qui l'a précédé" className="form-control" />
+                    <div style={{ ...row, marginTop: '0.6rem' }}>
+                        <Field label="Réanimation" basis={300}><Choice name="careDeathResuscitation" formData={formData} handleChange={handleChange} options={DEATH_RESUSCITATION} placeholder="Réanimation tentée ?" /></Field>
+                        <Field label="Famille" basis={240}><Choice name="careDeathFamily" formData={formData} handleChange={handleChange} options={DEATH_FAMILY} placeholder="Proche prévenu ?" /></Field>
+                    </div>
+                    <Form.Control as="textarea" rows={2} name="careDeathResuscitationNote" value={formData.careDeathResuscitationNote || ''} onChange={handleChange} placeholder="Déroulé de la réanimation : manœuvres, médicaments, durée (facultatif)" className="form-control" />
+                </div>
+            )}
+        </>
+    );
+};

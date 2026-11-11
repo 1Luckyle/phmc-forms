@@ -13,7 +13,8 @@ import { SEVERITIES } from '../../clinical/vitals';
 import { patientFromForm, buildSuggestions, conditionsOf, contextTags, historySuggestions } from '../../clinical/engine';
 import { MEDICATION_BY_ID } from '../../clinical/medications';
 import { vitalsFromForm } from '../../clinical/vitals';
-import { sectionsFor, applySection, applyAll } from '../../clinical/apply';
+import { sectionsFor, applySection, applyAll, applyPatch } from '../../clinical/apply';
+import { buildDeathSuggestion } from '../../clinical/death';
 import { currentTime, pickNumericOption } from '../../clinical/context';
 
 const GROUPED_OPTIONS = CONDITION_GROUPS.map((g) => ({ label: g.label, options: g.options.map((c) => ({ value: c.id, label: c.label, search: [c.label, ...(c.aliases || [])].join(' ').toLowerCase() })) }));
@@ -63,7 +64,9 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
             // Le patient d'abord (âge, sexe) : constantes et doses sont ensuite recalculées pour lui.
             const withPatient = applySection(prev, 'patient', suggestions, { mode });
             const fresh = buildSuggestions({ conditionIds: ids, severity, patient: patientFromForm(withPatient), seed, formData: withPatient }) || suggestions;
-            return applyAll(withPatient, fresh, overwrite, mode, extraFor(fresh, withPatient));
+            const applied = applyAll(withPatient, fresh, overwrite, mode, extraFor(fresh, withPatient));
+            // Patient décédé : le décès se préremplit avec le reste (motifs, heure de fin de prise en charge).
+            return applied.careDeceased === 'Yes' ? applyPatch(applied, buildDeathSuggestion({ kind: 'emergency', formData: applied, now: currentTime() }), overwrite) : applied;
         });
         setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés, patient complété seulement là où il était vide).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
     };

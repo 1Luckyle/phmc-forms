@@ -14,6 +14,8 @@ import { patientFromForm } from '../../clinical/engine';
 import { MEDICATION_BY_ID } from '../../clinical/medications';
 import { vitalsFromForm } from '../../clinical/vitals';
 import { applyPatch, applyMeds } from '../../clinical/apply';
+import { buildDeathSuggestion } from '../../clinical/death';
+import { currentTime } from '../../clinical/context';
 import { labelOf, ASA_CLASSES, POST_OP_MONITORING } from '../../constants/careFormOptions';
 
 const GROUPED_OPTIONS = PROCEDURE_GROUPS.map((g) => ({ label: g.label, options: g.options.map((p) => ({ value: p.id, label: p.label, search: [p.label, p.name, ...(p.aliases || [])].join(' ').toLowerCase() })) }));
@@ -61,7 +63,8 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
                 if (key === 'patient') return;
                 next = key === 'meds' ? applyMeds(next, fresh.postOpMeds, overwrite, { prescribed: true }) : applyPatch(next, fresh.fields[key], overwrite);
             });
-            return next;
+            // Patient décédé pendant l'intervention : le décès se préremplit avec le reste.
+            return next.careDeceased === 'Yes' ? applyPatch(next, buildDeathSuggestion({ kind: 'surgery', formData: next, now: currentTime() }), overwrite) : next;
         });
         setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
     };

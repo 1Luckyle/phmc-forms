@@ -3,7 +3,7 @@ import { Form, Alert } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
-import { ReferralFields, SurgeryCharacterFields, PostOpFields } from './shared/CareExtraFields';
+import { ReferralFields, SurgeryCharacterFields, PostOpFields, DeathFields } from './shared/CareExtraFields';
 import SurgeryAssistant from './shared/SurgeryAssistant';
 import { careStaffOnly } from './shared/PhmcEmployeeSelect';
 import { darkSelectStyles } from './shared/selectStyles';
@@ -257,6 +257,8 @@ const Surgical = ({
                 className="form-control"
             />
         )}
+
+        <DeathFields kind="surgery" formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
         <Form.Label className="form-section-title">Rapport post-anesthésie</Form.Label>
         <Form.Control

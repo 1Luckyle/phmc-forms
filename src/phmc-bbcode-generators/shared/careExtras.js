@@ -5,7 +5,7 @@
 import { sectionBanner, BB_COLORS } from './bbStyles';
 import {
     labelOf, SURGERY_CHARACTERS, ASA_CLASSES, POST_OP_MONITORING, EVAL_REASONS, VACCINATION_STATES, RISK_LEVELS, RISK_ACTIONS, INVOLUNTARY_HOLDS,
-    DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, REFERRAL_REASONS, ARRIVAL_MODES,
+    DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, REFERRAL_REASONS, ARRIVAL_MODES, DEATH_MANNERS, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
 } from '../../constants/careFormOptions';
 import { minutesBetween, durationLabel, aptitudeValidUntil } from '../../utils/careFormRules';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
@@ -155,4 +155,20 @@ export const clinicalMedsBBCode = (f) => {
 export const prescriptionBBCode = (f) => {
     const lines = prescriptionLines(f);
     return lines.length ? `[u]Ordonnance${filled(f.phmcEmployee) ? ` (prescrite par ${text(f.phmcEmployee)})` : ''}: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
+};
+
+// ── Décès du patient pendant la prise en charge (urgences, opération) ──
+// Section placée à la fin du rapport de soins ; vide si le patient n'est pas décédé.
+export const deathBBCode = (f, blue = false) => {
+    if (f.careDeceased !== 'Yes') return '';
+    const resuscitation = [labelOf(DEATH_RESUSCITATION, f.careDeathResuscitation), filled(f.careDeathResuscitationNote) ? text(f.careDeathResuscitationNote) : ''].filter(Boolean).join('\n[br][/br]');
+    const rows = [
+        filled(f.careDeathTime) ? `[tr][td]Heure du décès[/td][td]${text(f.careDeathTime)}[/td][/tr]` : '',
+        filled(f.careDeathCause) ? `[tr][td]Cause et circonstances[/td][td]\n${text(f.careDeathCause)}\n[/td][/tr]` : '',
+        filled(f.careDeathManner) ? `[tr][td]Nature du décès[/td][td]${labelOf(DEATH_MANNERS, f.careDeathManner)}[/td][/tr]` : '',
+        resuscitation ? `[tr][td]Réanimation[/td][td]\n${resuscitation}\n[/td][/tr]` : '',
+        filled(f.careDeathFamily) ? `[tr][td]Famille[/td][td]${labelOf(DEATH_FAMILY, f.careDeathFamily)}[/td][/tr]` : '',
+        filled(f.careDeathBody) ? `[tr][td]Destination du corps[/td][td]${labelOf(DEATH_BODY, f.careDeathBody)}[/td][/tr]` : '',
+    ].filter(Boolean).join('\n');
+    return `${sectionBanner('Décès du patient', accentOf(blue))}\n[table]\n${rows || '[tr][td]Décès constaté[/td][td]Détails non renseignés[/td][/tr]'}\n[/table]\n`;
 };

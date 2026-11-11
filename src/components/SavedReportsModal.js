@@ -15,6 +15,7 @@ import { INVOICE_STATUS_COLORS } from '../utils/patientBilling';
 import { isDossierVersion, formPhase } from '../utils/dossierCore';
 import { ReportCard, FilterChips, PaymentPill, Pill, BulkBar, Pager } from './Reports/ReportParts';
 import { PrescriptionMenuSection } from './PrescriptionMenu';
+import { reportLinkUrl, linkTargetOf } from '../utils/reportLinks';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
@@ -661,6 +662,7 @@ const SavedReportsModal = ({
                         <Dropdown.Item onClick={() => handleExportDocument('png', report)} disabled={!report.bbCode}>Télécharger l'image (PNG, pour Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleExportDocument('png-copy', report)} disabled={!report.bbCode}>Copier l'image (à coller dans Discord)</Dropdown.Item>
                         <Dropdown.Item onClick={() => handleCopyTitle(report)}>Copier le titre</Dropdown.Item>
+                        <Dropdown.Item onClick={() => copyToClipboard(reportLinkUrl(linkTargetOf(report)), showNotification, 'Lien copié !')} disabled={!reportLinkUrl(linkTargetOf(report))} title="Lien direct vers ce rapport : la personne qui l'ouvre doit être connectée et avoir les accès">Copier le lien du rapport</Dropdown.Item>
                         <PrescriptionMenuSection prescription={report.ordonnance} showNotification={showNotification} />
                     </>
                 )}
