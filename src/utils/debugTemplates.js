@@ -893,6 +893,24 @@ export const hasDebugTemplate = (version) => Object.prototype.hasOwnProperty.cal
 // pas de gabarit (ex. panneau de contrôle admin).
 // Formulaires du personnel soignant : le nom du patient se saisit en trois champs et la date de naissance remplace l'âge ; l'opération a aussi un chirurgien principal (le signataire).
 const CARE_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29, 35, 41];
+// Champs ajoutés aux formulaires de soins (adressage, accompagnant, puis ceux propres à chaque formulaire) : valeurs de test cohérentes avec les listes de constants/careFormOptions.js.
+const careExtras = (version, h) => {
+    const common = { appointmentTime: '14:30', referralReason: 'PhmcDoctor', referringDoctor: 'Dr. Debug Adressant', companionName: 'Marie Testard', companionRelation: 'Épouse' };
+    const emergencyContact = {
+        patientEmergencyContact: 'Marie Testard', patientEmergencyContactTitle: 'Mrs', patientEmergencyContactFirstName: 'Marie', patientEmergencyContactMiddleName: '', patientEmergencyContactLastName: 'Testard',
+        patientEmergencyContactRelation: 'Épouse', patientEmergencyContactNumber: '555-0199', patientEmergencyContactDiscord: 'marie.testard',
+    };
+    const mental = { riskSuicide: 'Low', riskDanger: 'None', riskAction: 'CloseFollowUp', riskActionNote: 'Revoir sous une semaine.', involuntaryHold: 'No', ...emergencyContact };
+    const aptitude = { evalReason: 'Renewal', aptitudeConclusion: 'Apte avec restrictions', aptitudeRestrictions: 'Port de verres correcteurs.', aptitudeValidityMonths: '12', visualAcuity: '10/10 corrigée', hearingValue: 'Normale', vaccinationState: 'Yes' };
+    const extras = {
+        5: { surgeonEmployee: h.phmc.phmcEmployee || '', surgeryCharacter: 'Urgent', surgeryAsa: 'ASA2', postOpMonitoring: 'RecoveryRoom', postOpExams: 'Radiographie de contrôle.' },
+        6: aptitude, 7: aptitude, 14: mental, 16: mental, 28: mental, 29: mental,
+        19: { careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'] },
+        20: { orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3' },
+        21: { orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3' },
+    };
+    return Number(version) === 35 || Number(version) === 41 ? {} : { ...common, ...(extras[version] || {}) };
+};
 export const getDebugTemplate = (version, ctx) => {
     const build = TEMPLATES[version];
     if (!build) return null;
@@ -904,7 +922,7 @@ export const getDebugTemplate = (version, ctx) => {
         patientMiddleName: helpers.patient.middleName,
         patientLastName: helpers.patient.lastName,
         ...(Number(version) === 35 ? {} : { patientDateOfBirth: helpers.patient.dob }),
-        ...(Number(version) === 5 ? { surgeonEmployee: template.phmcEmployee || '' } : {}),
+        ...careExtras(Number(version), helpers),
         ...template,
     };
 };

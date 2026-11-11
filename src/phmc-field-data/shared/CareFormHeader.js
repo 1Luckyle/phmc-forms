@@ -14,6 +14,7 @@ import usePatientNameParts from '../../hooks/usePatientNameParts';
 import { usePatientDossier } from '../../utils/dossierLookup';
 import { todayIso } from '../../utils/appointmentDate';
 import PhmcEmployeeSelect from './PhmcEmployeeSelect';
+import { ReferralFields } from './CareExtraFields';
 
 const rowStyle = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
 const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
@@ -58,10 +59,18 @@ export const PatientIdentityFields = ({ formData, setFormData, handleChange, idP
 };
 
 // Date du rendez-vous / de la consultation : le sélecteur refuse le passé (min), et la saisie au clavier aussi (voir MainApp.handleChange).
-export const AppointmentDateField = ({ formData, handleChange, name = 'date', label = 'Date du rendez-vous' }) => (
-    <div style={{ marginBottom: '0.6rem' }}>
-        <Form.Label>{label}</Form.Label>
-        <Form.Control type="date" name={name} value={formData[name] || ''} min={todayIso()} onChange={handleChange} className="form-control" />
+export const AppointmentDateField = ({ formData, handleChange, name = 'date', label = 'Date du rendez-vous', withTime = false }) => (
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+        <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+            <Form.Label>{label}</Form.Label>
+            <Form.Control type="date" name={name} value={formData[name] || ''} min={todayIso()} onChange={handleChange} className="form-control" />
+        </div>
+        {withTime && (
+            <div style={{ flex: '0 1 170px', minWidth: 0 }}>
+                <Form.Label>Heure</Form.Label>
+                <Form.Control type="time" name="appointmentTime" value={formData.appointmentTime || ''} onChange={handleChange} className="form-control" />
+            </div>
+        )}
     </div>
 );
 
@@ -70,11 +79,12 @@ export const CareEmployeeField = ({ formData, setFormData, options, label = "Ide
     <PhmcEmployeeSelect name={name} label={label} options={options} formData={formData} setFormData={setFormData} careOnly placeholder={placeholder} rankField={rankField} />
 );
 
-const CareFormHeader = ({ formData, setFormData, handleChange, phmcGroupedOptions, sectionTitle = 'Patient et rendez-vous', dateLabel = 'Date du rendez-vous', dateName = 'date' }) => (
+const CareFormHeader = ({ formData, setFormData, handleChange, phmcGroupedOptions, unrestrictedPhmcGroupedOptions, sectionTitle = 'Patient et rendez-vous', dateLabel = 'Date du rendez-vous', dateName = 'date' }) => (
     <>
         <Form.Label className="form-section-title">{sectionTitle}</Form.Label>
         <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
-        <AppointmentDateField formData={formData} handleChange={handleChange} name={dateName} label={dateLabel} />
+        <AppointmentDateField formData={formData} handleChange={handleChange} name={dateName} label={dateLabel} withTime />
+        <ReferralFields formData={formData} setFormData={setFormData} handleChange={handleChange} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
         <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} />
     </>
 );

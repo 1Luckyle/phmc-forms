@@ -1,4 +1,5 @@
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
+import { riskBBCode, emergencyContactBBCode } from './shared/careExtras';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -34,7 +35,7 @@ ${patientChiefComplaint}
 [/table]
 ${sectionBanner(`Constatations`)}
 [table][tr][td][list=none]Notes: ${patientNotes}[/list][/table]
-${sectionBanner(`Diagnostic de sortie`)}
+${riskBBCode(formData, false)}${emergencyContactBBCode(formData, false)}${sectionBanner(`Diagnostic de sortie`)}
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis}[/list][/table]
 ${sectionBanner(`Thérapie`)}

@@ -6,7 +6,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
 import crypto from 'crypto';
 import { renderMail, wrapMailHtml, PHMC_SITE_URL } from './mailTemplatesCore.js';
-import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion } from './dossierCore.js';
+import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion, EMERGENCY_FIELDS } from './dossierCore.js';
 
 // Initialize Firebase Admin SDK
 // L'URL de la Realtime Database est fournie explicitement : sans elle,
@@ -2903,6 +2903,29 @@ export const reconcileDossiers = onSchedule({ schedule: 'every 1 minutes', timeZ
                 await db.ref(`dossiersEnAttente/${patientNode}/${key}`).remove();
             } catch (error) {
                 console.error(`reconcileDossiers: échec pour ${patientNode}/${key}:`, error);
+            }
+        }
+    }
+    // Contact d'urgence modifié depuis un formulaire de santé mentale (contactsUrgenceMaj) : appliqué tout de suite au dossier s'il existe (aucun dossier : rien à mettre à jour), puis retiré.
+    const contactUpdates = (await db.ref('contactsUrgenceMaj').get()).val() || {};
+    for (const [patientNode, items] of Object.entries(contactUpdates)) {
+        for (const [key, item] of Object.entries(items || {})) {
+            try {
+                const hasDossier = (await db.ref(`dossiersPatients/${patientNode}/initial`).get()).exists();
+                const updates = {};
+                if (hasDossier && item && item.champs) {
+                    Object.entries(item.champs).forEach(([field, value]) => {
+                        if (EMERGENCY_FIELDS.includes(field)) updates[`dossiersPatients/${patientNode}/donnees/${field}`] = String(value ?? '').trim() === '' ? null : String(value).trim().slice(0, 200);
+                    });
+                }
+                if (Object.keys(updates).length > 0) {
+                    updates[`dossiersPatients/${patientNode}/majLe`] = now;
+                    updates[`dossiersPatients/${patientNode}/historique/contact_${key}`] = { version: 0, appliqueLe: now, titre: `Contact d'urgence mis à jour (${String((item && item.titre) || 'consultation').slice(0, 120)})`, createur: 'personnel' };
+                    await db.ref().update(updates);
+                }
+                await db.ref(`contactsUrgenceMaj/${patientNode}/${key}`).remove();
+            } catch (error) {
+                console.error(`reconcileDossiers: contact d'urgence ${patientNode}/${key}:`, error);
             }
         }
     }

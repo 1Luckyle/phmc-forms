@@ -49,6 +49,8 @@ export const VERSION_FIELDS = {
         patientSummaryConsultation: 'textarea', patientAddress: 'textarea', patientSummary: 'textarea', surgeryPostOpInstructions: 'textarea',
         patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        surgeryCharacter: 'select', surgeryAsa: 'select', postOpMonitoring: 'select', postOpExams: 'textarea',
     },
     6: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -59,6 +61,8 @@ export const VERSION_FIELDS = {
         patientOther: 'select', predisposition: 'select', patientMedicine: 'textarea', patientImpairments: 'textarea',
         patientSummary: 'textarea', patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        evalReason: 'select', aptitudeConclusion: 'select', aptitudeRestrictions: 'textarea', aptitudeValidityMonths: 'select', visualAcuity: 'text', hearingValue: 'text', vaccinationState: 'select', vaccinationNote: 'text',
     },
     7: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -69,6 +73,8 @@ export const VERSION_FIELDS = {
         patientOther: 'select', predisposition: 'select', patientMedicine: 'textarea', patientImpairments: 'textarea',
         patientSummary: 'textarea', patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        evalReason: 'select', aptitudeConclusion: 'select', aptitudeRestrictions: 'textarea', aptitudeValidityMonths: 'select', visualAcuity: 'text', hearingValue: 'text', vaccinationState: 'select', vaccinationNote: 'text',
     },
     8: {
         coronerEmployee: 'select', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', patientAge: 'number', patientDateOfBirth: 'date',
@@ -85,6 +91,8 @@ export const VERSION_FIELDS = {
         admission: 'textarea', patientProcedure: 'textarea', patientMedicine: 'textarea', followup: 'select',
         patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        riskSuicide: 'select', riskDanger: 'select', riskAction: 'select', riskActionNote: 'text', involuntaryHold: 'select', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text', patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text',
     },
     16: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -92,6 +100,8 @@ export const VERSION_FIELDS = {
         admission: 'textarea', patientProcedure: 'textarea', patientMedicine: 'textarea', followup: 'select',
         patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        riskSuicide: 'select', riskDanger: 'select', riskAction: 'select', riskActionNote: 'text', involuntaryHold: 'select', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text', patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text',
     },
     19: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -103,6 +113,8 @@ export const VERSION_FIELDS = {
         patientDiagnosis: 'textarea', patientSecondaryDiagnosis: 'textarea', patientProcedure: 'textarea', admission: 'textarea',
         patientMedicine: 'textarea', prescriptionImage: 'textarea', followup: 'select', patientDateOfBirth: 'date', patientAgeYears: 'number',
         patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea', patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        careStartTime: 'time', careEndTime: 'time', dischargeDestination: 'select', transferTo: 'text', routineCare: 'select',
     },
     20: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -114,6 +126,8 @@ export const VERSION_FIELDS = {
         patientMedicine: 'textarea', patientNotes: 'textarea', scenePhotos: 'textarea', followup: 'select',
         patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        orientedService: 'select', orientedServiceOther: 'text', examsOrdered: 'select', examsOrderedNote: 'text', workStoppage: 'select', workStoppageDays: 'number',
     },
     21: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -125,6 +139,8 @@ export const VERSION_FIELDS = {
         patientMedicine: 'textarea', patientNotes: 'textarea', scenePhotos: 'textarea', followup: 'select',
         patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        orientedService: 'select', orientedServiceOther: 'text', examsOrdered: 'select', examsOrderedNote: 'text', workStoppage: 'select', workStoppageDays: 'number',
     },
     22: {
         patientTitle: 'select', patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',
@@ -182,6 +198,8 @@ export const VERSION_FIELDS = {
         patientDiagnosis: 'textarea', admission: 'textarea', patientTreatmentPlan: 'textarea', patientTherapyMedicine: 'textarea',
         followup: 'textarea', patientTreatmentMedicine: 'textarea', patientTherapy: 'textarea', patientFollowUp: 'textarea',
         patientSafety: 'textarea', patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        riskSuicide: 'select', riskDanger: 'select', riskAction: 'select', riskActionNote: 'text', involuntaryHold: 'select', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text', patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text',
     },
     29: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
@@ -196,6 +214,8 @@ export const VERSION_FIELDS = {
         patientDiagnosis: 'textarea', admission: 'textarea', patientTreatmentPlan: 'textarea', patientTherapyMedicine: 'textarea',
         followup: 'textarea', patientTreatmentMedicine: 'textarea', patientTherapy: 'textarea', patientFollowUp: 'textarea',
         patientSafety: 'textarea', patientDateOfBirth: 'date', patientAgeYears: 'number', patientSex: 'textarea', patientCurrentMedicine: 'textarea',
+        appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
+        riskSuicide: 'select', riskDanger: 'select', riskAction: 'select', riskActionNote: 'text', involuntaryHold: 'select', patientEmergencyContact: 'text', patientEmergencyContactTitle: 'select', patientEmergencyContactFirstName: 'text', patientEmergencyContactMiddleName: 'text', patientEmergencyContactLastName: 'text', patientEmergencyContactRelation: 'text', patientEmergencyContactNumber: 'text', patientEmergencyContactDiscord: 'text',
     },
     35: {
         emailPurpose: 'select', emailRecipient: 'text', patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text',

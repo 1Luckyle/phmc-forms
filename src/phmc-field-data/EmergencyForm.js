@@ -3,14 +3,11 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
+import { EmergencyTimingFields, EmergencyDischargeFields } from './shared/CareExtraFields';
+import { ARRIVAL_MODES } from '../constants/careFormOptions';
 
-const ARRIVAL_MODE_OPTIONS = [
-    { value: 'Walk-in', label: 'Par ses propres moyens' },
-    { value: 'EMS', label: 'Ambulance / EMS' },
-    { value: 'Police', label: 'Amené par les forces de l\'ordre' },
-    { value: 'Transfer', label: 'Transfert depuis un autre établissement' },
-    { value: 'Other', label: 'Autre' },
-];
+// Modes d'arrivée : constants/careFormOptions.js (à pied, véhicule personnel, ambulance, hélicoptère, forces de l'ordre, transfert).
+const ARRIVAL_MODE_OPTIONS = ARRIVAL_MODES;
 
 // Valeurs chiffrées facultatives des signes vitaux. Les catégories (normal /
 // anormal) restent les cases à cocher du protocole ; ces valeurs les précisent.
@@ -105,6 +102,7 @@ const EmergencyForm = ({
     setFormData,
     phmcRank,
     phmcGroupedOptions,
+    unrestrictedPhmcGroupedOptions,
     lab,
     painLevel,
     temperature,
@@ -204,7 +202,7 @@ const EmergencyForm = ({
         <>
             {/* ... (Your existing form fields up to the Findings section) ... */}
             <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
-            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
+            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
             <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} allergiesRequired={false} />
 
@@ -230,6 +228,8 @@ const EmergencyForm = ({
                     className="form-control"
                 />
             </div>
+
+            <EmergencyTimingFields formData={formData} handleChange={handleChange} />
 
             <Form.Label className="form-section-title">Anamnèse</Form.Label>
             <Form.Control
@@ -436,6 +436,8 @@ const EmergencyForm = ({
                     {(followup || []).map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
             </div>
+
+            <EmergencyDischargeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
         </>
     );
 };

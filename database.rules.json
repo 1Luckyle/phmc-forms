@@ -642,6 +642,18 @@
     // façon anonyme (abandonné, invisible depuis l'interface) — lecture encore
     // publique pour les anciennes données déjà présentes, mais plus aucune
     // nouvelle écriture anonyme n'y est permise.
+    // contactsUrgenceMaj/{ID patient}/{clé} : contact d'urgence modifié depuis un formulaire de SANTÉ MENTALE (psychiatrie, évaluation psychologique) : { champs: { champ: valeur }, par, titre, creeLe }.
+    // Posé par le personnel à l'enregistrement du rapport ; la fonction serveur reconcileDossiers l'applique au dossier du patient (qui n'est jamais écrit par un client) puis le supprime.
+    "contactsUrgenceMaj": {
+      "$patientId": {
+        ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
+        "$key": {
+          ".write": "auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
+          ".validate": "newData.hasChildren(['champs', 'par', 'creeLe'])"
+        }
+      }
+    },
+
     // partagesRecus/{nœud du destinataire}/{id} : les Mails Externes (formulaire 42) que leur créateur a PARTAGÉS avec cette personne : { ownerNode, reportKey, titre, de, le }.
     // Écrit par le CRÉATEUR (ownerNode = son propre nœud de rapports, noeudsRapports/{uid}) qui reste seul propriétaire : il retire le partage (ou supprime le mail) quand il veut.
     // Lu par le destinataire (et les admins) ; le destinataire peut seulement retirer une ligne de SA liste. Le mail lui-même se lit par savedReports/{ownerNode}/{reportKey}

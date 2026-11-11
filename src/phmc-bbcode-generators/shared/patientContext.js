@@ -1,4 +1,5 @@
 import { sectionBanner } from './bbStyles';
+import { referralLinesBBCode, backgroundUpdatedBBCode } from './careExtras';
 const GENDER_LABELS = {
     Male: 'Masculin',
     Female: 'Féminin',
@@ -38,6 +39,8 @@ export const formatAgeAndGender = (formData) => {
  */
 export const buildPatientContextBBCode = (formData, { accentColor = '#FF0000', showHistory = true } = {}) => {
     let body = `[u]Âge / Sexe: [/u] ${formatAgeAndGender(formData)}`;
+    const referral = referralLinesBBCode(formData);
+    if (referral) body += `\n[br][/br]${referral}`;
     if (showHistory) {
         body += `
 [br][/br][u]Allergies: [/u][br][/br]
@@ -46,6 +49,8 @@ ${formData.patientAllergies && String(formData.patientAllergies).trim() ? String
 ${orNA(formData.patientChronicDiseases)}
 [br][/br][u]Traitements habituels: [/u][br][/br]
 ${orNA(formData.patientCurrentMedicine)}`;
+        const updated = backgroundUpdatedBBCode(formData);
+        if (updated) body += `\n[br][/br]${updated}`;
     }
     return `${sectionBanner('Contexte patient', { accent: accentColor })}
 [table][tr][td][left][list=none]${body}[/left][/list][/table]

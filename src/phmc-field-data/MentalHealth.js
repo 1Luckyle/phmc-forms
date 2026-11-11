@@ -2,12 +2,14 @@ import React from 'react';
 import { Form } from 'react-bootstrap';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
+import { RiskFields, EmergencyContactSection } from './shared/CareExtraFields';
 
 const MentalHealth = ({
     formData,
     handleChange,
     phmcRank,
     phmcGroupedOptions,
+    unrestrictedPhmcGroupedOptions,
     admission,
     followup,
     setFormData,
@@ -16,7 +18,7 @@ const MentalHealth = ({
     
     return (
         <>
-            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
+            <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
             <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
@@ -39,6 +41,9 @@ const MentalHealth = ({
                 placeholder="Notes de session / observations du patient"
                 className="form-control"
             />
+
+            <RiskFields formData={formData} handleChange={handleChange} />
+            <EmergencyContactSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
             <Form.Label className="form-section-title">Diagnostic de sortie</Form.Label>
             <Form.Control

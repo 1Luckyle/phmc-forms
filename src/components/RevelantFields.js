@@ -470,12 +470,23 @@ const DMEC_EXTRA = {
 // Formulaires du personnel soignant : nom du patient en trois champs, date de naissance (l'âge en est déduit), et pour l'opération le chirurgien (distinct du signataire).
 const CARE_IDENTITY_EXTRA = ['patientFirstName', 'patientMiddleName', 'patientLastName', 'patientDateOfBirth', 'patientAgeYears', 'patientSex', 'phmcRank'];
 const CARE_EXTRA_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29, 35, 41];
+// Champs ajoutés (adressage, accompagnant, mise à jour du fond médical) à tous les rapports de soins, puis ceux propres à chaque formulaire.
+const CARE_REPORT_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
+const CARE_COMMON_EXTRA = ['appointmentTime', 'referralReason', 'referralOther', 'referringDoctor', 'companionName', 'companionRelation', 'patientBackgroundUpdated'];
+const SURGERY_EXTRA = ['surgeonEmployee', 'surgeryCharacter', 'surgeryAsa', 'postOpMonitoring', 'postOpExams'];
+const APTITUDE_EXTRA = ['evalReason', 'aptitudeConclusion', 'aptitudeRestrictions', 'aptitudeValidityMonths', 'visualAcuity', 'hearingValue', 'vaccinationState', 'vaccinationNote'];
+const MENTAL_EXTRA = ['riskSuicide', 'riskDanger', 'riskAction', 'riskActionNote', 'involuntaryHold', 'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord'];
+const EMERGENCY_EXTRA = ['careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare'];
+const CONSULT_EXTRA = ['orientedService', 'orientedServiceOther', 'examsOrdered', 'examsOrderedNote', 'workStoppage', 'workStoppageDays'];
+const CARE_VERSION_EXTRA = {
+    5: SURGERY_EXTRA, 6: APTITUDE_EXTRA, 7: APTITUDE_EXTRA, 14: MENTAL_EXTRA, 16: MENTAL_EXTRA, 28: MENTAL_EXTRA, 29: MENTAL_EXTRA, 19: EMERGENCY_EXTRA, 20: CONSULT_EXTRA, 21: CONSULT_EXTRA,
+};
 
 const getRelevantFields = (bbCodeVersion) => {
     // Mail Externe : l'objet, le destinataire, l'expéditeur (fonction, département), le texte (BBCode et HTML de l'éditeur) et la date.
     if (bbCodeVersion === 42) return ['externalMailSubject', 'externalMailRecipient', 'externalMailRecipientAddress', 'externalMailFonction', 'externalMailService', 'externalMailBody', 'externalMailBodyHtml', 'externalMailDate'];
     const base = baseRelevantFields(bbCodeVersion);
-    if (CARE_EXTRA_VERSIONS.includes(bbCodeVersion)) return [...new Set([...base, ...CARE_IDENTITY_EXTRA, ...(bbCodeVersion === 5 ? ['surgeonEmployee'] : [])])];
+    if (CARE_EXTRA_VERSIONS.includes(bbCodeVersion)) return [...new Set([...base, ...CARE_IDENTITY_EXTRA, ...(CARE_REPORT_VERSIONS.includes(bbCodeVersion) ? CARE_COMMON_EXTRA : []), ...(CARE_VERSION_EXTRA[bbCodeVersion] || [])])];
     if (DMEC_EXTRA[bbCodeVersion]) return [...new Set([...base, ...DMEC_EXTRA[bbCodeVersion], 'coronerPHNumber', 'coronerEmail'])];
     if (bbCodeVersion === 3 || bbCodeVersion === 25) return [...new Set(withPresetFields([...base, ...PATIENT_FILE_EXTRA]))];
     // Mise à jour : toutes les rubriques du dossier avancé peuvent être modifiées, donc tous leurs champs sont gardés.

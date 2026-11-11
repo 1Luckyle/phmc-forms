@@ -30,6 +30,7 @@ import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
 import { APPOINTMENT_DATE_VERSIONS } from './appointmentDate';
 import { validateMedicalCertificate } from './medicalCertificates';
+import { validateCareExtras } from './careFormRules';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value);
 const text = (value) => String(value ?? '').trim();
@@ -73,6 +74,8 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
     if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de consultation : champ obligatoire.');
+    // Champs ajoutés aux formulaires de soins : conduite à tenir, contrainte, transfert, durée d'arrêt… (utils/careFormRules.js).
+    validateCareExtras(version, data).forEach((problem) => errors.push(problem));
     // Certificat de maladie : les champs demandés dépendent du type de courrier (utils/medicalCertificates.js).
     if (version === 35) validateMedicalCertificate(data).forEach((problem) => errors.push(problem));
     // Certificat de vol : classe, catégories, résultat de chaque examen de la classe, conclusion cohérente avec les examens (voir utils/flightCertificate.js).

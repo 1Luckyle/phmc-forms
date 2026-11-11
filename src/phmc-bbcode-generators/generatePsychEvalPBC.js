@@ -1,4 +1,5 @@
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
+import { riskBBCode, emergencyContactBBCode } from './shared/careExtras';
 import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -165,7 +166,7 @@ ${checkbox(formData.Risk === 'Suicidal')} Idées ou tentatives suicidaires ${che
 ${patientRiskAssessment}
 [/list][/td][/tr][/table]
 
-${sectionBanner(`Constatations`, { accent: BB_COLORS.blue })}
+${riskBBCode(formData, true)}${emergencyContactBBCode(formData, true)}${sectionBanner(`Constatations`, { accent: BB_COLORS.blue })}
 [table][tr][td][list=none]
 Notes: ${patientFindings}
 [/list][/td][/tr][/table]

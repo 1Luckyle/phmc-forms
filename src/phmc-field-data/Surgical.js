@@ -3,6 +3,7 @@ import { Form, Alert } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
+import { ReferralFields, SurgeryCharacterFields, PostOpFields } from './shared/CareExtraFields';
 import { careStaffOnly } from './shared/PhmcEmployeeSelect';
 import { darkSelectStyles } from './shared/selectStyles';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
@@ -70,7 +71,8 @@ const Surgical = ({
     <>
     <Form.Label className="form-section-title">Patient et rendez-vous</Form.Label>
     <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
-    <AppointmentDateField formData={formData} handleChange={handleChange} />
+    <AppointmentDateField formData={formData} handleChange={handleChange} withTime />
+    <ReferralFields formData={formData} setFormData={setFormData} handleChange={handleChange} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
     <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
@@ -114,6 +116,7 @@ const Surgical = ({
         styles={darkSelectStyles}
     />
     <Form.Label className="form-section-title">Enquête chirurgicale</Form.Label>
+    <SurgeryCharacterFields formData={formData} handleChange={handleChange} />
         <Form.Control
             as="textarea"
             rows={2}
@@ -263,6 +266,8 @@ const Surgical = ({
             className="form-control"
             placeholder="Détails de l'anesthésie post-opératoire (réveil, surveillance)"
         />
+
+        <PostOpFields formData={formData} handleChange={handleChange} />
 
         <Form.Label className="form-section-title">Résumé de la procédure et suites</Form.Label>
         <Form.Control

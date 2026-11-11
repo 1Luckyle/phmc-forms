@@ -2,12 +2,14 @@ import React from 'react';
 import { Form } from 'react-bootstrap'; 
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
+import { RiskFields, EmergencyContactSection } from './shared/CareExtraFields';
 
 const Shrink = ({
     formData,
     handleChange,
     setFormData,
     phmcGroupedOptions,
+    unrestrictedPhmcGroupedOptions,
     phmcRank,
     Appearance,
     Behavior,
@@ -26,7 +28,7 @@ const Shrink = ({
     return (
         <>
         <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
-        <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
+        <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
         <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} showHistory={false} />
         <Form.Label className="form-section-title">Motif de la consultation</Form.Label>
@@ -358,6 +360,9 @@ const Shrink = ({
                 className="form-control"
                 />
                 </div>
+                <RiskFields formData={formData} handleChange={handleChange} />
+                <EmergencyContactSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
+
                 <Form.Label className="form-section-title">Constatations</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control

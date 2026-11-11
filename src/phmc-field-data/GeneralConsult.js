@@ -3,6 +3,7 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
+import { ConsultExtraFields } from './shared/CareExtraFields';
 
 // Valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
 const VITAL_VALUE_FIELDS = [
@@ -21,6 +22,8 @@ const GeneralConsult = ({
     setFormData,
     phmcRank,
     phmcGroupedOptions,
+    unrestrictedPhmcGroupedOptions,
+    onPrefillSickLeave,
     phmcEmployee,
     lab,
     bloodOxy,
@@ -43,7 +46,7 @@ const GeneralConsult = ({
                             <> 
                                 <p>Si vous avez besoin d'aide avec ce formulaire <a href="https://discord.gg/Qupn5tWc6H" target="_blank" rel="noopener noreferrer">utilisez ce lien! Il vous renverra vers le Discord du PHMC</a>. </p>
 
-                                <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
+                                <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
                                 <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
@@ -372,6 +375,7 @@ const GeneralConsult = ({
                                 ))}
                             </Form.Select>
 
+                                <ConsultExtraFields formData={formData} setFormData={setFormData} handleChange={handleChange} onPrefillSickLeave={onPrefillSickLeave} />
                             </>
     );
 };

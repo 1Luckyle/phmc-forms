@@ -542,23 +542,32 @@ await write('S1 met un formulaire en file pour un patient', true, 'S1', 'dossier
 
 // Mail Externe (formulaire 42) : lu par son créateur seul, et par ceux avec qui il l'a partagé (partageAvec) ; le créateur reste seul propriétaire.
 console.log('--- mails externes partagés ---');
-const withMail = (data) => {
+const withExternalMail = (data) => {
     data.savedReports.S_One = { m1: { bbCodeVersion: 42, bbCode: 'mail externe', data: { externalMailSubject: 'Objet' }, partageAvec: { S_Two: 'S2' } }, m2: { bbCodeVersion: 42, bbCode: 'non partagé', data: { externalMailSubject: 'Autre' } } };
     data.partagesRecus = { S_Two: { 'S_One__m1': { ownerNode: 'S_One', reportKey: 'm1', titre: 'Objet', de: 'S1', le: 1 } } };
 };
-await read('S2 lit le mail externe que S1 a partagé avec lui', true, 'S2', 'savedReports/S_One/m1', withMail);
-await read('P ne lit pas un mail externe qui n a pas été partagé avec lui', false, 'P', 'savedReports/S_One/m1', withMail);
-await read('S2 ne lit pas un mail externe non partagé', false, 'S2', 'savedReports/S_One/m2', withMail);
-await read('Admin A lit tous les mails externes', true, 'A', 'savedReports/S_One/m2', withMail);
-await read('S2 lit sa liste de partages reçus', true, 'S2', 'partagesRecus/S_Two', withMail);
-await read('P ne lit pas les partages reçus de S2', false, 'P', 'partagesRecus/S_Two', withMail);
-await write('S1 partage son mail : ligne dans la liste de S2', true, 'S1', 'partagesRecus/S_Two/S_One__m2', { ownerNode: 'S_One', reportKey: 'm2', titre: 'Autre', de: 'S1', le: 2 }, withMail);
-await write('S2 ne fabrique pas un partage au nom de S1', false, 'S2', 'partagesRecus/S_Two/faux', { ownerNode: 'S_One', reportKey: 'm2', titre: 'Autre', de: 'S1', le: 2 }, withMail);
-await write('S1 retire le partage de la liste de S2', true, 'S1', 'partagesRecus/S_Two/S_One__m1', null, withMail);
-await write('S2 retire une ligne de SA liste', true, 'S2', 'partagesRecus/S_Two/S_One__m1', null, withMail);
-await write('P ne retire pas une ligne de la liste de S2', false, 'P', 'partagesRecus/S_Two/S_One__m1', null, withMail);
-await write('S2 ne modifie pas le mail de S1', false, 'S2', 'savedReports/S_One/m1/bbCode', 'modifié', withMail);
-await write('S1 ajoute un destinataire à son mail', true, 'S1', 'savedReports/S_One/m2/partageAvec/P_One', 'P', withMail);
+await read('S2 lit le mail externe que S1 a partagé avec lui', true, 'S2', 'savedReports/S_One/m1', withExternalMail);
+await read('P ne lit pas un mail externe qui n a pas été partagé avec lui', false, 'P', 'savedReports/S_One/m1', withExternalMail);
+await read('S2 ne lit pas un mail externe non partagé', false, 'S2', 'savedReports/S_One/m2', withExternalMail);
+await read('Admin A lit tous les mails externes', true, 'A', 'savedReports/S_One/m2', withExternalMail);
+await read('S2 lit sa liste de partages reçus', true, 'S2', 'partagesRecus/S_Two', withExternalMail);
+await read('P ne lit pas les partages reçus de S2', false, 'P', 'partagesRecus/S_Two', withExternalMail);
+await write('S1 partage son mail : ligne dans la liste de S2', true, 'S1', 'partagesRecus/S_Two/S_One__m2', { ownerNode: 'S_One', reportKey: 'm2', titre: 'Autre', de: 'S1', le: 2 }, withExternalMail);
+await write('S2 ne fabrique pas un partage au nom de S1', false, 'S2', 'partagesRecus/S_Two/faux', { ownerNode: 'S_One', reportKey: 'm2', titre: 'Autre', de: 'S1', le: 2 }, withExternalMail);
+await write('S1 retire le partage de la liste de S2', true, 'S1', 'partagesRecus/S_Two/S_One__m1', null, withExternalMail);
+await write('S2 retire une ligne de SA liste', true, 'S2', 'partagesRecus/S_Two/S_One__m1', null, withExternalMail);
+await write('P ne retire pas une ligne de la liste de S2', false, 'P', 'partagesRecus/S_Two/S_One__m1', null, withExternalMail);
+await write('S2 ne modifie pas le mail de S1', false, 'S2', 'savedReports/S_One/m1/bbCode', 'modifié', withExternalMail);
+await write('S1 ajoute un destinataire à son mail', true, 'S1', 'savedReports/S_One/m2/partageAvec/P_One', 'P', withExternalMail);
+
+// Contact d'urgence modifié depuis un formulaire de santé mentale : demande posée par le personnel, appliquée par le serveur (le dossier n'est jamais écrit par un client).
+console.log("--- contact d'urgence (santé mentale) ---");
+const contactRequest = { champs: { patientEmergencyContactNumber: '555-0200' }, par: 'S1', titre: 'Consultation psychiatrique', creeLe: Date.now() };
+await write("S1 pose une demande de mise à jour du contact d'urgence", true, 'S1', 'contactsUrgenceMaj/PHMC-1/req1', contactRequest);
+await write('Civil C ne pose pas de demande', false, 'C', 'contactsUrgenceMaj/PHMC-1/req1', contactRequest);
+await write('S1 ne modifie pas une demande existante', false, 'S1', 'contactsUrgenceMaj/PHMC-1/req1', { ...contactRequest, par: 'autre' }, (data) => { data.contactsUrgenceMaj = { 'PHMC-1': { req1: contactRequest } }; });
+await write('Une demande sans champs est refusée', false, 'S1', 'contactsUrgenceMaj/PHMC-1/req2', { par: 'S1', creeLe: 1 });
+await read('S1 ne relit pas les demandes (admin et serveur seulement)', false, 'S1', 'contactsUrgenceMaj/PHMC-1', (data) => { data.contactsUrgenceMaj = { 'PHMC-1': { req1: contactRequest } }; });
 
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);

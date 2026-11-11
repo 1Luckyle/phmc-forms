@@ -1,5 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
+import { consultExtrasBBCode } from './shared/careExtras';
 import { BB_COLORS, checkbox, sectionBanner } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -74,7 +75,7 @@ ${patientNotes}
 [u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine}
 [br][/br]
-[u]Suivi: [/u][br][/br]
+${consultExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)

@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import { ageOn } from '../../utils/flightCertificate';
 import { todayIso } from '../../utils/appointmentDate';
+import { usePatientDossier } from '../../utils/dossierLookup';
+import { changedBackgroundFields, BACKGROUND_FIELD_LABELS } from '../../utils/careFormRules';
 
 export const PATIENT_GENDER_OPTIONS = [
     { value: 'Male', label: 'Masculin' },
@@ -28,6 +30,18 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
         if (!setFormData || !formData.patientDateOfBirth) return;
         if (ageText !== String(formData.patientAgeYears || '')) setFormData((prev) => (String(prev.patientAgeYears || '') === ageText ? prev : { ...prev, patientAgeYears: ageText }));
     }, [ageText, formData.patientDateOfBirth, formData.patientAgeYears, setFormData]);
+
+
+    // Allergies, antécédents et traitements corrigés par rapport au dossier : la mention « mis à jour lors de cette consultation » est ajoutée au rapport.
+    const { status, donnees } = usePatientDossier(formData.patientID);
+    const changedLabels = showHistory && status === 'found' ? changedBackgroundFields(donnees, formData).map((field) => BACKGROUND_FIELD_LABELS[field]) : [];
+    const changedKey = changedLabels.join('|');
+    const settled = status === 'found' || status === 'missing';
+    useEffect(() => {
+        if (!setFormData || !showHistory || !settled) return;
+        const current = Array.isArray(formData.patientBackgroundUpdated) ? formData.patientBackgroundUpdated.join('|') : '';
+        if (current !== changedKey) setFormData((prev) => ({ ...prev, patientBackgroundUpdated: changedKey ? changedKey.split('|') : [] }));
+    }, [changedKey, settled, showHistory, formData.patientBackgroundUpdated, setFormData]);
 
     return (
         <>
@@ -82,6 +96,9 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
                         placeholder="Traitements habituels du patient"
                         className="form-control"
                     />
+                    {changedLabels.length > 0 && (
+                        <span className="helper-text" data-no-tip="1">Modifié(s) par rapport au dossier ({changedLabels.join(', ')}) : la mention « mis à jour lors de cette consultation » sera ajoutée au rapport.</span>
+                    )}
                 </>
             )}
         </>

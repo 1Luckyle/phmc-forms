@@ -67,6 +67,8 @@ import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
 import { groupsFor, notifyUser, findStaffUidByNode } from './utils/notifications';
 import { comprehensiveSanitize } from './utils/patientRecords';
+import { queueEmergencyContactUpdate } from './utils/emergencyContactUpdates';
+import { MENTAL_HEALTH_VERSIONS } from './constants/careFormOptions';
 import useFormAccess from './hooks/useFormAccess';
 import useDossierPrefill, { useCandidaturePrefill } from './hooks/useDossierPrefill';
 import { staffIdentity } from './utils/knownPatient';
@@ -526,6 +528,25 @@ function MainApp({
             localStorage.setItem('formData', JSON.stringify(newFormData));
             return newFormData;
         });
+    };
+
+    // Consultation générale : prépare le Certificat de Maladie (arrêt de travail avec ITT) à partir de la consultation (patient, date, durée) et ouvre-le. La consultation reste en mémoire : enregistrez-la d'abord.
+    const handlePrefillSickLeave = () => {
+        if (!window.confirm("Ouvrir le Certificat de Maladie avec le patient, la date et la durée de l'arrêt déjà remplis ?\n\nEnregistrez d'abord cette consultation si ce n'est pas fait.")) return;
+        const days = Math.max(1, Number(formData.workStoppageDays) || 1);
+        const start = formData.date || new Date().toISOString().slice(0, 10);
+        const end = new Date(`${start}T00:00:00`);
+        end.setDate(end.getDate() + days - 1);
+        const pad = (n) => String(n).padStart(2, '0');
+        setFormData((prev) => ({
+            ...prev,
+            emailPurpose: 'Work Stoppage',
+            dateOfVisit: start,
+            sicknessStartDate: start,
+            sicknessEndDate: `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`,
+            certificateExit: prev.certificateExit || 'Sorties autorisées',
+        }));
+        handleAgencySelect(35);
     };
 
     const handleSelectChange = (selectedOption, action) => {
@@ -1092,6 +1113,15 @@ function MainApp({
                     lien: { cible: 'dossierPatient' },
                 });
             } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
+        }
+        // Santé mentale : un contact d'urgence modifié met à jour le dossier du patient (appliqué par le serveur, sous une minute).
+        if (result && result.success && MENTAL_HEALTH_VERSIONS.includes(Number(bbCodeVersion)) && formData.patientID) {
+            try {
+                const queued = await queueEmergencyContactUpdate({ patientID: formData.patientID, formData, authorName: staffName, reportTitle: generateTitle() });
+                if (queued) showNotification("Le contact d'urgence a changé : le dossier du patient sera mis à jour dans la minute.", 'check-circle', 7000);
+            } catch (contactError) {
+                showNotification("Le rapport est enregistré, mais le contact d'urgence du dossier n'a pas pu être mis à jour (règles Firebase à déployer ?).", 'warning', 9000);
+            }
         }
         return result;
     };
@@ -2200,6 +2230,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                         unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions}
                                         unrestrictedCoronerGroupedOptions={unrestrictedCoronerGroupedOptions}
                                         handleSelectChange={handleSelectChange}
+                                        onPrefillSickLeave={handlePrefillSickLeave}
                                         isUploading={isUploading}
                                         handleImageUpload={handleImageUpload}
                                         removeNotification={removeNotification}

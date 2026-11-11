@@ -1,4 +1,5 @@
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
+import { aptitudeBBCode } from './shared/careExtras';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
@@ -74,7 +75,7 @@ ${sectionBanner(`Résumé de l'évaluation`)}
 [table][tr][td][left][list=none][u]Déclaration d'évaluation: [/u][br][/br]
 ${patientSummary}
 [br][/br][/left][/list][/table]
-
+${aptitudeBBCode(formData, false)}
 `;
 
         return bbCode;

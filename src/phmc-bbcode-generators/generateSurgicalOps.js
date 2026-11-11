@@ -5,6 +5,7 @@
 // garde une chaîne vide.
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { surgeryRowsBBCode, postOpBBCode } from './shared/careExtras';
 
 const NOT_FILLED = 'Non renseigné';
 
@@ -60,6 +61,7 @@ ${surgeryProcedures}
 ${ANESTHESIA_LABELS[formData.surgeryAnesthesiaType] || NOT_FILLED} | ${formData.surgeryDuration ? `${formData.surgeryDuration} min` : 'Durée non renseignée'} | ${formData.surgeryBloodLoss ? `${formData.surgeryBloodLoss} mL` : 'Pertes non renseignées'}
 [/td][/tr]
 
+${surgeryRowsBBCode(formData)}
 [tr][td]Le patient ou sa famille a-t-il donné son consentement, ou avait-il une blessure potentiellement mortelle ou grave nécessitant une intervention chirurgicale immédiate?[/td][td]
 ${checkbox(formData.patientConsentOption === 'Yes')} Oui
 ${checkbox(formData.patientConsentOption === 'No')} Non
@@ -91,7 +93,7 @@ ${sectionBanner(`Rapport post-anesthésie`)}
 
 [/table]
 
-${sectionBanner(`Résumé de la procédure chirurgicale`)}
+${postOpBBCode(formData)}${sectionBanner(`Résumé de la procédure chirurgicale`)}
 [table]
 
 [tr][td]

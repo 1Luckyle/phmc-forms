@@ -10,6 +10,7 @@ import {
     NEW_KEY, isDossierVersion, BASIC_VERSION, ADVANCED_VERSION, UPDATE_VERSION,
 } from './dossierCore';
 import { titleLabel } from './patientIdentity';
+import { MENTAL_HEALTH_VERSIONS } from '../constants/careFormOptions';
 import { placeWithCity } from './places';
 
 // Fond médical qu'un formulaire de soins peut reprendre du dossier (jamais le motif, l'examen ni le diagnostic).
@@ -45,6 +46,8 @@ export const dossierPrefillPatch = (version, donnees = {}, formData = {}, knownF
         [EMERGENCY_FIELDS, MEDICAL_FIELDS, MENTAL_FIELDS, FAMILY_FIELDS, SOCIAL_FIELDS, LIFESTYLE_FIELDS, DIRECTIVE_FIELDS].forEach((group) => group.forEach((field) => take(field)));
     } else if (CARE_PREFILL_VERSIONS.includes(number) && !isDossierVersion(number)) {
         CARE_IDENTITY_FIELDS.forEach((field) => take(field));
+        // Santé mentale : le contact d'urgence du dossier (modifié ici, il met le dossier à jour à l'enregistrement).
+        if (MENTAL_HEALTH_VERSIONS.includes(number)) EMERGENCY_FIELDS.forEach((field) => take(field));
         if (known.has('patientSex') && !empty(donnees.patientGender)) wanted.patientSex = careSexOf(donnees.patientGender);
         CARE_BACKGROUND_FIELDS.forEach((field) => take(field));
     } else if (CARE_IDENTITY_ONLY_VERSIONS.includes(number)) {

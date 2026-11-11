@@ -3,6 +3,7 @@ import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { emergencyExtrasBBCode, arrivalModeLabel } from './shared/careExtras';
 
 const generateEmergencyProtocol = (formData) => {
     const {
@@ -75,7 +76,7 @@ Date: ${date || 'N/A'}
 Signé: ${signedLine(formData)}
 ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
-[table][tr][td][left][list=none][u]Arrivée: [/u] ${ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
+[table][tr][td][left][list=none][u]Arrivée: [/u] ${arrivalModeLabel(formData.arrivalMode) || ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
 [br][/br]
 [u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
@@ -117,7 +118,7 @@ ${patientMedicine || 'N/A'}
 [br][/br]
 ${prescriptionImageBBCode ? `${prescriptionImageBBCode}
 [br][/br]
-` : ''}[u]Suivi: [/u][br][/br]
+` : ''}${emergencyExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)

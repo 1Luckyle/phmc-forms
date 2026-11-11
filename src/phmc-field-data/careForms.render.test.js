@@ -15,6 +15,7 @@ jest.mock('../components/Messaging/RichMessageEditor', () => {
 });
 jest.mock('../utils/staffAdmin', () => ({ loadStaffMembers: jest.fn() }));
 jest.mock('../utils/notifications', () => ({ notifyUser: jest.fn() }));
+jest.mock('../hooks/useTitleOptions', () => ({ __esModule: true, default: () => [{ value: 'Mr', label: 'M.' }] }));
 
 const Surgical = require('./Surgical').default;
 const SicknessEmail = require('./SicknessEmail').default;
@@ -22,6 +23,9 @@ const FlightCertificate = require('./FlightCertificate').default;
 const ExternalMail = require('./ExternalMail').default;
 const FormChecklist = require('../components/FormChecklist').default;
 const PhysEval = require('./PhysEvalPHMC').default;
+const MentalHealth = require('./MentalHealth').default;
+const EmergencyForm = require('./EmergencyForm').default;
+const GeneralConsult = require('./GeneralConsult').default;
 
 const careOption = (name, roles) => ({ value: name, label: name, rank: roles[0], roles, families: ['soignant'], lastName: name.split(' ').pop() });
 const phmcGroups = [{ label: 'Interne en Médecine', options: [careOption('Dr. Interne', ['Interne en Médecine'])] }];
@@ -125,5 +129,58 @@ describe('certificats et mail externe', () => {
         await act(async () => {});
         const { container } = render(<FormChecklist version={42} formData={{ externalMailSubject: 'Objet', externalMailRecipient: 'X', externalMailBody: 'Texte' }} />);
         expect(container.textContent).toBe('');
+    });
+});
+
+describe('champs ajoutés aux formulaires de soins', () => {
+    const allProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], assignedDepartment: [], departmentLarge: [], Imaging: [], Appearance: [], Behavior: [], Speech: [], Mood: [], Affect: [], ThoughtProcess: [], ThoughtContent: [], Insight: [], Cognition: [], Risk: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+
+    test("l'en-tête commun propose l'heure, le motif d'adressage, le médecin adressant et l'accompagnant", () => {
+        render(<Harness Component={PhysEval} extra={allProps} />);
+        expect(document.querySelector('input[name="appointmentTime"]')).toBeTruthy();
+        expect(screen.getByText("Motif d'adressage")).toBeTruthy();
+        expect(screen.getByText('Médecin adressant (facultatif)')).toBeTruthy();
+        expect(document.querySelector('input[name="companionName"]')).toBeTruthy();
+        expect(document.querySelector('select[name="referralReason"]').textContent).toContain('Adressé par les secours (EMS / 911)');
+    });
+
+    test("évaluation physique : conclusion d'aptitude, durée de validité par défaut, restrictions", async () => {
+        render(<Harness Component={PhysEval} initial={{ aptitudeConclusion: 'Apte avec restrictions', date: '2026-11-11' }} extra={allProps} />);
+        await waitFor(() => expect(stateOf().aptitudeValidityMonths).toBe('12'));
+        expect(screen.getByText("Valable jusqu'au 11/11/2027.")).toBeTruthy();
+        expect(document.querySelector('textarea[name="aptitudeRestrictions"]')).toBeTruthy();
+    });
+
+    test("psychiatrie : risque, conduite à tenir, contrainte et contact d'urgence du dossier", () => {
+        mockDossier = { status: 'found', donnees: { patientEmergencyContactFirstName: 'Marie', patientEmergencyContactNumber: '555-0199' } };
+        render(<Harness Component={MentalHealth} initial={{ patientID: 'PHMC-2752', patientEmergencyContactFirstName: 'Marie', patientEmergencyContactNumber: '555-0200' }} extra={allProps} />);
+        expect(screen.getByText('Risque suicidaire')).toBeTruthy();
+        expect(screen.getAllByText('Hospitalisation sous contrainte').length).toBeGreaterThan(0);
+        expect(screen.getByText(/dossier du patient sera mis à jour/)).toBeTruthy();
+    });
+
+    test("urgences : temps de prise en charge calculé, orientation de sortie, soins systématiques", () => {
+        render(<Harness Component={EmergencyForm} initial={{ careStartTime: '23:30', careEndTime: '00:15', dischargeDestination: 'Transfer' }} extra={allProps} />);
+        expect(screen.getByDisplayValue('45 min')).toBeTruthy();
+        expect(screen.getByText('Orientation de sortie')).toBeTruthy();
+        expect(screen.getByText('Établissement de transfert')).toBeTruthy();
+        expect(document.querySelector('select[name="arrivalMode"]').textContent).toContain('Hélicoptère');
+    });
+
+    test("consultation générale : arrêt de travail avec bouton de préremplissage du certificat", () => {
+        const onPrefillSickLeave = jest.fn();
+        render(<Harness Component={GeneralConsult} initial={{ workStoppage: 'Yes', workStoppageDays: '3' }} extra={{ ...allProps, onPrefillSickLeave }} />);
+        expect(screen.getByText('Service orienté après consultation')).toBeTruthy();
+        const button = screen.getByText('Préremplir le Certificat de Maladie');
+        act(() => { button.click(); });
+        expect(onPrefillSickLeave).toHaveBeenCalled();
+    });
+
+    test('fond médical corrigé par rapport au dossier : mention affichée et mémorisée', async () => {
+        mockDossier = { status: 'found', donnees: { patientAllergies: 'Pénicilline' } };
+        render(<Harness Component={GeneralConsult} initial={{ patientID: 'PHMC-2752', patientAllergies: 'Pénicilline, latex' }} extra={allProps} />);
+        await waitFor(() => expect(stateOf().patientBackgroundUpdated).toEqual(['allergies']));
+        expect(screen.getByText(/mis à jour lors de cette consultation/)).toBeTruthy();
     });
 });

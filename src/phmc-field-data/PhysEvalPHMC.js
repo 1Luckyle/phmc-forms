@@ -2,11 +2,13 @@ import React from 'react';
 import { Form } from 'react-bootstrap';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
+import { AptitudeFields } from './shared/CareExtraFields';
 
 const PhysEval = ({
             formData,
             handleChange,
             phmcGroupedOptions,
+            unrestrictedPhmcGroupedOptions,
             setFormData,
             phmcRank,
             BodyMassIndex,
@@ -25,7 +27,7 @@ const PhysEval = ({
         }) => {
     return (
     <>
-                                <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} />
+                                <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
                                 <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} showHistory={false} />
 
@@ -316,6 +318,7 @@ const PhysEval = ({
                                         placeholder="Déclaration d'évaluation"
                                     />
                                 </Form.Group>
+                                <AptitudeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
                             </>
     );
 };
