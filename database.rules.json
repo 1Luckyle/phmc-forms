@@ -642,14 +642,16 @@
     // façon anonyme (abandonné, invisible depuis l'interface) — lecture encore
     // publique pour les anciennes données déjà présentes, mais plus aucune
     // nouvelle écriture anonyme n'y est permise.
-    // contactsUrgenceMaj/{ID patient}/{clé} : contact d'urgence modifié depuis un formulaire de SANTÉ MENTALE (psychiatrie, évaluation psychologique) : { champs: { champ: valeur }, par, titre, creeLe }.
-    // Posé par le personnel à l'enregistrement du rapport ; la fonction serveur reconcileDossiers l'applique au dossier du patient (qui n'est jamais écrit par un client) puis le supprime.
+    // contactsUrgenceMaj/{ID patient}/{clé} : demande du personnel soignant sur le dossier du patient, posée à l'enregistrement d'un rapport :
+    //   { champs?: { champ: valeur }, ajouts?: { patientAllergies|patientChronicDiseases|patientCurrentMedicine: [éléments] }, par, titre, creeLe }
+    //   `champs` = contact d'urgence modifié depuis un formulaire de SANTÉ MENTALE (remplace les valeurs) ; `ajouts` = allergies, antécédents ou traitements oubliés (AJOUTÉS, jamais retirés).
+    // La fonction serveur reconcileDossiers l'applique au dossier du patient (qui n'est jamais écrit par un client) puis la supprime.
     "contactsUrgenceMaj": {
       "$patientId": {
         ".read": "auth != null && root.child('adminUIDs').child(auth.uid).val() === true",
         "$key": {
           ".write": "auth != null && !data.exists() && newData.exists() && (root.child('staffUIDs').child(auth.uid).val() === true || root.child('adminUIDs').child(auth.uid).val() === true)",
-          ".validate": "newData.hasChildren(['champs', 'par', 'creeLe'])"
+          ".validate": "newData.hasChildren(['par', 'creeLe']) && (newData.hasChild('champs') || newData.hasChild('ajouts'))"
         }
       }
     },

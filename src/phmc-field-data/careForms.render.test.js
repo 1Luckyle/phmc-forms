@@ -348,3 +348,44 @@ describe('choix par défaut des formulaires de consultation', () => {
         expect(stateOf()).toMatchObject({ patientSafety: 'Voisin joignable' });
     });
 });
+
+describe('fond médical complété depuis une consultation', () => {
+    const props = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], assignedDepartment: [], departmentLarge: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; });
+
+    test("allergie ajoutée : case « Ajouter aussi au dossier » cochée par défaut, décochable", async () => {
+        mockDossier = { status: 'found', donnees: { patientAllergies: 'Pénicilline' } };
+        render(<Harness Component={GeneralConsult} initial={{ patientID: 'PHMC-2752', patientAllergies: 'Pénicilline, latex' }} extra={props} />);
+        const box = await screen.findByLabelText(/Ajouter aussi au dossier du patient \(allergies\)/);
+        expect(box.checked).toBe(true);
+        await act(async () => { box.click(); });
+        expect(stateOf().patientBackgroundSync).toBe('No');
+        await act(async () => { screen.getByLabelText(/Ajouter aussi au dossier du patient/).click(); });
+        expect(stateOf().patientBackgroundSync).toBe('Yes');
+    });
+
+    test("rien d'ajouté : pas de case ; pas de dossier : pas de case", () => {
+        mockDossier = { status: 'found', donnees: { patientAllergies: 'Pénicilline' } };
+        const { unmount } = render(<Harness Component={GeneralConsult} initial={{ patientID: 'PHMC-2752', patientAllergies: 'Pénicilline' }} extra={props} />);
+        expect(screen.queryByLabelText(/Ajouter aussi au dossier du patient/)).toBeNull();
+        unmount();
+        mockDossier = { status: 'missing', donnees: null };
+        render(<Harness Component={GeneralConsult} initial={{ patientID: 'PHMC-2752', patientAllergies: 'Latex' }} extra={props} />);
+        expect(screen.queryByLabelText(/Ajouter aussi au dossier du patient/)).toBeNull();
+    });
+
+    test("assistant : l'antécédent évoqué par le motif se propose, s'ajoute en un clic, puis disparaît", async () => {
+        mockDossier = { status: 'idle', donnees: null };
+        render(<Harness Component={EmergencyForm} initial={{ patientAgeYears: '30', clinicalConditions: ['asthme'], patientChronicDiseases: 'Hypertension' }} extra={props} />);
+        expect(screen.getByText('À vérifier dans le dossier du patient')).toBeTruthy();
+        await act(async () => { screen.getByText('+ Asthme').click(); });
+        expect(stateOf().patientChronicDiseases).toBe('Hypertension ; Asthme');
+        expect(screen.queryByText('+ Asthme')).toBeNull();
+    });
+
+    test("assistant : une allergie grave rappelle de noter l'allergène", () => {
+        mockDossier = { status: 'idle', donnees: null };
+        render(<Harness Component={EmergencyForm} initial={{ patientAgeYears: '30', clinicalConditions: ['anaphylaxie'] }} extra={props} />);
+        expect(screen.getByText(/Notez l'allergène identifié/)).toBeTruthy();
+    });
+});

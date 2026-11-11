@@ -3,9 +3,10 @@
 // Moteur de l'assistant clinique : doses proposées selon l'âge et le poids, contrôles de cohérence (dose maximale, cumul sur 24 h, allergies, antécédents, traitements en cours, constantes), et suggestions
 // complètes à partir de motifs de prise en charge. Pur (aucune dépendance React / Firebase) : tout est testé dans engine.test.js.
 import { MEDICATION_BY_ID, regimenOf } from './medications';
-import { CONDITION_BY_ID } from './conditions';
+import { CONDITION_BY_ID, HISTORY_HINTS } from './conditions';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
+import { missingBackgroundItems } from '../utils/dossierCore';
 
 // ───────────── Texte et patient ─────────────
 const normalize = (value) => String(value ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/œ/g, 'oe').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -309,4 +310,14 @@ export const clinicalWarnings = (formData = {}) => {
     });
     list.forEach((m) => lines.push(m.text));
     return lines;
+};
+
+/**
+ * Éléments du dossier que les motifs choisis invitent à compléter : antécédents évoqués qui manquent au patient, et rappel de noter l'allergène.
+ * → { chronic: ['Asthme'], allergen: boolean }
+ */
+export const historySuggestions = (conditionIds, patient = {}) => {
+    const hints = (Array.isArray(conditionIds) ? conditionIds : []).map((id) => HISTORY_HINTS[id]).filter(Boolean);
+    const wanted = [...new Set(hints.map((hint) => hint.chronic).filter(Boolean))];
+    return { chronic: missingBackgroundItems(patient.chronic, wanted.join(' ; ')), allergen: hints.some((hint) => hint.allergen) };
 };

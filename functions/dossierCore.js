@@ -40,6 +40,32 @@ export const EMERGENCY_FIELDS = [
     'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord',
 ];
 export const MEDICAL_FIELDS = ['patientBloodType', 'patientAllergies', 'patientCurrentMedicine', 'patientChronicDiseases', 'patientNotes'];
+
+// Fond médical COMPLÉTÉ par le personnel soignant depuis une consultation (allergies, antécédents, traitements en cours) : uniquement des AJOUTS, jamais de suppression ni de correction
+// (corriger ou retirer une information passe par une mise à jour du dossier). Le client calcule les éléments à ajouter, le serveur (reconcileDossiers) les applique avec les mêmes règles.
+export const BACKGROUND_UPDATE_FIELDS = ['patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine'];
+export const BACKGROUND_TEXT_MAX = 2000;
+const backgroundKey = (item) => String(item ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0153/g, 'oe').replace(/[^a-z0-9]+/g, ' ').trim();
+// « Pénicilline ; latex, aspirine » → ['Pénicilline', 'latex', 'aspirine'] (séparateurs : ; , et retours à la ligne).
+export const splitBackgroundItems = (text) => String(text ?? '').split(/[;,\n]+/).map((item) => item.trim()).filter(Boolean);
+// Éléments du texte `candidate` qui ne figurent pas encore (mot entier, sans accents ni casse) dans le texte `existing`, sans doublon.
+export const missingBackgroundItems = (existing, candidate) => {
+    const haystack = ` ${backgroundKey(existing)} `;
+    const seen = new Set();
+    return splitBackgroundItems(candidate).filter((item) => {
+        const key = backgroundKey(item);
+        if (!key || seen.has(key) || haystack.includes(` ${key} `)) return false;
+        seen.add(key);
+        return true;
+    });
+};
+// Texte du dossier après ajout (éléments séparés par « ; », plafonné) ; le texte existant n'est jamais modifié.
+export const appendBackgroundItems = (existing, items) => {
+    const base = String(existing ?? '').trim();
+    const added = (items || []).map((item) => String(item).trim()).filter(Boolean);
+    if (!added.length) return base;
+    return [base, ...added].filter(Boolean).join(' ; ').slice(0, BACKGROUND_TEXT_MAX);
+};
 export const MENTAL_FIELDS = ['patientMental', 'patientTherapy', 'patientTriggers', 'patientSupport', 'patientHarm'];
 export const FAMILY_FIELDS = ['patientFam', 'patientGenetic', 'patientFamSocial'];
 export const SOCIAL_FIELDS = ['maritalStatus', 'numberChildren', 'patientReligion', 'financialStatus'];

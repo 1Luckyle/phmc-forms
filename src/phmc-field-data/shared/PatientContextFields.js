@@ -3,7 +3,7 @@ import { Form } from 'react-bootstrap';
 import { ageOn } from '../../utils/flightCertificate';
 import { todayIso } from '../../utils/appointmentDate';
 import { usePatientDossier } from '../../utils/dossierLookup';
-import { changedBackgroundFields, BACKGROUND_FIELD_LABELS } from '../../utils/careFormRules';
+import { changedBackgroundFields, backgroundAdditions, BACKGROUND_FIELD_LABELS } from '../../utils/careFormRules';
 
 export const PATIENT_GENDER_OPTIONS = [
     { value: 'Male', label: 'Masculin' },
@@ -36,6 +36,9 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
     const { status, donnees } = usePatientDossier(formData.patientID);
     const changedLabels = showHistory && status === 'found' ? changedBackgroundFields(donnees, formData).map((field) => BACKGROUND_FIELD_LABELS[field]) : [];
     const changedKey = changedLabels.join('|');
+    // Éléments saisis qui manquent au dossier : ajoutés au dossier à l'enregistrement (le soignant peut le refuser). Tous les formulaires qui affichent ces champs posent la demande (voir BACKGROUND_UPDATE_VERSIONS).
+    const additions = showHistory && status === 'found' ? backgroundAdditions(donnees, formData) : {};
+    const addedLabels = Object.keys(additions).map((field) => BACKGROUND_FIELD_LABELS[field]);
     const settled = status === 'found' || status === 'missing';
     useEffect(() => {
         if (!setFormData || !showHistory || !settled) return;
@@ -98,6 +101,14 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
                     />
                     {changedLabels.length > 0 && (
                         <span className="helper-text" data-no-tip="1">Modifié(s) par rapport au dossier ({changedLabels.join(', ')}) : la mention « mis à jour lors de cette consultation » sera ajoutée au rapport.</span>
+                    )}
+                    {addedLabels.length > 0 && (
+                        <Form.Check
+                            type="checkbox" id="patientBackgroundSync" className="mt-1 small" data-no-tip="1"
+                            label={`Ajouter aussi au dossier du patient (${addedLabels.join(', ')}) : seuls les éléments manquants sont ajoutés, rien n'est retiré ni corrigé.`}
+                            checked={formData.patientBackgroundSync !== 'No'}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, patientBackgroundSync: event.target.checked ? 'Yes' : 'No' }))}
+                        />
                     )}
                 </>
             )}

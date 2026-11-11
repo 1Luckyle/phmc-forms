@@ -67,7 +67,7 @@ import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
 import { groupsFor, notifyUser, findStaffUidByNode } from './utils/notifications';
 import { comprehensiveSanitize } from './utils/patientRecords';
-import { queueEmergencyContactUpdate } from './utils/emergencyContactUpdates';
+import { queueDossierUpdate, hasDossierUpdateRules } from './utils/emergencyContactUpdates';
 import { MENTAL_HEALTH_VERSIONS } from './constants/careFormOptions';
 import useFormAccess from './hooks/useFormAccess';
 import useDossierPrefill, { useCandidaturePrefill } from './hooks/useDossierPrefill';
@@ -1114,13 +1114,16 @@ function MainApp({
                 });
             } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
         }
-        // Santé mentale : un contact d'urgence modifié met à jour le dossier du patient (appliqué par le serveur, sous une minute).
-        if (result && result.success && MENTAL_HEALTH_VERSIONS.includes(Number(bbCodeVersion)) && formData.patientID) {
+        // Contact d'urgence modifié (santé mentale) et allergies, antécédents ou traitements oubliés (consultations) : le dossier du patient est mis à jour par le serveur, sous une minute.
+        if (result && result.success && hasDossierUpdateRules(bbCodeVersion) && formData.patientID) {
             try {
-                const queued = await queueEmergencyContactUpdate({ patientID: formData.patientID, formData, authorName: staffName, reportTitle: generateTitle() });
-                if (queued) showNotification("Le contact d'urgence a changé : le dossier du patient sera mis à jour dans la minute.", 'check-circle', 7000);
-            } catch (contactError) {
-                showNotification("Le rapport est enregistré, mais le contact d'urgence du dossier n'a pas pu être mis à jour (règles Firebase à déployer ?).", 'warning', 9000);
+                const queued = await queueDossierUpdate({ patientID: formData.patientID, formData, authorName: staffName, reportTitle: generateTitle(), version: bbCodeVersion });
+                const parts = [];
+                if (queued.contact) parts.push("le contact d'urgence");
+                if (queued.additions.length) parts.push('les allergies, antécédents ou traitements ajoutés');
+                if (parts.length) showNotification(`Le dossier du patient sera mis à jour dans la minute (${parts.join(' et ')}).`, 'check-circle', 7000);
+            } catch (dossierError) {
+                showNotification("Le rapport est enregistré, mais le dossier du patient n'a pas pu être mis à jour (règles Firebase à déployer ?).", 'warning', 9000);
             }
         }
         return result;

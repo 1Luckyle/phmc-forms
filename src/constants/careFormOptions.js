@@ -66,6 +66,8 @@ export const INVOLUNTARY_HOLDS = list([
 ]);
 // Formulaires de santé mentale (psychiatrie PHMC / PBC, évaluation psychologique PHMC / PBC) : ils portent aussi le contact d'urgence du dossier.
 export const MENTAL_HEALTH_VERSIONS = [14, 16, 28, 29];
+// Formulaires dont le contexte patient montre les allergies, antécédents et traitements (leurs ajouts complètent le dossier) : opération, psychiatrie, urgences, consultation générale.
+export const BACKGROUND_UPDATE_VERSIONS = [5, 14, 16, 19, 20, 21];
 
 // ── Protocole d'urgence ──
 export const ARRIVAL_MODES = list([

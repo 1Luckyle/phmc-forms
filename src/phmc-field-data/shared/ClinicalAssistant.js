@@ -9,7 +9,7 @@ import { darkSelectStyles } from './selectStyles';
 import ClinicalMedications from './ClinicalMedications';
 import { CONDITION_GROUPS, CONDITION_BY_ID } from '../../clinical/conditions';
 import { SEVERITIES } from '../../clinical/vitals';
-import { patientFromForm, buildSuggestions, conditionsOf, contextTags } from '../../clinical/engine';
+import { patientFromForm, buildSuggestions, conditionsOf, contextTags, historySuggestions } from '../../clinical/engine';
 import { MEDICATION_BY_ID } from '../../clinical/medications';
 import { vitalsFromForm } from '../../clinical/vitals';
 import { SECTIONS, sectionPatch, applyPatch, applyMeds, applyAll } from '../../clinical/apply';
@@ -40,6 +40,8 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
         [ids, severity, patient, seed],
     );
     const tags = useMemo(() => contextTags(conditionsOf(ids)), [ids]);
+    const history = useMemo(() => historySuggestions(ids, patient), [ids, patient]);
+    const addChronic = (item) => setFormData((prev) => ({ ...prev, patientChronicDiseases: [String(prev.patientChronicDiseases || '').trim(), item].filter(Boolean).join(' ; ') }));
     const vitals = useMemo(() => vitalsFromForm(formData), [formData]);
 
     const selected = ids.map((id) => ({ value: id, label: CONDITION_BY_ID[id].label }));
@@ -103,6 +105,19 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                     </div>
                     <Form.Check type="checkbox" id="clinicalOverwrite" className="mt-2 small" label="Remplacer ce qui est déjà saisi (sinon seuls les champs vides sont complétés)" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
                     {done && <div className="small" style={{ color: '#7ee787', marginTop: 4 }}><i className="fas fa-check me-1"></i>{done}</div>}
+                </div>
+            )}
+
+            {suggestions && (history.chronic.length > 0 || history.allergen) && (
+                <div className="small" style={{ marginTop: 8, padding: '0.5rem 0.7rem', border: '1px dashed #30363d', borderRadius: 8 }}>
+                    <strong>À vérifier dans le dossier du patient</strong>
+                    {history.chronic.length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                            <span className="text-muted">Antécédent évoqué par ce motif, absent des antécédents :</span>{' '}
+                            {history.chronic.map((item) => <Button key={item} size="sm" variant="outline-secondary" className="me-1" onClick={() => addChronic(item)}>+ {item}</Button>)}
+                        </div>
+                    )}
+                    {history.allergen && <div style={{ marginTop: 4 }} className="text-muted">Notez l'allergène identifié dans les allergies du patient (champ « Allergies connues » plus haut) : il sera ajouté à son dossier.</div>}
                 </div>
             )}
 

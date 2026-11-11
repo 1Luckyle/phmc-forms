@@ -338,6 +338,19 @@ const METABO = group('Métabolique et infectieux', [
     },
 ]);
 
+// Antécédents que le motif évoque (à proposer d'ajouter au patient s'ils lui manquent) et motifs qui appellent de noter l'allergène.
+//  chronic : antécédent évoqué ; allergen : l'allergène identifié est à ajouter aux allergies.
+export const HISTORY_HINTS = {
+    asthme: { chronic: 'Asthme' },
+    hypoglycemie: { chronic: 'Diabète' },
+    acidocetose: { chronic: 'Diabète' },
+    crise_hypertensive: { chronic: 'Hypertension' },
+    oap: { chronic: 'Maladie cardiaque' },
+    convulsions: { chronic: 'Épilepsie' },
+    anaphylaxie: { allergen: true },
+    allergie_legere: { allergen: true },
+};
+
 export const CONDITIONS = [...TRAUMA, ...CARDIO, ...RESPI, ...NEURO, ...INTOX, ...METABO];
 export const CONDITION_BY_ID = Object.fromEntries(CONDITIONS.map((c) => [c.id, c]));
 export const CONDITION_GROUPS = [...new Set(CONDITIONS.map((c) => c.group))].map((name) => ({ label: name, options: CONDITIONS.filter((c) => c.group === name) }));

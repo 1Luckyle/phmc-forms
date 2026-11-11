@@ -6,7 +6,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
 import crypto from 'crypto';
 import { renderMail, wrapMailHtml, PHMC_SITE_URL } from './mailTemplatesCore.js';
-import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion, EMERGENCY_FIELDS } from './dossierCore.js';
+import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion, EMERGENCY_FIELDS, BACKGROUND_UPDATE_FIELDS, missingBackgroundItems, appendBackgroundItems } from './dossierCore.js';
 
 // Initialize Firebase Admin SDK
 // L'URL de la Realtime Database est fournie explicitement : sans elle,
@@ -2906,26 +2906,43 @@ export const reconcileDossiers = onSchedule({ schedule: 'every 1 minutes', timeZ
             }
         }
     }
-    // Contact d'urgence modifié depuis un formulaire de santé mentale (contactsUrgenceMaj) : appliqué tout de suite au dossier s'il existe (aucun dossier : rien à mettre à jour), puis retiré.
+    // Demandes du personnel soignant sur le dossier (contactsUrgenceMaj) : contact d'urgence modifié depuis un formulaire de santé mentale (`champs`, remplace les valeurs) et allergies, antécédents ou
+    // traitements oubliés (`ajouts`, AJOUTÉS à la suite du texte existant, jamais retirés). Appliquées tout de suite au dossier s'il existe (aucun dossier : rien à mettre à jour), puis retirées.
     const contactUpdates = (await db.ref('contactsUrgenceMaj').get()).val() || {};
     for (const [patientNode, items] of Object.entries(contactUpdates)) {
         for (const [key, item] of Object.entries(items || {})) {
             try {
-                const hasDossier = (await db.ref(`dossiersPatients/${patientNode}/initial`).get()).exists();
+                const dossierSnap = await db.ref(`dossiersPatients/${patientNode}`).get();
+                const hasDossier = dossierSnap.exists() && dossierSnap.child('initial').exists();
+                const donnees = (hasDossier && dossierSnap.child('donnees').val()) || {};
                 const updates = {};
+                const done = [];
                 if (hasDossier && item && item.champs) {
                     Object.entries(item.champs).forEach(([field, value]) => {
                         if (EMERGENCY_FIELDS.includes(field)) updates[`dossiersPatients/${patientNode}/donnees/${field}`] = String(value ?? '').trim() === '' ? null : String(value).trim().slice(0, 200);
                     });
+                    if (Object.keys(updates).length > 0) done.push("contact d'urgence");
+                }
+                if (hasDossier && item && item.ajouts && typeof item.ajouts === 'object') {
+                    BACKGROUND_UPDATE_FIELDS.forEach((field) => {
+                        const raw = item.ajouts[field];
+                        const incoming = (Array.isArray(raw) ? raw : Object.values(raw || {})).map((entry) => String(entry ?? '').trim().slice(0, 120)).filter(Boolean).slice(0, 20);
+                        const missing = missingBackgroundItems(donnees[field], incoming.join(' ; '));
+                        if (!missing.length) return;
+                        updates[`dossiersPatients/${patientNode}/donnees/${field}`] = appendBackgroundItems(donnees[field], missing);
+                        // Champ à choix par défaut : les ajouts rejoignent le texte libre (les choix cochés ne changent pas).
+                        if (donnees[`${field}Presets`] !== undefined || donnees[`${field}Free`] !== undefined) updates[`dossiersPatients/${patientNode}/donnees/${field}Free`] = appendBackgroundItems(donnees[`${field}Free`], missing);
+                        done.push({ patientAllergies: 'allergies', patientChronicDiseases: 'antécédents', patientCurrentMedicine: 'traitements' }[field]);
+                    });
                 }
                 if (Object.keys(updates).length > 0) {
                     updates[`dossiersPatients/${patientNode}/majLe`] = now;
-                    updates[`dossiersPatients/${patientNode}/historique/contact_${key}`] = { version: 0, appliqueLe: now, titre: `Contact d'urgence mis à jour (${String((item && item.titre) || 'consultation').slice(0, 120)})`, createur: 'personnel' };
+                    updates[`dossiersPatients/${patientNode}/historique/contact_${key}`] = { version: 0, appliqueLe: now, titre: `Dossier complété : ${done.join(', ')} (${String((item && item.titre) || 'consultation').slice(0, 120)})`, createur: 'personnel' };
                     await db.ref().update(updates);
                 }
                 await db.ref(`contactsUrgenceMaj/${patientNode}/${key}`).remove();
             } catch (error) {
-                console.error(`reconcileDossiers: contact d'urgence ${patientNode}/${key}:`, error);
+                console.error(`reconcileDossiers: demande sur le dossier ${patientNode}/${key}:`, error);
             }
         }
     }

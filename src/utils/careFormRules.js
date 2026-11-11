@@ -3,6 +3,7 @@
 // Règles pures des champs ajoutés aux formulaires de soins (voir constants/careFormOptions.js) : durée de prise en charge, validité d'une aptitude, changement du contact d'urgence,
 // contrôles avant enregistrement. Testé dans careFormRules.test.js.
 import { validUntil } from './flightCertificate';
+import { BACKGROUND_UPDATE_FIELDS, missingBackgroundItems } from './dossierCore';
 import { RISK_NEEDING_ACTION, MENTAL_HEALTH_VERSIONS, DEFAULT_APTITUDE_MONTHS, EVAL_REASONS, labelOf } from '../constants/careFormOptions';
 
 const TIME = /^(\d{1,2}):(\d{2})$/;
@@ -75,7 +76,17 @@ export const emergencyContactChanges = (donnees, formData) => {
 export const BACKGROUND_FIELD_LABELS = { patientAllergies: 'allergies', patientChronicDiseases: 'antécédents', patientCurrentMedicine: 'traitements' };
 export const changedBackgroundFields = (donnees, formData) => {
     if (!donnees) return [];
-    return Object.keys(BACKGROUND_FIELD_LABELS).filter((field) => norm(donnees[field]) !== '' && norm(formData[field]) !== norm(donnees[field]));
+    return Object.keys(BACKGROUND_FIELD_LABELS).filter((field) => norm(formData[field]) !== '' && norm(formData[field]) !== norm(donnees[field]));
+};
+// Éléments saisis dans le formulaire qui manquent au dossier (allergies, antécédents, traitements oubliés) : { champ: [éléments] }. Ils sont AJOUTÉS au dossier à l'enregistrement, jamais retirés.
+export const backgroundAdditions = (donnees, formData) => {
+    if (!donnees) return {};
+    const additions = {};
+    BACKGROUND_UPDATE_FIELDS.forEach((field) => {
+        const items = missingBackgroundItems(donnees[field], formData[field]);
+        if (items.length) additions[field] = items;
+    });
+    return additions;
 };
 
 // Problèmes propres aux champs ajoutés (en plus des champs obligatoires communs) → liste de messages.

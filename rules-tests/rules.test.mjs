@@ -567,6 +567,8 @@ await write("S1 pose une demande de mise à jour du contact d'urgence", true, 'S
 await write('Civil C ne pose pas de demande', false, 'C', 'contactsUrgenceMaj/PHMC-1/req1', contactRequest);
 await write('S1 ne modifie pas une demande existante', false, 'S1', 'contactsUrgenceMaj/PHMC-1/req1', { ...contactRequest, par: 'autre' }, (data) => { data.contactsUrgenceMaj = { 'PHMC-1': { req1: contactRequest } }; });
 await write('Une demande sans champs est refusée', false, 'S1', 'contactsUrgenceMaj/PHMC-1/req2', { par: 'S1', creeLe: 1 });
+await write("S1 pose une demande d'ajouts au fond médical (sans contact)", true, 'S1', 'contactsUrgenceMaj/PHMC-1/req3', { ajouts: { patientAllergies: ['Latex'] }, par: 'S1', titre: 'Consultation', creeLe: Date.now() });
+await write('Une demande sans champs ni ajouts est refusée', false, 'S1', 'contactsUrgenceMaj/PHMC-1/req4', { par: 'S1', titre: 'x', creeLe: 1 });
 await read('S1 ne relit pas les demandes (admin et serveur seulement)', false, 'S1', 'contactsUrgenceMaj/PHMC-1', (data) => { data.contactsUrgenceMaj = { 'PHMC-1': { req1: contactRequest } }; });
 
 await env.cleanup();
