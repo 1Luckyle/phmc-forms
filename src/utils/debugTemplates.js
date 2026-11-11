@@ -917,7 +917,7 @@ const careExtras = (version, h) => {
         6: aptitude, 7: aptitude, 14: mental, 16: mental, 28: mental, 29: mental,
         19: {
             extraStaff: h.extraStaff(1),
-            injuryDetails: [{ conditionId: 'fracture_fermee', regions: ['avant_bras', 'poignet'], side: 'Right', count: '1', note: 'Déformation en dos de fourchette.' }, { conditionId: 'plaie_superficielle', regions: ['main'], side: 'Right', count: '2', note: '' }],
+            injuryDetails: [{ conditionId: 'fracture_fermee', region: 'poignet', side: 'Right', count: '1', precisions: ['Déformation visible', 'Non déplacée'], note: 'Déformation en dos de fourchette.' }, { conditionId: 'plaie_superficielle', region: 'main', side: 'Right', count: '2', precisions: ['Plaie nette', 'Saignement contrôlé'], note: '' }, { conditionId: 'plaie_superficielle', region: 'genou', side: 'Left', count: '1', precisions: ['Plaie souillée'], note: '' }],
             injuryMutilations: [], injuryNote: 'Chute de deux mètres, réception sur la main droite.',
             careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
             patientWeight: '75', patientHeight: '178', clinicalConditions: ['fracture_fermee', 'plaie_superficielle'], clinicalSeverity: 'Moderate',

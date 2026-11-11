@@ -211,8 +211,14 @@ describe("assistant clinique du protocole d'urgence", () => {
         expect(state.bloodPressureValue).toMatch(/^\d{2,3}\/\d{2,3}$/);
         expect(state.painLevel).toBe('patientMildPain');
         expect(state.Imaging).toEqual(['XRay']);
-        expect(state.clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol', 'ketoprofene']);
-        expect(state.clinicalMeds[0]).toMatchObject({ regimenId: 'po', dose: 1000 });
+        // Soins administrés sur place, puis ordonnance de sortie composée d'après le motif (patient qui rentre chez lui) : antalgique 5 jours + AINS 5 jours, début demain (déjà administrés aujourd'hui).
+        const given = state.clinicalMeds.filter((m) => !m.prescribed);
+        const prescribed = state.clinicalMeds.filter((m) => m.prescribed);
+        expect(given.map((m) => m.medId)).toEqual(['paracetamol', 'ketoprofene']);
+        expect(given[0]).toMatchObject({ regimenId: 'po', dose: 1000 });
+        expect(prescribed.map((m) => m.medId)).toEqual(['paracetamol', 'ketoprofene']);
+        expect(prescribed[0]).toMatchObject({ regimenId: 'po', days: 5, count: 3, startDate: '2026-11-12' });
+        expect(screen.getByText(/Ordonnance de sortie proposée : Paracétamol \(5 j\), Kétoprofène \(5 j\)/)).toBeTruthy();
     });
 
     test('« Remplacer » écrase les champs déjà saisis', async () => {
@@ -226,7 +232,10 @@ describe("assistant clinique du protocole d'urgence", () => {
         render(<Harness Component={EmergencyForm} initial={{ ...patient, patientAllergies: 'Allergique aux AINS' }} extra={props} />);
         expect(screen.getByText(/Non proposés/).textContent).toMatch(/Kétoprofène.*Allergie/);
         await act(async () => { screen.getByText('Médicaments', { selector: 'button' }).click(); });
-        expect(stateOf().clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol']);
+        const { clinicalMeds } = stateOf();
+        expect(clinicalMeds.filter((m) => !m.prescribed).map((m) => m.medId)).toEqual(['paracetamol']);
+        // Allergie aux AINS : l'ordonnance prend l'option suivante (tramadol), jamais un AINS.
+        expect(clinicalMeds.filter((m) => m.prescribed).map((m) => m.medId)).toEqual(['paracetamol', 'tramadol']);
     });
 
     test('alertes en direct sur une dose trop forte, sans bloquer', () => {
@@ -257,7 +266,8 @@ describe("assistant clinique de la consultation générale", () => {
         expect(state.patientChiefComplaint).toMatch(/Douleur articulaire/);
         expect(state.patientProcedure).toMatch(/- /);
         expect(state.examsOrdered).toEqual(['Xray']);
-        expect(state.clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol', 'ibuprofene']);
+        expect(state.clinicalMeds.filter((m) => !m.prescribed).map((m) => m.medId)).toEqual(['paracetamol', 'ibuprofene']);
+        expect(state.clinicalMeds.filter((m) => m.prescribed).map((m) => [m.medId, m.days])).toEqual([['paracetamol', 3], ['ibuprofene', 5]]);
         expect(state.Imaging).toBeUndefined();
         expect(state.routineCare).toBeUndefined();
         expect(state.painLevel).toBeUndefined();
@@ -519,28 +529,65 @@ describe('urgences : précisions sur les blessures, sous les motifs et avant Pil
         expect(screen.getByText('Mutilations et atteintes associées')).toBeTruthy();
     });
 
-    test('nombre, côté et trajet se saisissent par blessure ; les mutilations et la précision libre sont enregistrées', async () => {
+    test('une zone du corps par ligne : nombre, côté, trajet et précision se saisissent par ligne ; les mutilations et la précision libre sont enregistrées', async () => {
         render(<Harness Component={EmergencyForm} initial={{ ...base, clinicalConditions: ['plaie_arme_feu'] }} extra={emergencyProps} />);
-        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryCount-plaie_arme_feu"]'), { target: { value: '2' } }); });
-        await act(async () => { fireEvent.change(document.querySelector('select[name="injurySide-plaie_arme_feu"]'), { target: { value: 'Right' } }); });
-        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryTrajectory-plaie_arme_feu"]'), { target: { value: 'Lodged' } }); });
-        await act(async () => { fireEvent.change(document.querySelector('input[name="injuryNote-plaie_arme_feu"]'), { target: { value: 'Saignement actif' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryCount-plaie_arme_feu-0"]'), { target: { value: '2' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injurySide-plaie_arme_feu-0"]'), { target: { value: 'Right' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryTrajectory-plaie_arme_feu-0"]'), { target: { value: 'Lodged' } }); });
+        // Précisions : des choix prêts à cocher (liste déroulante à choix multiple), sans avoir à écrire.
+        await act(async () => { fireEvent.keyDown(screen.getByText(/Précisions sur cette zone/), { key: 'ArrowDown', keyCode: 40 }); });
+        await act(async () => { fireEvent.click(screen.getByText('Saignement actif')); });
+        await act(async () => { fireEvent.keyDown(screen.getByText('Saignement actif'), { key: 'ArrowDown', keyCode: 40 }); });
+        await act(async () => { fireEvent.click(screen.getByText("Orifice d'entrée seul")); });
         await act(async () => { fireEvent.change(document.querySelector('input[name="injuryNote"]'), { target: { value: 'Agression au bar.' } }); });
-        const entry = stateOf().injuryDetails.find((e) => e.conditionId === 'plaie_arme_feu');
-        expect(entry).toMatchObject({ count: '2', side: 'Right', trajectory: 'Lodged', note: 'Saignement actif' });
+        const rows = stateOf().injuryDetails.filter((e) => e.conditionId === 'plaie_arme_feu');
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({ count: '2', side: 'Right', trajectory: 'Lodged', precisions: ['Saignement actif', "Orifice d'entrée seul"] });
         expect(stateOf().injuryNote).toBe('Agression au bar.');
     });
 
-    test('Pilou reprend la localisation et les mutilations dans la plainte, le diagnostic et les soins', async () => {
+    test('le bouton « Ajouter une zone » crée une ligne avec son propre côté et son propre nombre ; × la retire', async () => {
+        render(<Harness Component={EmergencyForm} initial={{ ...base, clinicalConditions: ['plaie_arme_feu', 'fracture_fermee'] }} extra={emergencyProps} />);
+        // Une seule ligne au départ, sans bouton de retrait.
+        expect(document.querySelectorAll('select[name^="injurySide-plaie_arme_feu-"]')).toHaveLength(1);
+        expect(screen.queryByLabelText('Retirer cette ligne')).toBeNull();
+        const addButtons = screen.getAllByText('Ajouter une zone');
+        expect(addButtons).toHaveLength(2);
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injurySide-plaie_arme_feu-0"]'), { target: { value: 'Right' } }); });
+        await act(async () => { addButtons[0].click(); });
+        expect(document.querySelectorAll('select[name^="injurySide-plaie_arme_feu-"]')).toHaveLength(2);
+        // La nouvelle ligne est vide et indépendante : l'autre côté s'y choisit sans toucher la première.
+        expect(document.querySelector('select[name="injurySide-plaie_arme_feu-1"]').value).toBe('');
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injurySide-plaie_arme_feu-1"]'), { target: { value: 'Left' } }); });
+        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryCount-plaie_arme_feu-1"]'), { target: { value: '1' } }); });
+        const shots = stateOf().injuryDetails.filter((e) => e.conditionId === 'plaie_arme_feu');
+        expect(shots.map((e) => e.side)).toEqual(['Right', 'Left']);
+        expect(shots[1].count).toBe('1');
+        // Le trajet de la balle se règle sur chaque ligne ; la fracture n'en a pas.
+        expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(2);
+        // Ajouter une zone à un autre motif ne mélange pas les lignes.
+        await act(async () => { screen.getAllByText('Ajouter une zone')[1].click(); });
+        expect(document.querySelectorAll('select[name^="injurySide-fracture_fermee-"]')).toHaveLength(2);
+        expect(document.querySelectorAll('select[name^="injurySide-plaie_arme_feu-"]')).toHaveLength(2);
+        // Retirer la première ligne des balles : il reste celle de gauche.
+        await act(async () => { screen.getAllByLabelText('Retirer cette ligne')[0].click(); });
+        expect(stateOf().injuryDetails.filter((e) => e.conditionId === 'plaie_arme_feu').map((e) => e.side)).toEqual(['Left']);
+        expect(document.querySelectorAll('select[name^="injurySide-plaie_arme_feu-"]')).toHaveLength(1);
+    });
+
+    test('Pilou reprend la localisation, ligne par ligne, et les mutilations dans la plainte, le diagnostic et les soins', async () => {
         render(<Harness Component={EmergencyForm} initial={{
             ...base, clinicalConditions: ['plaie_arme_feu'], injuryMutilations: ['teeth', 'eye'],
-            injuryDetails: [{ conditionId: 'plaie_arme_feu', regions: ['cuisse', 'abdomen'], side: 'Right', count: '2', trajectory: 'Lodged', note: '' }],
+            injuryDetails: [
+                { conditionId: 'plaie_arme_feu', region: 'cuisse', side: 'Right', count: '2', trajectory: 'Lodged', note: '' },
+                { conditionId: 'plaie_arme_feu', region: 'abdomen', side: 'Left', count: '1', note: '' },
+            ],
         }} extra={emergencyProps} />);
         await act(async () => { screen.getByText('Tout appliquer').click(); });
         const state = stateOf();
-        expect(state.patientChiefComplaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle ; localisation : cuisse et abdomen (côté droit) ; balle logée.');
+        expect(state.patientChiefComplaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), balle logée ; 1 impact de balle — abdomen (côté gauche).');
         expect(state.patientChiefComplaint).toContain('Mutilation(s) : perte de dent(s)');
-        expect(state.patientDiagnosis).toContain('Localisation : Plaie par arme à feu : 2 impacts de balle');
+        expect(state.patientDiagnosis).toContain('Localisation : Plaie par arme à feu : 2 impacts de balle — cuisse');
         expect(state.patientSecondaryDiagnosis).toContain('Mutilation(s) : perte de dent(s)');
         expect(state.patientProcedure).toContain('Mutilations :');
         expect(state.patientProcedure).toContain('Protection de l\'œil par une coque rigide');

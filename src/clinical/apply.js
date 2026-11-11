@@ -18,7 +18,7 @@ export const SECTIONS = [
     { key: 'exams', label: 'Examens', hint: 'Imagerie et résultats probables, résultats de laboratoire (en consultation : examens à prescrire).' },
     { key: 'diagnosis', label: 'Diagnostic', hint: 'Diagnostic principal et secondaire.' },
     { key: 'procedure', label: 'Procédure et soins', hint: 'Procédures et soins systématiques.' },
-    { key: 'meds', label: 'Médicaments', hint: 'Ajoute les médicaments proposés à la liste ci-dessous (doses calculées pour ce patient).' },
+    { key: 'meds', label: 'Médicaments', hint: 'Ajoute les médicaments proposés à la liste ci-dessous (doses calculées pour ce patient). Si le patient rentre chez lui, Pilou compose aussi son ordonnance de sortie d\'après les motifs (antalgiques, antibiotique, traitement de fond de la crise…).' },
     { key: 'outcome', label: 'Orientation', hint: 'Admission, suivi, orientation de sortie et conseils.' },
 ];
 // Patient décédé : plus d'orientation de sortie, d'admission, de suivi ni de conseils.
@@ -90,19 +90,26 @@ export const defaultStartDate = (entry, entries, reportDate) => {
 /** Met une ligne sur l'ordonnance, avec sa date de début par défaut (celle déjà choisie est gardée). */
 export const prescribeEntry = (entry, entries, reportDate) => ({ ...entry, prescribed: true, startDate: entry.startDate || defaultStartDate(entry, entries, reportDate) });
 
-/** Ajoute les médicaments suggérés (sans doublon de médicament + voie) ; `overwrite` remplace toute la liste. */
-export const applyMeds = (prev, meds, overwrite = false, { prescribed = false } = {}) => {
+/**
+ * Ajoute les médicaments suggérés (sans doublon de médicament + voie) ; `overwrite` remplace toute la liste.
+ *   prescribed : tous vont directement sur l'ordonnance (suites d'une opération) ;
+ *   prescription : ordonnance de SORTIE composée par l'assistant (engine.js : buildHomePrescription), ajoutée sur l'ordonnance ; les soins administrés sur place restent des médicaments administrés.
+ */
+export const applyMeds = (prev, meds, overwrite = false, { prescribed = false, prescription = [] } = {}) => {
     const current = Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : [];
-    // `prescribed` : les médicaments ajoutés vont directement sur l'ordonnance (suites d'une opération).
-    const incoming = meds.map(({ forCondition, ...entry }) => (prescribed ? prescribeEntry(entry, current, prev.date) : entry));
+    const given = meds.map(({ forCondition, ...entry }) => (prescribed ? prescribeEntry(entry, current, prev.date) : entry));
+    // La date de début d'un traitement de sortie tient compte de ce qui vient d'être administré (le même médicament : début le lendemain).
+    const outgoing = prescription.map(({ forCondition, ...entry }) => prescribeEntry(entry, [...(overwrite ? [] : current), ...given], prev.date));
+    const incoming = [...given, ...outgoing];
     if (overwrite) return { ...prev, clinicalMeds: incoming };
-    const added = incoming.filter((entry) => !current.some((c) => c.medId === entry.medId && c.regimenId === entry.regimenId));
+    // Doublon : même médicament, même voie ET même statut (administré / sur l'ordonnance).
+    const added = incoming.filter((entry) => !current.some((c) => c.medId === entry.medId && c.regimenId === entry.regimenId && !!c.prescribed === !!entry.prescribed));
     return { ...prev, clinicalMeds: [...current, ...added] };
 };
 
 /** Applique UNE section. Le patient (identité, antécédents) n'est jamais remplacé, même avec `overwrite` : seuls ses champs vides sont complétés. */
 export const applySection = (prev, key, suggestions, { overwrite = false, mode = 'emergency', extra = {} } = {}) => (
-    key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite) : applyPatch(prev, sectionPatch(key, suggestions, mode, { ...extra, deceased: isDeceased(prev) }), overwrite && key !== 'patient')
+    key === 'meds' ? applyMeds(prev, suggestions.meds, overwrite, { prescription: isDeceased(prev) ? [] : suggestions.prescription || [] }) : applyPatch(prev, sectionPatch(key, suggestions, mode, { ...extra, deceased: isDeceased(prev) }), overwrite && key !== 'patient')
 );
 
 /** Tout appliquer d'un coup. */

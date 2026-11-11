@@ -8,12 +8,13 @@
 //  tags          : contexte lu par les contrôles des médicaments (ex. 'hemorragie' interdit un AINS)
 //  findings      : valeurs des listes « Constatations » du protocole (esg, lungs, pupils, wounds, ecg, sono)
 //  meds          : [identifiant médicament, identifiant du schéma, gravité minimale 0-3 (légère → critique)]
+//  home          : ORDONNANCE DE SORTIE (patient qui rentre chez lui) : [{ options: [[médicament, jours, prises/24 h]…], minSeverity }] — voie orale ; la première option utilisable est retenue
 //  admitAt       : gravité (0-3) à partir de laquelle on propose l'admission (null : jamais)
 //  surgical      : à partir de « sévère », orientation vers le bloc opératoire
 
 const ALT = 'patientImpared';
 const NORMAL = 'patientNormal';
-const group = (name, items) => items.map((item) => ({ group: name, followup: 'AsNeeded', admitAt: null, tags: [], aliases: [], imaging: [], routineCare: [], steps: [], meds: [], findings: {}, ...item }));
+const group = (name, items) => items.map((item) => ({ group: name, followup: 'AsNeeded', admitAt: null, tags: [], aliases: [], imaging: [], routineCare: [], steps: [], meds: [], home: [], findings: {}, ...item }));
 
 const TRAUMA = group('Traumatologie', [
     {
@@ -22,6 +23,7 @@ const TRAUMA = group('Traumatologie', [
         findings: { wounds: 'patientBleeding', esg: NORMAL }, routineCare: ['Tetanus', 'Dressing'],
         steps: ['Lavage au sérum physiologique, détersion et exploration de la plaie.', 'Recherche d\'un corps étranger, d\'une atteinte tendineuse ou nerveuse.', 'Anesthésie locale puis suture, colle ou strips selon la plaie.', 'Pansement et mise à jour de la vaccination antitétanique.'],
         meds: [['lidocaine', 'infiltration', 0], ['paracetamol', 'po', 0], ['vaccin_tetanique', 'im', 0]],
+        home: [{ options: [['paracetamol', 2, 3]] }],
     },
     {
         id: 'plaie_profonde', label: 'Plaie profonde / délabrement', aliases: ['lacération profonde', 'morsure', 'amputation partielle'],
@@ -29,6 +31,7 @@ const TRAUMA = group('Traumatologie', [
         findings: { wounds: 'patientBleeding', esg: NORMAL }, imaging: ['XRay'], routineCare: ['Tetanus', 'Dressing', 'Antibiotic'], admitAt: 3, surgical: true,
         steps: ['Compression directe, surélévation, garrot si hémorragie non contrôlée.', 'Exploration chirurgicale sous anesthésie locale, lavage abondant.', 'Radiographie à la recherche d\'un corps étranger ou d\'une fracture.', 'Suture par plans, pansement compressif, antibioprophylaxie et rappel antitétanique.'],
         meds: [['lidocaine', 'infiltration', 0], ['paracetamol', 'po', 0], ['morphine', 'iv', 2], ['cefazoline', 'iv', 1], ['vaccin_tetanique', 'im', 0], ['acide_tranexamique', 'iv', 2]],
+        home: [{ options: [['paracetamol', 3, 3]] }, { options: [['amoxicilline_clav', 7], ['azithromycine', 3]] }],
     },
     {
         id: 'fracture_fermee', label: 'Fracture fermée d\'un membre', aliases: ['fracture', 'os cassé'],
@@ -36,6 +39,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Fracture fermée d\'un membre.', findings: { wounds: 'patientFractures', esg: NORMAL }, imaging: ['XRay'], routineCare: ['Analgesia', 'Immobilisation'], admitAt: 3, surgical: true, followup: 'Recommended',
         steps: ['Immobilisation du membre dans la position trouvée, retrait des bagues et bijoux.', 'Contrôle du pouls, de la sensibilité et de la motricité en aval.', 'Antalgie puis radiographie de face et de profil.', 'Réduction ou attelle selon le déplacement, avis orthopédique.'],
         meds: [['paracetamol', 'po', 0], ['ketoprofene', 'po', 0], ['morphine', 'iv', 2]],
+        home: [{ options: [['paracetamol', 5, 3]] }, { options: [['ketoprofene', 5], ['tramadol', 3]] }],
     },
     {
         id: 'fracture_ouverte', label: 'Fracture ouverte', aliases: ['fracture exposée', 'os apparent'],
@@ -50,6 +54,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Entorse ou luxation articulaire.', findings: { wounds: 'patientHematoma', esg: NORMAL }, imaging: ['XRay'], routineCare: ['Analgesia', 'Immobilisation'], followup: 'Recommended',
         steps: ['Glaçage, immobilisation et repos de l\'articulation.', 'Bilan clinique de la stabilité ; radiographie pour éliminer une fracture.', 'Réduction d\'une luxation sous analgésie, puis contrôle radiographique.', 'Attelle ou orthèse, consignes de décharge.'],
         meds: [['paracetamol', 'po', 0], ['ibuprofene', 'po', 0], ['morphine', 'iv', 3]],
+        home: [{ options: [['paracetamol', 3, 3]] }, { options: [['ibuprofene', 5], ['tramadol', 3]] }],
     },
     {
         id: 'trauma_cranien', label: 'Traumatisme crânien', aliases: ['coup à la tête', 'commotion', 'tête'],
@@ -57,6 +62,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Traumatisme crânien.', findings: { pupils: 'patientPupilsNormal', wounds: 'patientHematoma', esg: NORMAL }, imaging: ['CTScan'], routineCare: [], admitAt: 1, followup: 'Recommended',
         steps: ['Score de Glasgow et examen des pupilles, à répéter toutes les 15 minutes.', 'Immobilisation du rachis cervical en cas de mécanisme à risque.', 'Scanner cérébral si perte de connaissance, vomissements, anticoagulants ou Glasgow < 15.', 'Surveillance neurologique ; consignes écrites de retour en cas de somnolence ou de vomissements.'],
         meds: [['paracetamol', 'po', 0], ['ondansetron', 'po', 1]],
+        home: [{ options: [['paracetamol', 3, 3]] }, { options: [['ondansetron', 2]], minSeverity: 1 }],
     },
     {
         id: 'brulure', label: 'Brûlure', aliases: ['brûlure thermique', 'feu', 'ébouillantement'],
@@ -64,6 +70,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Brûlure cutanée.', findings: { wounds: 'patientNoWounds', esg: NORMAL }, routineCare: ['Analgesia', 'Dressing', 'Tetanus'], admitAt: 2, followup: 'Recommended',
         steps: ['Refroidissement à l\'eau tempérée pendant 15 à 20 minutes, retrait des vêtements et bijoux.', 'Évaluation de la surface brûlée et de la profondeur.', 'Pansement gras stérile, jamais de corps gras non stérile.', 'Perfusion de remplissage et surveillance en centre de brûlés au-delà de 15 % de surface.'],
         meds: [['paracetamol', 'po', 0], ['morphine', 'iv', 2], ['nacl09', 'iv', 2], ['vaccin_tetanique', 'im', 0], ['oxygene', 'masque', 2]],
+        home: [{ options: [['paracetamol', 5, 3]] }],
     },
     {
         id: 'plaie_arme_feu', label: 'Plaie par arme à feu', aliases: ['balle', 'tir', 'projectile', 'gunshot'],
@@ -71,6 +78,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Plaie par projectile d\'arme à feu.', findings: { wounds: 'patientBleeding', esg: ALT }, imaging: ['XRay', 'CTScan'], routineCare: ['Analgesia', 'Infusion', 'Oxygen', 'Antibiotic', 'Tetanus'], admitAt: 0, surgical: true, admitTo: 'Ward', followup: 'Recommended',
         steps: ['Sécurisation, déshabillage complet et recherche des orifices d\'entrée et de sortie.', 'Contrôle de l\'hémorragie : compression, pansement hémostatique, garrot sur un membre.', 'Deux voies veineuses, acide tranexamique, remplissage prudent, oxygène.', 'Radiographie ou scanner pour localiser le projectile, bilan préopératoire.', 'Exploration chirurgicale, antibioprophylaxie, rappel antitétanique.'],
         meds: [['oxygene', 'masque', 0], ['acide_tranexamique', 'iv', 0], ['nacl09', 'iv', 1], ['fentanyl', 'iv', 0], ['cefazoline', 'iv', 0], ['vaccin_tetanique', 'im', 0]],
+        home: [{ options: [['paracetamol', 5, 3]] }, { options: [['amoxicilline_clav', 7], ['azithromycine', 3]] }],
     },
     {
         id: 'plaie_arme_blanche', label: 'Plaie par arme blanche', aliases: ['couteau', 'coup de couteau', 'lame', 'poignardé'],
@@ -78,6 +86,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Plaie par arme blanche.', findings: { wounds: 'patientBleeding', esg: ALT }, imaging: ['XRay', 'Ultrasound'], routineCare: ['Analgesia', 'Dressing', 'Antibiotic', 'Tetanus'], admitAt: 1, surgical: true, followup: 'Recommended',
         steps: ['Compression directe, ne pas retirer l\'arme si elle est encore en place.', 'Recherche d\'une atteinte thoracique, abdominale ou vasculaire ; échographie de débrouillage.', 'Voie veineuse, antalgie, antibioprophylaxie, rappel antitétanique.', 'Exploration et suture au bloc si la plaie est profonde ou pénétrante.'],
         meds: [['fentanyl', 'iv', 1], ['paracetamol', 'po', 0], ['acide_tranexamique', 'iv', 2], ['nacl09', 'iv', 2], ['cefazoline', 'iv', 1], ['vaccin_tetanique', 'im', 0], ['lidocaine', 'infiltration', 0]],
+        home: [{ options: [['paracetamol', 3, 3]] }, { options: [['amoxicilline_clav', 5], ['azithromycine', 3]] }],
     },
     {
         id: 'trauma_thoracique', label: 'Traumatisme thoracique / pneumothorax', aliases: ['côtes', 'poumon', 'thorax', 'pneumothorax', 'hémothorax'],
@@ -85,6 +94,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Traumatisme thoracique avec atteinte pleuro-pulmonaire.', findings: { lungs: 'patientRhonchi', esg: ALT }, imaging: ['XRay', 'Ultrasound', 'CTScan'], routineCare: ['Oxygen', 'Analgesia'], admitAt: 0, surgical: false, admitTo: 'Ward', followup: 'Recommended',
         steps: ['Oxygène, position demi-assise, exsufflation à l\'aiguille si pneumothorax compressif.', 'Échographie thoracique (eFAST) et radiographie pulmonaire.', 'Drainage thoracique si pneumothorax ou hémothorax important.', 'Antalgie suffisante pour permettre la toux et la ventilation.'],
         meds: [['oxygene', 'masque', 0], ['paracetamol', 'po', 0], ['morphine', 'iv', 1], ['acide_tranexamique', 'iv', 3]],
+        home: [{ options: [['paracetamol', 5, 3]] }, { options: [['tramadol', 3]], minSeverity: 1 }],
     },
     {
         id: 'trauma_abdominal', label: 'Traumatisme abdominal', aliases: ['ventre', 'rate', 'foie', 'abdomen'],
@@ -92,6 +102,7 @@ const TRAUMA = group('Traumatologie', [
         diagnosis: 'Traumatisme abdominal avec suspicion d\'hémorragie interne.', findings: { sono: 'patientFluids', esg: ALT }, imaging: ['Ultrasound', 'CTScan'], routineCare: ['Infusion', 'Analgesia'], admitAt: 1, surgical: true, followup: 'Recommended',
         steps: ['Voie veineuse, remplissage prudent, surveillance rapprochée.', 'Échographie (eFAST) à la recherche d\'un épanchement libre.', 'Scanner abdominal si le patient est stable, bloc opératoire si instable.', 'À jeun strict, antalgie, groupage et bilan sanguin.'],
         meds: [['paracetamol', 'iv', 0], ['fentanyl', 'iv', 1], ['nacl09', 'iv', 1], ['acide_tranexamique', 'iv', 2]],
+        home: [{ options: [['paracetamol', 3, 3]] }],
     },
     {
         id: 'polytraumatisme', label: 'Polytraumatisme / état de choc', aliases: ['accident de la route', 'choc hémorragique', 'grave'],
@@ -167,6 +178,7 @@ const CARDIO = group('Cardio-vasculaire', [
         vitals: { hr: 8, sbp: 2 }, complaint: 'Démangeaisons et plaques rouges sur la peau.', diagnosis: 'Réaction allergique cutanée sans signe de gravité.', findings: { esg: NORMAL }, admitAt: null, followup: 'AsNeeded',
         steps: ['Identifier et écarter l\'allergène.', 'Vérifier l\'absence de gêne respiratoire, de gonflement du visage ou de malaise.', 'Surveillance de 30 minutes à 1 heure.', 'Consignes de retour si la réaction s\'aggrave.'],
         meds: [['cetirizine', 'po', 0], ['prednisolone', 'po', 1]],
+        home: [{ options: [['cetirizine', 5]] }, { options: [['prednisolone', 3]], minSeverity: 1 }],
     },
 ]);
 
@@ -177,6 +189,7 @@ const RESPI = group('Respiratoire', [
         findings: { lungs: 'patientRhonchi', esg: ALT }, routineCare: ['Oxygen'], admitAt: 2, followup: 'Recommended',
         steps: ['Position assise, oxygène pour une SpO2 ≥ 94 %.', 'Bronchodilatateurs en nébulisation, renouvelables toutes les 20 minutes.', 'Corticoïde par voie orale ou veineuse.', 'Débit expiratoire de pointe avant et après le traitement ; hospitalisation si la réponse est insuffisante.'],
         meds: [['salbutamol', 'neb', 0], ['ipratropium', 'neb', 2], ['prednisolone', 'po', 0], ['methylprednisolone', 'iv', 2], ['oxygene', 'masque', 1]],
+        home: [{ options: [['prednisolone', 5]] }],
     },
     {
         id: 'pneumopathie', label: 'Infection respiratoire / pneumonie', aliases: ['pneumonie', 'bronchite', 'toux', 'grippe'],
@@ -184,6 +197,7 @@ const RESPI = group('Respiratoire', [
         findings: { lungs: 'patientCrack', esg: ALT }, imaging: ['XRay'], routineCare: ['Antibiotic'], admitAt: 2, followup: 'Recommended',
         steps: ['Mesure de la SpO2 et de la fréquence respiratoire, oxygène si nécessaire.', 'Radiographie pulmonaire et bilan sanguin inflammatoire.', 'Antibiothérapie adaptée au terrain et à la gravité.', 'Antipyrétique, hydratation et consignes de retour.'],
         meds: [['paracetamol', 'po', 0], ['amoxicilline_clav', 'po', 0], ['azithromycine', 'po', 0], ['oxygene', 'masque', 2], ['ceftriaxone', 'iv', 2]],
+        home: [{ options: [['paracetamol', 5, 3]] }, { options: [['amoxicilline_clav', 7], ['azithromycine', 3]] }],
     },
     {
         id: 'detresse_respiratoire', label: 'Détresse respiratoire', aliases: ['étouffement', 'suffocation', 'obstruction', 'asphyxie'],
@@ -221,6 +235,7 @@ const NEURO = group('Neurologie', [
         vitals: { hr: 5, sbp: 6 }, complaint: 'Mal de tête pulsatile, gêne à la lumière et au bruit, nausées.', diagnosis: 'Migraine.', findings: { esg: NORMAL, pupils: 'patientPupilsNormal' }, admitAt: null,
         steps: ['Examen neurologique complet pour éliminer un signe de gravité.', 'Repos au calme, à l\'obscurité.', 'Antalgique et antiémétique.', 'Consignes de retour en cas de céphalée brutale, de fièvre ou de déficit.'],
         meds: [['paracetamol', 'po', 0], ['ketoprofene', 'po', 0], ['metoclopramide', 'po', 1]],
+        home: [{ options: [['paracetamol', 2, 3]] }, { options: [['ketoprofene', 2]] }, { options: [['metoclopramide', 2]], minSeverity: 1 }],
     },
     {
         id: 'coma', label: 'Altération de la conscience / coma', aliases: ['inconscient', 'inconscience', 'somnolent'],
@@ -302,6 +317,7 @@ const METABO = group('Métabolique et infectieux', [
         vitals: { hr: 24, sbp: -14, dbp: -8, temp: 0.7, rr: 3 }, complaint: 'Vomissements, diarrhées, soif intense, fatigue.', diagnosis: 'Gastro-entérite avec déshydratation.', findings: { esg: NORMAL }, routineCare: ['Infusion'], admitAt: 2, followup: 'AsNeeded',
         steps: ['Évaluation de l\'hydratation : pli cutané, muqueuses, tension.', 'Réhydratation orale, ou intraveineuse si les vomissements l\'empêchent.', 'Antiémétique et antispasmodique.', 'Consignes de retour : sang dans les selles, fièvre élevée, incapacité à boire.'],
         meds: [['ondansetron', 'po', 0], ['phloroglucinol', 'po', 0], ['paracetamol', 'po', 0], ['nacl09', 'iv', 2]],
+        home: [{ options: [['ondansetron', 2]] }, { options: [['phloroglucinol', 3]] }, { options: [['paracetamol', 3, 3]] }],
     },
     {
         id: 'sepsis', label: 'Fièvre / sepsis', aliases: ['infection', 'septicémie', 'état infectieux'],
@@ -309,18 +325,21 @@ const METABO = group('Métabolique et infectieux', [
         findings: { esg: ALT }, routineCare: ['Infusion', 'Antibiotic'], admitAt: 1, followup: 'Recommended',
         steps: ['Constantes complètes et recherche du foyer infectieux.', 'Bilan sanguin avec hémocultures et lactates, bandelette urinaire.', 'Antibiothérapie large dans l\'heure en cas de signes de gravité.', 'Remplissage vasculaire si hypotension ; antipyrétique.'],
         meds: [['paracetamol', 'po', 0], ['ceftriaxone', 'iv', 1], ['nacl09', 'iv', 1]],
+        home: [{ options: [['paracetamol', 3, 3]] }],
     },
     {
         id: 'douleur_abdominale', label: 'Douleur abdominale', aliases: ['mal au ventre', 'appendicite', 'abdomen aigu'],
         vitals: { hr: 14, sbp: 4, temp: 0.4 }, complaint: 'Douleur abdominale, nausées, parfois fièvre.', diagnosis: 'Douleur abdominale aiguë, cause à préciser.', findings: { esg: NORMAL }, imaging: ['Ultrasound'], routineCare: ['Analgesia'], admitAt: 2, surgical: true, followup: 'Recommended',
         steps: ['Examen de l\'abdomen : défense, contracture, signes péritonéaux.', 'Bandelette urinaire, test de grossesse chez la femme en âge de procréer, bilan sanguin.', 'Échographie ou scanner selon la localisation.', 'Avis chirurgical si abdomen aigu ; à jeun.'],
         meds: [['paracetamol', 'po', 0], ['phloroglucinol', 'po', 0], ['ondansetron', 'po', 1], ['fentanyl', 'iv', 3]],
+        home: [{ options: [['paracetamol', 3, 3]] }, { options: [['phloroglucinol', 3]] }],
     },
     {
         id: 'colique_nephretique', label: 'Colique néphrétique', aliases: ['calcul rénal', 'rein', 'lithiase'],
         vitals: { hr: 10, sbp: 20, dbp: 10 }, complaint: 'Douleur très intense du flanc irradiant vers les organes génitaux, agitation.', diagnosis: 'Colique néphrétique.', findings: { esg: NORMAL }, imaging: ['Ultrasound', 'CTScan'], routineCare: ['Analgesia'], admitAt: 3, followup: 'Recommended',
         steps: ['Antalgie rapide, bandelette urinaire à la recherche de sang.', 'Imagerie : échographie ou scanner sans injection.', 'Recherche de fièvre ou d\'un rein unique (urgence urologique).', 'Hydratation normale, tamisage des urines.'],
         meds: [['ketoprofene', 'iv', 0], ['paracetamol', 'iv', 0], ['phloroglucinol', 'iv', 0]],
+        home: [{ options: [['ketoprofene', 5]] }, { options: [['paracetamol', 5, 3]] }, { options: [['phloroglucinol', 3]] }],
     },
     {
         id: 'hypothermie', label: 'Hypothermie', aliases: ['gelure', 'froid', 'grelottement'],

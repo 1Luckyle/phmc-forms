@@ -289,6 +289,39 @@ export const entryText = (entry) => {
     return `${med.name} ${dose} — ${regimen.route}${frequency}${note ? ` (${note})` : ''}`;
 };
 
+// ───────────── Ordonnance de sortie ─────────────
+const intakesPerDay = (regimen) => (regimen.intervalHours >= 4 ? Math.min(4, Math.floor(24 / regimen.intervalHours)) : 1);
+const categoryOf = (medId) => MEDICATION_BY_ID[medId]?.category || '';
+
+/**
+ * Ordonnance de SORTIE d'un patient qui rentre chez lui, composée d'après les motifs (conditions.js : `home`) et NON d'après les soins administrés sur place (injections, anesthésie locale, vaccin… n'ont pas de suite à domicile).
+ * Pour chaque besoin, la première option utilisable est retenue : allergie, âge, antécédent ou interaction écartent un médicament, le suivant est essayé. Jamais deux AINS, ni deux antibiotiques ; un même médicament demandé par deux motifs est prescrit une fois, pour la durée la plus longue.
+ * → { entries: [{ medId, regimenId, dose, count, days, note, forCondition }], skipped: [{ medId, reasons }] }
+ */
+export const buildHomePrescription = ({ conditions, severityIndex, patient, checkCtx }) => {
+    const entries = [];
+    const skipped = [];
+    conditions.forEach((condition) => (condition.home || []).forEach(({ options = [], minSeverity = 0 }) => {
+        if (severityIndex < minSeverity) return;
+        for (const [medId, days, count] of options) {
+            const regimen = regimenOf(medId, 'po');
+            if (!regimen) continue;
+            const already = entries.find((entry) => entry.medId === medId);
+            if (already) { already.days = Math.max(already.days, days); return; }
+            if (/AINS/.test(categoryOf(medId)) && entries.some((entry) => /AINS/.test(categoryOf(entry.medId)))) return;
+            if (/Antibiotique/.test(categoryOf(medId)) && entries.some((entry) => /Antibiotique/.test(categoryOf(entry.medId)))) return;
+            const base = newEntry(medId, patient, 'po');
+            if (!base || !Number.isFinite(Number(base.dose))) { skipped.push({ medId, reasons: [doseOptions(medId, 'po', patient).unavailable || 'Dose non calculable.'] }); continue; }
+            const entry = { ...base, count: count || intakesPerDay(regimen), days };
+            const result = checkPrescription(entry, checkCtx);
+            if (result.level === 'error') { skipped.push({ medId, reasons: result.messages.filter((m) => m.level === 'error').map((m) => m.text) }); continue; }
+            entries.push({ ...entry, forCondition: condition.id });
+            return;
+        }
+    }));
+    return { entries, skipped };
+};
+
 // ───────────── Suggestions pour des motifs ─────────────
 export const conditionsOf = (ids) => (Array.isArray(ids) ? ids : []).map((id) => CONDITION_BY_ID[id]).filter(Boolean);
 export const contextTags = (conditions) => new Set(conditions.flatMap((c) => c.tags || []));
@@ -338,6 +371,10 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         });
     });
 
+    // Ordonnance de sortie : seulement si le patient rentre chez lui.
+    const home = destination === 'Home' ? buildHomePrescription({ conditions, severityIndex: sev.index, patient, checkCtx }) : { entries: [], skipped: [] };
+    home.skipped.forEach((item) => { if (!skipped.some((other) => other.medId === item.medId)) skipped.push(item); });
+
     // Résultats d'examens : seuls ceux des examens suggérés (imagerie) et de laboratoire.
     const exams = examResultsFor(conditions.map((c) => c.id), sev.index);
     const ids = conditions.map((c) => c.id);
@@ -367,7 +404,7 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         arrivalMode: arrivalModeFor(sev.index, tags),
         igu: sev.igu, admission: admitted ? 'Yes' : 'No',
         followup: conditions.some((c) => c.followup === 'Recommended') ? 'Recommended' : 'AsNeeded',
-        destination, meds, skipped,
+        destination, meds, prescription: home.entries, skipped,
     };
 };
 

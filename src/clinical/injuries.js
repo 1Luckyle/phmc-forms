@@ -4,7 +4,9 @@
 // le diagnostic et les soins, et le rapport les imprime en précision de l'anamnèse. Fonctions pures.
 //
 // Données du formulaire :
-//   injuryDetails     : [{ conditionId, regions: [id], side: 'Right'|'Left'|'Both'|'', count: '1'|'2'|'3'|'4'|'5+', trajectory?: 'Through'|'Lodged'|'Graze', note }]   (une entrée par motif de blessure)
+//   injuryDetails     : [{ conditionId, region: id, side: 'Right'|'Left'|'Both'|'', count: '1'|'2'|'3'|'4'|'5+', trajectory?: 'Through'|'Lodged'|'Graze', precisions: [libellé], note }]
+//                       precisions : choix proposés (PRECISIONS) ou saisis librement ; note : ancien champ libre, toujours imprimé.
+//                       UNE zone du corps par ligne, et autant de lignes que nécessaire pour un même motif (la même blessure peut toucher des zones de côtés différents)
 //   injuryMutilations : [code]    (pertes de dents, atteinte de l'œil, de l'oreille, amputations…)
 //   injuryNote        : texte libre
 import { CONDITION_BY_ID } from './conditions';
@@ -43,6 +45,27 @@ export const COUNTS = [{ value: '1', label: '1' }, { value: '2', label: '2' }, {
 export const TRAJECTORIES = [{ value: 'Through', label: 'Transfixiante (orifice d\'entrée et de sortie)' }, { value: 'Lodged', label: 'Balle logée' }, { value: 'Graze', label: 'Tangentielle (effleurement)' }];
 const TRAJECTORY_PHRASE = { Through: 'transfixiante', Lodged: 'balle logée', Graze: 'tangentielle' };
 
+// Précisions PROPOSÉES par motif (choix multiple, plus rapide que d'écrire) ; le soignant peut aussi en saisir une autre.
+const WOUND_PRECISIONS = ['Plaie nette', 'Bords irréguliers / contuse', 'Superficielle', 'Profonde (plan musculaire)', 'Saignement actif', 'Saignement contrôlé', 'Plaie souillée', 'Corps étranger', 'Atteinte tendineuse suspectée', 'Atteinte nerveuse suspectée', 'Atteinte vasculaire suspectée'];
+const FRACTURE_PRECISIONS = ['Non déplacée', 'Déplacée', 'Déformation visible', 'Comminutive', 'Gonflement important', 'Hématome', 'Pouls distal présent', 'Pouls distal absent', 'Sensibilité conservée', 'Atteinte nerveuse suspectée'];
+const BLUNT_PRECISIONS = ['Contusion', 'Hématome', 'Ecchymose', 'Douleur à la palpation', 'Plaie pénétrante', 'Saignement actif', 'Emphysème sous-cutané', 'Volet costal', 'Défense abdominale'];
+export const PRECISIONS = {
+    plaie_superficielle: WOUND_PRECISIONS,
+    plaie_profonde: WOUND_PRECISIONS,
+    plaie_arme_blanche: [...WOUND_PRECISIONS, 'Plaie pénétrante'],
+    plaie_arme_feu: ["Orifice d'entrée seul", "Orifices d'entrée et de sortie", 'Balle logée palpable', 'Tir à bout portant', 'Éclats de projectile', 'Saignement actif', 'Saignement contrôlé', 'Atteinte osseuse suspectée', 'Atteinte vasculaire suspectée', 'Atteinte nerveuse suspectée'],
+    fracture_fermee: FRACTURE_PRECISIONS,
+    fracture_ouverte: ['Os visible', 'Plaie souillée', 'Saignement actif', 'Déplacée', 'Comminutive', 'Pouls distal absent', 'Atteinte nerveuse suspectée', 'Garrot posé'],
+    entorse_luxation: ['Gonflement', 'Hématome', 'Instabilité', 'Déformation', 'Luxation réduite', 'Appui impossible', 'Pouls distal présent'],
+    trauma_cranien: ['Plaie du cuir chevelu', 'Hématome', 'Perte de connaissance', 'Vomissements', 'Saignement du nez ou de l\'oreille', 'Embarrure suspectée', 'Amnésie de l\'événement'],
+    brulure: ['1er degré', '2e degré superficiel', '2e degré profond', '3e degré', 'Phlyctènes', 'Circonférentielle', 'Brûlure chimique', 'Brûlure électrique', 'Vêtements retirés'],
+    trauma_thoracique: BLUNT_PRECISIONS,
+    trauma_abdominal: BLUNT_PRECISIONS,
+    polytraumatisme: ['Saignement actif', 'Garrot posé', 'Fracture associée', 'Plaie pénétrante', 'Déformation visible', 'Hématome'],
+    hemorragie_externe: ['Saignement actif', 'Garrot posé', 'Pansement compressif', 'Saignement contrôlé par compression', 'Artériel (pulsatile)', 'Veineux (en nappe)'],
+};
+export const precisionOptions = (conditionId) => (PRECISIONS[conditionId] || []).map((label) => ({ value: label, label }));
+
 // Mutilations et atteintes associées, avec la conduite à tenir que Pilou ajoute aux soins.
 export const MUTILATIONS = [
     { value: 'teeth', label: 'Perte de dent(s)', care: 'Récupération des dents (par la couronne, sans les frotter) et conservation dans du lait ou du sérum physiologique ; avis dentaire en urgence.' },
@@ -66,8 +89,8 @@ const joinFr = (items) => (items.length <= 1 ? items.join('') : `${items.slice(0
 const lowerFirst = (text) => String(text || '').charAt(0).toLowerCase() + String(text || '').slice(1);
 const asList = (value) => (Array.isArray(value) ? value : []);
 
-/** Entrée de détail d'un motif (ou null). */
-export const injuryEntryOf = (formData, conditionId) => asList(formData && formData.injuryDetails).find((entry) => entry && entry.conditionId === conditionId) || null;
+/** Lignes de détail d'un motif, dans l'ordre de saisie : un même motif peut avoir PLUSIEURS lignes (une zone du corps, son côté et son nombre chacune). */
+export const injuryRowsOf = (formData, conditionId) => asList(formData && formData.injuryDetails).filter((row) => row && row.conditionId === conditionId);
 
 /** Motifs sélectionnés qui se localisent. */
 export const selectedInjuryIds = (formData) => asList(formData && formData.clinicalConditions).filter((id) => isInjuryCondition(id) && CONDITION_BY_ID[id]);
@@ -78,23 +101,29 @@ const countPhrase = (conditionId, count) => {
     if (count === '1') return `1 ${one}`;
     return `${count === '5+' ? '5 ou plus' : count} ${many}`;
 };
-const regionsPhrase = (entry) => {
-    const labels = asList(entry.regions).map((id) => lowerFirst(REGION_LABEL[id] || id));
+// Zone du corps d'une ligne (une seule), suivie de son côté : « cuisse (côté droit) ». Une ancienne ligne à plusieurs zones (`regions`) reste lisible.
+const regionPhrase = (row) => {
+    const ids = row.region ? [row.region] : asList(row.regions);
+    const labels = ids.map((id) => lowerFirst(REGION_LABEL[id] || id));
     if (!labels.length) return '';
-    return `${joinFr(labels)}${SIDE_PHRASE[entry.side] ? ` (${SIDE_PHRASE[entry.side]})` : ''}`;
+    return `${joinFr(labels)}${SIDE_PHRASE[row.side] ? ` (${SIDE_PHRASE[row.side]})` : ''}`;
 };
 
-/** Une phrase par motif de blessure renseigné : « Plaie par arme à feu : 2 impacts de balle ; localisation : cuisse et abdomen (côté droit) ; balle logée ; précision ». */
+// Une ligne : « 2 impacts de balle — cuisse (côté droit), balle logée, précision ».
+const rowPhrase = (conditionId, row) => {
+    const head = [countPhrase(conditionId, row.count), regionPhrase(row)].filter(Boolean).join(' — ');
+    return [
+        head,
+        INJURY_CONDITIONS[conditionId].trajectory && TRAJECTORY_PHRASE[row.trajectory] ? TRAJECTORY_PHRASE[row.trajectory] : '',
+        ...asList(row.precisions).map((precision) => String(precision || '').trim()),
+        String(row.note || '').trim(),
+    ].filter(Boolean).join(', ');
+};
+
+/** Une phrase par motif de blessure, avec toutes ses lignes : « Plaie profonde / délabrement : 1 plaie — thorax (côté droit) ; 2 plaies — oreille (côté gauche) ». Un motif sans aucune précision n'imprime rien. */
 export const injuryLines = (formData) => selectedInjuryIds(formData).map((conditionId) => {
-    const entry = injuryEntryOf(formData, conditionId);
-    if (!entry) return '';
-    const parts = [
-        countPhrase(conditionId, entry.count),
-        regionsPhrase(entry) ? `localisation : ${regionsPhrase(entry)}` : '',
-        INJURY_CONDITIONS[conditionId].trajectory && TRAJECTORY_PHRASE[entry.trajectory] ? TRAJECTORY_PHRASE[entry.trajectory] : '',
-        String(entry.note || '').trim(),
-    ].filter(Boolean);
-    return parts.length ? `${CONDITION_BY_ID[conditionId].label} : ${parts.join(' ; ')}` : '';
+    const phrases = injuryRowsOf(formData, conditionId).map((row) => rowPhrase(conditionId, row)).filter(Boolean);
+    return phrases.length ? `${CONDITION_BY_ID[conditionId].label} : ${phrases.join(' ; ')}` : '';
 }).filter(Boolean);
 
 /** Mutilations cochées (libellés), sans les codes inconnus. */
