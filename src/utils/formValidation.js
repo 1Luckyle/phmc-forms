@@ -149,7 +149,8 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     // ID patient.
     if (CARE_FORM_VERSIONS.includes(version)) {
         if (!filled(data.patientID)) {
-            if (!CIVIL_MEDICAL_VERSIONS.includes(version)) {
+            // ID patient obligatoire pour ce formulaire (champ obligatoire ci-dessus) : pas d'avertissement en plus.
+            if (!CIVIL_MEDICAL_VERSIONS.includes(version) && !requiredFieldsOf(version).includes('patientID')) {
                 warnings.push("Aucun ID patient : le rapport ne sera pas rattaché au dossier du patient (il restera uniquement dans vos rapports enregistrés).");
             }
         } else if (!looksLikePatientId(data.patientID)) {
