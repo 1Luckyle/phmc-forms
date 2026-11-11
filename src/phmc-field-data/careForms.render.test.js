@@ -325,6 +325,70 @@ describe('décès du patient (urgences, opération)', () => {
     });
 });
 
+describe('opération : libellés en français ; patient décédé : plus de suites ni de prescription', () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const yesNo = [{ value: 'Yes', label: 'Yes' }, { value: 'No', label: 'No' }];
+    const emergencyProps = { admission: [{ value: 'Yes', label: 'Oui' }], followup: [{ value: 'AsNeeded', label: 'Au besoin' }], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    const meds = [{ medId: 'paracetamol', regimenId: 'iv', dose: 1000, count: 4, note: '' }, { medId: 'ketoprofene', regimenId: 'po', dose: 100, count: 2, note: '', prescribed: true, days: 5, startDate: '2026-11-12' }];
+
+    test('les trois listes « Yes / No » de l’enquête chirurgicale s’affichent en « Oui / Non »', () => {
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne' }} extra={{ patientConsent: yesNo, complications: yesNo, procedureGood: yesNo }} />);
+        expect(screen.getAllByText('Oui')).toHaveLength(3);
+        expect(screen.getAllByText('Non')).toHaveLength(3);
+        expect(screen.queryByText('Yes')).toBeNull();
+        expect(screen.queryByText('No')).toBeNull();
+        // La valeur enregistrée reste « Yes » / « No » (les rapports existants ne changent pas).
+        expect(document.querySelector('select[name="patientConsentOption"] option[value="Yes"]').textContent).toBe('Oui');
+    });
+
+    test('opération avec un patient vivant : détails post-opératoires, surveillance, consignes et médicaments post-opératoires', () => {
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne', clinicalMeds: meds }} />);
+        expect(screen.getByPlaceholderText(/Détails de l'anesthésie post-opératoire/)).toBeTruthy();
+        expect(screen.getByText('Surveillance post-opératoire')).toBeTruthy();
+        expect(screen.getByPlaceholderText(/Consignes post-opératoires/)).toBeTruthy();
+        expect(screen.getByText('Médicaments post-opératoires')).toBeTruthy();
+        expect(screen.getByText('Résumé de la procédure et suites')).toBeTruthy();
+    });
+
+    test('opération avec un patient décédé : tout cela disparaît, le résumé de la procédure reste', () => {
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne', clinicalMeds: meds, careDeceased: 'Yes' }} />);
+        expect(screen.queryByPlaceholderText(/Détails de l'anesthésie post-opératoire/)).toBeNull();
+        expect(screen.queryByText('Surveillance post-opératoire')).toBeNull();
+        expect(screen.queryByPlaceholderText(/Consignes post-opératoires/)).toBeNull();
+        expect(screen.queryByText('Médicaments post-opératoires')).toBeNull();
+        expect(screen.queryByText('Surveillance post-op')).toBeNull();
+        expect(screen.getByText('Résumé de la procédure')).toBeTruthy();
+        expect(screen.getByPlaceholderText("Type et dosage d'anesthésie administrée")).toBeTruthy();
+    });
+
+    test('urgences : un patient décédé n’a plus d’admission, de traitement à poursuivre, de suivi, d’orientation ni d’ordonnance', async () => {
+        const initial = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', date: '2026-11-11', phmcEmployee: 'Dr. Interne', clinicalMeds: meds };
+        const { unmount } = render(<Harness Component={EmergencyForm} initial={initial} extra={emergencyProps} />);
+        expect(screen.getByText('Patient admis?')).toBeTruthy();
+        expect(screen.getByText('Suivi requis?')).toBeTruthy();
+        expect(screen.getByPlaceholderText(/Autres traitements, conseils verbaux/)).toBeTruthy();
+        expect(screen.getByText('Orientation de sortie')).toBeTruthy();
+        expect(document.querySelectorAll('input[id^="rx-"]')).toHaveLength(2);
+        expect(screen.getByText("Tout mettre sur l'ordonnance")).toBeTruthy();
+        unmount();
+
+        render(<Harness Component={EmergencyForm} initial={{ ...initial, careDeceased: 'Yes', dischargeDestination: 'Death' }} extra={emergencyProps} />);
+        expect(screen.queryByText('Patient admis?')).toBeNull();
+        expect(screen.queryByText('Suivi requis?')).toBeNull();
+        expect(screen.queryByPlaceholderText(/Autres traitements, conseils verbaux/)).toBeNull();
+        expect(screen.queryByText('Orientation de sortie')).toBeNull();
+        expect(screen.getByText('Soins systématiques réalisés')).toBeTruthy();
+        // Aucune ordonnance : ni case, ni encadré ; la ligne déjà mise sur l'ordonnance est masquée, le médicament administré reste.
+        expect(document.querySelectorAll('input[id^="rx-"]')).toHaveLength(0);
+        expect(screen.queryByText("Tout mettre sur l'ordonnance")).toBeNull();
+        expect(screen.queryByText("Copier l'ordonnance")).toBeNull();
+        expect(screen.getAllByText('Paracétamol')).toHaveLength(1);
+        expect(screen.queryByText('Kétoprofène')).toBeNull();
+        // Pilou ne propose plus l'orientation (admission, suivi, conseils).
+        expect(screen.queryByText('Orientation', { selector: 'button' })).toBeNull();
+    });
+});
+
 describe('ordonnance dans la liste de médicaments', () => {
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
     const emergencyProps = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };

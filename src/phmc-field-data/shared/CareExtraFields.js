@@ -190,7 +190,7 @@ export const EmergencyDischargeFields = ({ formData, setFormData, handleChange }
     <>
         <Form.Label className="form-section-title">Sortie et soins systématiques</Form.Label>
         <div style={row}>
-            <Field label="Orientation de sortie" basis={260}><Choice name="dischargeDestination" formData={formData} handleChange={handleChange} options={DISCHARGE_DESTINATIONS} placeholder="Où va le patient ?" /></Field>
+            {formData.careDeceased !== 'Yes' && <Field label="Orientation de sortie" basis={260}><Choice name="dischargeDestination" formData={formData} handleChange={handleChange} options={DISCHARGE_DESTINATIONS} placeholder="Où va le patient ?" /></Field>}
             {formData.dischargeDestination === 'Transfer' && (
                 <Field label="Établissement de transfert" basis={240}><Form.Control type="text" name="transferTo" value={formData.transferTo || ''} onChange={handleChange} placeholder="Établissement" className="form-control" /></Field>
             )}

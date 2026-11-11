@@ -52,7 +52,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
 
     // Valeurs connues seulement au moment du clic : l'heure, et la catégorie d'oxygène sanguin (liste de la base, choisie d'après la saturation proposée).
     const extraFor = (sug, data) => ({ now: currentTime(), appointmentTime: data.appointmentTime || '', bloodOxy: pickNumericOption(bloodOxyOptions, sug.vitals.values.spo2) });
-    const sections = sectionsFor(mode);
+    const sections = sectionsFor(mode, { deceased: formData.careDeceased === 'Yes' });
     const apply = (key) => {
         if (!suggestions) return;
         setFormData((prev) => applySection(prev, key, suggestions, { overwrite, mode, extra: extraFor(suggestions, prev) }));

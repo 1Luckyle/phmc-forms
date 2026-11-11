@@ -4,6 +4,7 @@
 import { entryText, prescriptionText, addDaysIso } from './engine';
 import { todayIso } from '../utils/appointmentDate';
 import { addMinutes, examKeyOfImaging } from './context';
+import { isDeceased } from '../constants/careFormOptions';
 
 const isEmpty = (value) => (Array.isArray(value) ? value.length === 0 : value === undefined || value === null || String(value).trim() === '');
 
@@ -20,7 +21,9 @@ export const SECTIONS = [
     { key: 'meds', label: 'Médicaments', hint: 'Ajoute les médicaments proposés à la liste ci-dessous (doses calculées pour ce patient).' },
     { key: 'outcome', label: 'Orientation', hint: 'Admission, suivi, orientation de sortie et conseils.' },
 ];
-export const sectionsFor = (mode) => SECTIONS.filter((section) => !section.modes || section.modes.includes(mode));
+// Patient décédé : plus d'orientation de sortie, d'admission, de suivi ni de conseils.
+const DECEASED_SKIPPED_SECTIONS = ['outcome'];
+export const sectionsFor = (mode, { deceased = false } = {}) => SECTIONS.filter((section) => (!section.modes || section.modes.includes(mode)) && !(deceased && DECEASED_SKIPPED_SECTIONS.includes(section.key)));
 
 // Imagerie suggérée → examens à prescrire de la consultation générale (constants/careFormOptions.js : EXAMS_ORDERED).
 const EXAM_OF_IMAGING = { XRay: 'Xray', CTScan: 'Ct', MRI: 'Mri', Ultrasound: 'Ultrasound' };
@@ -104,7 +107,7 @@ export const applySection = (prev, key, suggestions, { overwrite = false, mode =
 
 /** Tout appliquer d'un coup. */
 export const applyAll = (prev, suggestions, overwrite = false, mode = 'emergency', extra = {}) => (
-    sectionsFor(mode).reduce((next, { key }) => applySection(next, key, suggestions, { overwrite, mode, extra }), prev)
+    sectionsFor(mode, { deceased: isDeceased(prev) }).reduce((next, { key }) => applySection(next, key, suggestions, { overwrite, mode, extra }), prev)
 );
 
 const medEntries = (formData) => (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []);
@@ -113,7 +116,7 @@ const medEntries = (formData) => (Array.isArray(formData.clinicalMeds) ? formDat
 export const clinicalMedLines = (formData) => medEntries(formData).filter((entry) => !entry?.prescribed).map(entryText).filter(Boolean);
 
 /** Lignes de l'ORDONNANCE : les médicaments cochés « sur l'ordonnance », avec leur durée. */
-export const prescriptionLines = (formData) => medEntries(formData).filter((entry) => entry?.prescribed).map(prescriptionText).filter(Boolean);
+export const prescriptionLines = (formData) => (isDeceased(formData) ? [] : medEntries(formData).filter((entry) => entry?.prescribed).map(prescriptionText).filter(Boolean));
 
 /** Ordonnance en texte brut, à recopier telle quelle (en jeu, sur le forum…). Vide si aucun médicament n'est sur l'ordonnance. */
 export const prescriptionPlainText = (formData) => {

@@ -20,6 +20,14 @@ import { labelOf, ASA_CLASSES, POST_OP_MONITORING } from '../../constants/careFo
 
 const GROUPED_OPTIONS = PROCEDURE_GROUPS.map((g) => ({ label: g.label, options: g.options.map((p) => ({ value: p.id, label: p.label, search: [p.label, p.name, ...(p.aliases || [])].join(' ').toLowerCase() })) }));
 const filterProcedures = (option, input) => !input || option.data.search.includes(input.toLowerCase());
+// Patient décédé : ni surveillance post-opératoire, ni médicaments post-opératoires ; le résumé et l'anesthésie ne gardent que ce qui a eu lieu pendant l'intervention.
+const DECEASED_SKIPPED = ['postop', 'meds'];
+const fieldsFor = (fields, key, deceased) => {
+    if (!deceased) return fields[key];
+    if (key === 'anesthesia') return { patientSummaryConsultation: fields.anesthesia.patientSummaryConsultation };
+    if (key === 'summary') return { patientSummary: fields.summary.patientSummary };
+    return fields[key];
+};
 const row = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
 const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
 const ANESTHESIA_LABELS = { General: 'générale', Regional: 'locorégionale', Sedation: 'sédation', Local: 'locale' };
@@ -47,9 +55,11 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
     const selected = ids.map((id) => ({ value: id, label: PROCEDURE_BY_ID[id].label }));
     const setIds = (options) => { setDone(''); setFormData((prev) => ({ ...prev, surgeryProcedureIds: (options || []).map((o) => o.value) })); };
 
+    const deceased = formData.careDeceased === 'Yes';
+    const sectionList = deceased ? SURGERY_SECTIONS.filter((section) => !DECEASED_SKIPPED.includes(section.key)) : SURGERY_SECTIONS;
     const apply = (key) => {
         if (!suggestions) return;
-        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.postOpMeds, overwrite, { prescribed: true }) : applyPatch(prev, suggestions.fields[key], overwrite && key !== 'patient')));
+        setFormData((prev) => (key === 'meds' ? applyMeds(prev, suggestions.postOpMeds, overwrite, { prescribed: true }) : applyPatch(prev, fieldsFor(suggestions.fields, key, deceased), overwrite && key !== 'patient')));
         setDone(`« ${SURGERY_SECTIONS.find((s) => s.key === key).label} » ${overwrite ? 'remplacé' : 'complété'}.`);
     };
     const applyEverything = () => {
@@ -59,9 +69,9 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
             const withPatient = applyPatch(prev, suggestions.fields.patient, false);
             const fresh = buildSurgerySuggestions({ procedureIds: ids, patient: patientFromForm(withPatient), seed, formData: withPatient }) || suggestions;
             let next = withPatient;
-            SURGERY_SECTIONS.forEach(({ key }) => {
+            sectionList.forEach(({ key }) => {
                 if (key === 'patient') return;
-                next = key === 'meds' ? applyMeds(next, fresh.postOpMeds, overwrite, { prescribed: true }) : applyPatch(next, fresh.fields[key], overwrite);
+                next = key === 'meds' ? applyMeds(next, fresh.postOpMeds, overwrite, { prescribed: true }) : applyPatch(next, fieldsFor(fresh.fields, key, deceased), overwrite);
             });
             // Patient décédé pendant l'intervention : le décès se préremplit avec le reste.
             return next.careDeceased === 'Yes' ? applyPatch(next, buildDeathSuggestion({ kind: 'surgery', formData: next, now: currentTime() }), overwrite) : next;
@@ -111,7 +121,7 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
                         <div className="small" style={{ color: '#e3b341', marginBottom: 6 }}>Non proposés : {suggestions.skipped.map((s) => `${MEDICATION_BY_ID[s.medId]?.name || s.medId} (${s.reasons[0]})`).join(' ; ')}</div>
                     )}
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {SURGERY_SECTIONS.map((s) => <Button key={s.key} size="sm" variant="outline-primary" title={s.hint} onClick={() => apply(s.key)}>{s.label}</Button>)}
+                        {sectionList.map((s) => <Button key={s.key} size="sm" variant="outline-primary" title={s.hint} onClick={() => apply(s.key)}>{s.label}</Button>)}
                         <Button size="sm" variant="primary" onClick={applyEverything}><i className="fas fa-wand-magic-sparkles me-1"></i>Tout appliquer</Button>
                     </div>
                     <Form.Check type="checkbox" id="surgeryOverwrite" className="mt-2 small" label="Remplacer ce qui est déjà saisi (sinon seuls les champs vides sont complétés)" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
@@ -119,7 +129,7 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
                 </div>
             )}
 
-            <ClinicalMedications formData={formData} setFormData={setFormData} patient={patient} tags={NO_TAGS} vitals={vitals} title="Médicaments post-opératoires" version={5} />
+            {!deceased && <ClinicalMedications formData={formData} setFormData={setFormData} patient={patient} tags={NO_TAGS} vitals={vitals} title="Médicaments post-opératoires" version={5} />}
         </>
     );
 };

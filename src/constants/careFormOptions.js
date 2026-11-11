@@ -129,3 +129,6 @@ export const DEATH_BODY = list([
 // Champs du décès : `careDeceased` = 'Yes' quand le patient est décédé, les autres ne comptent alors.
 export const DEATH_FIELDS = ['careDeceased', 'careDeathTime', 'careDeathCause', 'careDeathManner', 'careDeathResuscitation', 'careDeathResuscitationNote', 'careDeathFamily', 'careDeathBody'];
 export const DEATH_VERSIONS = [5, 19];
+
+// Patient décédé pendant la prise en charge : prescription, suites, suivi et surveillance post-opératoire n'ont alors plus de sens (voir les formulaires, les assistants et les rapports).
+export const isDeceased = (formData) => !!formData && formData.careDeceased === 'Yes';

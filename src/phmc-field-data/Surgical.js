@@ -18,6 +18,8 @@ const ANESTHESIA_TYPE_OPTIONS = [
 ];
 
 const SURGEON_ROLE = 'Chirurgien(ne)';
+// Les listes de la base portent « Yes » / « No » : affichés en français.
+const YES_NO_LABEL = { Yes: 'Oui', No: 'Non' };
 
 // Équipe chirurgicale. La personne qui remplit le rapport (« signataire », sélectionnée d'office, un administrateur choisit un soignant) le SIGNE :
 //   • si elle est chirurgien(ne), elle est le chirurgien principal ;
@@ -42,6 +44,8 @@ const Surgical = ({
         .map((group) => ({ ...group, options: group.options.filter((option) => Array.isArray(option.roles) && option.roles.includes(SURGEON_ROLE)) }))
         .filter((group) => group.options.length > 0), [careOptions]);
     const signerPool = useMemo(() => (isAdmin ? careStaffOnly(phmcGroupedOptions) : phmcGroupedOptions || []).flatMap((group) => group.options), [isAdmin, phmcGroupedOptions]);
+    // Patient décédé pendant l'intervention : plus de détails d'anesthésie post-opératoire, de surveillance, de consignes ni de suivi.
+    const deceased = formData.careDeceased === 'Yes';
     const signer = formData.phmcEmployee || '';
     const signerOption = signerPool.find((option) => option.value === signer) || null;
     const signerIsSurgeon = !!signerOption && Array.isArray(signerOption.roles) && signerOption.roles.includes(SURGEON_ROLE);
@@ -193,7 +197,7 @@ const Surgical = ({
     >
         <option value="" disabled>Patient consentant?</option>
         {patientConsent.map((option) => (
-            <option key={option.value} value={option.value}>{option.value}</option>
+            <option key={option.value} value={option.value}>{YES_NO_LABEL[option.value] || option.label || option.value}</option>
         ))}
     </Form.Select>        
     <Form.Select
@@ -212,7 +216,7 @@ const Surgical = ({
     >
         <option value="" disabled>Complications chirurgicales?</option>
         {complications.map((option) => (
-            <option key={option.value} value={option.value}>{option.value}</option>
+            <option key={option.value} value={option.value}>{YES_NO_LABEL[option.value] || option.label || option.value}</option>
         ))}
     </Form.Select>
     <Form.Select
@@ -231,7 +235,7 @@ const Surgical = ({
     >
         <option value="" disabled>Procédure réussie?</option>
         {procedureGood.map((option) => (
-            <option key={option.value} value={option.value}>{option.value}</option>
+            <option key={option.value} value={option.value}>{YES_NO_LABEL[option.value] || option.label || option.value}</option>
         ))}
     </Form.Select>
     </div>
@@ -270,19 +274,21 @@ const Surgical = ({
             rows="2"
             className="form-control"
         />
-        <Form.Control
-            as="textarea"
-            name="patientAddress"
-            value={formData.patientAddress}
-            onChange={handleChange}
-            rows="2"
-            className="form-control"
-            placeholder="Détails de l'anesthésie post-opératoire (réveil, surveillance)"
-        />
+        {!deceased && (
+            <Form.Control
+                as="textarea"
+                name="patientAddress"
+                value={formData.patientAddress}
+                onChange={handleChange}
+                rows="2"
+                className="form-control"
+                placeholder="Détails de l'anesthésie post-opératoire (réveil, surveillance)"
+            />
+        )}
 
-        <PostOpFields formData={formData} handleChange={handleChange} />
+        {!deceased && <PostOpFields formData={formData} handleChange={handleChange} />}
 
-        <Form.Label className="form-section-title">Résumé de la procédure et suites</Form.Label>
+        <Form.Label className="form-section-title">{deceased ? 'Résumé de la procédure' : 'Résumé de la procédure et suites'}</Form.Label>
         <Form.Control
             as="textarea"
             name="patientSummary"
@@ -292,15 +298,17 @@ const Surgical = ({
             className="form-control"
             placeholder="Résumé de la procédure chirurgicale"
         />
-        <Form.Control
-            as="textarea"
-            rows={2}
-            name="surgeryPostOpInstructions"
-            value={formData.surgeryPostOpInstructions || ''}
-            onChange={handleChange}
-            placeholder="Consignes post-opératoires, traitements prescrits et suivi prévu"
-            className="form-control"
-        />
+        {!deceased && (
+            <Form.Control
+                as="textarea"
+                rows={2}
+                name="surgeryPostOpInstructions"
+                value={formData.surgeryPostOpInstructions || ''}
+                onChange={handleChange}
+                placeholder="Consignes post-opératoires, traitements prescrits et suivi prévu"
+                className="form-control"
+            />
+        )}
 </>
     );
 };

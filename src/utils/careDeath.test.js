@@ -94,7 +94,7 @@ describe('remplissage debug : deux scénarios', () => {
             expect(dead).toMatchObject({ careDeceased: 'Yes', careDeathTime: '15:12', careDeathResuscitation: 'Attempted', careDeathBody: 'Coroner' });
             expect(validateCareExtras(version, dead)).toEqual([]);
         });
-        expect(getDebugTemplate(19, {}, 'death')).toMatchObject({ dischargeDestination: 'Death', admission: 'No' });
+        expect(getDebugTemplate(19, {}, 'death')).toMatchObject({ dischargeDestination: 'Death' });
         // Les autres formulaires ne reçoivent aucun champ de décès.
         expect(getDebugTemplate(20, {}, 'death').careDeceased).toBeUndefined();
     });

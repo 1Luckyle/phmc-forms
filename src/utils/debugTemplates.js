@@ -940,7 +940,7 @@ const deathScenario = (version, scenario) => {
         careDeathResuscitationNote: '[TEST] Massage cardiaque, intubation et adrénaline pendant 25 minutes, sans retour à une activité circulatoire spontanée.',
         careDeathFamily: 'ToInform',
         careDeathBody: 'Coroner',
-        ...(surgery ? {} : { dischargeDestination: 'Death', admission: 'No' }),
+        ...(surgery ? {} : { dischargeDestination: 'Death' }),
     };
 };
 export const getDebugTemplate = (version, ctx, scenario = '') => {

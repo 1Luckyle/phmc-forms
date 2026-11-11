@@ -29,6 +29,8 @@ const generateSurgicalOps = (formData) => {
         patientSummary = NOT_FILLED,
         surgeryProcedures = NOT_FILLED
     } = formData;
+    // Patient décédé pendant l'intervention : ni détails d'anesthésie post-opératoire, ni surveillance, ni consignes ou suivi (le décès a sa propre section).
+    const deceased = formData.careDeceased === 'Yes';
     const extraStaffNames = Array.isArray(extraStaff) ? extraStaff.join(', ') : extraStaff;
 
     let bbCode = `${careHeader({ title: "RAPPORT CHIRURGICAL", pbc: false, lines: `PATIENT ${patientName}${patientID ? ` (ID: ${patientID})` : ''}
@@ -84,9 +86,9 @@ ${sectionBanner(`Rapport post-anesthésie`)}
 [tr][td]Type et dosage d'anesthésie administrée[/td][td] ${patientSummaryConsultation}
 [/td][/tr]
 
-[tr][td]Détails d'anesthésie post-opératoire[/td][td]${patientAddress}
+${deceased ? '' : `[tr][td]Détails d'anesthésie post-opératoire[/td][td]${patientAddress}
 [/td][/tr]
-
+`}
 [/table]
 
 ${deathBBCode(formData)}${postOpBBCode(formData)}${sectionBanner(`Résumé de la procédure chirurgicale`)}
@@ -95,7 +97,7 @@ ${deathBBCode(formData)}${postOpBBCode(formData)}${sectionBanner(`Résumé de la
 [tr][td]
 ${patientSummary}
 [/td][/tr]
-${formData.surgeryPostOpInstructions ? `
+${!deceased && formData.surgeryPostOpInstructions ? `
 [tr][td][b]Consignes post-opératoires et suivi[/b][br][/br]
 ${formData.surgeryPostOpInstructions}
 [/td][/tr]` : ''}

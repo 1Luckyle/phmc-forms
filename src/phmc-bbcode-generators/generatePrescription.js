@@ -13,7 +13,7 @@ import { CARE_VISIT_LABELS } from '../utils/careVisitSummary';
 const entriesOf = (formData) => (Array.isArray(formData && formData.clinicalMeds) ? formData.clinicalMeds : []);
 
 /** Lignes d'ordonnance exploitables : [{ name, posology, note, start, days, end }]. */
-export const prescriptionRows = (formData) => entriesOf(formData).filter((entry) => entry && entry.prescribed).map(prescriptionParts).filter(Boolean);
+export const prescriptionRows = (formData) => (formData && formData.careDeceased === 'Yes' ? [] : entriesOf(formData)).filter((entry) => entry && entry.prescribed).map(prescriptionParts).filter(Boolean);
 
 export const hasPrescription = (formData) => prescriptionRows(formData).length > 0;
 

@@ -59,6 +59,7 @@ ${[weight ? `${weight} kg` : '', height ? `${height} cm` : ''].filter(Boolean).j
     return rows.length ? `\n${rows.join('\n')}\n` : '';
 };
 export const postOpBBCode = (f, blue = false) => {
+    if (f.careDeceased === 'Yes') return ''; // patient décédé : pas de surveillance ni de suites post-opératoires
     const medLines = clinicalMedLines(f);
     const rxLines = prescriptionLines(f);
     if (!filled(f.postOpMonitoring) && !filled(f.postOpExams) && !medLines.length && !rxLines.length) return '';

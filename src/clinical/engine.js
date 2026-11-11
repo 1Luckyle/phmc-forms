@@ -395,7 +395,8 @@ export const swapAntibiotic = (medId, patient, ctx = {}) => {
 
 /** Avertissements (non bloquants) d'un rapport : prescriptions incohérentes. */
 export const clinicalWarnings = (formData = {}) => {
-    const entries = Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : [];
+    // Patient décédé : l'ordonnance n'existe plus, ses lignes ne déclenchent aucune alerte.
+    const entries = (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []).filter((entry) => !(formData.careDeceased === 'Yes' && entry && entry.prescribed));
     if (!entries.length) return [];
     const patient = patientFromForm(formData);
     const conditions = conditionsOf(formData.clinicalConditions);

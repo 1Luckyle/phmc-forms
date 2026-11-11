@@ -30,7 +30,10 @@ const Messages = ({ messages }) => messages.filter((m) => m.level !== 'ok').map(
 const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, title = 'Médicaments administrés ou prescrits', version = 19 }) => {
     const entries = useMemo(() => (Array.isArray(formData.clinicalMeds) ? formData.clinicalMeds : []), [formData.clinicalMeds]);
     const reportDate = (formData.date && addDaysIso(formData.date, 0)) || todayIso();
-    const results = useMemo(() => checkList(entries, { patient, tags, vitals, date: reportDate }), [entries, patient, tags, vitals, reportDate]);
+    // Patient décédé : plus d'ordonnance ; les lignes déjà mises sur l'ordonnance sont masquées (et ignorées dans le rapport), les médicaments administrés restent.
+    const deceased = formData.careDeceased === 'Yes';
+    const rows = useMemo(() => entries.map((entry, index) => ({ entry, index })).filter(({ entry }) => !(deceased && entry.prescribed)), [entries, deceased]);
+    const results = useMemo(() => checkList(rows.map((row) => row.entry), { patient, tags, vitals, date: reportDate }), [rows, patient, tags, vitals, reportDate]);
     const setEntries = (updater) => setFormData((prev) => ({ ...prev, clinicalMeds: updater(Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : []) }));
     const update = (index, patch) => setEntries((list) => list.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
     const remove = (index) => setEntries((list) => list.filter((_, i) => i !== index));
@@ -47,13 +50,13 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
     return (
         <>
             <Form.Label className="form-section-title">{title}</Form.Label>
-            {entries.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez {ASSISTANT_LABEL} proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
-            {entries.map((entry, index) => {
+            {rows.length === 0 && <div className="helper-text" data-no-tip="1" style={{ marginBottom: '0.5rem' }}>Aucun médicament. Ajoutez-en depuis la liste, ou laissez {ASSISTANT_LABEL} proposer ceux du motif choisi. Les doses proposées sont calculées pour l'âge et le poids du patient.</div>}
+            {rows.map(({ entry, index }, position) => {
                 const med = MEDICATION_BY_ID[entry.medId];
                 const regimen = regimenOf(entry.medId, entry.regimenId);
                 if (!med || !regimen) return null;
                 const opts = doseOptions(entry.medId, entry.regimenId, patient);
-                const result = results.entries[index];
+                const result = results.entries[position];
                 const border = result.level === 'error' ? '#ff7b72' : result.level === 'warn' ? '#e3b341' : '#30363d';
                 return (
                     <div key={`${entry.medId}-${index}`} style={{ border: `1px solid ${border}`, borderRadius: 8, padding: '0.6rem 0.75rem', marginBottom: '0.6rem', background: '#101923' }}>
@@ -91,27 +94,29 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                                 ))}
                             </div>
                         )}
-                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-                            <Form.Check type="checkbox" id={`rx-${index}`} className="small" label="Sur l'ordonnance (traitement à poursuivre après la sortie)" checked={!!entry.prescribed} onChange={(e) => update(index, e.target.checked ? { prescribed: true, startDate: entry.startDate || defaultStartDate(entry, entries, reportDate) } : { prescribed: false })} />
-                            {entry.prescribed && (
-                                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <span className="small text-muted">Début</span>
-                                    <Form.Control type="date" value={entry.startDate || ''} onChange={(e) => update(index, { startDate: e.target.value })} title="Date de début du traitement" className="form-control" style={{ maxWidth: 160 }} />
-                                    <Button size="sm" variant={entry.startDate === reportDate ? 'primary' : 'outline-secondary'} onClick={() => update(index, { startDate: reportDate })} title="Le traitement commence le jour du rapport">Aujourd'hui</Button>
-                                    <Button size="sm" variant={entry.startDate === addDaysIso(reportDate, 1) ? 'primary' : 'outline-secondary'} onClick={() => update(index, { startDate: addDaysIso(reportDate, 1) })} title="Le traitement commence le lendemain (déjà administré aujourd'hui)">Demain</Button>
-                                </div>
-                            )}
-                            {entry.prescribed && (
-                                <Form.Control type="number" min="1" max="90" value={entry.days ?? ''} onChange={(e) => update(index, { days: e.target.value === '' ? '' : Math.max(1, Math.min(90, Number(e.target.value))) })} placeholder="Durée (jours)" title="Durée du traitement, en jours" className="form-control" style={{ maxWidth: 150 }} />
-                            )}
-                        </div>
+                        {!deceased && (
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+                                <Form.Check type="checkbox" id={`rx-${index}`} className="small" label="Sur l'ordonnance (traitement à poursuivre après la sortie)" checked={!!entry.prescribed} onChange={(e) => update(index, e.target.checked ? { prescribed: true, startDate: entry.startDate || defaultStartDate(entry, entries, reportDate) } : { prescribed: false })} />
+                                {entry.prescribed && (
+                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <span className="small text-muted">Début</span>
+                                        <Form.Control type="date" value={entry.startDate || ''} onChange={(e) => update(index, { startDate: e.target.value })} title="Date de début du traitement" className="form-control" style={{ maxWidth: 160 }} />
+                                        <Button size="sm" variant={entry.startDate === reportDate ? 'primary' : 'outline-secondary'} onClick={() => update(index, { startDate: reportDate })} title="Le traitement commence le jour du rapport">Aujourd'hui</Button>
+                                        <Button size="sm" variant={entry.startDate === addDaysIso(reportDate, 1) ? 'primary' : 'outline-secondary'} onClick={() => update(index, { startDate: addDaysIso(reportDate, 1) })} title="Le traitement commence le lendemain (déjà administré aujourd'hui)">Demain</Button>
+                                    </div>
+                                )}
+                                {entry.prescribed && (
+                                    <Form.Control type="number" min="1" max="90" value={entry.days ?? ''} onChange={(e) => update(index, { days: e.target.value === '' ? '' : Math.max(1, Math.min(90, Number(e.target.value))) })} placeholder="Durée (jours)" title="Durée du traitement, en jours" className="form-control" style={{ maxWidth: 150 }} />
+                                )}
+                            </div>
+                        )}
                         {regimen.note && <div className="small text-muted" style={{ marginTop: 4 }}>{regimen.note}{regimen.maxDaily ? ` Maximum ${formatNumber(regimen.maxDaily)} ${regimen.unit}/24 h.` : ''}</div>}
                         <Messages messages={result.messages} />
                     </div>
                 );
             })}
             <Messages messages={results.list} />
-            {entries.length > 0 && (
+            {!deceased && entries.length > 0 && (
                 <div style={{ border: '1px solid #30363d', borderRadius: 8, padding: '0.6rem 0.75rem', margin: '0.4rem 0 0.6rem', background: '#101923' }} data-no-tip="1">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <strong><i className="fas fa-file-prescription me-1"></i>Ordonnance</strong>

@@ -19,7 +19,8 @@ const ANESTHESIA = { General: 'générale', Regional: 'locorégionale', Local: '
 const clean = (value, max = 240) => String(value ?? '').replace(/\[|\]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 const medicationNames = (f) => {
-    const names = (Array.isArray(f.clinicalMeds) ? f.clinicalMeds : []).map((entry) => MEDICATION_BY_ID[entry && entry.medId]?.name).filter(Boolean);
+    // Patient décédé : seuls les médicaments administrés comptent (pas d'ordonnance).
+    const names = (Array.isArray(f.clinicalMeds) ? f.clinicalMeds : []).filter((entry) => !(f.careDeceased === 'Yes' && entry && entry.prescribed)).map((entry) => MEDICATION_BY_ID[entry && entry.medId]?.name).filter(Boolean);
     return [...new Set(names)].slice(0, 8).join(', ');
 };
 

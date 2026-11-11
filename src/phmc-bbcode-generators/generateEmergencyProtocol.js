@@ -74,6 +74,26 @@ const generateEmergencyProtocol = (formData) => {
         }
     }
 
+    // Patient décédé : ni admission, ni traitement ou ordonnance à poursuivre, ni suivi (le décès a sa propre section, voir deathBBCode).
+    const deceased = formData.careDeceased === 'Yes';
+    const admissionBlock = deceased ? '' : `[u]Admission: [/u][br][/br]
+${checkbox(formData.admission === 'Yes')} Oui
+${checkbox(formData.admission === 'No')} Non
+[br][/br]
+`;
+    const treatmentsBlock = deceased ? '' : `[u]Médicaments/Traitements: [/u][br][/br]
+${patientMedicine || 'N/A'}
+[br][/br]
+${prescriptionImageBBCode ? `${prescriptionImageBBCode}
+[br][/br]
+` : ''}`;
+    const followupBlock = deceased ? '' : `[u]Suivi: [/u][br][/br]
+${checkbox(formData.followup === 'AsNeeded')} Au besoin
+${checkbox(formData.followup === 'Recommended')} Recommandé
+${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
+
+`;
+
     let bbCode = `${careHeader({ title: "PROTOCOLE D'URGENCE", pbc: false, lines: `PATIENT: ${patientName || 'N/A'}
 ID PATIENT: ${patientID || 'N/A'}
 
@@ -111,24 +131,10 @@ ${patientDiagnosis || 'N/A'}
 [br][/br][u]Diagnostic secondaire: [/u][br][/br]
 ${patientSecondaryDiagnosis || 'N/A'}[/left][/list][/table]
 ${sectionBanner(`Thérapie`)}
-[table][tr][td][left][list=none][u]Admission: [/u][br][/br]
-${checkbox(formData.admission === 'Yes')} Oui
-${checkbox(formData.admission === 'No')} Non
-[br][/br]
-[u]Procédure/Texte libre: [/u][br][/br]
+[table][tr][td][left][list=none]${admissionBlock}[u]Procédure/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-${clinicalMedsBBCode(formData)}[u]Médicaments/Traitements: [/u][br][/br]
-${patientMedicine || 'N/A'}
-[br][/br]
-${prescriptionImageBBCode ? `${prescriptionImageBBCode}
-[br][/br]
-` : ''}${emergencyExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]
-${checkbox(formData.followup === 'AsNeeded')} Au besoin
-${checkbox(formData.followup === 'Recommended')} Recommandé
-${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
-
-[/left][/list][/table]
+${clinicalMedsBBCode(formData)}${treatmentsBlock}${emergencyExtrasBBCode(formData)}${followupBlock}[/left][/list][/table]
 ${deathBBCode(formData)}`;
     return bbCode;
 };

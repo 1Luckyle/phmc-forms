@@ -199,6 +199,8 @@ const EmergencyForm = ({
         ...newFormDataSlice
     }));
 };
+    // Patient décédé : plus d'admission, de traitement à poursuivre, d'ordonnance ni de suivi.
+    const deceased = formData.careDeceased === 'Yes';
     return (
         <>
             {/* ... (Your existing form fields up to the Findings section) ... */}
@@ -427,18 +429,22 @@ const EmergencyForm = ({
 
             <Form.Label className="form-section-title">Thérapie et sortie</Form.Label>
             <Form.Control as="textarea" name="patientProcedure" value={formData.patientProcedure} onChange={handleChange} rows="3" placeholder="Procédures effectuées sur le patient" className="form-control" />
-            <Form.Select name="admission" value={formData.admission} onChange={handleChange} className="form-control">
-                <option value="" disabled>Patient admis?</option>
-                {admission.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-            </Form.Select>
-            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Autres traitements, conseils verbaux et recommandations (les médicaments se saisissent dans la liste de l'assistant clinique)" className={`form-control mb-2 `} />
-                {/* Le suivi se renseigne que le patient soit admis ou non (le BBCode l'imprime dans les deux cas). */}
-                <Form.Select name="followup" value={formData.followup || ''} onChange={handleChange} className="form-control">
-                    <option value="" disabled>Suivi requis?</option>
-                    {(followup || []).map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+            {!deceased && (
+                <Form.Select name="admission" value={formData.admission} onChange={handleChange} className="form-control">
+                    <option value="" disabled>Patient admis?</option>
+                    {admission.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
                 </Form.Select>
-            </div>
+            )}
+            {!deceased && (
+                <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                    <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Autres traitements, conseils verbaux et recommandations (les médicaments se saisissent dans la liste de l'assistant clinique)" className={`form-control mb-2 `} />
+                    {/* Le suivi se renseigne que le patient soit admis ou non (le BBCode l'imprime dans les deux cas). */}
+                    <Form.Select name="followup" value={formData.followup || ''} onChange={handleChange} className="form-control">
+                        <option value="" disabled>Suivi requis?</option>
+                        {(followup || []).map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                    </Form.Select>
+                </div>
+            )}
 
             <EmergencyDischargeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
