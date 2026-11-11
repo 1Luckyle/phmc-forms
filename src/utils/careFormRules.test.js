@@ -120,4 +120,19 @@ describe('BBCode des champs ajoutés', () => {
         expect(bb).toContain('ECG, Bilan sanguin : À jeun');
         expect(bb).toContain('Arrêt de travail: [/u] Oui, 3 jour(s)');
     });
+    test("urgences : motifs, poids et taille, médicaments de l'assistant clinique", () => {
+        const bb = generateEmergencyProtocol({
+            ...base, patientWeight: '75', patientHeight: '1,78 m', clinicalConditions: ['fracture_fermee', 'plaie_superficielle'], clinicalSeverity: 'Severe',
+            clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '' }, { medId: 'morphine', regimenId: 'iv', dose: 3, count: 1, note: 'titration' }],
+        });
+        expect(bb).toContain("[u]Motifs de prise en charge: [/u] Fracture fermée d'un membre, Plaie superficielle / coupure (gravité : sévère)");
+        expect(bb).toContain('[u]Poids / taille: [/u] 75 kg / 178 cm');
+        expect(bb).toContain('[u]Médicaments administrés: [/u]');
+        expect(bb).toContain('• Paracétamol 1 000 mg — PO, 3 prises/24 h (toutes les 6 h)');
+        expect(bb).toContain('• Morphine 3 mg — IV (titration) (titration)');
+        // un ancien rapport s'imprime comme avant
+        const old = generateEmergencyProtocol(base);
+        expect(old).not.toContain('Motifs de prise en charge');
+        expect(old).not.toContain('Médicaments administrés');
+    });
 });

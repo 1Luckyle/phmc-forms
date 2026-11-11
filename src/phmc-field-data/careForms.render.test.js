@@ -184,3 +184,61 @@ describe('champs ajoutés aux formulaires de soins', () => {
         expect(screen.getByText(/mis à jour lors de cette consultation/)).toBeTruthy();
     });
 });
+
+describe("assistant clinique du protocole d'urgence", () => {
+    const props = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] };
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const patient = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', patientHeight: '178', clinicalConditions: ['fracture_fermee'], clinicalSeverity: 'Moderate', patientID: 'PHMC-2752', date: '2026-11-11' };
+
+    test('sans motif : poids, taille, gravité et liste de médicaments, aucune suggestion', () => {
+        render(<Harness Component={EmergencyForm} initial={{ patientAgeYears: '35' }} extra={props} />);
+        expect(screen.getByText('Assistant clinique')).toBeTruthy();
+        expect(document.querySelector('input[name="patientWeight"]')).toBeTruthy();
+        expect(screen.queryByText('Tout appliquer')).toBeNull();
+        expect(screen.getByText('Médicaments administrés ou prescrits')).toBeTruthy();
+    });
+
+    test('un motif propose des suggestions, appliquées seulement au clic, sans écraser un champ rempli', async () => {
+        render(<Harness Component={EmergencyForm} initial={{ ...patient, patientDiagnosis: 'Diagnostic du soignant' }} extra={props} />);
+        expect(screen.getByText(/Suggestions/)).toBeTruthy();
+        expect(stateOf().heartRateValue).toBeUndefined();
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        const state = stateOf();
+        expect(state.patientDiagnosis).toBe('Diagnostic du soignant');
+        expect(state.patientChiefComplaint).toMatch(/impotence/);
+        expect(Number(state.heartRateValue)).toBeGreaterThan(40);
+        expect(state.bloodPressureValue).toMatch(/^\d{2,3}\/\d{2,3}$/);
+        expect(state.painLevel).toBe('patientMildPain');
+        expect(state.Imaging).toEqual(['XRay']);
+        expect(state.clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol', 'ketoprofene']);
+        expect(state.clinicalMeds[0]).toMatchObject({ regimenId: 'po', dose: 1000 });
+    });
+
+    test('« Remplacer » écrase les champs déjà saisis', async () => {
+        render(<Harness Component={EmergencyForm} initial={{ ...patient, patientDiagnosis: 'Ancien' }} extra={props} />);
+        await act(async () => { screen.getByLabelText(/Remplacer ce qui est déjà saisi/).click(); });
+        await act(async () => { screen.getByText('Diagnostic', { selector: 'button' }).click(); });
+        expect(stateOf().patientDiagnosis).toMatch(/Fracture fermée/);
+    });
+
+    test("allergie : le médicament concerné n'est pas proposé et la raison s'affiche", async () => {
+        render(<Harness Component={EmergencyForm} initial={{ ...patient, patientAllergies: 'Allergique aux AINS' }} extra={props} />);
+        expect(screen.getByText(/Non proposés/).textContent).toMatch(/Kétoprofène.*Allergie/);
+        await act(async () => { screen.getByText('Médicaments', { selector: 'button' }).click(); });
+        expect(stateOf().clinicalMeds.map((m) => m.medId)).toEqual(['paracetamol']);
+    });
+
+    test('alertes en direct sur une dose trop forte, sans bloquer', () => {
+        const meds = [{ medId: 'paracetamol', regimenId: 'po', dose: 2000, count: 1, note: '' }];
+        render(<Harness Component={EmergencyForm} initial={{ ...patient, clinicalConditions: [], clinicalMeds: meds }} extra={props} />);
+        expect(screen.getByText(/Dose maximale d'une prise dépassée/)).toBeTruthy();
+        expect(screen.getByText('Paracétamol')).toBeTruthy();
+        const { container } = render(<FormChecklist version={19} formData={{ ...patient, clinicalMeds: meds }} />);
+        expect(container.textContent).toContain("Dose maximale d'une prise dépassée");
+    });
+
+    test('enfant sans poids : rappel', () => {
+        render(<Harness Component={EmergencyForm} initial={{ patientAgeYears: '6' }} extra={props} />);
+        expect(screen.getByText(/moins de 15 ans/)).toBeTruthy();
+    });
+});

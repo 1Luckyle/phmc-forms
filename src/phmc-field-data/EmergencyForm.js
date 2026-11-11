@@ -4,6 +4,7 @@ import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
 import { EmergencyTimingFields, EmergencyDischargeFields } from './shared/CareExtraFields';
+import ClinicalAssistant from './shared/ClinicalAssistant';
 import { ARRIVAL_MODES } from '../constants/careFormOptions';
 
 // Modes d'arrivée : constants/careFormOptions.js (à pied, véhicule personnel, ambulance, hélicoptère, forces de l'ordre, transfert).
@@ -205,6 +206,8 @@ const EmergencyForm = ({
             <CareFormHeader formData={formData} setFormData={setFormData} handleChange={handleChange} phmcGroupedOptions={phmcGroupedOptions} unrestrictedPhmcGroupedOptions={unrestrictedPhmcGroupedOptions} />
 
             <PatientContextFields formData={formData} setFormData={setFormData} handleChange={handleChange} allergiesRequired={false} />
+
+            <ClinicalAssistant formData={formData} setFormData={setFormData} handleChange={handleChange} />
 
             <Form.Label className="form-section-title">Arrivée aux urgences</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -429,7 +432,7 @@ const EmergencyForm = ({
                 {admission.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
             </Form.Select>
             <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Médicaments / traitements administrés ou prescrits, conseils verbaux et recommandations" className={`form-control mb-2 `} />
+                <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Autres traitements, conseils verbaux et recommandations (les médicaments se saisissent dans la liste de l'assistant clinique)" className={`form-control mb-2 `} />
                 {/* Le suivi se renseigne que le patient soit admis ou non (le BBCode l'imprime dans les deux cas). */}
                 <Form.Select name="followup" value={formData.followup || ''} onChange={handleChange} className="form-control">
                     <option value="" disabled>Suivi requis?</option>

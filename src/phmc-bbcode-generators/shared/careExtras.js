@@ -8,6 +8,10 @@ import {
     DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, REFERRAL_REASONS, ARRIVAL_MODES,
 } from '../../constants/careFormOptions';
 import { minutesBetween, durationLabel, aptitudeValidUntil } from '../../utils/careFormRules';
+import { CONDITION_BY_ID } from '../../clinical/conditions';
+import { severityOf } from '../../clinical/vitals';
+import { parseWeightKg, parseHeightCm } from '../../clinical/engine';
+import { clinicalMedLines } from '../../clinical/apply';
 
 const filled = (value) => (Array.isArray(value) ? value.length > 0 : String(value ?? '').trim() !== '');
 const text = (value) => String(value ?? '').trim();
@@ -118,4 +122,22 @@ export const consultExtrasBBCode = (f) => {
     const stoppage = f.workStoppage === 'Yes' ? `Oui, ${Number(f.workStoppageDays) || '?'} jour(s)` : (f.workStoppage === 'No' ? 'Non' : '');
     const lines = joinLines([line('Service orienté après consultation', service), line('Examens complémentaires prescrits', exams), line('Arrêt de travail', stoppage)]);
     return lines ? `${lines}\n[br][/br]\n` : '';
+};
+
+// ── Protocole d'urgence : assistant clinique ──
+// Motifs de prise en charge (avec la gravité) et poids / taille, dans l'anamnèse. Vide si rien n'est renseigné.
+export const clinicalAnamnesisBBCode = (f) => {
+    const labels = (Array.isArray(f.clinicalConditions) ? f.clinicalConditions : []).map((id) => CONDITION_BY_ID[id]?.label).filter(Boolean);
+    const weight = parseWeightKg(f.patientWeight);
+    const height = parseHeightCm(f.patientHeight);
+    const body = [
+        labels.length ? line('Motifs de prise en charge', `${labels.join(', ')} (gravité : ${severityOf(f.clinicalSeverity).label.toLowerCase()})`) : '',
+        weight || height ? line('Poids / taille', [weight ? `${weight} kg` : '', height ? `${height} cm` : ''].filter(Boolean).join(' / ')) : '',
+    ].filter(Boolean);
+    return body.length ? `${body.join('\n[br][/br]')}\n[br][/br]\n` : '';
+};
+// Médicaments de la liste de l'assistant (dose, voie, prises), dans la thérapie.
+export const clinicalMedsBBCode = (f) => {
+    const lines = clinicalMedLines(f);
+    return lines.length ? `[u]Médicaments administrés: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
 };

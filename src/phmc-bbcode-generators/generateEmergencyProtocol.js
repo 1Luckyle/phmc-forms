@@ -3,7 +3,7 @@ import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 import { checkbox, phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
-import { emergencyExtrasBBCode, arrivalModeLabel } from './shared/careExtras';
+import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
 
 const generateEmergencyProtocol = (formData) => {
     const {
@@ -78,7 +78,7 @@ ${phmcHeaderEnd()}
 ${buildPatientContextBBCode(formData)}${sectionBanner(`Anamnèse`)}
 [table][tr][td][left][list=none][u]Arrivée: [/u] ${arrivalModeLabel(formData.arrivalMode) || ARRIVAL_MODE_LABELS[formData.arrivalMode] || 'N/A'}${formData.arrivalTime ? ` à ${formData.arrivalTime}` : ''}
 [br][/br]
-[u]Plainte principale: [/u][br][/br]
+${clinicalAnamnesisBBCode(formData)}[u]Plainte principale: [/u][br][/br]
 ${patientChiefComplaint || 'N/A'}
 
 [u] Mécanisme de blessure du patient: [/u][br][/br]
@@ -113,7 +113,7 @@ ${checkbox(formData.admission === 'No')} Non
 [u]Procédure/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-[u]Médicaments/Traitements: [/u][br][/br]
+${clinicalMedsBBCode(formData)}[u]Médicaments/Traitements: [/u][br][/br]
 ${patientMedicine || 'N/A'}
 [br][/br]
 ${prescriptionImageBBCode ? `${prescriptionImageBBCode}

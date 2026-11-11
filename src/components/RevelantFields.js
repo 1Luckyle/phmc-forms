@@ -476,7 +476,7 @@ const CARE_COMMON_EXTRA = ['appointmentTime', 'referralReason', 'referralOther',
 const SURGERY_EXTRA = ['surgeonEmployee', 'surgeryCharacter', 'surgeryAsa', 'postOpMonitoring', 'postOpExams'];
 const APTITUDE_EXTRA = ['evalReason', 'aptitudeConclusion', 'aptitudeRestrictions', 'aptitudeValidityMonths', 'visualAcuity', 'hearingValue', 'vaccinationState', 'vaccinationNote'];
 const MENTAL_EXTRA = ['riskSuicide', 'riskDanger', 'riskAction', 'riskActionNote', 'involuntaryHold', 'patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord'];
-const EMERGENCY_EXTRA = ['careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare'];
+const EMERGENCY_EXTRA = ['careStartTime', 'careEndTime', 'dischargeDestination', 'transferTo', 'routineCare', 'patientWeight', 'patientHeight', 'clinicalConditions', 'clinicalSeverity', 'clinicalMeds'];
 const CONSULT_EXTRA = ['orientedService', 'orientedServiceOther', 'examsOrdered', 'examsOrderedNote', 'workStoppage', 'workStoppageDays'];
 const CARE_VERSION_EXTRA = {
     5: SURGERY_EXTRA, 6: APTITUDE_EXTRA, 7: APTITUDE_EXTRA, 14: MENTAL_EXTRA, 16: MENTAL_EXTRA, 28: MENTAL_EXTRA, 29: MENTAL_EXTRA, 19: EMERGENCY_EXTRA, 20: CONSULT_EXTRA, 21: CONSULT_EXTRA,

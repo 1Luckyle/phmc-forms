@@ -115,6 +115,7 @@ export const VERSION_FIELDS = {
         patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea', patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         careStartTime: 'time', careEndTime: 'time', dischargeDestination: 'select', transferTo: 'text', routineCare: 'select',
+        patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
     },
     20: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
