@@ -92,6 +92,7 @@ import { useSiteConfig } from './contexts/SiteConfigContext';
 import ImmersiveHeader from './components/ImmersiveHeader';
 import { exportReportDocument } from './utils/reportDocumentExport';
 import { getRoleInfo, sortKeyOfRank, extraRanksOf, familiesOfMember } from './constants/ranks';
+import { phmcOptionOf } from './utils/staffOptions';
 import { logActivity } from './utils/activityLog';
 import CctvHubModal from './components/Cctv/CctvHubModal';
 import InternalRecruitmentRequest from './components/Recruitment/InternalRecruitmentRequest';
@@ -1412,15 +1413,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                 if (!groups[categoryName]) {
                     groups[categoryName] = [];
                 }
-                groups[categoryName].push({
-                    value: employee.name,
-                    label: employee.name,
-                    category: employee.category,
-                    rank: employee.category || employee.rank || '',
-                    lastName: employee.lastName,
-                    roles: [employee.category || employee.rank, ...extraRanksOf(employee)].filter(Boolean),
-                    families: familiesOfMember(employee, 'phmc')
-                });
+                groups[categoryName].push(phmcOptionOf(employee));
                 return groups;
             }, {})
         ).map(([category, options]) => ({
@@ -1470,13 +1463,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                 if (!groups[categoryName]) {
                     groups[categoryName] = [];
                 }
-                groups[categoryName].push({
-                    value: employee.name,
-                    label: employee.name,
-                    category: employee.category,
-                    lastName: employee.lastName,
-                    families: familiesOfMember(employee, 'phmc')
-                });
+                groups[categoryName].push(phmcOptionOf(employee));
                 return groups;
             }, {})
         ).map(([category, options]) => ({

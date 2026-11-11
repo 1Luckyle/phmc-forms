@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Spinner } from 'react-bootstrap';
 import BaseModal from './BaseModal';
 import { loadDeathSignals, deathSignalSummary, deathSignalFamilyLabel } from '../utils/deathSignals';
-import { DEATH_MANNERS, DEATH_RESUSCITATION, DEATH_BODY, labelOf } from '../constants/careFormOptions';
+import { deathMannerLabel, DEATH_RESUSCITATION, DEATH_BODY, labelOf } from '../constants/careFormOptions';
 
 const card = { border: '1px solid #30363d', borderRadius: 6, padding: '10px 12px', background: '#0d1117', marginBottom: 10 };
 const muted = { color: '#8b949e', fontSize: '0.8rem' };
@@ -15,7 +15,7 @@ const day = (ms) => (ms ? new Date(Number(ms)).toLocaleString() : '');
 export const DeathSignalDetails = ({ signal }) => {
     const lines = [
         signal.cause && ['Cause', signal.cause],
-        signal.nature && ['Nature', labelOf(DEATH_MANNERS, signal.nature)],
+        signal.nature && ['Nature', deathMannerLabel(signal.nature)],
         signal.reanimation && ['Réanimation', labelOf(DEATH_RESUSCITATION, signal.reanimation)],
         signal.famille && ['Famille', deathSignalFamilyLabel(signal.famille)],
         signal.destination && ['Destination du corps', labelOf(DEATH_BODY, signal.destination)],

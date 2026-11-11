@@ -321,7 +321,7 @@ describe('décès du patient (urgences, opération)', () => {
         await act(async () => { screen.getByText(/Préremplir avec Pilou/).click(); });
         const state = stateOf();
         expect(state.careDeathCause).toBe('Cause déjà saisie.');
-        expect(state).toMatchObject({ careDeathManner: 'Undetermined', careDeathBody: 'Coroner' });
+        expect(state).toMatchObject({ careDeathManner: 'CauseUndetermined', careDeathBody: 'Coroner' });
     });
 });
 
@@ -429,6 +429,70 @@ describe("interrupteur « patient décédé » : dans l'assistant Pilou", () => 
     test("consultation générale : pas d'interrupteur (le décès ne concerne que les urgences et l'opération)", () => {
         render(<Harness Component={GeneralConsult} initial={{}} extra={{ ...emergencyProps, assignedDepartment: [], departmentLarge: [] }} />);
         expect(document.getElementById('careDeceased')).toBeNull();
+    });
+});
+
+describe("opération : Pilou remplit toute l'enquête chirurgicale, et la liste des chirurgiens vient de vraies fiches", () => {
+    beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
+    const patient = { patientAgeYears: '35', patientSex: 'Male', patientWeight: '75', patientHeight: '178', surgeryProcedureIds: ['appendicectomie'], patientID: 'PHMC-2752', date: '2026-11-11', phmcEmployee: 'Dr. Interne' };
+
+    test('patient vivant : consentement, complications et réussite de la procédure sont renseignés', async () => {
+        render(<Harness Component={Surgical} initial={patient} />);
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        expect(stateOf()).toMatchObject({ patientConsentOption: 'Yes', patientComplicationOptions: 'No', procedureGoodOptions: 'Yes' });
+        expect(stateOf().patientComplicationsYes).toBeUndefined();
+        expect(stateOf().procedureGoodNo).toBeUndefined();
+    });
+
+    test('un champ déjà choisi par le chirurgien n’est pas écrasé', async () => {
+        render(<Harness Component={Surgical} initial={{ ...patient, patientComplicationOptions: 'Yes', patientComplicationsYes: 'Plaie vasculaire.' }} />);
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        expect(stateOf()).toMatchObject({ patientConsentOption: 'Yes', patientComplicationOptions: 'Yes', patientComplicationsYes: 'Plaie vasculaire.', procedureGoodOptions: 'Yes' });
+    });
+
+    test('patient décédé : le décès d’abord, puis complication fatale, procédure non aboutie (avec leur détail) et résumé interrompu', async () => {
+        render(<Harness Component={Surgical} initial={{ ...patient, careDeceased: 'Yes' }} />);
+        await act(async () => { screen.getByText('Tout appliquer').click(); });
+        const state = stateOf();
+        expect(state).toMatchObject({ careDeathManner: 'CauseUndetermined', careDeathBody: 'Coroner', careDeathResuscitation: 'Attempted', patientConsentOption: 'Yes', patientComplicationOptions: 'Yes', procedureGoodOptions: 'No' });
+        expect(state.careDeathCause).toMatch(/^Décès survenu au cours de l'intervention/);
+        expect(state.patientComplicationsYes).toContain("cause non établie");
+        expect(state.procedureGoodNo).toMatch(/interrompue avant son terme/);
+        expect(state.patientSummary).toContain("Interruption de l'intervention");
+        // Pas de suites pour un patient décédé.
+        expect(state.postOpMonitoring).toBeUndefined();
+        expect(state.surgeryPostOpInstructions).toBeUndefined();
+        expect(state.clinicalMeds).toBeUndefined();
+    });
+
+    test('la nature du décès au bloc est une liste explicite ; aux urgences, la liste générale', () => {
+        const options = (name) => [...document.querySelectorAll(`select[name="${name}"] option`)].map((option) => option.textContent);
+        const { unmount } = render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne', careDeceased: 'Yes' }} />);
+        const surgical = options('careDeathManner');
+        expect(surgical).toEqual(expect.arrayContaining(['Hémorragie peropératoire non contrôlée', "Complication de l'anesthésie (voies aériennes, hémodynamique, produits)", 'Choc anaphylactique peropératoire', "Cause indéterminée (à préciser par l'autopsie)"]));
+        expect(surgical).not.toContain('Mort naturelle (maladie)');
+        expect(screen.getByText('Cause du décès au bloc')).toBeTruthy();
+        unmount();
+        render(<Harness Component={EmergencyForm} initial={{ phmcEmployee: 'Dr. Interne', careDeceased: 'Yes' }} extra={{ admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] }} />);
+        const emergency = options('careDeathManner');
+        expect(emergency).toContain('Mort naturelle (maladie)');
+        expect(emergency).not.toContain('Hémorragie peropératoire non contrôlée');
+    });
+
+    test('chirurgien principal : les chirurgiens sont retrouvés dans la liste construite comme dans l’application (rôle principal ou cumulé)', () => {
+        const { phmcOptionOf } = require('../utils/staffOptions');
+        const fiches = [
+            { name: 'Dr. Rose Callahan', category: 'Médecin Titulaire', lastName: 'Callahan', extraRanks: ['Directeur(trice)', 'Chirurgien(ne)'] },
+            { name: 'Dr. Adrien Valmont', category: 'Médecin Titulaire', lastName: 'Valmont' },
+            { name: 'Paul Martin', category: 'Chirurgien(ne)', lastName: 'Martin' },
+        ];
+        const groups = [{ label: 'Médecin Titulaire', options: fiches.slice(0, 2).map(phmcOptionOf) }, { label: 'Chirurgien(ne)', options: [phmcOptionOf(fiches[2])] }];
+        render(<Harness Component={Surgical} initial={{ phmcEmployee: 'Dr. Interne' }} extra={{ unrestrictedPhmcGroupedOptions: groups }} />);
+        fireEvent.keyDown(screen.getByText(/Sélectionner un chirurgien/), { key: 'ArrowDown', keyCode: 40 });
+        expect(screen.getByText('Dr. Rose Callahan')).toBeTruthy();
+        expect(screen.getByText('Paul Martin')).toBeTruthy();
+        expect(screen.queryByText('Dr. Adrien Valmont')).toBeNull();
+        expect(screen.queryByText('Aucun chirurgien dans la liste du personnel')).toBeNull();
     });
 });
 

@@ -49,7 +49,8 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
         () => buildSurgerySuggestions({ procedureIds: ids, patient, seed, formData }),
         // formData ne sert qu'à la date pour la date de naissance proposée ; les champs du patient sont couverts par `patient`.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [ids, patient, seed, formData.date],
+        // Les suggestions de l'enquête chirurgicale et du résumé dépendent du décès (nature, pertes, terrain, ASA) : elles sont recalculées quand ces champs changent.
+        [ids, patient, seed, formData.date, formData.careDeceased, formData.careDeathManner, formData.careDeathTime, formData.surgeryBloodLoss, formData.surgeryAsa, formData.surgeryAnesthesiaType, formData.patientChronicDiseases],
     );
     const vitals = useMemo(() => vitalsFromForm(formData), [formData]);
 
@@ -68,14 +69,15 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
         setFormData((prev) => {
             // Le patient d'abord (âge, sexe) : l'anesthésie, les doses et le risque sont ensuite recalculés pour lui. Il n'est jamais remplacé, seulement complété.
             const withPatient = applyPatch(prev, suggestions.fields.patient, false);
-            const fresh = buildSurgerySuggestions({ procedureIds: ids, patient: patientFromForm(withPatient), seed, formData: withPatient }) || suggestions;
-            let next = withPatient;
+            // Patient décédé : le décès d'abord (nature, cause) : l'enquête chirurgicale (complications, procédure) et le résumé s'en inspirent.
+            const withDeath = withPatient.careDeceased === 'Yes' ? applyPatch(withPatient, buildDeathSuggestion({ kind: 'surgery', formData: withPatient, now: currentTime() }), overwrite) : withPatient;
+            const fresh = buildSurgerySuggestions({ procedureIds: ids, patient: patientFromForm(withDeath), seed, formData: withDeath }) || suggestions;
+            let next = withDeath;
             sectionList.forEach(({ key }) => {
                 if (key === 'patient') return;
                 next = key === 'meds' ? applyMeds(next, fresh.postOpMeds, overwrite, { prescribed: true }) : applyPatch(next, fieldsFor(fresh.fields, key, deceased), overwrite);
             });
-            // Patient décédé pendant l'intervention : le décès se préremplit avec le reste.
-            return next.careDeceased === 'Yes' ? applyPatch(next, buildDeathSuggestion({ kind: 'surgery', formData: next, now: currentTime() }), overwrite) : next;
+            return next;
         });
         setDone(overwrite ? 'Toutes les suggestions ont été appliquées (champs existants remplacés).' : 'Toutes les suggestions ont été appliquées aux champs encore vides.');
     };

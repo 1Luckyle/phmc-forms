@@ -4,6 +4,7 @@
 // diagnostic, nom, caractère, anesthésie (produits et doses calculés et contrôlés par le moteur), durée et pertes, classe ASA, surveillance post-opératoire, résumé, consignes, médicaments post-opératoires.
 import { PROCEDURE_BY_ID } from './procedures';
 import { entryText, newEntry, checkPrescription, findTerm, swapAntibiotic } from './engine';
+import { surgeryDeathBundle } from './death';
 import { regimenOf } from './medications';
 import { suggestPatient, patientNotices } from './context';
 
@@ -97,6 +98,8 @@ const roundTo = (value, step) => Math.round(value / step) * step;
 export const buildSurgerySuggestions = ({ procedureIds, patient, seed = '', formData = {} }) => {
     const procedures = procedureList(procedureIds);
     if (!procedures.length) return null;
+    // Patient décédé au bloc : récit détaillé (cause, complication, échec de la procédure, résumé) selon la cause choisie ou la plus probable.
+    const death = formData && formData.careDeceased === 'Yes' ? surgeryDeathBundle({ formData: { ...formData, surgeryProcedureIds: procedureIds } }) : null;
     const ctx = { patient, vitals: {}, tags: new Set() };
     const skipped = [];
 
@@ -172,11 +175,17 @@ export const buildSurgerySuggestions = ({ procedureIds, patient, seed = '', form
             surgeryAnesthesiaType: type,
             surgeryDuration: String(duration),
             surgeryBloodLoss: String(bloodLoss),
+            // Enquête chirurgicale : consentement, complications et réussite de la procédure (un patient décédé : complication fatale et procédure non aboutie, avec leur détail).
+            patientConsentOption: 'Yes',
+            patientComplicationOptions: death ? 'Yes' : 'No',
+            ...(death ? { patientComplicationsYes: death.complication } : {}),
+            procedureGoodOptions: death ? 'No' : 'Yes',
+            ...(death ? { procedureGoodNo: death.failure } : {}),
         },
         anesthesia: { patientSummaryConsultation: anesthesiaText, patientAddress: plan.after },
         risk: { surgeryAsa: asa },
         postop: { postOpMonitoring: monitoring, postOpExams: unique(procedures.map((p) => p.postOpExams)).join(' ') },
-        summary: { patientSummary: summary, surgeryPostOpInstructions: unique(procedures.map((p) => p.instructions)).join(' ') },
+        summary: { patientSummary: death ? `${summary}\n\n${death.summary}` : summary, surgeryPostOpInstructions: unique(procedures.map((p) => p.instructions)).join(' ') },
     };
     return { procedures, anesthesiaType: type, asa, duration, bloodLoss, monitoring, fields, postOpMeds, skipped, notices: patientNotices({ ids: procedureIds, patient, label: 'cette intervention' }) };
 };

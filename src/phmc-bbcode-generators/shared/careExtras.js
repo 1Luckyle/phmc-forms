@@ -5,7 +5,7 @@
 import { sectionBanner, BB_COLORS } from './bbStyles';
 import {
     labelOf, SURGERY_CHARACTERS, ASA_CLASSES, POST_OP_MONITORING, EVAL_REASONS, VACCINATION_STATES, RISK_LEVELS, RISK_ACTIONS, INVOLUNTARY_HOLDS,
-    DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, REFERRAL_REASONS, ARRIVAL_MODES, DEATH_MANNERS, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
+    DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, REFERRAL_REASONS, ARRIVAL_MODES, deathMannerLabel, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
 } from '../../constants/careFormOptions';
 import { minutesBetween, durationLabel, aptitudeValidUntil } from '../../utils/careFormRules';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
@@ -168,7 +168,7 @@ export const deathBBCode = (f, blue = false) => {
     const rows = [
         filled(f.careDeathTime) ? `[tr][td]Heure du décès[/td][td]${text(f.careDeathTime)}[/td][/tr]` : '',
         filled(f.careDeathCause) ? `[tr][td]Cause et circonstances[/td][td]\n${text(f.careDeathCause)}\n[/td][/tr]` : '',
-        filled(f.careDeathManner) ? `[tr][td]Nature du décès[/td][td]${labelOf(DEATH_MANNERS, f.careDeathManner)}[/td][/tr]` : '',
+        filled(f.careDeathManner) ? `[tr][td]Nature du décès[/td][td]${deathMannerLabel(f.careDeathManner)}[/td][/tr]` : '',
         resuscitation ? `[tr][td]Réanimation[/td][td]\n${resuscitation}\n[/td][/tr]` : '',
         filled(f.careDeathFamily) ? `[tr][td]Famille[/td][td]${labelOf(DEATH_FAMILY, f.careDeathFamily)}[/td][/tr]` : '',
         filled(f.careDeathBody) ? `[tr][td]Destination du corps[/td][td]${labelOf(DEATH_BODY, f.careDeathBody)}[/td][/tr]` : '',

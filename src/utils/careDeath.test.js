@@ -1,7 +1,8 @@
 jest.mock('../firebase', () => ({ database: {}, auth: { currentUser: null } }));
 jest.mock('firebase/database', () => ({ ref: jest.fn(), get: jest.fn(), set: jest.fn(), update: jest.fn(), push: jest.fn(), onValue: jest.fn(), query: jest.fn(), limitToLast: jest.fn() }));
 
-import { deathMannerOf, buildDeathSuggestion } from '../clinical/death';
+import { deathMannerOf, buildDeathSuggestion, surgeryDeathMannerOf, surgeryDeathBundle } from '../clinical/death';
+import { SURGERY_DEATH_MANNERS, deathMannersFor, deathMannerLabel } from '../constants/careFormOptions';
 import { validateCareExtras } from './careFormRules';
 import { careVisitSummary } from './careVisitSummary';
 import { getDebugTemplate, DEBUG_DEATH_VERSIONS } from './debugTemplates';
@@ -24,22 +25,73 @@ describe('décès du patient : aide de Pilou', () => {
         expect(deathMannerOf(['inconnu'])).toBe('Undetermined');
     });
 
-    test('urgences : heure de fin de prise en charge, cause tirée des motifs, corps au DMEC si le décès n\'est pas naturel', () => {
-        const suggestion = buildDeathSuggestion({ kind: 'emergency', now: '16:00', formData: { clinicalConditions: ['polytraumatisme'], patientInjuryMechanism: 'Accident à haute cinétique.', careEndTime: '15:20', patientEmergencyContactNumber: '555-0100' } });
-        expect(suggestion).toMatchObject({ careDeathTime: '15:20', careDeathManner: 'Accidental', careDeathResuscitation: 'Attempted', careDeathFamily: 'ToInform', careDeathBody: 'Coroner' });
-        expect(suggestion.careDeathCause).toMatch(/^Décès consécutif à : polytraumatisme/);
+    test("urgences : heure de fin, récit détaillé tiré des motifs et de l'évolution, corps au DMEC si le décès n'est pas naturel", () => {
+        const suggestion = buildDeathSuggestion({ kind: 'emergency', now: '16:00', formData: { clinicalConditions: ['polytraumatisme'], patientInjuryMechanism: 'Accident à haute cinétique.', careStartTime: '14:35', careEndTime: '15:12', arrivalTime: '14:30', patientEmergencyContactNumber: '555-0100' } });
+        expect(suggestion).toMatchObject({ careDeathTime: '15:12', careDeathManner: 'Accidental', careDeathResuscitation: 'Attempted', careDeathFamily: 'ToInform', careDeathBody: 'Coroner' });
+        expect(suggestion.careDeathCause).toMatch(/^Décès constaté à 15:12, après une arrivée à 14:30 \(prise en charge de 37 minutes\)\./);
+        expect(suggestion.careDeathCause).toContain('Prise en charge pour : polytraumatisme');
         expect(suggestion.careDeathCause).toContain('accident à haute cinétique');
-        // Mort naturelle : morgue ; sans heure de fin, l'heure du clic ; sans contact connu, aucun proche identifié.
+        expect(suggestion.careDeathCause).toContain('Choc hémorragique réfractaire malgré le remplissage vasculaire');
+        expect(suggestion.careDeathResuscitationNote).toContain('massage cardiaque externe immédiat (100 à 120 compressions par minute)');
+        expect(suggestion.careDeathResuscitationNote).toContain('adrénaline 1 mg renouvelée toutes les 3 à 5 minutes');
+        expect(suggestion.careDeathResuscitationNote).toContain('remplissage vasculaire massif, hémostase et transfusion');
+        expect(suggestion.careDeathResuscitationNote).toContain('Réanimation poursuivie pendant 37 minutes (de 14:35 à 15:12)');
+        // Mort naturelle : morgue ; sans heure de fin, l'heure du clic ; sans contact connu, aucun proche identifié ; l'évolution suit le motif.
         const natural = buildDeathSuggestion({ kind: 'emergency', now: '16:00', formData: { clinicalConditions: ['sca'] } });
         expect(natural).toMatchObject({ careDeathTime: '16:00', careDeathManner: 'Natural', careDeathBody: 'Morgue', careDeathFamily: 'NoContact' });
-        // Sans motif : seule la cause reste à écrire.
-        expect(buildDeathSuggestion({ kind: 'emergency', formData: {} }).careDeathCause).toBeUndefined();
+        expect(natural.careDeathCause).toContain('Arrêt cardiaque réfractaire sur syndrome coronarien aigu');
+        expect(natural.careDeathResuscitationNote).toContain('défibrillation (choc électrique)');
+        expect(natural.careDeathResuscitationNote).toContain('Réanimation poursuivie environ 30 minutes');
+        // Surdose : antidote ; anaphylaxie : adrénaline IM.
+        expect(buildDeathSuggestion({ kind: 'emergency', formData: { clinicalConditions: ['surdose_opioides'] } }).careDeathResuscitationNote).toContain('naloxone');
+        expect(buildDeathSuggestion({ kind: 'emergency', formData: { clinicalConditions: ['anaphylaxie'] } }).careDeathResuscitationNote).toContain('adrénaline IM puis IV');
+        // Sans motif : seule la cause reste à écrire (le déroulé de la réanimation est proposé quand même).
+        const none = buildDeathSuggestion({ kind: 'emergency', formData: {} });
+        expect(none.careDeathCause).toBeUndefined();
+        expect(none.careDeathResuscitationNote).toContain('massage cardiaque externe');
     });
 
-    test('opération : décès au cours de l\'intervention choisie, circonstances à déterminer, DMEC', () => {
-        const suggestion = buildDeathSuggestion({ kind: 'surgery', now: '15:12', formData: { surgeryProcedureIds: ['appendicectomie'] } });
-        expect(suggestion).toMatchObject({ careDeathTime: '15:12', careDeathManner: 'Undetermined', careDeathBody: 'Coroner', careDeathResuscitation: 'Attempted' });
-        expect(suggestion.careDeathCause).toMatch(/^Décès survenu au cours de l'intervention \(appendicectomie/i);
+    test("opération : décès au bloc : cause explicite choisie d'après les pertes, le terrain et l'ASA, récit détaillé", () => {
+        const base = { surgeryProcedureIds: ['appendicectomie'], surgeryAnesthesiaType: 'General' };
+        const undetermined = buildDeathSuggestion({ kind: 'surgery', now: '15:12', formData: base });
+        expect(undetermined).toMatchObject({ careDeathTime: '15:12', careDeathManner: 'CauseUndetermined', careDeathBody: 'Coroner', careDeathResuscitation: 'Attempted' });
+        expect(undetermined.careDeathCause).toMatch(/^Décès survenu au cours de l'intervention \(appendicectomie.*\), sous anesthésie générale, constaté à 15:12\./i);
+        expect(undetermined.careDeathCause).toContain("précisées par l'autopsie");
+        expect(undetermined.careDeathResuscitationNote).toContain('Arrêt cardio-circulatoire constaté au bloc : suspension de l\'acte');
+        expect(undetermined.careDeathResuscitationNote).toContain('décès constaté par le chirurgien principal à 15:12');
+
+        expect(surgeryDeathMannerOf({ ...base, surgeryBloodLoss: '600' })).toBe('Hemorrhage');
+        expect(surgeryDeathMannerOf({ surgeryProcedureIds: ['laparotomie'] })).toBe('Hemorrhage');
+        expect(surgeryDeathMannerOf({ ...base, patientChronicDiseases: 'Insuffisance cardiaque, diabète' })).toBe('CardiacArrest');
+        expect(surgeryDeathMannerOf({ ...base, surgeryAsa: 'ASA4' })).toBe('PreexistingCondition');
+        // Un choix déjà fait dans le formulaire est respecté ; une valeur de la liste des urgences est ignorée.
+        expect(surgeryDeathMannerOf({ ...base, surgeryBloodLoss: '900', careDeathManner: 'Anaphylaxis' })).toBe('Anaphylaxis');
+        expect(surgeryDeathMannerOf({ ...base, careDeathManner: 'Natural' })).toBe('CauseUndetermined');
+
+        const hemorrhage = buildDeathSuggestion({ kind: 'surgery', now: '15:12', formData: { ...base, surgeryBloodLoss: '600' } });
+        expect(hemorrhage.careDeathManner).toBe('Hemorrhage');
+        expect(hemorrhage.careDeathCause).toContain('Hémorragie peropératoire massive (pertes estimées à 600 mL)');
+        expect(hemorrhage.careDeathResuscitationNote).toContain('transfusion massive');
+        const anaphylaxis = buildDeathSuggestion({ kind: 'surgery', formData: { ...base, careDeathManner: 'Anaphylaxis' } });
+        expect(anaphylaxis.careDeathCause).toContain('Choc anaphylactique peropératoire');
+        expect(anaphylaxis.careDeathResuscitationNote).toContain('adrénaline renforcée');
+    });
+
+    test('chaque cause du bloc a son récit et son geste de réanimation ; chaque libellé est explicite', () => {
+        SURGERY_DEATH_MANNERS.forEach(({ value, label }) => {
+            const bundle = surgeryDeathBundle({ formData: { surgeryProcedureIds: ['appendicectomie'], careDeathManner: value }, now: '15:12' });
+            expect(bundle.manner).toBe(value);
+            expect(bundle.cause.length).toBeGreaterThan(120);
+            expect(bundle.resuscitation).toContain('massage cardiaque externe');
+            expect(bundle.complication).toBeTruthy();
+            expect(bundle.failure).toMatch(/interrompue/);
+            expect(bundle.summary).toMatch(/^Interruption de l'intervention à 15:12/);
+            expect(deathMannerLabel(value)).toBe(label);
+            expect(label).not.toMatch(/^(Mort naturelle|Mort accidentelle|Mort violente)/);
+        });
+        expect(deathMannerLabel('Accidental')).toBe('Mort accidentelle');
+        expect(deathMannersFor('surgery')).toBe(SURGERY_DEATH_MANNERS);
+        expect(deathMannersFor('emergency').map((o) => o.value)).toContain('Natural');
     });
 });
 

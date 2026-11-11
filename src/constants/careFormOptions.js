@@ -132,3 +132,21 @@ export const DEATH_VERSIONS = [5, 19];
 
 // Patient décédé pendant la prise en charge : prescription, suites, suivi et surveillance post-opératoire n'ont alors plus de sens (voir les formulaires, les assistants et les rapports).
 export const isDeceased = (formData) => !!formData && formData.careDeceased === 'Yes';
+
+// Décès AU BLOC OPÉRATOIRE : causes explicites (la liste générale — naturelle, accidentelle, violente… — n'a pas de sens pour un décès en cours d'intervention). Valeurs distinctes de DEATH_MANNERS.
+export const SURGERY_DEATH_MANNERS = list([
+    ['Hemorrhage', 'Hémorragie peropératoire non contrôlée'],
+    ['AnesthesiaComplication', "Complication de l'anesthésie (voies aériennes, hémodynamique, produits)"],
+    ['Anaphylaxis', 'Choc anaphylactique peropératoire'],
+    ['CardiacArrest', 'Arrêt cardio-circulatoire peropératoire (terrain cardiaque)'],
+    ['Embolism', 'Embolie peropératoire (pulmonaire, graisseuse ou gazeuse)'],
+    ['Shock', 'Choc (septique ou hémorragique) non réversible'],
+    ['SurgicalComplication', "Complication chirurgicale (lésion d'un vaisseau ou d'un organe)"],
+    ['PreexistingCondition', 'Aggravation de la pathologie initiale (lésions trop graves)'],
+    ['CauseUndetermined', "Cause indéterminée (à préciser par l'autopsie)"],
+]);
+export const ALL_DEATH_MANNERS = [...DEATH_MANNERS, ...SURGERY_DEATH_MANNERS];
+/** Liste des natures de décès selon le formulaire : 'surgery' (au bloc) ou 'emergency' (urgences). */
+export const deathMannersFor = (kind) => (kind === 'surgery' ? SURGERY_DEATH_MANNERS : DEATH_MANNERS);
+/** Libellé d'une nature de décès, quelle que soit la liste d'où elle vient. */
+export const deathMannerLabel = (value) => labelOf(ALL_DEATH_MANNERS, value);

@@ -934,8 +934,8 @@ const deathScenario = (version, scenario) => {
     return {
         careDeceased: 'Yes',
         careDeathTime: '15:12',
-        careDeathCause: surgery ? "[TEST] Arrêt cardio-circulatoire peropératoire sur hémorragie massive non contrôlée." : '[TEST] Décès consécutif à un polytraumatisme avec choc hémorragique réfractaire.',
-        careDeathManner: surgery ? 'Undetermined' : 'Accidental',
+        careDeathCause: surgery ? "[TEST] Hémorragie peropératoire massive non contrôlée, choc hémorragique réfractaire puis arrêt cardio-circulatoire." : '[TEST] Décès consécutif à un polytraumatisme avec choc hémorragique réfractaire.',
+        careDeathManner: surgery ? 'Hemorrhage' : 'Accidental',
         careDeathResuscitation: 'Attempted',
         careDeathResuscitationNote: '[TEST] Massage cardiaque, intubation et adrénaline pendant 25 minutes, sans retour à une activité circulatoire spontanée.',
         careDeathFamily: 'ToInform',

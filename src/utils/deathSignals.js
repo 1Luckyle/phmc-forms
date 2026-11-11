@@ -7,7 +7,7 @@
 import { ref, get, set, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { canonicalPatientId } from './patientId';
-import { DEATH_VERSIONS, DEATH_MANNERS, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY, labelOf } from '../constants/careFormOptions';
+import { DEATH_VERSIONS, deathMannerLabel, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY, labelOf } from '../constants/careFormOptions';
 import { notifyUser } from './notifications';
 
 const clip = (value, max) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -28,7 +28,7 @@ export const buildDeathSignal = ({ version, formData = {}, authorName = '', uid 
         dateNaissance: clip(formData.patientDateOfBirth, 10),
         kind: KIND_OF_VERSION[number],
         date, heure: time,
-        cause: clip(formData.careDeathCause, 500), nature: clip(formData.careDeathManner, 30), reanimation: clip(formData.careDeathResuscitation, 30),
+        cause: clip(formData.careDeathCause, 900), nature: clip(formData.careDeathManner, 30), reanimation: clip(formData.careDeathResuscitation, 30),
         famille: clip(formData.careDeathFamily, 30), destination: clip(formData.careDeathBody, 30),
         par: clip(authorName || formData.phmcEmployee, 120) || 'Un soignant', uid: String(uid || ''), creeLe: now, statut: 'a_traiter',
     };
@@ -48,7 +48,7 @@ export const deathSignalToDmecForm = (signal = {}) => {
         dateTime: signal.date ? `${signal.date}T${/^\d{1,2}:\d{2}$/.test(signal.heure || '') ? String(signal.heure).padStart(5, '0') : '00:00'}` : '',
         pronouncedTimeOfDeath: signal.heure ? String(signal.heure).padStart(5, '0') : '',
         probableCauseOfDeath: signal.cause || '',
-        mannerOfDeath: signal.nature ? labelOf(DEATH_MANNERS, signal.nature) : '',
+        mannerOfDeath: signal.nature ? deathMannerLabel(signal.nature) : '',
         synopsis: `Décès constaté lors d'un ${(DEATH_SIGNAL_KINDS[signal.kind] || 'rapport de soins').toLowerCase()} (déclaré par ${signal.par || 'un soignant'}).${details ? `\n${details}` : ''}`,
     };
     return Object.fromEntries(Object.entries(values).filter(([, value]) => value !== ''));

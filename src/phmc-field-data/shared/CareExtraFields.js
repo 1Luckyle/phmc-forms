@@ -15,7 +15,7 @@ import { emergencyContactChanges, aptitudeValidUntil, minutesBetween, durationLa
 import {
     REFERRAL_REASONS, SURGERY_CHARACTERS, ASA_CLASSES, POST_OP_MONITORING, EVAL_REASONS, APTITUDE_CONCLUSIONS, APTITUDE_VALIDITY_MONTHS, DEFAULT_APTITUDE_MONTHS, VACCINATION_STATES,
     RISK_LEVELS, RISK_ACTIONS, INVOLUNTARY_HOLDS, ARRIVAL_MODES, DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, RISK_NEEDING_ACTION,
-    DEATH_MANNERS, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
+    deathMannersFor, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
 } from '../../constants/careFormOptions';
 import { buildDeathSuggestion } from '../../clinical/death';
 import { applyPatch } from '../../clinical/apply';
@@ -272,7 +272,7 @@ export const DeathFields = ({ formData, setFormData, handleChange, kind = 'emerg
                     </div>
                     <div style={row}>
                         <Field label="Heure du décès" basis={140}><Form.Control type="time" name="careDeathTime" value={formData.careDeathTime || ''} onChange={handleChange} className="form-control" /></Field>
-                        <Field label="Circonstances" basis={260}><Choice name="careDeathManner" formData={formData} handleChange={handleChange} options={DEATH_MANNERS} placeholder="Nature du décès" /></Field>
+                        <Field label={kind === 'surgery' ? 'Cause du décès au bloc' : 'Circonstances'} basis={300}><Choice name="careDeathManner" formData={formData} handleChange={handleChange} options={deathMannersFor(kind)} placeholder={kind === 'surgery' ? 'Cause du décès' : 'Nature du décès'} /></Field>
                         <Field label="Destination du corps" basis={240}><Choice name="careDeathBody" formData={formData} handleChange={handleChange} options={DEATH_BODY} placeholder="Où est conduit le corps ?" /></Field>
                     </div>
                     <Form.Label>Cause et circonstances du décès</Form.Label>
