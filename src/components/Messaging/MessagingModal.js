@@ -20,6 +20,7 @@ import {
     validateMailDraft, messageToEmailBbcode, conversationToEmailBbcode, conversationTitle, mailTitle, bbcodeToPlainText, formatDateFr, stripImgWidth,
 } from '../../utils/internalMail';
 import { markMessageNotificationsRead } from '../../utils/notifications';
+import { messageLinkUrl } from '../../utils/deepLinks';
 import { bbcodeToHtmlFragment } from '../../utils/bbcodeToHtml';
 import { getCachedSignatureUrl } from '../../utils/userCreations';
 import ImagePreview from '../ImagePreview';
@@ -401,6 +402,11 @@ const MessagingModal = ({ show, onHide, mailbox, initialMessageId = '', showNoti
                         {message.deUid !== uid && Object.keys(message.dest || {}).filter((id) => id !== uid).length > 0 && (
                             <Button size="sm" variant="outline-primary" onClick={() => startReply(true)}><i className="fas fa-reply-all me-1"></i>Répondre à tous</Button>
                         )}
+                        <Button size="sm" variant="outline-secondary" disabled={!messageLinkUrl(view.id)}
+                            title="Copier le lien direct vers ce message (comme sur Discord) : seuls l'expéditeur et les destinataires peuvent l'ouvrir"
+                            onClick={() => copyText(messageLinkUrl(view.id), 'Lien du message copié ! Seuls ses participants pourront l\'ouvrir.')}>
+                            <i className="fas fa-link me-1"></i>Copier le lien
+                        </Button>
                         <Dropdown>
                             <Dropdown.Toggle size="sm" variant="outline-info" disabled={exportingThread}>
                                 {exportingThread ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="fas fa-file-export me-1"></i>}Exporter

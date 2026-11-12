@@ -19,6 +19,7 @@ import TransparencyPage from './components/Transparency/TransparencyPage';
 import MemorialPage from './components/Memorial/MemorialPage';
 import HospitalPlanPage from './components/Directory/HospitalPlanPage';
 import ReportLinkPage from './components/ReportLinkPage';
+import DeepLinkPage from './components/DeepLinkPage';
 import DeceasedGuard from './components/DeceasedGuard';
 
 function App() {
@@ -313,6 +314,9 @@ const initialFormData = {
                                     <Route path="/hommage" element={<MemorialPage />} />
                                     <Route path="/plan" element={<HospitalPlanPage />} />
                                     <Route path="/rapport/:node/:key" element={<ReportLinkPage />} />
+                                    <Route path="/message/:id" element={<DeepLinkPage kind="message" />} />
+                                    <Route path="/poste/:category/:key" element={<DeepLinkPage kind="poste" />} />
+                                    <Route path="/candidature/:uid/:id" element={<DeepLinkPage kind="candidature" />} />
                                     <Route path="/login" element={<GtaLogin />} />
                                     <Route path="/auth/gta/callback" element={<GtaCallback />} />
                                     <Route path="/admin" element={<ProtectedRoute><Admin formData={formData} setFormData={setFormData} showNotification={showNotification} /></ProtectedRoute>} />

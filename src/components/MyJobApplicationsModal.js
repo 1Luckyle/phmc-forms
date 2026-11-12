@@ -19,6 +19,7 @@ import InternalRecruitmentRequest from './Recruitment/InternalRecruitmentRequest
 import { logActivity } from '../utils/activityLog';
 import { presentsLabel } from '../utils/interviews';
 import { copyToClipboard } from './notificationService';
+import { candidatureLinkUrl } from '../utils/deepLinks';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
@@ -78,7 +79,7 @@ const applicationTitle = (application) => `Candidature - ${application.poste || 
 
 // `canAct` : faux pour un employé sans statut de recrutement interne : il consulte son dossier sans pouvoir agir ; ses candidatures encore ouvertes
 // sont mises en pause automatiquement jusqu'à ce qu'il obtienne le statut.
-const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onRefresh, onLoad, onEdit, canAct = true }) => {
+const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, isLoading, onUpdateStatus, showNotification, onDeleted, onRefresh, onLoad, onEdit, canAct = true, initialOpenId = '' }) => {
     // Interrupteur Debug (panneau admin) : permet de supprimer une candidature de l'historique.
     const { debugDeleteApplicationsEnabled } = useDebug();
     const { locked, lockTitle } = useWriteLock();
@@ -87,6 +88,8 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
     const [openId, setOpenId] = useState(undefined); // undefined = choix par défaut (ouverte s'il n'y en a qu'une) ; null = tout replié
     const [meta, setMeta] = useState({});
+    // Ouvert par un lien direct vers une candidature : celle-ci est dépliée.
+    useEffect(() => { if (show && initialOpenId) setOpenId(initialOpenId); }, [show, initialOpenId]);
     // Le poste s'affiche sous son libellé français, même pour une ancienne candidature qui n'a gardé que la clé.
     const { selectOptions } = useData();
     const applications = useMemo(() => (rawApplications || []).map((application) => ({
@@ -246,6 +249,12 @@ const MyJobApplicationsModal = ({ show, onHide, applications: rawApplications, i
                                             )}
 
                                             <div className="rec-actions">
+                                                {application.statut !== 'brouillon' && application.candidatUid && (
+                                                    <Button size="sm" variant="outline-info" title="Copie le lien direct vers cette candidature (le recrutement peut l'ouvrir)"
+                                                        onClick={() => copyToClipboard(candidatureLinkUrl(application.candidatUid, application.id), showNotification, 'Lien de la candidature copié !')}>
+                                                        <i className="fas fa-link me-1"></i>Copier le lien
+                                                    </Button>
+                                                )}
                                                 {canAct && application.statut === 'brouillon' && (
                                                     <Button size="sm" variant="primary" disabled={locked} title={locked ? lockTitle : undefined} onClick={() => handleAction(application, 'soumise')}>Candidater</Button>
                                                 )}

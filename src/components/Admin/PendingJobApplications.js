@@ -33,6 +33,7 @@ import { describeInterview, interviewChanges, presentsLabel, saveDecharge } from
 import ForumHint from '../ForumHint';
 import useForumNotice from '../../hooks/useForumNotice';
 import { copyToClipboard } from '../notificationService';
+import { candidatureLinkUrl } from '../../utils/deepLinks';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 import { getFormDefinition } from '../../formDefinitions';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
@@ -62,13 +63,14 @@ const StatusChip = ({ status }) => (
     <span className="cctv-chip" style={{ '--c': colorOf(status) }}><span className="cctv-dot"></span>{STATUS_LABELS[status] || status}</span>
 );
 
-const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
+// initialOpenKey : « uid/id » d'une candidature à déplier d'emblée (lien direct, voir utils/deepLinks.js).
+const PendingJobApplications = ({ showNotification, initialSearch = '', initialOpenKey = '' }) => {
     const [applications, setApplications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [meta, setMeta] = useState({});
-    const [filter, setFilter] = useState(initialSearch ? 'all' : 'todo'); // recherche venue de l'annuaire : toutes les candidatures de la personne
+    const [filter, setFilter] = useState(initialSearch || initialOpenKey ? 'all' : 'todo'); // recherche venue de l'annuaire ou lien direct : toutes les candidatures
     const [search, setSearch] = useState(initialSearch);
-    const [openId, setOpenId] = useState(undefined); // undefined = défaut (ouverte s'il n'y a qu'un résultat) ; null = tout replié
+    const [openId, setOpenId] = useState(initialOpenKey || undefined); // undefined = défaut (ouverte s'il n'y a qu'un résultat) ; null = tout replié
     const [interviewTarget, setInterviewTarget] = useState(null); // { application, editing } : fenêtre d'entretien ouverte
     const [refusing, setRefusing] = useState({});      // { [clé]: { reason, detail } } : panneau de refus ouvert
     const [busyKey, setBusyKey] = useState(null);
@@ -514,6 +516,14 @@ const PendingJobApplications = ({ showNotification, initialSearch = '' }) => {
                                             <><dt>Motif du refus</dt><dd>{application.refus.motif}{application.refus.detail ? <><br /><span className="cctv-muted">{application.refus.detail}</span></> : null}{application.refus.parNom ? <span className="cctv-muted"> — {application.refus.parNom}</span> : null}</dd></>
                                         )}
                                     </dl>
+
+                                    <div className="rec-actions mb-2">
+                                        <Button size="sm" variant="outline-info" disabled={!candidatureLinkUrl(application.candidatUid, application.id)}
+                                            title="Copie le lien direct vers cette candidature (comme le lien d'un message Discord) : le recrutement l'ouvre d'un clic"
+                                            onClick={() => copyToClipboard(candidatureLinkUrl(application.candidatUid, application.id), showNotification, 'Lien de la candidature copié !')}>
+                                            <i className="fas fa-link me-1"></i>Copier le lien
+                                        </Button>
+                                    </div>
 
                                     {canAct && (
                                         <div className="rec-actions">

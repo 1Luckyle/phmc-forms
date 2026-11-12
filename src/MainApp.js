@@ -3,7 +3,8 @@ import FormPurpose from './components/FormPurpose';
 import FormSections from './components/FormSections';
 import { formThemeFor, isPbcVersion, PHMC_VERSION_OF_PBC } from './utils/formAccess';
 import { useReportManagement } from './components/useReportManagement';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { CATEGORY_BY_KEY, getCategoryPositions, isPositionOpen } from './constants/recruitment';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { formDefinitions, getFormDefinition } from './formDefinitions'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -1617,6 +1618,51 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
     const { canAccess: canAccessCurrentForm } = useFormAccess();
     // Le formulaire se pré-remplit à partir du dossier du patient dont l'ID est saisi (voir utils/dossierPrefill.js).
     useDossierPrefill(bbCodeVersion, formData, setFormData);
+
+    // Liens directs (#/message/…, #/poste/…, #/candidature/…, voir utils/deepLinks.js) : DeepLinkPage nous ramène ici avec la cible dans l'état de
+    // navigation ; on ouvre la bonne fenêtre, puis on efface l'état (un rechargement ou un retour arrière ne rouvre pas le lien).
+    const location = useLocation();
+    const deepLink = location.state?.deepLink || null;
+    const [deepLinkApplicationKey, setDeepLinkApplicationKey] = useState('');   // candidature à ouvrir dans la gestion du recrutement : « uid/id »
+    const [deepLinkMyApplicationId, setDeepLinkMyApplicationId] = useState(''); // candidature à ouvrir dans « Mon dossier candidat »
+    useEffect(() => {
+        if (!deepLink || authLoading || (!currentEmployee && !civilianProfile)) return;
+        const finish = () => navigate('/', { replace: true, state: null });
+        switch (deepLink.cible) {
+            case 'message':
+                if (toolAccess.messaging) { setMessagingInitialId(deepLink.id); setShowMessaging(true); }
+                else showNotification('La messagerie interne est réservée au personnel du PHMC.', 'warning', 6000);
+                finish();
+                break;
+            case 'poste': {
+                if (isLoadingData) return;      // les postes ne sont pas encore chargés : on réessaie dès qu'ils le sont
+                const category = CATEGORY_BY_KEY[deepLink.categorie];
+                const position = category ? getCategoryPositions(selectOptions, category.key)[deepLink.cle] : null;
+                if (!position) showNotification('Ce poste n\'existe plus : le lien n\'est plus valable.', 'warning', 6000);
+                else if (!isPositionOpen(position)) showNotification(`Le poste « ${position.nom || deepLink.cle} » est fermé : il ne reçoit plus de candidatures.`, 'warning', 7000);
+                else {
+                    setBbCodeVersion(category.bbCodeVersion);
+                    setFormData((prev) => ({ ...prev, recruitmentPosition: deepLink.cle }));
+                    showNotification(`Candidature au poste « ${position.nom || deepLink.cle} » : le formulaire est prêt.`, 'info-circle', 6000);
+                }
+                finish();
+                break;
+            }
+            case 'candidature':
+                if (auth.currentUser && auth.currentUser.uid === deepLink.uid) {
+                    setDeepLinkMyApplicationId(deepLink.id); loadMyJobApplications(); setShowMyJobApplications(true);
+                } else if (canManageRecruitment) {
+                    setDeepLinkApplicationKey(`${deepLink.uid}/${deepLink.id}`); setShowRecruitmentManager(true);
+                } else {
+                    showNotification('Cette candidature n\'est accessible qu\'à son auteur et au recrutement.', 'warning', 6000);
+                }
+                finish();
+                break;
+            default:
+                finish();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [deepLink, authLoading, currentEmployee, civilianProfile, isLoadingData, selectOptions, toolAccess.messaging, canManageRecruitment]);
     // Candidatures : identité du compte et résumé médical du dossier (voir utils/dossierPrefill.js).
     useCandidaturePrefill({
         enabled: getFormDefinition(bbCodeVersion)?.group === 'PHMC Recruitment' && !authLoading,
@@ -2880,7 +2926,8 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                         <RecruitmentManager
                             show={showRecruitmentManager}
                             initialSearch={directoryApplicantSearch}
-                            onHide={() => { setShowRecruitmentManager(false); setDirectoryApplicantSearch(''); }}
+                            initialOpenKey={deepLinkApplicationKey}
+                            onHide={() => { setShowRecruitmentManager(false); setDirectoryApplicantSearch(''); setDeepLinkApplicationKey(''); }}
                             showNotification={showNotification}
                         />
                         <AwarenessCalendarModal
@@ -2979,7 +3026,8 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                         />
                         <MyJobApplicationsModal
                             show={showMyJobApplications}
-                            onHide={() => setShowMyJobApplications(false)}
+                            initialOpenId={deepLinkMyApplicationId}
+                            onHide={() => { setShowMyJobApplications(false); setDeepLinkMyApplicationId(''); }}
                             applications={myJobApplications}
                             isLoading={isLoadingJobApplications}
                             showNotification={showNotification}

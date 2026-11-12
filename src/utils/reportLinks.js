@@ -41,7 +41,7 @@ export const peekPendingReportLink = (now = Date.now()) => {
     try {
         const [stamp, ...rest] = String(sessionStorage.getItem(PENDING_KEY) || '').split('|');
         const path = rest.join('|');
-        return path && now - Number(stamp) < PENDING_MAX_AGE_MS && /^\/rapport\//.test(path) ? path : '';
+        return path && now - Number(stamp) < PENDING_MAX_AGE_MS && /^\/(rapport|message|poste|candidature)\//.test(path) ? path : '';
     } catch (error) { return ''; }
 };
 export const clearPendingReportLink = () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (error) { /* rien à faire */ } };

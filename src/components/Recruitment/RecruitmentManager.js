@@ -32,6 +32,8 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
 import InternalRecruitmentManager from './InternalRecruitmentManager';
 import { loadSalaryGrid, echelonOf, formatEchelonRates } from '../../utils/salaryGrid';
+import { buildOpenPositionsText, DISCORD_MESSAGE_LIMIT } from '../../utils/openPositionsText';
+import { posteLinkUrl } from '../../utils/deepLinks';
 import '../Cctv/CctvRequests.css';
 import './Recruitment.css';
 
@@ -50,7 +52,7 @@ const closeStyle = {
     color: '#f85149', fontSize: '28px', lineHeight: 1, cursor: 'pointer', zIndex: 5,
 };
 
-const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = '' }) => {
+const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = '', initialOpenKey = '' }) => {
     const { currentEmployee, isAdmin, isRecruiter, canManageRecruitment } = useEmployeeAuth();
     const actorLabel = isAdmin ? 'Admin' : 'Recruteur';
     const actorEmail = currentEmployee?.email || 'Inconnu';
@@ -107,6 +109,8 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
 
     // Ouvert depuis l'annuaire sur une personne : on arrive sur « Candidatures », déjà filtré sur son nom.
     useEffect(() => { if (show && initialSearch) setTab('applications'); }, [show, initialSearch]);
+    // Ouvert par un lien direct vers une candidature (« uid/id ») : on arrive sur « Candidatures », cette candidature dépliée.
+    useEffect(() => { if (show && initialOpenKey) setTab('applications'); }, [show, initialOpenKey]);
 
     useEffect(() => {
         if (!show) { setCategory(''); setTab('positions'); setShowRoleModal(false); setRoleToEdit(null); setRoleToRename(null); }
@@ -172,6 +176,29 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
         adminSelectedCategoryName: config.label,
     });
 
+    // Texte de TOUS les postes ouverts (toutes catégories), avec échelon et salaires : indépendant de la catégorie choisie.
+    const [copyingOpen, setCopyingOpen] = useState(false);
+    const handleCopyOpenPositions = async () => {
+        setCopyingOpen(true);
+        try {
+            const [loadedGrid, ...loaded] = await Promise.all([
+                loadSalaryGrid(),
+                ...RECRUITMENT_CATEGORIES.map((cat) => loadCategoryPositions(cat).then((result) => ({ label: cat.label, positions: result.positions }))),
+            ]);
+            const { text, count } = buildOpenPositionsText({ categories: loaded, grid: loadedGrid });
+            const copied = await copyToClipboard(text, showNotification, count > 0 ? `${count} poste${count > 1 ? 's' : ''} ouvert${count > 1 ? 's' : ''} copié${count > 1 ? 's' : ''}, par catégorie (format Discord).` : 'Aucun poste ouvert : le texte copié l\'indique.');
+            if (copied !== false && text.length > DISCORD_MESSAGE_LIMIT) {
+                showNotification(`Le texte fait ${text.length} caractères : Discord n'accepte que ${DISCORD_MESSAGE_LIMIT} par message, collez-le en deux fois (une catégorie par message).`, 'warning', 9000);
+            }
+        } catch (error) {
+            console.error('Error copying open positions:', error);
+            Sentry.captureException(error, { extra: { context: 'RecruitmentManager copy open positions' } });
+            showNotification('Échec de la copie des postes ouverts.', 'error');
+        } finally {
+            setCopyingOpen(false);
+        }
+    };
+
     const handleCopyStatusesBBCode = async () => {
         if (!config) return;
         await copyToClipboard(buildStatusesBBCode(), showNotification, 'BBCode des statuts de recrutement copié !');
@@ -231,6 +258,13 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
                 <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                     {tab === 'positions' && (
                         <>
+                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                <span style={{ color: '#8b949e', fontSize: '0.85em' }}>Tous les postes ouverts, rangés par catégorie, avec l'échelon et les salaires.</span>
+                                <Button variant="outline-info" size="sm" onClick={handleCopyOpenPositions} disabled={copyingOpen}
+                                    title="Copie le texte de tous les postes ouverts (toutes catégories), avec l'échelon et le salaire de chacun">
+                                    {copyingOpen ? <Spinner animation="border" size="sm" /> : <i className="fas fa-copy"></i>} Copier tous les postes ouverts
+                                </Button>
+                            </div>
                             <div className="form-group mb-3">
                                 <label htmlFor="recruitmentCategory">Catégorie de recrutement</label>
                                 <select id="recruitmentCategory" className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -297,6 +331,12 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
                                                         </small>
                                                     </div>
                                                     <div className="rm-position-actions">
+                                                        <Button variant="outline-info" size="sm"
+                                                            onClick={() => copyToClipboard(posteLinkUrl(config.key, key), showNotification, 'Lien du poste copié ! Il ouvre le formulaire de candidature à ce poste.')}
+                                                            disabled={!posteLinkUrl(config.key, key)}
+                                                            title="Copie le lien direct vers ce poste (comme le lien d'un message Discord) : il ouvre le formulaire de candidature déjà réglé sur ce poste">
+                                                            <i className="fas fa-link"></i> Copier le lien
+                                                        </Button>
                                                         {/* Sensible (change l'identifiant du poste) : réservé aux admins. */}
                                                         {isAdmin && (
                                                             <Button variant="outline-warning" size="sm" disabled={isUpdating}
@@ -328,7 +368,7 @@ const RecruitmentManager = ({ show, onHide, showNotification, initialSearch = ''
                         </>
                     )}
 
-                    {tab === 'applications' && <PendingJobApplications showNotification={showNotification} initialSearch={initialSearch} />}
+                    {tab === 'applications' && <PendingJobApplications showNotification={showNotification} initialSearch={initialSearch} initialOpenKey={initialOpenKey} />}
                     {tab === 'contracts' && <ContractsManager showNotification={showNotification} />}
                     {tab === 'internal' && <InternalRecruitmentManager showNotification={showNotification} onCountChange={setPendingInternal} />}
                 </div>
