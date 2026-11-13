@@ -27,7 +27,8 @@ export const DEFAULT_REQUIRED = {
     21: ['patientName', 'patientID', 'date', 'phmcEmployee'],
     22: ['patientName', 'date'],
     23: ['patientName', 'date'],
-    24: ['patientEmail', 'patientID'],
+    // Représentant légal : obligatoire seulement quand il est demandé (patient de moins de 18 ans non émancipé, voir utils/fieldApplicability.js).
+    24: ['patientEmail', 'patientID', 'guardianName', 'guardianRelation'],
     25: ['patientFirstName', 'patientLastName', 'patientDateOfBirth', 'patientEmail', 'patientID', 'patientWeight', 'patientHeight'],
     26: ['patientFirstName', 'patientLastName', 'date', 'patientEmail', 'patientID'],
     27: ['internalEmailSubject', 'internalEmailRecipient'],
@@ -36,7 +37,7 @@ export const DEFAULT_REQUIRED = {
     35: ['patientName', 'patientID', 'phmcEmployee'],
     41: ['patientName', 'patientID', 'date', 'phmcEmployee'],
     42: ['externalMailSubject', 'externalMailRecipient', 'externalMailBody'],
-    37: ['caseNumber', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
+    37: ['deathRecordType', 'caseNumber', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
     // Candidatures : socle commun à tous les envois (le reste dépend du poste et du profil, voir validateApplication).
     50: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
     51: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
@@ -50,6 +51,8 @@ export const DEFAULT_REQUIRED = {
 // (ID patient et e-mail : facturation des dossiers médicaux Civils).
 const TITLE = 'title';
 const BILLING = 'billing';
+// Raison 'rule' : règle propre au formulaire (le champ reste obligatoire dès qu'il s'affiche, mais pas quand il n'apparaît pas : voir utils/fieldApplicability.js).
+const RULE = 'rule';
 export const LOCKED_FIELDS = {
     1: { decedentOOC: TITLE, dateTime: TITLE },
     3: { patientFirstName: TITLE, patientLastName: TITLE, patientDateOfBirth: TITLE, patientID: BILLING, patientEmail: BILLING },
@@ -66,7 +69,7 @@ export const LOCKED_FIELDS = {
     21: { patientName: TITLE, date: TITLE },
     22: { patientName: TITLE, date: TITLE },
     23: { patientName: TITLE, date: TITLE },
-    24: { patientID: BILLING, patientEmail: BILLING },
+    24: { patientID: BILLING, patientEmail: BILLING, guardianName: RULE, guardianRelation: RULE },
     25: { patientFirstName: TITLE, patientLastName: TITLE, patientDateOfBirth: TITLE, patientID: BILLING, patientEmail: BILLING },
     26: { patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, patientID: BILLING, patientEmail: BILLING },
     27: { internalEmailSubject: TITLE },
@@ -87,6 +90,7 @@ export const LOCKED_FIELDS = {
 export const LOCK_REASONS = {
     [TITLE]: 'Ce champ compose le titre du rapport : il reste obligatoire.',
     [BILLING]: 'Ce champ sert à la facturation du dossier : il reste obligatoire.',
+    [RULE]: 'Règle du formulaire : obligatoire dès que le champ s\'affiche (patient mineur non émancipé), sans jamais bloquer quand il n\'apparaît pas.',
 };
 
 // Règles propres au code, qui ne se règlent pas champ par champ (affichées en lecture seule dans la page d'administration).
@@ -97,7 +101,7 @@ export const SPECIAL_RULES = {
     24: [
         "Prénom ou nom du patient : au moins un des deux.",
         "Au moins un élément du dossier médical à divulguer.",
-        "Patient mineur non émancipé : nom et lien du représentant légal.",
+        "Patient mineur non émancipé : nom et lien du représentant légal (ces deux champs n'apparaissent, et ne sont exigés, que dans ce cas).",
     ],
     25: ["Titre « Mineur » : seulement si la date de naissance indique moins de 18 ans."],
     26: ["Au moins un élément du dossier médical à mettre à jour."],

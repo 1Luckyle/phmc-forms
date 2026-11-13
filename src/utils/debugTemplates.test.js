@@ -1,6 +1,7 @@
 import { getDebugTemplate, hasDebugTemplate } from './debugTemplates';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { requiredFieldsOf } from './formRulesCore';
+import { isFieldApplicable } from './fieldApplicability';
 import { validateReport } from './formValidation';
 
 jest.mock('../firebase', () => ({ database: {}, auth: {} }));
@@ -34,7 +35,8 @@ describe('remplissage debug : à tenir à jour avec chaque formulaire', () => {
 
     test.each(versions.filter((v) => hasDebugTemplate(v) && v < 50))('le gabarit du formulaire %i remplit tous ses champs obligatoires', (version) => {
         const template = getDebugTemplate(version, {}) || {};
-        const missing = requiredFieldsOf(version).filter((key) => template[key] === undefined || template[key] === '');
+        // Un champ conditionnel qui ne s'affiche pas avec ces données (représentant légal d'un majeur…) n'a pas à être rempli (voir fieldApplicability.js).
+        const missing = requiredFieldsOf(version).filter((key) => isFieldApplicable(version, key, template) && (template[key] === undefined || template[key] === ''));
         // Le médecin et le défunt viennent de l'identité connectée ou d'un autre champ : seuls les champs propres au formulaire sont vérifiés ici.
         expect(missing.filter((key) => !TECHNICAL.has(key))).toEqual([]);
     });

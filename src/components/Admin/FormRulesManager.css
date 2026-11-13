@@ -23,5 +23,8 @@
 .fr-table td small { color: #8b98a5; }
 .fr-table tr.req { background: rgba(248, 81, 73, 0.06); }
 .fr-help { color: #c3ccd5; max-width: 420px; }
+/* Champ conditionnel : n'apparaît (et n'est exigé) que dans certains cas. */
+.fr-cond { margin-top: 4px; color: #e3b341; font-size: 0.82rem; }
+.fr-cond i { margin-right: 5px; }
 .fr-empty { color: #8b98a5; }
 @media (max-width: 860px) { .fr-layout { grid-template-columns: 1fr; } .fr-list { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; } }

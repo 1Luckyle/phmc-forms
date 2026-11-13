@@ -10,6 +10,7 @@ import { VERSION_FIELDS } from '../../constants/formFieldCatalog';
 import { getFieldInfo } from '../../constants/fieldInfo';
 import { buildReportTitle } from '../../utils/reportTitle';
 import { fieldKeysOf, isFieldRequired, isDefaultRequired, lockedReasonOf, specialRulesOf, LOCK_REASONS } from '../../utils/formRulesCore';
+import { conditionTextOf } from '../../utils/fieldApplicability';
 import { useFormRules, saveFieldRequirement, resetFormRequirements } from '../../utils/formRules';
 import './FormRulesManager.css';
 
@@ -17,7 +18,7 @@ const GROUPS = [
     { label: 'Dossiers médicaux Civils', versions: [3, 25, 24, 26] },
     { label: 'Médecine légale (DMEC)', versions: [1, 4, 2, 8, 11, 37] },
     { label: 'Soins et notes du personnel', versions: [5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 28, 29, 35, 41] },
-    { label: 'E-mail interne', versions: [27] },
+    { label: 'Courriers', versions: [42] },
     { label: 'Candidatures', versions: [50, 51, 52, 53, 54, 55] },
 ];
 
@@ -52,7 +53,7 @@ const FormRulesManager = ({ showNotification, onLogAction }) => {
         return keys.map((key) => {
             const type = VERSION_FIELDS[version]?.[key] || 'text';
             const info = getFieldInfo(version, key, type);
-            return { key, type, ...info, locked: lockedReasonOf(version, key), required: isFieldRequired(version, key, overrides), modified: key in (overrides[version] || {}) };
+            return { key, type, ...info, locked: lockedReasonOf(version, key), required: isFieldRequired(version, key, overrides), modified: key in (overrides[version] || {}), condition: conditionTextOf(version, key) };
         }).filter((row) => (!onlyRequired || row.required) && (!q || `${row.label} ${row.key} ${row.help}`.toLowerCase().includes(q)));
     }, [keys, version, overrides, query, onlyRequired]);
 
@@ -89,7 +90,7 @@ const FormRulesManager = ({ showNotification, onLogAction }) => {
             <div className="fr-head">
                 <div>
                     <h4><i className="fas fa-list-check"></i> Champs obligatoires</h4>
-                    <p>Pour chaque formulaire, cochez les champs sans lesquels le rapport ne peut pas être enregistré. Le changement s'applique immédiatement à tous les utilisateurs.</p>
+                    <p>Pour chaque formulaire, cochez les champs sans lesquels le rapport ne peut pas être enregistré. Le changement s'applique immédiatement à tous les utilisateurs. Un champ marqué « Conditionnel » n'apparaît que dans certains cas : même obligatoire, il n'est exigé que lorsqu'il s'affiche et ne bloque jamais l'enregistrement le reste du temps.</p>
                 </div>
             </div>
 
@@ -133,7 +134,10 @@ const FormRulesManager = ({ showNotification, onLogAction }) => {
                                     <tr key={row.key} className={row.required ? 'req' : ''}>
                                         <td><b>{row.label}</b><small>{row.key}</small></td>
                                         <td>{TYPE_LABELS[row.type] || row.type}</td>
-                                        <td className="fr-help">{row.help}</td>
+                                        <td className="fr-help">
+                                            {row.help}
+                                            {row.condition && <div className="fr-cond"><i className="fas fa-code-branch"></i>Conditionnel : affiché, donc exigé, seulement si {row.condition}.</div>}
+                                        </td>
                                         <td className="text-center">
                                             {row.locked ? (
                                                 <span title={LOCK_REASONS[row.locked]}><i className="fas fa-lock"></i> <small>Verrouillé</small></span>

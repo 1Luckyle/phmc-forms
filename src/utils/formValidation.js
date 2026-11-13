@@ -25,6 +25,7 @@ import {
 } from '../constants/recruitment';
 import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } from './minors';
 import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
+import { isFieldApplicable } from './fieldApplicability';
 import { getFieldInfo } from '../constants/fieldInfo';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
@@ -68,6 +69,10 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     const data = formData || {};
 
     requiredFieldsOf(version).forEach((field) => {
+        // Champ conditionnel qui ne s'affiche pas (ex. représentant légal d'un patient majeur) : il ne peut pas être renseigné, il ne bloque donc pas.
+        if (!isFieldApplicable(version, field, data)) return;
+        // Représentant légal (mineur non émancipé) : contrôlé plus bas avec ses messages dédiés.
+        if (version === 24 && (field === 'guardianName' || field === 'guardianRelation')) return;
         // Rapport public de décès d'un défunt NON IDENTIFIÉ : son Discord (HRP) est forcément inconnu.
         if (version === 37 && field === 'decedentOOC' && data.deathRecordType === 'Unidentified') return;
         if (!filled(data[field])) errors.push(`${fieldLabel(version, field)} : champ obligatoire.`);
@@ -307,7 +312,8 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     }
 
     Object.entries(getFormOverrides()[version] || {}).forEach(([field, state]) => {
-        if (state === true && !checked.has(field)) need(field, fieldLabel(version, field));
+        // Un champ conditionnel qui ne s'affiche pas (ex. précision « Autre » du genre) n'est exigé que lorsqu'il s'affiche.
+        if (state === true && !checked.has(field) && isFieldApplicable(version, field, data)) need(field, fieldLabel(version, field));
     });
 
     need('oocForumName', 'Nom de compte du forum GTA:W');

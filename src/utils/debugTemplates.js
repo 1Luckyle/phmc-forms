@@ -391,8 +391,6 @@ const TEMPLATES = {
         decedentOOC: 'test.debug',
         decedentAge: '42',
         decedentSex: 'Male',
-        decedentHeight: '1,80 m',
-        decedentWeight: '80 kg',
         decedentMarks: "Tatouage sur l'avant-bras gauche, cicatrice à l'abdomen.",
         patientID: h.patient.id,
         typeOfDeath: h.opt('typeOfDeathOptions'),
@@ -550,7 +548,6 @@ const TEMPLATES = {
             ctResults: imaging.includes('CTScan') ? h.some('ctResults', 1) : [],
             mriResults: imaging.includes('MRI') ? h.some('mriResults', 1) : [],
             ultrasoundResults: imaging.includes('Ultrasound') ? h.some('ultrasoundResults', 1) : [],
-            prescriptionImage: h.img(),
         };
     },
 
@@ -686,7 +683,6 @@ const TEMPLATES = {
         attachedReportSummary: buildEmployerSummaryBBCode('consult', {
             facility: 'Centre médical Pillbox Hill', date: h.today.split('-').reverse().join('/'), admission: 'Non', followup: 'Recommandé',
         }),
-        SubmitDate: h.today,
     }),
 
     // Mail Externe (courrier envoyé hors du site)
@@ -791,9 +787,11 @@ const TEMPLATES = {
 // ───────────────────── Gabarits partagés entre versions ─────────────────────
 
 function physEval(h) {
+    // Évaluation physique : pas de rubrique antécédents / traitement (PatientContextFields showHistory={false}).
+    const { patientChronicDiseases, patientCurrentMedicine, ...context } = patientContext(h); // eslint-disable-line no-unused-vars
     return {
         ...h.phmc,
-        ...patientContext(h),
+        ...context,
         phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
