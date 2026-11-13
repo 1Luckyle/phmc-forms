@@ -779,7 +779,7 @@ function MainApp({
                 // Un retour à la ligne ET [br][/br] côte à côte faisaient deux sauts : on les fusionne (voir utils/bbcodeLineBreaks.js).
                 const signer = resolveSigner(formData);
                 const generated = definition.generator({ ...generatorArgs, signer });
-                // Signature du personnel, puis pied de page PHMC sur tous les rapports (pas sur les candidatures, qui se postent telles quelles).
+                // Signature du personnel, puis pied de page PHMC sur tous les rapports (pas sur les candidatures, dont le générateur pose lui-même le pied de page).
                 return normalizeBBCodeLineBreaks(definition.group === "PHMC Recruitment" ? generated : withPhmcFooter(withStaffSignature(generated, bbCodeVersion, signer), bbCodeVersion));
             }
         } else {

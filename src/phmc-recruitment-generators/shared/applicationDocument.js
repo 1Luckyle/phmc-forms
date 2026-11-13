@@ -2,8 +2,8 @@
 //
 // Document (BBCode / aperçu) commun aux six candidatures, dans le même style que les autres formulaires du site : en-tête à deux cellules, bandeaux de rubrique noirs,
 // champs en « étiquette : valeur ». Plus de numérotation rouge, de cases à cocher vides ni de bandeau de liens : les choix (niveau d'études, citoyenneté…) sont écrits
-// en toutes lettres, l'expérience professionnelle en une fiche par emploi. Le pied de page du centre est ajouté, comme pour tous les rapports, par withPhmcFooter.
-import { careHeader, sectionBanner, escapeBbText, pbcFooter } from '../../phmc-bbcode-generators/shared/bbStyles';
+// en toutes lettres, l'expérience professionnelle en une fiche par emploi. Le pied de page du centre (PHMC ou clinique de Paleto Bay) termine le document.
+import { careHeader, sectionBanner, escapeBbText, pbcFooter, phmcFooter } from '../../phmc-bbcode-generators/shared/bbStyles';
 import { placeWithCity } from '../../utils/places';
 import {
     applicantDisplayName, applicantAge, locationLabel, jobsOf, jobPeriod, enrollmentPeriod, timezoneLabel, frDate, licenseOf,
@@ -91,8 +91,8 @@ ${education}
 ${experience}${licences}${partTime}${sectionBanner('(( Informations hors personnage ))')}
 ${hrp}
 `;
-    // Le pied de page standard (PHMC) est ajouté ensuite par withPhmcFooter ; pour la clinique de Paleto Bay, on pose ici le sien (il reconnaît sa marque et n'ajoute rien).
-    return pbc ? `${document.replace(/\s+$/, '')}\n${pbcFooter()}` : document;
+    // Pied de page du centre sur TOUTES les candidatures (aperçu et BBCode) : celui de la clinique de Paleto Bay pour une candidature à la clinique, celui du PHMC sinon. MainApp n'en ajoute pas aux candidatures.
+    return `${document.replace(/\s+$/, '')}\n${pbc ? pbcFooter() : phmcFooter()}`;
 };
 
 export default generateApplicationDocument;

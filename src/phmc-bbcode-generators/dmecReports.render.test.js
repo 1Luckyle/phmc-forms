@@ -81,7 +81,8 @@ describe('en-tête commun des rapports du DMEC', () => {
         const text = generateDeathRecord({ ...getDebugTemplate(37, ctx), agencyDataStore });
         expect(text).toContain('death-record-header.png');
         // Logo à texte clair : sur un bandeau sombre, pas sur fond blanc.
-        expect(text).toMatch(/\[divboxcolor=black\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/death-record-header\.png/);
+        // Réduit à une largeur fixe (sinon il s'étire sur tout le bandeau) et centré.
+        expect(text).toMatch(/\[divboxcolor=black\]\[center\](\[br\]\[\/br\])?\[img=\d{2,3}\]https:\/\/phmc-tools\.com\/img\/death-record-header\.png/);
         expect(text).not.toContain('dmec-seal-small');
         const dossier = text.slice(text.indexOf('Numéro de dossier'), text.indexOf('Circonstances du décès'));
         // Jamais trois cellules sur une ligne : la troisième serait écrasée sur la droite.
