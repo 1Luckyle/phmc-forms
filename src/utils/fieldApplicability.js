@@ -114,6 +114,8 @@ const RECORD_TYPE_SET = rule('le type de défunt est choisi', (d) => filled(d.de
 const UNIDENTIFIED = rule('le défunt est « Non identifié »', (d) => d.deathRecordType === 'Unidentified');
 const IDENTIFIED = rule('le défunt est « Identifié »', (d) => filled(d.deathRecordType) && d.deathRecordType !== 'Unidentified');
 
+const ONGOING_STUDIES = rule('les études ne sont pas « en cours »', (d) => !d.applicantEnrollmentOngoing);
+
 // ───────────── Table : { version: { champ: { text, when } } } ─────────────
 export const FIELD_CONDITIONS = {
     1: {
@@ -172,13 +174,13 @@ export const FIELD_CONDITIONS = {
         hairColor: UNIDENTIFIED, eyeColor: UNIDENTIFIED, weight: UNIDENTIFIED, height: UNIDENTIFIED, tattoos: UNIDENTIFIED, jewelry: UNIDENTIFIED, comments: UNIDENTIFIED,
     },
     41: flightRules(),
-    // Candidatures : le texte de précision du genre n'existe que si « Autre » est coché.
-    50: { applicantGenderOtherText: rule('« Autre » est coché pour le genre', (d) => filled(d.genderOther)) },
-    51: { applicantGenderOtherText: rule('« Autre » est coché pour le genre', (d) => filled(d.genderOther)) },
-    52: { applicantGenderOtherText: rule('« Autre » est coché pour le genre', (d) => filled(d.genderOther)) },
-    53: { applicantGenderOtherText: rule('« Autre » est coché pour le genre', (d) => filled(d.genderOther)) },
-    54: { applicantGenderOtherText: rule('« Autre » est coché pour le genre', (d) => filled(d.genderOther)) },
-    55: { applicantGenderOtherText: rule('« Autre » est coché pour le genre', (d) => filled(d.genderOther)) },
+    // Candidatures : la date de fin de scolarité n'existe que si les études ne sont pas « en cours ».
+    50: { applicantEnrollmentEnd: ONGOING_STUDIES },
+    51: { applicantEnrollmentEnd: ONGOING_STUDIES },
+    52: { applicantEnrollmentEnd: ONGOING_STUDIES },
+    53: { applicantEnrollmentEnd: ONGOING_STUDIES },
+    54: { applicantEnrollmentEnd: ONGOING_STUDIES },
+    55: { applicantEnrollmentEnd: ONGOING_STUDIES },
 };
 CARE_FORMS_WITH_REFERRAL.forEach((version) => { FIELD_CONDITIONS[version] = { ...REFERRAL, ...(FIELD_CONDITIONS[version] || {}) }; });
 // Le formulaire 7 est la version PBC du 6 : mêmes conditions.

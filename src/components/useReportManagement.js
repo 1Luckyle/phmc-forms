@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { migrateApplicationData } from '../utils/applicationForm';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
 import {
     normalizeApplicationStatus, applicationStatusLabel, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
@@ -1616,7 +1617,7 @@ Candidature : ${applicationId}`,
                 return false;
             }
             const poste = positionLabelFor(selectOptions, version, fresh.posteCle || fresh.poste) || fresh.poste || '';
-            setPendingFormLoad({ version, data: { ...fresh.donnees }, label: poste || 'Candidature' });
+            setPendingFormLoad({ version, data: migrateApplicationData(fresh.donnees), label: poste || 'Candidature' });
             const next = { candidatUid: applicant.uid, id: fresh.id, version, poste, statut: fresh.statut };
             setEditingApplication(next);
             try { localStorage.setItem(EDIT_STORAGE_KEY, JSON.stringify({ uid: applicant.uid, id: fresh.id })); } catch (error) { /* ignoré */ }
@@ -1669,7 +1670,7 @@ Candidature : ${applicationId}`,
         }
         setPendingFormLoad({
             version,
-            data: { ...application.donnees },
+            data: migrateApplicationData(application.donnees),
             label: application.poste || 'Candidature',
         });
         return true;

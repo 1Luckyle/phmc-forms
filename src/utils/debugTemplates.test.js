@@ -9,7 +9,7 @@ jest.mock('firebase/database', () => ({ ref: jest.fn(), onValue: jest.fn(), get:
 
 // Champs techniques que le remplissage debug pose et qui ne sont pas des champs saisis (paiement, identité du personnel, tableaux).
 const TECHNICAL = new Set([
-    'payNow', 'isExempt', 'fleecaPaymentId', 'paymentProofPhotos', 'filledByStaff', 'lastName', 'phmcEmployee', 'phmcEmployeeLastName', 'surgeonEmployee', 'externalMailBodyHtml', 'externalMailDate', 'coronerEmployee',
+    'applicantTitleAndFullName', 'payNow', 'isExempt', 'fleecaPaymentId', 'paymentProofPhotos', 'filledByStaff', 'lastName', 'phmcEmployee', 'phmcEmployeeLastName', 'surgeonEmployee', 'externalMailBodyHtml', 'externalMailDate', 'coronerEmployee',
     'coronerBadge', 'coronerRank', 'coronerDiscord', 'chiefCoronerEmployee', 'chiefCoronerBadge', 'chiefCoronerRank', 'chiefCoronerDiscord', 'decedents',
     'caseNumber', 'recruitmentPosition', 'phmcSignature', 'additionalReports', 'date', 'UpdateMedicalFile', 'patientTitleOptions',
     // Nom complet recomposé à partir des trois champs (prénom, deuxième prénom, nom) : voir usePatientNameParts.

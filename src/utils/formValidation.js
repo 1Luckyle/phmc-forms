@@ -24,6 +24,7 @@ import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
 import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } from './minors';
+import { jobsOf, jobProblems, licensesOf } from './applicationForm';
 import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { isFieldApplicable } from './fieldApplicability';
 import { getFieldInfo } from '../constants/fieldInfo';
@@ -186,20 +187,16 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
 
 // ───────────────────────────── Candidatures ─────────────────────────────
 
-const ANY_GENDER = ['genderMale', 'genderFemale', 'genderOther'];
-const ANY_EDUCATION = ['eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAssociate', 'eduBachelor', 'eduMaster', 'eduDoctorate'];
-const ANY_CITIZENSHIP = ['citizenUS', 'citizenPermanent', 'citizenNone'];
-
-// Variantes par formulaire de candidature (reprennent ce que chaque formulaire marque déjà comme obligatoire).
-// `ems: true` : sections réservées aux paramédics / EMT (emploi, lettre, expérience) ; les autres rôles EMS ont
-// à la place licence, motivation, preuve de licence sur un autre personnage et preuves de DFP.
+// Variantes par formulaire de candidature : tous les formulaires partagent les mêmes champs (voir phmc-civilian-fields/shared/ApplicationFields.js) ; seuls changent
+// l'expérience médicale (absente de l'administration) et, pour le paramédical (`ems`), les rubriques selon le poste (paramédic / technicien : emplois ; autres rôles :
+// licence, demande de programme à temps partiel et preuves).
 const APPLICATION_PROFILES = {
-    50: { dob: 'split', location: true, health: true, education: true, employment: true, experience: true, motivation: true },
-    51: { dob: 'combined', location: 'orHealth', health: false, education: true, employment: true, experience: true, motivation: true },
-    52: { dob: 'combined', health: true, education: true, employment: true, experience: false, motivation: true },
-    53: { dob: 'combined', health: true, education: true, employment: true, experience: true, motivation: true },
-    54: { dob: 'combined', health: true, education: true, employment: true, experience: true, motivation: true },
-    55: { dob: 'combined', health: true, education: true, employment: 'ems', experience: 'ems', motivation: 'ems', ems: true },
+    50: { medicalExperience: true },
+    51: { medicalExperience: true },
+    52: { medicalExperience: false },
+    53: { medicalExperience: true },
+    54: { medicalExperience: true },
+    55: { medicalExperience: true, ems: true },
 };
 
 const isParamedic = (positions, key) => matchesPosition(positions, key, { roles: ['Paramedic'], keys: ['Paramedic'] });
@@ -244,67 +241,52 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         if (isRelaxed(version, field)) return;
         if (!filled(data[field])) errors.push(`${label} : champ obligatoire.`);
     };
-    const needOne = (fields, label) => {
-        fields.forEach((field) => checked.add(field));
-        if (fields.every((field) => isRelaxed(version, field))) return;
-        if (!fields.some((field) => filled(data[field]))) errors.push(`${label} : faites un choix.`);
-    };
 
-    // 1. Informations personnelles
-    need('applicantTitleAndFullName', 'Titre et nom complet');
-    needOne(ANY_GENDER, 'Genre');
-    if (filled(data.genderOther)) need('applicantGenderOtherText', 'Genre (précision « Autre »)');
-    if (profile.dob === 'split') {
-        need('applicantDOB', 'Date de naissance');
-        need('applicantBirthPlace', 'Lieu de naissance');
-    } else {
-        need('applicantDOBAndPlace', 'Date et lieu de naissance');
-    }
-    need('applicantAddress', 'Adresse');
+    // 1. Identité
+    need('applicantTitle', 'Titre');
+    need('applicantFirstName', 'Prénom');
+    need('applicantLastName', 'Nom de famille');
+    need('applicantDOB', 'Date de naissance');
+    need('applicantAddress', 'Adresse du domicile');
+    need('applicantZIP', 'Ville du domicile');
     need('applicantPhone', 'Téléphone');
     need('applicantEmail', 'E-mail');
-    if (profile.location === true) needOne(['locationPHMC', 'locationPBC'], 'Site visé (PHMC ou PBC)');
-    if (profile.location === 'orHealth') {
-        const hasLocation = filled(data.locationPHMC) || filled(data.locationPBC);
-        const hasHealth = filled(data.applicantMedicalConditions) && ANY_CITIZENSHIP.some((field) => filled(data[field]));
-        if (!hasLocation && !hasHealth) errors.push('Site visé (PHMC ou PBC) : faites un choix.');
-    }
-    if (profile.health) {
-        need('applicantMedicalConditions', 'Problèmes de santé (ou N/A)');
-        needOne(ANY_CITIZENSHIP, 'Citoyenneté');
-    }
+    need('applicantCitizenship', 'Citoyenneté');
 
-    // 2. Formation, 3. Emploi
-    if (profile.education) {
-        needOne(ANY_EDUCATION, "Niveau d'études");
-        need('applicantSchoolName', "Nom de l'établissement");
-        need('applicantEnrollmentTerm', "Période d'inscription");
-        need('applicantMajor', 'Domaine / spécialité');
-        need('applicantLanguages', 'Langues parlées');
-    }
-    // EMS : emploi, lettre et expérience pour paramédics / EMT ; licence, motivation, autre personnage et DFP pour les autres rôles.
+    // 2. Formation
+    need('applicantEducationLevel', "Niveau d'études");
+    need('applicantSchoolName', "Nom de l'établissement");
+    need('applicantEnrollmentStart', 'Début de la scolarité');
+    if (!data.applicantEnrollmentOngoing) need('applicantEnrollmentEnd', 'Fin de la scolarité (ou cochez « Études en cours »)');
+    need('applicantMajor', "Domaine d'études");
+    need('applicantLanguages', 'Langues supplémentaires (choisissez « Aucune autre langue » le cas échéant)');
+
+    // 3. Expérience professionnelle : demandée dans TOUTES les candidatures (autres rôles EMS compris).
     const emsFull = profile.ems ? (isParamedic(positions, data.recruitmentPosition) || isEmt(positions, data.recruitmentPosition)) : null;
-    if (profile.employment === true || (profile.employment === 'ems' && emsFull)) {
-        need('applicantPrevEmployment', 'Emploi précédent');
-        need('applicantPrevDuties', 'Responsabilités');
-        need('applicantPrevDismissalReason', 'Motif de départ');
+    const emsOther = !!profile.ems && !emsFull;
+    const jobs = jobsOf(data);
+    checked.add('applicantJobs');
+    checked.add('applicantNoExperience');
+    if (!isRelaxed(version, 'applicantJobs')) {
+        if (jobs.length === 0 && !data.applicantNoExperience) errors.push('Expérience professionnelle : ajoutez un emploi, ou cochez « Je n\'ai aucune expérience professionnelle ».');
+        jobs.forEach((job, index) => {
+            const missing = jobProblems(job);
+            if (missing.length > 0) errors.push(`Emploi ${index + 1} : renseignez ${missing.join(', ')}.`);
+            else if (filled(job.start) && (parseDate(job.start) === null || isFutureDate(parseDate(job.start), 0))) errors.push(`Emploi ${index + 1} : date de début invalide.`);
+        });
     }
-    if (profile.ems && !emsFull) {
-        need('emsLicenseLink', "Licence de technicien médical d'urgence");
+    // 4. Licences : captures facultatives, sauf pour les autres rôles EMS (licence de technicien médical d'urgence) qui demandent aussi le programme à temps partiel.
+    checked.add('applicantLicenses');
+    if (emsOther) {
+        if (!isRelaxed(version, 'applicantLicenses') && licensesOf(data).length === 0) errors.push("Licences : ajoutez au moins une capture d'écran (votre licence de technicien médical d'urgence).");
         need('emsPartTimeReason', 'Motivation pour le programme à temps partiel');
     }
-    if (profile.motivation === true || (profile.motivation === 'ems' && emsFull)) {
-        need('applicantMotivationLetter', 'Lettre de motivation');
-    }
 
-    // Informations hors RP
-    need('oocUcpName', "Nom d'utilisateur UCP");
+    // 5. Informations hors RP
     need('oocDiscord', 'Nom Discord');
     need('oocTimezone', 'Fuseau horaire');
-    if (profile.experience === true || (profile.experience === 'ems' && emsFull)) {
-        need('oocMedicalExperience', 'Expérience médicale réelle ou RP médical passé');
-    }
-    if (profile.ems && !emsFull) {
+    if (profile.medicalExperience && !emsOther) need('oocMedicalExperience', 'Expérience médicale réelle ou RP médical passé');
+    if (emsOther) {
         need('oocOtherCharLicenseProof', 'Licence BLS/ALS sur un autre personnage (ou N/A)');
         need('dfpSanFireLink', 'Preuve de DFP SAN FIRE (ou N/A)');
         need('dfpPhmcLink', 'Preuve de DFP PHMC (ou N/A)');
@@ -312,17 +294,26 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     }
 
     Object.entries(getFormOverrides()[version] || {}).forEach(([field, state]) => {
-        // Un champ conditionnel qui ne s'affiche pas (ex. précision « Autre » du genre) n'est exigé que lorsqu'il s'affiche.
+        // Un champ conditionnel qui ne s'affiche pas n'est exigé que lorsqu'il s'affiche (voir utils/fieldApplicability.js).
         if (state === true && !checked.has(field) && isFieldApplicable(version, field, data)) need(field, fieldLabel(version, field));
     });
 
-    need('oocForumName', 'Nom de compte du forum GTA:W');
     // Formes valides
     if (filled(data.applicantEmail) && !isValidEmail(data.applicantEmail)) errors.push('E-mail : format invalide (ex. prenomnom@mail.eyefind.fr).');
     if (filled(data.applicantPhone) && !isValidPhone(data.applicantPhone)) errors.push('Téléphone : numéro invalide (chiffres, espaces ou tirets).');
-    if (profile.dob === 'split' && filled(data.applicantDOB)) {
+    if (filled(data.applicantDOB)) {
         const date = parseDate(data.applicantDOB);
-        if (date && (isFutureDate(date, 0) || isImplausiblyOld(date))) errors.push('Date de naissance : date invalide.');
+        if (!date || isFutureDate(date, 0) || isImplausiblyOld(date)) errors.push('Date de naissance : date invalide.');
+    }
+    // Le titre suit l'âge (même règle que les dossiers médicaux) : « Mineur » sous 18 ans, jamais au-delà.
+    if (filled(data.applicantTitle) && filled(data.applicantDOB)) {
+        const age = ageOn(data.applicantDOB);
+        if (isMinorTitle(data.applicantTitle) && (age === null || age >= MAJORITY_AGE)) errors.push('Titre « Mineur » : la date de naissance doit indiquer un candidat de moins de 18 ans.');
+        else if (age !== null && age < MAJORITY_AGE && !isMinorTitle(data.applicantTitle)) errors.push('Titre : un candidat de moins de 18 ans a obligatoirement le titre « Mineur ».');
+    }
+    if (filled(data.applicantEnrollmentStart) && filled(data.applicantEnrollmentEnd) && !data.applicantEnrollmentOngoing
+        && String(data.applicantEnrollmentEnd) < String(data.applicantEnrollmentStart)) {
+        errors.push('Scolarité : la date de fin ne peut pas précéder la date de début.');
     }
 
     return { errors, warnings };

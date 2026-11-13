@@ -32,7 +32,7 @@ const SAMPLE = {
 
 const TYPE_LABELS = {
     text: 'Texte', textarea: 'Texte long', date: 'Date', 'datetime-local': 'Date et heure', time: 'Heure', email: 'E-mail', number: 'Nombre',
-    select: 'Liste', checkbox: 'Case', radio: 'Choix',
+    select: 'Liste', checkbox: 'Case', radio: 'Choix', list: 'Plusieurs fiches',
 };
 
 const FormRulesManager = ({ showNotification, onLogAction }) => {

@@ -9,9 +9,8 @@ import {
     ADVANCED_FIELDS, IDENTITY_FIELDS, EMERGENCY_FIELDS, MEDICAL_FIELDS, MENTAL_FIELDS, FAMILY_FIELDS, SOCIAL_FIELDS, LIFESTYLE_FIELDS, DIRECTIVE_FIELDS,
     NEW_KEY, isDossierVersion, BASIC_VERSION, ADVANCED_VERSION, UPDATE_VERSION,
 } from './dossierCore';
-import { titleLabel } from './patientIdentity';
+import { ageOn, isMinorTitle, MAJORITY_AGE } from './minors';
 import { MENTAL_HEALTH_VERSIONS } from '../constants/careFormOptions';
-import { placeWithCity } from './places';
 
 // Fond médical qu'un formulaire de soins peut reprendre du dossier (jamais le motif, l'examen ni le diagnostic).
 export const CARE_BACKGROUND_FIELDS = ['patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine'];
@@ -67,32 +66,29 @@ export const dossierPrefillPatch = (version, donnees = {}, formData = {}, knownF
 };
 
 // ───────────── Candidatures ─────────────
-// Les candidatures reprennent l'identité du compte (profil) et le dossier : titre et nom complet, genre, date de naissance, adresse, téléphone, e-mail, Discord, et un résumé des
-// conditions médicales connues (allergies, maladies chroniques, traitements). identity : { firstName, middleName, lastName, dateOfBirth, gender, address, zip, phone, email, discord }.
-// Un champ déjà rempli (ou restauré du brouillon) n'est jamais écrasé.
+// Les candidatures reprennent l'identité du compte (profil) et le dossier : titre, prénom, deuxième prénom, nom, date de naissance, adresse et ville, téléphone, e-mail et Discord.
+// identity : { firstName, middleName, lastName, dateOfBirth, address, zip, phone, email, discord }. Un champ déjà rempli (ou restauré du brouillon) n'est jamais écrasé.
+// Le titre « Mineur » suit l'âge (formulaire : useMinorTitleGuard) : il n'est jamais repris d'un dossier ancien s'il contredit la date de naissance.
 export const candidaturePrefillPatch = (identity = {}, donnees = {}, formData = {}) => {
     const person = { ...identity };
-    const fullName = [donnees.patientFirstName || person.firstName, donnees.patientMiddleName || person.middleName, donnees.patientLastName || person.lastName].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
-    const gender = String(donnees.patientGender || person.gender || '').toLowerCase();
-    const medical = [
-        donnees.patientAllergies && `Allergies : ${donnees.patientAllergies}`,
-        donnees.patientChronicDiseases && `Maladies chroniques : ${donnees.patientChronicDiseases}`,
-        donnees.patientCurrentMedicine && `Traitements en cours : ${donnees.patientCurrentMedicine}`,
-    ].filter(Boolean).join(' ; ');
+    const dob = donnees.patientDateOfBirth || person.dateOfBirth || '';
+    const age = ageOn(dob);
+    let title = donnees.patientTitle || '';
+    if (isMinorTitle(title) && (age === null || age >= MAJORITY_AGE)) title = '';
     const wanted = {
-        applicantTitleAndFullName: fullName ? [titleLabel(donnees.patientTitle) || '', fullName].filter(Boolean).join(' ').trim() : '',
-        applicantDOB: donnees.patientDateOfBirth || person.dateOfBirth || '',
-        applicantAddress: placeWithCity(donnees.patientAddress || person.address || '', donnees.patientZIP || person.zip || '', donnees.patientZIPCity || ''),
+        applicantTitle: title,
+        applicantFirstName: donnees.patientFirstName || person.firstName || '',
+        applicantMiddleName: donnees.patientMiddleName || person.middleName || '',
+        applicantLastName: donnees.patientLastName || person.lastName || '',
+        applicantDOB: dob,
+        applicantAddress: donnees.patientAddress || person.address || '',
+        applicantZIP: donnees.patientZIP || person.zip || '',
+        applicantZIPCity: donnees.patientZIPCity || '',
         applicantPhone: donnees.patientPH || person.phone || '',
         applicantEmail: person.email || '',
         oocDiscord: donnees.patientDiscord || person.discord || '',
-        applicantMedicalConditions: medical,
     };
     const patch = {};
     Object.entries(wanted).forEach(([key, value]) => { if (value && empty(formData[key])) patch[key] = value; });
-    // Genre : une case, seulement si aucune n'est cochée.
-    const noGender = !formData.genderMale && !formData.genderFemale && !formData.genderOther;
-    if (noGender && (gender === 'homme' || gender === 'male')) patch.genderMale = true;
-    if (noGender && (gender === 'femme' || gender === 'female')) patch.genderFemale = true;
     return patch;
 };

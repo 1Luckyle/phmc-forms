@@ -39,12 +39,12 @@ export const DEFAULT_REQUIRED = {
     42: ['externalMailSubject', 'externalMailRecipient', 'externalMailBody'],
     37: ['deathRecordType', 'caseNumber', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
     // Candidatures : socle commun à tous les envois (le reste dépend du poste et du profil, voir validateApplication).
-    50: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
-    51: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
-    52: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
-    53: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
-    54: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
-    55: ['applicantTitleAndFullName', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocUcpName', 'oocForumName', 'oocDiscord', 'oocTimezone'],
+    50: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    51: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    52: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    53: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    54: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    55: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
 };
 
 // Champs qu'on ne peut pas rendre facultatifs : raison 'title' (ils composent le titre du rapport, sans eux il serait introuvable) ou 'billing'
@@ -79,12 +79,12 @@ export const LOCKED_FIELDS = {
     41: { patientName: TITLE, date: TITLE },
     42: { externalMailSubject: TITLE },
     37: { decedentFirstName: TITLE, decedentLastName: TITLE, decedentOOC: TITLE, dateOfDeath: TITLE },
-    50: { applicantTitleAndFullName: TITLE },
-    51: { applicantTitleAndFullName: TITLE },
-    52: { applicantTitleAndFullName: TITLE },
-    53: { applicantTitleAndFullName: TITLE },
-    54: { applicantTitleAndFullName: TITLE },
-    55: { applicantTitleAndFullName: TITLE },
+    50: { applicantFirstName: TITLE, applicantLastName: TITLE },
+    51: { applicantFirstName: TITLE, applicantLastName: TITLE },
+    52: { applicantFirstName: TITLE, applicantLastName: TITLE },
+    53: { applicantFirstName: TITLE, applicantLastName: TITLE },
+    54: { applicantFirstName: TITLE, applicantLastName: TITLE },
+    55: { applicantFirstName: TITLE, applicantLastName: TITLE },
 };
 
 export const LOCK_REASONS = {

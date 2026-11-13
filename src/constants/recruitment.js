@@ -163,18 +163,14 @@ export const APPLICATION_EDITABLE_STATUSES = ['brouillon', 'soumise', 'en_pause'
 
 // Libellés des champs d'une candidature, pour dire dans l'historique ce que le candidat a modifié.
 export const APPLICATION_FIELD_LABELS = {
-    recruitmentPosition: 'Poste visé', applicantTitleAndFullName: 'Titre et nom complet', genderMale: 'Genre', genderFemale: 'Genre', genderOther: 'Genre',
-    applicantGenderOtherText: 'Genre (précision)', applicantDOB: 'Date de naissance', applicantBirthPlace: 'Lieu de naissance',
-    applicantDOBAndPlace: 'Date et lieu de naissance', applicantAddress: 'Adresse', applicantPhone: 'Téléphone', applicantEmail: 'E-mail',
-    locationPHMC: 'Site (PHMC)', locationPBC: 'Site (PBC)', applicantMedicalConditions: 'Conditions médicales', citizenUS: 'Citoyenneté',
-    citizenPermanent: 'Citoyenneté', citizenNone: 'Citoyenneté', eduHighSchool: 'Études', eduCertificate: 'Études', eduDiploma: 'Études',
-    eduAssociate: 'Études', eduBachelor: 'Études', eduMaster: 'Études', eduDoctorate: 'Études', applicantSchoolName: 'Établissement',
-    applicantEnrollmentTerm: 'Période d\'études', applicantMajor: 'Filière', applicantLanguages: 'Langues', applicantPrevEmployment: 'Emploi précédent',
-    applicantPrevDuties: 'Fonctions précédentes', applicantPrevDismissalReason: 'Motif de départ', applicantMotivationLetter: 'Lettre de motivation',
-    emsLicenseLink: 'Licence', emsPartTimeReason: 'Temps partiel', dfpSanFireLink: 'Preuve DFP (SanFire)', dfpPhmcLink: 'Preuve DFP (PHMC)',
-    dfpLegalFactionLink: 'Preuve DFP (faction légale)', oocUcpName: 'Nom UCP', oocForumName: 'Nom du forum', oocDiscord: 'Discord',
-    oocTimezone: 'Fuseau horaire', oocMedicalExperience: 'Expérience médicale (HRP)', oocOtherCharLicenseProof: 'Preuve de licence (autre personnage)',
-    oocOtherFactionDfpLfm: 'DFP / LFM (autre faction)',
+    recruitmentPosition: 'Poste visé', applicantTitleAndFullName: 'Titre et nom complet', applicantTitle: 'Titre', applicantFirstName: 'Prénom',
+    applicantMiddleName: 'Deuxième prénom', applicantLastName: 'Nom de famille', applicantDOB: 'Date de naissance', applicantAddress: 'Adresse',
+    applicantZIP: 'Ville du domicile', applicantZIPCity: 'Ville du domicile', applicantPhone: 'Téléphone', applicantEmail: 'E-mail', applicantLocation: 'Site',
+    applicantCitizenship: 'Citoyenneté', applicantEducationLevel: 'Niveau d\'études', applicantSchoolName: 'Établissement', applicantEnrollmentStart: 'Début de scolarité',
+    applicantEnrollmentEnd: 'Fin de scolarité', applicantEnrollmentOngoing: 'Études en cours', applicantMajor: 'Filière', applicantLanguages: 'Langues',
+    applicantJobs: 'Expériences professionnelles', applicantNoExperience: 'Expériences professionnelles', applicantLicenses: 'Licences', emsPartTimeReason: 'Temps partiel',
+    dfpSanFireLink: 'Preuve DFP (SanFire)', dfpPhmcLink: 'Preuve DFP (PHMC)', dfpLegalFactionLink: 'Preuve DFP (faction légale)',
+    oocDiscord: 'Discord', oocTimezone: 'Fuseau horaire', oocMedicalExperience: 'Expérience médicale (HRP)', oocOtherCharLicenseProof: 'Preuve de licence (autre personnage)',
 };
 
 // Champs différents entre deux jeux de réponses → libellés uniques (sans valeurs : certains textes sont longs et personnels).

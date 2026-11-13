@@ -43,16 +43,22 @@ describe('pré-remplissage depuis le dossier', () => {
 });
 
 describe('pré-remplissage des candidatures', () => {
-    const identity = { firstName: 'Jean', lastName: 'Testard', dateOfBirth: '1990-05-14', gender: 'Homme', address: '1 rue', zip: '90001', phone: '555-0000', email: 'jean@mail.eyefind.fr', discord: 'jean#1' };
-    test('reprend l’identité du compte et un résumé médical du dossier, sans écraser un champ rempli', () => {
-        const patch = candidaturePrefillPatch(identity, { patientAllergies: 'Pénicilline', patientChronicDiseases: 'Asthme', patientTitle: 'Mr' }, { applicantPhone: 'déjà saisi' });
-        expect(patch).toMatchObject({ applicantDOB: '1990-05-14', applicantEmail: 'jean@mail.eyefind.fr', oocDiscord: 'jean#1', genderMale: true });
-        expect(patch.applicantTitleAndFullName).toMatch(/Jean Testard$/);
-        expect(patch.applicantMedicalConditions).toBe('Allergies : Pénicilline ; Maladies chroniques : Asthme');
+    const identity = { firstName: 'Jean', middleName: 'Paul', lastName: 'Testard', dateOfBirth: '1990-05-14', address: '1 rue', zip: '90001', phone: '555-0000', email: 'jean@mail.eyefind.fr', discord: 'jean#1' };
+    test('reprend l’identité du compte (titre, prénoms, nom, naissance, adresse, ville, contacts), sans écraser un champ rempli', () => {
+        const patch = candidaturePrefillPatch(identity, { patientTitle: 'Mr', patientZIPCity: 'Mission Row' }, { applicantPhone: 'déjà saisi' });
+        expect(patch).toMatchObject({
+            applicantTitle: 'Mr', applicantFirstName: 'Jean', applicantMiddleName: 'Paul', applicantLastName: 'Testard', applicantDOB: '1990-05-14', applicantZIP: '90001',
+            applicantZIPCity: 'Mission Row', applicantEmail: 'jean@mail.eyefind.fr', oocDiscord: 'jean#1',
+        });
         expect(patch).not.toHaveProperty('applicantPhone');
-        expect(patch.applicantAddress).toContain('1 rue');
+        expect(patch.applicantAddress).toBe('1 rue');
     });
-    test('le genre n’est pas posé si une case est déjà cochée', () => {
-        expect(candidaturePrefillPatch(identity, {}, { genderFemale: true })).not.toHaveProperty('genderMale');
+    test('plus de genre ni de résumé médical dans une candidature', () => {
+        const patch = candidaturePrefillPatch(identity, { patientAllergies: 'Pénicilline', patientGender: 'Homme' }, {});
+        expect(patch).not.toHaveProperty('genderMale');
+        expect(patch).not.toHaveProperty('applicantMedicalConditions');
+    });
+    test('le titre « Mineur » d’un ancien dossier n’est pas repris pour un adulte', () => {
+        expect(candidaturePrefillPatch(identity, { patientTitle: 'Mineur' }, {})).not.toHaveProperty('applicantTitle');
     });
 });

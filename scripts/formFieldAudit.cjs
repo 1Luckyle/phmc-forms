@@ -17,7 +17,7 @@ const read = (file) => fs.readFileSync(file, 'utf8');
 
 // Champs cités dans le code d'un formulaire mais qui n'en sont PAS des champs de saisie du catalogue (état de calcul, liste interne, paiement…).
 const IGNORE_IN_CODE = {
-    '*': ['patientName', 'patientNameNew', 'lastName', 'date', 'payNow', 'fleecaPaymentId', 'patientTitleOptions', 'decedentName', 'extraStaff', 'massFatality', 'decedents', 'autopsyDiagramMarkers'],
+    '*': ['patientName', 'patientNameNew', 'lastName', 'date', 'payNow', 'fleecaPaymentId', 'patientTitleOptions', 'decedentName', 'extraStaff', 'massFatality', 'decedents', 'autopsyDiagramMarkers', 'applicantTitleAndFullName'],   // nom composé des candidatures : pas une saisie
     1: ['evidenceLocker', 'decedentHeight', 'decedentWeight'],   // taille et poids : seulement à l'autopsie (showMeasures)
     6: ['patientChronicDiseases', 'patientCurrentMedicine'], 7: ['patientChronicDiseases', 'patientCurrentMedicine'],   // PatientContextFields showHistory={false}
     8: ['decedentOOC'],
@@ -26,11 +26,15 @@ const IGNORE_IN_CODE = {
     20: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'], 21: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'],
     24: ['releaseReports', 'releasePractitionerAuto', 'phmcEmployee'],   // praticien déduit des rapports retenus, pas un champ de saisie
     35: ['appointmentTime'], 41: ['appointmentTime'],
+    // Candidatures : un seul composant partagé (phmc-civilian-fields/shared/ApplicationFields.js) qui cite aussi les champs propres au paramédical et à l'expérience médicale.
+    50: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'], 51: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'], 52: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'oocMedicalExperience'], 53: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'], 54: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'],
 };
 // Champs du catalogue absents du code sous leur nom littéral : noms construits dynamiquement (ville du code postal, examens du certificat de vol, rapports joints).
 const IGNORE_IN_CATALOG = {
-    '*': ['placeOfDeathZipCity', 'patientZIPCity', 'patientZIPNewCity'],
+    '*': ['placeOfDeathZipCity', 'patientZIPCity', 'patientZIPNewCity', 'applicantZIPCity'],
     2: ['deathReport'],
+    // Candidatures : listes (emplois, captures de licences) écrites par clé d'objet dans le composant partagé.
+    50: ['applicantJobs', 'applicantLicenses'], 51: ['applicantJobs', 'applicantLicenses'], 52: ['applicantJobs', 'applicantLicenses'], 53: ['applicantJobs', 'applicantLicenses'], 54: ['applicantJobs', 'applicantLicenses'], 55: ['applicantJobs', 'applicantLicenses'],
 };
 const DYNAMIC_PREFIXES = ['flightCert_'];
 

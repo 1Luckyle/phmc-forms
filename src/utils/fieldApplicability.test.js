@@ -1,6 +1,6 @@
 import { FIELD_CONDITIONS, conditionOf, conditionTextOf, isFieldApplicable } from './fieldApplicability';
 import { setFormOverrides, requiredFieldsOf, isFieldRequired, lockedReasonOf, fieldKeysOf } from './formRulesCore';
-import { validateReport, validateApplication } from './formValidation';
+import { validateReport } from './formValidation';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 
 afterEach(() => setFormOverrides({}));
@@ -81,16 +81,9 @@ describe('un champ rendu obligatoire dans le back-office ne bloque que lorsqu\'i
         expect(isFieldApplicable(41, 'flightCert_cardio', { flightCertClass: 'Class1' })).toBe(true);
     });
 
-    test('candidature : la précision « Autre » du genre n\'est exigée que si « Autre » est coché', () => {
-        setFormOverrides({ 52: { applicantGenderOtherText: true } });
-        const base = {
-            recruitmentPosition: 'X', applicantTitleAndFullName: 'Mme Jane Doe', genderFemale: true, applicantDOBAndPlace: '01/01/1990 Los Santos', applicantAddress: 'Rue 1', applicantPhone: '555-0142',
-            applicantEmail: 'a@b.fr', applicantMedicalConditions: 'N/A', citizenUS: true, eduHighSchool: true, applicantSchoolName: 'S', applicantEnrollmentTerm: '2010', applicantMajor: 'M',
-            applicantLanguages: 'FR', applicantPrevEmployment: 'E', applicantPrevDuties: 'D', applicantPrevDismissalReason: 'R', applicantMotivationLetter: 'L',
-            oocUcpName: 'u', oocForumName: 'f', oocDiscord: 'd', oocTimezone: 'tz',
-        };
-        expect(validateApplication(52, base, { mode: 'submit' }).errors.join(' ')).not.toMatch(/précision/i);
-        expect(validateApplication(52, { ...base, genderFemale: false, genderOther: true }, { mode: 'submit' }).errors.join(' ')).toMatch(/Genre|précision/i);
+    test('candidature : la date de fin de scolarité n\'est exigée que si les études ne sont pas en cours', () => {
+        expect(isFieldApplicable(52, 'applicantEnrollmentEnd', { applicantEnrollmentOngoing: true })).toBe(false);
+        expect(isFieldApplicable(52, 'applicantEnrollmentEnd', { applicantEnrollmentOngoing: false })).toBe(true);
     });
 });
 

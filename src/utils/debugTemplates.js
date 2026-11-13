@@ -318,45 +318,37 @@ const consultBase = (h) => ({
 });
 
 const recruitmentBase = (h) => ({
-    applicantTitleAndFullName: `M. ${h.patient.fullName}`,
-    genderMale: true,
-    genderFemale: false,
-    genderOther: false,
-    applicantGenderOtherText: '',
+    applicantTitle: 'Mr',
+    applicantFirstName: 'Jean',
+    applicantMiddleName: '',
+    applicantLastName: 'Testard',
+    applicantTitleAndFullName: 'M. Jean Testard',
+    applicantDOB: '1990-05-14',
     applicantAddress: h.patient.address,
+    applicantZIP: h.patient.zip,
     applicantPhone: h.patient.phone,
     applicantEmail: h.patient.email,
-    locationPHMC: true,
-    locationPBC: false,
-    applicantMedicalConditions: 'Aucune condition médicale particulière.',
-    citizenUS: true,
-    citizenPermanent: false,
-    citizenNone: false,
-    eduHighSchool: true,
-    eduCertificate: false,
-    eduDiploma: false,
-    eduAssociate: false,
-    eduBachelor: true,
-    eduMaster: false,
-    eduDoctorate: false,
+    applicantCitizenship: 'Citoyen des États-Unis',
+    applicantLocation: 'PHMC',
+    applicantEducationLevel: 'Licence/Baccalauréat (Bachelor’s Degree)',
     applicantSchoolName: 'Université de San Andreas',
-    applicantEnrollmentTerm: '2012 - 2016',
-    applicantMajor: 'Sciences de la santé',
-    applicantLanguages: 'Français, Anglais',
-    applicantPrevEmployment: 'Los Santos General Hospital (2017 - 2023)',
-    applicantPrevDuties: 'Accueil et prise en charge des patients, suivi des dossiers médicaux.',
-    applicantPrevDismissalReason: 'Démission pour évolution de carrière.',
-    applicantMotivationLetter: `${LOREM_LONG}\n\nJe souhaite rejoindre le PHMC pour mettre mes compétences au service des patients.`,
-    oocUcpName: 'JeanTestard',
+    applicantEnrollmentStart: '2012-09-01',
+    applicantEnrollmentEnd: '2016-06-30',
+    applicantEnrollmentOngoing: false,
+    applicantMajor: 'Santé publique',
+    applicantLanguages: ['Anglais', 'Français'],
+    applicantJobs: [
+        { company: 'Los Santos General Hospital', role: 'Agent d\'accueil', start: '2017-01-09', left: true, end: '2023-03-31', duties: 'Accueil et prise en charge des patients, suivi des dossiers médicaux.', leaveReason: 'Évolution de carrière.' },
+    ],
+    applicantNoExperience: false,
+    applicantLicenses: [],
     oocDiscord: 'jean.testard',
-    oocTimezone: 'GMT+1',
+    oocTimezone: 'America/Los_Angeles',
     oocMedicalExperience: 'Trois ans d\'expérience médicale en jeu.',
-    oocForumName: 'JeanTestard',
 });
 
 // Copie de `obj` sans certaines clés (un formulaire qui n'a pas tel champ ne doit pas le recevoir).
 const without = (obj, keys) => Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)));
-const NO_LOCATION = ['locationPHMC', 'locationPBC'];
 
 // Premier poste ouvert d'une liste de détails de poste (clé → { status }).
 const openPosition = (details, optionValues = null) => {
@@ -746,36 +738,29 @@ const TEMPLATES = {
     50: (h) => ({
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'medecine')),
-        applicantDOB: h.patient.dob,
-        applicantBirthPlace: 'Los Santos, San Andreas',
     }),
     51: (h) => ({
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(
             getCategoryPositions(h.selectOptions, 'psychologie')
         ),
-        applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     52: (h) => ({
-        ...without(recruitmentBase(h), [...NO_LOCATION, 'oocMedicalExperience']),
+        ...without(recruitmentBase(h), ['oocMedicalExperience']),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'administration')),
-        applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     53: (h) => ({
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'soinsInfirmiers')),
-        applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     54: (h) => ({
-        ...without(recruitmentBase(h), NO_LOCATION),
+        ...recruitmentBase(h),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'medecineLegale')),
-        applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
     }),
     55: (h) => ({
-        ...without(recruitmentBase(h), NO_LOCATION),
+        ...recruitmentBase(h),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'paramedical')),
-        applicantDOBAndPlace: `${h.patient.dob} à Los Santos`,
-        emsLicenseLink: h.img(),
+        applicantLicenses: [h.img()],
         emsPartTimeReason: LOREM_SHORT,
         oocOtherCharLicenseProof: 'N/A',
         dfpSanFireLink: 'N/A',
