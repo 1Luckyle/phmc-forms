@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[4422],{14422:(e,a,t)=>{t.r(a),t.d(a,{default:()=>i});t(65043);var o=t(9920),s=t(85092),n=t(70579);const l={storageKey:"applicationDraft_paramedical",positionLabel:"S\xe9lectionner un poste EMS\u2026",ems:!0,medicalExperience:!0},i=e=>{let{formData:a,handleChange:t,setFormData:i,selectOptions:r}=e;return(0,n.jsx)(s.A,{formData:a,handleChange:t,setFormData:i,positionDetails:(0,o.f9)(r,"paramedical"),config:l})}}}]);
-//# sourceMappingURL=4422.5dd267e8.chunk.js.map

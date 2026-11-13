@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[3283],{13283:(e,a,t)=>{t.r(a),t.d(a,{default:()=>i});t(65043);var n=t(9920),o=t(85092),l=t(70579);const s={storageKey:"applicationDraft_medecineLegale",positionLabel:"S\xe9lectionner un poste de m\xe9decine l\xe9gale\u2026",medicalExperience:!0},i=e=>{let{formData:a,handleChange:t,setFormData:i,selectOptions:c}=e;return(0,l.jsx)(o.A,{formData:a,handleChange:t,setFormData:i,positionDetails:(0,n.f9)(c,"medecineLegale"),config:s})}}}]);
-//# sourceMappingURL=3283.f45f892b.chunk.js.map

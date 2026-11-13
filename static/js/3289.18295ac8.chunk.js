@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[3289],{33289:(e,a,t)=>{t.r(a),t.d(a,{default:()=>s});t(65043);var n=t(85092),i=t(70579);const o={storageKey:"applicationDraft_medecine",positionLabel:"S\xe9lectionner un poste en m\xe9decine\u2026",medicalExperience:!0},s=e=>{let{formData:a,handleChange:t,setFormData:s,physicianRecruitmentDetails:c}=e;return(0,i.jsx)(n.A,{formData:a,handleChange:t,setFormData:s,positionDetails:c,config:o})}}}]);
-//# sourceMappingURL=3289.18295ac8.chunk.js.map
