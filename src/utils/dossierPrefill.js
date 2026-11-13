@@ -76,6 +76,7 @@ export const candidaturePrefillPatch = (identity = {}, donnees = {}, formData = 
     let title = donnees.patientTitle || '';
     if (isMinorTitle(title) && (age === null || age >= MAJORITY_AGE)) title = '';
     const wanted = {
+        patientID: person.patientID || '',
         applicantTitle: title,
         applicantFirstName: donnees.patientFirstName || person.firstName || '',
         applicantMiddleName: donnees.patientMiddleName || person.middleName || '',

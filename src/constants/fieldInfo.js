@@ -408,7 +408,7 @@ export const FIELD_INFO = {
     applicantLanguages: ["Langues supplémentaires", "Langues parlées en plus de la langue principale : plusieurs choix possibles, ou « Aucune autre langue »."],
     applicantJobs: ["Expériences professionnelles", "Un encadré par emploi occupé (bouton « Ajouter un emploi ») : entreprise, rôle, début, fin si vous avez quitté l'emploi, responsabilités."],
     applicantNoExperience: ["Aucune expérience", "Cochez si votre personnage n'a aucune expérience professionnelle à présenter."],
-    applicantLicenses: ["Licences", "Captures d'écran de vos licences (commande /licenses en jeu) : bouton « Ajouter une capture de licence » ou glisser-déposer. Facultatif, sauf pour les rôles EMS autres que paramédic et technicien."],
+    applicantLicense: ["Licence", "Capture d'écran de votre licence (commande /licenses en jeu) : collez le lien de l'image, téléchargez-la (hébergée par ImgBB) ou collez une capture (Ctrl+V). Une seule image. Facultatif, sauf pour les rôles EMS autres que paramédic et technicien."],
     emsPartTimeReason: ["Motivation temps partiel", "Court paragraphe expliquant pourquoi vous pensez convenir au programme à temps partiel."],
     oocDiscord: ["Nom Discord", "Votre nom Discord, hors RP."],
     oocTimezone: ["Fuseau horaire", "Votre fuseau horaire, hors RP : tapez votre ville ou votre région. " + SELECT],

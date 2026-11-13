@@ -39,12 +39,12 @@ export const DEFAULT_REQUIRED = {
     42: ['externalMailSubject', 'externalMailRecipient', 'externalMailBody'],
     37: ['deathRecordType', 'caseNumber', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
     // Candidatures : socle commun à tous les envois (le reste dépend du poste et du profil, voir validateApplication).
-    50: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    51: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    52: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    53: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    54: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    55: ['applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    50: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    51: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    52: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    53: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    54: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    55: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
 };
 
 // Champs qu'on ne peut pas rendre facultatifs : raison 'title' (ils composent le titre du rapport, sans eux il serait introuvable) ou 'billing'

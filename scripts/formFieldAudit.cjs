@@ -34,7 +34,7 @@ const IGNORE_IN_CATALOG = {
     '*': ['placeOfDeathZipCity', 'patientZIPCity', 'patientZIPNewCity', 'applicantZIPCity'],
     2: ['deathReport'],
     // Candidatures : listes (emplois, captures de licences) écrites par clé d'objet dans le composant partagé.
-    50: ['applicantJobs', 'applicantLicenses'], 51: ['applicantJobs', 'applicantLicenses'], 52: ['applicantJobs', 'applicantLicenses'], 53: ['applicantJobs', 'applicantLicenses'], 54: ['applicantJobs', 'applicantLicenses'], 55: ['applicantJobs', 'applicantLicenses'],
+    50: ['applicantJobs'], 51: ['applicantJobs'], 52: ['applicantJobs'], 53: ['applicantJobs'], 54: ['applicantJobs'], 55: ['applicantJobs'],
 };
 const DYNAMIC_PREFIXES = ['flightCert_'];
 

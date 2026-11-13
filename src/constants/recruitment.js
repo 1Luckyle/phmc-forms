@@ -168,7 +168,7 @@ export const APPLICATION_FIELD_LABELS = {
     applicantZIP: 'Ville du domicile', applicantZIPCity: 'Ville du domicile', applicantPhone: 'Téléphone', applicantEmail: 'E-mail', applicantLocation: 'Site',
     applicantCitizenship: 'Citoyenneté', applicantEducationLevel: 'Niveau d\'études', applicantSchoolName: 'Établissement', applicantEnrollmentStart: 'Début de scolarité',
     applicantEnrollmentEnd: 'Fin de scolarité', applicantEnrollmentOngoing: 'Études en cours', applicantMajor: 'Filière', applicantLanguages: 'Langues',
-    applicantJobs: 'Expériences professionnelles', applicantNoExperience: 'Expériences professionnelles', applicantLicenses: 'Licences', emsPartTimeReason: 'Temps partiel',
+    applicantJobs: 'Expériences professionnelles', applicantNoExperience: 'Expériences professionnelles', applicantLicense: 'Licence', patientID: 'ID patient', emsPartTimeReason: 'Temps partiel',
     dfpSanFireLink: 'Preuve DFP (SanFire)', dfpPhmcLink: 'Preuve DFP (PHMC)', dfpLegalFactionLink: 'Preuve DFP (faction légale)',
     oocDiscord: 'Discord', oocTimezone: 'Fuseau horaire', oocMedicalExperience: 'Expérience médicale (HRP)', oocOtherCharLicenseProof: 'Preuve de licence (autre personnage)',
 };

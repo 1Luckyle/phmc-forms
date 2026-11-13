@@ -1,5 +1,5 @@
 import {
-    migrateApplicationData, applicantDisplayName, jobProblems, jobPeriod, enrollmentPeriod, timezoneOptions, utcOffsetLabel, timezoneLabel, licensesOf,
+    migrateApplicationData, jobProblems, jobPeriod, enrollmentPeriod, timezoneOptions, utcOffsetLabel, timezoneLabel, licenseOf,
     NO_OTHER_LANGUAGE, APPLICATION_FIELDS, EDUCATION_LEVELS, CITIZENSHIP_OPTIONS,
 } from './applicationForm';
 import { validateApplication } from './formValidation';
@@ -14,7 +14,7 @@ jest.mock('firebase/database', () => ({ ref: jest.fn(), get: jest.fn(), set: jes
 afterEach(() => setFormOverrides({}));
 
 const complete = (over = {}) => ({
-    recruitmentPosition: 'Attending', applicantTitle: 'Mrs', applicantFirstName: 'Jane', applicantMiddleName: '', applicantLastName: 'Doe', applicantDOB: '1990-05-14',
+    recruitmentPosition: 'Attending', patientID: 'PHMC-2752', applicantTitle: 'Mrs', applicantFirstName: 'Jane', applicantMiddleName: '', applicantLastName: 'Doe', applicantDOB: '1990-05-14',
     applicantAddress: '1 Rue', applicantZIP: '90001', applicantPhone: '555-0142', applicantEmail: 'jane@mail.eyefind.fr', applicantCitizenship: CITIZENSHIP_OPTIONS[0],
     applicantEducationLevel: EDUCATION_LEVELS[4], applicantSchoolName: 'Univ', applicantEnrollmentStart: '2010-09-01', applicantEnrollmentEnd: '2014-06-30', applicantMajor: 'Biologie',
     applicantLanguages: ['Anglais'], applicantJobs: [{ company: 'LSGH', role: 'Infirmière', start: '2015-01-05', left: false, end: '', duties: 'Soins', leaveReason: '' }],
@@ -59,14 +59,23 @@ describe('candidature : champs communs', () => {
         expect(validateApplication(55, complete({ recruitmentPosition: 'Paramedic' }), { mode: 'submit', selectOptions }).errors).toEqual([]);
         const other = validateApplication(55, complete({ recruitmentPosition: 'Cadet', applicantJobs: [] }), { mode: 'submit', selectOptions }).errors.join(' ');
         expect(other).toMatch(/Expérience professionnelle/);
-        expect(other).toMatch(/Licences : ajoutez au moins une capture/);
+        expect(other).toMatch(/Licence : ajoutez la capture d'écran/);
         expect(other).toMatch(/programme à temps partiel/);
         expect(other).not.toMatch(/Nom Discord|Fuseau/);
     });
 
-    test('licences : captures facultatives hors rôles EMS particuliers ; seules les adresses https sont gardées', () => {
-        expect(validateApplication(50, complete({ applicantLicenses: [] }), { mode: 'submit' }).errors).toEqual([]);
-        expect(licensesOf({ applicantLicenses: ['https://i.ibb.co/a.png', 'javascript:alert(1)', 'http://x.fr/a.png'] })).toEqual(['https://i.ibb.co/a.png']);
+    test('licence : une capture facultative hors rôles EMS particuliers ; seule une adresse https est gardée (la dernière si plusieurs)', () => {
+        expect(validateApplication(50, complete({ applicantLicense: '' }), { mode: 'submit' }).errors).toEqual([]);
+        expect(licenseOf({ applicantLicense: 'https://i.ibb.co/a.png, https://i.ibb.co/b.png' })).toBe('https://i.ibb.co/b.png');
+        expect(licenseOf({ applicantLicense: 'javascript:alert(1), http://x.fr/a.png' })).toBe('');
+    });
+
+    test('ID patient : obligatoire, de forme valide, et celui du compte', () => {
+        expect(validateApplication(50, complete({ patientID: '' }), { mode: 'submit' }).errors).toEqual(['ID patient : champ obligatoire.']);
+        expect(validateApplication(50, complete({ patientID: 'abc' }), { mode: 'submit' }).errors.join(' ')).toMatch(/forme attendue/);
+        expect(validateApplication(50, complete(), { mode: 'submit', applicantPatientId: 'PHMC-2752' }).errors).toEqual([]);
+        expect(validateApplication(50, complete({ patientID: '2752' }), { mode: 'submit', applicantPatientId: 'PHMC-2752' }).errors).toEqual([]);
+        expect(validateApplication(50, complete({ patientID: 'PHMC-9999' }), { mode: 'submit', applicantPatientId: 'PHMC-2752' }).errors.join(' ')).toMatch(/doit être le vôtre/);
     });
 });
 
@@ -83,12 +92,12 @@ describe('anciennes candidatures reprises dans le formulaire actuel', () => {
         expect(data).toMatchObject({ applicantEnrollmentStart: '2010-09-01', applicantEnrollmentEnd: '2014-06-30', applicantLanguages: ['Anglais', 'Espagnol'], applicantLocation: 'PHMC' });
         expect(data.applicantJobs).toHaveLength(1);
         expect(data.applicantJobs[0]).toMatchObject({ company: 'Infirmière chez LSGH', duties: 'Soins', leaveReason: '' });
-        expect(data.applicantLicenses).toEqual(['https://i.ibb.co/lic.png']);
+        expect(data.applicantLicense).toBe('https://i.ibb.co/lic.png');
         expect(data.oocTimezone).toBe('');   // « EST » n'est pas un vrai fuseau : à rechoisir
         expect(data.applicantTitleAndFullName).toBe('Mme Jane Marie Doe');
     });
     test('les champs supprimés disparaissent', () => {
-        ['genderFemale', 'applicantDOBAndPlace', 'citizenUS', 'eduBachelor', 'applicantEnrollmentTerm', 'applicantPrevEmployment', 'oocUcpName', 'applicantMotivationLetter', 'emsLicenseLink'].forEach((field) => expect(data).not.toHaveProperty(field));
+        ['genderFemale', 'applicantDOBAndPlace', 'citizenUS', 'eduBachelor', 'applicantEnrollmentTerm', 'applicantPrevEmployment', 'oocUcpName', 'applicantMotivationLetter', 'emsLicenseLink', 'applicantLicenses'].forEach((field) => expect(data).not.toHaveProperty(field));
     });
     test('idempotent, et « N/A » = aucune expérience / aucune autre langue', () => {
         expect(migrateApplicationData(data)).toEqual(data);
@@ -115,7 +124,7 @@ describe('fuseaux horaires et périodes', () => {
 });
 
 describe('aperçu de la candidature', () => {
-    const doc = generateApplicationDocument({ ...complete({ applicantLicenses: ['https://i.ibb.co/lic.png'] }), positionDetailsData: { Attending: { nom: 'Médecin titulaire' } } }, { categoryLabel: 'Médecine' });
+    const doc = generateApplicationDocument({ ...complete({ applicantLicense: 'https://i.ibb.co/lic.png' }), positionDetailsData: { Attending: { nom: 'Médecin titulaire' } } }, { categoryLabel: 'Médecine' });
     test('même style que les autres formulaires, sans les éléments retirés', () => {
         expect(doc).toContain('CANDIDATURE');
         expect(doc).toContain('Médecin titulaire');
@@ -123,15 +132,25 @@ describe('aperçu de la candidature', () => {
         expect(doc).toContain('Infirmière chez LSGH');
         expect(doc).toContain('[img=320]https://i.ibb.co/lic.png[/img]');
         expect(doc).toContain('Europe / Paris (UTC+');
+        expect(doc).toContain('ID patient :[/u] PHMC-2752');
+        expect(doc).toContain('https://phmc-tools.com/img/phmc.png');
+        expect(doc).not.toContain('phmcpaletobaylogo');
         ['Faculté Médicale', 'Guide des Visiteurs', 'LES POSTES SONT', 'ajoutez un c', '[cb]', '[color=#FF0000]1[/color]', 'Lettre de Motivation', 'UCP', 'Forum'].forEach((text) => expect(doc).not.toContain(text));
     });
     test('les six formulaires utilisent le même document', () => {
         expect(generatePhysician({ ...complete(), positionDetailsData: {} })).toContain('Centre de Carrières — Médecine');
     });
+    test('une candidature à la clinique de Paleto Bay porte le logo et les coordonnées du PBC', () => {
+        const pbc = generateApplicationDocument({ ...complete({ applicantLocation: 'PBC' }), positionDetailsData: {} }, { categoryLabel: 'Médecine' });
+        expect(pbc).toContain('phmcpaletobaylogo.png');
+        expect(pbc).toContain('Clinique de Paleto Bay');
+        expect(pbc).not.toContain('https://phmc-tools.com/img/phmc.png');
+    });
+
     test('un crochet saisi ne devient pas une balise', () => {
         expect(generateApplicationDocument({ ...complete({ oocMedicalExperience: 'Vu [b]gras[/b] ici' }) })).toContain('Vu ［b］gras［/b］ ici');
     });
     test('tous les champs du formulaire sont enregistrés avec la candidature', () => {
-        expect(APPLICATION_FIELDS).toEqual(expect.arrayContaining(['applicantJobs', 'applicantLicenses', 'applicantTitle', 'oocTimezone']));
+        expect(APPLICATION_FIELDS).toEqual(expect.arrayContaining(['applicantJobs', 'applicantLicense', 'patientID', 'applicantTitle', 'oocTimezone']));
     });
 });

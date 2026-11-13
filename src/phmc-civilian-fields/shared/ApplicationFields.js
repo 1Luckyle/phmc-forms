@@ -5,7 +5,8 @@
 // liste de postes et quelques variantes (config) ; la logique des champs, la validation (utils/formValidation.js) et l'aperçu (phmc-recruitment-generators/shared/
 // applicationDocument.js) sont partagés. Les listes et fonctions utilitaires sont dans utils/applicationForm.js.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Form, Button, Spinner } from 'react-bootstrap';
+import { Form, Button, InputGroup } from 'react-bootstrap';
+import ImagePreview from '../../components/ImagePreview';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { isPositionClosed, matchesPosition } from '../../constants/recruitment';
@@ -17,9 +18,10 @@ import ComboSelect from '../../phmc-field-data/shared/ComboSelect';
 import { SimpleSelect } from '../../phmc-field-data/shared/PatientGeneralInfo';
 import { darkSelectStyles } from '../../phmc-field-data/shared/selectStyles';
 import { uploadImageToServer } from '../../utils/imageUploadApi';
+import './ApplicationFields.css';
 import {
-    APPLICATION_FIELDS, EDUCATION_LEVELS, CITIZENSHIP_OPTIONS, LOCATION_OPTIONS, MAJOR_PRESETS, LANGUAGE_PRESETS, NO_OTHER_LANGUAGE, MAX_JOBS, MAX_LICENSES,
-    emptyJob, jobsOf, licensesOf, applicantDisplayName, applicantAge, timezoneOptions, timezoneLabel, browserTimezone, migrateApplicationData,
+    APPLICATION_FIELDS, EDUCATION_LEVELS, CITIZENSHIP_OPTIONS, LOCATION_OPTIONS, MAJOR_PRESETS, LANGUAGE_PRESETS, NO_OTHER_LANGUAGE, MAX_JOBS,
+    emptyJob, jobsOf, licenseOf, applicantDisplayName, applicantAge, timezoneOptions, timezoneLabel, browserTimezone, migrateApplicationData,
 } from '../../utils/applicationForm';
 
 const DRAFT_EXPIRY_MS = 5 * 24 * 60 * 60 * 1000; // brouillon conservé sur l'appareil 5 jours
@@ -32,7 +34,7 @@ const card = { border: '1px solid #30363d', borderRadius: 8, padding: '12px 14px
 
 const Section = ({ children }) => <Form.Label className="form-section-title">{children}</Form.Label>;
 const Field = ({ label, children, hint }) => (
-    <Form.Group className="mb-3">
+    <Form.Group className="mb-2">
         <Form.Label>{label}</Form.Label>
         {children}
         {hint && <span className="helper-text" data-no-tip="1">{hint}</span>}
@@ -46,11 +48,11 @@ const JobsEditor = ({ formData, setFormData }) => {
     const update = (index, patch) => setFormData((prev) => ({ ...prev, applicantJobs: jobsOf(prev).map((job, i) => (i === index ? { ...job, ...patch } : job)) }));
     const add = () => setFormData((prev) => (jobsOf(prev).length >= MAX_JOBS ? prev : { ...prev, applicantNoExperience: false, applicantJobs: [...jobsOf(prev), emptyJob()] }));
     const remove = (index) => setFormData((prev) => ({ ...prev, applicantJobs: jobsOf(prev).filter((job, i) => i !== index) }));
-    const text = (index, key, placeholder, extra = {}) => (
-        <Form.Control type="text" value={jobs[index][key] || ''} onChange={(event) => update(index, { [key]: event.target.value })} placeholder={placeholder} className="form-control" {...extra} />
+    const text = (index, key, placeholder, guide, extra = {}) => (
+        <Form.Control type="text" value={jobs[index][key] || ''} onChange={(event) => update(index, { [key]: event.target.value })} placeholder={placeholder} className="form-control" data-guide={guide} {...extra} />
     );
     return (
-        <div data-guide="Ajoutez un encadré par emploi occupé, du plus récent au plus ancien.">
+        <div>
             <Form.Check
                 type="checkbox" id="applicantNoExperience" name="applicantNoExperience" className="mb-3"
                 label=" Je n'ai aucune expérience professionnelle à présenter"
@@ -67,28 +69,28 @@ const JobsEditor = ({ formData, setFormData }) => {
                         </Button>
                     </div>
                     <div style={row}>
-                        <div style={cell(220)}>{text(index, 'company', "Nom de l'entreprise")}</div>
-                        <div style={cell(220)}>{text(index, 'role', 'Rôle occupé')}</div>
+                        <div style={cell(220)}>{text(index, 'company', "Nom de l'entreprise", "Nom de l'entreprise où votre personnage a travaillé.")}</div>
+                        <div style={cell(220)}>{text(index, 'role', 'Rôle occupé', 'Poste ou fonction occupé dans cette entreprise.')}</div>
                     </div>
                     <div style={{ ...row, marginTop: 10, alignItems: 'center' }}>
                         <div style={cell(170)}>
                             <Form.Label className="mb-1">Début</Form.Label>
-                            <Form.Control type="date" value={job.start || ''} max={today} onChange={(event) => update(index, { start: event.target.value })} className="form-control" />
+                            <Form.Control type="date" data-guide="Date de début de cet emploi (calendrier)." value={job.start || ''} max={today} onChange={(event) => update(index, { start: event.target.value })} className="form-control" />
                         </div>
                         <div style={{ ...cell(200), paddingTop: 22 }}>
                             <Form.Check
-                                type="checkbox" id={`job-left-${index}`} label=" J'ai quitté cet emploi" checked={!!job.left}
+                                type="checkbox" id={`job-left-${index}`} data-guide="Cochez si votre personnage a quitté cet emploi : la date de fin devient modifiable." label=" J'ai quitté cet emploi" checked={!!job.left}
                                 onChange={(event) => update(index, { left: event.target.checked, ...(event.target.checked ? {} : { end: '', leaveReason: '' }) })}
                             />
                         </div>
                         <div style={cell(170)}>
                             <Form.Label className="mb-1">Fin</Form.Label>
-                            <Form.Control type="date" value={job.end || ''} min={job.start || undefined} max={today} disabled={!job.left} onChange={(event) => update(index, { end: event.target.value })} className="form-control" />
+                            <Form.Control type="date" data-guide="Date de fin de cet emploi (seulement si vous l'avez quitté)." value={job.end || ''} min={job.start || undefined} max={today} disabled={!job.left} onChange={(event) => update(index, { end: event.target.value })} className="form-control" />
                         </div>
                     </div>
-                    <Form.Control as="textarea" rows={3} className="form-control mt-3" value={job.duties || ''} onChange={(event) => update(index, { duties: event.target.value })} placeholder="Vos responsabilités dans cet emploi" />
+                    <Form.Control as="textarea" rows={3} className="form-control mt-3" data-guide="Vos responsabilités et missions dans cet emploi." value={job.duties || ''} onChange={(event) => update(index, { duties: event.target.value })} placeholder="Vos responsabilités dans cet emploi" />
                     {job.left && (
-                        <Form.Control as="textarea" rows={2} className="form-control mt-3" value={job.leaveReason || ''} onChange={(event) => update(index, { leaveReason: event.target.value })} placeholder="Motif du départ (facultatif)" />
+                        <Form.Control as="textarea" rows={2} className="form-control mt-3" data-guide="Pourquoi vous avez quitté cet emploi (facultatif)." value={job.leaveReason || ''} onChange={(event) => update(index, { leaveReason: event.target.value })} placeholder="Motif du départ (facultatif)" />
                     )}
                 </div>
             ))}
@@ -107,55 +109,56 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
     reader.readAsDataURL(file);
 });
 
-// Licences : captures d'écran (/licenses en jeu) envoyées sur nos serveurs d'images ; une vignette par capture, avec un bouton pour la retirer.
-const LicensesEditor = ({ formData, setFormData }) => {
-    const licenses = licensesOf(formData);
-    const [uploading, setUploading] = useState(0);
+// Licence : UNE capture d'écran (commande /licenses en jeu). Même principe que les photos du formulaire du DMEC : une zone pour coller le lien de l'image,
+// un bouton pour la télécharger (elle est alors hébergée sur ImgBB par notre serveur), le collage d'une image (Ctrl+V) et un aperçu.
+const LicenseField = ({ formData, setFormData }) => {
+    const value = formData.applicantLicense || '';
+    const [uploading, setUploading] = useState(false);
     const [problem, setProblem] = useState('');
-    const inputRef = useRef(null);
 
-    const addFiles = async (files) => {
-        const images = Array.from(files || []).filter((file) => /^image\//i.test(file.type));
-        if (images.length !== (files || []).length) setProblem('Seules les images sont acceptées.'); else setProblem('');
-        const room = MAX_LICENSES - licensesOf(formData).length;
-        if (images.length > room) setProblem(`Maximum ${MAX_LICENSES} captures : seules les ${Math.max(room, 0)} premières sont envoyées.`);
-        for (const file of images.slice(0, Math.max(room, 0))) {
-            setUploading((n) => n + 1);
-            try {
-                const { url } = await uploadImageToServer(await fileToDataUrl(file));
-                setFormData((prev) => ({ ...prev, applicantLicenses: [...licensesOf(prev), url].slice(0, MAX_LICENSES) }));
-            } catch (error) {
-                setProblem(`Image non envoyée : ${error.message || 'erreur inconnue'}`);
-            } finally {
-                setUploading((n) => n - 1);
-            }
+    const upload = async (file) => {
+        if (!file) return;
+        if (!/^image\//i.test(file.type)) { setProblem('Seules les images sont acceptées.'); return; }
+        setUploading(true);
+        setProblem('');
+        try {
+            const { url } = await uploadImageToServer(await fileToDataUrl(file));
+            setFormData((prev) => ({ ...prev, applicantLicense: url }));
+        } catch (error) {
+            setProblem(`Image non envoyée : ${error.message || 'erreur inconnue'}`);
+        } finally {
+            setUploading(false);
         }
     };
-    const remove = (index) => setFormData((prev) => ({ ...prev, applicantLicenses: licensesOf(prev).filter((url, i) => i !== index) }));
+    const pick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (event) => upload(event.target.files && event.target.files[0]);
+        input.click();
+    };
+    const handlePaste = (event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const image = items.find((item) => item.type && item.type.indexOf('image') !== -1);
+        if (image) { event.preventDefault(); upload(image.getAsFile()); }
+    };
 
     return (
-        <div
-            data-guide="Ajoutez une capture d'écran de chacune de vos licences (commande /licenses en jeu)."
-            onDragOver={(event) => { if (Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault(); }}
-            onDrop={(event) => { if (event.dataTransfer?.files?.length) { event.preventDefault(); addFiles(event.dataTransfer.files); } }}
-        >
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
-                {licenses.map((url, index) => (
-                    <div key={url} style={{ position: 'relative', border: '1px solid #30363d', borderRadius: 8, padding: 4, background: 'rgba(255,255,255,0.03)' }}>
-                        <img src={url} alt={`Licence ${index + 1}`} style={{ display: 'block', maxWidth: 180, maxHeight: 120, borderRadius: 6 }} />
-                        <Button size="sm" variant="danger" type="button" style={{ position: 'absolute', top: 6, right: 6, padding: '0 6px' }} onClick={() => remove(index)} aria-label={`Retirer la licence ${index + 1}`}>
-                            <i className="fas fa-times"></i>
-                        </Button>
-                    </div>
-                ))}
-            </div>
-            <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={(event) => { addFiles(event.target.files); event.target.value = ''; }} />
-            <Button type="button" variant="outline-primary" size="sm" onClick={() => inputRef.current && inputRef.current.click()} disabled={licenses.length >= MAX_LICENSES || uploading > 0}>
-                {uploading > 0 ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="fas fa-image me-1"></i>}Ajouter une capture de licence
-            </Button>
-            <span className="helper-text ms-2" data-no-tip="1">Facultatif · glissez-déposez aussi des images ici · {licenses.length}/{MAX_LICENSES}</span>
-            {problem && <div className="text-warning small mt-1">{problem}</div>}
-        </div>
+        <>
+            <InputGroup>
+                <Form.Control
+                    type="text" name="applicantLicense" value={value} className="form-control" onPaste={handlePaste}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, applicantLicense: event.target.value }))}
+                    placeholder="Lien de la capture d'écran de votre licence (ou téléchargez-la)"
+                />
+                <Button variant="success" type="button" disabled={uploading} onClick={pick}>
+                    <i className={`fas ${uploading ? 'fa-spinner fa-spin' : 'fa-upload'}`}></i> {uploading ? 'Téléchargement...' : 'Télécharger l\'image'}
+                </Button>
+            </InputGroup>
+            <span className="helper-text" data-no-tip="1">Une seule image : collez son lien, téléchargez-la ou collez une capture (Ctrl+V). Hébergée par ImgBB.</span>
+            {problem && <div className="text-warning small mb-1">{problem}</div>}
+            <ImagePreview imageUrls={licenseOf(formData)} showPreviews onImageRemove={() => setFormData((prev) => ({ ...prev, applicantLicense: '' }))} />
+        </>
     );
 };
 
@@ -235,7 +238,7 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
     };
 
     return (
-        <>
+        <div className="app-compact">
             <Section>Poste visé</Section>
             <Field label="Poste pour lequel vous postulez">
                 <Form.Select name="recruitmentPosition" value={formData.recruitmentPosition || ''} onChange={handleChange} className="form-control">
@@ -249,6 +252,9 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
             </Field>
 
             <Section>Identité</Section>
+            <Field label="ID patient" hint="Il rattache la candidature à votre compte (ex. PHMC-2752).">
+                <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (ex. PHMC-2752)" className="form-control" />
+            </Field>
             <Field label="Titre et nom" hint="Le titre dépend de l'âge : « Mineur » est imposé sous 18 ans (selon la date de naissance ci-dessous).">
                 <div style={row}>
                     <NameFields
@@ -330,9 +336,9 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
                     <JobsEditor formData={formData} setFormData={setFormData} />
                 </>
             )}
-            <Section>Licences</Section>
-            <Field label={emsOther ? "Captures d'écran de vos licences (dont votre licence de technicien médical d'urgence)" : "Captures d'écran de vos licences"}>
-                <LicensesEditor formData={formData} setFormData={setFormData} />
+            <Section>Licence</Section>
+            <Field label={emsOther ? "Capture d'écran de votre licence de technicien médical d'urgence" : "Capture d'écran de votre licence"}>
+                <LicenseField formData={formData} setFormData={setFormData} />
             </Field>
             {emsOther && (
                 <>
@@ -382,7 +388,7 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
                     )}
                 </>
             )}
-        </>
+        </div>
     );
 };
 

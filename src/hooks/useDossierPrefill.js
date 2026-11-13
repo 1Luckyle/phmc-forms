@@ -66,7 +66,7 @@ export const useCandidaturePrefill = ({ enabled, version, patientID, identity, f
             if (cancelled) return;
             done.current.add(marker);
             setFormData((prev) => {
-                const patch = candidaturePrefillPatch(identity, donnees, prev);
+                const patch = candidaturePrefillPatch({ ...identity, patientID }, donnees, prev);
                 return Object.keys(patch).length ? { ...prev, ...patch } : prev;
             });
         }, 1200);

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { migrateApplicationData } from '../utils/applicationForm';
+import { canonicalPatientId } from '../utils/patientId';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
 import {
     normalizeApplicationStatus, applicationStatusLabel, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
@@ -1454,6 +1455,7 @@ Copie : ${copyPath}`, target: copyAuthorName,
                 mode: submitAction === 'submit' || alreadySubmitted ? 'submit' : 'draft',
                 existing: editing ? null : existing,
                 selectOptions: samePoste ? null : selectOptions,   // poste fermé depuis l'envoi : sans effet si on ne le change pas
+                applicantPatientId: applicant.patientID || '',
             });
             if (applicationCheck.errors.length > 0) {
                 showNotification(
@@ -1505,7 +1507,8 @@ Copie : ${copyPath}`, target: copyAuthorName,
             const payload = sanitizeForFirebase({
                 candidatUid: applicant.uid,
                 interne: applicant.internal || undefined,
-                idPatient: applicant.patientID,
+                // La candidature est rattachée à l'ID patient saisi dans le formulaire (déjà contrôlé : c'est celui du compte) ; à défaut, à celui du compte.
+                idPatient: formData.patientID ? canonicalPatientId(formData.patientID) : applicant.patientID,
                 nomCandidat: applicantName,
                 // Libellé français du poste (la clé, souvent anglaise, est gardée à part).
                 poste: newPoste,

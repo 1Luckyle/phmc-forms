@@ -24,7 +24,7 @@ import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
 import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } from './minors';
-import { jobsOf, jobProblems, licensesOf } from './applicationForm';
+import { jobsOf, jobProblems, licenseOf } from './applicationForm';
 import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { isFieldApplicable } from './fieldApplicability';
 import { getFieldInfo } from '../constants/fieldInfo';
@@ -205,7 +205,7 @@ const isEmt = (positions, key) => matchesPosition(positions, key, { roles: ['Tec
 // → { errors: [message], warnings: [message] }
 //   mode : 'draft' | 'submit' ; existing : candidature déjà enregistrée (ou null) ; selectOptions : pour lire l'état
 //   ouvert/fermé du poste.
-export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'submit', existing = null, selectOptions = null } = {}) => {
+export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'submit', existing = null, selectOptions = null, applicantPatientId = '' } = {}) => {
     const version = Number(bbCodeVersion);
     const errors = [];
     const warnings = [];
@@ -242,7 +242,8 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         if (!filled(data[field])) errors.push(`${label} : champ obligatoire.`);
     };
 
-    // 1. Identité
+    // 1. Identité : l'ID patient rattache la candidature au compte du candidat (il ne compose pas le titre).
+    need('patientID', 'ID patient');
     need('applicantTitle', 'Titre');
     need('applicantFirstName', 'Prénom');
     need('applicantLastName', 'Nom de famille');
@@ -275,10 +276,10 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
             else if (filled(job.start) && (parseDate(job.start) === null || isFutureDate(parseDate(job.start), 0))) errors.push(`Emploi ${index + 1} : date de début invalide.`);
         });
     }
-    // 4. Licences : captures facultatives, sauf pour les autres rôles EMS (licence de technicien médical d'urgence) qui demandent aussi le programme à temps partiel.
-    checked.add('applicantLicenses');
+    // 4. Licence : une capture facultative, sauf pour les autres rôles EMS (licence de technicien médical d'urgence) qui demandent aussi le programme à temps partiel.
+    checked.add('applicantLicense');
     if (emsOther) {
-        if (!isRelaxed(version, 'applicantLicenses') && licensesOf(data).length === 0) errors.push("Licences : ajoutez au moins une capture d'écran (votre licence de technicien médical d'urgence).");
+        if (!isRelaxed(version, 'applicantLicense') && !licenseOf(data)) errors.push("Licence : ajoutez la capture d'écran de votre licence de technicien médical d'urgence.");
         need('emsPartTimeReason', 'Motivation pour le programme à temps partiel');
     }
 
@@ -299,6 +300,11 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     });
 
     // Formes valides
+    if (filled(data.patientID) && !looksLikePatientId(data.patientID)) errors.push(`ID patient : « ${text(data.patientID)} » n'a pas la forme attendue (ex. PHMC-2752 ou 2752).`);
+    // Une candidature ne s'enregistre que sous SON ID patient (celui du compte), jamais sous celui de quelqu'un d'autre.
+    if (filled(data.patientID) && applicantPatientId && canonicalPatientId(data.patientID) !== canonicalPatientId(applicantPatientId)) {
+        errors.push(`ID patient : il doit être le vôtre (${canonicalPatientId(applicantPatientId)}) : une candidature ne peut être enregistrée que sous l'ID de votre compte.`);
+    }
     if (filled(data.applicantEmail) && !isValidEmail(data.applicantEmail)) errors.push('E-mail : format invalide (ex. prenomnom@mail.eyefind.fr).');
     if (filled(data.applicantPhone) && !isValidPhone(data.applicantPhone)) errors.push('Téléphone : numéro invalide (chiffres, espaces ou tirets).');
     if (filled(data.applicantDOB)) {

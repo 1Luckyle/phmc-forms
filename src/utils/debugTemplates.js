@@ -341,7 +341,8 @@ const recruitmentBase = (h) => ({
         { company: 'Los Santos General Hospital', role: 'Agent d\'accueil', start: '2017-01-09', left: true, end: '2023-03-31', duties: 'Accueil et prise en charge des patients, suivi des dossiers médicaux.', leaveReason: 'Évolution de carrière.' },
     ],
     applicantNoExperience: false,
-    applicantLicenses: [],
+    applicantLicense: '',
+    patientID: h.patient.id,
     oocDiscord: 'jean.testard',
     oocTimezone: 'America/Los_Angeles',
     oocMedicalExperience: 'Trois ans d\'expérience médicale en jeu.',
@@ -760,7 +761,7 @@ const TEMPLATES = {
     55: (h) => ({
         ...recruitmentBase(h),
         recruitmentPosition: openPosition(getCategoryPositions(h.selectOptions, 'paramedical')),
-        applicantLicenses: [h.img()],
+        applicantLicense: h.img(),
         emsPartTimeReason: LOREM_SHORT,
         oocOtherCharLicenseProof: 'N/A',
         dfpSanFireLink: 'N/A',

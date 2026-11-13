@@ -8,7 +8,8 @@
 //                   applicantAddress, applicantZIP (+ applicantZIPCity), applicantPhone, applicantEmail, applicantLocation, applicantCitizenship
 //   formation       applicantEducationLevel, applicantSchoolName, applicantEnrollmentStart / End / Ongoing, applicantMajor, applicantLanguages (liste)
 //   expérience      applicantJobs (liste d'emplois), applicantNoExperience (pour TOUS les formulaires, autres rôles EMS compris)
-//   licences        applicantLicenses (liste de captures d'écran, adresses https) ; autres rôles EMS : emsPartTimeReason
+//   licence         applicantLicense (capture d'écran de la licence, adresse https d'une image) ; autres rôles EMS : emsPartTimeReason
+//   dossier         patientID (ID patient du candidat : c'est lui qui rattache la candidature à son compte, il ne compose pas le titre)
 //   hors RP         oocDiscord, oocTimezone, oocMedicalExperience ; paramédicaux : oocOtherCharLicenseProof, dfpSanFireLink, dfpPhmcLink, dfpLegalFactionLink
 import { ageOn, parseBirthDate } from './minors';
 import { titleLabel, joinFullName, splitFullName } from './patientIdentity';
@@ -98,8 +99,11 @@ export const browserTimezone = () => {
 // ───────────── Expérience professionnelle ─────────────
 
 export const MAX_JOBS = 8;
-export const MAX_LICENSES = 6;
-export const licensesOf = (data) => (Array.isArray(data?.applicantLicenses) ? data.applicantLicenses.filter((url) => /^https:\/\/\S+$/i.test(String(url || ''))) : []);
+// Licence : UNE capture d'écran (adresse https d'une image, envoyée sur ImgBB ou collée). Plusieurs adresses séparées par des virgules : la dernière est gardée.
+export const licenseOf = (data) => {
+    const urls = String(data?.applicantLicense || '').split(',').map((url) => url.trim()).filter((url) => /^https:\/\/\S+$/i.test(url));
+    return urls.length ? urls[urls.length - 1] : '';
+};
 export const emptyJob = () => ({ company: '', role: '', start: '', left: false, end: '', duties: '', leaveReason: '' });
 export const jobsOf = (data) => (Array.isArray(data?.applicantJobs) ? data.applicantJobs : []);
 
@@ -143,10 +147,10 @@ export const applicantAge = (data) => ageOn(data?.applicantDOB);
 
 // Tous les champs de saisie d'une candidature (brouillon conservé sur l'appareil, champs enregistrés avec la candidature).
 export const APPLICATION_FIELDS = [
-    'recruitmentPosition', 'applicantTitle', 'applicantFirstName', 'applicantMiddleName', 'applicantLastName', 'applicantTitleAndFullName', 'applicantDOB',
+    'recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantMiddleName', 'applicantLastName', 'applicantTitleAndFullName', 'applicantDOB',
     'applicantAddress', 'applicantZIP', 'applicantZIPCity', 'applicantPhone', 'applicantEmail', 'applicantLocation', 'applicantCitizenship',
     'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantEnrollmentOngoing', 'applicantMajor', 'applicantLanguages',
-    'applicantJobs', 'applicantNoExperience', 'applicantLicenses', 'emsPartTimeReason',
+    'applicantJobs', 'applicantNoExperience', 'applicantLicense', 'emsPartTimeReason',
     'oocDiscord', 'oocTimezone', 'oocMedicalExperience', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink',
 ];
 
@@ -157,7 +161,7 @@ const LEGACY_FIELDS = [
     'genderMale', 'genderFemale', 'genderOther', 'applicantGenderOtherText', 'applicantBirthPlace', 'applicantDOBAndPlace', 'locationPHMC', 'locationPBC',
     'applicantMedicalConditions', 'citizenUS', 'citizenPermanent', 'citizenNone', 'eduHighSchool', 'eduCertificate', 'eduDiploma', 'eduAssociate', 'eduBachelor',
     'eduMaster', 'eduDoctorate', 'applicantEnrollmentTerm', 'applicantPrevEmployment', 'applicantPrevDuties', 'applicantPrevDismissalReason', 'applicantMotivationLetter',
-    'oocUcpName', 'oocForumName', 'oocOtherFactionDfpLfm', 'emsLicenseLink',
+    'oocUcpName', 'oocForumName', 'oocOtherFactionDfpLfm', 'emsLicenseLink', 'applicantLicenses',
 ];
 const NAME_TITLES = { 'm.': 'Mr', mr: 'Mr', monsieur: 'Mr', mme: 'Mrs', mrs: 'Mrs', madame: 'Mrs', mlle: 'Miss', miss: 'Miss', ms: 'Ms', maître: 'Mstr', mineur: 'Mineur' };
 const isNothing = (value) => { const v = String(value ?? '').trim().toLowerCase(); return !v || v === 'n/a' || v === 'na' || v === 'aucun' || v === 'aucune' || v === 'non'; };
@@ -212,8 +216,11 @@ export const migrateApplicationData = (source) => {
         if (isNothing(old.applicantPrevEmployment)) { if (empty(data.applicantNoExperience)) data.applicantNoExperience = true; }
         else data.applicantJobs = [{ ...emptyJob(), company: String(old.applicantPrevEmployment).trim(), duties: isNothing(old.applicantPrevDuties) ? '' : String(old.applicantPrevDuties).trim(), leaveReason: isNothing(old.applicantPrevDismissalReason) ? '' : String(old.applicantPrevDismissalReason).trim() }];
     }
-    // Ancien lien de licence (paramédical) → première capture de la rubrique « Licences ».
-    if (empty(data.applicantLicenses)) data.applicantLicenses = /^https:\/\/\S+$/i.test(String(old.emsLicenseLink || '').trim()) ? [String(old.emsLicenseLink).trim()] : [];
+    // Ancien lien de licence (paramédical) ou ancienne liste de captures → la capture de la rubrique « Licence ».
+    if (empty(data.applicantLicense)) {
+        const candidates = [...(Array.isArray(old.applicantLicenses) ? old.applicantLicenses : []), old.emsLicenseLink].map((url) => String(url || '').trim());
+        data.applicantLicense = candidates.find((url) => /^https:\/\/\S+$/i.test(url)) || '';
+    }
     // Fuseau : seulement un vrai nom de fuseau est conservé (l'ancien texte libre « EST », « UTC+1 » ne l'est pas).
     if (!empty(data.oocTimezone) && !timezoneNames().includes(data.oocTimezone)) data.oocTimezone = '';
     if (Object.keys(old).length > 0) data.applicantTitleAndFullName = applicantDisplayName(data) || data.applicantTitleAndFullName || '';

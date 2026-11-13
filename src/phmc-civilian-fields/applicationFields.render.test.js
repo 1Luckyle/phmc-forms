@@ -34,7 +34,7 @@ beforeEach(() => {
 describe('candidature : formulaire commun', () => {
     test('rubriques actuelles ; plus de genre, lettre de motivation, forum, UCP, condition médicale ni lieu de naissance', () => {
         render(<Harness Component={Physician} extra={{ physicianRecruitmentDetails: positions }} />);
-        ['Poste visé', 'Identité', 'Formation', 'Expérience professionnelle', 'Licences', '(( Informations hors personnage ))'].forEach((title) => expect(screen.getByText(title)).toBeTruthy());
+        ['Poste visé', 'Identité', 'Formation', 'Expérience professionnelle', 'Licence', '(( Informations hors personnage ))'].forEach((title) => expect(screen.getByText(title)).toBeTruthy());
         ['Genre', 'Lettre de motivation', 'forum', 'UCP', 'condition médicale', 'Lieu de naissance'].forEach((word) => expect(document.body.textContent.toLowerCase()).not.toContain(word.toLowerCase()));
         expect(document.querySelector('option[value="Closed"]').disabled).toBe(true);
         expect(document.body.textContent).not.toMatch(/est requis/);
@@ -68,17 +68,27 @@ describe('candidature : formulaire commun', () => {
         expect(stateOf().applicantJobs).toHaveLength(0);
     });
 
-    test('licences : une capture envoyée apparaît en vignette et se retire', async () => {
+    test('licence : une seule image, par lien ou par collage (téléversée sur ImgBB)', async () => {
         render(<Harness Component={Physician} extra={{ physicianRecruitmentDetails: positions }} />);
-        const input = document.querySelector('input[type="file"]');
+        const field = document.querySelector('input[name="applicantLicense"]');
+        expect(screen.getByText(/Télécharger l'image/)).toBeTruthy();
+        await act(async () => { fireEvent.change(field, { target: { name: 'applicantLicense', value: 'https://i.ibb.co/lien.png' } }); });
+        expect(stateOf().applicantLicense).toBe('https://i.ibb.co/lien.png');
         const file = new File(['x'], 'licence.png', { type: 'image/png' });
-        await act(async () => { fireEvent.change(input, { target: { files: [file] } }); });
-        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-        expect(uploadImageToServer).toHaveBeenCalled();
-        await screen.findByAltText('Licence 1');
-        expect(stateOf().applicantLicenses).toEqual(['https://i.ibb.co/lic.png']);
-        await act(async () => { screen.getByLabelText('Retirer la licence 1').click(); });
-        expect(stateOf().applicantLicenses).toEqual([]);
+        await act(async () => { fireEvent.paste(field, { clipboardData: { items: [{ type: 'image/png', getAsFile: () => file }] } }); });
+        await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
+        expect(uploadImageToServer).toHaveBeenCalledTimes(1);
+        expect(stateOf().applicantLicense).toBe('https://i.ibb.co/lic.png');   // remplace le lien précédent
+    });
+
+    test('les champs d\'une fiche d\'emploi ont leur propre infobulle, et l\'ID patient est demandé', async () => {
+        render(<Harness Component={Physician} extra={{ physicianRecruitmentDetails: positions }} />);
+        expect(document.querySelector('input[name="patientID"]')).toBeTruthy();
+        await act(async () => { screen.getByText('Ajouter un emploi').click(); });
+        const guides = [...document.querySelectorAll('[data-guide]')].map((node) => node.getAttribute('data-guide'));
+        expect(guides.length).toBeGreaterThanOrEqual(5);
+        expect(new Set(guides).size).toBe(guides.length);
+        expect(guides.join(' ')).not.toMatch(/Ajoutez un encadré par emploi/);
     });
 
     test('un brouillon d\'avant la refonte est repris dans les champs actuels', async () => {
@@ -99,7 +109,7 @@ describe('candidature paramédicale', () => {
         unmount();
         render(<Harness Component={Ems} initial={{ recruitmentPosition: 'Cadet' }} extra={{ selectOptions }} />);
         expect(screen.getByText('Expérience professionnelle')).toBeTruthy();
-        expect(screen.getByText('Licences')).toBeTruthy();
+        expect(screen.getByText('Licence')).toBeTruthy();
         expect(screen.getByText('Programme à temps partiel')).toBeTruthy();
         expect(screen.getByText(/Licence BLS\/ALS/)).toBeTruthy();
     });

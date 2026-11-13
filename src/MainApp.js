@@ -3287,7 +3287,7 @@ function MainAppWrapper() {
     applicantEnrollmentEnd: '',
     applicantEnrollmentOngoing: false,
     applicantJobs: [],
-    applicantLicenses: [],
+    applicantLicense: '',
     applicantNoExperience: false,
         applicantPhone: '',
         applicantEmail: '',

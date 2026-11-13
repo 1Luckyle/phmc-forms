@@ -43,11 +43,11 @@ describe('pré-remplissage depuis le dossier', () => {
 });
 
 describe('pré-remplissage des candidatures', () => {
-    const identity = { firstName: 'Jean', middleName: 'Paul', lastName: 'Testard', dateOfBirth: '1990-05-14', address: '1 rue', zip: '90001', phone: '555-0000', email: 'jean@mail.eyefind.fr', discord: 'jean#1' };
+    const identity = { patientID: 'PHMC-2752', firstName: 'Jean', middleName: 'Paul', lastName: 'Testard', dateOfBirth: '1990-05-14', address: '1 rue', zip: '90001', phone: '555-0000', email: 'jean@mail.eyefind.fr', discord: 'jean#1' };
     test('reprend l’identité du compte (titre, prénoms, nom, naissance, adresse, ville, contacts), sans écraser un champ rempli', () => {
         const patch = candidaturePrefillPatch(identity, { patientTitle: 'Mr', patientZIPCity: 'Mission Row' }, { applicantPhone: 'déjà saisi' });
         expect(patch).toMatchObject({
-            applicantTitle: 'Mr', applicantFirstName: 'Jean', applicantMiddleName: 'Paul', applicantLastName: 'Testard', applicantDOB: '1990-05-14', applicantZIP: '90001',
+            patientID: 'PHMC-2752', applicantTitle: 'Mr', applicantFirstName: 'Jean', applicantMiddleName: 'Paul', applicantLastName: 'Testard', applicantDOB: '1990-05-14', applicantZIP: '90001',
             applicantZIPCity: 'Mission Row', applicantEmail: 'jean@mail.eyefind.fr', oocDiscord: 'jean#1',
         });
         expect(patch).not.toHaveProperty('applicantPhone');
