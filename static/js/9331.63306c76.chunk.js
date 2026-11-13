@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkphmc_tools=self.webpackChunkphmc_tools||[]).push([[9331],{89331:(e,s,t)=>{t.r(s),t.d(s,{default:()=>r});t(65043);var a=t(9920),i=t(85092),n=t(70579);const o={storageKey:"applicationDraft_soinsInfirmiers",positionLabel:"S\xe9lectionner un poste d'infirmier\u2026",medicalExperience:!0},r=e=>{let{formData:s,handleChange:t,setFormData:r,selectOptions:l}=e;return(0,n.jsx)(i.A,{formData:s,handleChange:t,setFormData:r,positionDetails:(0,a.f9)(l,"soinsInfirmiers"),config:o})}}}]);
+//# sourceMappingURL=9331.63306c76.chunk.js.map
