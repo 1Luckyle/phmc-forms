@@ -15,6 +15,8 @@ const TECHNICAL = new Set([
     // Nom complet recomposé à partir des trois champs (prénom, deuxième prénom, nom) : voir usePatientNameParts.
     'patientName', 'patientNameNew', 'decedentName', 'witnessName',
     // Champs dont la saisie n'a pas d'attribut `name` (listes, sélecteurs, tableaux) et que le catalogue ne voit donc pas.
+    // ID patient de plusieurs personnes : une ligne par défunt (rapport de masse, dans `decedents`) ; ID supplémentaires du courriel DMEC.
+    'decedentPatientIDs', 'additionalPatientIDs',
     'morgueStatus', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems', 'evidenceLocker', 'scenePhotos', 'XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults',
 ]);
 const isPresetPart = (key) => /(Presets|Free)$/.test(key);

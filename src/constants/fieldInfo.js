@@ -12,7 +12,7 @@ const SIGNE = "Signe vital : choisissez la valeur constatée dans la liste.";
 export const FIELD_INFO = {
     // ── Identité du patient ──
     patientID: ["ID patient", "ID du patient, de la forme PHMC-2752 (ou simplement 2752). Il relie le rapport à son dossier médical."],
-    additionalPatientIDs: ["ID patient des autres défunts", "ID patient des autres défunts concernés (réels ou temporaires TMP-…) : ils s'ajoutent au titre du rapport, et le rapport est lié au dossier de chacun."],
+    decedentPatientIDs: ["ID patient de chaque défunt", "Chaque défunt a son ID patient (réel, ou temporaire TMP-… s'il n'en a pas) : le titre du rapport est la suite de ces ID, et le rapport est lié au dossier de chacun."],
     patientName: ["Nom du patient", "Entrer le nom complet du patient (Prénom / Deuxième Prénom / Nom de famille)."],
     patientNameNew: ["Nom du patient", "Prénom (deuxième prénom) et nom de famille du patient."],
     patientFirstName: ["Prénom du patient", "Prénom du patient, tel qu'à l'état civil."],

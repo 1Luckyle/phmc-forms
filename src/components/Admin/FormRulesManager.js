@@ -27,7 +27,9 @@ const SAMPLE = {
     patientID: 'PHMC-2752', patientName: 'Jane Doe', patientFirstName: 'Jane', patientLastName: 'Doe', patientDateOfBirth: '1990-05-14', date: '2026-11-02',
     SubmitDate: '2026-11-02', dateOfVisit: '2026-11-02', decedentName: 'John Doe', decedentOOC: 'John Smith', dateTime: '2026-11-02T14:30', autopsyDate: '2026-11-02',
     dateOfDeath: '2026-11-02', caseNumber: '2026-0042', requestingOfficer: 'Officier Mike Ross, LSSD',
-    internalEmailSubject: 'Réunion du lundi', internalEmailRecipient: 'Direction', applicantTitleAndFullName: 'Mme Jane Doe', decedents: [{ decedentName: 'John Doe' }],
+    internalEmailSubject: 'Réunion du lundi', internalEmailRecipient: 'Direction', applicantTitleAndFullName: 'Mme Jane Doe',
+    // Rapport de masse et courriel DMEC : plusieurs personnes, le titre est la suite de leurs ID.
+    decedents: [{ decedentName: 'John Doe', patientID: 'PHMC-2752' }, { decedentName: 'Jane Doe', patientID: 'TMP-AB3CD' }], additionalPatientIDs: ['TMP-AB3CD'],
 };
 
 const TYPE_LABELS = {

@@ -76,6 +76,8 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         if (version === 24 && (field === 'guardianName' || field === 'guardianRelation')) return;
         // Rapport public de décès d'un défunt NON IDENTIFIÉ : son Discord (HRP) est forcément inconnu.
         if (version === 37 && field === 'decedentOOC' && data.deathRecordType === 'Unidentified') return;
+        // Rapport de masse : les ID patient sont dans chaque défunt, contrôlés défunt par défunt plus bas.
+        if (version === 11 && field === 'decedentPatientIDs') return;
         if (!filled(data[field])) errors.push(`${fieldLabel(version, field)} : champ obligatoire.`);
     });
 

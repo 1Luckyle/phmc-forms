@@ -16,7 +16,7 @@ export const VERSION_FIELDS = {
     },
     2: {
         coronerEmployee: 'select', requestingOfficer: 'text', department: 'select', coronerPHNumber: 'text',
-        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text', additionalPatientIDs: 'list',
+        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text',
     },
     3: {
         patientID: 'text', patientTitle: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientDateOfBirth: 'date',
@@ -83,6 +83,8 @@ export const VERSION_FIELDS = {
     11: {
         coronerEmployee: 'select', dateTime: 'datetime-local', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text', showRequestingOfficerInput: 'checkbox',
         department: 'select', requestingOfficer: 'text', synopsis: 'textarea', evidenceLockerID: 'text', requestingAgency: 'select',
+        // Un ID patient par défunt (liste « Défunts ») : composent le titre du rapport ; contrôlés défunt par défunt (utils/formValidation.js).
+        decedentPatientIDs: 'list',
     },
     14: {
         patientName: 'text', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', phmcRank: 'select',
