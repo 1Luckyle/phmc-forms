@@ -84,7 +84,7 @@ const generateDeathReport = (formData) => {
 
     // Fiche du défunt et de l'intervention.
     const rows = [
-        [['Date et heure de l\'enquête', frDay(dateTime) || 'Inconnue'], ['Lieu du décès', place]],
+        [['Date de l\'enquête', frDay(String(dateTime || '').slice(0, 10)) || 'Inconnue'], ['Lieu du décès', place]],
         [['Appel reçu de', agencyName], ['Heure du décès prononcée', pronouncedTimeOfDeath || 'Heure inconnue']],
         [['Médecin légiste', `${rank} ${coronerEmployee || 'Coroner inconnu'}`], ['Numéro de badge', coronerBadge || 'N/A']],
         [['Cause probable du décès', probableCauseOfDeath || 'Indéterminée'], ['Manière du décès', frDeath(mannerOfDeath) || 'Indéterminée']],

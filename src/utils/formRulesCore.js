@@ -11,14 +11,15 @@ import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 
 // Minimum prévu par le code. Les règles qui ne se résument pas à « rempli / vide » sont dans SPECIAL_RULES.
 export const DEFAULT_REQUIRED = {
-    1: ['decedentOOC', 'dateTime'],
-    2: ['coronerEmployee', 'requestingOfficer'],
+    // DMEC : l'ID patient (réel ou temporaire TMP-…) identifie le défunt et compose le titre du rapport ; le Discord du défunt reste demandé mais ne compose plus le titre.
+    1: ['patientID', 'decedentOOC', 'dateTime'],
+    2: ['coronerEmployee', 'requestingOfficer', 'patientID'],
     3: ['patientFirstName', 'patientLastName', 'patientDateOfBirth', 'patientEmail', 'patientID', 'patientWeight', 'patientHeight'],
-    4: ['decedentFirstName', 'decedentLastName', 'decedentOOC', 'autopsyDate'],
+    4: ['patientID', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'autopsyDate'],
     5: ['patientName', 'patientID', 'date', 'phmcEmployee', 'surgeonEmployee'],
     6: ['patientName', 'patientID', 'date', 'phmcEmployee'],
     7: ['patientName', 'patientID', 'date', 'phmcEmployee'],
-    8: ['decedentFirstName', 'decedentLastName', 'date'],
+    8: ['patientID', 'decedentFirstName', 'decedentLastName', 'date'],
     11: ['dateTime'],
     14: ['patientName', 'patientID', 'date', 'phmcEmployee'],
     16: ['patientName', 'patientID', 'date', 'phmcEmployee'],
@@ -37,7 +38,7 @@ export const DEFAULT_REQUIRED = {
     35: ['patientName', 'patientID', 'phmcEmployee'],
     41: ['patientName', 'patientID', 'date', 'phmcEmployee'],
     42: ['externalMailSubject', 'externalMailRecipient', 'externalMailBody'],
-    37: ['deathRecordType', 'caseNumber', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
+    37: ['deathRecordType', 'caseNumber', 'patientID', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
     // Candidatures : socle commun à tous les envois (le reste dépend du poste et du profil, voir validateApplication).
     50: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
     51: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
@@ -54,13 +55,14 @@ const BILLING = 'billing';
 // Raison 'rule' : règle propre au formulaire (le champ reste obligatoire dès qu'il s'affiche, mais pas quand il n'apparaît pas : voir utils/fieldApplicability.js).
 const RULE = 'rule';
 export const LOCKED_FIELDS = {
-    1: { decedentOOC: TITLE, dateTime: TITLE },
+    1: { patientID: TITLE, dateTime: TITLE },
+    2: { patientID: TITLE },
     3: { patientFirstName: TITLE, patientLastName: TITLE, patientDateOfBirth: TITLE, patientID: BILLING, patientEmail: BILLING },
-    4: { decedentFirstName: TITLE, decedentLastName: TITLE, decedentOOC: TITLE, autopsyDate: TITLE },
+    4: { patientID: TITLE, autopsyDate: TITLE },
     5: { patientName: TITLE, date: TITLE },
     6: { patientName: TITLE, date: TITLE },
     7: { patientName: TITLE, date: TITLE },
-    8: { decedentFirstName: TITLE, decedentLastName: TITLE, date: TITLE },
+    8: { patientID: TITLE, date: TITLE },
     11: { dateTime: TITLE },
     14: { patientName: TITLE, date: TITLE },
     16: { patientName: TITLE, date: TITLE },
@@ -78,7 +80,7 @@ export const LOCKED_FIELDS = {
     35: { patientName: TITLE },
     41: { patientName: TITLE, date: TITLE },
     42: { externalMailSubject: TITLE },
-    37: { decedentFirstName: TITLE, decedentLastName: TITLE, decedentOOC: TITLE, dateOfDeath: TITLE },
+    37: { patientID: TITLE, dateOfDeath: TITLE },
     50: { applicantFirstName: TITLE, applicantLastName: TITLE },
     51: { applicantFirstName: TITLE, applicantLastName: TITLE },
     52: { applicantFirstName: TITLE, applicantLastName: TITLE },
@@ -95,9 +97,14 @@ export const LOCK_REASONS = {
 
 // Règles propres au code, qui ne se règlent pas champ par champ (affichées en lecture seule dans la page d'administration).
 export const SPECIAL_RULES = {
-    2: ["Nom IC ou OOC du défunt : au moins un des deux."],
+    2: ["ID patient du défunt (réel, ou temporaire TMP-… généré dans le formulaire) : il identifie le courriel. Le courriel peut concerner plusieurs défunts : on ajoute leurs ID, le titre est la suite de ces ID et le rapport est lié à chacun d'eux."],
+    1: ["ID patient du défunt : réel, ou temporaire (TMP-…) pour un défunt sans ID. Le titre du rapport ne comporte que la date, jamais l'heure."],
+    37: ["Discord du défunt : pas exigé pour un défunt non identifié."],
     3: ["Titre « Mineur » : seulement si la date de naissance indique moins de 18 ans."],
-    11: ["Au moins un défunt, et le premier doit avoir un nom."],
+    11: [
+        "Au moins un défunt, et le premier doit avoir un nom.",
+        "Chaque défunt a son ID patient (réel, ou temporaire TMP-…) : le titre du rapport est la suite de ces ID, et le rapport est lié au dossier de chacun.",
+    ],
     24: [
         "Prénom ou nom du patient : au moins un des deux.",
         "Au moins un élément du dossier médical à divulguer.",

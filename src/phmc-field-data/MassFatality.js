@@ -7,6 +7,7 @@ import PresetTextField from './shared/PresetTextField';
 import useTitleOptions from '../hooks/useTitleOptions';
 import { SimpleSelect } from './shared/PatientGeneralInfo';
 import ZipCityField from '../components/ZipCityField';
+import TemporaryIdPicker from './shared/TemporaryIdPicker';
 import { splitFullName, joinFullName } from '../utils/patientIdentity';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 import { localizeOptions, DEATH_TYPE_FR, MANNER_FR } from '../utils/deathLabels';
@@ -286,8 +287,9 @@ const MassFatality = ({
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <Form.Control type="text" value={dec.decedentOOC} placeholder="(( Discord du joueur (HRP) ))" onChange={(e) => updateDecedent(idx, 'decedentOOC', e.target.value)} data-guide="Discord du joueur du défunt, hors jeu de rôle." />
-                                <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" onChange={(e) => updateDecedent(idx, 'patientID', e.target.value)} data-guide="ID du défunt s'il était patient du PHMC (PHMC-2752)." />
+                                <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient du défunt (obligatoire ; ID temporaire s'il n'en a pas)" onChange={(e) => updateDecedent(idx, 'patientID', e.target.value)} data-guide="ID patient du défunt (PHMC-2752), obligatoire : le titre du rapport est la suite des ID de tous les défunts, et le rapport est lié au dossier de chacun. Sans ID : « Générer un ID temporaire » sous le champ." />
                             </div>
+                            <TemporaryIdPicker value={dec.patientID || ''} onChange={(next) => updateDecedent(idx, 'patientID', next)} personName={joinFullName(partsOf(dec).first, partsOf(dec).middle, partsOf(dec).last) || dec.decedentOOC} />
                             <Form.Label>Heure du décès prononcée</Form.Label>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <Form.Control type="datetime-local" value={dec.pronouncedTimeOfDeath} onChange={(e) => updateDecedent(idx, 'pronouncedTimeOfDeath', e.target.value)} data-guide="Date et heure à laquelle le décès a été prononcé." />

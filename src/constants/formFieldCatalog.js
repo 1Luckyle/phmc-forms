@@ -6,7 +6,7 @@
 
 export const VERSION_FIELDS = {
     1: {
-        coronerEmployee: 'select', dateTime: 'datetime-local', pronouncedTimeOfDeath: 'time', showRequestingOfficerInput: 'checkbox',
+        coronerEmployee: 'select', dateTime: 'date', pronouncedTimeOfDeath: 'time', showRequestingOfficerInput: 'checkbox',
         department: 'select', requestingOfficer: 'text', massFatality: 'radio', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select',
         decedentOOC: 'text', patientID: 'text', typeOfDeath: 'select', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text',
         decedentAttributes: 'text', mannerOfDeath: 'textarea', probableCauseOfDeath: 'textarea', synopsis: 'textarea',
@@ -16,7 +16,7 @@ export const VERSION_FIELDS = {
     },
     2: {
         coronerEmployee: 'select', requestingOfficer: 'text', department: 'select', coronerPHNumber: 'text',
-        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text',
+        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text', additionalPatientIDs: 'list',
     },
     3: {
         patientID: 'text', patientTitle: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientDateOfBirth: 'date',

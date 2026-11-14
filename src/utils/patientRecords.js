@@ -368,6 +368,26 @@ export async function deleteReportWithRules(report, viewer) {
         if (snap.exists()) { indexRef = r; indexEntry = snap.val(); break; }
     }
 
+    // Rapport lié à plusieurs personnes (rapport de masse, courriel DMEC) : son entrée existe dans le dossier de chacune ; elles suivent le rapport (supprimé ou retiré).
+    const siblingRefs = [];
+    if (reportPath) {
+        try {
+            const idsSnap = await get(ref(database, `${reportPath}/data/patientIDs`));
+            const ids = idsSnap.exists() && Array.isArray(idsSnap.val()) ? idsSnap.val() : [];
+            const seenNodes = new Set(indexRef ? [indexRef.parent.key] : []);
+            for (const id of ids) {
+                for (const node of await findPatientNodes(id)) {
+                    if (seenNodes.has(node)) continue;
+                    seenNodes.add(node);
+                    const siblingRef = ref(database, `patientRecords/${node}/${indexKey}`);
+                    if ((await get(siblingRef)).exists()) siblingRefs.push(siblingRef);
+                }
+            }
+        } catch (error) {
+            console.warn('Linked patient entries could not be listed:', error);
+        }
+    }
+
     const hasCopies = !!indexEntry?.copiedBy && Object.keys(indexEntry.copiedBy).length > 0;
     const isCopy = !!indexEntry?.copiedFrom || !!report.isCopy;
 
@@ -387,6 +407,7 @@ export async function deleteReportWithRules(report, viewer) {
         if (indexRef) await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
         if (reportPath) await remove(ref(database, reportPath));
         if (indexRef) await removeIndexEntry(indexRef);
+        for (const siblingRef of siblingRefs) await removeIndexEntry(siblingRef);
         await releaseDeath();
         if (viewer.role !== 'civil') await retractDeathSignal(indexKey);
     };
@@ -395,6 +416,7 @@ export async function deleteReportWithRules(report, viewer) {
         if (indexRef && viewer.role === 'civil') await removeUnpaidInvoice(indexRef.parent.key, indexRef.key);
         if (reportPath) await update(ref(database, reportPath), { ownerDeleted: true });
         if (indexRef) await update(indexRef, { ownerDeleted: true });
+        for (const siblingRef of siblingRefs) await update(siblingRef, { ownerDeleted: true });
         await releaseDeath();
         if (viewer.role !== 'civil') await retractDeathSignal(indexKey);
     };
@@ -486,6 +508,24 @@ export async function reindexPatientRecords({ onProgress } = {}) {
     for (const [authorNode, reports] of Object.entries(all)) {
         for (const [reportKey, report] of Object.entries(reports || {})) {
             stats.scanned++;
+            // Rapport lié à plusieurs personnes (rapport de masse, courriel DMEC) : une entrée d'index par personne ; on recrée celles qui manquent.
+            if (!report?.copiedFrom && Array.isArray(report?.data?.patientIDs)) {
+                const mainId = canonicalPatientId(report.data.patientID);
+                report.data.patientIDs.map((id) => canonicalPatientId(id)).filter((id) => id && id !== mainId).forEach((id) => {
+                    if (existing[id]?.[reportKey]) return;
+                    updates[`patientRecords/${id}/${reportKey}`] = {
+                        reportPath: `savedReports/${authorNode}/${reportKey}`,
+                        visibility: 'staff-only',
+                        bbCodeVersion: report.bbCodeVersion ?? null,
+                        originalKey: report.originalKey ?? '',
+                        title: report.title ?? null,
+                        authorName: report.authorName ?? '',
+                        creatorName: report.creatorName ?? report.authorName ?? '',
+                        timestamp: report.timestamp ?? Date.now(),
+                    };
+                    stats.created++;
+                });
+            }
             const rawId = report?.data?.patientID;
             if (!rawId) continue;
             const patientNode = canonicalPatientId(rawId);

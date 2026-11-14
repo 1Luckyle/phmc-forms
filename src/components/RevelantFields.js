@@ -29,7 +29,7 @@ const baseRelevantFields = (bbCodeVersion) => {
             return [
                 'requestingOfficer', 'department', 'coronerEmployee', 'coronerRank',
                 'coronerDiscord', 'coronerPHNumber', 'deathReport', 'additionalReports',
-                'decedentName', 'decedentOOC',
+                'decedentName', 'decedentOOC', 'patientID', 'additionalPatientIDs',
             ];
         case 3: // Patient File - Advanced
             return [

@@ -114,9 +114,7 @@ const DeathRecord = ({
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
-                        {!unidentified && (
-                            <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient" className="form-control" />
-                        )}
+                        <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder={unidentified ? 'ID temporaire (TMP-…) du défunt non identifié' : 'ID Patient'} className="form-control" />
                     </div>
             <TemporaryIdPicker formData={formData} setFormData={setFormData} />
                     <Form.Label>Date du décès</Form.Label>

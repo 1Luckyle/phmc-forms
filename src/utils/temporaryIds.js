@@ -76,8 +76,24 @@ export const buildTransferUpdates = ({ tempId, realId, items = [] }) => {
         updates[`patientRecords/${realId}/${indexKey}`] = next;
         updates[`patientRecords/${tempId}/${indexKey}`] = null;
         if (reportPath && report) {
-            updates[`${reportPath}/data/patientID`] = realId;
+            const data = report.data || {};
+            // ID principal : remplacé seulement s'il s'agit de l'ID temporaire (un rapport lié à plusieurs personnes peut avoir un autre ID principal).
+            if (!data.patientID || canonicalPatientId(data.patientID) === tempId) updates[`${reportPath}/data/patientID`] = realId;
+            // Rapport lié à plusieurs personnes : la liste des ID, les ID supplémentaires d'un courriel et l'ID de chaque défunt d'un rapport de masse.
+            const swap = (list) => [...new Set(list.map((id) => (canonicalPatientId(id) === tempId ? realId : id)))];
+            ['patientIDs', 'additionalPatientIDs'].forEach((field) => {
+                if (Array.isArray(data[field]) && data[field].some((id) => canonicalPatientId(id) === tempId)) updates[`${reportPath}/data/${field}`] = swap(data[field]);
+            });
+            if (Array.isArray(data.decedents)) {
+                data.decedents.forEach((decedent, position) => {
+                    if (decedent && canonicalPatientId(decedent.patientID) === tempId) updates[`${reportPath}/data/decedents/${position}/patientID`] = realId;
+                });
+            }
             ['title', 'originalKey', 'bbCode'].forEach((field) => { if (typeof report[field] === 'string' && report[field].includes(tempId)) updates[`${reportPath}/${field}`] = replaceAll(report[field], tempId, realId); });
+            // Les entrées d'index des AUTRES personnes du rapport portent le même titre : mis à jour aussi.
+            (Array.isArray(data.patientIDs) ? data.patientIDs : []).map((id) => canonicalPatientId(id)).filter((id) => id && id !== tempId && id !== realId).forEach((other) => {
+                ['title', 'originalKey'].forEach((field) => { if (typeof report[field] === 'string' && report[field].includes(tempId)) updates[`patientRecords/${other}/${indexKey}/${field}`] = replaceAll(report[field], tempId, realId); });
+            });
         }
         moved += 1;
     });

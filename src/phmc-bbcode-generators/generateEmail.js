@@ -1,6 +1,7 @@
 import { getPrice } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
 import { sectionBanner, infoTable, paragraph, dmecHeaderLogos } from './shared/bbStyles';
+import { linkedPatientIds, patientIdsLabel } from '../utils/linkedPatients';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -45,9 +46,9 @@ const generateEmail = (formData) => {
     const joinList = (...lists) => lists.map((list) => String(list || '').trim()).filter(Boolean).join(', ');
     const names = joinList(formData.decedentName, formData.reportDecedentNames);
     const discords = joinList(formData.decedentOOC, formData.reportDecedentOOC);
-    const patientId = String(formData.patientID || '').trim();
-    const decedentBlock = names || discords || patientId
-        ? `${names || NOT_FILLED}${discords ? ` (( Discord : ${discords} ))` : ''}${patientId ? ` — ID Patient : ${patientId}` : ''}`
+    const patientIds = linkedPatientIds(2, formData);
+    const decedentBlock = names || discords || patientIds.length
+        ? `${names || NOT_FILLED}${discords ? ` (( Discord : ${discords} ))` : ''}${patientIds.length ? ` — ID Patient : ${patientIdsLabel(patientIds)}` : ''}`
         : '';
 
     const attachments = (additionalReports || []).filter((report) => String(report || '').trim());

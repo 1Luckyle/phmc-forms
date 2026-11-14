@@ -170,7 +170,7 @@ export const FIELD_CONDITIONS = {
     37: {
         caseNumber: RECORD_TYPE_SET, caseStatus: RECORD_TYPE_SET, bodyStatus: RECORD_TYPE_SET, sex: RECORD_TYPE_SET, ethnicity: RECORD_TYPE_SET, age: RECORD_TYPE_SET,
         dateOfDeath: RECORD_TYPE_SET, manner: RECORD_TYPE_SET, causesOfDeath: RECORD_TYPE_SET, chiefMedicalExaminer: RECORD_TYPE_SET, coronerEmployee: RECORD_TYPE_SET,
-        patientID: IDENTIFIED, otherSignificantConditions: IDENTIFIED,
+        patientID: RECORD_TYPE_SET, otherSignificantConditions: IDENTIFIED,
         hairColor: UNIDENTIFIED, eyeColor: UNIDENTIFIED, weight: UNIDENTIFIED, height: UNIDENTIFIED, tattoos: UNIDENTIFIED, jewelry: UNIDENTIFIED, comments: UNIDENTIFIED,
     },
     41: flightRules(),

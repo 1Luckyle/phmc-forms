@@ -60,14 +60,15 @@ describe('un champ rendu obligatoire dans le back-office ne bloque que lorsqu\'i
     });
 
     test('rapport public de décès : champs propres au défunt non identifié', () => {
-        setFormOverrides({ 37: { hairColor: true, patientID: true } });
+        setFormOverrides({ 37: { hairColor: true } });
         const base = { caseNumber: '1', decedentFirstName: 'A', decedentLastName: 'B', decedentOOC: 'C', dateOfDeath: '2026-11-01' };
         const identified = validateReport(37, { ...base, deathRecordType: 'Identified' }).errors.join(' ');
         expect(identified).toMatch(/ID patient/i);
         expect(identified).not.toMatch(/cheveux/i);
         const unidentified = validateReport(37, { ...base, deathRecordType: 'Unidentified' }).errors.join(' ');
         expect(unidentified).toMatch(/cheveux/i);
-        expect(unidentified).not.toMatch(/ID patient/i);
+        // L'ID patient (réel ou temporaire TMP-…) identifie TOUS les défunts, identifiés ou non.
+        expect(unidentified).toMatch(/ID patient/i);
     });
 
     test('sans type de défunt, le formulaire reste bloqué (le type est lui-même obligatoire)', () => {

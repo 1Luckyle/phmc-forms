@@ -373,7 +373,7 @@ const TEMPLATES = {
     // Services de Médecine Légale
     1: (h) => ({
         ...h.coroner,
-        dateTime: h.utcDateTime,
+        dateTime: h.today,
         pronouncedTimeOfDeath: h.utcTime,
         department: h.opt('requestingAgenciesOptions'),
         showRequestingOfficerInput: true,
@@ -435,6 +435,7 @@ const TEMPLATES = {
         ...decedentParts(),
         decedentOOC: 'test.debug',
         patientID: h.patient.id,
+        additionalPatientIDs: ['TMP-DEBU2'],
         deathReport: LOREM_SHORT,
         additionalReports: [LOREM_SHORT],
     }),
@@ -505,7 +506,8 @@ const TEMPLATES = {
         decedents: [1, 2].map((n) => ({
             ...decedentParts('Défunt', '', `Numéro${n}`),
             decedentOOC: `test.debug${n}`,
-            patientID: '',
+            // Chaque défunt a son ID patient (le titre du rapport est la suite de ces ID).
+            patientID: n === 1 ? h.patient.id : `TMP-DEBU${n + 2}`,
             dateTime: h.utcDateTime,
             pronouncedTimeOfDeath: h.utcDateTime,
             typeOfDeath: h.opt('typeOfDeathOptions'),

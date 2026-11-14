@@ -89,6 +89,7 @@ const initialFormData = {
     requestingOfficer: '',
     deathReport: '',
     additionalReports: [],
+    additionalPatientIDs: [],
     autopsyDate: '',
     autopsyTime: '',
     autopsyDeathCauses: [''],

@@ -3142,6 +3142,7 @@ function MainAppWrapper() {
         requestingOfficer: '',
         deathReport: '',
         additionalReports: [],
+        additionalPatientIDs: [],
         autopsyDate: '',
         autopsyTime: '',
         autopsyDeathCauses: [''],

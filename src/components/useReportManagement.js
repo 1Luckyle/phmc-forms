@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { migrateApplicationData } from '../utils/applicationForm';
 import { canonicalPatientId } from '../utils/patientId';
+import { linkedPatientIds, hasSeveralPatients } from '../utils/linkedPatients';
 import { loadApplication, loadApplicationsOf, saveApplication } from '../utils/recruitmentStore';
 import {
     normalizeApplicationStatus, applicationStatusLabel, positionLabelFor, APPLICATION_EDITABLE_STATUSES, changedApplicationFields,
@@ -359,6 +360,13 @@ export const useReportManagement = (
         if (formData.patientID && reportDataToSave.data) {
             reportDataToSave.data.patientID = normalizePatientId(formData.patientID);
         }
+        // Rapport lié à PLUSIEURS personnes (rapport de masse : un ID par défunt ; courriel DMEC : défunts supplémentaires) : la liste des ID est conservée dans le rapport
+        // (le premier sert d'ID principal) ; chaque ID reçoit son entrée d'index plus bas.
+        const linkedIds = hasSeveralPatients(bbCodeVersion) ? linkedPatientIds(bbCodeVersion, formData) : [];
+        if (linkedIds.length > 0 && reportDataToSave.data) {
+            if (!reportDataToSave.data.patientID) reportDataToSave.data.patientID = linkedIds[0];
+            reportDataToSave.data.patientIDs = linkedIds;
+        }
 
         // Fallbacks anti-undefined sur les champs sensibles
         if (reportDataToSave.data && reportDataToSave.data.coronerRank === undefined) {
@@ -496,6 +504,36 @@ export const useReportManagement = (
                         console.warn('Could not request exemption:', exemptionError);
                     }
                 }
+            }
+
+            // Autres personnes du rapport (défunts d'un rapport de masse, défunts supplémentaires d'un courriel) : le même rapport est indexé dans le dossier de chacune.
+            // Au mieux, comme l'index principal : une erreur ici ne fait jamais échouer l'enregistrement.
+            const mainId = canonicalPatientId(formData.patientID);
+            const otherIds = linkedIds.filter((id) => id !== mainId);
+            if (otherIds.length > 0) {
+                const failed = [];
+                for (const id of otherIds) {
+                    try {
+                        await writeIndexEntry({
+                            patientID: id,
+                            indexKey: sanitizedKey,
+                            entry: {
+                                reportPath,
+                                visibility: 'staff-only',
+                                bbCodeVersion,
+                                originalKey: key,
+                                title: pureTitle,
+                                authorName: currentAuthor,
+                                creatorName: currentAuthor,
+                                timestamp: Date.now(),
+                            },
+                        });
+                    } catch (linkError) {
+                        console.warn(`Could not index report under patientRecords/${id}:`, linkError);
+                        failed.push(id);
+                    }
+                }
+                if (failed.length > 0) showNotification(`Le rapport est enregistré, mais n'a pas pu être lié au dossier de : ${failed.join(', ')}.`, 'warning', 9000);
             }
 
             // Rapport de décès (« Services de Médecine Légale ») avec un ID patient : le patient est déclaré décédé, le personnel
@@ -812,6 +850,7 @@ Clé : ${sanitizedKey}`,
                                     ...loadedFormData,
                                     decedentName: updatedName,
                                     decedentOOC: updatedOoc,
+                                    patientID: prevFormData.patientID || loadedFormData.patientID || '',
                                     deathReport: updatedDeathReport,
                                     additionalReports: updatedAdditionalReports,
                                 };

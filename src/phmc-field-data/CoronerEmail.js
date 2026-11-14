@@ -10,6 +10,7 @@ import {
 import { ReportPreviewFrame } from '../components/ReportExpansion';
 import CoronerSelect from './shared/CoronerSelect';
 import NameFields from './shared/NameFields';
+import TemporaryIdPicker from './shared/TemporaryIdPicker';
 
 const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
 
@@ -115,6 +116,13 @@ const CoronerEmail = ({
 
     const attached = attachedOf(formData);
 
+    // ID patient des autres défunts concernés (le premier est le champ « ID patient » ci-dessus).
+    const extraIds = Array.isArray(formData.additionalPatientIDs) ? formData.additionalPatientIDs : [];
+    const setExtraIds = (change) => setFormData((prev) => ({ ...prev, additionalPatientIDs: change(Array.isArray(prev.additionalPatientIDs) ? prev.additionalPatientIDs : []) }));
+    const addExtraId = () => setExtraIds((list) => [...list, '']);
+    const setExtraId = (index, value) => setExtraIds((list) => list.map((item, i) => (i === index ? value : item)));
+    const removeExtraId = (index) => setExtraIds((list) => list.filter((_, i) => i !== index));
+
     return (
         <>
             <Form.Label className="form-section-title">Expéditeur</Form.Label>
@@ -170,9 +178,26 @@ const CoronerEmail = ({
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
-                <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
+                <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient du défunt (obligatoire ; ID temporaire si le défunt n'en a pas)" className="form-control" />
             </div>
-            <span className="helper-text">Les défunts des rapports joints ci-dessous s'ajoutent automatiquement (nom IC et Discord) : inutile de les saisir une seconde fois.</span>
+            <TemporaryIdPicker formData={formData} setFormData={setFormData} />
+            {extraIds.map((extraId, index) => (
+                <div key={index} className="mt-2">
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <Form.Control
+                            type="text" value={extraId} onChange={(event) => setExtraId(index, event.target.value)}
+                            placeholder={`ID Patient du défunt n°${index + 2} (réel, ou temporaire)`} className="form-control"
+                            data-guide="ID patient d'un autre défunt concerné par ce courriel : il s'ajoute au titre du rapport, et le rapport est lié à son dossier."
+                        />
+                        <Button size="sm" variant="outline-danger" onClick={() => removeExtraId(index)} title="Retirer ce défunt"><i className="fas fa-times"></i></Button>
+                    </div>
+                    <TemporaryIdPicker value={extraId} onChange={(next) => setExtraId(index, next)} />
+                </div>
+            ))}
+            <div className="mt-2">
+                <Button size="sm" variant="outline-secondary" onClick={addExtraId}><i className="fas fa-user-plus me-1"></i>Ajouter l'ID d'un autre défunt</Button>
+            </div>
+            <span className="helper-text">Plusieurs défunts : chacun a son ID patient, le titre du rapport est la suite de ces ID et le rapport est lié au dossier de chacun. Les défunts des rapports joints ci-dessous s'ajoutent automatiquement (nom IC et Discord) : inutile de les saisir une seconde fois.</span>
 
             <Form.Label className="form-section-title">Frais de demande</Form.Label>
             <Form.Group className="mb-3">

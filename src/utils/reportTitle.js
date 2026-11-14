@@ -10,13 +10,15 @@
 // restent dans saveReport.
 
 import { canonicalPatientId } from './patientId';
+import { linkedPatientIds, patientIdsLabel } from './linkedPatients';
 
 // Format standard demandé : "[ID-Patient] Nom du formulaire - Date", avec repli
 // sur le nom du patient quand l'ID n'est pas renseigné.
 export function buildStandardReportKey(formName, patientID, patientName, dateValue) {
     // L'ID est toujours affiché sous sa forme canonique (2752 → PHMC-2752, sans espaces parasites).
     const identifier = canonicalPatientId(patientID) || patientName || null;
-    const datePart = frDay(dateValue) || 'Date inconnue';
+    // La date seulement : jamais l'heure dans un titre, même quand le champ en contient une.
+    const datePart = frDay(dateValue).split(' ')[0] || 'Date inconnue';
     return identifier ? `[${identifier}] ${formName} - ${datePart}` : `${formName} - ${datePart}`;
 }
 
@@ -46,21 +48,21 @@ export function buildReportTitle(version, formData = {}, formName = '') {
     const f = formData || {};
 
     switch (version) {
-        // DMEC (médecine légale) : même convention que les formulaires de soin, « [identifiant] Nom du formulaire - date ». L'identifiant est l'ID patient quand
-        // le défunt en avait un (champ présent dans le rapport), sinon le nom du défunt (IC, puis HRP).
+        // DMEC (médecine légale) : même convention que les formulaires de soin, « [ID patient] Nom du formulaire - date » (la date seulement, sans l'heure). Depuis les ID temporaires (TMP-…),
+        // tout défunt a un ID patient : il identifie le rapport. Le nom du défunt (IC, puis HRP) ne sert plus que de repli pour un ancien rapport sans ID.
         case 1: // Services de Médecine Légale
             return buildStandardReportKey(name, f.patientID, decedentLabel(f), f.dateTime);
         case 4: // Rapport d'Autopsie
             return buildStandardReportKey(name, f.patientID, decedentLabel(f), f.autopsyDate);
         case 37: // Rapport Public de Décès
             return buildStandardReportKey(name, f.patientID, decedentLabel(f), f.dateOfDeath);
-        case 2: // Email DMEC (pas de champ ID patient : le défunt, ou la liste des défunts)
-            return buildStandardReportKey(name, '', decedentLabel(f), todayFr());
+        case 2: // Email DMEC : l'ID de chaque défunt concerné, à la suite
+            return buildStandardReportKey(name, '', patientIdsLabel(linkedPatientIds(2, f)) || decedentLabel(f), todayFr());
         case 8: // Certificat de Décès
-            return buildStandardReportKey(name, '', decedentLabel(f), f.date);
-        case 11: { // Rapport de Tuerie/Accident de Masse : les noms de tous les défunts
+            return buildStandardReportKey(name, f.patientID, decedentLabel(f), f.date);
+        case 11: { // Rapport de Tuerie/Accident de Masse : la suite des ID patient de tous les défunts (leurs noms seulement pour un ancien rapport sans ID)
             const names = (Array.isArray(f.decedents) ? f.decedents : []).map((d) => d.decedentName).filter(Boolean).join(', ');
-            return buildStandardReportKey(name, '', names, frDay(f.dateTime).split(' ')[0]);
+            return buildStandardReportKey(name, '', patientIdsLabel(linkedPatientIds(11, f)) || names, f.dateTime);
         }
         case 22:
         case 23: // Notes de Service

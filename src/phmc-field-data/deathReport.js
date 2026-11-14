@@ -64,9 +64,10 @@ useEffect(() => {
 
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                 <Form.Control
-                    type="datetime-local"
+                    type="date"
                     name="dateTime"
-                    value={formData.dateTime}
+                    title="Date de l'enquête"
+                    value={String(formData.dateTime || '').slice(0, 10)}
                     onChange={handleChange}
                     className="form-control"
                 />
@@ -77,8 +78,8 @@ useEffect(() => {
                     onClick={() => {
                         const now = new Date();
                         const pad = (n) => n.toString().padStart(2, '0');
-                        // Use UTC for accuracy (matches Current Server Time)
-                        const utc = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+                        // Date UTC (celle de l'heure du serveur affichée plus haut) ; seule la date est conservée.
+                        const utc = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
                         handleChange({ target: { name: 'dateTime', value: utc } });
                     }}
                 >
@@ -155,7 +156,7 @@ useEffect(() => {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
-                <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient (le défunt n'était peut-être pas patient du PHMC)" className="form-control" />
+                <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient du défunt (obligatoire ; ID temporaire si le défunt n'en a pas)" className="form-control" />
             </div>
             <TemporaryIdPicker formData={formData} setFormData={setFormData} />
             <DecedentDetailsFields formData={formData} handleChange={handleChange} />

@@ -13,11 +13,14 @@ import { isTemporaryId, loadTemporaryIds, registerTemporaryId, findTemporaryIdsB
 
 const decedentName = (formData) => [formData.decedentFirstName, formData.decedentMiddleName, formData.decedentLastName].filter(Boolean).join(' ').trim() || String(formData.decedentName || '').trim();
 
-const TemporaryIdPicker = ({ formData, setFormData }) => {
+// Par défaut le sélecteur agit sur l'ID patient du formulaire (formData.patientID). Pour une AUTRE personne du même rapport (défunt n°2 d'un rapport de masse, ID supplémentaire d'un courriel),
+// `value` (son ID), `onChange(nouvelId)` et `personName` (son nom) remplacent le champ du formulaire.
+const TemporaryIdPicker = ({ formData = {}, setFormData, value, onChange, personName }) => {
     const { staffName } = useEmployeeAuth();
-    const id = canonicalPatientId(formData.patientID);
+    const own = typeof onChange === 'function';
+    const id = canonicalPatientId(own ? value : formData.patientID);
     const temporary = isTemporaryId(id);
-    const name = decedentName(formData);
+    const name = own ? String(personName || '').trim() : decedentName(formData);
     const [registry, setRegistry] = useState({});
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -32,11 +35,11 @@ const TemporaryIdPicker = ({ formData, setFormData }) => {
     }, [id, temporary]);
 
     const matches = useMemo(() => findTemporaryIdsByName(registry, name), [registry, name]);
-    const use = (value) => setFormData((prev) => ({ ...prev, patientID: value }));
+    const use = (next) => (own ? onChange(next) : setFormData((prev) => ({ ...prev, patientID: next })));
     const generate = async () => {
         setBusy(true);
         setError('');
-        try { use(await registerTemporaryId({ nom: name || formData.decedentOOC || 'Inconnu(e)', byName: staffName })); } catch (err) { setError(err.message || "Impossible de créer l'identifiant temporaire."); } finally { setBusy(false); }
+        try { use(await registerTemporaryId({ nom: name || (own ? '' : formData.decedentOOC) || 'Inconnu(e)', byName: staffName })); } catch (err) { setError(err.message || "Impossible de créer l'identifiant temporaire."); } finally { setBusy(false); }
     };
     const request = async () => {
         setBusy(true);

@@ -12,6 +12,7 @@ const SIGNE = "Signe vital : choisissez la valeur constatée dans la liste.";
 export const FIELD_INFO = {
     // ── Identité du patient ──
     patientID: ["ID patient", "ID du patient, de la forme PHMC-2752 (ou simplement 2752). Il relie le rapport à son dossier médical."],
+    additionalPatientIDs: ["ID patient des autres défunts", "ID patient des autres défunts concernés (réels ou temporaires TMP-…) : ils s'ajoutent au titre du rapport, et le rapport est lié au dossier de chacun."],
     patientName: ["Nom du patient", "Entrer le nom complet du patient (Prénom / Deuxième Prénom / Nom de famille)."],
     patientNameNew: ["Nom du patient", "Prénom (deuxième prénom) et nom de famille du patient."],
     patientFirstName: ["Prénom du patient", "Prénom du patient, tel qu'à l'état civil."],
@@ -419,15 +420,20 @@ export const FIELD_INFO = {
     dfpLegalFactionLink: ["Preuve de DFP Legal Faction", "Lien de preuve de votre DFP Legal Faction Management, ou « N/A »."],
 };
 
+const DECEDENT_ID = ["ID patient du défunt", "ID patient du défunt (PHMC-2752), obligatoire : il compose le titre du rapport. Défunt sans ID : « Générer un ID temporaire » sous le champ."];
+
 // Sens particulier d'une clé dans un formulaire donné : { version: { clé: [libellé, aide] } }.
 export const VERSION_FIELD_INFO = {
-    8: { date: ["Date de délivrance", "Date de délivrance du certificat de décès (calendrier)."], patientDateOfBirth: ["Date de naissance du défunt", "Date de naissance du défunt (calendrier), si elle est connue."] },
+    8: { patientID: DECEDENT_ID, date: ["Date de délivrance", "Date de délivrance du certificat de décès (calendrier)."], patientDateOfBirth: ["Date de naissance du défunt", "Date de naissance du défunt (calendrier), si elle est connue."] },
     26: { date: ["Date de naissance", "Date de naissance du patient (calendrier). Elle ne peut pas être dans le futur."] },
     22: { date: ["Date de la note", "Date de la note de service (calendrier)."], patientNotes: ["Notes", "Contenu de la note de service."] },
     23: { date: ["Date de la note", "Date de la note de service (calendrier)."], patientNotes: ["Notes", "Contenu de la note de service."] },
     27: {},
-    37: { patientID: ["ID patient", "ID du patient, s'il était patient du PHMC (facultatif)."] },
-    1: { patientID: ["ID patient", "ID du défunt s'il était patient du PHMC (facultatif)."] },
+    // DMEC : l'ID patient du défunt est obligatoire et compose le titre ; un défunt sans ID reçoit un ID temporaire (TMP-…).
+    37: { patientID: DECEDENT_ID },
+    1: { patientID: DECEDENT_ID, dateTime: ["Date de l'enquête", "Date de l'enquête (calendrier) : seule la date compte, pas l'heure. Elle compose le titre du rapport."] },
+    2: { patientID: DECEDENT_ID, additionalPatientIDs: ["ID patient des autres défunts", "ID patient des autres défunts concernés par le courriel (réels ou temporaires TMP-…) : ils s'ajoutent au titre du rapport, et le rapport est lié au dossier de chacun."] },
+    4: { patientID: DECEDENT_ID },
 };
 
 const humanize = (key) => String(key || '')

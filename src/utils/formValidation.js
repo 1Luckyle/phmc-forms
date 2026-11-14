@@ -101,9 +101,10 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         const decedents = Array.isArray(data.decedents) ? data.decedents : [];
         if (decedents.length === 0) errors.push('Ajoutez au moins un défunt au rapport.');
         else if (!filled(decedents[0]?.decedentName)) errors.push('Le premier défunt doit avoir un nom.');
-    }
-    if (version === 2 && !filled(data.decedentName) && !filled(data.decedentOOC) && !filled(data.reportDecedentNames) && !filled(data.reportDecedentOOC)) {
-        errors.push('Nom IC ou OOC du défunt : au moins un des deux est obligatoire.');
+        // Chaque défunt a son ID patient (réel, ou temporaire TMP-…) : le titre du rapport est la suite de ces ID, et le rapport est lié à chacun d'eux.
+        decedents.forEach((decedent, index) => {
+            if (!filled(decedent?.patientID)) errors.push(`Défunt n°${index + 1} : ID patient obligatoire (ID temporaire TMP-… s'il n'en a pas).`);
+        });
     }
     if (version === 24 && !(Array.isArray(data.MedicalRecordsRelease) && data.MedicalRecordsRelease.length > 0)) {
         errors.push('Sélectionnez au moins un élément du dossier médical à divulguer.');
