@@ -1,7 +1,8 @@
 // src/phmc-bbcode-generators/generateContract.js
 //
 // Mise en page BBCode des documents contractuels (contrats, avenants, conventions, convocations, notifications), dans la charte des autres
-// formulaires : en-tête PHMC (logo + adresse du centre), titre, bandeaux noirs à chevron rouge, tableaux gris, bloc de signatures.
+// formulaires : en-tête à deux cellules comme les rapports (informations du document à gauche ; logo et titre en grand à droite — logo PHMC et sceau du DMEC pour les documents du
+// Département de Pathologie et de Médecine Légale), bandeaux noirs à chevron rouge, tableaux gris, bloc de signatures, puis le pied de page commun du PHMC (coordonnées du centre).
 // Comme l'AMA, le résultat se prévisualise, se copie, se télécharge en HTML / PDF / image : seul le CONTENU (articles) vient de
 // utils/contractClauses.js ; ici on ne s'occupe que de la forme.
 //
@@ -10,7 +11,7 @@
 // Un bloc d'article est une chaîne (paragraphe) ou { liste: [...], numerotee?: true } | { tableau: [[libellé, valeur], …] } | { serment: texte }
 //   | { encart: texte }. Les textes peuvent contenir du BBCode inline généré par les gabarits ([b]…[/b]) ; les saisies des utilisateurs sont
 //   nettoyées AVANT (voir bbSafe).
-import { phmcHeaderEnd, sectionBanner } from './shared/bbStyles';
+import { careHeader, dmecHeader, sectionBanner, phmcFooter } from './shared/bbStyles';
 
 // Repères remplacés au moment de l'AFFICHAGE par le bloc de signature de l'employé (le texte, lui, est figé à l'envoi). Pas de crochets : le
 // convertisseur BBCode les prendrait pour des balises.
@@ -50,10 +51,11 @@ const generateContract = (doc) => {
         title, subtitle, reference, dateText, service, partiesTitre = 'Entre les soussignés', visas = [], parties = [], preambule = [], articles = [], signatures, footer = [],
     } = doc;
 
-    const headerCell = `[divbox=white][table][tr][td][center][br][/br][size=130][b]${title}[/b][/size]
-${subtitle ? `[size=105]${subtitle}[/size]\n` : ''}${service === 'coroner' ? '[size=90][b]DÉPARTEMENT DE PATHOLOGIE ET DE MÉDECINE LÉGALE[/b][/size]\n' : ''}[br][/br][size=85]Réf. ${reference}
-${dateText}[/size]
-${phmcHeaderEnd()}`;
+    // En-tête commun aux rapports : étiquette « Informations du document », puis la référence et la date d'édition ; le titre du document est en grand à droite, sous le logo.
+    const headerTitle = String(title || '').toUpperCase();
+    const headerCell = service === 'coroner'
+        ? `[divbox=white]${dmecHeader({ label: 'Informations du document', name: `Réf. ${reference}`, detail: dateText, title: headerTitle, subtitle: subtitle ? `[size=105]${subtitle}[/size]` : '' })}[/divbox]`
+        : careHeader({ title: headerTitle, label: 'Informations du document', lines: `Réf. ${reference}\n${dateText}${subtitle ? `\n${subtitle}` : ''}` });
 
     const visasBlock = visas.length
         ? `[divbox=white][size=90]${visas.map((visa) => `[i]${visa}[/i]`).join('\n')}[/size][/divbox]`
@@ -86,6 +88,7 @@ ${signatures.intro ? `[justify]${signatures.intro}[/justify]\n` : ''}[table][tr]
         sigBlock,
         footerBlock,
         '[/divbox]',
+        phmcFooter(),
     ].filter(Boolean).join('\n');
 };
 

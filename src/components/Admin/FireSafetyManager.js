@@ -12,6 +12,7 @@ import {
     loadFireSafety, saveControl, addNonConformity, assignNonConformity, resolveNonConformity, reopenNonConformity, saveDrill,
 } from '../../utils/fireSafety';
 import useDebugDelete from '../../hooks/useDebugDelete';
+import DebugFillButton from '../DebugFillButton';
 import { removeFireRecord } from '../../utils/debugDelete';
 import './FireSafety.css';
 
@@ -157,6 +158,12 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
     const [echeance, setEcheance] = useState('');
     const [busy, setBusy] = useState(false);
     const failed = failedItems(items);
+    // Remplissage de test (mode debug) : un étage, tous les points conformes sauf le premier, une remarque.
+    const debugFill = () => {
+        setEtage(ETAGE_SUGGESTIONS[0] || 'Rez-de-chaussée');
+        setItems(Object.fromEntries(CHECKLIST.map((item, index) => [item.key, index === 0 ? 'nc' : 'ok'])));
+        setNotes('Contrôle de test (debug).');
+    };
 
     const submit = async () => {
         setBusy(true);
@@ -185,7 +192,7 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
                     </div>
                 ))}
             </div>
-            <Form.Group className="my-2" data-guide-zone><Form.Label>Notes <small className="text-muted">(facultatif)</small></Form.Label><Form.Control as="textarea" rows={2} maxLength={500} name="controleNotes" data-guide="Facultatif : une remarque sur ce contrôle." value={notes} onChange={(e) => setNotes(e.target.value)} /></Form.Group>
+            <Form.Group className="my-2" data-guide-zone><Form.Label>Notes <small className="text-muted">(facultatif)</small></Form.Label><Form.Control placeholder="Remarque sur ce contrôle (facultatif)" as="textarea" rows={2} maxLength={500} name="controleNotes" data-guide="Facultatif : une remarque sur ce contrôle." value={notes} onChange={(e) => setNotes(e.target.value)} /></Form.Group>
             {failed.length > 0 && (
                 <Alert variant="warning" className="py-2">
                     <Form.Check type="checkbox" id="fs-create-nc" checked={createNc} onChange={(e) => setCreateNc(e.target.checked)}
@@ -198,6 +205,7 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
                     )}
                 </Alert>
             )}
+            <DebugFillButton onFill={debugFill} className="me-2" />
             <Button variant="primary" onClick={submit} disabled={busy || !etage.trim()}>{busy ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer le contrôle'}</Button>
 
             <h6 className="mt-4">Historique des contrôles</h6>
@@ -242,6 +250,9 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
         setForm({ etage: '', article: '202', description: '', responsable: '', echeance: '' });
     }, 'Non-conformité ajoutée.');
 
+    // Remplissage de test (mode debug) : une non-conformité plausible.
+    const debugFill = () => setForm({ etage: ETAGE_SUGGESTIONS[0] || 'Rez-de-chaussée', article: Object.keys(ARTICLES)[0] || '202', description: 'Issue de secours encombrée (test debug).', responsable: '', echeance: '' });
+
     const assign = (nc) => setAssigning({ nc, responsable: nc.responsable || '', echeance: msToDate(nc.echeance) });
     const confirmAssign = () => {
         const { nc, responsable, echeance } = assigning;
@@ -266,6 +277,7 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
                     <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField name="ncEcheance" data-guide="Facultatif : la date limite de correction." value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
                 </div>
             </div>
+            <DebugFillButton onFill={debugFill} className="me-2" />
             <Button variant="primary" onClick={add} disabled={busy || !form.etage.trim() || form.description.trim().length < 5}>Ajouter la non-conformité</Button>
 
             <Modal show={!!assigning} onHide={() => setAssigning(null)} centered>
@@ -340,6 +352,8 @@ const Drills = ({ data, onSaved, showNotification, adminName }) => {
     const [form, setForm] = useState(EMPTY_DRILL);
     const [busy, setBusy] = useState(false);
     const total = form.participants.length + (Number(form.autres) || 0);
+    // Remplissage de test (mode debug) : un exercice avec quelques autres personnes (les participants du personnel se choisissent dans la liste).
+    const debugFill = () => setForm((prev) => ({ ...prev, etage: prev.etage || 'Tout le bâtiment', autres: prev.autres || '12', duree: prev.duree || '8', observations: prev.observations || 'Évacuation de test (debug) : sans incident.' }));
     const submit = async () => {
         setBusy(true);
         try {
@@ -355,11 +369,12 @@ const Drills = ({ data, onSaved, showNotification, adminName }) => {
                 <Form.Group><Form.Label>Zone <small className="text-muted">(vide = tout le bâtiment)</small></Form.Label><EtageInput name="exerciceZone" data-guide="Facultatif : la zone évacuée. Vide = tout le bâtiment." value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value })} emptyLabel="Tout le bâtiment" /></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Participants <small className="text-muted">(personnel, sélection multiple)</small></Form.Label><div data-guide="Le personnel qui a participé à l'exercice (au moins un participant, ou des autres personnes)."><ParticipantsSelect value={form.participants} onChange={(participants) => setForm({ ...form, participants })} /></div></Form.Group>
                 <div className="fs-pair fs-pair-even">
-                <Form.Group><Form.Label>Autres personnes <small className="text-muted">(patients, visiteurs — nombre, facultatif)</small></Form.Label><Form.Control inputMode="numeric" name="exerciceAutres" data-guide="Facultatif : le nombre de patients ou de visiteurs évacués." value={form.autres} onChange={(e) => setForm({ ...form, autres: e.target.value.replace(/\D/g, '') })} /></Form.Group>
-                <Form.Group><Form.Label>Durée d'évacuation (minutes)</Form.Label><Form.Control inputMode="numeric" name="exerciceDuree" required data-guide="La durée de l'évacuation, en minutes." value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value.replace(/\D/g, '') })} /></Form.Group>
+                <Form.Group><Form.Label>Autres personnes <small className="text-muted">(patients, visiteurs — nombre, facultatif)</small></Form.Label><Form.Control placeholder="ex. 12" inputMode="numeric" name="exerciceAutres" data-guide="Facultatif : le nombre de patients ou de visiteurs évacués." value={form.autres} onChange={(e) => setForm({ ...form, autres: e.target.value.replace(/\D/g, '') })} /></Form.Group>
+                <Form.Group><Form.Label>Durée d'évacuation (minutes)</Form.Label><Form.Control placeholder="ex. 8" inputMode="numeric" name="exerciceDuree" required data-guide="La durée de l'évacuation, en minutes." value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value.replace(/\D/g, '') })} /></Form.Group>
                 </div>
-                <Form.Group className="fs-wide"><Form.Label>Observations <small className="text-muted">(facultatif)</small></Form.Label><Form.Control as="textarea" rows={2} maxLength={500} name="exerciceObservations" data-guide="Facultatif : ce qui s'est bien ou mal passé." value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} /></Form.Group>
+                <Form.Group className="fs-wide"><Form.Label>Observations <small className="text-muted">(facultatif)</small></Form.Label><Form.Control placeholder="Ce qui s'est bien passé, ce qui est à améliorer (facultatif)" as="textarea" rows={2} maxLength={500} name="exerciceObservations" data-guide="Facultatif : ce qui s'est bien ou mal passé." value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} /></Form.Group>
             </div>
+            <DebugFillButton onFill={debugFill} className="me-2" />
             <Button variant="primary" onClick={submit} disabled={busy || total === 0 || !form.duree}>Enregistrer l'exercice{total > 0 ? ` (${total} participant${total > 1 ? 's' : ''})` : ''}</Button>
             <h6 className="mt-4">Exercices réalisés</h6>
             {data.exercices.length === 0 ? <p className="text-muted">Aucun exercice enregistré.</p> : (

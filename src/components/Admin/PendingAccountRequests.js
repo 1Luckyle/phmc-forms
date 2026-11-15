@@ -335,7 +335,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                     <Form>
                         <Form.Group className="mb-3">
                             <Form.Label style={{ color: '#c9d1d9' }}>Prénom</Form.Label>
-                            <Form.Control
+                            <Form.Control placeholder="Prénom"
                                 type="text"
                                 value={editingRequest.firstName || ''}
                                 onChange={(e) => {
@@ -347,7 +347,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label style={{ color: '#c9d1d9' }}>Nom de famille</Form.Label>
-                            <Form.Control
+                            <Form.Control placeholder="Nom de famille"
                                 type="text"
                                 value={editingRequest.lastName || ''}
                                 onChange={(e) => {
@@ -378,7 +378,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                             <>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Discord</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. prenom.nom"
                                         type="text"
                                         value={editingRequest.discord}
                                         onChange={(e) => setEditingRequest({...editingRequest, discord: e.target.value})}
@@ -387,7 +387,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Badge</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Numéro de badge"
                                         type="text"
                                         value={editingRequest.badge}
                                         onChange={(e) => setEditingRequest({...editingRequest, badge: e.target.value})}
@@ -396,7 +396,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Numéro de téléphone</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. 555-0100"
                                         type="text"
                                         value={editingRequest.phNumber || ''}
                                         onChange={(e) => setEditingRequest({...editingRequest, phNumber: e.target.value})}
@@ -408,7 +408,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                             <>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Discord</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. prenom.nom"
                                         type="text"
                                         value={editingRequest.discord || ''}
                                         onChange={(e) => setEditingRequest({...editingRequest, discord: e.target.value})}
@@ -417,7 +417,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Badge</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Numéro de badge"
                                         type="text"
                                         value={editingRequest.badge || ''}
                                         onChange={(e) => setEditingRequest({...editingRequest, badge: e.target.value})}
@@ -426,7 +426,7 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Numéro de téléphone</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. 555-0100"
                                         type="text"
                                         value={editingRequest.phNumber || ''}
                                         onChange={(e) => setEditingRequest({...editingRequest, phNumber: e.target.value})}

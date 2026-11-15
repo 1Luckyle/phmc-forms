@@ -72,7 +72,7 @@ const PricingManager = ({ showNotification, onLogAction }) => {
                                 </div>
                                 <div className="adm-price-input">
                                     <div className="input-group">
-                                        <input
+                                        <input placeholder="ex. 5 000"
                                             type="number" min="0" max={MAX_PRICE} step="100" inputMode="numeric"
                                             className={`form-control ${draft[definition.key] !== undefined && !state.valid ? 'is-invalid' : ''}`}
                                             value={draft[definition.key] ?? ''} disabled={saving}

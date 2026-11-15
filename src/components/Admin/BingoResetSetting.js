@@ -65,7 +65,7 @@ const BingoResetSetting = ({ bingoType, disabled, showNotification, onLogAction 
                 />
                 <div className="d-flex align-items-center gap-2">
                     <span>Tous les</span>
-                    <Form.Control
+                    <Form.Control placeholder="ex. 7"
                         type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)}
                         disabled={disabled || busy || never} style={{ width: '90px' }} aria-label="Nombre de jours entre deux réinitialisations"
                     />

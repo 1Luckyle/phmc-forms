@@ -167,12 +167,12 @@ const MailTemplatesManager = ({ showNotification, onLogAction, adminName }) => {
                     {!template.fragment && (
                         <Form.Group className="mb-2">
                             <Form.Label>Sujet <small className="text-muted">({draft.subject.length}/{SUBJECT_MAX})</small></Form.Label>
-                            <Form.Control ref={subjectRef} value={draft.subject} onFocus={() => { lastField.current = 'subject'; }} onChange={(e) => setDraft((p) => ({ ...p, subject: e.target.value }))} />
+                            <Form.Control placeholder="Objet du message" ref={subjectRef} value={draft.subject} onFocus={() => { lastField.current = 'subject'; }} onChange={(e) => setDraft((p) => ({ ...p, subject: e.target.value }))} />
                         </Form.Group>
                     )}
                     <Form.Group className="mb-2">
                         <Form.Label>Corps du mail <small className="text-muted">({draft.body.length}/{BODY_MAX})</small></Form.Label>
-                        <Form.Control as="textarea" rows={template.fragment ? 3 : 12} ref={bodyRef} className="mt-body" value={draft.body}
+                        <Form.Control placeholder="Texte du message" as="textarea" rows={template.fragment ? 3 : 12} ref={bodyRef} className="mt-body" value={draft.body}
                             onFocus={() => { lastField.current = 'body'; }} onChange={(e) => setDraft((p) => ({ ...p, body: e.target.value }))} spellCheck />
                     </Form.Group>
 
@@ -214,7 +214,7 @@ const MailTemplatesManager = ({ showNotification, onLogAction, adminName }) => {
                                 {scalarVars.map((variable) => (
                                     <Form.Group key={variable.key}>
                                         <Form.Label>{variable.label}</Form.Label>
-                                        <Form.Control size="sm" value={vars[variable.key] ?? ''} onChange={(e) => setSamples((p) => ({ ...p, [variable.key]: e.target.value }))} />
+                                        <Form.Control placeholder="Valeur d'exemple" size="sm" value={vars[variable.key] ?? ''} onChange={(e) => setSamples((p) => ({ ...p, [variable.key]: e.target.value }))} />
                                     </Form.Group>
                                 ))}
                             </div>

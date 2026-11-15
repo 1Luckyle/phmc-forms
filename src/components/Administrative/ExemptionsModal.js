@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, Nav, Spinner, Table } from 'react-bootstrap';
 import BaseModal from '../BaseModal';
+import DebugFillButton from '../DebugFillButton';
 import '../DarkUi.css';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import {
@@ -110,6 +111,7 @@ const ExemptionsModal = ({ show, onHide, showNotification }) => {
                         <Form.Control size="sm" style={{ maxWidth: 160 }} name="patientID" required data-guide="L'ID patient à exempter (PHMC-1234)." placeholder="ID patient" value={manual.patientID} onChange={(event) => setManual({ ...manual, patientID: event.target.value })} />
                         <Form.Control size="sm" style={{ maxWidth: 200 }} name="name" data-guide="Facultatif : son nom, pour le courriel." placeholder="Nom (facultatif)" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} />
                         <Form.Control size="sm" style={{ maxWidth: 260 }} name="note" data-guide="Facultatif : un message transmis à la personne." placeholder="Commentaire (facultatif)" value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} />
+                        <DebugFillButton size="sm" onFill={() => setManual({ patientID: 'PHMC-2752', name: 'Jean Testard', note: 'Exemption de test (debug).' })} />
                         <Button size="sm" variant="outline-success" disabled={!isValidPatientId(manual.patientID) || busyId === 'manual'} onClick={() => run('manual', () => grantExemption({ patientID: manual.patientID, patientName: manual.name, name: actor, note: manual.note }).then(() => setManual({ patientID: '', name: '', note: '' })), 'Exemption accordée.')}>
                             <i className="fas fa-plus me-1"></i>Accorder directement
                         </Button>

@@ -12,6 +12,7 @@ import {
 } from '../../../utils/staffAdmin';
 import { STAFF_FAMILIES, familyOfMember, normalizeRank, getRoleInfo, RECRUITER_DEFAULT_RANK } from '../../../constants/ranks';
 import RolePicker from './RolePicker';
+import DebugFillButton from '../../DebugFillButton';
 import { sendAdminActionWebhook } from '../adminUtils';
 import { canonicalPatientId } from '../../../utils/patientId';
 import EmailChangeFlow from '../../EmailChangeFlow';
@@ -53,6 +54,11 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
     const { busy, error, setError, run } = useBusy();
 
     const service = STAFF_FAMILIES[family].service;
+    // Remplissage de test (mode debug) : seulement pour AJOUTER un membre (jamais pour modifier une vraie fiche). Le grade se choisit à la main.
+    const debugFill = () => setForm((prev) => ({
+        ...prev, firstName: prev.firstName || 'Test', lastName: prev.lastName || 'Debug', address: prev.address || 'Elgin Avenue, Pillbox Hill', dateOfBirth: prev.dateOfBirth || '1990-05-14',
+        gender: prev.gender || 'Homme', discord: prev.discord || 'test.debug', phNumber: prev.phNumber || '555-0100', badge: prev.badge || '99999',
+    }));
 
     useEffect(() => {
         if (!show) return;
@@ -123,7 +129,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill">
                         <Form.Label>Prénom</Form.Label>
-                        <Form.Control name="prenom" required value={form.firstName} onChange={set('firstName')} />
+                        <Form.Control placeholder="Prénom" name="prenom" required value={form.firstName} onChange={set('firstName')} />
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Deuxième prénom</Form.Label>
@@ -131,7 +137,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Nom</Form.Label>
-                        <Form.Control name="nom" required value={form.lastName} onChange={set('lastName')} />
+                        <Form.Control placeholder="Nom de famille" name="nom" required value={form.lastName} onChange={set('lastName')} />
                     </Form.Group>
                 </div>
                 {isEdit && (
@@ -164,7 +170,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Téléphone</Form.Label>
-                        <Form.Control value={form.phNumber} onChange={set('phNumber')} />
+                        <Form.Control placeholder="ex. 555-0100" value={form.phNumber} onChange={set('phNumber')} />
                     </Form.Group>
                 </div>
                 {isEdit ? <Form.Text className="text-muted d-block mb-3">ID patient : PHMC-{form.badge}</Form.Text> : <div className="mb-2"></div>}
@@ -196,7 +202,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 </div>
                 <Form.Group>
                     <Form.Label>Discord</Form.Label>
-                    <Form.Control value={form.discord} onChange={set('discord')} />
+                    <Form.Control placeholder="ex. prenom.nom" value={form.discord} onChange={set('discord')} />
                 </Form.Group>
                 {isEdit && member.uid && (
                     <Form.Check
@@ -222,6 +228,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 )}
             </Modal.Body>
             <Modal.Footer>
+                {!isEdit && <DebugFillButton onFill={debugFill} disabled={busy} />}
                 <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
                 <Button variant="primary" onClick={handleSave} disabled={busy}>
                     {busy ? <Spinner size="sm" animation="border" /> : (isEdit ? 'Enregistrer' : 'Ajouter')}
@@ -261,7 +268,7 @@ export const RemoveStaffDialog = ({ show, onHide, member, allStaff, adminEmail, 
                 </p>
                 <Form.Group>
                     <Form.Label>Pour confirmer, tapez « {member.displayName} »</Form.Label>
-                    <Form.Control value={typed} onChange={(e) => setTyped(e.target.value)} />
+                    <Form.Control placeholder="Nom complet de l'employé" value={typed} onChange={(e) => setTyped(e.target.value)} />
                 </Form.Group>
             </Modal.Body>
             <Modal.Footer>

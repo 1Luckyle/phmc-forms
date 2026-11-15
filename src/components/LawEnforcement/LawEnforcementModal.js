@@ -7,6 +7,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Form, Spinner, Table } from 'react-bootstrap';
 import BaseModal from '../BaseModal';
+import DebugFillButton from '../DebugFillButton';
 import '../DarkUi.css';
 import './LawEnforcement.css';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
@@ -101,6 +102,11 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
 
     const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
     const errors = validateRequest(form);
+    // Remplissage de test (mode debug, voir DebugFillButton) : une demande d'agent complète, sans aucun contenu médical.
+    const debugFill = () => setForm((prev) => ({
+        ...prev, service: 'LSPD', agent: '4821 — Officier John Doe', type: Object.keys(requestTypesFor(scope))[0], patientID: 'PHMC-2752',
+        baseLegale: 'mandat', reference: 'Mandat n° 2026-0142', decision: 'transmis', note: 'Demande de test : renvoyée à la Direction.',
+    }));
 
     const submit = async () => {
         setSaving(true);
@@ -135,14 +141,15 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
                 <Form.Group><Form.Label>Fondement invoqué</Form.Label>
                     <Form.Select name="baseLegale" required data-guide="Sur quel fondement l'agent demande : mandat, consentement ou danger vital. Sans fondement, rien ne se communique." value={form.baseLegale} onChange={set('baseLegale')}>{Object.entries(LEGAL_BASES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
                 {form.baseLegale === 'mandat' && (
-                    <Form.Group><Form.Label>Référence du mandat</Form.Label><Form.Control name="reference" required data-guide="Le numéro ou la référence du mandat présenté par l'agent." value={form.reference} onChange={set('reference')} maxLength={120} /></Form.Group>
+                    <Form.Group><Form.Label>Référence du mandat</Form.Label><Form.Control placeholder="ex. Mandat n° 2026-0142" name="reference" required data-guide="Le numéro ou la référence du mandat présenté par l'agent." value={form.reference} onChange={set('reference')} maxLength={120} /></Form.Group>
                 )}
                 <Form.Group><Form.Label>Décision</Form.Label>
                     <Form.Select name="decision" required data-guide="Ce que vous avez décidé : remis, refusé, renvoyé à la Direction…" value={form.decision} onChange={set('decision')}>{Object.entries(DECISIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
                 <Form.Group className="le-note"><Form.Label>Note <small className="text-muted">(facultatif, sans contenu médical)</small></Form.Label>
-                    <Form.Control as="textarea" rows={2} name="note" data-guide="Facultatif : une précision, sans aucun contenu médical." value={form.note} onChange={set('note')} maxLength={300} /></Form.Group>
+                    <Form.Control placeholder="Précision utile, sans aucun contenu médical (facultatif)" as="textarea" rows={2} name="note" data-guide="Facultatif : une précision, sans aucun contenu médical." value={form.note} onChange={set('note')} maxLength={300} /></Form.Group>
             </div>
             {errors.length > 0 && <small className="text-warning d-block mb-2">{errors[0]}</small>}
+            <DebugFillButton onFill={debugFill} className="me-2" />
             <Button variant="primary" onClick={submit} disabled={saving || errors.length > 0}>{saving ? <Spinner as="span" animation="border" size="sm" /> : 'Enregistrer dans le registre'}</Button>
 
             <div className="d-flex justify-content-between align-items-center mt-4 mb-2">

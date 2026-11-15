@@ -130,9 +130,9 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                                     <label key={label} className="cctv-edit-field">
                                         <span>{label}{isCctvFieldRequired(label) ? ' *' : ''}</span>
                                         {long ? (
-                                            <textarea rows={3} value={editing[label]} disabled={busy} onChange={(e) => setEditing((prev) => ({ ...prev, [label]: e.target.value }))} />
+                                            <textarea rows={3} placeholder={label} value={editing[label]} disabled={busy} onChange={(e) => setEditing((prev) => ({ ...prev, [label]: e.target.value }))} />
                                         ) : (
-                                            <input type="text" value={editing[label]} disabled={busy} onChange={(e) => setEditing((prev) => ({ ...prev, [label]: e.target.value }))} />
+                                            <input type="text" placeholder={label} value={editing[label]} disabled={busy} onChange={(e) => setEditing((prev) => ({ ...prev, [label]: e.target.value }))} />
                                         )}
                                     </label>
                                 );

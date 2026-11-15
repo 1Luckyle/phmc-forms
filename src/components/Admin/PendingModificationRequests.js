@@ -238,7 +238,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                             <>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Prénom</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Prénom"
                                         type="text"
                                         value={editingRequest.newData.firstName || editingRequest.newData.name?.split(' ')[0] || ''}
                                         onChange={(e) => {
@@ -251,7 +251,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Nom de famille</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Nom de famille"
                                         type="text"
                                         value={editingRequest.newData.lastName || editingRequest.newData.name?.split(' ').slice(1).join(' ') || ''}
                                         onChange={(e) => {
@@ -264,7 +264,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Discord</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. prenom.nom"
                                         type="text"
                                         value={editingRequest.newData.discord}
                                         onChange={(e) => setEditingRequest({
@@ -296,7 +296,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Badge</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Numéro de badge"
                                         type="text"
                                         value={editingRequest.newData.badge}
                                         onChange={(e) => setEditingRequest({
@@ -308,7 +308,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Numéro de téléphone</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. 555-0100"
                                         type="text"
                                         value={editingRequest.newData.phNumber || ''}
                                         onChange={(e) => setEditingRequest({
@@ -323,7 +323,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                             <>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Prénom</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Prénom"
                                         type="text"
                                         value={editingRequest.newData.name}
                                         onChange={(e) => setEditingRequest({
@@ -335,7 +335,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Nom de famille</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Nom de famille"
                                         type="text"
                                         value={editingRequest.newData.lastName || ''}
                                         onChange={(e) => setEditingRequest({
@@ -347,7 +347,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Discord</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. prenom.nom"
                                         type="text"
                                         value={editingRequest.newData.discord || ''}
                                         onChange={(e) => setEditingRequest({
@@ -379,7 +379,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Badge</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="Numéro de badge"
                                         type="text"
                                         value={editingRequest.newData.badge || ''}
                                         onChange={(e) => setEditingRequest({
@@ -391,7 +391,7 @@ const PendingModificationRequests = ({ showNotification, currentUser }) => {
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: '#c9d1d9' }}>Numéro de téléphone</Form.Label>
-                                    <Form.Control
+                                    <Form.Control placeholder="ex. 555-0100"
                                         type="text"
                                         value={editingRequest.newData.phNumber || ''}
                                         onChange={(e) => setEditingRequest({

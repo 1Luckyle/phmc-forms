@@ -31,12 +31,12 @@ const EchelonGuide = ({ echelons, usage = {}, selected = null, onPick = null, ed
                         {editable ? (
                             <span className="eg-amounts">
                                 <InputGroup size="sm" className="eg-rate">
-                                    <Form.Control inputMode="decimal" value={rates[echelon.numero]?.horaire ?? ''} aria-label={`${echelon.libelle} : montant à l'heure`}
+                                    <Form.Control placeholder="ex. 45" inputMode="decimal" value={rates[echelon.numero]?.horaire ?? ''} aria-label={`${echelon.libelle} : montant à l'heure`}
                                         onChange={(event) => onRateChange(echelon.numero, 'horaire', cleanAmount(event.target.value))} />
                                     <InputGroup.Text>$ / h</InputGroup.Text>
                                 </InputGroup>
                                 <InputGroup size="sm" className="eg-rate">
-                                    <Form.Control inputMode="decimal" value={rates[echelon.numero]?.hebdo ?? ''} aria-label={`${echelon.libelle} : montant à la semaine`}
+                                    <Form.Control placeholder="ex. 1 800" inputMode="decimal" value={rates[echelon.numero]?.hebdo ?? ''} aria-label={`${echelon.libelle} : montant à la semaine`}
                                         onChange={(event) => onRateChange(echelon.numero, 'hebdo', cleanAmount(event.target.value))} />
                                     <InputGroup.Text>$ / sem.</InputGroup.Text>
                                 </InputGroup>

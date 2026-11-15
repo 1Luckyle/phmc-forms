@@ -15,6 +15,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Badge, Button, Dropdown, Form, Spinner, Table } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
 import BaseModal from '../BaseModal';
+import DebugFillButton from '../DebugFillButton';
+import { debugFillChamps } from '../../utils/debugAdminFill';
 import '../DarkUi.css';
 import ContractDocument, { ContractExportBar } from './ContractDocument';
 import PersonnelFileDialog from './PersonnelFileDialog';
@@ -397,6 +399,17 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         );
     };
 
+    // Remplissage de test (mode debug, voir DebugFillButton) : choisit le premier destinataire possible puis remplit chaque champ visible encore vide (grade, échelon et contrat modifié compris).
+    const debugFill = () => {
+        if (!employeeUid && recipients[0]) onPickEmployee(recipients[0].uid);
+        setFields((prev) => debugFillChamps((champs) => visibleFields(type, champs, ctx), prev, {
+            role: ranks[0]?.value || STAFF_SERVICES.phmc.ranks[0]?.value,
+            echelon: allEchelons[0]?.libelle,
+            contratRefId: signedEmployment[0]?.id,
+            convocationRefId: convocationChoices[0]?.id,
+        }));
+    };
+
     const title = isNew ? `Nouveau document — ${CONTRACT_TYPES[type]}` : `${CONTRACT_TYPES[type]} — ${contract.employeNom}`;
 
     return (
@@ -500,6 +513,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         : <Alert variant="secondary" className="py-2 mb-0">Choisissez le destinataire pour voir l'aperçu.</Alert>}
 
                     <div className="d-flex justify-content-end gap-2 mt-3">
+                        <DebugFillButton onFill={debugFill} disabled={busy} />
                         <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
                         <Button variant="outline-primary" onClick={() => save({ thenSend: false })} disabled={busy}>Enregistrer le brouillon</Button>
                         <Button variant="success" onClick={() => save({ thenSend: true })} disabled={busy}>

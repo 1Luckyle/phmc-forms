@@ -146,7 +146,7 @@ const PrivacyPolicyManager = ({ showNotification, onLogAction, adminName }) => {
                         <div className="pp-layout">
                             <div>
                                 <Form.Label>Texte</Form.Label>
-                                <Form.Control as="textarea" ref={area} className="pp-editor" value={texte} onChange={(e) => setTexte(e.target.value)} spellCheck />
+                                <Form.Control placeholder="Texte de la politique de confidentialité" as="textarea" ref={area} className="pp-editor" value={texte} onChange={(e) => setTexte(e.target.value)} spellCheck />
                                 <Form.Text className="text-muted d-block mt-1">
                                     <code>## Titre</code> · <code>- puce</code> · <code>**gras**</code> · <code>*italique*</code> · <code>[texte](https://adresse)</code>. Une ligne vide sépare deux paragraphes.
                                 </Form.Text>

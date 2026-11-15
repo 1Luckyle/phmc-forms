@@ -14,6 +14,8 @@ import * as Sentry from '@sentry/react';
 import '../DarkUi.css';
 import '../Contracts/Contracts.css';
 import BaseModal from '../BaseModal';
+import DebugFillButton from '../DebugFillButton';
+import { debugFillChamps } from '../../utils/debugAdminFill';
 import ContractDocument from '../Contracts/ContractDocument';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
@@ -69,6 +71,9 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
             return '';
         }
     }, [type, champs, issuer, agreement]);
+
+    // Remplissage de test (mode debug, voir DebugFillButton) : chaque champ visible encore vide reçoit une valeur de test.
+    const debugFill = () => setChamps((previous) => debugFillChamps((values) => visibleFields(type, values), previous));
 
     const save = async (alsoSend) => {
         const check = validateAgreement(type, champs, { forSend: alsoSend });
@@ -150,6 +155,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
                     <div className="d-flex gap-2 flex-wrap">
                         <Button variant="primary" onClick={() => save(false)} disabled={busy}>{busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-floppy-disk me-1"></i>Enregistrer le brouillon</>}</Button>
                         <Button variant="success" onClick={() => save(true)} disabled={busy}><i className="fas fa-paper-plane me-1"></i>Enregistrer et envoyer</Button>
+                        <DebugFillButton onFill={debugFill} disabled={busy} />
                         <Button variant="secondary" onClick={onCancel} disabled={busy}>Annuler</Button>
                     </div>
                 </div>

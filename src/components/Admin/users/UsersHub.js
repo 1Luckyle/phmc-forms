@@ -258,9 +258,9 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
             <Modal.Header closeButton><Modal.Title>Modifier {form.firstName} {form.lastName}</Modal.Title></Modal.Header>
             <Modal.Body>
                 <div className="d-flex gap-2 mb-3 align-items-end">
-                    <Form.Group className="flex-fill"><Form.Label>Prénom</Form.Label><Form.Control value={form.firstName || ''} onChange={set('firstName')} /></Form.Group>
-                    <Form.Group className="flex-fill"><Form.Label>Deuxième prénom</Form.Label><Form.Control value={form.middleName || ''} onChange={set('middleName')} /></Form.Group>
-                    <Form.Group className="flex-fill"><Form.Label>Nom</Form.Label><Form.Control value={form.lastName || ''} onChange={set('lastName')} /></Form.Group>
+                    <Form.Group className="flex-fill"><Form.Label>Prénom</Form.Label><Form.Control placeholder="Prénom" value={form.firstName || ''} onChange={set('firstName')} /></Form.Group>
+                    <Form.Group className="flex-fill"><Form.Label>Deuxième prénom</Form.Label><Form.Control placeholder="Deuxième prénom (facultatif)" value={form.middleName || ''} onChange={set('middleName')} /></Form.Group>
+                    <Form.Group className="flex-fill"><Form.Label>Nom</Form.Label><Form.Control placeholder="Nom de famille" value={form.lastName || ''} onChange={set('lastName')} /></Form.Group>
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill"><Form.Label>Date de naissance</Form.Label><Form.Control type="date" value={form.dateOfBirth || ''} onChange={set('dateOfBirth')} /></Form.Group>
@@ -271,12 +271,12 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
                     </Form.Group>
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-start">
-                    <Form.Group style={{ flex: '2 1 0' }}><Form.Label className="text-nowrap">Adresse</Form.Label><Form.Control value={form.address || ''} onChange={set('address')} /></Form.Group>
+                    <Form.Group style={{ flex: '2 1 0' }}><Form.Label className="text-nowrap">Adresse</Form.Label><Form.Control placeholder="Numéro, rue" value={form.address || ''} onChange={set('address')} /></Form.Group>
                     <Form.Group style={{ flex: '1 1 210px' }}><Form.Label className="text-nowrap">Ville / code postal</Form.Label><ZipCityField zip={form.zip || ''} onZipChange={(zip) => set('zip')({ target: { value: zip } })} placeholder="" /></Form.Group>
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-end">
-                    <Form.Group className="flex-fill"><Form.Label>Téléphone</Form.Label><Form.Control value={form.phone || ''} onChange={set('phone')} /></Form.Group>
-                    <Form.Group className="flex-fill"><Form.Label>Discord</Form.Label><Form.Control value={form.discord || ''} onChange={set('discord')} /></Form.Group>
+                    <Form.Group className="flex-fill"><Form.Label>Téléphone</Form.Label><Form.Control placeholder="ex. 555-0100" value={form.phone || ''} onChange={set('phone')} /></Form.Group>
+                    <Form.Group className="flex-fill"><Form.Label>Discord</Form.Label><Form.Control placeholder="ex. prenom.nom" value={form.discord || ''} onChange={set('discord')} /></Form.Group>
                 </div>
                 <Form.Group className="mb-3"><Form.Label>ID patient</Form.Label><Form.Control value={form.patientID || ''} disabled /></Form.Group>
                 {/* Changement d'e-mail : code de vérification envoyé à la nouvelle adresse (à relayer par la personne). */}
