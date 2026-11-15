@@ -27,10 +27,11 @@ const CARE_FORMS_WITH_REFERRAL = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
 
 // Date de naissance OU âge (bascule du bloc « Contexte patient ») : l'âge se calcule tout seul quand la date est saisie ; quand la date est inconnue, on saisit l'âge à la place.
 // Un champ ne bloque donc jamais quand l'autre le remplace.
-const BIRTH_OR_AGE = {
-    patientDateOfBirth: rule('l\'âge n\'est pas saisi à la place (date de naissance inconnue)', (d) => !(filled(d.patientAgeYears) && !filled(d.patientDateOfBirth))),
-    patientAgeYears: rule('la date de naissance est inconnue (âge saisi à sa place)', (d) => !filled(d.patientDateOfBirth)),
-};
+const birthOrAge = (ageName = 'patientAgeYears') => ({
+    patientDateOfBirth: rule('l\'âge n\'est pas saisi à la place (date de naissance inconnue)', (d) => !(filled(d[ageName]) && !filled(d.patientDateOfBirth))),
+    [ageName]: rule('la date de naissance est inconnue (âge saisi à sa place)', (d) => !filled(d.patientDateOfBirth)),
+});
+const BIRTH_OR_AGE = birthOrAge();
 
 // Patient décédé pendant la prise en charge (urgences, opération) : le bloc « Décès du patient » s'ouvre, et les suites (admission, suivi, ordonnance…) se ferment.
 const DECEASED = rule('le patient est déclaré décédé', (d) => d.careDeceased === 'Yes');
@@ -200,6 +201,9 @@ export const FIELD_CONDITIONS = {
 CARE_FORMS_WITH_REFERRAL.forEach((version) => { FIELD_CONDITIONS[version] = { ...REFERRAL, ...BIRTH_OR_AGE, ...(FIELD_CONDITIONS[version] || {}) }; });
 // Le formulaire 7 est la version PBC du 6 : mêmes conditions.
 FIELD_CONDITIONS[7] = { ...FIELD_CONDITIONS[6], ...REFERRAL, ...BIRTH_OR_AGE };
+// Certificat de décès (âge du défunt : « patientAge ») et certificat de vol : même bascule date de naissance / âge.
+FIELD_CONDITIONS[8] = { ...birthOrAge('patientAge'), ...(FIELD_CONDITIONS[8] || {}) };
+FIELD_CONDITIONS[41] = { ...birthOrAge(), ...(FIELD_CONDITIONS[41] || {}) };
 
 /** Condition d'affichage d'un champ ({ text, when }) ou null s'il s'affiche toujours. */
 export const conditionOf = (version, field) => FIELD_CONDITIONS[Number(version)]?.[field] || null;

@@ -1,7 +1,7 @@
 // src/phmc-bbcode-generators/generateFlightCertificate.js
 // Certificat d'aptitude médicale au vol (formulaire 41). Voir utils/flightCertificate.js pour les classes et critères.
 import {
-    getFlightCertClass, FLIGHT_CERT_EXAMS, examResultKey, examValueKey, validityMonthsFor, validUntil,
+    getFlightCertClass, FLIGHT_CERT_EXAMS, examResultKey, examValueKey, validityMonthsFor, validUntil, patientAgeFor,
 } from '../utils/flightCertificate';
 
 const frDate = (value) => {
@@ -14,7 +14,10 @@ const generateFlightCertificate = (formData) => {
     const cls = getFlightCertClass(f.flightCertClass);
     const categories = Array.isArray(f.flightCertCategories) ? f.flightCertCategories : [];
     const conclusion = f.flightCertConclusion || '';
-    const months = validityMonthsFor(f.flightCertClass, f.patientDateOfBirth, f.date);
+    const months = validityMonthsFor(f.flightCertClass, f.patientDateOfBirth, f.date, f.patientAgeYears);
+    // Date de naissance inconnue : l'âge saisi la remplace sur le certificat.
+    const enteredAge = f.patientDateOfBirth ? null : patientAgeFor('', f.date, f.patientAgeYears);
+    const birthRow = enteredAge !== null ? `[tr][td][b]Âge[/b][/td][td]${enteredAge} ans[/td]` : `[tr][td][b]Date de naissance[/b][/td][td]${frDate(f.patientDateOfBirth)}[/td]`;
     const until = validUntil(f.date, months);
 
     const verdictColor = conclusion === 'Apte' ? '#008000' : conclusion === 'Inapte' ? '#FF0000' : '#FF8000';
@@ -45,7 +48,7 @@ Je soussigné(e), [b]${f.phmcEmployee || 'Employé PHMC'}[/b], ${f.phmcRank || '
 
 [table]
 [tr][td][b]Patient[/b][/td][td]${f.patientName || 'N/A'}${f.patientID ? ` (${f.patientID})` : ''}[/td]
-[tr][td][b]Date de naissance[/b][/td][td]${frDate(f.patientDateOfBirth)}[/td]
+${birthRow}
 [tr][td][b]Catégorie(s) de vol[/b][/td][td]${categories.length ? categories.join(', ') : 'N/A'}[/td]
 [/table]
 

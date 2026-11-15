@@ -6,6 +6,7 @@ import CoronerSelect from './shared/CoronerSelect';
 import NameFields from './shared/NameFields';
 import PlaceWithCity from './shared/PlaceWithCity';
 import PresetTextField from './shared/PresetTextField';
+import BirthOrAgeFields from './shared/BirthOrAgeFields';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 
 const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
@@ -38,25 +39,11 @@ const Certificate = ({
                 />
             </div>
             <TemporaryIdPicker formData={formData} setFormData={setFormData} />
-            <Form.Label>Âge du défunt | Date de naissance (si disponible)</Form.Label>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <Form.Control
-                    type="number"
-                    name="patientAge"
-                    value={formData.patientAge}
-                    onChange={handleChange}
-                    placeholder="Âge du défunt"
-                    className="form-control"
-                />
-                <Form.Control
-                    type="date"
-                    name="patientDateOfBirth"
-                    value={formData.patientDateOfBirth}
-                    onChange={handleChange}
-                    placeholder="Date de naissance du défunt"
-                    className="form-control"
-                />
-            </div>
+            <Form.Label>Date de naissance ou âge du défunt (si disponible)</Form.Label>
+            <BirthOrAgeFields
+                formData={formData} setFormData={setFormData} handleChange={handleChange} dobName="patientDateOfBirth" ageName="patientAge"
+                refDate={formData.dateofdeath || formData.date} agePlaceholder="Âge du défunt" computedAgeLabel="Âge du défunt calculé à partir de sa date de naissance"
+            />
 
             <Form.Label className="form-section-title">Décès</Form.Label>
             <PresetTextField

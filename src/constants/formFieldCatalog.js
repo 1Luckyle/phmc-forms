@@ -232,7 +232,7 @@ export const VERSION_FIELDS = {
     },
     41: {
         flightCertClass: 'select', flightCertCategories: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text',
-        patientDateOfBirth: 'date', date: 'date', flightCert_vision: 'select', flightCert_vision_value: 'text',
+        patientDateOfBirth: 'date', patientAgeYears: 'number', date: 'date', flightCert_vision: 'select', flightCert_vision_value: 'text',
         flightCert_colorVision: 'select', flightCert_hearing: 'select', flightCert_bloodPressure: 'select', flightCert_bloodPressure_value: 'text',
         flightCert_cardio: 'select', flightCert_neuro: 'select', flightCert_mental: 'select', flightCert_substances: 'select',
         flightCertConclusion: 'select', flightCertRestrictions: 'textarea', flightCertNote: 'textarea',

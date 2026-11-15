@@ -57,11 +57,19 @@ export const ageOn = (birthDate, onDate) => {
     return age;
 };
 
-// Durée de validité (en mois) d'une classe pour ce patient : plus courte à partir de 40 ans.
-export const validityMonthsFor = (classValue, birthDate, examDate) => {
+// Âge du patient : tiré de sa date de naissance à la date de l'examen, sinon l'âge saisi à la place (date de naissance inconnue) ; null si aucun des deux.
+export const patientAgeFor = (birthDate, examDate, enteredAge) => {
+    const fromBirth = ageOn(birthDate, examDate);
+    if (fromBirth !== null) return fromBirth;
+    const text = String(enteredAge ?? '').trim();
+    return text !== '' && Number.isFinite(Number(text)) ? Number(text) : null;
+};
+
+// Durée de validité (en mois) d'une classe pour ce patient : plus courte à partir de 40 ans. `enteredAge` : âge saisi quand la date de naissance est inconnue.
+export const validityMonthsFor = (classValue, birthDate, examDate, enteredAge) => {
     const cls = getFlightCertClass(classValue);
     if (!cls) return null;
-    const age = ageOn(birthDate, examDate);
+    const age = patientAgeFor(birthDate, examDate, enteredAge);
     return age !== null && age >= 40 ? cls.validityMonthsSenior : cls.validityMonths;
 };
 

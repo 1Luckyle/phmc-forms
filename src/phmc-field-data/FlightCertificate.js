@@ -1,10 +1,10 @@
 import React from 'react';
 import { Form, InputGroup, Alert } from 'react-bootstrap';
 import { PatientIdentityFields, AppointmentDateField, CareEmployeeField } from './shared/CareFormHeader';
-import { todayIso } from '../utils/appointmentDate';
+import BirthOrAgeFields from './shared/BirthOrAgeFields';
 import {
     FLIGHT_CERT_CLASSES, FLIGHT_CERT_CATEGORIES, FLIGHT_CERT_EXAMS, FLIGHT_CERT_RESULTS, FLIGHT_CERT_CONCLUSIONS,
-    getFlightCertClass, examResultKey, examValueKey, validityMonthsFor, validUntil, ageOn,
+    getFlightCertClass, examResultKey, examValueKey, validityMonthsFor, validUntil, patientAgeFor,
 } from '../utils/flightCertificate';
 
 const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOptions }) => {
@@ -18,9 +18,9 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
         });
     };
 
-    const months = validityMonthsFor(formData.flightCertClass, formData.patientDateOfBirth, formData.date);
+    const months = validityMonthsFor(formData.flightCertClass, formData.patientDateOfBirth, formData.date, formData.patientAgeYears);
     const until = validUntil(formData.date, months);
-    const age = ageOn(formData.patientDateOfBirth, formData.date);
+    const age = patientAgeFor(formData.patientDateOfBirth, formData.date, formData.patientAgeYears);
 
     return (
         <>
@@ -48,15 +48,12 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
             <Form.Label className="form-section-title">Patient et examen</Form.Label>
             <PatientIdentityFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                    <Form.Label>Date de naissance du patient</Form.Label>
-                    <Form.Control type="date" name="patientDateOfBirth" value={formData.patientDateOfBirth || ''} max={todayIso()} onChange={handleChange} className="form-control" />
-                </div>
+            {/* Date de naissance ou âge (bascule), puis la date de l'examen, sur la même ligne. */}
+            <BirthOrAgeFields formData={formData} setFormData={setFormData} handleChange={handleChange} refDate={formData.date} marginBottom="0.2rem">
                 <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     <AppointmentDateField formData={formData} handleChange={handleChange} label="Date de l'examen" />
                 </div>
-            </div>
+            </BirthOrAgeFields>
 
             {cls && (
                 <>

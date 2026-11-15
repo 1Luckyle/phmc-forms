@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Form, Button, ButtonGroup } from 'react-bootstrap';
-import { ageOn } from '../../utils/flightCertificate';
-import { todayIso } from '../../utils/appointmentDate';
+import React, { useEffect } from 'react';
+import { Form } from 'react-bootstrap';
+import BirthOrAgeFields from './BirthOrAgeFields';
 import { usePatientDossier } from '../../utils/dossierLookup';
 import { changedBackgroundFields, backgroundAdditions, BACKGROUND_FIELD_LABELS } from '../../utils/careFormRules';
 import { HISTORY_PRESETS } from '../../constants/historyPresets';
@@ -31,25 +30,6 @@ export const PATIENT_GENDER_OPTIONS = [
  * d'antécédents/allergies/traitements (évaluation physique, psychiatrie).
  */
 const PatientContextFields = ({ formData, setFormData, handleChange, showHistory = true, allergiesRequired = true, title = 'Contexte patient' }) => {
-    // Mode de saisie : date de naissance (l'âge se calcule) ou âge seul (date de naissance inconnue).
-    const [ageOnly, setAgeOnly] = useState(() => !formData.patientDateOfBirth && String(formData.patientAgeYears || '').trim() !== '');
-    // Un rapport rechargé ou un dossier repris qui apporte une date de naissance ramène à la saisie par date.
-    useEffect(() => { if (formData.patientDateOfBirth) setAgeOnly(false); }, [formData.patientDateOfBirth]);
-
-    const computedAge = ageOn(formData.patientDateOfBirth, formData.date);
-    const ageText = computedAge !== null && computedAge >= 0 ? String(computedAge) : '';
-    useEffect(() => {
-        if (!setFormData || !formData.patientDateOfBirth) return;
-        if (ageText !== String(formData.patientAgeYears || '')) setFormData((prev) => (String(prev.patientAgeYears || '') === ageText ? prev : { ...prev, patientAgeYears: ageText }));
-    }, [ageText, formData.patientDateOfBirth, formData.patientAgeYears, setFormData]);
-
-    // Bascule : vers « âge seul », la date de naissance est retirée (l'âge calculé reste, modifiable) ; vers « date de naissance », l'âge saisi à la main est retiré.
-    const chooseMode = (nextAgeOnly) => {
-        if (nextAgeOnly === ageOnly) return;
-        setAgeOnly(nextAgeOnly);
-        setFormData((prev) => (nextAgeOnly ? { ...prev, patientDateOfBirth: '' } : { ...prev, patientAgeYears: '' }));
-    };
-
     // Ordonnances en cours du patient (autres rapports, voir hooks/useActivePrescriptions.js) : comptées avec les traitements habituels jusqu'à leur date de fin, sans entrer dans le dossier.
     const activeRx = Array.isArray(formData.patientActivePrescriptions) ? formData.patientActivePrescriptions : [];
     const removedRx = Array.isArray(formData.patientActivePrescriptionsOff) ? formData.patientActivePrescriptionsOff : [];
@@ -73,25 +53,8 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
     return (
         <>
             <Form.Label className="form-section-title">{title}</Form.Label>
-            {/* Champs alignés sur leur bas : la bascule (date de naissance / âge) tient lieu d'étiquette, les saisies restent sur la même ligne. */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.6rem' }}>
-                <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.35rem' }}>
-                        <ButtonGroup size="sm" aria-label="Saisir la date de naissance ou l'âge" data-no-tip="1">
-                            <Button type="button" variant={ageOnly ? 'outline-secondary' : 'secondary'} active={!ageOnly} onClick={() => chooseMode(false)} title="Saisir la date de naissance : l'âge se calcule tout seul">Date de naissance</Button>
-                            <Button type="button" variant={ageOnly ? 'secondary' : 'outline-secondary'} active={ageOnly} onClick={() => chooseMode(true)} title="Date de naissance inconnue : saisir seulement l'âge">Âge</Button>
-                        </ButtonGroup>
-                    </div>
-                    {ageOnly
-                        ? <Form.Control type="number" inputMode="numeric" min="0" max="120" step="1" name="patientAgeYears" value={formData.patientAgeYears || ''} onChange={handleChange} placeholder="Âge en années" className="form-control" />
-                        : <Form.Control type="date" name="patientDateOfBirth" value={formData.patientDateOfBirth || ''} max={todayIso()} onChange={handleChange} className="form-control" />}
-                </div>
-                {!ageOnly && (
-                    <div style={{ flex: '0 1 140px', minWidth: 0 }}>
-                        <Form.Label>Âge</Form.Label>
-                        <Form.Control type="text" readOnly disabled value={ageText ? `${ageText} ans` : ''} placeholder="Calculé" className="form-control" aria-label="Âge calculé à partir de la date de naissance" />
-                    </div>
-                )}
+            {/* Date de naissance ou âge (bascule), puis le sexe, sur la même ligne : voir BirthOrAgeFields. */}
+            <BirthOrAgeFields formData={formData} setFormData={setFormData} handleChange={handleChange}>
                 <div style={{ flex: '1 1 180px', minWidth: 0 }}>
                     <Form.Label>Sexe</Form.Label>
                     <Form.Select name="patientSex" value={formData.patientSex || ''} onChange={handleChange} className="form-control">
@@ -101,7 +64,7 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
                         ))}
                     </Form.Select>
                 </div>
-            </div>
+            </BirthOrAgeFields>
             {showHistory && (
                 <>
                     <Form.Label>Allergies connues</Form.Label>

@@ -1415,7 +1415,9 @@ textarea:disabled {
 
 
 /* Champs à choix par défaut (PresetTextField) : moins d'espace sous la zone de texte, et un titre ou une étiquette qui suit se rapproche. */
-.form-container form .preset-field { margin-bottom: 4px; }
+/* Base 0 (et non 220 px) : le formulaire est une colonne flex, où la base d'un champ devient sa HAUTEUR ; en rangée, la largeur minimale suffit à faire passer à la ligne. */
+.form-container form .preset-field { flex: 1 1 0; min-width: min(220px, 100%); margin-bottom: 4px; }
+.form-container form > .preset-field { flex: 0 0 auto; }
 /* Dans une rangée de champs, l'écart entre lignes vient déjà de la rangée : pas de marge en plus. */
 .form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]) > .preset-field { margin-bottom: 0; }
 .form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):has(> .preset-field) { margin-bottom: 4px; }

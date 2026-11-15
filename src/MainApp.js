@@ -1300,8 +1300,8 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
         { version: 23, name: "Note de Service | PBC", icon: phmcpaletobay }
     ];
     const mentalHealthFormsSubGroup = [
-        { version: 14, name: "Consultation psychiatrique | PHMC", icon: PHMCLogo },
-        { version: 16, name: "Consultation psychiatrique | PBC", icon: phmcpaletobay }
+        { version: 14, name: "Consultation Psychiatrique | PHMC", icon: PHMCLogo },
+        { version: 16, name: "Consultation Psychiatrique | PBC", icon: phmcpaletobay }
     ];
     const civilianFormsSubGroup = [
         { version: 24, name: "Formulaire de Libération Médicale", icon: Civilian },

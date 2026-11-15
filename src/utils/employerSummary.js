@@ -21,7 +21,7 @@ export const ACCEPTED_REPORT_VERSIONS = [19, 20, 21, 14, 16, 28, 29, 6, 7];
 export const ACCEPTED_REPORT_LABELS = [
     "Protocole d'urgence (ER)",
     'Consultation Générale (PHMC ou PBC)',
-    'Consultation psychiatrique (PHMC ou PBC)',
+    'Consultation Psychiatrique (PHMC ou PBC)',
     'Évaluation psychologique (PHMC ou PBC)',
     'Évaluation physique (PHMC ou PBC)',
 ];
@@ -47,7 +47,7 @@ export const KIND_POLICIES = {
     },
     // Psychiatrie / psychologie : plus sensibles — ni spécialité, ni hospitalisation, ni suivi.
     psychiatric: {
-        label: 'Consultation psychiatrique',
+        label: 'Consultation Psychiatrique',
         employerLabel: 'Consultation médicale',
         fields: ['facility', 'date'],
     },

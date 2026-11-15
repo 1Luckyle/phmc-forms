@@ -63,7 +63,7 @@ const PresetTextField = ({ name, formData, setFormData, presets = [], placeholde
     };
 
     return (
-        <div className="preset-field" style={{ flex: '1 1 220px', minWidth: 0 }}>
+        <div className="preset-field">
             {label && <div className="preset-field-label">{label}</div>}
             <CreatableSelect
                 isMulti
