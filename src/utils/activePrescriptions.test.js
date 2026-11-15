@@ -48,12 +48,25 @@ describe('ordonnances en cours', () => {
     });
     test('copies, ordonnances sans fin, rapport en cours de modification et médicaments retirés sont ignorés', () => {
         expect(activePrescriptions(entries, { asOf: '2026-11-13' }).map((item) => item.medId)).not.toContain('amoxicilline');
-        expect(activePrescriptions(entries, { asOf: '2026-11-13', excludeTitle: entries.a.title }).map((item) => item.medId)).toEqual(['paracetamol']);
+        // Rapport enregistré rouvert (même titre, même ordonnance) : ignoré ; autre rapport du même titre mais d'une autre ordonnance : compté.
+        expect(activePrescriptions(entries, { asOf: '2026-11-13', excludeTitle: entries.a.title, ownItems: entries.a.ordonnances }).map((item) => item.medId)).toEqual(['paracetamol']);
+        expect(activePrescriptions(entries, { asOf: '2026-11-13', excludeTitle: entries.a.title, ownItems: [{ medId: 'amoxicilline', start: '2026-11-13', end: '2026-11-18' }] }).map((item) => item.medId)).toEqual(['ibuprofene', 'paracetamol']);
+        // Rien n'est écarté sans ordonnance dans le formulaire : on ne compte jamais que les autres rapports.
+        expect(activePrescriptions(entries, { asOf: '2026-11-13', excludeTitle: entries.a.title }).map((item) => item.medId)).toEqual(['ibuprofene', 'paracetamol']);
         expect(activePrescriptions(entries, { asOf: '2026-11-13', off: ['paracetamol'] }).map((item) => item.medId)).toEqual(['ibuprofene']);
     });
     test('l’index renvoyé par Firebase peut donner un objet au lieu d’un tableau', () => {
         const fromFirebase = { a: { title: 't', ordonnances: { 0: { medId: 'paracetamol', name: 'Paracétamol', start: '2026-11-11', end: '2026-11-15' } } } };
         expect(activePrescriptions(fromFirebase, { asOf: '2026-11-12' })).toHaveLength(1);
+    });
+});
+
+describe('l’ordonnance en cours de rédaction n’est jamais comptée comme un traitement habituel', () => {
+    test('seules les ordonnances des rapports enregistrés comptent, pas les lignes « sur l’ordonnance » du formulaire', () => {
+        const formData = { patientAgeYears: '40', clinicalMeds: [rx({ medId: 'ibuprofene', startDate: '2026-11-15', days: 5 })] };
+        expect(patientFromForm(formData).currentMeds).toBe('');
+        expect(patientFromForm(formData).activeRx).toEqual([]);
+        expect(habitualMedicineText(formData)).toBe('');
     });
 });
 

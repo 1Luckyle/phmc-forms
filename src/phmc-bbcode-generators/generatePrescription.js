@@ -20,6 +20,18 @@ export const hasPrescription = (formData) => prescriptionRows(formData).length >
 
 const text = (value) => String(value ?? '').trim();
 
+/**
+ * Consignes de traitement jointes à l'ordonnance (ce que le patient doit faire : repos, conseils, soins à domicile) : le champ de saisie dépend du formulaire d'origine
+ * (même source que le rapport, voir treatmentBBCode) — protocole d'urgence : « patientMedicine » ; consultations : plan de traitement (« patientProcedure ») puis « patientMedicine » ;
+ * opération : consignes post-opératoires (« surgeryPostOpInstructions »).
+ */
+export const prescriptionConsignes = (formData = {}, version = 19) => {
+    if (formData.careDeceased === 'Yes') return '';
+    const CONSIGNES_FIELDS = { 5: ['surgeryPostOpInstructions'], 19: ['patientMedicine'], 20: ['patientProcedure', 'patientMedicine'], 21: ['patientProcedure', 'patientMedicine'] };
+    const fields = CONSIGNES_FIELDS[Number(version)] || [];
+    return fields.map((field) => text(formData[field])).filter(Boolean).join('\n');
+};
+
 /** Titre du document, dans la forme des titres de rapports : « [PHMC-2752] Ordonnance - 11/11/2026 ». */
 export const prescriptionTitle = (formData = {}) => `${text(formData.patientID) ? `[${text(formData.patientID)}] ` : ''}Ordonnance${frDay(text(formData.date)) ? ` - ${frDay(text(formData.date))}` : ''}`;
 
@@ -40,12 +52,14 @@ const generatePrescription = (formData = {}, version = 19) => {
     });
     const body = rows.map((row) => `[tr][td] [b]${escapeBbText(row.name)}[/b]${row.note ? `\n[i]${escapeBbText(row.note)}[/i]` : ''} [/td][td] ${escapeBbText(row.posology)} [/td][td] ${row.start ? frDay(row.start) : '—'} [/td][td] ${durationCell(row)} [/td]`).join('\n');
     const label = CARE_VISIT_LABELS[Number(version)];
+    const consignes = prescriptionConsignes(formData, version);
+    const consignesBlock = consignes ? `\n${sectionBanner('Consignes de traitement')}\n[table][tr][td]\n${escapeBbText(consignes)}\n[/td][/tr][/table]` : '';
     const text1 = `${header}
 ${sectionBanner('Traitement prescrit')}
 [table]
 [tr][td] [b]Médicament[/b] [/td][td] [b]Posologie[/b] [/td][td] [b]Début[/b] [/td][td] [b]Durée[/b] [/td]
 ${body}
-[/table]${label ? `\n[center][i]Ordonnance remise à la suite de : ${label}${date ? ` du ${date}` : ''}.[/i][/center]` : ''}`;
+[/table]${consignesBlock}${label ? `\n[center][i]Ordonnance remise à la suite de : ${label}${date ? ` du ${date}` : ''}.[/i][/center]` : ''}`;
     return withPhmcFooter(text1, version);
 };
 

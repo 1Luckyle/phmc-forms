@@ -26,7 +26,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
         <>
             <Form.Label className="form-section-title">Certificat</Form.Label>
             <Form.Group className="mb-3">
-                <Form.Label>Classe du certificat *</Form.Label>
+                <Form.Label>Classe du certificat</Form.Label>
                 <Form.Select name="flightCertClass" value={formData.flightCertClass || ''} onChange={handleChange} className="form-control" required>
                     <option value="" disabled>Choisir la classe…</option>
                     {Object.values(FLIGHT_CERT_CLASSES).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -35,7 +35,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
             </Form.Group>
 
             <Form.Group className="mb-3">
-                <Form.Label>Catégorie(s) de vol * (art. 400 du Code de l'Aviation)</Form.Label>
+                <Form.Label>Catégorie(s) de vol (art. 400 du Code de l'Aviation)</Form.Label>
                 <div className="d-flex flex-wrap gap-3" data-field-group="flightCertCategories">
                     {FLIGHT_CERT_CATEGORIES.map((category) => (
                         <Form.Check
@@ -54,7 +54,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
                     <Form.Control type="date" name="patientDateOfBirth" value={formData.patientDateOfBirth || ''} max={todayIso()} onChange={handleChange} className="form-control" />
                 </div>
                 <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                    <AppointmentDateField formData={formData} handleChange={handleChange} label="Date de l'examen *" />
+                    <AppointmentDateField formData={formData} handleChange={handleChange} label="Date de l'examen" />
                 </div>
             </div>
 
@@ -65,7 +65,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
                         const info = FLIGHT_CERT_EXAMS[exam];
                         return (
                             <Form.Group className="mb-3" key={exam}>
-                                <Form.Label>{info.label} *</Form.Label>
+                                <Form.Label>{info.label}</Form.Label>
                                 <InputGroup>
                                     <Form.Select name={examResultKey(exam)} value={formData[examResultKey(exam)] || ''} onChange={handleChange} className="form-control" required>
                                         <option value="" disabled>Résultat…</option>
@@ -87,7 +87,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
             <Form.Label className="form-section-title">Conclusion</Form.Label>
             <Form.Group className="mb-3">
-                <Form.Label>Conclusion *</Form.Label>
+                <Form.Label>Conclusion</Form.Label>
                 <Form.Select name="flightCertConclusion" value={formData.flightCertConclusion || ''} onChange={handleChange} className="form-control" required>
                     <option value="" disabled>Choisir la conclusion…</option>
                     {FLIGHT_CERT_CONCLUSIONS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -96,13 +96,13 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
             {formData.flightCertConclusion === 'Apte avec restrictions' && (
                 <Form.Group className="mb-3">
-                    <Form.Label>Restrictions *</Form.Label>
+                    <Form.Label>Restrictions</Form.Label>
                     <Form.Control as="textarea" rows={2} name="flightCertRestrictions" value={formData.flightCertRestrictions || ''} onChange={handleChange} placeholder="ex. Port de verres correcteurs obligatoire ; vol de jour uniquement" className="form-control" required />
                 </Form.Group>
             )}
 
             <Form.Group className="mb-3">
-                <Form.Label>Observations (facultatif — jamais de diagnostic)</Form.Label>
+                <Form.Label>Observations (jamais de diagnostic)</Form.Label>
                 <Form.Control as="textarea" rows={2} name="flightCertNote" value={formData.flightCertNote || ''} onChange={handleChange} placeholder="Information utile à l'autorité aéronautique, sans donnée médicale détaillée" className="form-control" />
             </Form.Group>
 
@@ -115,7 +115,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
             )}
 
             <Form.Label className="form-section-title">Médecin signataire</Form.Label>
-            <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} label="Identifiants de l'employé *" />
+            <CareEmployeeField formData={formData} setFormData={setFormData} options={phmcGroupedOptions} label="Identifiants de l'employé" />
             <span className="helper-text">Le certificat est signé par la personne qui le remplit : sa signature, son nom et son rôle figurent au bas du document.</span>
         </>
     );

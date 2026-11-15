@@ -1415,6 +1415,13 @@ textarea:disabled {
 
 
 /* Champs à choix par défaut (PresetTextField) : moins d'espace sous la zone de texte, et un titre ou une étiquette qui suit se rapproche. */
-.form-container form .preset-field { margin-bottom: 8px; }
-.form-container form .preset-field + .form-section-title { margin-top: 1rem; }
-.form-container form .preset-field + .form-label:not(.form-section-title) { margin-top: 0.2rem; }
+.form-container form .preset-field { margin-bottom: 4px; }
+/* Dans une rangée de champs, l'écart entre lignes vient déjà de la rangée : pas de marge en plus. */
+.form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]) > .preset-field { margin-bottom: 0; }
+.form-container form div[style*="display: flex"][style*="gap: 10px"]:not([style*="flex-direction: column"]):has(> .preset-field) { margin-bottom: 4px; }
+.form-container form .preset-field + .form-select,
+.form-container form .preset-field + .form-control { margin-top: 0; }
+.form-container form .preset-field-label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em; color: #9fb3c8; margin: 0 0 3px 2px; }
+.form-container form .preset-field + .form-section-title,
+.form-container form div:has(> .preset-field:last-child) + .form-section-title { margin-top: 0.6rem; }
+.form-container form .preset-field + .form-label:not(.form-section-title) { margin-top: 0.1rem; }

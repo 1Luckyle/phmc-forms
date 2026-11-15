@@ -73,11 +73,11 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
     return (
         <>
             <Form.Label className="form-section-title">{title}</Form.Label>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+            {/* Champs alignés sur leur bas : la bascule (date de naissance / âge) tient lieu d'étiquette, les saisies restent sur la même ligne. */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.6rem' }}>
                 <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <Form.Label className="mb-1">{ageOnly ? 'Âge' : 'Date de naissance'}</Form.Label>
-                        <ButtonGroup size="sm" className="mb-1" aria-label="Saisir la date de naissance ou l'âge" data-no-tip="1">
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <ButtonGroup size="sm" aria-label="Saisir la date de naissance ou l'âge" data-no-tip="1">
                             <Button type="button" variant={ageOnly ? 'outline-secondary' : 'secondary'} active={!ageOnly} onClick={() => chooseMode(false)} title="Saisir la date de naissance : l'âge se calcule tout seul">Date de naissance</Button>
                             <Button type="button" variant={ageOnly ? 'secondary' : 'outline-secondary'} active={ageOnly} onClick={() => chooseMode(true)} title="Date de naissance inconnue : saisir seulement l'âge">Âge</Button>
                         </ButtonGroup>

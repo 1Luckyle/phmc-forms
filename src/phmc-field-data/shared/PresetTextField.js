@@ -30,8 +30,10 @@ const PresetTextField = ({ name, formData, setFormData, presets = [], placeholde
     const single = meta.mode === 'single';
     const groups = meta.groups || [];
     const hint = placeholderProp || historyPlaceholder(name);
+    // Champ d'historique sans texte d'aide propre : un titre court au-dessus (« Tabac »), et dans le champ seulement « Choisir ou écrire… » (l'aide détaillée reste dans l'info-bulle).
+    const label = !placeholderProp && !selectPlaceholderProp ? meta.label : undefined;
     const placeholder = selectPlaceholderProp
-        || (hint ? `${hint} — choisir dans la liste ou écrire` : (single ? 'Choisir dans la liste ou écrire…' : 'Choisir dans la liste (plusieurs choix) ou écrire pour ajouter…'));
+        || (label ? 'Choisir ou écrire…' : (hint ? `${hint} — choisir ou écrire` : 'Choisir ou écrire…'));
     const presetsKey = `${name}Presets`;
     const freeKey = `${name}Free`;
     const items = itemsOf(formData, name);
@@ -62,6 +64,7 @@ const PresetTextField = ({ name, formData, setFormData, presets = [], placeholde
 
     return (
         <div className="preset-field" style={{ flex: '1 1 220px', minWidth: 0 }}>
+            {label && <div className="preset-field-label">{label}</div>}
             <CreatableSelect
                 isMulti
                 name={name}

@@ -102,6 +102,19 @@ describe("ordonnance : document à part", () => {
         expect(bb).not.toContain('Perfusion');
     });
 
+    test("les consignes de traitement du rapport sont jointes à l'ordonnance (urgence, consultations, opération)", () => {
+        expect(generatePrescription(form, 19)).not.toContain('Consignes de traitement');
+        const urgence = generatePrescription({ ...form, patientMedicine: 'Repos, hydratation.' }, 19);
+        expect(urgence).toContain('Consignes de traitement');
+        expect(urgence).toContain('Repos, hydratation.');
+        expect(urgence.indexOf('Repos, hydratation.')).toBeLessThan(urgence.indexOf('Ordonnance remise'));
+        const consult = generatePrescription({ ...form, patientProcedure: 'Éviter l\'effort.', patientMedicine: 'Boire.' }, 20);
+        expect(consult).toContain('Éviter l\'effort.\nBoire.');
+        expect(generatePrescription({ ...form, surgeryPostOpInstructions: 'Pansement 48 h.' }, 5)).toContain('Pansement 48 h.');
+        // Patient décédé : aucune ordonnance, donc aucune consigne.
+        expect(generatePrescription({ ...form, careDeceased: 'Yes', patientMedicine: 'Repos.' }, 19)).toBe('');
+    });
+
     test("ordonnance d'un rapport enregistré : titre et BBCode, rien sans ordonnance", () => {
         const found = prescriptionOfReport({ bbCodeVersion: 5, data: form });
         expect(found.title).toBe('[PHMC-1] Ordonnance - 11/11/2026');

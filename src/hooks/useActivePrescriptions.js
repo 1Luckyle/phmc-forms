@@ -7,7 +7,7 @@ import { ref, get } from 'firebase/database';
 import { database } from '../firebase';
 import { canonicalPatientId } from '../utils/patientId';
 import { isLookupId } from '../utils/dossierLookup';
-import { activePrescriptions } from '../utils/activePrescriptions';
+import { activePrescriptions, prescriptionItemsOf } from '../utils/activePrescriptions';
 import { todayIso } from '../utils/appointmentDate';
 
 // Formulaires qui montrent le contexte patient complet (allergies, antécédents, traitements habituels) : les ordonnances en cours s'y ajoutent aux traitements.
@@ -29,6 +29,8 @@ const useActivePrescriptions = (version, formData, setFormData, currentTitle = '
     const node = canonicalPatientId(formData && formData.patientID);
     const asOf = /^\d{4}-\d{2}-\d{2}/.test(String((formData && formData.date) || '')) ? String(formData.date).slice(0, 10) : todayIso();
     const offKey = JSON.stringify((formData && formData.patientActivePrescriptionsOff) || []);
+    // Ordonnance du rapport en cours de rédaction : jamais comptée comme « ordonnance en cours » (voir activePrescriptions).
+    const ownKey = JSON.stringify(prescriptionItemsOf(formData));
 
     useEffect(() => {
         if (!enabled || !setFormData) return undefined;
@@ -37,10 +39,10 @@ const useActivePrescriptions = (version, formData, setFormData, currentTitle = '
         if (!isLookupId(node)) { apply([]); return undefined; }
         loadIndex(node).then((entries) => {
             if (cancelled || !entries) return;
-            apply(activePrescriptions(entries, { asOf, excludeTitle: currentTitle, off: JSON.parse(offKey) }));
+            apply(activePrescriptions(entries, { asOf, excludeTitle: currentTitle, ownItems: JSON.parse(ownKey), off: JSON.parse(offKey) }));
         });
         return () => { cancelled = true; };
-    }, [enabled, node, asOf, currentTitle, offKey, setFormData]);
+    }, [enabled, node, asOf, currentTitle, offKey, ownKey, setFormData]);
 };
 
 export default useActivePrescriptions;

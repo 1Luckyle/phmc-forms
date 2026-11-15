@@ -24,20 +24,26 @@ export const prescriptionItemsOf = (formData) => {
 
 const listOf = (value) => (Array.isArray(value) ? value : (value && typeof value === 'object' ? Object.values(value) : []));
 
+// Signature d'une liste d'ordonnance (médicament + début + fin) : sert à reconnaître l'ordonnance du rapport qu'on est en train de modifier.
+const signatureOf = (items) => listOf(items).filter((item) => item && item.medId).map((item) => `${item.medId}|${dayOf(item.start)}|${dayOf(item.end)}`).sort().join(';');
+
 /**
  * Ordonnances en cours à la date `asOf`, d'après les entrées d'index d'un patient ({ clé: entrée }).
  *   • en cours : fin >= asOf et début au plus tard le lendemain (un médicament déjà donné ce jour-là commence le lendemain) ;
- *   • un même médicament n'apparaît qu'une fois (la fin la plus tardive) ; les copies, rapports retirés et le rapport en cours de modification (`excludeTitle`) sont ignorés ;
+ *   • un même médicament n'apparaît qu'une fois (la fin la plus tardive) ; les copies et rapports retirés sont ignorés ;
+ *   • seules les ordonnances des AUTRES rapports comptent, jamais celle qu'on est en train de rédiger : un rapport enregistré rouvert est reconnu à son titre (`excludeTitle`) ET à
+ *     une ordonnance identique (`ownItems`, voir prescriptionItemsOf) — un autre rapport du même jour, même titre, avec une autre ordonnance reste compté ;
  *   • `off` : médicaments que le soignant a retirés de la liste (patient qui a arrêté son traitement).
  * → [{ medId, name, posology, start, end, report }] triées par date de fin.
  */
-export const activePrescriptions = (indexEntries, { asOf = '', excludeTitle = '', off = [] } = {}) => {
+export const activePrescriptions = (indexEntries, { asOf = '', excludeTitle = '', ownItems = [], off = [] } = {}) => {
     const day = dayOf(asOf) || todayIso();
+    const own = signatureOf(ownItems);
     const horizon = addDaysIso(day, 1);
     const best = new Map();
     Object.values(indexEntries || {}).forEach((entry) => {
         if (!entry || entry.copiedFrom || entry.ownerDeleted) return;
-        if (excludeTitle && entry.title === excludeTitle) return;
+        if (excludeTitle && entry.title === excludeTitle && own && signatureOf(entry.ordonnances) === own) return;
         listOf(entry.ordonnances).forEach((item) => {
             if (!item || !item.medId || !dayOf(item.end) || off.includes(item.medId)) return;
             if (dayOf(item.end) < day || (dayOf(item.start) && dayOf(item.start) > horizon)) return;

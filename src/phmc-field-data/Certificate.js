@@ -64,7 +64,7 @@ const Certificate = ({
                 placeholder="Autres précisions sur la cause probable du décès" selectPlaceholder="Cause probable du décès (plusieurs choix possibles)…"
             />
             <Form.Label>Heure du décès | Date du décès</Form.Label>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
                 <Form.Control
                     type="time"
                     name="TimeofDeath"
