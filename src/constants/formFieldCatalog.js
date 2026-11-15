@@ -15,8 +15,8 @@ export const VERSION_FIELDS = {
         requestingAuthority: 'select', requestingAuthorityRef: 'text', requestingAgency: 'select',
     },
     2: {
-        coronerEmployee: 'select', requestingOfficer: 'text', department: 'select', coronerPHNumber: 'text',
-        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', deathReport: 'textarea', coronerEmail: 'text', patientID: 'text',
+        dmecEmailSubject: 'text', requestingOfficer: 'text', department: 'select', coronerEmployee: 'select',
+        decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text', patientID: 'text', deathReport: 'textarea',
     },
     3: {
         patientID: 'text', patientTitle: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientDateOfBirth: 'date',

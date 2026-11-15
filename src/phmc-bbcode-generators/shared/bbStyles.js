@@ -64,7 +64,7 @@ Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
 [url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
 
 // Formulaires qui portent déjà ce pied de page dans leur propre texte (courriels du PHMC) : rien n'est ajouté.
-const FORMS_WITH_OWN_FOOTER = [27, 35, 42];
+const FORMS_WITH_OWN_FOOTER = [2, 27, 35, 42];
 export const withPhmcFooter = (bbCode, version) => {
     const text = String(bbCode || '');
     if (!text.trim() || FORMS_WITH_OWN_FOOTER.includes(Number(version)) || text.includes(PHMC_FOOTER_MARK) || text.includes(PBC_FOOTER_MARK)) return text;
@@ -76,7 +76,7 @@ export const withPhmcFooter = (bbCode, version) => {
 // son nom en gras, son rôle et son service, puis par le pied de page du centre. La signature est réduite à SIGNATURE_IMG_WIDTH pixels dans l'aperçu et le HTML ([img=largeur] est une
 // extension du site : elle est retirée à la copie du BBCode, voir notificationService.copyToClipboard).
 export const SIGNATURE_IMG_WIDTH = 200;
-const NO_SIGNATURE_VERSIONS = [3, 24, 25, 26, 27, 35, 40, 42, 50, 51, 52, 53, 54, 55, 999];
+const NO_SIGNATURE_VERSIONS = [2, 3, 24, 25, 26, 27, 35, 40, 42, 50, 51, 52, 53, 54, 55, 999];
 export const hasStaffSignatureFooter = (version) => !NO_SIGNATURE_VERSIONS.includes(Number(version));
 // Un « [mot] » saisi dans un champ ne doit pas devenir une balise BBCode : crochets pleine largeur (même règle que la messagerie, utils/internalMail.js).
 export const escapeBbText = (text) => String(text || '').replace(/\[(\/?[a-z*][^\]\n]{0,60})\]/gi, '［$1］');

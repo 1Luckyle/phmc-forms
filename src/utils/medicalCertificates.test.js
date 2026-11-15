@@ -64,8 +64,8 @@ describe('signature du personnel au bas des rapports', () => {
 
     test('ajoutée aux rapports du personnel, jamais aux candidatures, dossiers Civils ni courriels', () => {
         expect(withStaffSignature('Rapport', 5, signer)).toContain('Dr. Rose Callahan');
-        [1, 2, 4, 6, 19, 22, 37, 41].forEach((version) => expect(hasStaffSignatureFooter(version)).toBe(true));
-        [3, 24, 25, 26, 27, 35, 40, 42, 50, 55, 999].forEach((version) => expect(hasStaffSignatureFooter(version)).toBe(false));
+        [1, 4, 6, 19, 22, 37, 41].forEach((version) => expect(hasStaffSignatureFooter(version)).toBe(true));
+        [2, 3, 24, 25, 26, 27, 35, 40, 42, 50, 55, 999].forEach((version) => expect(hasStaffSignatureFooter(version)).toBe(false));
         expect(withStaffSignature('Candidature', 50, signer)).toBe('Candidature');
         expect(withStaffSignature('Rapport', 5, null)).toBe('Rapport');
     });

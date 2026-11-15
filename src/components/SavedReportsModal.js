@@ -5,7 +5,7 @@ import { Button, Form, Dropdown } from 'react-bootstrap';
 import Select from 'react-select';
 import { copyToClipboard } from './notificationService';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { reportTitleOf, reportCreatorOf, comprehensiveSanitize } from '../utils/patientRecords';
+import { reportTitleOf, reportCreatorOf, comprehensiveSanitize, shallowKeys } from '../utils/patientRecords';
 import useReportIndexStatus from '../hooks/useReportIndexStatus';
 import { logActivity } from '../utils/activityLog';
 import { ACCEPTED_REPORT_LABELS } from '../utils/employerSummary';
@@ -365,6 +365,30 @@ const SavedReportsModal = ({
         return options;
     }, [employeeOptions, preselectedEmployeeType, isAdmin, currentEmployee, employeeProfile, staffName]);
 
+    // Nombre de rapports de chaque employé, affiché à côté de son nom dans la liste (comme « — n rapport(s) » dans le dossier patient). Lecture « shallow » : seuls les noms des
+    // rapports sont lus (pas leur contenu). Relue à l'ouverture et quand le chargement d'une liste se termine (suppression, enregistrement). Sans droit de lecture : pas de nombre.
+    const [employeeCounts, setEmployeeCounts] = useState({});
+    useEffect(() => {
+        if (!show || !isAdmin) return undefined;
+        let cancelled = false;
+        const names = [...new Set(filteredEmployeeOptions.flatMap((group) => group.options.map((option) => option.value)).filter(Boolean))];
+        (async () => {
+            const counts = {};
+            for (let start = 0; start < names.length && !cancelled; start += 8) {
+                await Promise.all(names.slice(start, start + 8).map(async (name) => {
+                    const keys = await shallowKeys(`savedReports/${comprehensiveSanitize(name)}`);
+                    if (keys) counts[name] = keys.length;
+                }));
+            }
+            if (!cancelled) setEmployeeCounts(counts);
+        })();
+        return () => { cancelled = true; };
+    }, [show, isAdmin, filteredEmployeeOptions, isLoadingReports]);
+    const employeeOptionLabel = (option) => {
+        const count = employeeCounts[option.value];
+        return count === undefined ? option.label : <span>{option.label} <span style={{ color: '#8b949e' }}>— {count} rapport{count > 1 ? 's' : ''}</span></span>;
+    };
+
     const sortedReports = useMemo(() => {
         if (!currentEmployee) return [];
         return [...(reportsForSelectedUser || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -679,12 +703,6 @@ const SavedReportsModal = ({
     const isAllCurrentPageSelected =
         currentReportsOnPage.length > 0 && currentReportsOnPage.every((report) => selectedReportKeys.includes(report.key));
 
-    const canSwitchEmployee = currentPhmcEmployee && currentCoronerEmployee && currentPhmcEmployee !== currentCoronerEmployee;
-    let otherEmployeeName = '';
-    if (canSwitchEmployee) {
-        otherEmployeeName = selectedEmployee?.value === currentCoronerEmployee ? currentPhmcEmployee : currentCoronerEmployee;
-    }
-
     if (!show) return null;
 
     // Une carte par rapport : titre, méta, pastilles (paiement, copie, partage), actions toujours visibles, aperçu déplié dessous.
@@ -842,6 +860,7 @@ const SavedReportsModal = ({
                             <Select
                                 name="employeeSelect"
                                 options={filteredEmployeeOptions}
+                                formatOptionLabel={employeeOptionLabel}
                                 value={selectedEmployee}
                                 onChange={handleEmployeeSelect}
                                 isClearable
@@ -849,25 +868,6 @@ const SavedReportsModal = ({
                                 styles={reactSelectStyles}
                             />
                         </Form.Group>
-                        {canSwitchEmployee && !preselectedEmployeeType && (
-                            <Button
-                                variant="primary" size="sm"
-                                onClick={() => {
-                                    const newEmployeeValue =
-                                        selectedEmployee?.value === currentCoronerEmployee ? currentPhmcEmployee : currentCoronerEmployee;
-                                    const newEmployeeOption = employeeOptions
-                                        ?.flatMap((g) => g.options)
-                                        .find((o) => o.value === newEmployeeValue);
-                                    if (newEmployeeOption) {
-                                        handleEmployeeSelect(newEmployeeOption);
-                                        showNotification(`Passé aux rapports pour ${newEmployeeOption.label}`, 'exchange-alt');
-                                    }
-                                }}
-                                title={`Passer aux rapports pour ${otherEmployeeName}`}
-                            >
-                                <i className="fas fa-exchange-alt me-1"></i>Passer à {otherEmployeeName}
-                            </Button>
-                        )}
                     </div>
                 )}
 

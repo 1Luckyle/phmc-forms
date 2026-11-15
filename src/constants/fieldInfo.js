@@ -310,6 +310,7 @@ export const FIELD_INFO = {
     coronerEmployee: ["Médecin légiste", "Médecin légiste concerné. Choisissez-le dans la liste (vous pouvez taper pour rechercher)."],
     chiefCoronerEmployee: ["Chef médecin légiste", "Chef médecin légiste. " + SELECT],
     chiefMedicalExaminer: ["Examinateur médical en chef", "Examinateur médical en chef ou adjoint. " + SELECT],
+    dmecEmailSubject: ["Objet du courriel", "Objet du courriel (facultatif) : à défaut, « Documents du rapport de décès »."],
     coronerPHNumber: ["Téléphone du coroner", "Numéro de contact du coroner, repris de son profil : il ne se modifie pas ici."],
     decedentTitle: ["Titre du défunt", "Civilité du défunt (M., Mme…). Le choix est libre."],
     decedentFirstName: ["Prénom du défunt", "Prénom du défunt, tel que son personnage (IC)."],

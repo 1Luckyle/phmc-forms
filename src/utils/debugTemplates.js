@@ -433,6 +433,7 @@ const TEMPLATES = {
     2: (h) => ({
         ...h.coroner,
         // Numéro et e-mail viennent du profil du coroner (voir `coroner` plus haut), pas de valeurs inventées.
+        dmecEmailSubject: 'Documents du rapport de décès',
         requestingOfficer: 'Officier John Doe',
         department: h.opt('requestingAgenciesOptions'),
         ...decedentParts(),

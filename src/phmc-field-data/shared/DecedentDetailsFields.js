@@ -26,7 +26,8 @@ const DecedentDetailsFields = ({ formData, setFormData, handleChange, refDate, s
         <BirthOrAgeFields
             formData={formData} setFormData={setFormData} handleChange={handleChange} dobName="decedentDateOfBirth" ageName="decedentAge" refDate={refDate}
             agePlaceholder="Âge (estimé si inconnu)" computedAgeLabel="Âge du défunt calculé à partir de sa date de naissance"
-        >
+        />
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.6rem' }}>
             <div style={{ flex: '1 1 180px', minWidth: 0 }}>
                 <Form.Label>Genre à l'état civil</Form.Label>
                 <Form.Select name="decedentSex" value={formData.decedentSex || ''} onChange={handleChange} className="form-control">
@@ -49,7 +50,7 @@ const DecedentDetailsFields = ({ formData, setFormData, handleChange, refDate, s
                     </div>
                 </>
             )}
-        </BirthOrAgeFields>
+        </div>
         <Form.Control
             as="textarea"
             rows={2}

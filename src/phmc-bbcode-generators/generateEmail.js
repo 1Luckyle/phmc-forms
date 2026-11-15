@@ -1,52 +1,55 @@
+// src/phmc-bbcode-generators/generateEmail.js
+//
+// Email DMEC (formulaire 2) : le courriel du Département de Pathologie et de Médecine Légale qui accompagne un rapport de décès. Même forme que les autres courriels du PHMC (messagerie interne,
+// Mail Externe) : en-tête « Pillbox Hill Medical Center », objet centré, lignes À / De / Le, texte, signature de la personne qui l'envoie, puis le pied de page commun des courriels
+// (shared/bbStyles.js). Aucune coordonnée personnelle de l'expéditeur (Discord, téléphone, e-mail) : le pied de page porte celles du centre.
 import { getPrice } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
-import { sectionBanner, infoTable, paragraph, dmecHeaderLogos } from './shared/bbStyles';
+import { staffSignatureBlock, mailFooter, escapeBbText } from './shared/bbStyles';
 import { linkedPatientIds, patientIdsLabel } from '../utils/linkedPatients';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
 const NOT_FILLED = 'Non renseigné';
 
+export const DMEC_DEPARTMENT = 'Département de Pathologie et de Médecine Légale';
+export const DMEC_EMAIL_DEFAULT_SUBJECT = 'Documents du rapport de décès';
+
+const pad = (n) => String(n).padStart(2, '0');
+const todayFr = () => { const now = new Date(); return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`; };
+
 const generateEmail = (formData) => {
+    const f = formData || {};
     const {
         requestingOfficer = NOT_FILLED,
         department = NOT_FILLED,
         coronerEmployee = NOT_FILLED,
         coronerRank = NOT_FILLED,
-        coronerDiscord = NOT_FILLED,
-        coronerPHNumber = NOT_FILLED,
-        coronerEmail = NOT_FILLED,
         deathReport = NOT_FILLED,
         additionalReports,
-        agencyDataStore, // Added agencyDataStore
+        agencyDataStore,
         autopsyPaymentLink,
-    } = formData;
+    } = f;
 
     const requestFee = formatMoney(getPrice('fraisDemandeAutopsie')); // tarif modifiable dans le panneau admin
     const paymentInstructions = autopsyPaymentLink
         ? `Cliquez sur le lien suivant pour régler les frais de ${requestFee} via Fleeca : [url=${autopsyPaymentLink}]Payer ${requestFee} via Fleeca[/url]`
-        : `Veuillez contacter le Département de Pathologie et de Médecine Légale du PHMC pour obtenir un lien de paiement Fleeca.`;
+        : `Veuillez contacter le ${DMEC_DEPARTMENT} du PHMC pour obtenir un lien de paiement Fleeca.`;
 
-    const getDepartmentFullName = (shortCode) => {
-        if (agencyDataStore && agencyDataStore[shortCode]) {
-            return agencyDataStore[shortCode].fullName;
-        }
-        return shortCode; // fallback to shortcode
-    };
+    const agencyName = agencyDataStore && agencyDataStore[department] ? agencyDataStore[department].fullName : department;
+    const recipient = [requestingOfficer, agencyName].map((part) => String(part || '').trim()).filter(Boolean).join(' - ');
+    const subject = String(f.dmecEmailSubject || '').trim() || DMEC_EMAIL_DEFAULT_SUBJECT;
 
-    // En-tête : le logo de l'agence destinataire à gauche ; à droite, le logo du PHMC et, plus petit à côté, le sceau du DMEC.
-    // Dans le BBCode, seule une ADRESSE WEB fonctionne (lien imgBB de l'agence) : jamais le fichier local du dépôt, utilisé seulement à l'écran.
-    const agencyLogo = [agencyDataStore?.[department]?.forumLogo, agencyDataStore?.[department]?.logo]
-        .map((url) => String(url || '').trim()).find((url) => /^https?:\/\//i.test(url)) || '';
-    const header = agencyLogo
-        ? `[table][tr][td][center][img]${agencyLogo}[/img][/center][td][center]${dmecHeaderLogos()}[/center][/table]`
-        : `[center]${dmecHeaderLogos()}[/center]`;
+    // Signataire : la personne qui envoie (son profil), sinon le coroner choisi ; le département est toujours celui de la médecine légale.
+    const signerBase = f.signer && f.signer.name ? f.signer : { name: coronerEmployee === NOT_FILLED ? '' : coronerEmployee, rank: coronerRank === NOT_FILLED ? '' : coronerRank, signatureUrl: '' };
+    const signer = { ...signerBase, rank: signerBase.rank || (coronerRank === NOT_FILLED ? '' : coronerRank), service: DMEC_DEPARTMENT };
+    const role = [signer.rank, signer.service].map((part) => String(part || '').trim()).filter(Boolean).join(' — ');
 
     // Défunt(s) concerné(s) : ceux saisis dans le formulaire et ceux des rapports joints (IC, Discord, ID patient).
     const joinList = (...lists) => lists.map((list) => String(list || '').trim()).filter(Boolean).join(', ');
-    const names = joinList(formData.decedentName, formData.reportDecedentNames);
-    const discords = joinList(formData.decedentOOC, formData.reportDecedentOOC);
-    const patientIds = linkedPatientIds(2, formData);
+    const names = joinList(f.decedentName, f.reportDecedentNames);
+    const discords = joinList(f.decedentOOC, f.reportDecedentOOC);
+    const patientIds = linkedPatientIds(2, f);
     const decedentBlock = names || discords || patientIds.length
         ? `${names || NOT_FILLED}${discords ? ` (( Discord : ${discords} ))` : ''}${patientIds.length ? ` — ID Patient : ${patientIdsLabel(patientIds)}` : ''}`
         : '';
@@ -59,21 +62,26 @@ ${report}
 [/code]
 [/altspoiler]`);
 
-    const agencyName = getDepartmentFullName(department);
-    const recipient = [requestingOfficer, agencyName].map((part) => String(part || '').trim()).filter(Boolean).join(' - ');
-    const blocks = [
-        header,
-        sectionBanner('Courriel du Département de Pathologie et de Médecine Légale', { size: 115 }),
-        infoTable([
-            [['Destinataire', recipient], ['Expéditeur', `${coronerEmployee} (${coronerEmail})`]],
-            [['Objet', 'Documents du rapport de décès']],
-            ...(decedentBlock ? [[['Défunt(s) concerné(s)', decedentBlock]]] : []),
-        ]),
-        paragraph(`À l'attention de: ${[agencyName, requestingOfficer].map((part) => String(part || '').trim()).filter(Boolean).map((part) => `[b]${part}[/b]`).join(' - ')}
+    const attention = [agencyName, requestingOfficer].map((part) => String(part || '').trim()).filter(Boolean).map((part) => `[b]${part}[/b]`).join(' - ');
+    const heading = (title) => `[b][size=110]${title}[/size][/b]`;
 
-Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel.`),
-        sectionBanner('Informations / demande(s) d\'autopsie', { size: 115 }),
-        paragraph('Si vous avez besoin d\'une autopsie, veuillez suivre ce lien et suivre les instructions: [url=]Portail d\'autopsie[/url].'),
+    const blocks = [
+        `[divbox=na][br][/br][imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b]
+[size=85]${DMEC_DEPARTMENT}[/size]
+[center][/center][br][/br]
+[center][size=150][b]${escapeBbText(subject)}[/b][/size][/center]
+
+[b]À :[/b] ${escapeBbText(recipient || '—')}
+[b]De :[/b] ${escapeBbText(signer.name || NOT_FILLED)}${role ? ` (${escapeBbText(role)})` : ''}
+[b]Le :[/b] ${todayFr()}${decedentBlock ? `\n[b]Défunt(s) concerné(s) :[/b] ${escapeBbText(decedentBlock)}` : ''}
+[hr][/hr][br][/br][list=none]
+À l'attention de : ${attention || NOT_FILLED}
+
+Ce rapport de coroner a été rédigé par ${coronerRank} ${coronerEmployee}. Vous trouverez les documents ci-joints attachés à ce courriel.
+
+${heading('Informations / demande(s) d\'autopsie')}
+Si vous avez besoin d'une autopsie, veuillez suivre ce lien et suivre les instructions : [url=]Portail d'autopsie[/url].
+[/list]`,
         `[altspoiler=FAQ sur la demande d'autopsie]
 1) Comment puis-je demander un rapport d'autopsie et/ou un certificat de décès?
 Les autopsies et les certificats de décès peuvent être utiles dans diverses situations, en particulier lorsque la cause du décès joue un rôle essentiel. Nos professionnels s'efforcent de traiter chaque demande dans les délais les plus brefs. Cependant, étant donné que l'effort de documentation est immense, des frais de demande sont associés. Dès réception du paiement, le rapport ou le certificat vous sera envoyé directement.
@@ -92,12 +100,7 @@ De plus, s'il s'agit d'un PK, veuillez utiliser John/Jane Doe avec le nom de leu
 
 [url=]Cliquez ici pour contacter un médecin légiste afin d'obtenir le feu vert![/url] ))
 [/altspoiler]`,
-        sectionBanner('Pour toute autre question', { size: 115 }),
-        infoTable([
-            [['Médecin légiste', `${coronerRank} ${coronerEmployee}`], ['Numéro de téléphone', coronerPHNumber]],
-            [['Adresse e-mail', coronerEmail], ['(( Discord', `${coronerDiscord} ))`]],
-        ]),
-        sectionBanner('Documents joints', { size: 115 }),
+        `[list=none]${heading('Documents joints')}[/list]`,
         `[altspoiler=Rapport du coroner]
 ${deathReport}
 [code]
@@ -106,10 +109,9 @@ ${deathReport}
 [/code]
 [/altspoiler]`,
         ...attachmentBlocks,
-        paragraph(`Cordialement
-${coronerRank} ${coronerEmployee}
-Pillbox Hill Medical Center - Pathologie et Médecine Légale`),
-        `[size=75]Le contenu de ce courriel est destiné uniquement à la personne ou à l'entité à laquelle il est adressé. Ce courriel peut contenir des informations confidentielles. Si vous n'êtes pas la personne à qui ce message est adressé, sachez que toute utilisation, reproduction ou distribution de ce message est strictement interdite. Si vous avez reçu ceci par erreur, veuillez contacter l'expéditeur et supprimer immédiatement ce courriel et toutes les pièces jointes.[/size]`,
+        `[list=none]Pour toute autre question, veuillez contacter le ${DMEC_DEPARTMENT} du PHMC.[/list][br][/br]
+${staffSignatureBlock(signer)}
+${mailFooter()}[/divbox]`,
     ];
 
     return blocks.filter(Boolean).join('\n');

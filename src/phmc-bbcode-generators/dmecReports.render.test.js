@@ -32,14 +32,25 @@ describe('rapports de médecine légale : construction', () => {
         expect(unchecked).not.toContain('Officier Jane Roe');
     });
 
-    test('e-mail DMEC : logo de l’agence (lien web) puis logo PHMC et petit sceau du DMEC, expéditeur avec son vrai e-mail, rapport joint rendu sans source brute', () => {
+    test('e-mail DMEC : même forme que Mail Externe (en-tête, À / De / Le, signature, pied de page), sans coordonnées de l’expéditeur, rapport joint rendu sans source brute', () => {
         const report = generateDeathReport({ ...getDebugTemplate(1, ctx), agencyDataStore });
         expect(prepareCoronerReport(report).ok).toBe(true);
         const email = generateEmail({ ...getDebugTemplate(2, ctx), department: 'LSSD', agencyDataStore, deathReport: report, additionalReports: [] });
-        expect(email).toMatch(/\[table\]\[tr\]\[td\]\[center\]\[img\]https:\/\/img\/lssd\.png\[\/img\]\[\/center\]\[td\]\[center\]\[img\]https:\/\/phmc-tools\.com\/img\/phmc\.png\[\/img\]\[img\]https:\/\/phmc-tools\.com\/img\/dmec-seal-small\.png/);
-        expect(email).toContain('Expéditeur: Dr Légiste (a.b@phmc.health)');
-        expect(email).toContain('Numéro de téléphone: 555-0142');
-        expect(email).not.toContain('@ phmc.health');
+        // En-tête commun des courriels du PHMC, avec le département de médecine légale en sous-titre.
+        expect(email.startsWith('[divbox=na]')).toBe(true);
+        expect(email).toContain('[imageleft]https://phmc-tools.com/img/phmc-curve.png[/imageleft] [b][size=110]Pillbox Hill Medical Center[/size][/b]');
+        expect(email).toContain('[size=85]Département de Pathologie et de Médecine Légale[/size]');
+        expect(email).toContain('[b]À :[/b] Officier John Doe - Los Santos Sheriff Department');
+        expect(email).toMatch(/\[b\]De :\[\/b\] Dr Légiste \(.*Département de Pathologie et de Médecine Légale\)/);
+        expect(email).toMatch(/\[b\]Le :\[\/b\] \d{2}\/\d{2}\/\d{4}/);
+        // Plus aucune coordonnée personnelle de l'expéditeur (Discord, téléphone, e-mail) ; le pied de page est celui des courriels du PHMC.
+        expect(email).not.toContain('a.b@phmc.health');
+        expect(email).not.toContain('555-0142');
+        expect(email).not.toContain('Numéro de téléphone');
+        expect(email).not.toContain('Discord du coroner');
+        expect(email).toContain('info.phmc@mail.eyefind.fr');
+        expect(email).toContain('Le contenu de ce message et de toute pièce jointe est confidentiel');
+        expect(email.endsWith('[/divbox]')).toBe(true);
         // La copie BBCode garde le bloc [code] ; l'aperçu / HTML ne montre jamais la source brute du rapport.
         expect(email).toContain('[code]');
         const html = bbcodeToHtmlFragment(email);

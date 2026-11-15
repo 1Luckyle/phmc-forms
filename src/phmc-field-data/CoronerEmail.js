@@ -11,6 +11,8 @@ import { ReportPreviewFrame } from '../components/ReportExpansion';
 import CoronerSelect from './shared/CoronerSelect';
 import NameFields from './shared/NameFields';
 import TemporaryIdPicker from './shared/TemporaryIdPicker';
+import { MAIL_LIMITS } from '../utils/internalMail';
+import { DMEC_EMAIL_DEFAULT_SUBJECT } from '../phmc-bbcode-generators/generateEmail';
 
 const DECEDENT_FIELDS = { full: 'decedentName', first: 'decedentFirstName', middle: 'decedentMiddleName', last: 'decedentLastName', title: 'decedentTitle' };
 
@@ -125,60 +127,69 @@ const CoronerEmail = ({
 
     return (
         <>
-            <Form.Label className="form-section-title">Expéditeur</Form.Label>
-            <CoronerSelect options={coronerGroupedOptions} formData={formData} handleSelectChange={handleSelectChange} label="Coroner expéditeur" />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
-                <Form.Control
-                    type="text" name="coronerPHNumber" value={formData.coronerPHNumber || ''} readOnly
-                    placeholder="Numéro de téléphone du coroner (tiré de son profil)" className="form-control"
-                />
-                <Form.Control
-                    type="text" name="coronerEmail" value={formData.coronerEmail || ''} readOnly
-                    placeholder="Adresse e-mail du coroner (tirée de son profil)" className="form-control"
-                />
-            </div>
-            <span className="helper-text">
-                Le numéro et l'adresse e-mail sont repris du profil du coroner et ne se modifient pas ici : chacun les met à jour dans « Mon profil » (menu Outils).
-            </span>
+            <Form.Label className="form-section-title">Courrier</Form.Label>
+            <Form.Group className="mb-3">
+                <Form.Label>Objet (facultatif)</Form.Label>
+                <Form.Control type="text" name="dmecEmailSubject" value={formData.dmecEmailSubject || ''} maxLength={MAIL_LIMITS.subject} onChange={handleChange} placeholder={DMEC_EMAIL_DEFAULT_SUBJECT} className="form-control" />
+            </Form.Group>
 
             <Form.Label className="form-section-title">Destinataire</Form.Label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control
-                    type="text"
-                    name="requestingOfficer"
-                    value={formData.requestingOfficer}
-                    onChange={handleChange}
-                    placeholder="Grade, prénom et nom du destinataire (ex. Officier John Doe)"
-                    className="form-control"
-                />
-                <Form.Select
-                    name="department"
-                    value={formData.department}
-                    onChange={handleChange}
-                    className="form-control"
-                    disabled={isLoadingData || !agencyDataStore || Object.keys(agencyDataStore).length === 0}
-                >
-                    <option value="" disabled>
-                        {isLoadingData ? 'Chargement des agences...' : 'Agence du destinataire'}
-                    </option>
-                    {agencyDataStore && Object.entries(agencyDataStore).map(([key, agency]) => (
-                        <option key={key} value={key}>
-                            {agency.fullName || key}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+                    <Form.Label>Destinataire (grade, prénom et nom)</Form.Label>
+                    <Form.Control
+                        type="text"
+                        name="requestingOfficer"
+                        value={formData.requestingOfficer}
+                        onChange={handleChange}
+                        placeholder="ex: Officier John Doe"
+                        className="form-control"
+                    />
+                </div>
+                <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+                    <Form.Label>Agence du destinataire</Form.Label>
+                    <Form.Select
+                        name="department"
+                        value={formData.department}
+                        onChange={handleChange}
+                        className="form-control"
+                        disabled={isLoadingData || !agencyDataStore || Object.keys(agencyDataStore).length === 0}
+                    >
+                        <option value="" disabled>
+                            {isLoadingData ? 'Chargement des agences...' : 'Choisir l\'agence'}
                         </option>
-                    ))}
-                </Form.Select>
+                        {agencyDataStore && Object.entries(agencyDataStore).map(([key, agency]) => (
+                            <option key={key} value={key}>
+                                {agency.fullName || key}
+                            </option>
+                        ))}
+                    </Form.Select>
+                </div>
             </div>
 
+            <Form.Label className="form-section-title">Expéditeur</Form.Label>
+            <div style={{ marginBottom: '0.6rem' }}>
+                <CoronerSelect options={coronerGroupedOptions} formData={formData} handleSelectChange={handleSelectChange} label="Identifiants de l'employé (expéditeur)" />
+            </div>
+            <span className="helper-text">Le courriel est signé par vous : votre signature, votre nom, votre fonction et le Département de Pathologie et de Médecine Légale figurent au bas du document, avec le pied de page du centre. Vos coordonnées personnelles n'y figurent pas.</span>
+
             <Form.Label className="form-section-title">Défunt concerné</Form.Label>
+            <Form.Label>Nom du défunt (IC)</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <NameFields
                     formData={formData} setFormData={setFormData} handleChange={handleChange} fields={DECEDENT_FIELDS}
                     placeholders={{ first: 'Prénom du défunt (IC)', middle: 'Deuxième prénom (IC)', last: 'Nom de famille (IC)' }}
                 />
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
-                <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient du défunt (obligatoire ; ID temporaire si le défunt n'en a pas)" className="form-control" />
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '0.6rem' }}>
+                <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+                    <Form.Label>Discord du joueur (HRP)</Form.Label>
+                    <Form.Control type="text" name="decedentOOC" value={formData.decedentOOC} onChange={handleChange} placeholder="(( Discord du joueur (HRP) ))" className="form-control" />
+                </div>
+                <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+                    <Form.Label>ID patient du défunt</Form.Label>
+                    <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="PHMC-2752 (ou ID temporaire si le défunt n'en a pas)" className="form-control" />
+                </div>
             </div>
             <TemporaryIdPicker formData={formData} setFormData={setFormData} />
             {extraIds.map((extraId, index) => (
