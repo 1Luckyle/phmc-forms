@@ -301,7 +301,6 @@ const consultBase = (h) => ({
     patientChiefComplaint: 'Douleur thoracique depuis deux heures.',
     patientDiagnosis: 'Contusion thoracique sans fracture.',
     patientSecondaryDiagnosis: 'Stress aigu.',
-    patientMedicine: 'Paracétamol 1 g, repos.',
     patientProcedure: 'Examen clinique, radiographie thoracique.',
     ...vitals(h),
     bloodOxy: h.opt('bloodOxy'),
@@ -314,7 +313,6 @@ const consultBase = (h) => ({
     lab: h.some('lab', 2),
     admission: h.opt('admission'),
     followup: h.opt('followup'),
-    scenePhotos: h.img(),
 });
 
 const recruitmentBase = (h) => ({
@@ -370,7 +368,7 @@ const TEMPLATES = {
         payNow: false,
     }),
 
-    // Services de Médecine Légale
+    // Rapport d'Enquête sur le Décès
     1: (h) => ({
         ...h.coroner,
         dateTime: h.today,
@@ -534,6 +532,7 @@ const TEMPLATES = {
         const imaging = h.some('Imaging', 1);
         return {
             ...consultBase(h),
+            patientMedicine: 'Repos, hydratation, surveillance de la douleur pendant 48 h.',
             patientInjuryMechanism: 'Chute d\'un escabeau de deux mètres.',
             arrivalMode: 'EMS',
             arrivalTime: h.utcTime,
@@ -549,11 +548,13 @@ const TEMPLATES = {
     // Consultation Générale (PHMC)
     20: (h) => ({
         ...consultBase(h),
+        patientProcedure: 'Repos, hydratation, reprise progressive des activités sous 48 h.',
         assignedDepartment: h.opt('assignedDepartment'),
     }),
     // Consultation Générale (PBC)
     21: (h) => ({
         ...consultBase(h),
+        patientProcedure: 'Repos, hydratation, reprise progressive des activités sous 48 h.',
         paletoClinicDepartment: h.opt('paletoClinicDepartment'),
         assignedDepartment: h.opt('assignedDepartment'),
         patientNotes: LOREM_SHORT,
@@ -682,6 +683,7 @@ const TEMPLATES = {
 
     // Mail Externe (courrier envoyé hors du site)
     42: (h) => ({
+        phmcEmployee: h.phmc.phmcEmployee || '',
         externalMailSubject: 'Confirmation de rendez-vous',
         externalMailRecipient: 'Madame Dupont',
         externalMailRecipientAddress: 'dupont@mail.eyefind.fr',

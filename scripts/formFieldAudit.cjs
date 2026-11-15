@@ -32,13 +32,17 @@ const IGNORE_IN_CODE = {
     24: ['releaseReports', 'releasePractitionerAuto', 'phmcEmployee'],   // praticien déduit des rapports retenus, pas un champ de saisie
     35: ['appointmentTime'], 41: ['appointmentTime'],
     // Candidatures : un seul composant partagé (phmc-civilian-fields/shared/ApplicationFields.js) qui cite aussi les champs propres au paramédical et à l'expérience médicale.
-    50: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'], 51: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'], 52: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'oocMedicalExperience'], 53: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'], 54: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'],
+    50: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 51: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 52: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate', 'oocMedicalExperience'], 53: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 54: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 55: ['SubmitDate'],
 };
 // Champs du catalogue absents du code sous leur nom littéral : noms construits dynamiquement (ville du code postal, examens du certificat de vol, rapports joints).
 const IGNORE_IN_CATALOG = {
     '*': ['placeOfDeathZipCity', 'patientZIPCity', 'patientZIPNewCity', 'applicantZIPCity'],
     2: ['deathReport'],
-    11: ['decedentPatientIDs'],   // ligne de synthèse du panneau admin : les ID sont saisis dans chaque défunt (champ « patientID » des lignes)
+    11: ['decedentPatientIDs'],
+    // Valeurs mesurées des signes vitaux : champs construits depuis une liste (name: '…'), que l'analyse du code ne lit pas.
+    19: ['temperatureValue', 'heartRateValue', 'respiratoryRateValue', 'bloodPressureValue', 'spo2Value', 'glucoseValue', 'gcsScore'],
+    20: ['temperatureValue', 'heartRateValue', 'respiratoryRateValue', 'bloodPressureValue', 'spo2Value', 'glucoseValue', 'gcsScore'],
+    21: ['temperatureValue', 'heartRateValue', 'respiratoryRateValue', 'bloodPressureValue', 'spo2Value', 'glucoseValue', 'gcsScore'],   // ligne de synthèse du panneau admin : les ID sont saisis dans chaque défunt (champ « patientID » des lignes)
     // Candidatures : listes (emplois, captures de licences) écrites par clé d'objet dans le composant partagé.
     50: ['applicantJobs'], 51: ['applicantJobs'], 52: ['applicantJobs'], 53: ['applicantJobs'], 54: ['applicantJobs'], 55: ['applicantJobs'],
 };

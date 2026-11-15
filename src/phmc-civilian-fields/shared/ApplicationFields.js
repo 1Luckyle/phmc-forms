@@ -21,7 +21,7 @@ import { uploadImageToServer } from '../../utils/imageUploadApi';
 import './ApplicationFields.css';
 import {
     APPLICATION_FIELDS, EDUCATION_LEVELS, CITIZENSHIP_OPTIONS, LOCATION_OPTIONS, MAJOR_PRESETS, LANGUAGE_PRESETS, NO_OTHER_LANGUAGE, MAX_JOBS,
-    emptyJob, jobsOf, licenseOf, applicantDisplayName, applicantAge, timezoneOptions, timezoneLabel, browserTimezone, migrateApplicationData,
+    MIN_APPLICATION_AGE, emptyJob, jobsOf, licenseOf, applicantDisplayName, applicantAge, timezoneOptions, timezoneLabel, browserTimezone, migrateApplicationData,
 } from '../../utils/applicationForm';
 
 const DRAFT_EXPIRY_MS = 5 * 24 * 60 * 60 * 1000; // brouillon conservé sur l'appareil 5 jours
@@ -52,7 +52,7 @@ const JobsEditor = ({ formData, setFormData }) => {
         <Form.Control type="text" value={jobs[index][key] || ''} onChange={(event) => update(index, { [key]: event.target.value })} placeholder={placeholder} className="form-control" data-guide={guide} {...extra} />
     );
     return (
-        <div>
+        <div data-field-group="applicantJobs" data-filled={jobs.length > 0 || formData.applicantNoExperience ? '1' : '0'}>
             <Form.Check
                 type="checkbox" id="applicantNoExperience" name="applicantNoExperience" className="mb-3"
                 label=" Je n'ai aucune expérience professionnelle à présenter"
@@ -251,6 +251,10 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
                 </Form.Select>
             </Field>
 
+            <Field label="Date de la candidature" hint="La date du jour : elle ne peut pas être modifiée.">
+                <Form.Control type="date" name="SubmitDate" value={formData.SubmitDate || todayIso()} readOnly className="form-control" style={{ maxWidth: 220 }} />
+            </Field>
+
             <Section>Identité</Section>
             <Field label="ID patient" hint="Il rattache la candidature à votre compte (ex. PHMC-2752).">
                 <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder="ID Patient (ex. PHMC-2752)" className="form-control" />
@@ -271,6 +275,11 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
                     </div>
                     {age !== null && <span className="helper-text" data-no-tip="1" style={{ margin: 0 }}>{age} an{age > 1 ? 's' : ''}</span>}
                 </div>
+                {age !== null && age < MIN_APPLICATION_AGE && (
+                    <div className="alert alert-danger py-2 small mt-2 mb-0" role="alert" data-no-tip="1">
+                        <i className="fas fa-ban me-2"></i>Il faut avoir au moins {MIN_APPLICATION_AGE} ans pour candidater : votre candidature ne pourra pas être enregistrée.
+                    </div>
+                )}
             </Field>
             <Field label="Adresse du domicile">
                 <div style={row}>
@@ -338,7 +347,7 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
             )}
             <Section>Licence</Section>
             <Field label={emsOther ? "Capture d'écran de votre licence de technicien médical d'urgence" : "Capture d'écran de votre licence"}>
-                <LicenseField formData={formData} setFormData={setFormData} />
+                <div data-required={emsOther ? '1' : undefined}><LicenseField formData={formData} setFormData={setFormData} /></div>
             </Field>
             {emsOther && (
                 <>
@@ -353,7 +362,7 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
                 <>
                     <Section>(( Informations hors personnage ))</Section>
                     <Field label="Nom Discord">
-                        <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} className="form-control" />
+                        <Form.Control type="text" name="oocDiscord" value={formData.oocDiscord || ''} onChange={handleChange} placeholder="Votre nom Discord (ex. pseudo)" className="form-control" />
                     </Field>
                     <Field label="Fuseau horaire" hint="Tapez votre ville ou votre région (ex. « Paris », « New York ») : le décalage actuel avec l'heure UTC est indiqué.">
                         <Select

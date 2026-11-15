@@ -536,7 +536,7 @@ export const useReportManagement = (
                 if (failed.length > 0) showNotification(`Le rapport est enregistré, mais n'a pas pu être lié au dossier de : ${failed.join(', ')}.`, 'warning', 9000);
             }
 
-            // Rapport de décès (« Services de Médecine Légale ») avec un ID patient : le patient est déclaré décédé, le personnel
+            // Rapport de décès (« Rapport d'Enquête sur le Décès ») avec un ID patient : le patient est déclaré décédé, le personnel
             // soignant ne peut plus rien enregistrer sur lui tant qu'un admin ne débloque pas la fiche (ou que ce rapport est supprimé).
             if (formData.patientID && locksPatient(bbCodeVersion) && writerIsDmec) {
                 try {

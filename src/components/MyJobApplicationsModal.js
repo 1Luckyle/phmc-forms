@@ -30,6 +30,7 @@ import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentE
 import './Cctv/CctvRequests.css';
 import './Recruitment/Applications.css';
 import useWriteLock from '../hooks/useWriteLock';
+import { applicationExportTitle } from '../utils/reportTitle';
 
 const modalStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -75,7 +76,7 @@ const formatDate = (timestamp) => {
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
+const applicationTitle = applicationExportTitle;
 
 // `canAct` : faux pour un employé sans statut de recrutement interne : il consulte son dossier sans pouvoir agir ; ses candidatures encore ouvertes
 // sont mises en pause automatiquement jusqu'à ce qu'il obtienne le statut.

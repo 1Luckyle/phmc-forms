@@ -4,7 +4,7 @@
 //
 // Même principe que les certificats médicaux (voir employerSummary.js) : un rapport ne se tape pas à la main. On le colle
 // (il est alors vérifié d'après ses titres) ou on le joint depuis « Rapports enregistrés ». Sont acceptés :
-//   • le Rapport de décès (formulaire « Services de Médecine Légale », version 1) — « RAPPORT D'ENQUÊTE SUR LE DÉCÈS » ;
+//   • le Rapport de décès (formulaire « Rapport d'Enquête sur le Décès », version 1) — « RAPPORT D'ENQUÊTE SUR LE DÉCÈS » ;
 //   • le Rapport de catastrophe mortelle (tuerie / accident de masse, version 11) — « RAPPORT DE CATASTROPHE MORTELLE ».
 // Tout autre contenu (autre formulaire, texte libre, titre seul cité dans un message) est refusé. Contrairement au certificat,
 // le rapport est joint EN ENTIER (l'officier demandeur reçoit le rapport complet) ; les noms du défunt (IC et HRP) sont repris

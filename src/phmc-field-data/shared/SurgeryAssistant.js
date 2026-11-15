@@ -108,7 +108,7 @@ const SurgeryAssistant = ({ formData, setFormData, handleChange }) => {
             ))}
             <Form.Label>Interventions (choix multiple)</Form.Label>
             <Select
-                isMulti options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterProcedures} styles={darkSelectStyles} className="form-control p-0"
+                isMulti name="surgeryProcedureIds" options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterProcedures} styles={darkSelectStyles} className="form-control p-0"
                 placeholder="Appendicectomie, ostéosynthèse, césarienne… (nom ou synonyme)" noOptionsMessage={() => 'Aucune intervention trouvée'}
             />
 

@@ -105,7 +105,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
             ))}
             <Form.Label>{mode === 'consult' ? 'Motifs de la consultation' : 'Motifs de prise en charge'} (choix multiple)</Form.Label>
             <Select
-                isMulti options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterConditions} styles={darkSelectStyles} className="form-control p-0"
+                isMulti name="clinicalConditions" options={GROUPED_OPTIONS} value={selected} onChange={setIds} filterOption={filterConditions} styles={darkSelectStyles} className="form-control p-0"
                 placeholder="Fracture, brûlure, asthme, surdose… (nom ou synonyme)" noOptionsMessage={() => 'Aucun motif trouvé'}
             />
 

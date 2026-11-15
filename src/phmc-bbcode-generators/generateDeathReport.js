@@ -13,7 +13,7 @@ const NOT_FILLED = 'Non renseigné';
 
 const splitUrls = (value) => (value || '').split(',').map((url) => url.trim()).filter(Boolean);
 
-// Rapport d'enquête sur le décès (formulaire « Services de Médecine Légale »). Mise en page : en-tête à deux cellules, fiche du défunt,
+// Rapport d'enquête sur le décès (formulaire « Rapport d'Enquête sur le Décès »). Mise en page : en-tête à deux cellules, fiche du défunt,
 // rapport écrit, dossier photographique, déclaration, confidentialité, puis les éléments hors personnage.
 // ATTENTION : utils/coronerAttachments.js reconnaît ce rapport d'après ses titres (« Rapport d'enquête sur le décès », « A. Rapport écrit »…)
 // et en tire le nom du défunt (« a identifié l'individu comme étant … ») et son Discord (« Discord du joueur (HRP): … »).

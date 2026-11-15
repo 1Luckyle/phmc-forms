@@ -36,8 +36,18 @@ describe('candidature : champs communs', () => {
         VERSION_FIELDS[50] && ['genderMale', 'applicantBirthPlace', 'applicantMedicalConditions', 'applicantMotivationLetter', 'oocForumName', 'oocUcpName'].forEach((field) => expect(VERSION_FIELDS[50][field]).toBeUndefined());
     });
 
-    test('le titre suit l\'âge : « Mineur » sous 18 ans, jamais au-delà', () => {
+    test('moins de 16 ans : aucune candidature, pas même un brouillon', () => {
         const year = new Date().getFullYear() - 12;
+        ['submit', 'draft'].forEach((mode) => {
+            const result = validateApplication(50, complete({ applicantDOB: `${year}-01-01`, applicantTitle: 'Mineur' }), { mode });
+            expect(result.errors.join(' ')).toMatch(/au moins 16 ans/);
+        });
+        const sixteen = new Date().getFullYear() - 16;
+        expect(validateApplication(50, complete({ applicantDOB: `${sixteen}-01-01`, applicantTitle: 'Mineur' }), { mode: 'submit' }).errors.join(' ')).not.toMatch(/au moins 16 ans/);
+    });
+
+    test('le titre suit l\'âge : « Mineur » sous 18 ans, jamais au-delà', () => {
+        const year = new Date().getFullYear() - 17;
         expect(validateApplication(50, complete({ applicantDOB: `${year}-01-01`, applicantTitle: 'Mr' }), { mode: 'submit' }).errors.join(' ')).toMatch(/obligatoirement le titre « Mineur »/);
         expect(validateApplication(50, complete({ applicantTitle: 'Mineur' }), { mode: 'submit' }).errors.join(' ')).toMatch(/Titre « Mineur » : la date de naissance/);
     });

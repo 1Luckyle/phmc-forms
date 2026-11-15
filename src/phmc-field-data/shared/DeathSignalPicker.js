@@ -1,6 +1,6 @@
 // src/phmc-field-data/shared/DeathSignalPicker.js
 //
-// En tête de « Services de Médecine Légale » : « Partir d'un décès signalé ». Les décès signalés par les soignants (urgences, opération) qui n'ont pas encore de rapport de décès se choisissent ici, et
+// En tête de « Rapport d'Enquête sur le Décès » : « Partir d'un décès signalé ». Les décès signalés par les soignants (urgences, opération) qui n'ont pas encore de rapport de décès se choisissent ici, et
 // préremplissent le rapport (identité, ID, date et heure, cause, nature, synopsis). Le lien avec la fiche repose sur sa clé (deathSignalKey) : l'enregistrement du rapport la marque « traitée ».
 import React, { useEffect, useState } from 'react';
 import Select from 'react-select';

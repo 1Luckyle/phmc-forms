@@ -22,9 +22,9 @@ const dead = { ...base, careDeceased: 'Yes', careDeathTime: '15:12', careDeathCa
 describe('patient décédé : aucune prescription, suite ni suivi', () => {
     test('protocole d’urgence : ni admission, ni traitement, ni ordonnance, ni suivi ; les médicaments administrés et le décès restent', () => {
         const alive = generateEmergencyProtocol(base);
-        ['Admission:', 'Médicaments/Traitements', 'Repos et hydratation', 'Suivi:', 'Ordonnance (prescrite par'].forEach((text) => expect(alive).toContain(text));
+        ['Admission:', 'Consignes de traitement (jointes à l\'ordonnance)', 'Repos et hydratation', 'Suivi:', 'Ordonnance (prescrite par'].forEach((text) => expect(alive).toContain(text));
         const bb = generateEmergencyProtocol(dead);
-        ['Admission:', 'Médicaments/Traitements', 'Repos et hydratation', 'Suivi:', 'Ordonnance', 'Recommandé'].forEach((text) => expect(bb).not.toContain(text));
+        ['Admission:', 'Consignes de traitement', 'Repos et hydratation', 'Suivi:', 'Ordonnance', 'Recommandé'].forEach((text) => expect(bb).not.toContain(text));
         expect(bb).toContain('Médicaments administrés');
         expect(bb).toContain('Procédure/Texte libre');
         expect(bb).toContain('Réanimation');

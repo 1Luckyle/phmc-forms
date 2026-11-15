@@ -16,7 +16,7 @@ import { familiesOfMember } from '../constants/ranks';
 export const PUBLIC_DEATH_VERSION = 37;
 
 // Formulaire dont l'enregistrement, avec un ID patient, déclare le patient décédé et bloque le personnel soignant
-// (« Services de Médecine Légale » = le rapport de décès). Une seule constante à modifier pour changer de déclencheur ;
+// (« Rapport d'Enquête sur le Décès » = le rapport de décès). Une seule constante à modifier pour changer de déclencheur ;
 // les règles Firebase, elles, ne regardent que l'existence de patientsDecedes/{ID}.
 export const DEATH_LOCK_VERSIONS = [1];
 

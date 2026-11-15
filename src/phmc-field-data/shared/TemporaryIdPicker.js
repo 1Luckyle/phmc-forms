@@ -50,7 +50,7 @@ const TemporaryIdPicker = ({ formData = {}, setFormData, value, onChange, person
     if (temporary) {
         const knownReal = canonicalPatientId(realId);
         return (
-            <Alert variant="info" className="py-2 small mt-2" data-no-tip="1">
+            <Alert variant="dark" className="py-2 small mt-2" data-no-tip="1" style={{ background: '#101923', border: '1px solid #30363d', color: '#c9d1d9' }}>
                 <i className="fas fa-id-badge me-2"></i><strong>ID temporaire {id}</strong> : utilisez le même ID sur chaque rapport de cette personne pour les relier. Quand son ID patient réel est connu (ou qu'elle ouvre son compte),
                 les administrateurs le lui attribuent et tous les rapports sont transférés.
                 <div className="d-flex gap-2 flex-wrap align-items-center mt-2">

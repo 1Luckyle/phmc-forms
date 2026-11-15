@@ -1,6 +1,6 @@
 import { DEFAULT_REQUIRED, setFormOverrides, isFieldRequired, isDefaultRequired, requiredFieldsOf, lockedReasonOf, specialRulesOf } from './formRulesCore';
 import { validateReport } from './formValidation';
-import { buildReportTitle, frDay } from './reportTitle';
+import { buildReportTitle, frDay, buildApplicationTitle, applicationExportTitle } from './reportTitle';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { FIELD_INFO } from '../constants/fieldInfo';
 
@@ -60,9 +60,46 @@ describe('titres des rapports', () => {
         expect(buildReportTitle(22, { patientID: '2752', date: '2026-11-02' }, 'Note de Service')).toBe('[PHMC-2752] Note de Service - 02/11/2026');
         expect(buildReportTitle(5, { patientName: 'Jane Doe' }, 'Opération Chirurgicale')).toBe('[Jane Doe] Opération Chirurgicale - Date inconnue');
         expect(buildReportTitle(37, { caseNumber: '2026-0042', decedentName: 'A', decedentOOC: 'B', dateOfDeath: '2026-11-02' }, 'Rapport Public de Décès')).toBe('[A] Rapport Public de Décès - 02/11/2026');
-        expect(buildReportTitle(1, { patientID: '2752', decedentName: 'A', dateTime: '2026-11-02T14:30' }, 'Services de Médecine Légale')).toBe('[PHMC-2752] Services de Médecine Légale - 02/11/2026');
+        expect(buildReportTitle(1, { patientID: '2752', decedentName: 'A', dateTime: '2026-11-02T14:30' }, "Rapport d'Enquête sur le Décès")).toBe("[PHMC-2752] Rapport d'Enquête sur le Décès - 02/11/2026");
         expect(buildReportTitle(4, { decedentName: 'John Doe', decedentOOC: 'John S', autopsyDate: '2026-11-02' }, "Rapport d'Autopsie")).toBe("[John Doe] Rapport d'Autopsie - 02/11/2026");
         expect(buildReportTitle(11, { dateTime: '2026-11-02T10:00', decedents: [{ decedentName: 'A' }, { decedentName: 'B' }] }, 'Rapport de Tuerie/Accident de Masse')).toBe('[A, B] Rapport de Tuerie/Accident de Masse - 02/11/2026');
+    });
+});
+
+describe('titres : mail externe et candidatures', () => {
+    test('mail externe : « [expéditeur -> destinataire] - Mail Externe - date »', () => {
+        expect(buildReportTitle(42, { phmcEmployee: 'Dr Rose Callahan', externalMailRecipient: 'Madame Dupont', externalMailDate: '11/11/2026' }, 'Mail Externe')).toBe('[Dr Rose Callahan -> Madame Dupont] - Mail Externe - 11/11/2026');
+        // Sans destinataire (en cours de saisie) : seul l'expéditeur ; sans rien : le nom du formulaire et la date.
+        expect(buildReportTitle(42, { phmcEmployee: 'Dr Rose Callahan', externalMailDate: '11/11/2026' }, 'Mail Externe')).toBe('[Dr Rose Callahan] - Mail Externe - 11/11/2026');
+        expect(buildReportTitle(42, { externalMailDate: '11/11/2026' }, 'Mail Externe')).toBe('Mail Externe - 11/11/2026');
+    });
+    test('mail externe : l’expéditeur et le destinataire composent le titre (verrouillés), l’objet reste obligatoire mais modifiable', () => {
+        expect(lockedReasonOf(42, 'phmcEmployee')).toBe('title');
+        expect(lockedReasonOf(42, 'externalMailRecipient')).toBe('title');
+        expect(lockedReasonOf(42, 'externalMailSubject')).toBeNull();
+        expect(isFieldRequired(42, 'externalMailSubject')).toBe(true);
+    });
+    test('candidature : « [Poste] Candidature: Nom du candidat - date »', () => {
+        expect(buildApplicationTitle({ poste: 'Médecin titulaire', nom: 'Mme Jane Doe', date: '11/11/2026' })).toBe('[Médecin titulaire] Candidature: Mme Jane Doe - 11/11/2026');
+        expect(buildApplicationTitle({ nom: 'Jane Doe', date: '11/11/2026' })).toBe('Candidature: Jane Doe - 11/11/2026');
+        expect(buildReportTitle(50, { recruitmentPositionLabel: 'Chirurgien', applicantTitleAndFullName: 'M. Jean Testard' }, 'Postes Médicaux')).toMatch(/^\[Chirurgien\] Candidature: M\. Jean Testard - \d{2}\/\d{2}\/\d{4}$/);
+        expect(applicationExportTitle({ poste: 'Chirurgien', nomCandidat: 'Jean Testard', creeLe: new Date(2026, 10, 3).getTime() })).toBe('[Chirurgien] Candidature: Jean Testard - 03/11/2026');
+    });
+    test('candidature : le poste compose le titre (verrouillé) ; tout ce que la validation exige est obligatoire par défaut', () => {
+        [50, 51, 52, 53, 54, 55].forEach((version) => {
+            expect(lockedReasonOf(version, 'recruitmentPosition')).toBe('title');
+            ['applicantZIP', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone'].forEach((field) => expect(isFieldRequired(version, field)).toBe(true));
+            expect(isFieldRequired(version, 'applicantMiddleName')).toBe(false);
+        });
+        expect(isFieldRequired(52, 'oocMedicalExperience')).toBe(false);
+        expect(isFieldRequired(50, 'oocMedicalExperience')).toBe(true);
+        expect(isFieldRequired(55, 'emsPartTimeReason')).toBe(true);
+    });
+    test('certificat de vol : classe, catégories et conclusion sont obligatoires et verrouillées', () => {
+        ['flightCertClass', 'flightCertCategories', 'flightCertConclusion'].forEach((field) => {
+            expect(isFieldRequired(41, field)).toBe(true);
+            expect(lockedReasonOf(41, field)).toBe('essential');
+        });
     });
 });
 
@@ -150,7 +187,7 @@ describe('panneau admin : uniquement des champs qui existent dans les formulaire
 
 describe('DMEC : titre par ID patient, date seule, champs obligatoires', () => {
     const DMEC = [1, 2, 4, 8, 37];
-    const names = { 1: 'Services de Médecine Légale', 2: 'Email DMEC', 4: "Rapport d'Autopsie", 8: 'Certificat de Décès', 37: 'Rapport Public de Décès' };
+    const names = { 1: "Rapport d'Enquête sur le Décès", 2: 'Email DMEC', 4: "Rapport d'Autopsie", 8: 'Certificat de Décès', 37: 'Rapport Public de Décès' };
     const dates = { 1: { dateTime: '2026-11-02T14:30' }, 2: {}, 4: { autopsyDate: '2026-11-02' }, 8: { date: '2026-11-02' }, 37: { dateOfDeath: '2026-11-02' } };
 
     test.each(DMEC)('formulaire %i : le titre commence par l’ID patient du défunt, pas par son nom', (version) => {
@@ -165,7 +202,7 @@ describe('DMEC : titre par ID patient, date seule, champs obligatoires', () => {
     });
 
     test('jamais l’heure dans un titre, même quand le champ en contient une', () => {
-        expect(buildReportTitle(1, { patientID: '2752', dateTime: '2026-11-02T23:59' }, 'Services de Médecine Légale')).toBe('[PHMC-2752] Services de Médecine Légale - 02/11/2026');
+        expect(buildReportTitle(1, { patientID: '2752', dateTime: '2026-11-02T23:59' }, "Rapport d'Enquête sur le Décès")).toBe("[PHMC-2752] Rapport d'Enquête sur le Décès - 02/11/2026");
         expect(buildReportTitle(11, { dateTime: '2026-11-02T10:00', decedents: [{ decedentName: 'A' }] }, 'Tuerie')).toBe('[A] Tuerie - 02/11/2026');
     });
 
@@ -236,7 +273,7 @@ describe('DMEC : titre par ID patient, date seule, champs obligatoires', () => {
         expect(validateReport(2, { patientID: 'TMP-AB3CD', coronerEmployee: 'X', requestingOfficer: 'Y' }).errors.join(' ')).not.toMatch(/ID patient|Nom IC/);
     });
 
-    test('Services de Médecine Légale : le champ « Date et heure » devient une date', () => {
+    test("Rapport d'Enquête sur le Décès : le champ « Date et heure » devient une date", () => {
         const { VERSION_FIELDS } = require('../constants/formFieldCatalog');
         expect(VERSION_FIELDS[1].dateTime).toBe('date');
     });

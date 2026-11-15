@@ -1412,3 +1412,9 @@ textarea:disabled {
     background-color: #1158c7;
     color: #ffffff;
 }
+
+
+/* Champs à choix par défaut (PresetTextField) : moins d'espace sous la zone de texte, et un titre ou une étiquette qui suit se rapproche. */
+.form-container form .preset-field textarea { margin-bottom: 8px; }
+.form-container form .preset-field + .form-section-title { margin-top: 1rem; }
+.form-container form .preset-field + .form-label:not(.form-section-title) { margin-top: 0.2rem; }

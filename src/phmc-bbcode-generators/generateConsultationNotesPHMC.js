@@ -1,6 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
-import { consultExtrasBBCode, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
+import { consultExtrasBBCode, clinicalAnamnesisBBCode, treatmentBBCode } from './shared/careExtras';
 import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 
 const generateConsultationNotesPHMC = (formData) => {
@@ -20,12 +20,10 @@ const generateConsultationNotesPHMC = (formData) => {
     } = formData;
 
     // --- Custom Handling for scenePhotos (Medication) ---
-    let medicationBBCode = '[i]Aucun détail sur les médicaments fourni.[/i]'; // Default fallback
-    const medicationText = formData.patientMedicine && formData.patientMedicine.trim();
-
-    if (medicationText) {
-        medicationBBCode = medicationText;
-    }
+    // Les médicaments viennent de l'assistant (administrés + ordonnance) ; le plan de traitement et, pour les anciens rapports, le texte « autres traitements » et les images d'ordonnance
+    // forment les consignes jointes à l'ordonnance (voir treatmentBBCode).
+    const medicationText = [patientProcedure, formData.patientMedicine].map((part) => String(part || '').trim()).filter(Boolean).join('\n');
+    let medicationBBCode = medicationText;
 
     if (scenePhotos && scenePhotos.trim()) {
         const items = scenePhotos.split(',')
@@ -87,13 +85,7 @@ ${sectionBanner(`Thérapie`)}
 ${checkbox(formData.admission === 'Yes')} Oui
 ${checkbox(formData.admission === 'No')} Non
 [br][/br]
-[u]Plan de traitement/Texte libre: [/u][br][/br]
-${patientProcedure || 'N/A'}
-[br][/br]
-${clinicalMedsBBCode(formData)}[u]Médicaments/Traitements: [/u][br][/br]
-${medicationBBCode} 
-[br][/br]
-${consultExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]
+${treatmentBBCode(formData, { consignes: medicationBBCode, emptyText: 'Plan de traitement' })}${consultExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)

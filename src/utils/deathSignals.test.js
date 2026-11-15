@@ -54,7 +54,7 @@ describe('décès signalé : la fiche', () => {
         expect(signal.par).toBe('Un soignant');
     });
 
-    test('préremplissage de « Services de Médecine Légale »', () => {
+    test("préremplissage de « Rapport d'Enquête sur le Décès »", () => {
         const form = deathSignalToDmecForm({ ...buildDeathSignal({ version: 19, formData: care, authorName: 'Dr. Callahan', uid: 'S1' }), key: 'sig1' });
         expect(form).toMatchObject({
             patientID: 'PHMC-2752', decedentFirstName: 'Jean', decedentMiddleName: 'Michel', decedentLastName: 'Testard', dateTime: '2026-11-11T15:12', pronouncedTimeOfDeath: '15:12',

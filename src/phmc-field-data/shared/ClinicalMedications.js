@@ -132,11 +132,13 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                     {previewOpen && prescriptionBb && <div className="mt-2"><ReportPreviewFrame bbCode={prescriptionBb} title={prescriptionTitle(formData)} height={420} /></div>}
                 </div>
             )}
+            <div data-field-group="clinicalMeds" data-filled={entries.length > 0 ? '1' : '0'} className="mt-2">
             <Select
                 options={MED_OPTIONS} filterOption={filterMeds} styles={darkSelectStyles} className="form-control p-0 mt-2" value={null} placeholder="Ajouter un médicament… (nom, marque ou classe)"
                 noOptionsMessage={() => 'Aucun médicament trouvé'}
                 onChange={(option) => { if (!option) return; const entry = newEntry(option.value, patient); if (entry) setEntries((list) => [...list, entry]); }}
             />
+            </div>
         </>
     );
 };

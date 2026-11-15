@@ -1,7 +1,7 @@
 // src/components/DeathSignalBanner.js
 //
 // Bandeau de « Dossier Patient » quand un décès a été signalé pour ce patient (utils/deathSignals.js) :
-//   • à traiter : « rapport de décès à établir » (avec le bouton pour le DMEC, qui peut ouvrir « Services de Médecine Légale » prérempli) ;
+//   • à traiter : « rapport de décès à établir » (avec le bouton pour le DMEC, qui peut ouvrir « Rapport d'Enquête sur le Décès » prérempli) ;
 //   • traité    : le rapport de décès a été établi.
 import React, { useEffect, useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';

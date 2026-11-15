@@ -3,7 +3,7 @@ import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
-import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, clinicalMedsBBCode, deathBBCode } from './shared/careExtras';
+import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, treatmentBBCode, deathBBCode } from './shared/careExtras';
 
 // Soignants supplémentaires cités dans l'en-tête (le rédacteur, qui signe, n'y figure pas deux fois).
 const extraStaffLine = (formData) => {
@@ -81,12 +81,8 @@ ${checkbox(formData.admission === 'Yes')} Oui
 ${checkbox(formData.admission === 'No')} Non
 [br][/br]
 `;
-    const treatmentsBlock = deceased ? '' : `[u]Médicaments/Traitements: [/u][br][/br]
-${patientMedicine || 'N/A'}
-[br][/br]
-${prescriptionImageBBCode ? `${prescriptionImageBBCode}
-[br][/br]
-` : ''}`;
+    // Médicaments administrés, ordonnance et consignes de traitement jointes (voir treatmentBBCode) ; l'image d'ordonnance des anciens rapports suit les consignes.
+    const treatmentsBlock = treatmentBBCode(formData, { consignes: deceased ? '' : [patientMedicine, prescriptionImageBBCode].filter(Boolean).join('\n'), emptyText: deceased ? '' : 'Consignes de traitement' });
     const followupBlock = deceased ? '' : `[u]Suivi: [/u][br][/br]
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
@@ -134,7 +130,7 @@ ${sectionBanner(`Thérapie`)}
 [table][tr][td][left][list=none]${admissionBlock}[u]Procédure/Texte libre: [/u][br][/br]
 ${patientProcedure || 'N/A'}
 [br][/br]
-${clinicalMedsBBCode(formData)}${treatmentsBlock}${emergencyExtrasBBCode(formData)}${followupBlock}[/left][/list][/table]
+${treatmentsBlock}${emergencyExtrasBBCode(formData)}${followupBlock}[/left][/list][/table]
 ${deathBBCode(formData)}`;
     return bbCode;
 };

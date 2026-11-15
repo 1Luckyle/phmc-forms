@@ -38,6 +38,7 @@ import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../.
 import { getFormDefinition } from '../../formDefinitions';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
+import { applicationExportTitle } from '../../utils/reportTitle';
 import '../Cctv/CctvRequests.css';
 import '../Recruitment/Applications.css';
 
@@ -373,7 +374,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '', initialO
     };
 
     // ───────── Export ─────────
-    const applicationTitle = (application) => `Candidature - ${application.poste || 'Poste'}${application.nomCandidat ? ` - ${application.nomCandidat}` : ''}`;
+    const applicationTitle = applicationExportTitle;
     const handleCopyBbCode = (application) => {
         if (!application.bbcode) { showNotification('Aucun BBCode enregistré pour cette candidature.', 'warning'); return; }
         copyToClipboard(application.bbcode, showNotification, 'BBCode copié !');

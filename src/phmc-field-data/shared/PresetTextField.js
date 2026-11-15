@@ -48,7 +48,7 @@ const PresetTextField = ({ name, formData, setFormData, presets = [], placeholde
     };
 
     return (
-        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+        <div className="preset-field" style={{ flex: '1 1 220px', minWidth: 0 }}>
             <Select
                 isMulti
                 name={name}

@@ -164,6 +164,17 @@ export const clinicalMedsBBCode = (f) => {
     const given = lines.length ? `[u]Médicaments administrés: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
     return `${given}${prescriptionBBCode(f)}`;
 };
+// Thérapie d'un rapport de soins : médicaments administrés, puis ORDONNANCE (les médicaments à prescrire) à laquelle les consignes de traitement (ce que le patient doit faire) sont jointes. Les consignes
+// seules (sans ordonnance) s'impriment seules ; l'ordonnance seule aussi. `emptyText` : intitulé imprimé avec « N/A » quand il n'y a rien du tout (sinon la section reste vide).
+export const treatmentBBCode = (f, { consignes = '', emptyText = '' } = {}) => {
+    const lines = clinicalMedLines(f);
+    const given = lines.length ? `[u]Médicaments administrés: [/u][br][/br]\n${lines.map((l) => `• ${l}`).join('\n[br][/br]')}\n[br][/br]\n` : '';
+    const prescription = prescriptionBBCode(f);
+    const note = text(consignes);
+    const instructions = note ? `[u]Consignes de traitement${prescription ? " (jointes à l'ordonnance)" : ''}: [/u][br][/br]\n${note}\n[br][/br]\n` : '';
+    const out = `${given}${prescription}${instructions}`;
+    return out || (emptyText ? `[u]${emptyText}: [/u][br][/br]\nN/A\n[br][/br]\n` : '');
+};
 // Ordonnance : les médicaments cochés « sur l'ordonnance » (dose, voie, prises, durée), avec le prescripteur.
 export const prescriptionBBCode = (f) => {
     const lines = prescriptionLines(f);

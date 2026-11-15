@@ -1,7 +1,7 @@
 // src/components/DeathSignalsModal.js
 //
 // « Décès signalés » (DMEC et admins) : les fiches posées par les soignants quand un patient décède aux urgences ou en opération (utils/deathSignals.js). Le DMEC n'a pas accès aux rapports de soins : la fiche
-// donne l'essentiel, et « Créer le rapport de décès » ouvre « Services de Médecine Légale » prérempli. Une fiche passe en « traitée » quand ce rapport est enregistré.
+// donne l'essentiel, et « Créer le rapport de décès » ouvre « Rapport d'Enquête sur le Décès » prérempli. Une fiche passe en « traitée » quand ce rapport est enregistré.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Spinner } from 'react-bootstrap';
 import BaseModal from './BaseModal';

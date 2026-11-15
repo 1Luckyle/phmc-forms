@@ -1,6 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
-import { consultExtrasBBCode, clinicalAnamnesisBBCode, clinicalMedsBBCode } from './shared/careExtras';
+import { consultExtrasBBCode, clinicalAnamnesisBBCode, treatmentBBCode } from './shared/careExtras';
 import { BB_COLORS, careHeader, checkbox, sectionBanner } from './shared/bbStyles';
 
 // Placeholder utilisé pour les informations attendues mais non renseignées,
@@ -59,14 +59,8 @@ ${sectionBanner(`Thérapie`, { accent: BB_COLORS.blue })}
 ${checkbox(formData.admission === 'Yes')} Oui
 ${checkbox(formData.admission === 'No')} Non
 [br][/br]
-[u]Plan de traitement/Texte libre: [/u][br][/br]
-${patientProcedure}
-[br][/br]
-[u]Notes supplémentaires: [/u][br][/br]
+${treatmentBBCode(formData, { consignes: [patientProcedure, patientMedicine].filter((part) => part && part !== NOT_FILLED && String(part).trim()).join('\n'), emptyText: 'Plan de traitement' })}[u]Notes supplémentaires: [/u][br][/br]
 ${patientNotes}
-[br][/br]
-${clinicalMedsBBCode(formData)}[u]Médicaments/Traitements: [/u][br][/br]
-${patientMedicine}
 [br][/br]
 ${consultExtrasBBCode(formData)}[u]Suivi: [/u][br][/br]
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin

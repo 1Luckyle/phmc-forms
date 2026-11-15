@@ -24,7 +24,7 @@ import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
 import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } from './minors';
-import { jobsOf, jobProblems, licenseOf } from './applicationForm';
+import { jobsOf, jobProblems, licenseOf, MIN_APPLICATION_AGE } from './applicationForm';
 import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { isFieldApplicable } from './fieldApplicability';
 import { getFieldInfo } from '../constants/fieldInfo';
@@ -215,6 +215,12 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     const profile = APPLICATION_PROFILES[version];
     if (!profile) return { errors, warnings };
 
+    // Moins de 16 ans : aucune candidature, pas même un brouillon.
+    const dobAge = filled(data.applicantDOB) ? ageOn(data.applicantDOB) : null;
+    if (dobAge !== null && dobAge < MIN_APPLICATION_AGE) {
+        errors.push(`Candidature impossible : il faut avoir au moins ${MIN_APPLICATION_AGE} ans (date de naissance indiquée : ${dobAge} an${dobAge > 1 ? 's' : ''}).`);
+        return { errors, warnings };
+    }
     // Brouillon : seul le poste est indispensable.
     if (!filled(data.recruitmentPosition)) {
         errors.push('Choisissez le poste visé : sans poste, la candidature ne peut pas être enregistrée.');

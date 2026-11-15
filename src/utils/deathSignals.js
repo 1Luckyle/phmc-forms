@@ -2,7 +2,7 @@
 //
 // DÉCÈS SIGNALÉS : quand un rapport de soins (protocole d'urgence, opération) indique que le patient est décédé, une petite fiche est posée pour le DMEC (decesSignales/{clé du rapport de soins}).
 // Le DMEC ne peut pas lire les rapports de soins (cloisonnement soignants / DMEC) : la fiche lui donne l'essentiel (identité, ID, date et heure, cause, nature, réanimation, destination du corps), jamais le
-// rapport médical. Il en tire son « Services de Médecine Légale » prérempli ; l'enregistrer marque la fiche « traitée » (le lien repose sur la clé de la fiche, pas sur l'ID).
+// rapport médical. Il en tire son « Rapport d'Enquête sur le Décès » prérempli ; l'enregistrer marque la fiche « traitée » (le lien repose sur la clé de la fiche, pas sur l'ID).
 // La fiche suit le rapport de soins : corrigée quand on le corrige, retirée quand on le supprime ou qu'on décoche le décès (tant qu'elle n'est pas traitée).
 import { ref, get, set, update, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { database, auth } from '../firebase';
@@ -35,7 +35,7 @@ export const buildDeathSignal = ({ version, formData = {}, authorName = '', uid 
     return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== '' && value !== undefined));
 };
 
-/** Valeurs à poser dans « Services de Médecine Légale » (v1) d'après une fiche. */
+/** Valeurs à poser dans « Rapport d'Enquête sur le Décès » (v1) d'après une fiche. */
 export const deathSignalToDmecForm = (signal = {}) => {
     const details = [
         signal.cause ? `Cause signalée : ${signal.cause}` : '',

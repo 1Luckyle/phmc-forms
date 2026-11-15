@@ -24,6 +24,17 @@ export function buildStandardReportKey(formName, patientID, patientName, dateVal
 
 const pad2 = (number) => String(number).padStart(2, '0');
 
+// Titre d'une candidature : « [Nom du poste] Candidature: Nom du candidat - JJ/MM/AAAA ».
+export const buildApplicationTitle = ({ poste = '', nom = '', date = '' } = {}) => {
+    const post = String(poste || '').trim();
+    return `${post ? `[${post}] ` : ''}Candidature: ${String(nom || '').trim() || 'Inconnu'} - ${date || 'Date inconnue'}`;
+};
+// Même titre pour une candidature déjà enregistrée ({ poste, nomCandidat, creeLe }) : exports, copie du titre.
+export const applicationExportTitle = (application = {}) => {
+    const created = application.creeLe ? new Date(application.creeLe) : new Date();
+    return buildApplicationTitle({ poste: application.poste, nom: application.nomCandidat, date: `${pad2(created.getDate())}/${pad2(created.getMonth() + 1)}/${created.getFullYear()}` });
+};
+
 // Date du jour, JJ/MM/AAAA (heure locale : toISOString() donnait la date UTC, parfois la veille ou le lendemain).
 export const todayFr = () => { const now = new Date(); return `${pad2(now.getDate())}/${pad2(now.getMonth() + 1)}/${now.getFullYear()}`; };
 
@@ -50,7 +61,7 @@ export function buildReportTitle(version, formData = {}, formName = '') {
     switch (version) {
         // DMEC (médecine légale) : même convention que les formulaires de soin, « [ID patient] Nom du formulaire - date » (la date seulement, sans l'heure). Depuis les ID temporaires (TMP-…),
         // tout défunt a un ID patient : il identifie le rapport. Le nom du défunt (IC, puis HRP) ne sert plus que de repli pour un ancien rapport sans ID.
-        case 1: // Services de Médecine Légale
+        case 1: // Rapport d'Enquête sur le Décès
             return buildStandardReportKey(name, f.patientID, decedentLabel(f), f.dateTime);
         case 4: // Rapport d'Autopsie
             return buildStandardReportKey(name, f.patientID, decedentLabel(f), f.autopsyDate);
@@ -76,8 +87,13 @@ export function buildReportTitle(version, formData = {}, formName = '') {
             return buildStandardReportKey(name, f.patientID, f.patientName, f.patientDateOfBirth);
         case 27: // Email interne : l'objet du message tient lieu d'identifiant
             return buildStandardReportKey(name, '', f.internalEmailSubject, todayFr());
-        case 42: // Mail externe : l'objet du courrier tient lieu d'identifiant (jamais d'ID patient)
-            return buildStandardReportKey(name, '', f.externalMailSubject, todayFr());
+        case 42: { // Mail externe : « [expéditeur -> destinataire] - Mail Externe - date » (jamais d'ID patient)
+            const sender = String(f.phmcEmployee || '').trim();
+            const recipient = String(f.externalMailRecipient || '').trim();
+            const route = sender && recipient ? `${sender} -> ${recipient}` : (sender || recipient);
+            const day = frDay(f.externalMailDate) || todayFr();
+            return route ? `[${route}] - ${name} - ${day}` : `${name} - ${day}`;
+        }
         case 40: // Formulaire AMA (EMS)
             return buildStandardReportKey(name, f.patientID, f.patientSignature, f.date);
         case 5: case 6: case 7: case 14: case 16: case 19: case 20: case 21:
@@ -87,8 +103,9 @@ export function buildReportTitle(version, formData = {}, formName = '') {
             return buildStandardReportKey(name, f.patientID, f.patientName, f.date || f.dateOfVisit);
         default: {
             // Candidatures (50-55) : pas d'ID patient, on identifie le candidat.
+            // La date est celle du jour (le formulaire ne la laisse pas modifier) ; le nom du poste est joint par le formulaire (recruitmentPositionLabel).
             if (version >= 50 && version <= 55) {
-                return `Candidature: ${f.applicantTitleAndFullName || 'Inconnu'}`;
+                return buildApplicationTitle({ poste: f.recruitmentPositionLabel || f.recruitmentPosition, nom: f.applicantTitleAndFullName, date: todayFr() });
             }
             let identifier = f.decedentName || f.patientName || f.applicantTitleAndFullName || 'Unnamed Report';
             if (Array.isArray(identifier)) identifier = identifier.join(', ');

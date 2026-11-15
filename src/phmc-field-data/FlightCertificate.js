@@ -36,7 +36,7 @@ const FlightCertificate = ({ formData, handleChange, setFormData, phmcGroupedOpt
 
             <Form.Group className="mb-3">
                 <Form.Label>Catégorie(s) de vol * (art. 400 du Code de l'Aviation)</Form.Label>
-                <div className="d-flex flex-wrap gap-3">
+                <div className="d-flex flex-wrap gap-3" data-field-group="flightCertCategories">
                     {FLIGHT_CERT_CATEGORIES.map((category) => (
                         <Form.Check
                             key={category} type="checkbox" id={`flight-cat-${category}`} label={category}

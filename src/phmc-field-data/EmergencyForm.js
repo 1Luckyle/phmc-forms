@@ -437,7 +437,7 @@ const EmergencyForm = ({
             )}
             {!deceased && (
                 <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                    <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Autres traitements, conseils verbaux et recommandations (les médicaments se saisissent dans la liste de l'assistant clinique)" className={`form-control mb-2 `} />
+                    <Form.Control as="textarea" name="patientMedicine" value={formData.patientMedicine} onChange={handleChange} rows="3" placeholder="Consignes de traitement : repos, conseils verbaux, soins à domicile, recommandations. Les médicaments se saisissent dans la liste de l'assistant : ils forment l'ordonnance, jointe à ces consignes." className={`form-control mb-2 `} />
                     {/* Le suivi se renseigne que le patient soit admis ou non (le BBCode l'imprime dans les deux cas). */}
                     <Form.Select name="followup" value={formData.followup || ''} onChange={handleChange} className="form-control">
                         <option value="" disabled>Suivi requis?</option>

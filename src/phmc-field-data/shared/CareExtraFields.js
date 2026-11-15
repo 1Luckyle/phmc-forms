@@ -63,7 +63,7 @@ export const ReferralFields = ({ formData, setFormData, handleChange, unrestrict
                 )}
                 <Field label="Médecin adressant (facultatif)" basis={260}>
                     <CreatableSelect
-                        isClearable options={careOptions} value={doctor} styles={darkSelectStyles} className="form-control"
+                        name="referringDoctor" isClearable options={careOptions} value={doctor} styles={darkSelectStyles} className="form-control"
                         placeholder="Soignant du PHMC, ou saisir un nom extérieur"
                         formatCreateLabel={(input) => `Utiliser « ${input} »`} noOptionsMessage={() => 'Saisissez un nom'}
                         onChange={(option) => setFormData((prev) => ({ ...prev, referringDoctor: option ? option.value : '' }))}

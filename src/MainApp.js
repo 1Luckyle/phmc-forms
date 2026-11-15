@@ -4,7 +4,7 @@ import FormSections from './components/FormSections';
 import { formThemeFor, isPbcVersion, PHMC_VERSION_OF_PBC } from './utils/formAccess';
 import { useReportManagement } from './components/useReportManagement';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CATEGORY_BY_KEY, getCategoryPositions, isPositionOpen } from './constants/recruitment';
+import { CATEGORY_BY_KEY, getCategoryPositions, isPositionOpen, positionLabelFor } from './constants/recruitment';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { formDefinitions, getFormDefinition } from './formDefinitions'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -565,7 +565,7 @@ function MainApp({
         handleAgencySelect(35);
     };
 
-    // Décès signalé par les soignants : ouvre « Services de Médecine Légale » prérempli. Le rapport reste lié à la fiche par sa clé (deathSignalKey) : l'enregistrer la marque « traitée ».
+    // Décès signalé par les soignants : ouvre « Rapport d'Enquête sur le Décès » prérempli. Le rapport reste lié à la fiche par sa clé (deathSignalKey) : l'enregistrer la marque « traitée ».
     const handleCreateDeathReport = (signal) => {
         setFormData((prev) => ({ ...prev, ...deathSignalToDmecForm(signal), deathSignalKey: signal.key }));
         handleAgencySelect(1);
@@ -710,7 +710,9 @@ function MainApp({
         const definition = getFormDefinition(bbCodeVersion);
         if (!definition) return "Rapport Sans Titre";
         if (bbCodeVersion === 999 && definition.titleGenerator) return definition.titleGenerator(formData);
-        return buildReportTitle(bbCodeVersion, formData, definition.name);
+        // Candidatures : le titre porte le nom (français) du poste visé.
+        const withPosition = bbCodeVersion >= 50 && bbCodeVersion <= 55 ? { ...formData, recruitmentPositionLabel: positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) } : formData;
+        return buildReportTitle(bbCodeVersion, withPosition, definition.name);
     };
 
     useEffect(() => {
@@ -1270,12 +1272,12 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
         });
     }
     const coronerFormsSubGroup = [
-        { version: 1, name: "Services de Médecine Légale", icon: corpse },
-        { version: 2, name: "Email DMEC", icon: email },
+        { version: 1, name: "Rapport d'Enquête sur le Décès", icon: corpse },
+        { version: 11, name: "Rapport de Tuerie/Accident de Masse", icon: corpse },
         { version: 4, name: "Rapport d'Autopsie", icon: corpse },
         { version: 8, name: "Certificat de Décès", icon: PHMCLogo },
-        { version: 11, name: "Rapport de Tuerie/Accident de Masse", icon: corpse },
-        { version: 37, name: "Rapport Public de Décès", icon: tombstone }
+        { version: 37, name: "Rapport Public de Décès", icon: tombstone },
+        { version: 2, name: "Email DMEC", icon: email }
     ];
     const physicalEvalFormsSubGroup = [
         { version: 6, name: "Évaluation Physique | PHMC", icon: PHMCLogo },

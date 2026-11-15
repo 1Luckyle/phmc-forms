@@ -120,8 +120,8 @@ export const formDefinitions = [
     { version: 25, name: "[Civil] Dossier Médical Basique", group: "PHMC", icon: Civilian, generator: generateBasicPatientFile, FieldComponent: BasicPatientFile, titleKey: "dossierMedicalBasique", sortOrder: 2, userTypes: ['civilian', 'phmcStaff', 'adminStaff', 'coroner', 'recruitment', 'other'], primaryFor: ['civilian'] },
     { version: 26, name: "[Civil] Mise à Jour du Dossier Médical", group: "PHMC", icon: Civilian, generator: generateMedicalFileUpdate, FieldComponent: MedicalUpdate, titleKey: "miseAJourDossierMedical", sortOrder: 4, isHiddenInSelector: true, userTypes: ['civilian', 'phmcStaff', 'adminStaff', 'coroner', 'recruitment', 'other'], primaryFor: ['civilian'] },
     // PHMC-FR Tools (Forensic Services next, then others)
-    { version: 1, name: "Services de Médecine Légale", group: "PHMC", icon: folder, generator: generateDeathReport, FieldComponent: DeathReport, titleKey: "servicesDeMedecineLegale", sortOrder: 10, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
-    { version: 4, name: "Rapport d'Autopsie", group: "PHMC", icon: autopsy /* Placeholder */, generator: generateAutopsy, FieldComponent: Autopsy, titleKey: "rapportAutopsie", sortOrder: 11, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
+    { version: 1, name: "Rapport d'Enquête sur le Décès", group: "PHMC", icon: folder, generator: generateDeathReport, FieldComponent: DeathReport, titleKey: "servicesDeMedecineLegale", sortOrder: 5, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
+    { version: 4, name: "Rapport d'Autopsie", group: "PHMC", icon: autopsy /* Placeholder */, generator: generateAutopsy, FieldComponent: Autopsy, titleKey: "rapportAutopsie", sortOrder: 7, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
     {
         version: 2,
         name: "Email DMEC",
@@ -130,37 +130,37 @@ export const formDefinitions = [
         generator: generateEmail,
         FieldComponent: CoronerEmail,
         titleKey: "DMECEmail",
-        sortOrder: 12,
+        sortOrder: 10,
         isHiddenInSelector: true,
 userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']
     },
-    { version: 8, name: "Certificat de Décès", group: "PHMC", icon: deathCertificate, generator: generateCertificate, FieldComponent: Certificate, titleKey: "certificateOfDeath", sortOrder: 13, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
-    { version: 5, name: "Opération Chirurgicale", group: "PHMC", icon: surgeon, generator: generateSurgicalOps, FieldComponent: Surgical, titleKey: "operationChirurgicale", sortOrder: 20, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },    { version: 6, name: "Évaluation Physique", group: "PHMC", icon: nurse, generator: generatePhysEvalInternalMed, FieldComponent: PhysEval, titleKey: "evaluationPhysique", sortOrder: 21, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 11, name: "Rapport de Tuerie/Accident de Masse", group: "PHMC", icon: graveyard, generator: generateMassFatality, FieldComponent: MassFatality, titleKey: "tuerieAccidentDeMasse", sortOrder: 14, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
+    { version: 8, name: "Certificat de Décès", group: "PHMC", icon: deathCertificate, generator: generateCertificate, FieldComponent: Certificate, titleKey: "certificateOfDeath", sortOrder: 8, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
+    { version: 5, name: "Opération Chirurgicale", group: "PHMC", icon: surgeon, generator: generateSurgicalOps, FieldComponent: Surgical, titleKey: "operationChirurgicale", sortOrder: 16, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },    { version: 6, name: "Évaluation Physique", group: "PHMC", icon: nurse, generator: generatePhysEvalInternalMed, FieldComponent: PhysEval, titleKey: "evaluationPhysique", sortOrder: 14, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 11, name: "Rapport de Tuerie/Accident de Masse", group: "PHMC", icon: graveyard, generator: generateMassFatality, FieldComponent: MassFatality, titleKey: "tuerieAccidentDeMasse", sortOrder: 6, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
     // Add isHiddenInSelector: true to the PBC version
-    { version: 7, name: "Évaluation Physique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generatePhysEvalInternalMedPBC, FieldComponent: PhysEval, titleKey: "evaluationPhysiquePBC", sortOrder: 22, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 14, name: "Consultation psychiatrique", group: "PHMC", icon: psychology, generator: generateMentalHealthPHMC, FieldComponent: MentalHealth, titleKey: "consultationPsychiatrique", sortOrder: 23, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 7, name: "Évaluation Physique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generatePhysEvalInternalMedPBC, FieldComponent: PhysEval, titleKey: "evaluationPhysiquePBC", sortOrder: 14.5, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 14, name: "Consultation psychiatrique", group: "PHMC", icon: psychology, generator: generateMentalHealthPHMC, FieldComponent: MentalHealth, titleKey: "consultationPsychiatrique", sortOrder: 12, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     // Add isHiddenInSelector: true to the PBC version
-    { version: 16, name: "Consultation psychiatrique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateMentalHealthPBC, FieldComponent: MentalHealth, titleKey: "consultationPsychiatriquePBC", sortOrder: 24, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 19, name: "Protocole d'Urgence", group: "PHMC", icon: emergency, generator: generateEmergencyProtocol, FieldComponent: EmergencyForm, titleKey: "protocoleUrgence", sortOrder: 25, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 20, name: "Consultation Générale", group: "PHMC", icon: empathy, generator: generateConsultationNotesPHMC, FieldComponent: GeneralConsult, titleKey: "consultationGeneralePHMC", sortOrder: 26, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 16, name: "Consultation psychiatrique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateMentalHealthPBC, FieldComponent: MentalHealth, titleKey: "consultationPsychiatriquePBC", sortOrder: 12.5, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 19, name: "Protocole d'Urgence", group: "PHMC", icon: emergency, generator: generateEmergencyProtocol, FieldComponent: EmergencyForm, titleKey: "protocoleUrgence", sortOrder: 15, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 20, name: "Consultation Générale", group: "PHMC", icon: empathy, generator: generateConsultationNotesPHMC, FieldComponent: GeneralConsult, titleKey: "consultationGeneralePHMC", sortOrder: 13, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     // Add isHiddenInSelector: true to the PBC version
-    { version: 21, name: "Consultation Générale (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateConsultationNotesPBC, FieldComponent: GeneralConsult, titleKey: "consultationGeneraletPBC", sortOrder: 27, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 22, name: "Note de Service", group: "PHMC", icon: paperwork, generator: generateCommentaryNotePHMC, FieldComponent: CommNotePHMC, titleKey: "noteServicePHMC", sortOrder: 28, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 21, name: "Consultation Générale (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateConsultationNotesPBC, FieldComponent: GeneralConsult, titleKey: "consultationGeneraletPBC", sortOrder: 13.5, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 22, name: "Note de Service", group: "PHMC", icon: paperwork, generator: generateCommentaryNotePHMC, FieldComponent: CommNotePHMC, titleKey: "noteServicePHMC", sortOrder: 19, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
     // Add isHiddenInSelector: true to the PBC version
-    { version: 23, name: "Note de Service (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateCommentaryNotePBC, FieldComponent: CommNotePBC, titleKey: "noteServicePBC", sortOrder: 29, isHiddenInSelector: true, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 23, name: "Note de Service (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generateCommentaryNotePBC, FieldComponent: CommNotePBC, titleKey: "noteServicePBC", sortOrder: 19.5, isHiddenInSelector: true, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
     { version: 27, name: "PHMC Email Interne", group: "PHMC", icon: emailIcon, generator: generateEmailPHMCEmail, FieldComponent: EmailInternal, titleKey: "phmcEmailInterne", sortOrder: 30, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'],
         // RETIRÉ : fusionné dans la Messagerie interne (boîte à outils). La définition reste pour ouvrir, copier et exporter les anciens rapports de ce formulaire,
         // mais il n'est plus proposé dans les sélecteurs de formulaires (voir les filtres « retired »).
         retired: true },
-    { version: 28, name: "Évaluation Psychologique", group: "PHMC", icon: psychology, generator: generatePsychEvalPHMC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePHMC", sortOrder: 31, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 28, name: "Évaluation Psychologique", group: "PHMC", icon: psychology, generator: generatePsychEvalPHMC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePHMC", sortOrder: 11, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     // Add isHiddenInSelector: true to the PBC version
-    { version: 29, name: "Évaluation Psychologique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generatePsychEvalPBC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePBC", sortOrder: 32, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
-    { version: 35, name: "Certificat de Maladie", group: "PHMC", icon: emailIcon, generator: generateSicknessEmail, FieldComponent: SicknessEmail, titleKey: "certificatMaladie", sortOrder: 33, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] }, // No FieldComponent for this one
+    { version: 29, name: "Évaluation Psychologique (PBC)", group: "PHMC", icon: phmcpaletobay, generator: generatePsychEvalPBC, FieldComponent: Shrink, titleKey: "evaluationPsychologiquePBC", sortOrder: 11.5, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 35, name: "Certificat de Maladie", group: "PHMC", icon: emailIcon, generator: generateSicknessEmail, FieldComponent: SicknessEmail, titleKey: "certificatMaladie", sortOrder: 17, isHiddenInSelector: true, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] }, // No FieldComponent for this one
     // Certificat d'aptitude médicale au vol : réservé au personnel soignant (utils/formAccess.js : tout formulaire non listé = famille soignante + admins).
-    { version: 41, name: "Certificat de Vol", group: "PHMC", icon: paperwork, generator: generateFlightCertificate, FieldComponent: FlightCertificate, titleKey: "certificatVol", sortOrder: 34, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 41, name: "Certificat de Vol", group: "PHMC", icon: paperwork, generator: generateFlightCertificate, FieldComponent: FlightCertificate, titleKey: "certificatVol", sortOrder: 18, userTypes: ['phmcStaff', 'other'], primaryFor: ['phmcStaff'] },
     // Mail Externe : courrier modèle envoyé hors du site, ouvert à TOUT le personnel (utils/formAccess.js : SHARED_STAFF_FORM_VERSIONS). Aucun ID patient : rien n'est rangé dans un dossier patient.
-    { version: 42, name: "Mail Externe", group: "PHMC", icon: emailIcon, generator: generateExternalMail, FieldComponent: ExternalMail, titleKey: "mailExterne", sortOrder: 36, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
+    { version: 42, name: "Mail Externe", group: "PHMC", icon: emailIcon, generator: generateExternalMail, FieldComponent: ExternalMail, titleKey: "mailExterne", sortOrder: 20, userTypes: ['phmcStaff', 'adminStaff', 'coroner', 'other'], primaryFor: ['phmcStaff'] },
     {
         version: 50,
         name: "Postes Médicaux",
@@ -247,7 +247,7 @@ userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']
         generator: generateDeathRecord,
         FieldComponent: DeathRecord,
         titleKey: "rapportPublicDeDeces",
-        sortOrder: 15,
+        sortOrder: 9,
         isHiddenInSelector: true,
         
 userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner']

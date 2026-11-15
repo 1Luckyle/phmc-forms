@@ -117,6 +117,7 @@ export const VERSION_FIELDS = {
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         careStartTime: 'time', careEndTime: 'time', injuryDetails: 'select', injuryMutilations: 'select', injuryNote: 'text', dischargeDestination: 'select', transferTo: 'text', routineCare: 'select',
         patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
+        temperatureValue: 'text', heartRateValue: 'text', respiratoryRateValue: 'text', bloodPressureValue: 'text', spo2Value: 'text', glucoseValue: 'text', gcsScore: 'text',
     },
     20: {
         patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', 
@@ -125,12 +126,13 @@ export const VERSION_FIELDS = {
         bloodOxy: 'select', findings: 'select', lungs: 'select', pupils: 'select',
         wounds: 'select', ecg: 'select', sono: 'select', lab: 'select',
         patientDiagnosis: 'textarea', patientSecondaryDiagnosis: 'textarea', admission: 'textarea', patientProcedure: 'textarea',
-        patientMedicine: 'textarea', followup: 'select',
+        followup: 'select',
         patientDateOfBirth: 'date', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         orientedService: 'select', orientedServiceOther: 'text', examsOrdered: 'select', examsOrderedNote: 'text', workStoppage: 'select', workStoppageDays: 'number',
         patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
+        temperatureValue: 'text', heartRateValue: 'text', respiratoryRateValue: 'text', bloodPressureValue: 'text', spo2Value: 'text', glucoseValue: 'text', gcsScore: 'text',
     },
     21: {
         patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', 
@@ -139,12 +141,13 @@ export const VERSION_FIELDS = {
         bloodOxy: 'select', findings: 'select', lungs: 'select', pupils: 'select',
         wounds: 'select', ecg: 'select', sono: 'select', lab: 'select',
         patientDiagnosis: 'textarea', patientSecondaryDiagnosis: 'textarea', admission: 'textarea', patientProcedure: 'textarea',
-        patientMedicine: 'textarea', patientNotes: 'textarea', followup: 'select',
+        patientNotes: 'textarea', followup: 'select',
         patientDateOfBirth: 'date', patientSex: 'textarea', patientAllergies: 'textarea', patientChronicDiseases: 'textarea',
         patientCurrentMedicine: 'textarea',
         appointmentTime: 'time', referralReason: 'select', referralOther: 'text', referringDoctor: 'select', companionName: 'text', companionRelation: 'text',
         orientedService: 'select', orientedServiceOther: 'text', examsOrdered: 'select', examsOrderedNote: 'text', workStoppage: 'select', workStoppageDays: 'number',
         patientWeight: 'text', patientHeight: 'text', clinicalConditions: 'select', clinicalSeverity: 'select', clinicalMeds: 'textarea',
+        temperatureValue: 'text', heartRateValue: 'text', respiratoryRateValue: 'text', bloodPressureValue: 'text', spo2Value: 'text', glucoseValue: 'text', gcsScore: 'text',
     },
     22: {
         patientTitle: 'select', patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', patientNotes: 'textarea',
@@ -236,7 +239,7 @@ export const VERSION_FIELDS = {
         phmcEmployee: 'select',
     },
     42: {
-        externalMailSubject: 'text', externalMailRecipient: 'text', externalMailRecipientAddress: 'email', externalMailFonction: 'text', externalMailService: 'text', externalMailBody: 'textarea',
+        externalMailSubject: 'text', externalMailRecipient: 'text', externalMailRecipientAddress: 'email', externalMailFonction: 'text', externalMailService: 'text', externalMailBody: 'textarea', phmcEmployee: 'select',
     },
     37: {
         deathRecordType: 'select', caseNumber: 'text', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text',

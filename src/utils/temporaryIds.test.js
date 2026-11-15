@@ -113,14 +113,14 @@ describe('identifiants temporaires : registre et attribution (base simulée)', (
             identifiantsTemporaires: { 'TMP-ABCDE': { nom: 'Jean Dupont', creeLe: 1, uid: 'D1', statut: 'temporaire' } },
             patientRecords: {
                 'TMP-ABCDE': {
-                    k1: { reportPath: 'savedReports/D_One/k1', title: '[TMP-ABCDE] Services de Médecine Légale - 11/11/2026', bbCodeVersion: 1, visibility: 'staff-only' },
+                    k1: { reportPath: 'savedReports/D_One/k1', title: "[TMP-ABCDE] Rapport d'Enquête sur le Décès - 11/11/2026", bbCodeVersion: 1, visibility: 'staff-only' },
                     k2: { reportPath: 'savedReports/D_Two/k2', title: '[TMP-ABCDE] Rapport d\'Autopsie - 12/11/2026', bbCodeVersion: 4, visibility: 'staff-only' },
                     k3: { reportPath: 'savedReports/D_One/k3', title: '[TMP-ABCDE] Certificat de Décès - 12/11/2026', bbCodeVersion: 8, visibility: 'staff-only' },
                 },
             },
             savedReports: {
                 D_One: {
-                    k1: { title: '[TMP-ABCDE] Services de Médecine Légale - 11/11/2026', bbCode: 'ID: TMP-ABCDE', data: { patientID: 'TMP-ABCDE' } },
+                    k1: { title: "[TMP-ABCDE] Rapport d'Enquête sur le Décès - 11/11/2026", bbCode: 'ID: TMP-ABCDE', data: { patientID: 'TMP-ABCDE' } },
                     k3: { title: '[TMP-ABCDE] Certificat de Décès - 12/11/2026', bbCode: 'ID: TMP-ABCDE', data: { patientID: 'TMP-ABCDE' } },
                 },
                 D_Two: { k2: { title: '[TMP-ABCDE] Rapport d\'Autopsie - 12/11/2026', bbCode: 'ID: TMP-ABCDE', data: { patientID: 'TMP-ABCDE' } } },
@@ -134,7 +134,7 @@ describe('identifiants temporaires : registre et attribution (base simulée)', (
         expect(result).toMatchObject({ moved: 2, frozen: ['k3'], publics: 1, deathMarker: true });
 
         expect(Object.keys(mockDb.patientRecords['PHMC-2752'])).toEqual(['k1', 'k2']);
-        expect(mockDb.patientRecords['PHMC-2752'].k1.title).toBe('[PHMC-2752] Services de Médecine Légale - 11/11/2026');
+        expect(mockDb.patientRecords['PHMC-2752'].k1.title).toBe("[PHMC-2752] Rapport d'Enquête sur le Décès - 11/11/2026");
         expect(mockDb.patientRecords['TMP-ABCDE']).toEqual({ k3: expect.any(Object) }); // le rapport gelé reste sous l'ID temporaire
         expect(mockDb.savedReports.D_One.k1.data.patientID).toBe('PHMC-2752');
         expect(mockDb.savedReports.D_One.k1.bbCode).toBe('ID: PHMC-2752');

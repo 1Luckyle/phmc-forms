@@ -7,6 +7,31 @@ import { aptitudeStatement } from '../utils/careFormRules';
 import PresetTextField from './shared/PresetTextField';
 import { PHYS_EVAL_PRESETS } from '../constants/careFormPresets';
 
+// Ce qu'il faut renseigner pour proposer une déclaration : la conclusion d'aptitude est indispensable (le bouton reste grisé sans elle) ; les autres champs complètent le texte proposé.
+const StatementRequirements = ({ formData }) => {
+    const conclusion = formData.aptitudeConclusion;
+    const items = [
+        { label: "Conclusion d'aptitude (section « Conclusion d'aptitude », plus bas)", done: !!conclusion, required: true },
+        { label: "Motif de l'évaluation", done: !!formData.evalReason },
+        { label: "Date de l'évaluation", done: !!formData.date },
+        ...(conclusion && conclusion !== 'Inapte' ? [{ label: 'Durée de validité', done: !!formData.aptitudeValidityMonths }] : []),
+        ...(conclusion === 'Apte avec restrictions' ? [{ label: 'Restrictions', done: !!String(formData.aptitudeRestrictions || '').trim() }] : []),
+        { label: 'Vaccinations', done: !!formData.vaccinationState },
+    ];
+    return (
+        <div className="helper-text" data-no-tip="1" style={{ marginTop: '0.4rem' }}>
+            <div>Pour proposer une déclaration, renseignez :</div>
+            <ul style={{ listStyle: 'none', paddingLeft: 0, margin: '0.2rem 0 0' }}>
+                {items.map((item) => (
+                    <li key={item.label} style={{ color: item.done ? '#3fb950' : (item.required ? '#ff7b72' : undefined) }}>
+                        <i className={`far ${item.done ? 'fa-circle-check' : 'fa-circle'} me-1`}></i>{item.label}{item.required ? ' — obligatoire' : ' — complète le texte'}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+};
+
 const PhysEval = ({
             formData,
             handleChange,
@@ -289,6 +314,7 @@ const PhysEval = ({
                                             <i className="fas fa-wand-magic-sparkles me-1"></i>Proposer une déclaration
                                         </button>
                                     </div>
+                                    <StatementRequirements formData={formData} />
                                 </Form.Group>
                                 <AptitudeFields formData={formData} setFormData={setFormData} handleChange={handleChange} />
                             </>

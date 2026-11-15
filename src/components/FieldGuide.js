@@ -15,7 +15,7 @@ import { startFormRulesSync } from '../utils/formRules';
 import './FieldGuide.css';
 
 const SKIP_TYPES = new Set(['hidden', 'button', 'submit', 'reset', 'file', 'range', 'color', 'image', 'checkbox', 'radio', 'search']);
-const REASONS = { title: 'Compose le titre du rapport.', billing: 'Sert à la facturation du dossier.' };
+const REASONS = { title: 'Compose le titre du rapport.', billing: 'Sert à la facturation du dossier.', author: 'Signe le rapport.', essential: "Indispensable au document." };
 
 // Parties d'une liste react-select (classes générées « css-xxxx-container » / « css-xxxx-control ») : un simple « [class*="-container"] » prendrait
 // aussi « modal-container » ou « form-control » et ferait lire le champ caché d'une AUTRE liste du formulaire (infobulle d'un mauvais champ).
@@ -31,8 +31,36 @@ const selectPartOf = (el, part) => {
 };
 
 // Champ saisissable survolé → { field (élément avec name/valeur), anchor (élément à entourer), name, type } ou null.
+// Un bloc balisé `data-field-group="champ"` (cases à cocher, éditeur de texte, liste dont le contenu est ailleurs…) se comporte comme un champ : même infobulle, mêmes couleurs.
 const resolveField = (target) => {
     if (!(target instanceof Element)) return null;
+    const base = resolveControl(target);
+    // Un champ sans nom mais qui porte sa propre aide (`data-guide`) garde son infobulle ; sinon on remonte au bloc balisé.
+    if (base && (base.name || base.field.closest('[data-guide]'))) return base;
+    const group = target.closest('[data-field-group]');
+    if (group) return { field: group, anchor: group, name: group.getAttribute('data-field-group'), type: 'group' };
+    return base;
+};
+
+// Ce que contient un champ : valeur saisie, hors choix « Autre » du menu des villes (il n'est pas une réponse).
+const OTHER_CITY = '__autre__';
+const valueOfField = (field) => { const value = String(field.value || '').trim(); return value === OTHER_CITY ? '' : value; };
+// Nom du champ de formulaire : son `name`, ou `data-field-name` (menu des villes, qui n'a pas de `name`).
+const keyOfField = (field) => field.name || field.getAttribute('data-field-name') || '';
+// « xxxFree » : zone de texte libre d'un champ à choix par défaut ; elle renseigne le champ « xxx » sans être marquée elle-même.
+const FREE_SUFFIX = /Free$/;
+const ownerOf = (key, has) => (FREE_SUFFIX.test(key) && !has(key) && has(key.replace(FREE_SUFFIX, '')) ? key.replace(FREE_SUFFIX, '') : key);
+// Un groupe est rempli : `data-filled="1"` (posé par le formulaire quand le contenu est ailleurs), sinon une case cochée, une saisie, ou du texte dans l'éditeur.
+const groupFilled = (el) => {
+    const flag = el.getAttribute('data-filled');
+    if (flag !== null) return flag === '1';
+    if (el.querySelector('input[type="checkbox"]:checked, input[type="radio"]:checked')) return true;
+    if (Array.from(el.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), textarea, select')).some((field) => valueOfField(field) !== '')) return true;
+    const editable = el.querySelector('[contenteditable="true"]');
+    return !!(editable && editable.textContent.trim() !== '');
+};
+
+const resolveControl = (target) => {
     const control = target.closest('input, textarea, select');
     if (control && !SKIP_TYPES.has(control.type)) {
         // Zone de saisie interne d'une liste déroulante (react-select) : le nom est porté par son champ caché.
@@ -105,7 +133,7 @@ const describe = ({ field, anchor, name, type }) => {
             const info = getFieldInfo(version, baseName, knownType || type);
             const required = isFieldRequired(version, baseName);
             // Candidatures : les autres champs sont exigés selon le poste, on n'affirme « facultatif » que pour un formulaire de rapport.
-            const requirement = required ? 'required' : (version < 50 && knownType ? 'optional' : '');
+            const requirement = required ? 'required' : (version <= 55 && knownType ? 'optional' : '');
             return { text: info.help, requirement, reason: REASONS[lockedReasonOf(version, baseName)] || '' };
         }
     }
@@ -177,12 +205,14 @@ const FieldGuide = () => {
                 const version = Number(zone.getAttribute('data-form-zone'));
                 const required = new Set(requiredFieldsOf(version));
                 const groups = new Map();
-                zone.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
-                    if (!required.has(field.name) || (SKIP_TYPES.has(field.type) && field.type !== 'hidden')) return;
-                    const entry = groups.get(field.name) || { fields: [], filled: false };
-                    entry.fields.push(field);
-                    if (String(field.value || '').trim() !== '') entry.filled = true;
-                    groups.set(field.name, entry);
+                zone.querySelectorAll('input, textarea, select').forEach((field) => {
+                    const raw = keyOfField(field);
+                    const key = ownerOf(raw, (name) => required.has(name));
+                    if (!key || !(required.has(key) || field.closest('[data-required]')) || field.disabled || (SKIP_TYPES.has(field.type) && field.type !== 'hidden')) return;
+                    const entry = groups.get(key) || { fields: [], filled: false };
+                    if (key === raw) entry.fields.push(field);
+                    if (valueOfField(field) !== '') entry.filled = true;
+                    groups.set(key, entry);
                 });
                 const marked = new Set();
                 groups.forEach((entry) => {
@@ -196,21 +226,30 @@ const FieldGuide = () => {
                         if (target) marked.add(target);
                     });
                 });
+                // Blocs balisés `data-field-group` obligatoires et encore vides.
+                zone.querySelectorAll('[data-field-group]').forEach((el) => { if (required.has(el.getAttribute('data-field-group')) && !groupFilled(el)) marked.add(el); });
                 zone.querySelectorAll('[data-req-empty]').forEach((el) => { if (!marked.has(el)) el.removeAttribute('data-req-empty'); });
                 marked.forEach((el) => { if (el.getAttribute('data-req-empty') !== '1') el.setAttribute('data-req-empty', '1'); });
 
                 // Champs FACULTATIFS encore vides (formulaires de rapport seulement : dans une candidature, l'exigence dépend du poste). Seuls les champs du
                 // catalogue sont concernés ; ceux en lecture seule ou déjà marqués en rouge sont ignorés.
-                const known = version < 50 ? VERSION_FIELDS[version] : null;
+                // Rapports (< 50) et candidatures (50 à 55) : seuls les champs du catalogue sont concernés.
+                const known = version <= 55 ? VERSION_FIELDS[version] : null;
                 const optionalMarked = new Set();
                 if (known) {
                     const optionalGroups = new Map();
-                    zone.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
-                        if (!known[field.name] || required.has(field.name) || (SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.readOnly || field.disabled) return;
-                        const entry = optionalGroups.get(field.name) || { fields: [], filled: false };
-                        entry.fields.push(field);
-                        if (String(field.value || '').trim() !== '') entry.filled = true;
-                        optionalGroups.set(field.name, entry);
+                    zone.querySelectorAll('input, textarea, select').forEach((field) => {
+                        const raw = keyOfField(field);
+                        const key = ownerOf(raw, (name) => !!known[name]);
+                        if (!key || !known[key] || required.has(key) || field.closest('[data-required]') || (SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.readOnly || field.disabled) return;
+                        const entry = optionalGroups.get(key) || { fields: [], filled: false };
+                        if (key === raw) entry.fields.push(field);
+                        if (valueOfField(field) !== '') entry.filled = true;
+                        optionalGroups.set(key, entry);
+                    });
+                    zone.querySelectorAll('[data-field-group]').forEach((el) => {
+                        const key = el.getAttribute('data-field-group');
+                        if (known[key] && !required.has(key) && !groupFilled(el) && !marked.has(el)) optionalMarked.add(el);
                     });
                     optionalGroups.forEach((entry) => {
                         if (entry.filled) return;

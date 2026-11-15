@@ -85,9 +85,7 @@ export const validateFlightCertificate = (formData) => {
     const f = formData || {};
     const problems = [];
     const cls = getFlightCertClass(f.flightCertClass);
-    if (!cls) problems.push('Choisissez la classe du certificat.');
-    if (!Array.isArray(f.flightCertCategories) || f.flightCertCategories.length === 0) problems.push('Choisissez au moins une catégorie de vol (avion, hélicoptère, hydravion).');
-    // Nom du patient, date de l'examen et employé : champs obligatoires communs (utils/formRulesCore.js).
+    // Classe, catégories de vol, conclusion, nom du patient, date de l'examen et employé : champs obligatoires (utils/formRulesCore.js).
     if (cls) {
         const missing = cls.exams.filter((exam) => !f[examResultKey(exam)]);
         if (missing.length) problems.push(`Renseignez le résultat de : ${missing.map((exam) => FLIGHT_CERT_EXAMS[exam].label).join(', ')}.`);
@@ -95,7 +93,6 @@ export const validateFlightCertificate = (formData) => {
         if (failed && f.flightCertConclusion === 'Apte') problems.push('Un examen est « non conforme » : la conclusion ne peut pas être « Apte » sans restriction.');
         if (!failed && f.flightCertConclusion === 'Inapte' && !String(f.flightCertNote || '').trim()) problems.push('Une conclusion « Inapte » alors que tous les examens sont conformes doit être expliquée dans les observations.');
     }
-    if (!f.flightCertConclusion) problems.push('Choisissez la conclusion (apte, apte avec restrictions, inapte).');
     if (f.flightCertConclusion === 'Apte avec restrictions' && !String(f.flightCertRestrictions || '').trim()) problems.push('Précisez les restrictions.');
     return problems;
 };

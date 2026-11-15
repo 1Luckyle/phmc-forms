@@ -342,16 +342,7 @@ const GeneralConsult = ({
                                     value={formData.patientProcedure}
                                     onChange={handleChange}
                                     rows="3"
-                                    placeholder="Plan de traitement (conseils verbaux, recommandations, notes additionnelles)"
-                                    className="form-control"
-                                />
-                                <Form.Control
-                                    as="textarea"
-                                    name="patientMedicine"
-                                    value={formData.patientMedicine || ''}
-                                    onChange={handleChange}
-                                    rows="2"
-                                    placeholder="Autres médicaments ou traitements (les médicaments avec dose se saisissent dans la liste de l'assistant clinique)"
+                                    placeholder="Plan de traitement et consignes au patient (repos, conseils verbaux, recommandations). Les médicaments se saisissent dans la liste de l'assistant : ils forment l'ordonnance, jointe à ces consignes."
                                     className="form-control"
                                 />
                                 {bbCodeVersion === 21 && (

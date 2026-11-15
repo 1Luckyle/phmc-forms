@@ -36,16 +36,16 @@ export const DEFAULT_REQUIRED = {
     28: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
     29: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
     35: ['patientFirstName', 'patientLastName', 'patientID', 'dateOfVisit', 'phmcEmployee'],
-    41: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
-    42: ['externalMailSubject', 'externalMailRecipient', 'externalMailBody'],
+    41: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee', 'flightCertClass', 'flightCertCategories', 'flightCertConclusion'],
+    42: ['externalMailSubject', 'externalMailRecipient', 'phmcEmployee', 'externalMailBody'],
     37: ['deathRecordType', 'caseNumber', 'patientID', 'decedentFirstName', 'decedentLastName', 'decedentOOC', 'dateOfDeath'],
-    // Candidatures : socle commun à tous les envois (le reste dépend du poste et du profil, voir validateApplication).
-    50: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    51: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    52: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    53: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    54: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
-    55: ['patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantPhone', 'applicantEmail', 'oocDiscord', 'oocTimezone'],
+    // Candidatures : tout ce que validateApplication exige (les champs propres à un poste ne comptent que lorsqu'ils s'affichent : voir utils/fieldApplicability.js).
+    50: ['recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantZIP', 'applicantPhone', 'applicantEmail', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone', 'oocMedicalExperience'],
+    51: ['recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantZIP', 'applicantPhone', 'applicantEmail', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone', 'oocMedicalExperience'],
+    52: ['recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantZIP', 'applicantPhone', 'applicantEmail', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone'],
+    53: ['recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantZIP', 'applicantPhone', 'applicantEmail', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone', 'oocMedicalExperience'],
+    54: ['recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantZIP', 'applicantPhone', 'applicantEmail', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone', 'oocMedicalExperience'],
+    55: ['recruitmentPosition', 'patientID', 'applicantTitle', 'applicantFirstName', 'applicantLastName', 'applicantDOB', 'applicantAddress', 'applicantZIP', 'applicantPhone', 'applicantEmail', 'applicantCitizenship', 'applicantEducationLevel', 'applicantSchoolName', 'applicantEnrollmentStart', 'applicantEnrollmentEnd', 'applicantMajor', 'applicantLanguages', 'applicantJobs', 'oocDiscord', 'oocTimezone', 'oocMedicalExperience', 'emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'],
 };
 
 // Champs qu'on ne peut pas rendre facultatifs : raison 'title' (ils composent le titre du rapport, sans eux il serait introuvable) ou 'billing'
@@ -53,6 +53,8 @@ export const DEFAULT_REQUIRED = {
 const TITLE = 'title';
 const BILLING = 'billing';
 const AUTHOR = 'author';
+// Raison 'essential' : sans cette information le document n'a pas de sens (certificat de vol : classe, catégories, conclusion).
+const ESSENTIAL = 'essential';
 // Raison 'rule' : règle propre au formulaire (le champ reste obligatoire dès qu'il s'affiche, mais pas quand il n'apparaît pas : voir utils/fieldApplicability.js).
 const RULE = 'rule';
 export const LOCKED_FIELDS = {
@@ -79,21 +81,22 @@ export const LOCKED_FIELDS = {
     28: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
     29: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
     35: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, dateOfVisit: TITLE, phmcEmployee: AUTHOR },
-    41: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
-    42: { externalMailSubject: TITLE },
+    41: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR, flightCertClass: ESSENTIAL, flightCertCategories: ESSENTIAL, flightCertConclusion: ESSENTIAL },
+    42: { phmcEmployee: TITLE, externalMailRecipient: TITLE },
     37: { patientID: TITLE, dateOfDeath: TITLE },
-    50: { applicantFirstName: TITLE, applicantLastName: TITLE },
-    51: { applicantFirstName: TITLE, applicantLastName: TITLE },
-    52: { applicantFirstName: TITLE, applicantLastName: TITLE },
-    53: { applicantFirstName: TITLE, applicantLastName: TITLE },
-    54: { applicantFirstName: TITLE, applicantLastName: TITLE },
-    55: { applicantFirstName: TITLE, applicantLastName: TITLE },
+    50: { recruitmentPosition: TITLE, applicantFirstName: TITLE, applicantLastName: TITLE },
+    51: { recruitmentPosition: TITLE, applicantFirstName: TITLE, applicantLastName: TITLE },
+    52: { recruitmentPosition: TITLE, applicantFirstName: TITLE, applicantLastName: TITLE },
+    53: { recruitmentPosition: TITLE, applicantFirstName: TITLE, applicantLastName: TITLE },
+    54: { recruitmentPosition: TITLE, applicantFirstName: TITLE, applicantLastName: TITLE },
+    55: { recruitmentPosition: TITLE, applicantFirstName: TITLE, applicantLastName: TITLE },
 };
 
 export const LOCK_REASONS = {
     [TITLE]: 'Ce champ compose le titre du rapport : il reste obligatoire.',
     [BILLING]: 'Ce champ sert à la facturation du dossier : il reste obligatoire.',
     [AUTHOR]: "L'employé signe le rapport et le range sous son nom : sans lui, le rapport ne peut pas être enregistré.",
+    [ESSENTIAL]: "Le document n'a pas de sens sans cette information : elle reste obligatoire.",
     [RULE]: 'Règle du formulaire : obligatoire dès que le champ s\'affiche (patient mineur non émancipé), sans jamais bloquer quand il n\'apparaît pas.',
 };
 

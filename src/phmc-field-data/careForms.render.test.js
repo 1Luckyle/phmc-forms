@@ -123,12 +123,12 @@ describe('certificats et mail externe', () => {
     test('bandeau « À compléter avant d\'enregistrer »', () => {
         const { container } = render(<FormChecklist version={41} formData={{}} />);
         expect(container.textContent).toContain("À compléter avant d'enregistrer");
-        expect(container.textContent).toContain('Choisissez la classe du certificat.');
+        expect(container.textContent).toContain('Classe du certificat de vol : champ obligatoire.');
     });
 
     test('bandeau vide quand tout est renseigné', async () => {
         await act(async () => {});
-        const { container } = render(<FormChecklist version={42} formData={{ externalMailSubject: 'Objet', externalMailRecipient: 'X', externalMailBody: 'Texte' }} />);
+        const { container } = render(<FormChecklist version={42} formData={{ externalMailSubject: 'Objet', externalMailRecipient: 'X', phmcEmployee: 'Dr Test', externalMailBody: 'Texte' }} />);
         expect(container.textContent).toBe('');
     });
 });
@@ -380,7 +380,7 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         const { unmount } = render(<Harness Component={EmergencyForm} initial={initial} extra={emergencyProps} />);
         expect(screen.getByText('Patient admis?')).toBeTruthy();
         expect(screen.getByText('Suivi requis?')).toBeTruthy();
-        expect(screen.getByPlaceholderText(/Autres traitements, conseils verbaux/)).toBeTruthy();
+        expect(screen.getByPlaceholderText(/Consignes de traitement : repos/)).toBeTruthy();
         expect(screen.getByText('Orientation de sortie')).toBeTruthy();
         expect(document.querySelectorAll('input[id^="rx-"]')).toHaveLength(2);
         expect(screen.getByText("Tout mettre sur l'ordonnance")).toBeTruthy();
@@ -389,7 +389,7 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         render(<Harness Component={EmergencyForm} initial={{ ...initial, careDeceased: 'Yes', dischargeDestination: 'Death' }} extra={emergencyProps} />);
         expect(screen.queryByText('Patient admis?')).toBeNull();
         expect(screen.queryByText('Suivi requis?')).toBeNull();
-        expect(screen.queryByPlaceholderText(/Autres traitements, conseils verbaux/)).toBeNull();
+        expect(screen.queryByPlaceholderText(/Consignes de traitement : repos/)).toBeNull();
         expect(screen.queryByText('Orientation de sortie')).toBeNull();
         // Ni orientation de sortie ni soins systématiques : tout le bloc « Sortie et soins systématiques » disparaît.
         expect(screen.queryByText('Sortie et soins systématiques')).toBeNull();

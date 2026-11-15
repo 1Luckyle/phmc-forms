@@ -17,7 +17,7 @@
 //   visiteur non connecté          inchangé : pas de restriction.
 import { familiesOfMember } from '../constants/ranks';
 
-// Formulaires de médecine légale (DMEC) : Services de Médecine Légale, Rapport d'Autopsie, Email DMEC,
+// Formulaires de médecine légale (DMEC) : Rapport d'Enquête sur le Décès, Rapport d'Autopsie, Email DMEC,
 // Certificat de Décès, Rapport de Tuerie/Accident de Masse, Rapport Public de Décès.
 export const DMEC_FORM_VERSIONS = [1, 4, 2, 8, 11, 37];
 

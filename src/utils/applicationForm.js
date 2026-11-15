@@ -14,6 +14,9 @@
 import { ageOn, parseBirthDate } from './minors';
 import { titleLabel, joinFullName, splitFullName } from './patientIdentity';
 
+// Âge minimum pour candidater : en dessous, aucune candidature (pas même un brouillon) ne peut être enregistrée.
+export const MIN_APPLICATION_AGE = 16;
+
 export const EDUCATION_LEVELS = [
     'Diplôme d’Études Secondaires (High School Diploma)',
     'Certificat (Sous-licence ou Professionnel/Technique)',

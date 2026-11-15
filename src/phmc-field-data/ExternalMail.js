@@ -6,13 +6,14 @@
 import React, { useEffect, useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import RichMessageEditor from '../components/Messaging/RichMessageEditor';
+import PhmcEmployeeSelect, { withDmecOptions } from './shared/PhmcEmployeeSelect';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { MAIL_LIMITS } from '../utils/internalMail';
 
 const pad = (n) => String(n).padStart(2, '0');
 const todayFr = () => { const now = new Date(); return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`; };
 
-const ExternalMail = ({ formData, setFormData, handleChange, showNotification }) => {
+const ExternalMail = ({ formData, setFormData, handleChange, showNotification, phmcGroupedOptions, coronerGroupedOptions }) => {
     const { currentEmployee, staffProfile } = useEmployeeAuth();
     const uid = currentEmployee?.uid || '';
     const editorRef = useRef(null);
@@ -68,6 +69,9 @@ const ExternalMail = ({ formData, setFormData, handleChange, showNotification })
             </div>
 
             <Form.Label className="form-section-title">Expéditeur</Form.Label>
+            <div style={{ marginBottom: '0.6rem' }}>
+                <PhmcEmployeeSelect label="Identifiants de l'employé (expéditeur)" options={withDmecOptions(phmcGroupedOptions, coronerGroupedOptions)} formData={formData} setFormData={setFormData} />
+            </div>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
                 <div style={{ flex: '1 1 240px', minWidth: 0 }}>
                     <Form.Label>Fonction au sein du PHMC</Form.Label>
@@ -81,7 +85,9 @@ const ExternalMail = ({ formData, setFormData, handleChange, showNotification })
             <span className="helper-text">Le courrier est signé par vous : votre signature, votre nom, votre fonction et votre département figurent au bas du document.</span>
 
             <Form.Label className="form-section-title">Texte du courrier</Form.Label>
-            <RichMessageEditor ref={editorRef} initialHtml={formData.externalMailBodyHtml || ''} onChange={onBodyChange} onNotify={notify} />
+            <div data-field-group="externalMailBody" data-filled={String(formData.externalMailBody || '').trim() ? '1' : '0'}>
+                <RichMessageEditor ref={editorRef} initialHtml={formData.externalMailBodyHtml || ''} onChange={onBodyChange} onNotify={notify} />
+            </div>
             <span className="helper-text">Mise en forme directe (gras, listes, citation, lien, images) : le texte est converti pour l'aperçu, le PDF, l'image et le HTML. Ce courrier n'est enregistré dans aucun dossier patient.</span>
         </>
     );
