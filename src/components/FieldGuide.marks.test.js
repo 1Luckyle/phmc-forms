@@ -88,3 +88,47 @@ describe('FieldGuide : champs sans name et blocs balisés', () => {
         jest.useRealTimers();
     });
 });
+
+const DecedentsForm = () => {
+    const [decedents, setDecedents] = useState([{ patientID: '' }, { patientID: '' }]);
+    const [requested, setRequested] = useState(false);
+    const set = (index, value) => setDecedents((prev) => prev.map((dec, i) => (i === index ? { ...dec, patientID: value } : dec)));
+    return (
+        <>
+            <FieldGuide />
+            <form data-form-zone="11">
+                <label><input type="checkbox" name="showRequestingOfficerInput" checked={requested} onChange={(e) => setRequested(e.target.checked)} /> Rapport demandé ?</label>
+                {decedents.map((dec, index) => (
+                    <div key={index} data-field-scope={`decedent-${index}`}>
+                        <input type="text" data-testid={`id-${index}`} data-field-name="patientID" value={dec.patientID} onChange={(e) => set(index, e.target.value)} />
+                    </div>
+                ))}
+            </form>
+        </>
+    );
+};
+
+describe('FieldGuide : fiches répétées (un défunt = une portée) et cases à cocher du catalogue', () => {
+    afterEach(() => { document.body.innerHTML = ''; });
+
+    test('remplir l’ID d’un défunt n’efface pas la marque obligatoire de l’autre', async () => {
+        const { getByTestId } = render(<DecedentsForm />);
+        await wait();
+        expect(getByTestId('id-0').hasAttribute('data-req-empty')).toBe(true);
+        expect(getByTestId('id-1').hasAttribute('data-req-empty')).toBe(true);
+        await act(async () => { fireEvent.change(getByTestId('id-0'), { target: { value: 'PHMC-1' } }); });
+        await wait();
+        expect(getByTestId('id-0').hasAttribute('data-req-empty')).toBe(false);
+        expect(getByTestId('id-1').hasAttribute('data-req-empty')).toBe(true);
+    });
+
+    test('une case à cocher du catalogue, décochée, porte l’encadré facultatif (bleu) sur son enveloppe, et le perd une fois cochée', async () => {
+        const { container } = render(<DecedentsForm />);
+        await wait();
+        const box = container.querySelector('input[type="checkbox"]');
+        expect(box.parentElement.hasAttribute('data-opt-empty')).toBe(true);
+        await act(async () => { fireEvent.click(box); });
+        await wait();
+        expect(box.parentElement.hasAttribute('data-opt-empty')).toBe(false);
+    });
+});

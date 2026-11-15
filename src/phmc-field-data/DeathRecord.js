@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TemporaryIdPicker from './shared/TemporaryIdPicker';
+import BirthOrAgeFields from './shared/BirthOrAgeFields';
 import { Form } from 'react-bootstrap';
 import { database } from '../firebase';
 import { ref, get } from 'firebase/database';
@@ -120,12 +121,17 @@ const DeathRecord = ({
                     <Form.Label>Date du décès</Form.Label>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Control type="date" name="dateOfDeath" value={formData.dateOfDeath} onChange={handleChange} className="form-control" />
-                        <Form.Control type="text" name="age" value={formData.age} onChange={handleChange} placeholder={unidentified ? 'Âge approximatif du défunt' : 'Âge du défunt'} className="form-control" />
                     </div>
+                    <Form.Label>{unidentified ? 'Date de naissance (si connue) ou âge approximatif du défunt' : 'Date de naissance ou âge du défunt'}</Form.Label>
+                    <BirthOrAgeFields
+                        formData={formData} setFormData={setFormData} handleChange={handleChange} dobName="decedentDateOfBirth" ageName="age" refDate={formData.dateOfDeath}
+                        agePlaceholder={unidentified ? 'Âge approximatif du défunt' : 'Âge du défunt'} computedAgeLabel="Âge du défunt calculé à partir de sa date de naissance"
+                    />
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Form.Select name="sex" value={formData.sex} onChange={handleChange} className="form-control">
                             <option value="">Genre à l'état civil du défunt</option>
-                            {selectOptions.gender.map(option => (
+                            {/* Genre à l'état civil : masculin ou féminin (une ancienne valeur différente reste affichée jusqu'à ce qu'on la remplace). */}
+                            {selectOptions.gender.filter((option) => ['Male', 'Female'].includes(option.value) || option.value === formData.sex).map(option => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </Form.Select>

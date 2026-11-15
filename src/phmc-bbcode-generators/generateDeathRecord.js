@@ -1,9 +1,7 @@
 import { placeWithCity } from '../utils/places';
 import { frDay } from '../utils/reportTitle';
 import { withTitle } from '../utils/patientIdentity';
-import { sectionBanner, infoTable, paragraph } from './shared/bbStyles';
-
-const DEATH_LOGO_WIDTH = 200;
+import { sectionBanner, infoTable, paragraph, dmecHeaderLogos } from './shared/bbStyles';
 
 // Dossier public de décès (version 37) : bandeau d'en-tête public, fiche du défunt, dossier, circonstances, médecins légistes et mention de divulgation.
 const generateDeathRecord = (formData) => {
@@ -35,6 +33,7 @@ const generateDeathRecord = (formData) => {
         decedentName,
         dateOfDeath,
         age,
+        decedentDateOfBirth,
     } = formData;
 
     const unidentified = deathRecordType === 'Unidentified';
@@ -51,10 +50,10 @@ const generateDeathRecord = (formData) => {
         : [[['Autres informations significatives', otherSignificantConditions || 'Aucune']]];
 
     const blocks = [
-        // Logo à texte clair : posé sur un bandeau sombre (sur fond blanc il serait presque invisible). Réduit (il s'étirait sur toute la largeur du bandeau) et centré, avec de l'air autour.
-        `[divboxcolor=black][center][br][/br][img=${DEATH_LOGO_WIDTH}]https://phmc-tools.com/img/death-record-header.png[/img][br][/br][/center][/divboxcolor]\n`,
+        // En-tête de l'Email DMEC : le logo du PHMC et, à côté, le sceau du DMEC (voir dmecHeaderLogos).
+        `[center]${dmecHeaderLogos()}[/center]\n`,
         sectionBanner('DOSSIER PUBLIC DU DÉFUNT', { size: 115 }),
-        `[center][size=130][b]${withTitle(formData.decedentTitle, decedentName) || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/b][/size]\n${unidentified ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'} — Date du décès: ${frDay(dateOfDeath) || '[DATE ICI]'}[/center]`,
+        `[center][size=130][b]${withTitle(formData.decedentTitle, decedentName) || 'PRÉNOM (DEUXIÈME) & NOM ICI'}[/b][/size]\n${unidentified ? 'Âge approximatif' : 'Âge'}: ${age || '[ÂGE ICI]'}${/^\d{4}-\d{2}-\d{2}/.test(String(decedentDateOfBirth || '')) ? ` (né(e) le ${frDay(decedentDateOfBirth)})` : ''} — Date du décès: ${frDay(dateOfDeath) || '[DATE ICI]'}[/center]`,
         sectionBanner('Dossier', { size: 115 }),
         infoTable([
             [['Numéro de dossier', caseNumber || ''], ['Statut du dossier', caseStatus || '']],

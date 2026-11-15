@@ -179,7 +179,7 @@ const Autopsy = ({
                 />
             </div>
             <TemporaryIdPicker formData={formData} setFormData={setFormData} />
-            <DecedentDetailsFields formData={formData} handleChange={handleChange} showMeasures />
+            <DecedentDetailsFields formData={formData} setFormData={setFormData} handleChange={handleChange} refDate={formData.autopsyDate || formData.date} showMeasures />
             <RequestingAuthorityFields formData={formData} handleChange={handleChange} />
             <Form.Label>Lieu du décès</Form.Label>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>

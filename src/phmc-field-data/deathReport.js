@@ -159,7 +159,7 @@ useEffect(() => {
                 <Form.Control type="text" name="patientID" value={formData.patientID} onChange={handleChange} placeholder="ID Patient du défunt (obligatoire ; ID temporaire si le défunt n'en a pas)" className="form-control" />
             </div>
             <TemporaryIdPicker formData={formData} setFormData={setFormData} />
-            <DecedentDetailsFields formData={formData} handleChange={handleChange} />
+            <DecedentDetailsFields formData={formData} setFormData={setFormData} handleChange={handleChange} refDate={formData.dateTime} />
 
             <Form.Label className="form-section-title">Circonstances du décès</Form.Label>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -212,6 +212,7 @@ useEffect(() => {
             <Form.Check
                 type="checkbox"
                 id="evidenceLocker"
+                name="evidenceLocker"
                 label="       J'ai soumis des preuves au casier à preuves"
                 checked={evidenceLockerChecked}
                 onChange={(e) => {
@@ -352,6 +353,7 @@ useEffect(() => {
                 <Form.Check
                     type="checkbox"
                     id="morgueStatus"
+                    name="morgueStatus"
                     label="       Cocher si l'écran de morgue est indisponible / cassé / inaccessible"
                     checked={formData.morgueStatus === 'true'}
                     onChange={(e) => setFormData(prev => ({ ...prev, morgueStatus: e.target.checked.toString() }))}

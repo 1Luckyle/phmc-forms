@@ -3,7 +3,8 @@
 // Valeurs et libellés communs aux formulaires de dossier patient (Basique, Avancé, Mise à jour, Libération) : genre, ethnicité, type de téléphone,
 // titre, et découpage d'un nom complet en prénom / deuxième prénom / nom. Module pur.
 
-export const GENDER_OPTIONS = ['Homme', 'Femme', 'Autre'];
+// Genre à l'état civil : donnée médicale tirée de l'anatomie, donc deux choix (une ancienne valeur « Autre » reste affichée jusqu'à ce qu'on la remplace).
+export const GENDER_OPTIONS = ['Homme', 'Femme'];
 
 const GENDER_ALIASES = { male: 'Homme', masculin: 'Homme', homme: 'Homme', female: 'Femme', féminin: 'Femme', feminin: 'Femme', femme: 'Femme', other: 'Autre', autre: 'Autre' };
 // « Male » (profil, anciens rapports) → « Homme » ; une valeur inconnue est gardée telle quelle.

@@ -45,6 +45,9 @@ const resolveField = (target) => {
 // Ce que contient un champ : valeur saisie, hors choix « Autre » du menu des villes (il n'est pas une réponse).
 const OTHER_CITY = '__autre__';
 const valueOfField = (field) => { const value = String(field.value || '').trim(); return value === OTHER_CITY ? '' : value; };
+// Portée d'un champ : les fiches répétées d'un même formulaire (un défunt = une fiche, `data-field-scope`) se calculent chacune de leur côté, sinon un champ rempli dans une fiche
+// effacerait la marque du même champ vide dans une autre.
+const scopeOf = (field) => { const holder = field.closest('[data-field-scope]'); return holder ? holder.getAttribute('data-field-scope') : ''; };
 // Nom du champ de formulaire : son `name`, ou `data-field-name` (menu des villes, qui n'a pas de `name`).
 const keyOfField = (field) => field.name || field.getAttribute('data-field-name') || '';
 // « xxxFree » : zone de texte libre d'un champ à choix par défaut ; elle renseigne le champ « xxx » sans être marquée elle-même.
@@ -209,10 +212,11 @@ const FieldGuide = () => {
                     const raw = keyOfField(field);
                     const key = ownerOf(raw, (name) => required.has(name));
                     if (!key || !(required.has(key) || field.closest('[data-required]')) || field.disabled || (SKIP_TYPES.has(field.type) && field.type !== 'hidden')) return;
-                    const entry = groups.get(key) || { fields: [], filled: false };
+                    const slot = `${key}@${scopeOf(field)}`;
+                    const entry = groups.get(slot) || { fields: [], filled: false };
                     if (key === raw) entry.fields.push(field);
                     if (valueOfField(field) !== '') entry.filled = true;
-                    groups.set(key, entry);
+                    groups.set(slot, entry);
                 });
                 const marked = new Set();
                 groups.forEach((entry) => {
@@ -226,6 +230,11 @@ const FieldGuide = () => {
                         if (target) marked.add(target);
                     });
                 });
+                // Cases à cocher du catalogue, encore décochées (celles d'un bloc `data-field-group` sont marquées avec leur bloc).
+                const knownBoxes = VERSION_FIELDS[version] || {};
+                const emptyBoxes = Array.from(zone.querySelectorAll('input[type="checkbox"][name]')).filter((box) => knownBoxes[box.name] === 'checkbox' && !box.checked && !box.disabled && !box.closest('[data-field-group]'));
+                const boxWrapper = (box) => box.closest('.form-check') || box.parentElement;
+                emptyBoxes.forEach((box) => { if (required.has(box.name)) marked.add(boxWrapper(box)); });
                 // Blocs balisés `data-field-group` obligatoires et encore vides.
                 zone.querySelectorAll('[data-field-group]').forEach((el) => { if (required.has(el.getAttribute('data-field-group')) && !groupFilled(el)) marked.add(el); });
                 zone.querySelectorAll('[data-req-empty]').forEach((el) => { if (!marked.has(el)) el.removeAttribute('data-req-empty'); });
@@ -242,10 +251,11 @@ const FieldGuide = () => {
                         const raw = keyOfField(field);
                         const key = ownerOf(raw, (name) => !!known[name]);
                         if (!key || !known[key] || required.has(key) || field.closest('[data-required]') || (SKIP_TYPES.has(field.type) && field.type !== 'hidden') || field.readOnly || field.disabled) return;
-                        const entry = optionalGroups.get(key) || { fields: [], filled: false };
+                        const slot = `${key}@${scopeOf(field)}`;
+                        const entry = optionalGroups.get(slot) || { fields: [], filled: false };
                         if (key === raw) entry.fields.push(field);
                         if (valueOfField(field) !== '') entry.filled = true;
-                        optionalGroups.set(key, entry);
+                        optionalGroups.set(slot, entry);
                     });
                     zone.querySelectorAll('[data-field-group]').forEach((el) => {
                         const key = el.getAttribute('data-field-group');
@@ -263,6 +273,7 @@ const FieldGuide = () => {
                         });
                     });
                 }
+                if (known) emptyBoxes.forEach((box) => { const wrapper = boxWrapper(box); if (!required.has(box.name) && !marked.has(wrapper)) optionalMarked.add(wrapper); });
                 zone.querySelectorAll('[data-opt-empty]').forEach((el) => { if (!optionalMarked.has(el)) el.removeAttribute('data-opt-empty'); });
                 optionalMarked.forEach((el) => { if (el.getAttribute('data-opt-empty') !== '1') el.setAttribute('data-opt-empty', '1'); });
             });

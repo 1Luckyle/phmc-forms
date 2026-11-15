@@ -53,6 +53,9 @@ select[data-req-empty], select[data-opt-empty] { padding-right: 3.6rem; backgrou
 select[data-req-empty] { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e"), var(--bs-form-select-bg-img, none); }
 select[data-opt-empty] { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%2358a6ff'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3c/svg%3e"), var(--bs-form-select-bg-img, none); }
 
+/* Case à cocher du catalogue encore décochée : son enveloppe porte le repère (même cadre que les blocs ci-dessous). */
+.form-check[data-req-empty], .form-check[data-opt-empty] { border: 1px solid transparent; border-radius: 6px; padding-top: 3px; padding-bottom: 3px; padding-right: 10px; width: fit-content; }
+
 /* Bloc balisé data-field-group (cases à cocher, éditeur de texte, ajout de médicament…) : il porte les mêmes repères que les champs de saisie. */
 [data-field-group] { border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; }
 

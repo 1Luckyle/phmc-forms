@@ -47,7 +47,7 @@ describe('patient plausible', () => {
     test('remarques : âge ou sexe manquants, sexe incompatible', () => {
         expect(patientNotices({ ids: [], patient: { ageYears: null, sex: '' } })).toHaveLength(2);
         expect(patientNotices({ ids: [], patient: adult })).toEqual([]);
-        expect(patientNotices({ ids: ['cesarienne'], patient: adult, label: 'cette intervention' })[0]).toMatch(/masculin.*cette intervention concerne un patient de sexe féminin/);
+        expect(patientNotices({ ids: ['cesarienne'], patient: adult, label: 'cette intervention' })[0]).toMatch(/masculin.*cette intervention concerne un patient de genre féminin/);
     });
 });
 
@@ -169,7 +169,7 @@ describe('chirurgie : patient plausible', () => {
         const s = buildSurgerySuggestions({ procedureIds: ['cesarienne'], patient: adult, seed: 'x' });
         expect(s.fields.patient.patientSex).toBe('Female');
         expect(Number(s.fields.patient.patientAgeYears)).toBeGreaterThanOrEqual(20);
-        expect(s.notices.some((n) => /cette intervention concerne un patient de sexe féminin/.test(n))).toBe(true);
+        expect(s.notices.some((n) => /cette intervention concerne un patient de genre féminin/.test(n))).toBe(true);
         expect(buildSurgerySuggestions({ procedureIds: ['appendicectomie'], patient: { ...adult, ageYears: null }, seed: 'x' }).notices[0]).toMatch(/Date de naissance non renseignée/);
     });
 });

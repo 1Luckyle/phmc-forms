@@ -23,13 +23,13 @@ export const CARE_IDENTITY_FIELDS = ['patientFirstName', 'patientMiddleName', 'p
 export const CARE_PREFILL_VERSIONS = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
 export const CARE_IDENTITY_ONLY_VERSIONS = [35, 41];
 
-// Sexe du dossier (« Homme », « Femme », « Autre ») → valeur de la liste « Sexe du patient » des formulaires de soins.
+// Genre du dossier (« Homme », « Femme ») → valeur de la liste « Genre à l'état civil » des formulaires de soins (rien pour une ancienne valeur « Autre » : à choisir).
 export const careSexOf = (gender) => {
     const value = String(gender || '').trim().toLowerCase();
     if (!value) return '';
     if (['homme', 'male', 'masculin'].includes(value)) return 'Male';
     if (['femme', 'female', 'féminin', 'feminin'].includes(value)) return 'Female';
-    return 'Other';
+    return '';
 };
 
 const empty = (value) => (Array.isArray(value) ? value.length === 0 : String(value ?? '').trim() === '');
@@ -50,7 +50,7 @@ export const dossierPrefillPatch = (version, donnees = {}, formData = {}, knownF
         CARE_IDENTITY_FIELDS.forEach((field) => take(field));
         // Santé mentale : le contact d'urgence du dossier (modifié ici, il met le dossier à jour à l'enregistrement).
         if (MENTAL_HEALTH_VERSIONS.includes(number)) EMERGENCY_FIELDS.forEach((field) => take(field));
-        if (known.has('patientSex') && !empty(donnees.patientGender)) wanted.patientSex = careSexOf(donnees.patientGender);
+        if (known.has('patientSex') && !empty(donnees.patientGender) && careSexOf(donnees.patientGender)) wanted.patientSex = careSexOf(donnees.patientGender);
         CARE_BACKGROUND_FIELDS.forEach((field) => take(field));
         CARE_BODY_FIELDS.forEach((field) => {
             if (!known.has(field) || empty(donnees[field])) return;

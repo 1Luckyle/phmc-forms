@@ -14,6 +14,7 @@ const DoeChoice = ({ formData, setFormData, fields, showMassFatality = false, on
     const john = isDoe(formData, fields, 'John');
     const jane = isDoe(formData, fields, 'Jane');
     const mass = formData.massFatality === true || formData.massFatality === 'true';
+    const named = String(formData[fields.first] || '').trim() !== '' || String(formData[fields.last] || '').trim() !== '';
 
     const toggle = (first, checked) => setFormData((prev) => ({
         ...prev,
@@ -27,8 +28,10 @@ const DoeChoice = ({ formData, setFormData, fields, showMassFatality = false, on
     return (
         <div className="radio-inline-container">
             <div className="radio-button-group">
-                <Form.Check type="checkbox" id="johnDoe" label="   John Doe" checked={john} onChange={(e) => toggle('John', e.target.checked)} inline />
-                <Form.Check type="checkbox" id="janeDoe" label="   Jane Doe" checked={jane} onChange={(e) => toggle('Jane', e.target.checked)} inline />
+                <div data-field-group={fields.first} data-filled={named ? '1' : '0'} style={{ display: 'inline-block' }}>
+                    <Form.Check type="checkbox" id="johnDoe" label="   John Doe" checked={john} onChange={(e) => toggle('John', e.target.checked)} inline />
+                    <Form.Check type="checkbox" id="janeDoe" label="   Jane Doe" checked={jane} onChange={(e) => toggle('Jane', e.target.checked)} inline />
+                </div>
                 {showMassFatality && (
                     <Form.Check
                         type="checkbox" id="massFatality" name="massFatality" label="   Tuerie/accident de masse" checked={mass} inline

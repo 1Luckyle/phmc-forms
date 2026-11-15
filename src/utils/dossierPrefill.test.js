@@ -27,7 +27,7 @@ describe('pré-remplissage depuis le dossier', () => {
         const patch = dossierPrefillPatch(5, withIdentity, {}, fields('patientFirstName', 'patientMiddleName', 'patientLastName', 'patientDateOfBirth', 'patientSex'));
         expect(patch).toEqual({ patientFirstName: 'Jean', patientMiddleName: 'Michel', patientLastName: 'Testard', patientDateOfBirth: '1990-05-14', patientSex: 'Male' });
         expect(dossierPrefillPatch(5, { patientGender: 'Femme' }, {}, fields('patientSex'))).toEqual({ patientSex: 'Female' });
-        expect(dossierPrefillPatch(5, { patientGender: 'Autre' }, {}, fields('patientSex'))).toEqual({ patientSex: 'Other' });
+        expect(dossierPrefillPatch(5, { patientGender: 'Autre' }, {}, fields('patientSex'))).toEqual({});
     });
     test('certificats (maladie, vol) : identité seulement, pas de fond médical', () => {
         const patch = dossierPrefillPatch(35, donnees, {}, fields('patientFirstName', 'patientAllergies'));

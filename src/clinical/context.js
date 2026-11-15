@@ -54,14 +54,14 @@ export const suggestPatient = ({ ids = [], seed = '', formData = {}, chronic = [
     };
 };
 
-/** Remarques sur le patient saisi : âge ou sexe manquants (calculs sur un adulte de 35 ans), sexe incompatible avec le motif ou l'intervention. */
+/** Remarques sur le patient saisi : âge ou genre à l'état civil manquants (calculs sur un adulte de 35 ans), genre incompatible avec le motif ou l'intervention. */
 export const patientNotices = ({ ids = [], patient = {}, label = 'ce motif' }) => {
     const notices = [];
     if (patient.ageYears === null || patient.ageYears === undefined) notices.push("Date de naissance non renseignée : constantes et doses calculées pour un adulte de 35 ans. « Patient » propose un âge plausible.");
-    if (!patient.sex || patient.sex === 'Other') notices.push('Sexe non renseigné : les valeurs de repos sont celles d\'un adulte moyen.');
+    if (!patient.sex || patient.sex === 'Other') notices.push('Genre à l\'état civil non renseigné : les valeurs de repos sont celles d\'un adulte moyen.');
     ids.forEach((id) => {
         const wanted = SEX_HINTS[id];
-        if (wanted && patient.sex && patient.sex !== 'Other' && patient.sex !== wanted) notices.push(`Sexe renseigné (${SEX_LABELS[patient.sex] || patient.sex}) : ${label} concerne un patient de sexe ${SEX_LABELS[wanted]}.`);
+        if (wanted && patient.sex && patient.sex !== 'Other' && patient.sex !== wanted) notices.push(`Genre à l'état civil renseigné (${SEX_LABELS[patient.sex] || patient.sex}) : ${label} concerne un patient de genre ${SEX_LABELS[wanted]}.`);
     });
     return notices;
 };

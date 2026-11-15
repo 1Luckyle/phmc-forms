@@ -20,7 +20,8 @@ const IGNORE_IN_CODE = {
     '*': ['patientName', 'patientNameNew', 'lastName', 'date', 'payNow', 'fleecaPaymentId', 'patientTitleOptions', 'decedentName', 'extraStaff', 'massFatality', 'decedents', 'autopsyDiagramMarkers', 'applicantTitleAndFullName',
         // Recomposés ou déduits : nom complet (prénom + deuxième prénom + nom), rôle de l'employé, âge tiré de la date de naissance. Ce ne sont pas des champs de saisie.
         'phmcRank', 'patientAgeYears', 'witnessName', 'attorneyName', 'patientEmergencyContact'],   // nom composé des candidatures : pas une saisie
-    1: ['evidenceLocker', 'decedentHeight', 'decedentWeight'],   // taille et poids : seulement à l'autopsie (showMeasures)
+    1: ['evidenceLocker', 'decedentHeight', 'decedentWeight', 'patientDateOfBirth'],   // taille et poids : seulement à l'autopsie (showMeasures) ; patientDateOfBirth : valeur par défaut du composant partagé BirthOrAgeFields (ici « decedentDateOfBirth »)
+    4: ['patientDateOfBirth'], 37: ['patientDateOfBirth'],   // idem : le composant partagé BirthOrAgeFields reçoit « decedentDateOfBirth »
     28: ['patientCurrentMedicine'], 29: ['patientCurrentMedicine'],
     6: ['patientChronicDiseases', 'patientCurrentMedicine'], 7: ['patientChronicDiseases', 'patientCurrentMedicine'],   // PatientContextFields showHistory={false}
     2: ['additionalPatientIDs'],   // liste d'ID des autres défunts : facultative par nature (le premier ID est le champ « ID patient »)
@@ -38,7 +39,7 @@ const IGNORE_IN_CODE = {
 const IGNORE_IN_CATALOG = {
     '*': ['placeOfDeathZipCity', 'patientZIPCity', 'patientZIPNewCity', 'applicantZIPCity'],
     2: ['deathReport'],
-    11: ['decedentPatientIDs'],
+    11: ['decedentPlaceOfDeathZipCity'],   // ville saisie à la main : nom construit par ZipCityField (fieldName + « City »)
     // Valeurs mesurées des signes vitaux : champs construits depuis une liste (name: '…'), que l'analyse du code ne lit pas.
     19: ['temperatureValue', 'heartRateValue', 'respiratoryRateValue', 'bloodPressureValue', 'spo2Value', 'glucoseValue', 'gcsScore'],
     20: ['temperatureValue', 'heartRateValue', 'respiratoryRateValue', 'bloodPressureValue', 'spo2Value', 'glucoseValue', 'gcsScore'],

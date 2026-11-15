@@ -77,13 +77,12 @@ describe('en-tête commun des rapports du DMEC', () => {
         expect(text).toContain('Département de Pathologie et de Médecine Légale');
         expect(text).not.toContain('Bureau du Coroner');
     });
-    test('le rapport public de décès garde son bandeau et un tableau « Dossier » à deux cellules par ligne', () => {
+    test('le rapport public de décès reprend l\'en-tête de l\'Email DMEC (logo du PHMC et sceau du DMEC) et un tableau « Dossier » à deux cellules par ligne', () => {
         const text = generateDeathRecord({ ...getDebugTemplate(37, ctx), agencyDataStore });
-        expect(text).toContain('death-record-header.png');
-        // Logo à texte clair : sur un bandeau sombre, pas sur fond blanc.
-        // Réduit à une largeur fixe (sinon il s'étire sur tout le bandeau) et centré.
-        expect(text).toMatch(/\[divboxcolor=black\]\[center\](\[br\]\[\/br\])?\[img=\d{2,3}\]https:\/\/phmc-tools\.com\/img\/death-record-header\.png/);
-        expect(text).not.toContain('dmec-seal-small');
+        expect(text).toContain('[center][img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/dmec-seal-small.png[/img][/center]');
+        // Plus de bandeau sombre : l'en-tête est celui de l'Email DMEC.
+        expect(text).not.toContain('death-record-header');
+        expect(text).not.toContain('[divboxcolor=black][center][br][/br][img=');
         const dossier = text.slice(text.indexOf('Numéro de dossier'), text.indexOf('Circonstances du décès'));
         // Jamais trois cellules sur une ligne : la troisième serait écrasée sur la droite.
         dossier.split('[tr]').filter((row) => row.includes(': ')).forEach((row) => expect(row.split('[td]').length - 1).toBeLessThanOrEqual(2));

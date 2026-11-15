@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Form, Button, InputGroup } from 'react-bootstrap';
 import ImagePreview from '../components/ImagePreview';
 import CoronerSelect from './shared/CoronerSelect';
@@ -99,32 +99,11 @@ const MassFatality = ({
     coronerGroupedOptions,
 }) => {
     const titleOptions = useTitleOptions();
-    const generateEvidenceLockerID = () => {
+    // Numéro de soumission au casier à preuves : préfixe de la date du jour, à compléter par le coroner.
+    const evidenceLockerPrefix = () => {
         const today = new Date();
-        const day = String(today.getDate()).padStart(2, '0');
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const year = today.getFullYear().toString().slice(2, 4); // Get last 2 digits of year
-        const baseID = `EV-${year}${month}${day}-`;
-        // Append whatever the user types
-        return baseID;
+        return `EV-${today.getFullYear().toString().slice(2, 4)}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}-`;
     };
-    const [evidenceLockerChecked, setEvidenceLockerChecked] = useState(formData.evidenceLocker === 'true');
-
-    const setGeneratedEvidenceLockerID = () => {
-        setFormData(prev => ({
-            ...prev,
-            evidenceLockerID: generateEvidenceLockerID()
-        }));
-    };
-    useEffect(() => {
-        setFormData(prev => ({
-            ...prev,
-            evidenceLockerID: '',
-            evidenceLocker: 'false'
-        }));
-    }, [setFormData]);
-
-    
 
     const addDecedent = () => {
         setFormData(prevFormData => ({
@@ -192,6 +171,9 @@ const MassFatality = ({
         decedentFirstName: checked ? first : '', decedentMiddleName: '', decedentLastName: checked ? 'Doe' : '', decedentName: checked ? `${first} Doe` : '',
     });
 
+    // Casier à preuves d'UN défunt : cocher propose le préfixe du numéro, décocher le retire.
+    const toggleEvidenceLocker = (index, checked) => patchDecedent(index, { evidenceLocker: checked ? 'true' : 'false', evidenceLockerID: checked ? evidenceLockerPrefix() : '' });
+
     return (
         <>
             <Form.Label className="form-section-title">Informations générales</Form.Label>
@@ -225,7 +207,7 @@ const MassFatality = ({
                     ))}
                 </Form.Select>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+            <div data-field-group="showRequestingOfficerInput" data-filled={formData.showRequestingOfficerInput ? '1' : '0'} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                 <Form.Check
                     type="checkbox"
                     label="Rapport demandé ?"
@@ -271,29 +253,29 @@ const MassFatality = ({
                     />
                     {!dec.collapsed && (
                         <div id={`decedent-collapse-${idx}`}>
-                        <div data-guide-zone>
+                        <div data-field-scope={`decedent-${idx}`}>
                             <div className="radio-inline-container">
-                                <div className="radio-button-group">
+                                <div className="radio-button-group" data-field-group="decedentFirstName" data-filled={(partsOf(dec).first || partsOf(dec).last) ? '1' : '0'}>
                                     <Form.Check type="checkbox" id={`johnDoe-${idx}`} label="   John Doe" checked={isDoe(dec, 'John')} onChange={(e) => toggleDoe(idx, 'John', e.target.checked)} inline />
                                     <Form.Check type="checkbox" id={`janeDoe-${idx}`} label="   Jane Doe" checked={isDoe(dec, 'Jane')} onChange={(e) => toggleDoe(idx, 'Jane', e.target.checked)} inline />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <SimpleSelect name={`decedentTitle-${idx}`} value={dec.decedentTitle} onChange={(e) => updateDecedent(idx, 'decedentTitle', e.target.value)} placeholder="Titre"
+                                <SimpleSelect name="decedentTitle" value={dec.decedentTitle} onChange={(e) => updateDecedent(idx, 'decedentTitle', e.target.value)} placeholder="Titre"
                                     style={{ flex: '0 0 150px', minWidth: '130px' }} options={titleOptions} />
-                                <Form.Control type="text" value={partsOf(dec).first} placeholder="Prénom du défunt (IC)" onChange={(e) => setNamePart(idx, 'first', e.target.value)} required={idx === 0} data-guide="Prénom du défunt, tel que son personnage. Le premier défunt doit avoir un nom." />
-                                <Form.Control type="text" value={partsOf(dec).middle} placeholder="Deuxième prénom (IC)" onChange={(e) => setNamePart(idx, 'middle', e.target.value)} data-guide="Deuxième prénom du défunt, s'il en a un." />
-                                <Form.Control type="text" value={partsOf(dec).last} placeholder="Nom de famille (IC)" onChange={(e) => setNamePart(idx, 'last', e.target.value)} required={idx === 0} data-guide="Nom de famille du défunt, tel que son personnage." />
+                                <Form.Control type="text" value={partsOf(dec).first} placeholder="Prénom du défunt (IC)" onChange={(e) => setNamePart(idx, 'first', e.target.value)} data-field-name="decedentFirstName" data-required={idx === 0 ? '1' : undefined} data-guide="Prénom du défunt, tel que son personnage. Le premier défunt doit avoir un nom." />
+                                <Form.Control type="text" value={partsOf(dec).middle} placeholder="Deuxième prénom (IC)" onChange={(e) => setNamePart(idx, 'middle', e.target.value)} data-field-name="decedentMiddleName" data-guide="Deuxième prénom du défunt, s'il en a un." />
+                                <Form.Control type="text" value={partsOf(dec).last} placeholder="Nom de famille (IC)" onChange={(e) => setNamePart(idx, 'last', e.target.value)} data-field-name="decedentLastName" data-required={idx === 0 ? '1' : undefined} data-guide="Nom de famille du défunt, tel que son personnage." />
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" value={dec.decedentOOC} placeholder="(( Discord du joueur (HRP) ))" onChange={(e) => updateDecedent(idx, 'decedentOOC', e.target.value)} data-guide="Discord du joueur du défunt, hors jeu de rôle." />
-                                <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient du défunt (obligatoire ; ID temporaire s'il n'en a pas)" onChange={(e) => updateDecedent(idx, 'patientID', e.target.value)} data-guide="ID patient du défunt (PHMC-2752), obligatoire : le titre du rapport est la suite des ID de tous les défunts, et le rapport est lié au dossier de chacun. Sans ID : « Générer un ID temporaire » sous le champ." />
+                                <Form.Control type="text" value={dec.decedentOOC} placeholder="(( Discord du joueur (HRP) ))" onChange={(e) => updateDecedent(idx, 'decedentOOC', e.target.value)} data-field-name="decedentOOC" data-guide="Discord du joueur du défunt, hors jeu de rôle." />
+                                <Form.Control type="text" value={dec.patientID || ''} placeholder="ID Patient du défunt (obligatoire ; ID temporaire s'il n'en a pas)" onChange={(e) => updateDecedent(idx, 'patientID', e.target.value)} data-field-name="patientID" data-guide="ID patient du défunt (PHMC-2752), obligatoire : le titre du rapport est la suite des ID de tous les défunts, et le rapport est lié au dossier de chacun. Sans ID : « Générer un ID temporaire » sous le champ." />
                             </div>
                             <TemporaryIdPicker value={dec.patientID || ''} onChange={(next) => updateDecedent(idx, 'patientID', next)} personName={joinFullName(partsOf(dec).first, partsOf(dec).middle, partsOf(dec).last) || dec.decedentOOC} />
                             <Form.Label>Heure du décès prononcée</Form.Label>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="datetime-local" value={dec.pronouncedTimeOfDeath} onChange={(e) => updateDecedent(idx, 'pronouncedTimeOfDeath', e.target.value)} data-guide="Date et heure à laquelle le décès a été prononcé." />
-                                <Form.Select value={dec.typeOfDeath} onChange={(e) => updateDecedent(idx, 'typeOfDeath', e.target.value)} data-guide="Type de décès : PK (mort du joueur) ou CK (mort définitive du personnage).">
+                                <Form.Control type="datetime-local" value={dec.pronouncedTimeOfDeath} onChange={(e) => updateDecedent(idx, 'pronouncedTimeOfDeath', e.target.value)} data-field-name="pronouncedTimeOfDeath" data-guide="Date et heure à laquelle le décès a été prononcé." />
+                                <Form.Select value={dec.typeOfDeath} onChange={(e) => updateDecedent(idx, 'typeOfDeath', e.target.value)} data-field-name="typeOfDeath" data-guide="Type de décès : PK (mort du joueur) ou CK (mort définitive du personnage).">
                                     <option value="" disabled>Sélectionner le type de décès</option>
                                     {localizeOptions(typeOfDeathOptions, DEATH_TYPE_FR).map((opt) => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -302,14 +284,14 @@ const MassFatality = ({
                             </div>
                             <Form.Label>Lieu du décès</Form.Label>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Control type="text" value={dec.placeOfDeath} placeholder="Lieu du décès (Numéro, Étage, Rue)" onChange={(e) => updateDecedent(idx, 'placeOfDeath', e.target.value)} data-guide="Adresse du lieu où le défunt est décédé." />
+                                <Form.Control type="text" value={dec.placeOfDeath} placeholder="Lieu du décès (Numéro, Étage, Rue)" onChange={(e) => updateDecedent(idx, 'placeOfDeath', e.target.value)} data-field-name="decedentPlaceOfDeath" data-guide="Adresse du lieu où le défunt est décédé." />
                                 <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-                                    <ZipCityField fieldName="placeOfDeathZip" zip={dec.placeOfDeathZip || ''} onZipChange={(zip) => updateDecedent(idx, 'placeOfDeathZip', zip)}
+                                    <ZipCityField fieldName="decedentPlaceOfDeathZip" zip={dec.placeOfDeathZip || ''} onZipChange={(zip) => updateDecedent(idx, 'placeOfDeathZip', zip)}
                                         city={dec.placeOfDeathZipCity || ''} onCityChange={(name) => updateDecedent(idx, 'placeOfDeathZipCity', name)} placeholder="Code postal" />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <Form.Select value={dec.mannerOfDeath} onChange={(e) => updateDecedent(idx, 'mannerOfDeath', e.target.value)} data-guide="Mode du décès : naturelle, accidentelle, suicide, homicide ou indéterminée.">
+                                <Form.Select value={dec.mannerOfDeath} onChange={(e) => updateDecedent(idx, 'mannerOfDeath', e.target.value)} data-field-name="mannerOfDeath" data-guide="Mode du décès : naturelle, accidentelle, suicide, homicide ou indéterminée.">
                                     <option value="" disabled>Sélectionner le mode de décès</option>
                                     {localizeOptions(mannerOfDeathOptions, MANNER_FR).map((opt) => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -326,40 +308,26 @@ const MassFatality = ({
                         </div>
                             <Form.Group className="mb-3">
                                 <Form.Label>Blessures du défunt / Points à noter</Form.Label>
-                                <Form.Control as="textarea" rows={3} value={dec.synopsis} onChange={e => updateDecedent(idx, 'synopsis', e.target.value)} placeholder="Blessures constatées, éléments notables…" data-guide="Blessures constatées sur le défunt et éléments à noter." />
+                                <Form.Control as="textarea" rows={3} value={dec.synopsis} onChange={e => updateDecedent(idx, 'synopsis', e.target.value)} placeholder="Blessures constatées, éléments notables…" data-field-name="decedentInjuries" data-guide="Blessures constatées sur le défunt et éléments à noter." />
                             </Form.Group>
                             <Form.Group className="mb-3">
                                 <label>Soumission au casier à preuves:</label>
-                                <Form.Check
-                                    type="checkbox"
-                                    id="evidenceLocker"
-                                    label="       J'ai soumis des preuves au casier à preuves"
-                                    checked={evidenceLockerChecked}
-                                    onChange={(e) => {
-                                        setEvidenceLockerChecked(e.target.checked);
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            evidenceLocker: e.target.checked.toString(),
-                                        }));
-
-                                        if (e.target.checked) {
-                                            setGeneratedEvidenceLockerID();
-                                        } else {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                evidenceLockerID: ''
-                                            }));
-                                        }
-                                    }}
-                                />
-
-                                {evidenceLockerChecked && (
+                                <div data-field-group="evidenceLocker" data-filled={dec.evidenceLocker === 'true' ? '1' : '0'}>
+                                    <Form.Check
+                                        type="checkbox"
+                                        id={`evidenceLocker-${idx}`}
+                                        label="       J'ai soumis des preuves au casier à preuves"
+                                        checked={dec.evidenceLocker === 'true'}
+                                        onChange={(e) => toggleEvidenceLocker(idx, e.target.checked)}
+                                    />
+                                </div>
+                                {dec.evidenceLocker === 'true' && (
                                     <Form.Control
                                         type="text"
-                                        name="evidenceLockerID"
-                                        value={formData.evidenceLockerID || generateEvidenceLockerID()}
-                                        onChange={handleChange}
-                                        placeholder={generateEvidenceLockerID() + " Votre numéro de soumission ici"}
+                                        data-field-name="evidenceLockerID"
+                                        value={dec.evidenceLockerID || ''}
+                                        onChange={(e) => updateDecedent(idx, 'evidenceLockerID', e.target.value)}
+                                        placeholder={evidenceLockerPrefix() + " Votre numéro de soumission ici"}
                                         className="form-control"
                                     />
                                 )}
@@ -371,6 +339,7 @@ const MassFatality = ({
                                         as="textarea"
                                         rows={2}
                                         value={dec.scenePhotos}
+                                        data-field-name="scenePhotos"
                                         onChange={e => updateDecedent(idx, 'scenePhotos', e.target.value)}
                                         placeholder="Télécharger les photos de la scène (séparées par des virgules)"
                                         onPaste={e => {
@@ -430,6 +399,7 @@ const MassFatality = ({
                                         as="textarea"
                                         rows={2}
                                         value={dec.additionalImages}
+                                        data-field-name="additionalImages"
                                         onChange={e => updateDecedent(idx, 'additionalImages', e.target.value)}
                                         placeholder="(( Écran de morgue, photos des liaisons (( /cdamages )), rapport de test ADN )) (séparés par des virgules)"
                                         onPaste={e => {
@@ -482,13 +452,15 @@ const MassFatality = ({
                                     Télécharger le(s) photographie(s). Prend en charge le collage depuis le presse-papiers (Ctrl+V). Hébergé par ImgBB.
                                 </span>
                                 <label>Bugs de la morgue:</label>
-                                <Form.Check
-                                    type="checkbox"
-                                    id={`morgueStatus-${idx}`}
-                                    label="       Cocher si l'écran de morgue est indisponible / cassé / inaccessible"
-                                    checked={dec.morgueStatus === 'true' || dec.morgueStatus === true}
-                                    onChange={(e) => updateDecedent(idx, 'morgueStatus', e.target.checked.toString())}
-                                />
+                                <div data-field-group="morgueStatus" data-filled={dec.morgueStatus === 'true' || dec.morgueStatus === true ? '1' : '0'}>
+                                    <Form.Check
+                                        type="checkbox"
+                                        id={`morgueStatus-${idx}`}
+                                        label="       Cocher si l'écran de morgue est indisponible / cassé / inaccessible"
+                                        checked={dec.morgueStatus === 'true' || dec.morgueStatus === true}
+                                        onChange={(e) => updateDecedent(idx, 'morgueStatus', e.target.checked.toString())}
+                                    />
+                                </div>
                             </Form.Group>
                             
                         </div>

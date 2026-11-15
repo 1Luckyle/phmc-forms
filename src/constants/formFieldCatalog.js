@@ -7,10 +7,10 @@
 export const VERSION_FIELDS = {
     1: {
         coronerEmployee: 'select', dateTime: 'date', pronouncedTimeOfDeath: 'time', showRequestingOfficerInput: 'checkbox',
-        department: 'select', requestingOfficer: 'text', massFatality: 'radio', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select',
+        department: 'select', requestingOfficer: 'text', massFatality: 'checkbox', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select',
         decedentOOC: 'text', patientID: 'text', typeOfDeath: 'select', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text',
         decedentAttributes: 'text', mannerOfDeath: 'textarea', probableCauseOfDeath: 'textarea', synopsis: 'textarea',
-        evidenceLockerID: 'text', scenePhotos: 'textarea', additionalImages: 'textarea', decedentAge: 'text',
+        evidenceLocker: 'checkbox', evidenceLockerID: 'text', scenePhotos: 'textarea', additionalImages: 'textarea', morgueStatus: 'checkbox', decedentDateOfBirth: 'date', decedentAge: 'text',
         decedentSex: 'select', decedentMarks: 'textarea',
         requestingAuthority: 'select', requestingAuthorityRef: 'text', requestingAgency: 'select',
     },
@@ -38,7 +38,7 @@ export const VERSION_FIELDS = {
         autopsyTime: 'time', deathType: 'text', causeOfDeath: 'text', externalExamination: 'textarea',
         autopsyClothing: 'textarea', autopsyInternalExamination: 'textarea', RadiologyResult: 'textarea', autopsyAlbumUrl: 'textarea',
         autopsyPhotosUnavailable: 'checkbox', synopsis: 'textarea', coronerEmployee: 'select', chiefCoronerEmployee: 'select',
-        decedentAge: 'text', decedentSex: 'select', decedentHeight: 'text', decedentWeight: 'text',
+        decedentDateOfBirth: 'date', decedentAge: 'text', decedentSex: 'select', decedentHeight: 'text', decedentWeight: 'text',
         decedentMarks: 'textarea', requestingAuthority: 'select', requestingAuthorityRef: 'text', autopsyDeathCauses: 'textarea', autopsyAnatomicSummaryItems: 'textarea', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text',
     },
     5: {
@@ -81,10 +81,13 @@ export const VERSION_FIELDS = {
         date: 'date', witnessFirstName: 'text', witnessMiddleName: 'text', witnessLastName: 'text', witnessTitle: 'select', patientID: 'text', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text',
     },
     11: {
-        coronerEmployee: 'select', dateTime: 'datetime-local', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text', showRequestingOfficerInput: 'checkbox',
-        department: 'select', requestingOfficer: 'text', synopsis: 'textarea', evidenceLockerID: 'text', requestingAgency: 'select',
-        // Un ID patient par défunt (liste « Défunts ») : composent le titre du rapport ; contrôlés défunt par défunt (utils/formValidation.js).
-        decedentPatientIDs: 'list',
+        coronerEmployee: 'select', dateTime: 'datetime-local', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text',
+        department: 'select', showRequestingOfficerInput: 'checkbox', requestingAgency: 'select', requestingOfficer: 'text', synopsis: 'textarea',
+        // Fiche de CHAQUE défunt (liste « Défunts ») : réglée ici pour toutes les fiches, contrôlée défunt par défunt (utils/massFatality.js, utils/formValidation.js).
+        decedentTitle: 'select', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentOOC: 'text', patientID: 'text',
+        pronouncedTimeOfDeath: 'datetime-local', typeOfDeath: 'select', decedentPlaceOfDeath: 'text', decedentPlaceOfDeathZip: 'select', decedentPlaceOfDeathZipCity: 'text',
+        mannerOfDeath: 'select', probableCauseOfDeath: 'textarea', decedentInjuries: 'textarea', evidenceLocker: 'checkbox', evidenceLockerID: 'text',
+        scenePhotos: 'textarea', additionalImages: 'textarea', morgueStatus: 'checkbox',
     },
     14: {
         patientFirstName: 'text', patientMiddleName: 'text', patientLastName: 'text', patientID: 'text', date: 'date', 
@@ -244,7 +247,7 @@ export const VERSION_FIELDS = {
     37: {
         deathRecordType: 'select', caseNumber: 'text', decedentFirstName: 'text', decedentMiddleName: 'text', decedentLastName: 'text', decedentTitle: 'select', decedentOOC: 'text',
         patientID: 'text', dateOfDeath: 'date', caseStatus: 'select', bodyStatus: 'select',
-        sex: 'select', ethnicity: 'text', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text', age: 'text',
+        sex: 'select', ethnicity: 'text', placeOfDeath: 'text', placeOfDeathZip: 'select', placeOfDeathZipCity: 'text', decedentDateOfBirth: 'date', age: 'text',
         manner: 'select', hairColor: 'text', eyeColor: 'text', weight: 'text',
         height: 'text', tattoos: 'textarea', jewelry: 'textarea', comments: 'textarea',
         otherSignificantConditions: 'textarea', coronerEmployee: 'select', chiefMedicalExaminer: 'select', causesOfDeath: 'textarea',

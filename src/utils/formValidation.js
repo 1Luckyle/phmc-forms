@@ -27,6 +27,7 @@ import { guardianErrors, isMinorPatient, isMinorTitle, ageOn, MAJORITY_AGE } fro
 import { jobsOf, jobProblems, licenseOf, MIN_APPLICATION_AGE } from './applicationForm';
 import { requiredFieldsOf, isRelaxed, getFormOverrides } from './formRulesCore';
 import { isFieldApplicable } from './fieldApplicability';
+import { DECEDENT_FIELDS, isDecedentField, decedentValue, isDecedentFieldApplicable } from './massFatality';
 import { getFieldInfo } from '../constants/fieldInfo';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
@@ -77,7 +78,8 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         // Rapport public de décès d'un défunt NON IDENTIFIÉ : son Discord (HRP) est forcément inconnu.
         if (version === 37 && field === 'decedentOOC' && data.deathRecordType === 'Unidentified') return;
         // Rapport de masse : les ID patient sont dans chaque défunt, contrôlés défunt par défunt plus bas.
-        if (version === 11 && field === 'decedentPatientIDs') return;
+        // Rapport de masse : les champs de la fiche d'un défunt sont contrôlés défunt par défunt plus bas.
+        if (isDecedentField(version, field)) return;
         if (!filled(data[field])) errors.push(`${fieldLabel(version, field)} : champ obligatoire.`);
     });
 
@@ -105,6 +107,14 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         // Chaque défunt a son ID patient (réel, ou temporaire TMP-…) : le titre du rapport est la suite de ces ID, et le rapport est lié à chacun d'eux.
         decedents.forEach((decedent, index) => {
             if (!filled(decedent?.patientID)) errors.push(`Défunt n°${index + 1} : ID patient obligatoire (ID temporaire TMP-… s'il n'en a pas).`);
+        });
+        // Autres champs de la fiche, exigés pour chaque défunt quand la page d'administration les rend obligatoires.
+        requiredFieldsOf(version).forEach((field) => {
+            if (!DECEDENT_FIELDS[field] || field === 'patientID') return;
+            decedents.forEach((decedent, index) => {
+                if (!isDecedentFieldApplicable(field, decedent)) return;
+                if (!filled(decedentValue(decedent, field))) errors.push(`Défunt n°${index + 1} : ${fieldLabel(version, field)} : champ obligatoire.`);
+            });
         });
     }
     if (version === 24 && !(Array.isArray(data.MedicalRecordsRelease) && data.MedicalRecordsRelease.length > 0)) {

@@ -158,7 +158,7 @@ const buildHelpers = (ctx = {}) => {
     }
     const patient = {
         ageYears: String(Math.max(0, ageYears)),
-        // Valeurs du sélecteur « Sexe du patient » : Male / Female / Other.
+        // Valeurs du sélecteur « Genre à l'état civil » : Male / Female (ancienne valeur : Other).
         sex: ['Male', 'Female', 'Other'].includes(civil?.gender) ? civil.gender : 'Male',
         firstName: civil?.firstName || 'Jean',
         middleName: civil ? (civil.middleName || '') : 'Michel',
@@ -504,8 +504,6 @@ const TEMPLATES = {
         requestingAgency: h.opt('requestingAgenciesOptions', 1),
         requestingOfficer: 'Officier John Doe',
         synopsis: LOREM_LONG,
-        evidenceLocker: 'false',
-        evidenceLockerID: '',
         decedents: [1, 2].map((n) => ({
             ...decedentParts('Défunt', '', `Numéro${n}`),
             decedentOOC: `test.debug${n}`,
@@ -518,8 +516,9 @@ const TEMPLATES = {
             placeOfDeathZip: h.patient.zip,
             mannerOfDeath: h.opt('mannerOfDeathOptions'),
             synopsis: LOREM_SHORT,
-            evidenceLocker: 'false',
-            evidenceLockerID: '',
+            // Casier à preuves : le défunt n°1 a une soumission (numéro préfixé de la date du jour), le n°2 non.
+            evidenceLocker: n === 1 ? 'true' : 'false',
+            evidenceLockerID: n === 1 ? `EV-${String(h.today).slice(2).replace(/-/g, '')}-0042` : '',
             ...presetFill('probableCauseOfDeath', 1, '', DEATH_CAUSE_PRESETS),
             scenePhotos: h.img(),
             additionalImages: '',

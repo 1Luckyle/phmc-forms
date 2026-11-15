@@ -7,10 +7,10 @@ import { HISTORY_PRESETS } from '../../constants/historyPresets';
 import PresetTextField from './PresetTextField';
 import { frDayOf } from '../../utils/activePrescriptions';
 
+// Genre à l'état civil : donnée purement médicale, tirée de l'anatomie : masculin ou féminin (ancienne valeur « Other » : voir l'option d'ancienne saisie ci-dessous).
 export const PATIENT_GENDER_OPTIONS = [
     { value: 'Male', label: 'Masculin' },
     { value: 'Female', label: 'Féminin' },
-    { value: 'Other', label: 'Autre / Non précisé' },
 ];
 
 /**
@@ -56,9 +56,10 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
             {/* Date de naissance ou âge (bascule), puis le sexe, sur la même ligne : voir BirthOrAgeFields. */}
             <BirthOrAgeFields formData={formData} setFormData={setFormData} handleChange={handleChange}>
                 <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-                    <Form.Label>Sexe</Form.Label>
+                    <Form.Label>Genre à l'état civil</Form.Label>
                     <Form.Select name="patientSex" value={formData.patientSex || ''} onChange={handleChange} className="form-control">
-                        <option value="" disabled>Sexe du patient</option>
+                        <option value="" disabled>Genre à l'état civil du patient</option>
+                        {formData.patientSex === 'Other' && <option value="Other">Autre / Non précisé (ancienne saisie : à remplacer)</option>}
                         {PATIENT_GENDER_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                         ))}

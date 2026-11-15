@@ -40,7 +40,7 @@ export const formatAgeAndGender = (formData) => {
  * la Clinique de Paleto Bay.
  */
 export const buildPatientContextBBCode = (formData, { accentColor = '#FF0000', showHistory = true } = {}) => {
-    let body = `[u]Âge / Sexe: [/u] ${formatAgeAndGender(formData)}`;
+    let body = `[u]Âge / Genre à l'état civil: [/u] ${formatAgeAndGender(formData)}`;
     const referral = referralLinesBBCode(formData);
     if (referral) body += `\n[br][/br]${referral}`;
     if (showHistory) {

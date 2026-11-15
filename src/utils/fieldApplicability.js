@@ -27,9 +27,9 @@ const CARE_FORMS_WITH_REFERRAL = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
 
 // Date de naissance OU âge (bascule du bloc « Contexte patient ») : l'âge se calcule tout seul quand la date est saisie ; quand la date est inconnue, on saisit l'âge à la place.
 // Un champ ne bloque donc jamais quand l'autre le remplace.
-const birthOrAge = (ageName = 'patientAgeYears') => ({
-    patientDateOfBirth: rule('l\'âge n\'est pas saisi à la place (date de naissance inconnue)', (d) => !(filled(d[ageName]) && !filled(d.patientDateOfBirth))),
-    [ageName]: rule('la date de naissance est inconnue (âge saisi à sa place)', (d) => !filled(d.patientDateOfBirth)),
+const birthOrAge = (ageName = 'patientAgeYears', dobName = 'patientDateOfBirth') => ({
+    [dobName]: rule('l\'âge n\'est pas saisi à la place (date de naissance inconnue)', (d) => !(filled(d[ageName]) && !filled(d[dobName]))),
+    [ageName]: rule('la date de naissance est inconnue (âge saisi à sa place)', (d) => !filled(d[dobName])),
 });
 const BIRTH_OR_AGE = birthOrAge();
 
@@ -43,6 +43,8 @@ const REQUESTING_OFFICER = {
     requestingOfficer: rule('la case « demande d\'un officier » est cochée', (d) => isYes(d.showRequestingOfficerInput)),
     requestingAgency: rule('la case « demande d\'un officier » est cochée', (d) => isYes(d.showRequestingOfficerInput)),
 };
+// Mass fatality : le numéro de soumission n'existe que pour un défunt dont la case « casier à preuves » est cochée (contrôlé défunt par défunt).
+const LOCKER_CHECKED = rule('la case « casier à preuves » du défunt est cochée', (d) => (Array.isArray(d.decedents) ? d.decedents : []).some((dec) => dec && (dec.evidenceLocker === 'true' || dec.evidenceLocker === true)));
 const AUTHORITY_REF = { requestingAuthorityRef: rule('une autorité requérante est choisie', (d) => filled(d.requestingAuthority)) };
 
 // Directives anticipées (dossier avancé et mise à jour) : le mandataire n'est demandé que s'il y en a un.
@@ -154,7 +156,7 @@ export const FIELD_CONDITIONS = {
         patientAllergies: rule('un risque d\'allergie est signalé (« Oui »)', (d) => d.patientAllergiesRisk === 'Yes'),
         vaccinationNote: rule('la vaccination n\'est pas à jour (« Non »)', (d) => d.vaccinationState === 'No'),
     },
-    11: { ...REQUESTING_OFFICER },
+    11: { ...REQUESTING_OFFICER, evidenceLockerID: LOCKER_CHECKED },
     19: {
         ...Object.fromEntries(CARE_DEATH_FIELDS.map((field) => [field, DECEASED])),
         admission: ALIVE, followup: ALIVE, patientMedicine: ALIVE, routineCare: ALIVE, dischargeDestination: ALIVE,
@@ -204,6 +206,10 @@ FIELD_CONDITIONS[7] = { ...FIELD_CONDITIONS[6], ...REFERRAL, ...BIRTH_OR_AGE };
 // Certificat de décès (âge du défunt : « patientAge ») et certificat de vol : même bascule date de naissance / âge.
 FIELD_CONDITIONS[8] = { ...birthOrAge('patientAge'), ...(FIELD_CONDITIONS[8] || {}) };
 FIELD_CONDITIONS[41] = { ...birthOrAge(), ...(FIELD_CONDITIONS[41] || {}) };
+// Défunts des rapports de médecine légale : date de naissance ou âge (estimé si inconnu).
+FIELD_CONDITIONS[1] = { ...birthOrAge('decedentAge', 'decedentDateOfBirth'), ...(FIELD_CONDITIONS[1] || {}) };
+FIELD_CONDITIONS[4] = { ...birthOrAge('decedentAge', 'decedentDateOfBirth'), ...(FIELD_CONDITIONS[4] || {}) };
+FIELD_CONDITIONS[37] = { ...birthOrAge('age', 'decedentDateOfBirth'), ...(FIELD_CONDITIONS[37] || {}) };
 
 /** Condition d'affichage d'un champ ({ text, when }) ou null s'il s'affiche toujours. */
 export const conditionOf = (version, field) => FIELD_CONDITIONS[Number(version)]?.[field] || null;

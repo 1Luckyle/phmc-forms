@@ -791,7 +791,7 @@ describe("assistant clinique : patient inconnu et champs complets", () => {
     test("sans âge ni sexe : remarques affichées, puis « Tout appliquer » complète le patient et tous les champs", async () => {
         render(<Harness Component={EmergencyForm} initial={{ patientID: 'PHMC-2752', date: '2026-11-11', clinicalConditions: ['fracture_fermee'], clinicalSeverity: 'Moderate' }} extra={props} />);
         expect(screen.getByText(/Date de naissance non renseignée/)).toBeTruthy();
-        expect(screen.getByText(/Sexe non renseigné/)).toBeTruthy();
+        expect(screen.getByText(/Genre à l'état civil non renseigné/)).toBeTruthy();
         await act(async () => { screen.getByText('Tout appliquer').click(); });
         const state = stateOf();
         expect(state.patientDateOfBirth).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -815,7 +815,7 @@ describe("assistant clinique : patient inconnu et champs complets", () => {
 
     test("sexe incompatible avec l'intervention : remarque dans l'assistant chirurgical", () => {
         render(<Harness Component={Surgical} initial={{ patientAgeYears: '30', patientSex: 'Male', surgeryProcedureIds: ['cesarienne'] }} extra={{}} />);
-        expect(screen.getByText(/concerne un patient de sexe féminin/)).toBeTruthy();
+        expect(screen.getByText(/concerne un patient de genre féminin/)).toBeTruthy();
     });
 
     test("la consultation n'a pas de bouton « Arrivée »", () => {

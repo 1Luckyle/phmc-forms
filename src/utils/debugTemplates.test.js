@@ -3,6 +3,7 @@ import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { requiredFieldsOf } from './formRulesCore';
 import { isFieldApplicable } from './fieldApplicability';
 import { validateReport } from './formValidation';
+import { isDecedentField } from './massFatality';
 
 jest.mock('../firebase', () => ({ database: {}, auth: {} }));
 jest.mock('firebase/database', () => ({ ref: jest.fn(), onValue: jest.fn(), get: jest.fn(), set: jest.fn(), update: jest.fn() }));
@@ -16,7 +17,7 @@ const TECHNICAL = new Set([
     'patientName', 'patientNameNew', 'decedentName', 'witnessName', 'attorneyName', 'patientEmergencyContact', 'phmcRank', 'patientAgeYears',
     // Champs dont la saisie n'a pas d'attribut `name` (listes, sélecteurs, tableaux) et que le catalogue ne voit donc pas.
     // ID patient de plusieurs personnes : une ligne par défunt (rapport de masse, dans `decedents`) ; ID supplémentaires du courriel DMEC.
-    'decedentPatientIDs', 'additionalPatientIDs',
+    'additionalPatientIDs',
     // Ordonnances encore en cours du patient, lues dans ses autres rapports (hooks/useActivePrescriptions.js), et celles que le soignant a retirées.
     'patientActivePrescriptions', 'patientActivePrescriptionsOff',
     'morgueStatus', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems', 'evidenceLocker', 'scenePhotos', 'XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults',
@@ -42,7 +43,8 @@ describe('remplissage debug : à tenir à jour avec chaque formulaire', () => {
         // Un champ conditionnel qui ne s'affiche pas avec ces données (représentant légal d'un majeur…) n'a pas à être rempli (voir fieldApplicability.js).
         const missing = requiredFieldsOf(version).filter((key) => isFieldApplicable(version, key, template) && (template[key] === undefined || template[key] === ''));
         // Le médecin et le défunt viennent de l'identité connectée ou d'un autre champ : seuls les champs propres au formulaire sont vérifiés ici.
-        expect(missing.filter((key) => !TECHNICAL.has(key))).toEqual([]);
+        // Rapport de masse : les champs d'une fiche de défunt sont dans `decedents` (contrôlés défunt par défunt par validateReport, voir le test suivant).
+        expect(missing.filter((key) => !TECHNICAL.has(key) && !isDecedentField(version, key))).toEqual([]);
     });
 });
 

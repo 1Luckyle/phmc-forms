@@ -20,7 +20,7 @@ export const DEFAULT_REQUIRED = {
     6: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
     7: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
     8: ['patientID', 'decedentFirstName', 'decedentLastName', 'date'],
-    11: ['decedentPatientIDs', 'dateTime'],
+    11: ['patientID', 'dateTime'],
     14: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
     16: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
     19: ['patientFirstName', 'patientLastName', 'patientID', 'date', 'phmcEmployee'],
@@ -66,7 +66,7 @@ export const LOCKED_FIELDS = {
     6: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
     7: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
     8: { patientID: TITLE, date: TITLE },
-    11: { decedentPatientIDs: TITLE, dateTime: TITLE },
+    11: { patientID: TITLE, dateTime: TITLE },
     14: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
     16: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
     19: { patientID: TITLE, patientFirstName: TITLE, patientLastName: TITLE, date: TITLE, phmcEmployee: AUTHOR },
@@ -107,7 +107,8 @@ export const SPECIAL_RULES = {
     37: ["Discord du défunt : pas exigé pour un défunt non identifié."],
     3: ["Titre « Mineur » : seulement si la date de naissance indique moins de 18 ans."],
     11: [
-        "Au moins un défunt, et le premier doit avoir un nom.",
+        "Au moins un défunt, et le premier doit avoir un nom (prénom et nom de la première fiche).",
+        "Les champs cochés « obligatoire » pour la fiche d'un défunt sont exigés pour CHAQUE défunt du rapport.",
         "Chaque défunt a son ID patient (réel, ou temporaire TMP-…) : le titre du rapport est la suite de ces ID, et le rapport est lié au dossier de chacun.",
     ],
     24: [

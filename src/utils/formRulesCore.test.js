@@ -225,10 +225,10 @@ describe('DMEC : titre par ID patient, date seule, champs obligatoires', () => {
 
     test('panneau admin : le rapport de masse montre une ligne « ID patient de chaque défunt », obligatoire et verrouillée', () => {
         const { fieldKeysOf } = require('./formRulesCore');
-        expect(fieldKeysOf(11)).toContain('decedentPatientIDs');
-        expect(isDefaultRequired(11, 'decedentPatientIDs')).toBe(true);
-        expect(lockedReasonOf(11, 'decedentPatientIDs')).toBe('title');
-        expect(isFieldRequired(11, 'decedentPatientIDs', { 11: { decedentPatientIDs: false } })).toBe(true);
+        expect(fieldKeysOf(11)).toContain('patientID');
+        expect(isDefaultRequired(11, 'patientID')).toBe(true);
+        expect(lockedReasonOf(11, 'patientID')).toBe('title');
+        expect(isFieldRequired(11, 'patientID', { 11: { patientID: false } })).toBe(true);
         // Le courriel DMEC n'expose pas la liste des ID supplémentaires comme un champ à rendre obligatoire.
         expect(fieldKeysOf(2)).not.toContain('additionalPatientIDs');
     });
