@@ -145,9 +145,9 @@ describe('mise à jour du dossier : nouveau titre', () => {
 
 describe('panneau admin : uniquement des champs qui existent dans les formulaires', () => {
     const { fieldKeysOf } = require('./formRulesCore');
-    const DERIVED = ['patientName', 'patientNameNew', 'decedentName', 'witnessName', 'attorneyName', 'patientEmergencyContact', 'phmcRank', 'patientAgeYears'];
+    const DERIVED = ['patientName', 'patientNameNew', 'decedentName', 'witnessName', 'attorneyName', 'patientEmergencyContact', 'phmcRank'];
 
-    test('aucun formulaire ne présente un nom recomposé, le rôle de l\u2019employé ou l\u2019âge déduit comme un champ à régler', () => {
+    test('aucun formulaire ne présente un nom recomposé, le rôle de l\u2019employé ou autre champ déduit comme un champ à régler', () => {
         const found = [];
         Object.keys(VERSION_FIELDS).forEach((version) => fieldKeysOf(version).forEach((key) => { if (DERIVED.includes(key)) found.push(`v${version}:${key}`); }));
         expect(found).toEqual([]);

@@ -120,3 +120,27 @@ describe('cohérence de la table des conditions', () => {
         expect(Object.keys(VERSION_FIELDS).length).toBeGreaterThan(25);
     });
 });
+
+describe('date de naissance OU âge (formulaires de soins)', () => {
+    const CARE = [5, 6, 7, 14, 16, 19, 20, 21, 28, 29];
+    test("l'âge existe au catalogue de chaque formulaire qui propose la bascule, donc la page admin peut le rendre obligatoire ou facultatif", () => {
+        CARE.forEach((version) => {
+            expect(VERSION_FIELDS[version].patientAgeYears).toBe('number');
+            expect(fieldKeysOf(version)).toContain('patientAgeYears');
+            expect(conditionTextOf(version, 'patientAgeYears')).toMatch(/date de naissance est inconnue/);
+        });
+    });
+    test("date de naissance obligatoire : l'âge saisi à sa place suffit ; âge obligatoire : la date de naissance suffit (l'âge s'en déduit)", () => {
+        setFormOverrides({ 19: { patientDateOfBirth: true, patientAgeYears: true } });
+        expect(isFieldApplicable(19, 'patientDateOfBirth', { patientAgeYears: '34' })).toBe(false);
+        expect(isFieldApplicable(19, 'patientAgeYears', { patientDateOfBirth: '1990-05-17' })).toBe(false);
+        // Rien de saisi : les deux restent exigés.
+        expect(isFieldApplicable(19, 'patientDateOfBirth', {})).toBe(true);
+        expect(isFieldApplicable(19, 'patientAgeYears', {})).toBe(true);
+        const base = { patientID: 'PHMC-1' };
+        const age = validateReport(19, { ...base, patientAgeYears: '34' }).errors.join(' ');
+        expect(age).not.toMatch(/Date de naissance : champ obligatoire|Âge du patient : champ obligatoire/);
+        expect(validateReport(19, { ...base, patientDateOfBirth: '1990-05-17' }).errors.join(' ')).not.toMatch(/Âge du patient : champ obligatoire/);
+        expect(validateReport(19, base).errors.join(' ')).toMatch(/Âge du patient : champ obligatoire/);
+    });
+});
