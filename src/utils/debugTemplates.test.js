@@ -13,7 +13,7 @@ const TECHNICAL = new Set([
     'coronerBadge', 'coronerRank', 'coronerDiscord', 'chiefCoronerEmployee', 'chiefCoronerBadge', 'chiefCoronerRank', 'chiefCoronerDiscord', 'decedents',
     'caseNumber', 'recruitmentPosition', 'phmcSignature', 'additionalReports', 'date', 'UpdateMedicalFile', 'patientTitleOptions',
     // Nom complet recomposé à partir des trois champs (prénom, deuxième prénom, nom) : voir usePatientNameParts.
-    'patientName', 'patientNameNew', 'decedentName', 'witnessName',
+    'patientName', 'patientNameNew', 'decedentName', 'witnessName', 'attorneyName', 'patientEmergencyContact', 'phmcRank', 'patientAgeYears',
     // Champs dont la saisie n'a pas d'attribut `name` (listes, sélecteurs, tableaux) et que le catalogue ne voit donc pas.
     // ID patient de plusieurs personnes : une ligne par défunt (rapport de masse, dans `decedents`) ; ID supplémentaires du courriel DMEC.
     'decedentPatientIDs', 'additionalPatientIDs',

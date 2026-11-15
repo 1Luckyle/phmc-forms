@@ -43,7 +43,7 @@ describe('champs conditionnels : libération médicale (représentant légal)', 
 describe('un champ rendu obligatoire dans le back-office ne bloque que lorsqu\'il s\'affiche', () => {
     test('formulaire d\'urgences : la destination de transfert n\'est exigée que pour un transfert', () => {
         setFormOverrides({ 19: { transferTo: true } });
-        const base = { patientName: 'Jane Doe', patientID: '2752', date: '2026-11-02', phmcEmployee: 'Dr X' };
+        const base = { patientFirstName: 'Jane', patientLastName: 'Doe', patientID: '2752', date: '2026-11-02', phmcEmployee: 'Dr X' };
         expect(validateReport(19, { ...base, dischargeDestination: 'Home' }).errors).toEqual([]);
         expect(validateReport(19, { ...base, dischargeDestination: 'Transfer' }).errors).toContain('Établissement de transfert : champ obligatoire.');
         expect(validateReport(19, { ...base, dischargeDestination: 'Transfer', transferTo: 'Hôpital Central' }).errors).toEqual([]);

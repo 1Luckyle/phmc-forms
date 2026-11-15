@@ -40,20 +40,20 @@ const AUTHORITY_REF = { requestingAuthorityRef: rule('une autorité requérante 
 // Directives anticipées (dossier avancé et mise à jour) : le mandataire n'est demandé que s'il y en a un.
 const ATTORNEY_YES = rule('un mandataire est désigné (« Oui »)', (d) => d.attorney === 'Yes');
 const ATTORNEY_FIELDS = {
-    attorneyName: ATTORNEY_YES, attorneyFirstName: ATTORNEY_YES, attorneyMiddleName: ATTORNEY_YES, attorneyLastName: ATTORNEY_YES, attorneyTitle: ATTORNEY_YES,
+    attorneyFirstName: ATTORNEY_YES, attorneyMiddleName: ATTORNEY_YES, attorneyLastName: ATTORNEY_YES, attorneyTitle: ATTORNEY_YES,
     attorneyRelation: ATTORNEY_YES, attorneyPH: ATTORNEY_YES,
 };
 const DNR_OTHER = rule('l\'ordre de non-réanimation est « Autre »', (d) => d.dnr === 'other');
 
 // Mise à jour du dossier médical : chaque rubrique cochée ouvre ses champs.
 const UPDATE_SECTIONS = {
-    AdvancedDirectives: ['attorney', 'attorneyName', 'attorneyFirstName', 'attorneyMiddleName', 'attorneyLastName', 'attorneyTitle', 'attorneyRelation', 'attorneyPH', 'dnr', 'dnrOrder', 'dnrOther'],
+    AdvancedDirectives: ['attorney', 'attorneyFirstName', 'attorneyMiddleName', 'attorneyLastName', 'attorneyTitle', 'attorneyRelation', 'attorneyPH', 'dnr', 'dnrOrder', 'dnrOther'],
     SocialInformation: ['maritalStatus', 'numberChildren', 'patientReligion', 'financialStatus'],
     Lifestyle: ['patientSmoker', 'patientAlcohol', 'patientDrugs', 'patientExercise', 'patientDiet', 'patientSleep', 'patientSexLife', 'patientJobRisks', 'patientHazards', 'patientOther'],
     'Medical History': ['patientBloodType', 'patientWeight', 'patientHeight', 'patientAllergies', 'patientCurrentMedicine', 'patientChronicDiseases', 'patientNotes'],
     FamilyHistory: ['patientFam', 'patientGenetic', 'patientFamSocial'],
     MentalHealth: ['patientMental', 'patientTherapy', 'patientTriggers', 'patientSupport', 'patientHarm'],
-    EmergencyContact: ['patientEmergencyContact', 'patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord'],
+    EmergencyContact: ['patientEmergencyContactTitle', 'patientEmergencyContactFirstName', 'patientEmergencyContactMiddleName', 'patientEmergencyContactLastName', 'patientEmergencyContactRelation', 'patientEmergencyContactNumber', 'patientEmergencyContactDiscord'],
     GeneralInformation: ['patientTitleNew', 'patientFirstNameNew', 'patientMiddleNameNew', 'patientLastNameNew', 'patientDateOfBirthNew', 'patientAddressNew', 'patientZIPNew', 'patientZIPNewCity', 'patientGenderNew', 'patientRaceNew', 'patientPHNew', 'patientDiscordNew'],
 };
 const SECTION_LABELS = {
@@ -115,6 +115,10 @@ const UNIDENTIFIED = rule('le défunt est « Non identifié »', (d) => d.deathR
 const IDENTIFIED = rule('le défunt est « Identifié »', (d) => filled(d.deathRecordType) && d.deathRecordType !== 'Unidentified');
 
 const ONGOING_STUDIES = rule('les études ne sont pas « en cours »', (d) => !d.applicantEnrollmentOngoing);
+// Candidature EMS : ces champs ne s'affichent que pour les autres rôles EMS (ni ambulancier, ni technicien médical d'urgence) ; la page de candidature (phmc-civilian-fields/shared/ApplicationFields.js)
+// et validateApplication (utils/formValidation.js) connaissent le poste visé, pas cette table : le texte est affiché dans la page d'administration, le contrôle est fait par validateApplication.
+const EMS_OTHER_ROLE = rule("le poste visé est un autre rôle EMS (ni ambulancier, ni technicien médical d'urgence)", () => true);
+const EMS_FULL_ROLE = rule("le poste visé est ambulancier ou technicien médical d'urgence", () => true);
 
 // ───────────── Table : { version: { champ: { text, when } } } ─────────────
 export const FIELD_CONDITIONS = {
@@ -180,7 +184,11 @@ export const FIELD_CONDITIONS = {
     52: { applicantEnrollmentEnd: ONGOING_STUDIES },
     53: { applicantEnrollmentEnd: ONGOING_STUDIES },
     54: { applicantEnrollmentEnd: ONGOING_STUDIES },
-    55: { applicantEnrollmentEnd: ONGOING_STUDIES },
+    55: {
+        applicantEnrollmentEnd: ONGOING_STUDIES,
+        emsPartTimeReason: EMS_OTHER_ROLE, oocOtherCharLicenseProof: EMS_OTHER_ROLE, dfpSanFireLink: EMS_OTHER_ROLE, dfpPhmcLink: EMS_OTHER_ROLE, dfpLegalFactionLink: EMS_OTHER_ROLE,
+        oocMedicalExperience: EMS_FULL_ROLE,
+    },
 };
 CARE_FORMS_WITH_REFERRAL.forEach((version) => { FIELD_CONDITIONS[version] = { ...REFERRAL, ...(FIELD_CONDITIONS[version] || {}) }; });
 // Le formulaire 7 est la version PBC du 6 : mêmes conditions.

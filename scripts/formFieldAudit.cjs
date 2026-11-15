@@ -17,14 +17,18 @@ const read = (file) => fs.readFileSync(file, 'utf8');
 
 // Champs cités dans le code d'un formulaire mais qui n'en sont PAS des champs de saisie du catalogue (état de calcul, liste interne, paiement…).
 const IGNORE_IN_CODE = {
-    '*': ['patientName', 'patientNameNew', 'lastName', 'date', 'payNow', 'fleecaPaymentId', 'patientTitleOptions', 'decedentName', 'extraStaff', 'massFatality', 'decedents', 'autopsyDiagramMarkers', 'applicantTitleAndFullName'],   // nom composé des candidatures : pas une saisie
+    '*': ['patientName', 'patientNameNew', 'lastName', 'date', 'payNow', 'fleecaPaymentId', 'patientTitleOptions', 'decedentName', 'extraStaff', 'massFatality', 'decedents', 'autopsyDiagramMarkers', 'applicantTitleAndFullName',
+        // Recomposés ou déduits : nom complet (prénom + deuxième prénom + nom), rôle de l'employé, âge tiré de la date de naissance. Ce ne sont pas des champs de saisie.
+        'phmcRank', 'patientAgeYears', 'witnessName', 'attorneyName', 'patientEmergencyContact'],   // nom composé des candidatures : pas une saisie
     1: ['evidenceLocker', 'decedentHeight', 'decedentWeight'],   // taille et poids : seulement à l'autopsie (showMeasures)
+    28: ['patientCurrentMedicine'], 29: ['patientCurrentMedicine'],
     6: ['patientChronicDiseases', 'patientCurrentMedicine'], 7: ['patientChronicDiseases', 'patientCurrentMedicine'],   // PatientContextFields showHistory={false}
     2: ['additionalPatientIDs'],   // liste d'ID des autres défunts : facultative par nature (le premier ID est le champ « ID patient »)
     8: ['decedentOOC'],
     11: ['evidenceLocker', 'decedentTitle', 'decedentOOC', 'patientID', 'pronouncedTimeOfDeath', 'typeOfDeath', 'mannerOfDeath', 'probableCauseOfDeath', 'scenePhotos', 'additionalImages'], // lignes de défunts
     19: ['XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults'],    // valeurs stockées derrière « Résultats d'imagerie »
-    20: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'], 21: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'],
+    20: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased', 'patientNotes', 'paletoClinicDepartment'],   // patientNotes et paletoClinicDepartment : consultation de la clinique de Paleto Bay (21) seulement
+    21: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'],
     24: ['releaseReports', 'releasePractitionerAuto', 'phmcEmployee'],   // praticien déduit des rapports retenus, pas un champ de saisie
     35: ['appointmentTime'], 41: ['appointmentTime'],
     // Candidatures : un seul composant partagé (phmc-civilian-fields/shared/ApplicationFields.js) qui cite aussi les champs propres au paramédical et à l'expérience médicale.

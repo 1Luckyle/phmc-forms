@@ -82,7 +82,6 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     });
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
-    if (version === 35 && !filled(data.date) && !filled(data.dateOfVisit)) errors.push('Date de consultation : champ obligatoire.');
     // Poids et taille du dossier médical (basique, avancé, section « Historique médical » de la mise à jour) : des valeurs lisibles (kg et cm).
     if ([3, 25].includes(version) || (version === 26 && Array.isArray(data.UpdateMedicalFile) && data.UpdateMedicalFile.some((section) => section === 'Medical History' || section === 'MedicalHistory'))) {
         if (filled(data.patientWeight) && parseWeightKg(data.patientWeight) === null) errors.push('Poids du patient : valeur invalide (en kilogrammes, par exemple 75).');
@@ -297,6 +296,8 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
         need('dfpLegalFactionLink', 'Preuve de DFP Legal Faction Management (ou N/A)');
     }
 
+    // Champs propres au poste visé (autres rôles EMS / rôles complets) : exigés ci-dessus quand ils s'affichent, jamais par le réglage générique ci-dessous.
+    ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'oocMedicalExperience'].forEach((field) => checked.add(field));
     Object.entries(getFormOverrides()[version] || {}).forEach(([field, state]) => {
         // Un champ conditionnel qui ne s'affiche pas n'est exigé que lorsqu'il s'affiche (voir utils/fieldApplicability.js).
         if (state === true && !checked.has(field) && isFieldApplicable(version, field, data)) need(field, fieldLabel(version, field));

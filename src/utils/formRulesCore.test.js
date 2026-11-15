@@ -8,22 +8,22 @@ afterEach(() => setFormOverrides({}));
 
 describe('champs obligatoires', () => {
     test('par défaut : le minimum du code', () => {
-        expect(requiredFieldsOf(22)).toEqual(expect.arrayContaining(['patientName', 'date']));
+        expect(requiredFieldsOf(22)).toEqual(expect.arrayContaining(['patientFirstName', 'patientLastName', 'date']));
         expect(isFieldRequired(22, 'patientNotes')).toBe(false);
     });
 
     test('le back-office peut rendre un champ obligatoire, jamais facultatif un champ verrouillé', () => {
-        setFormOverrides({ 22: { patientNotes: true, patientName: false } });
+        setFormOverrides({ 22: { patientNotes: true, patientFirstName: false } });
         expect(isFieldRequired(22, 'patientNotes')).toBe(true);
-        expect(lockedReasonOf(22, 'patientName')).toBe('title');
-        expect(isFieldRequired(22, 'patientName')).toBe(true);
+        expect(lockedReasonOf(22, 'patientFirstName')).toBe('title');
+        expect(isFieldRequired(22, 'patientFirstName')).toBe(true);
     });
 
     test('un champ obligatoire vide bloque l\'enregistrement, avec le bon libellé', () => {
         setFormOverrides({ 22: { patientNotes: true } });
-        const { errors } = validateReport(22, { patientName: 'Jane Doe', date: '2026-11-02' });
+        const { errors } = validateReport(22, { patientFirstName: 'Jane', patientLastName: 'Doe', date: '2026-11-02' });
         expect(errors).toEqual(['Notes : champ obligatoire.']);
-        expect(validateReport(22, { patientName: 'Jane Doe', date: '2026-11-02', patientNotes: 'ok' }).errors).toEqual([]);
+        expect(validateReport(22, { patientFirstName: 'Jane', patientLastName: 'Doe', date: '2026-11-02', patientNotes: 'ok' }).errors).toEqual([]);
     });
 
     test('un champ par défaut rendu facultatif ne bloque plus (hors verrous)', () => {
@@ -103,6 +103,48 @@ describe('mise à jour du dossier : nouveau titre', () => {
         expect(validateReport(26, { ...base, patientTitleNew: 'Mr' }).errors.join(' ')).toMatch(/obligatoirement le titre « Maître/);
         expect(validateReport(26, { ...base, patientTitleNew: 'Mstr' }).errors).toEqual([]);
         expect(validateReport(26, { ...base, date: recent(30), patientTitleOptions: 'Mr', patientTitleNew: 'Mstr' }).errors.join(' ')).toMatch(/moins de 18 ans/);
+    });
+});
+
+describe('panneau admin : uniquement des champs qui existent dans les formulaires', () => {
+    const { fieldKeysOf } = require('./formRulesCore');
+    const DERIVED = ['patientName', 'patientNameNew', 'decedentName', 'witnessName', 'attorneyName', 'patientEmergencyContact', 'phmcRank', 'patientAgeYears'];
+
+    test('aucun formulaire ne présente un nom recomposé, le rôle de l\u2019employé ou l\u2019âge déduit comme un champ à régler', () => {
+        const found = [];
+        Object.keys(VERSION_FIELDS).forEach((version) => fieldKeysOf(version).forEach((key) => { if (DERIVED.includes(key)) found.push(`v${version}:${key}`); }));
+        expect(found).toEqual([]);
+    });
+
+    test('le nom du patient est demandé en prénom et nom de famille (verrouillés : ils composent le titre)', () => {
+        [5, 6, 7, 14, 16, 19, 20, 21, 22, 23, 28, 29, 35, 41].forEach((version) => {
+            expect(lockedReasonOf(version, 'patientFirstName')).toBe('title');
+            expect(lockedReasonOf(version, 'patientLastName')).toBe('title');
+            expect(lockedReasonOf(version, 'patientMiddleName')).toBeNull();
+        });
+    });
+
+    test('formulaires de soins : ID patient, date et signataire sont indispensables et verrouillés (certificat de maladie compris)', () => {
+        [5, 6, 7, 14, 16, 19, 20, 21, 28, 29, 35, 41].forEach((version) => {
+            expect(lockedReasonOf(version, 'patientID')).toBe('title');
+            expect(lockedReasonOf(version, 'phmcEmployee')).toBe('author');
+            expect(lockedReasonOf(version, version === 35 ? 'dateOfVisit' : 'date')).toBe('title');
+        });
+        // Sans date de consultation, le certificat de maladie est refusé (message du champ, plus de règle à part).
+        const { validateReport } = require('./formValidation');
+        expect(validateReport(35, { patientFirstName: 'A', patientLastName: 'B', patientID: '1', phmcEmployee: 'Dr X' }).errors.join(' ')).toMatch(/Date de consultation : champ obligatoire/);
+    });
+
+    test('certificat de vol : plus de « nom du patient » en un champ ni de « grade du praticien »', () => {
+        expect(fieldKeysOf(41)).not.toContain('patientName');
+        expect(fieldKeysOf(41)).not.toContain('phmcRank');
+        expect(fieldKeysOf(41)).toEqual(expect.arrayContaining(['patientFirstName', 'patientLastName', 'phmcEmployee']));
+    });
+
+    test('candidature EMS : les champs propres aux autres rôles EMS sont signalés conditionnels dans le panneau', () => {
+        const { conditionTextOf } = require('./fieldApplicability');
+        ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink'].forEach((field) => expect(conditionTextOf(55, field)).toMatch(/autre rôle EMS/));
+        expect(conditionTextOf(55, 'oocMedicalExperience')).toMatch(/ambulancier/);
     });
 });
 

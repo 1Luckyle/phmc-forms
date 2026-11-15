@@ -823,9 +823,11 @@ function mentalHealth(h) {
 }
 
 function shrink(h) {
+    // Pas de rubrique « traitement en cours » dans l'évaluation psychiatrique : le traitement a ses propres champs (patientTreatmentMedicine…).
+    const { patientCurrentMedicine, ...context } = patientContext(h); // eslint-disable-line no-unused-vars
     return {
         ...h.phmc,
-        ...patientContext(h),
+        ...context,
         phmcRank: h.phmc.phmcRank || h.opt('phmcRank'),
         patientName: h.patient.fullName,
         patientID: h.patient.id,
