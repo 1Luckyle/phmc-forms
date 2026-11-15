@@ -6,6 +6,7 @@ import { usePatientDossier } from '../../utils/dossierLookup';
 import { changedBackgroundFields, backgroundAdditions, BACKGROUND_FIELD_LABELS } from '../../utils/careFormRules';
 import { HISTORY_PRESETS } from '../../constants/historyPresets';
 import PresetTextField from './PresetTextField';
+import { frDayOf } from '../../utils/activePrescriptions';
 
 export const PATIENT_GENDER_OPTIONS = [
     { value: 'Male', label: 'Masculin' },
@@ -48,6 +49,12 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
         setAgeOnly(nextAgeOnly);
         setFormData((prev) => (nextAgeOnly ? { ...prev, patientDateOfBirth: '' } : { ...prev, patientAgeYears: '' }));
     };
+
+    // Ordonnances en cours du patient (autres rapports, voir hooks/useActivePrescriptions.js) : comptées avec les traitements habituels jusqu'à leur date de fin, sans entrer dans le dossier.
+    const activeRx = Array.isArray(formData.patientActivePrescriptions) ? formData.patientActivePrescriptions : [];
+    const removedRx = Array.isArray(formData.patientActivePrescriptionsOff) ? formData.patientActivePrescriptionsOff : [];
+    const removeRx = (medId) => setFormData((prev) => ({ ...prev, patientActivePrescriptionsOff: [...new Set([...(prev.patientActivePrescriptionsOff || []), medId])], patientActivePrescriptions: (prev.patientActivePrescriptions || []).filter((item) => item.medId !== medId) }));
+    const restoreRx = () => setFormData((prev) => ({ ...prev, patientActivePrescriptionsOff: [] }));
 
     // Allergies, antécédents et traitements corrigés par rapport au dossier : la mention « mis à jour lors de cette consultation » est ajoutée au rapport.
     const { status, donnees } = usePatientDossier(formData.patientID);
@@ -112,6 +119,24 @@ const PatientContextFields = ({ formData, setFormData, handleChange, showHistory
                     <div style={{ display: 'flex', marginBottom: '0.6rem' }}>
                         <PresetTextField name="patientCurrentMedicine" formData={formData} setFormData={setFormData} presets={HISTORY_PRESETS.patientCurrentMedicine} placeholder="Traitements habituels du patient" />
                     </div>
+                    {(activeRx.length > 0 || removedRx.length > 0) && (
+                        <div style={{ margin: '-0.2rem 0 0.6rem' }} data-no-tip="1">
+                            {activeRx.length > 0 && (
+                                <>
+                                    <div className="helper-text">Ordonnances en cours : comptées avec les traitements habituels (rapport et contrôles de l'assistant) jusqu'à leur date de fin. Elles n'entrent pas dans le dossier du patient.</div>
+                                    <div className="d-flex flex-wrap gap-2 mt-1">
+                                        {activeRx.map((item) => (
+                                            <span key={item.medId} className="badge" style={{ background: 'rgba(210, 153, 34, 0.18)', border: '1px solid #d29922', color: '#e3b341', fontWeight: 500, whiteSpace: 'normal', textAlign: 'left' }} title={item.report ? `Ordonnance du rapport : ${item.report}` : undefined}>
+                                                <i className="fas fa-file-prescription me-1"></i>{item.name}{item.posology ? ` · ${item.posology}` : ''} · jusqu'au {frDayOf(item.end)}
+                                                <button type="button" className="btn btn-sm p-0 ms-2" style={{ color: 'inherit', lineHeight: 1 }} onClick={() => removeRx(item.medId)} aria-label={`Retirer ${item.name} (le patient ne le prend plus)`} title="Le patient ne prend plus ce médicament : le retirer de la liste">×</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            {removedRx.length > 0 && <button type="button" className="btn btn-link btn-sm p-0 mt-1" onClick={restoreRx}>Rétablir les ordonnances retirées ({removedRx.length})</button>}
+                        </div>
+                    )}
                     {changedLabels.length > 0 && (
                         <span className="helper-text" data-no-tip="1">Modifié(s) par rapport au dossier ({changedLabels.join(', ')}) : la mention « mis à jour lors de cette consultation » sera ajoutée au rapport.</span>
                     )}

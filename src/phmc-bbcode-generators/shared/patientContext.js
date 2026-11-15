@@ -1,4 +1,5 @@
 import { sectionBanner } from './bbStyles';
+import { habitualMedicineText } from '../../utils/activePrescriptions';
 import { normalizeRank } from '../../constants/ranks';
 import { referralLinesBBCode, backgroundUpdatedBBCode } from './careExtras';
 const GENDER_LABELS = {
@@ -49,7 +50,7 @@ ${formData.patientAllergies && String(formData.patientAllergies).trim() ? String
 [br][/br][u]Antécédents médicaux: [/u][br][/br]
 ${orNA(formData.patientChronicDiseases)}
 [br][/br][u]Traitements habituels: [/u][br][/br]
-${orNA(formData.patientCurrentMedicine)}`;
+${orNA(habitualMedicineText(formData))}`;
         const updated = backgroundUpdatedBBCode(formData);
         if (updated) body += `\n[br][/br]${updated}`;
     }

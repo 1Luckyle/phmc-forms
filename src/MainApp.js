@@ -75,6 +75,7 @@ import { comprehensiveSanitize } from './utils/patientRecords';
 import { queueDossierUpdate, hasDossierUpdateRules } from './utils/emergencyContactUpdates';
 import { MENTAL_HEALTH_VERSIONS } from './constants/careFormOptions';
 import useFormAccess from './hooks/useFormAccess';
+import useActivePrescriptions from './hooks/useActivePrescriptions';
 import useDossierPrefill, { useCandidaturePrefill } from './hooks/useDossierPrefill';
 import { staffIdentity } from './utils/knownPatient';
 import { adaptReleaseOptions } from './utils/releaseRequests';
@@ -714,6 +715,9 @@ function MainApp({
         const withPosition = bbCodeVersion >= 50 && bbCodeVersion <= 55 ? { ...formData, recruitmentPositionLabel: positionLabelFor(selectOptions, bbCodeVersion, formData.recruitmentPosition) } : formData;
         return buildReportTitle(bbCodeVersion, withPosition, definition.name);
     };
+
+    // Ordonnances encore en cours du patient (autres rapports) : comptées avec ses traitements habituels (voir utils/activePrescriptions.js).
+    useActivePrescriptions(bbCodeVersion, formData, setFormData, generateTitle());
 
     useEffect(() => {
         const timer = setTimeout(() => {

@@ -28,6 +28,7 @@ import { isBillableVersion, computeBilling } from '../utils/patientBilling';
 import { loadDossierContext, dossierBlockMessage, spendDossierToken, enqueueDossierForm, isDossierVersion, canModifyForm } from '../utils/dossierPatient';
 import { hasToken, isContactOnlyUpdate } from '../utils/dossierCore';
 import { careVisitSummary } from '../utils/careVisitSummary';
+import { prescriptionItemsOf } from '../utils/activePrescriptions';
 import { prescriptionOfReport } from '../phmc-bbcode-generators/generatePrescription';
 import { prescriptionNoticeFor } from '../utils/prescriptionNotice';
 import { getFormAccess } from '../utils/formAccess';
@@ -414,6 +415,8 @@ export const useReportManagement = (
                             ...(dossierToken ? { dossierJeton: true } : {}),
                             // Passage aux urgences, consultation, opération : un résumé alimente l'historique des soins du dossier médical (utils/careVisitSummary.js).
                             ...(careVisitSummary(bbCodeVersion, formData) ? { resume: careVisitSummary(bbCodeVersion, formData) } : {}),
+                            // Lignes d'ordonnance (médicament, posologie, début, fin) : les formulaires de soins suivants s'en servent pour compter les ordonnances encore en cours (utils/activePrescriptions.js).
+                            ...(prescriptionItemsOf(formData).length ? { ordonnances: prescriptionItemsOf(formData) } : {}),
                             ...(formData.dossierSansCompte === true && !isOwnedByThisCivilian ? { dossierSansCompte: true } : {}),
                         },
                     });
@@ -1085,6 +1088,7 @@ Clé : ${sanitizedKey}`,
                     authorName: e.authorName,
                     bbCode: e.bbCode,
                     ordonnance: e.ordonnance || null,
+                    ordonnanceFin: e.ordonnanceFin || (e.ordonnance && e.ordonnance.fin) || '',
                     prescriptionOnly: !!e.prescriptionOnly,
                     plainText: e.plainText || '',
                     patientID: e.patientID || patientID,
@@ -1129,6 +1133,7 @@ Clé : ${sanitizedKey}`,
                     authorName: e.authorName,
                     bbCode: e.bbCode,
                     ordonnance: e.ordonnance || null,
+                    ordonnanceFin: e.ordonnanceFin || (e.ordonnance && e.ordonnance.fin) || '',
                     prescriptionOnly: !!e.prescriptionOnly,
                     plainText: e.plainText || '',
                     patientID: e.patientID || patientID,

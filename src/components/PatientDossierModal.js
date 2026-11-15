@@ -17,6 +17,7 @@
 //     administrateur / chef de service (jamais pour une copie, jamais deux fois) ;
 //   • « Demandes de divulgation à traiter » en haut : les demandes de la Libération médicale
 //     qui contiennent SES rapports (tous ceux de la demande pour un admin / chef de service).
+import { prescriptionBadgeText } from '../utils/activePrescriptions';
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Form, Dropdown } from 'react-bootstrap';
@@ -510,7 +511,7 @@ const PatientDossierModal = ({
                         )}
                         <Pill color={visibility.color} title={visibility.hint}>{visibility.text}</Pill>
                         <PaymentPill invoice={invoice} />
-                        {root.ordonnance && <Pill color="#d29922" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport ». Le patient la reçoit d'office dans son dossier, même si le rapport ne lui est pas partagé."><i className="fas fa-file-prescription me-1"></i>Ordonnance</Pill>}
+                        {root.ordonnance && <Pill color="#d29922" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport ». Le patient la reçoit d'office dans son dossier, même si le rapport ne lui est pas partagé."><i className="fas fa-file-prescription me-1"></i>{prescriptionBadgeText(root.ordonnance)}</Pill>}
                         {gov.chips(root)}
                     </>
                 )}

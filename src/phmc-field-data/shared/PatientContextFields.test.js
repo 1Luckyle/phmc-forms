@@ -6,6 +6,7 @@ jest.mock('../../firebase', () => ({ database: {}, auth: {} }));
 jest.mock('../../utils/dossierLookup', () => ({ usePatientDossier: () => ({ status: 'idle', donnees: null }) }));
 
 const PatientContextFields = require('./PatientContextFields').default;
+const { itemsOf } = require('./PresetTextField');
 
 const Harness = ({ initial = {}, showHistory = true }) => {
     const [formData, setFormData] = useState(initial);
@@ -18,6 +19,16 @@ const Harness = ({ initial = {}, showHistory = true }) => {
     );
 };
 const stateOf = () => JSON.parse(screen.getByTestId('state').textContent);
+
+describe('champ à choix par défaut : un seul champ', () => {
+    test('les étiquettes viennent des choix enregistrés, de l’ancien texte libre, ou du texte regroupé d’un ancien rapport', () => {
+        expect(itemsOf({ patientAllergiesPresets: ['Latex'], patientAllergiesFree: '' }, 'patientAllergies')).toEqual(['Latex']);
+        expect(itemsOf({ patientAllergiesPresets: ['Latex'], patientAllergiesFree: 'Noix ; Latex' }, 'patientAllergies')).toEqual(['Latex', 'Noix']);
+        expect(itemsOf({ patientAllergies: 'Pénicilline ; Aspirine' }, 'patientAllergies')).toEqual(['Pénicilline', 'Aspirine']);
+        expect(itemsOf({ patientAllergiesPresets: [], patientAllergiesFree: '', patientAllergies: 'Pénicilline' }, 'patientAllergies')).toEqual(['Pénicilline']);
+        expect(itemsOf({}, 'patientAllergies')).toEqual([]);
+    });
+});
 
 describe('contexte patient', () => {
     test('par défaut, la date de naissance est demandée et l’âge se calcule', async () => {
@@ -47,19 +58,21 @@ describe('contexte patient', () => {
         expect(document.querySelector('input[name="patientDateOfBirth"]')).toBeNull();
     });
 
-    test('allergies, antécédents et traitements habituels : listes de choix + texte libre, repris dans le champ comme avant', async () => {
+    test('allergies, antécédents et traitements habituels : un seul champ (choix + texte écrit), repris dans le champ comme avant', async () => {
         render(<Harness />);
         ['patientAllergies', 'patientChronicDiseases', 'patientCurrentMedicine'].forEach((name) => {
             expect(document.querySelector(`input[type="hidden"][name="${name}"]`)).toBeTruthy();
-            expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeTruthy();
+            expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeNull();
         });
-        await act(async () => { fireEvent.change(document.querySelector('textarea[name="patientAllergiesFree"]'), { target: { name: 'patientAllergiesFree', value: 'Pénicilline' } }); });
+        const input = document.querySelector('input[type="hidden"][name="patientAllergies"]').closest('[class*="-container"]').querySelector('input:not([type="hidden"])');
+        await act(async () => { fireEvent.change(input, { target: { value: 'Pénicilline' } }); fireEvent.blur(input); });
         expect(stateOf().patientAllergies).toBe('Pénicilline');
+        expect(stateOf().patientAllergiesPresets).toEqual(['Pénicilline']);
     });
 
     test('sans historique (évaluation physique, psychiatrie), seuls la date, l’âge et le sexe sont demandés', () => {
         render(<Harness showHistory={false} />);
-        expect(document.querySelector('textarea[name="patientAllergiesFree"]')).toBeNull();
+        expect(document.querySelector('input[type="hidden"][name="patientAllergies"]')).toBeNull();
         expect(document.querySelector('select[name="patientSex"]')).toBeTruthy();
     });
 });

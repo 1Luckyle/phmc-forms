@@ -8,6 +8,7 @@
 // L'ID patient est UNIQUE et lié à l'UCP de la personne (personnage GTA World) : il n'est donc
 // jamais modifiable ici. Il est déduit de la fiche (PHMC-{personnage}) ; si une fiche n'en a
 // pas, seul un administrateur peut le définir (menu Utilisateurs → Personnel → Modifier).
+import { prescriptionBadgeText } from '../utils/activePrescriptions';
 import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { Dropdown } from 'react-bootstrap';
@@ -164,7 +165,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                                 {entries.map((entry) => (
                                     <React.Fragment key={entry.indexKey}>
                                     <tr>
-                                        <td style={tdStyle}>{entry.originalKey}{entry.prescriptionOnly && <span className="badge bg-warning text-dark ms-2" title="Ordonnance remise par votre soignant"><i className="fas fa-file-prescription me-1"></i>Ordonnance</span>}{entry.ordonnance && <span className="badge bg-warning text-dark ms-2" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>Ordonnance</span>}</td>
+                                        <td style={tdStyle}>{entry.originalKey}{entry.prescriptionOnly && <span className="badge bg-warning text-dark ms-2" title="Ordonnance remise par votre soignant"><i className="fas fa-file-prescription me-1"></i>{prescriptionBadgeText({ fin: entry.ordonnanceFin })}</span>}{entry.ordonnance && <span className="badge bg-warning text-dark ms-2" title="Ce rapport comporte une ordonnance : menu « Copier », rubrique « Ordonnance de ce rapport »"><i className="fas fa-file-prescription me-1"></i>{prescriptionBadgeText(entry.ordonnance)}</span>}</td>
                                         <td style={tdStyle}>{reportCreatorOf(entry) || 'N/A'}</td>
                                         <td style={tdStyle}>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}</td>
                                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>

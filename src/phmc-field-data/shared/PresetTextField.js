@@ -1,13 +1,12 @@
 // src/phmc-field-data/shared/PresetTextField.js
 //
-// Champ d'historique avec CHOIX PAR DÉFAUT : on coche autant de choix qu'on veut dans la liste, et on peut ajouter du texte libre en plus (même si des
-// choix sont déjà faits). Le résultat est le texte regroupé « choix 1 ; choix 2 ; texte libre », enregistré dans le champ lui-même (`name`) : le
-// reste de l'application (rapport BBCode, titre, recherche) lit ce champ comme avant. Les choix et le texte libre sont gardés à part
-// (`{name}Presets` et `{name}Free`) pour pouvoir être modifiés ensuite.
-// Un rapport enregistré avant l'arrivée des choix (texte seul) se rouvre avec son texte dans la zone de texte libre.
-import React from 'react';
-import Select from 'react-select';
-import { Form } from 'react-bootstrap';
+// Champ d'historique avec CHOIX PAR DÉFAUT, en UN SEUL champ : on choisit dans la liste autant de choix qu'on veut, et on peut aussi ÉCRIRE directement dans le champ pour ajouter ou préciser
+// ce que la liste ne propose pas (Entrée, ou simplement quitter le champ : le texte écrit devient une étiquette comme les autres). Le résultat est le texte regroupé « choix 1 ; choix 2 ; texte
+// écrit », enregistré dans le champ lui-même (`name`) : le reste de l'application (rapport BBCode, titre, recherche) lit ce champ comme avant. Les étiquettes sont gardées à part
+// (`{name}Presets`) pour pouvoir être modifiées ensuite ; `{name}Free` n'est plus saisi (il reste vide) mais un rapport enregistré avec l'ancien texte libre le retrouve comme étiquette.
+// Un rapport enregistré avant l'arrivée des choix (texte seul) se rouvre avec son texte découpé en étiquettes.
+import React, { useState } from 'react';
+import CreatableSelect from 'react-select/creatable';
 import { darkSelectStyles } from './selectStyles';
 import { aggregatePresetText, HISTORY_FIELD_META, historyPlaceholder } from '../../constants/historyPresets';
 
@@ -16,61 +15,69 @@ export { aggregatePresetText };
 // « Aucun(e) … » exclut les autres choix, et inversement.
 const isNone = (label) => /^aucun/i.test(String(label || ''));
 
-const PresetTextField = ({ name, formData, setFormData, presets = [], placeholder: placeholderProp, rows = 2, selectPlaceholder: selectPlaceholderProp }) => {
+// Étiquettes à afficher d'après les données : choix enregistrés + ancien texte libre ; à défaut, le texte regroupé du champ (ancien rapport, dossier repris), coupé sur « ; ».
+export const itemsOf = (formData, name) => {
+    const stored = Array.isArray(formData?.[`${name}Presets`]) ? formData[`${name}Presets`] : [];
+    const split = (text) => String(text || '').split(/\s*;\s*/).map((part) => part.trim()).filter(Boolean);
+    const free = split(formData?.[`${name}Free`]).filter((part) => !stored.includes(part));
+    if (stored.length || free.length) return [...stored, ...free];
+    return split(formData?.[name]);
+};
+
+const PresetTextField = ({ name, formData, setFormData, presets = [], placeholder: placeholderProp, selectPlaceholder: selectPlaceholderProp }) => {
     // Pour les champs d'historique, le texte d'aide et le mode de choix viennent de HISTORY_FIELD_META (un champ à choix unique n'accepte qu'une réponse).
     const meta = HISTORY_FIELD_META[name] || {};
     const single = meta.mode === 'single';
     const groups = meta.groups || [];
-    const placeholder = placeholderProp || historyPlaceholder(name);
-    const selectPlaceholder = selectPlaceholderProp || (single ? 'Choisir dans la liste…' : 'Choisir dans la liste (plusieurs choix possibles)…');
+    const hint = placeholderProp || historyPlaceholder(name);
+    const placeholder = selectPlaceholderProp
+        || (hint ? `${hint} — choisir dans la liste ou écrire` : (single ? 'Choisir dans la liste ou écrire…' : 'Choisir dans la liste (plusieurs choix) ou écrire pour ajouter…'));
     const presetsKey = `${name}Presets`;
     const freeKey = `${name}Free`;
-    const structured = formData?.[presetsKey] !== undefined || formData?.[freeKey] !== undefined;
-    const selected = Array.isArray(formData?.[presetsKey]) ? formData[presetsKey] : [];
-    const free = structured ? (formData?.[freeKey] || '') : (formData?.[name] || '');
+    const items = itemsOf(formData, name);
+    const [input, setInput] = useState('');
 
-    const update = (nextSelected, nextFree) => setFormData((prev) => ({
-        ...prev, [presetsKey]: nextSelected, [freeKey]: nextFree, [name]: aggregatePresetText(nextSelected, nextFree),
-    }));
+    const update = (next) => setFormData((prev) => ({ ...prev, [presetsKey]: next, [freeKey]: '', [name]: aggregatePresetText(next, '') }));
 
-    const handleSelect = (options) => {
-        let values = (options || []).map((option) => option.value);
-        const lastAdded = values.find((value) => !selected.includes(value));
-        if (lastAdded && single) values = [lastAdded];
-        else if (lastAdded && isNone(lastAdded)) values = [lastAdded];
+    const apply = (values) => {
+        let next = values;
+        const lastAdded = values.find((value) => !items.includes(value));
+        if (lastAdded && single) next = [lastAdded];
+        else if (lastAdded && isNone(lastAdded)) next = [lastAdded];
         else if (lastAdded) {
-            values = values.filter((value) => !isNone(value));
+            next = values.filter((value) => !isNone(value));
             // Un choix retire ceux de son groupe d'exclusion (ex. « Active » remplace « Inactive »).
             const group = groups.find((list) => list.includes(lastAdded));
-            if (group) values = values.filter((value) => value === lastAdded || !group.includes(value));
+            if (group) next = next.filter((value) => value === lastAdded || !group.includes(value));
         }
-        update(values, free);
+        update(next);
+    };
+
+    // Le texte écrit puis laissé en plan (clic ailleurs, changement de champ) devient une étiquette : rien n'est perdu.
+    const commitInput = () => {
+        const text = input.trim();
+        setInput('');
+        if (text && !items.includes(text)) apply([...items, text]);
     };
 
     return (
         <div className="preset-field" style={{ flex: '1 1 220px', minWidth: 0 }}>
-            <Select
+            <CreatableSelect
                 isMulti
                 name={name}
                 closeMenuOnSelect={single}
-                value={selected.map((value) => ({ label: value, value }))}
-                onChange={handleSelect}
+                value={items.map((value) => ({ label: value, value }))}
+                onChange={(options) => apply((options || []).map((option) => option.value))}
                 options={presets.map((preset) => ({ label: preset, value: preset }))}
-                placeholder={selectPlaceholder}
-                noOptionsMessage={() => 'Aucun choix'}
+                inputValue={input}
+                onInputChange={(value, { action }) => { if (action === 'input-change') setInput(value); else if (action === 'set-value' || action === 'input-blur') setInput(''); }}
+                onBlur={commitInput}
+                placeholder={placeholder}
+                formatCreateLabel={(text) => `Ajouter « ${text} »`}
+                noOptionsMessage={() => 'Aucun choix : écrivez votre texte pour l\'ajouter'}
                 styles={{ ...darkSelectStyles, container: (base) => ({ ...base, width: '100%' }) }}
                 className="preset-select"
-                aria-label={placeholder}
-            />
-            <Form.Control
-                as="textarea"
-                rows={rows}
-                name={freeKey}
-                value={free}
-                onChange={(event) => update(selected, event.target.value)}
-                placeholder={placeholder}
-                className="form-control"
-                style={{ marginTop: '6px' }}
+                aria-label={hint || placeholder}
             />
         </div>
     );

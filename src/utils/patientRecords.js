@@ -30,6 +30,7 @@ import {
 } from './patientId';
 import { isDossierVersion } from './dossierCore';
 import { careVisitSummary } from './careVisitSummary';
+import { prescriptionItemsOf } from './activePrescriptions';
 import { retractDeathSignal } from './deathSignals';
 import { prescriptionOfReport } from '../phmc-bbcode-generators/generatePrescription';
 
@@ -193,6 +194,7 @@ export const sharedPrescriptionEntries = (dossier) => (Array.isArray(dossier) ? 
         title: entry.ordonnance.title,
         bbCode: entry.ordonnance.bbCode,
         plainText: entry.ordonnance.plainText || '',
+        ordonnanceFin: entry.ordonnance.fin || '',
         ordonnance: null,
         imageUrl: null,
     }));
@@ -561,6 +563,7 @@ export async function reindexPatientRecords({ onProgress } = {}) {
                     copiedFrom: report.copiedFrom ?? null,
                     timestamp: report.timestamp ?? Date.now(),
                     ...(careVisitSummary(report.bbCodeVersion, report.data) ? { resume: careVisitSummary(report.bbCodeVersion, report.data) } : {}),
+                    ...(prescriptionItemsOf(report.data).length ? { ordonnances: prescriptionItemsOf(report.data) } : {}),
                 };
                 stats.created++;
             } else {
@@ -573,6 +576,11 @@ export async function reindexPatientRecords({ onProgress } = {}) {
                 if (!entry.resume && !entry.copiedFrom && report.data) {
                     const resume = careVisitSummary(report.bbCodeVersion, report.data);
                     if (resume) updates[`patientRecords/${patientNode}/${reportKey}/resume`] = resume;
+                }
+                // Anciens rapports avec ordonnance : ses lignes (médicament, fin) servent à compter les ordonnances encore en cours.
+                if (!entry.ordonnances && !entry.copiedFrom && report.data) {
+                    const items = prescriptionItemsOf(report.data);
+                    if (items.length) updates[`patientRecords/${patientNode}/${reportKey}/ordonnances`] = items;
                 }
                 // Les anciennes entrées n'ont pas le nom du patient : il alimente la liste de recherche.
                 if (!entry.patientName && report.data?.patientName) {

@@ -44,6 +44,8 @@ export const patientFromForm = (f = {}) => {
         const computed = ageOn(f.patientDateOfBirth, f.date);
         ageYears = computed !== null && computed >= 0 ? computed : null;
     }
+    // Ordonnances encore en cours (voir utils/activePrescriptions.js) : comptées avec les traitements habituels pour les interactions, et signalées en cas de doublon.
+    const activeRx = (Array.isArray(f.patientActivePrescriptions) ? f.patientActivePrescriptions : []).filter((item) => item && item.medId);
     return {
         ageYears,
         sex: f.patientSex || '',
@@ -51,7 +53,8 @@ export const patientFromForm = (f = {}) => {
         heightCm: parseHeightCm(f.patientHeight),
         allergies: f.patientAllergies || '',
         chronic: f.patientChronicDiseases || '',
-        currentMeds: f.patientCurrentMedicine || '',
+        currentMeds: [f.patientCurrentMedicine, ...activeRx.map((item) => item.name)].filter(Boolean).join(' ; '),
+        activeRx,
     };
 };
 export const isPediatric = (patient) => Number.isFinite(patient?.ageYears) && patient.ageYears < 15;
@@ -176,6 +179,13 @@ export const checkPrescription = (entry, ctx = {}) => {
     }
     (med.contra || []).forEach((rule) => { if (findTerm(`${patient.chronic} ${patient.allergies}`, rule.terms)) add(rule.level, rule.text); });
     (med.interacts || []).forEach((rule) => { const hit = findTerm(patient.currentMeds, rule.terms); if (hit) add(rule.level, `${rule.text} (« ${hit} »)`); });
+    // Ordonnances encore en cours (autres rapports) : même médicament, ou même famille.
+    (patient.activeRx || []).forEach((rx) => {
+        const other = MEDICATION_BY_ID[rx.medId];
+        const until = frIso(rx.end) ? ` jusqu'au ${frIso(rx.end)}` : '';
+        if (rx.medId === entry.medId) add('warn', `${med.name} déjà prescrit : ordonnance en cours${until}.`);
+        else if (other && med.family && other.family === med.family) add('warn', `Même famille que ${other.name} (ordonnance en cours${until}) : éviter le cumul.`);
+    });
     const tags = ctx.tags || new Set();
     Object.entries(med.avoidTags || {}).forEach(([tag, [level, text]]) => { if (tags.has(tag)) add(level, text); });
     const vitals = ctx.vitals || {};

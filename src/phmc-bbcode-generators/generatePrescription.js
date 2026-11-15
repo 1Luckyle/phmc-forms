@@ -57,5 +57,7 @@ export const prescriptionOfReport = (report) => {
     if (!data || !hasPrescription(data)) return null;
     const version = Number(report.bbCodeVersion) || 19;
     const bbCode = generatePrescription(data, version);
-    return bbCode ? { bbCode, title: prescriptionTitle(data), plainText: prescriptionPlainText(data) } : null;
+    // `fin` : dernière date de fin des lignes (le dossier affiche « en cours jusqu'au … » ou « terminée le … »), '' quand aucune durée n'est précisée.
+    const fin = prescriptionRows(data).map((row) => row.end).filter(Boolean).sort().pop() || '';
+    return bbCode ? { bbCode, title: prescriptionTitle(data), plainText: prescriptionPlainText(data), fin } : null;
 };

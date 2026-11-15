@@ -17,6 +17,8 @@ const TECHNICAL = new Set([
     // Champs dont la saisie n'a pas d'attribut `name` (listes, sélecteurs, tableaux) et que le catalogue ne voit donc pas.
     // ID patient de plusieurs personnes : une ligne par défunt (rapport de masse, dans `decedents`) ; ID supplémentaires du courriel DMEC.
     'decedentPatientIDs', 'additionalPatientIDs',
+    // Ordonnances encore en cours du patient, lues dans ses autres rapports (hooks/useActivePrescriptions.js), et celles que le soignant a retirées.
+    'patientActivePrescriptions', 'patientActivePrescriptionsOff',
     'morgueStatus', 'autopsyDeathCauses', 'autopsyAnatomicSummaryItems', 'evidenceLocker', 'scenePhotos', 'XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults',
 ]);
 const isPresetPart = (key) => /(Presets|Free)$/.test(key);

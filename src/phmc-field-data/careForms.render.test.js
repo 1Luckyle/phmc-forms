@@ -693,14 +693,21 @@ describe("assistant chirurgical de l'opération", () => {
 describe('choix par défaut des formulaires de consultation', () => {
     const props = { admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], Appearance: [], Behavior: [], Speech: [], Mood: [], Affect: [], ThoughtProcess: [], ThoughtContent: [], Insight: [], Cognition: [], Risk: [], BodyMassIndex: [], temperature: [], heartRate: [], breathing: [], bloodPressure: [], patientJob: [], patientJobRisks: [], patientAllergiesRisk: [], patientMedicineRegular: [], patientOther: [], predisposition: [] };
     beforeEach(() => { mockAuth = { staffName: 'Dr. Interne', isAdmin: false, currentEmployee: { uid: 'u1' }, staffProfile: { rank: 'Interne en Médecine' }, isCivilian: false, civilianProfile: null }; mockDossier = { status: 'idle', donnees: null }; });
-    const typeInto = (name, value) => act(() => { fireEvent.change(document.querySelector(`textarea[name="${name}"]`), { target: { value } }); });
+    // Champ à choix par défaut (un seul champ) : on écrit dans la liste, puis on la quitte : le texte devient une étiquette.
+    const addChip = (name, value) => act(async () => {
+        const hidden = document.querySelector(`input[type="hidden"][name="${name}"]`);
+        const input = hidden.closest('[class*="-container"]').querySelector('input:not([type="hidden"])');
+        fireEvent.change(input, { target: { value } });
+        fireEvent.blur(input);
+    });
+    const hasChoiceField = (name) => !!document.querySelector(`input[type="hidden"][name="${name}"]`);
 
-    test('évaluation physique : listes de choix sur les champs libres, texte libre regroupé', () => {
+    test('évaluation physique : listes de choix sur les champs libres, texte écrit dans le même champ', async () => {
         render(<Harness Component={PhysEval} initial={{ patientJob: 'Yes', patientJobRisks: 'Yes', patientAllergiesRisk: 'Yes', patientMedicineRegular: 'Yes', patientOther: 'Yes' }} extra={props} />);
-        ['patientCareer', 'careerRisks', 'patientAllergies', 'patientMedicine', 'patientImpairments'].forEach((name) => expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeTruthy());
+        ['patientCareer', 'careerRisks', 'patientAllergies', 'patientMedicine', 'patientImpairments'].forEach((name) => { expect(hasChoiceField(name)).toBe(true); expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeNull(); });
         expect(document.querySelector('textarea[name="patientSummary"]')).toBeTruthy();
-        typeInto('patientImpairmentsFree', 'Verres correcteurs');
-        expect(stateOf()).toMatchObject({ patientImpairments: 'Verres correcteurs', patientImpairmentsFree: 'Verres correcteurs', patientImpairmentsPresets: [] });
+        await addChip('patientImpairments', 'Verres correcteurs');
+        expect(stateOf()).toMatchObject({ patientImpairments: 'Verres correcteurs', patientImpairmentsFree: '', patientImpairmentsPresets: ['Verres correcteurs'] });
     });
 
     test('évaluation physique : constantes normales en un clic', async () => {
@@ -719,18 +726,18 @@ describe('choix par défaut des formulaires de consultation', () => {
         expect(stateOf().patientSummary).toContain('(renouvellement)');
     });
 
-    test('consultation psychiatrique : motif, notes, diagnostic, procédure et médicaments à choix', () => {
+    test('consultation psychiatrique : motif, notes, diagnostic, procédure et médicaments à choix', async () => {
         render(<Harness Component={MentalHealth} extra={props} />);
-        ['patientChiefComplaint', 'patientNotes', 'patientDiagnosis', 'patientProcedure', 'patientMedicine'].forEach((name) => expect(document.querySelector(`textarea[name="${name}Free"]`)).toBeTruthy());
-        typeInto('patientMedicineFree', 'Sertraline 50 mg le matin');
+        ['patientChiefComplaint', 'patientNotes', 'patientDiagnosis', 'patientProcedure', 'patientMedicine'].forEach((name) => expect(hasChoiceField(name)).toBe(true));
+        await addChip('patientMedicine', 'Sertraline 50 mg le matin');
         expect(stateOf().patientMedicine).toBe('Sertraline 50 mg le matin');
     });
 
-    test('évaluation psychologique : tous les champs libres ont leurs choix par défaut', () => {
+    test('évaluation psychologique : tous les champs libres ont leurs choix par défaut', async () => {
         render(<Harness Component={Shrink} extra={props} />);
         expect(document.querySelectorAll('.preset-select').length).toBeGreaterThanOrEqual(26);
-        expect(document.querySelector('textarea[name="patientSafetyFree"]')).toBeTruthy();
-        typeInto('patientSafetyFree', 'Voisin joignable');
+        expect(hasChoiceField('patientSafety')).toBe(true);
+        await addChip('patientSafety', 'Voisin joignable');
         expect(stateOf()).toMatchObject({ patientSafety: 'Voisin joignable' });
     });
 });

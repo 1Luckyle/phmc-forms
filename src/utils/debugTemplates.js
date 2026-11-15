@@ -16,6 +16,7 @@ import { HISTORY_PRESETS, aggregatePresetText } from '../constants/historyPreset
 import { PHYS_EVAL_PRESETS, MENTAL_HEALTH_PRESETS, PSYCH_EVAL_PRESETS } from '../constants/careFormPresets';
 import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 import { toFrenchGender } from './patientIdentity';
+import { addDaysIso } from '../clinical/engine';
 import { FLIGHT_CERT_CLASSES, examResultKey } from './flightCertificate';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -210,7 +211,9 @@ const vitals = (h) => ({
 // Champ d'historique à choix par défaut (voir PresetTextField) : `count` choix cochés + un texte libre, et le texte regroupé que lit le rapport.
 const presetFill = (key, count = 2, free = '', source = HISTORY_PRESETS[key]) => {
     const picked = (source || []).filter((item) => !/^aucun/i.test(item)).slice(0, count);
-    return { [key]: aggregatePresetText(picked, free), [`${key}Presets`]: picked, [`${key}Free`]: free };
+    // Un seul champ : le texte écrit est une étiquette de plus (`…Free` reste vide).
+    const items = [...picked, ...(free ? [free] : [])];
+    return { [key]: aggregatePresetText(items, ''), [`${key}Presets`]: items, [`${key}Free`]: '' };
 };
 
 // Défunt de démonstration : nom en trois parties (le nom complet est recomposé par le formulaire).
@@ -289,6 +292,8 @@ const patientContext = (h) => ({
     patientAllergies: 'Pénicilline',
     patientChronicDiseases: 'Hypertension artérielle',
     patientCurrentMedicine: 'Ramipril 5 mg le matin',
+    // Ordonnance encore en cours d'un autre rapport (voir hooks/useActivePrescriptions.js).
+    patientActivePrescriptions: [{ medId: 'ibuprofene', name: 'Ibuprofène', posology: '400 mg — voie orale, 3 prises/24 h', start: addDaysIso(h.today, -2), end: addDaysIso(h.today, 3), report: 'Consultation générale précédente' }],
 });
 
 const consultBase = (h) => ({
