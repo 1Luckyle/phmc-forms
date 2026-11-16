@@ -121,6 +121,7 @@ const PatientDossierModal = lazy(() => import('./components/PatientDossierModal'
 const CivilianProfileModal = lazy(() => import('./components/CivilianProfileModal'));
 const DirectoryModal = lazy(() => import('./components/Directory/DirectoryModal'));
 const MessagingModal = lazy(() => import('./components/Messaging/MessagingModal'));
+const PilouModal = lazy(() => import('./components/Pilou/PilouModal'));
 const MyPatientFileModal = lazy(() => import('./components/MyPatientFileModal'));
 const MyProfileModal = lazy(() => import('./components/MyProfileModal'));
 const AwarenessCalendarModal = lazy(() => import('./components/AwarenessCalendarModal'));
@@ -234,6 +235,8 @@ function MainApp({
     const [showDirectory, setShowDirectory] = useState(false);
     // Messagerie interne du personnel : boîte écoutée en direct (badge du menu), fenêtre ouverte depuis le menu ou une notification.
     const [showMessaging, setShowMessaging] = useState(false);
+    // Pilou : aide à la prise en charge d'un cas (Boîte à outils).
+    const [showPilou, setShowPilou] = useState(false);
     const [messagingInitialId, setMessagingInitialId] = useState('');
     const mailbox = useMailbox(auth.currentUser?.uid || (currentEmployee && currentEmployee.uid) || '', !!toolAccess.messaging);
     // Raccourcis de l'annuaire : ouvrir un outil déjà positionné sur la personne (voir DirectoryModal).
@@ -2071,6 +2074,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
                                                         toolAccess.messaging && { key: 'messaging', icon: 'fas fa-envelope', label: mailbox.unread > 0 ? `Messagerie interne (${mailbox.unread} non lu${mailbox.unread > 1 ? 's' : ''})` : 'Messagerie interne', onClick: closeAnd(() => { setMessagingInitialId(''); setShowMessaging(true); }) },
+                                                        toolAccess.pilou && { key: 'pilou', icon: 'fas fa-pills', label: 'Pilou — aide à la prise en charge', onClick: closeAnd(() => setShowPilou(true)) },
                                                         toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: "Annuaire & plan de l'hôpital", onClick: closeAnd(() => setShowDirectory(true)) },
                                                         // Administratif : un seul accès pour le recrutement, les sanctions et les contrats commerciaux (chacun selon ses droits).
                                                         toolAccess.administratif && { key: 'administratif', icon: 'fas fa-briefcase', label: 'Administratif', onClick: closeAnd(() => setShowAdminHub(true)) },
@@ -2907,6 +2911,9 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                 initialMessageId={messagingInitialId}
                                 showNotification={showNotification}
                             />
+                        )}
+                        {toolAccess.pilou && showPilou && (
+                            <PilouModal show={showPilou} onHide={() => setShowPilou(false)} showNotification={showNotification} />
                         )}
                         <DirectoryModal
                             show={showDirectory}

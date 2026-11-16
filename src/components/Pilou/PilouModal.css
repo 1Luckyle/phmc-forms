@@ -1,0 +1,44 @@
+/* Pilou : formulaire du cas à gauche, prise en charge à droite ; une seule colonne sur petit écran. */
+.pl-modal { color: #e6edf3; }
+.pl-intro { color: #9da7b3; font-size: 0.88rem; margin-bottom: 12px; }
+.pl-layout { display: flex; gap: 16px; align-items: flex-start; max-height: calc(100vh - 220px); }
+.pl-form { width: 340px; flex-shrink: 0; overflow-y: auto; max-height: calc(100vh - 220px); padding-right: 6px; }
+.pl-result { flex: 1; min-width: 0; overflow-y: auto; max-height: calc(100vh - 220px); padding-right: 6px; }
+.pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pl-modal .form-label { font-size: 0.8rem; color: #9fb0c0; margin: 0 0 2px; font-weight: 600; }
+.pl-title { font-size: 0.9rem; color: #c9d1d9; margin: 0 0 8px; }
+.pl-title i, .pl-block h6 i { margin-right: 7px; color: #58a6ff; }
+.pl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pl-chip { background: #1f6feb22; border: 1px solid #1f6feb; color: #cfe3ff; border-radius: 14px; padding: 2px 10px; font-size: 0.8rem; cursor: pointer; margin: 0; }
+.pl-chip:hover { background: #1f6feb55; }
+.pl-empty { text-align: center; color: #6e7681; padding: 60px 20px; }
+.pl-empty i { font-size: 2.4rem; margin-bottom: 10px; }
+.pl-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+.pl-head h5 { margin: 0 0 2px; }
+.pl-sub { color: #9da7b3; font-size: 0.85rem; }
+.pl-alert { background: #3a2a0a; border: 1px solid #9e6a03; border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; margin: 8px 0; color: #f0d58c; }
+.pl-alert i { margin-right: 6px; }
+.pl-vitals { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.pl-vital { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 5px 10px; min-width: 82px; text-align: center; }
+.pl-vital span { display: block; font-size: 0.72rem; color: #8b949e; }
+.pl-vital strong { font-size: 0.95rem; }
+.pl-condition { border: 1px solid #30363d; border-radius: 8px; padding: 12px 14px; margin-top: 14px; background: #0d1117; }
+.pl-cond-title { margin: 0 0 8px; color: #58a6ff; font-size: 1rem; }
+.pl-block { margin-top: 12px; }
+.pl-block h6 { font-size: 0.88rem; color: #c9d1d9; margin: 0 0 6px; }
+.pl-block ul, .pl-block ol { margin: 0; padding-left: 20px; font-size: 0.88rem; color: #c9d1d9; }
+.pl-block li { margin-bottom: 3px; }
+.pl-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pl-med { border: 1px solid #21262d; border-radius: 6px; padding: 7px 10px; margin-bottom: 6px; background: #0d1117; font-size: 0.88rem; }
+.pl-med.warn { border-color: #9e6a03; }
+.pl-med.error { border-color: #da3633; background: #2a0d0d; }
+.pl-med.info { border-color: #1f6feb; }
+.pl-for { color: #8b949e; font-size: 0.8rem; }
+.pl-med-alert { color: #f0d58c; font-size: 0.82rem; margin-top: 3px; }
+.pl-med.error .pl-med-alert { color: #ffa198; }
+.pl-skipped { font-size: 0.82rem; color: #9da7b3; margin-top: 6px; }
+@media (max-width: 900px) {
+    .pl-layout { flex-direction: column; max-height: none; }
+    .pl-form, .pl-result { width: 100%; max-height: none; overflow: visible; }
+    .pl-two { grid-template-columns: 1fr; }
+}

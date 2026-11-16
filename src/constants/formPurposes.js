@@ -36,10 +36,10 @@ export const FORM_PURPOSES = {
     41: "Certificat d'aptitude médicale au vol, réservé au personnel soignant : il atteste uniquement de l'aptitude (conforme ou non) d'un pilote selon sa classe, sans aucun diagnostic. Il ne remplace pas la licence de vol de la SAAA.",
 
     // ── Candidatures ──
-    50: "Candidature à un poste médical du PHMC : identité, formation, emploi, lettre de motivation et informations hors jeu. Elle est examinée par le recrutement, qui vous recontacte.",
-    51: "Candidature à un poste de psychologue ou de psychiatre du PHMC : identité, formation, emploi, lettre de motivation et informations hors jeu.",
-    52: "Candidature à un poste administratif du PHMC : identité, formation, emploi, lettre de motivation et informations hors jeu.",
-    53: "Candidature à un poste d'infirmier(ère) du PHMC : identité, formation, emploi, lettre de motivation et informations hors jeu.",
-    54: "Candidature à un poste du DMEC (médecine légale) : identité, formation, emploi, lettre de motivation et informations hors jeu.",
-    55: "Candidature à un poste EMS (paramédic, EMT…) : identité, formation, motivation, licences et preuves, et informations hors jeu.",
+    50: "Candidature à un poste médical du PHMC : identité (avec votre ID patient), formation, expériences professionnelles, capture de votre licence et informations hors personnage. Elle est examinée par le recrutement, qui vous recontacte.",
+    51: "Candidature à un poste de psychologue ou de psychiatre du PHMC : identité (avec votre ID patient), formation, expériences professionnelles, capture de votre licence et informations hors personnage. Elle est examinée par le recrutement, qui vous recontacte.",
+    52: "Candidature à un poste administratif du PHMC : identité (avec votre ID patient), formation, expériences professionnelles, capture de votre licence et informations hors personnage. Elle est examinée par le recrutement, qui vous recontacte.",
+    53: "Candidature à un poste d'infirmier(ère) du PHMC : identité (avec votre ID patient), formation, expériences professionnelles, capture de votre licence et informations hors personnage. Elle est examinée par le recrutement, qui vous recontacte.",
+    54: "Candidature à un poste du DMEC (médecine légale) : identité (avec votre ID patient), formation, expériences professionnelles, capture de votre licence et informations hors personnage. Elle est examinée par le recrutement, qui vous recontacte.",
+    55: "Candidature à un poste EMS (paramédic, EMT…) : identité (avec votre ID patient), formation, expériences professionnelles, capture de votre licence (obligatoire pour les rôles autres que paramédic et technicien, qui ajoutent leur motivation pour le programme à temps partiel) et informations hors personnage. Elle est examinée par le recrutement, qui vous recontacte.",
 };
