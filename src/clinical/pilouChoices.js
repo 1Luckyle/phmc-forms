@@ -1,19 +1,10 @@
 // src/clinical/pilouChoices.js
 //
-// Choix de l'outil Pilou : TOUS les champs sont à choix (listes), jamais de texte libre, car Pilou ne comprend que ce que son moteur connaît (clinical/medications.js : allergies,
+// Choix de l'outil Pilou : les champs de texte sont à choix (listes), jamais de texte libre, car Pilou ne comprend que ce que son moteur connaît (clinical/medications.js : allergies,
 // contre-indications liées aux antécédents, interactions avec les traitements en cours). Chaque choix d'allergie, d'antécédent et de traitement contient au moins un terme reconnu par
 // le moteur : un test (pilouChoices.test.js) le vérifie, pour qu'un choix proposé ne soit jamais sans effet.
+// L'âge, le poids et la taille sont des nombres saisis librement, bornés par clinical/bodyLimits.js : c'est le moteur qui en déduit ses tranches (âge : vitals.js, doses : engine.js).
 
-import { BODY_LIMITS } from './bodyLimits';
-
-const range = (from, to, step = 1) => { const out = []; for (let value = from; value <= to; value += step) out.push(value); return out; };
-
-// Âge en années (0 = moins d'un an).
-export const AGE_OPTIONS = range(BODY_LIMITS.ageYears.min, BODY_LIMITS.ageYears.max).map((years) => ({ value: String(years), label: years === 0 ? 'Nourrisson (moins d\'un an)' : `${years} an${years > 1 ? 's' : ''}` }));
-// Poids (1 à 400 kg, comme le reste du site) : au kilo près jusqu'à 10 kg, puis de plus en plus large.
-export const WEIGHT_OPTIONS = [...range(BODY_LIMITS.weightKg.min, 10), ...range(12, 40, 2), ...range(45, 150, 5), ...range(160, BODY_LIMITS.weightKg.max, 10)].map((kg) => ({ value: String(kg), label: `${kg} kg` }));
-// Taille (30 à 260 cm, comme le reste du site) : par tranches de 5 cm.
-export const HEIGHT_OPTIONS = range(BODY_LIMITS.heightCm.min, BODY_LIMITS.heightCm.max, 5).map((cm) => ({ value: String(cm), label: `${cm} cm` }));
 export const SEX_OPTIONS = [{ value: 'Male', label: 'Homme' }, { value: 'Female', label: 'Femme' }];
 
 const choices = (labels) => labels.map((label) => ({ value: label, label }));

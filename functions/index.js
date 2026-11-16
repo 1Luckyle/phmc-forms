@@ -124,7 +124,7 @@ const scheduleDeletion = async (request) => {
                      { name: "Phrase", value: request.phrase, inline: false },
                  ],
                  timestamp: new Date().toISOString(),
-                 footer: { text: "PHMC-FR Tools - Nettoyage programmé" }
+                 footer: { text: "PHMC Tools - Nettoyage programmé" }
              };
              await sendWebhook({ embeds: [embed] });
 

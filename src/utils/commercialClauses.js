@@ -294,7 +294,7 @@ export const buildAgreementDocument = (ctx) => {
             },
         },
         footer: [
-            `${COMMERCIAL_MODEL_VERSION} · Document généré par l'outil PHMC-FR · Réf. ${reference} · ${COMMERCIAL_LAW_VERSION}`,
+            `${COMMERCIAL_MODEL_VERSION} · Document généré par l'outil PHMC · Réf. ${reference} · ${COMMERCIAL_LAW_VERSION}`,
             'Accord confidentiel destiné aux seules Parties. Document de jeu de rôle (IC), sans valeur juridique réelle. Les signatures électroniques sont horodatées ; chaque Partie en conserve une copie.',
         ],
     };

@@ -265,7 +265,7 @@ export const sendMissingEmployeeNotification = async (
                 ],
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: `Soumis via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`,
+                    text: `Soumis via l'outil PHMC Tools - v${commitInfo.sha || 'N/A'}`,
                 },
             };
 
@@ -338,7 +338,7 @@ ${JSON.stringify(debugData, null, 2)}
                 ],
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: `Envoyé via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`,
+                    text: `Envoyé via l'outil PHMC Tools - v${commitInfo.sha || 'N/A'}`,
                 },
             };
 
@@ -437,7 +437,7 @@ ${JSON.stringify(debugData, null, 2)}
                 ],
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: `Envoyé via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`,
+                    text: `Envoyé via l'outil PHMC Tools - v${commitInfo.sha || 'N/A'}`,
                 },
             };
 
@@ -475,7 +475,7 @@ ${JSON.stringify(debugData, null, 2)}
                 ],
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: `Envoyé via l'outil PHMC-FR Tools - v${commitInfo.sha || 'N/A'}`,
+                    text: `Envoyé via l'outil PHMC Tools - v${commitInfo.sha || 'N/A'}`,
                 },
             };
 

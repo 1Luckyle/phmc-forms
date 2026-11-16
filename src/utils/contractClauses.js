@@ -97,8 +97,8 @@ const signaturesBlock = (ctx, { kind, intro, employeeRole }) => {
 };
 
 const footerLines = (ctx, extra = []) => [
-    `${MODEL_VERSION} · Document généré par l'outil PHMC-FR · Réf. ${ctx.reference}`,
-    'Document confidentiel destiné aux seules parties. La signature électronique de l\'outil PHMC-FR est horodatée ; chaque partie en conserve une copie.',
+    `${MODEL_VERSION} · Document généré par l'outil PHMC · Réf. ${ctx.reference}`,
+    'Document confidentiel destiné aux seules parties. La signature électronique de l\'outil PHMC est horodatée ; chaque partie en conserve une copie.',
     ...extra,
 ];
 
@@ -234,7 +234,7 @@ const donneesArticle = () => ({
     id: 'donnees',
     titre: 'Données personnelles',
     blocs: () => [
-        'L\'Employeur traite les données du dossier du personnel (identité, grade, contrats, évaluations, mesures disciplinaires, historique des accès) pour la gestion des ressources humaines et de la sécurité. Ces données sont conservées pendant la durée du contrat puis archivées dans le cadre légal ; l\'Employé(e) y a accès et peut en demander la rectification. La politique de confidentialité de l\'outil PHMC-FR en détaille les modalités.',
+        'L\'Employeur traite les données du dossier du personnel (identité, grade, contrats, évaluations, mesures disciplinaires, historique des accès) pour la gestion des ressources humaines et de la sécurité. Ces données sont conservées pendant la durée du contrat puis archivées dans le cadre légal ; l\'Employé(e) y a accès et peut en demander la rectification. La politique de confidentialité de l\'outil PHMC en détaille les modalités.',
     ],
 });
 
@@ -266,7 +266,7 @@ const generalesArticle = (ctx, { offre = true } = {}) => {
                 `${b('Modification.')} Toute modification des éléments essentiels (fonction, grade, rémunération, durée) suppose un avenant écrit accepté par ${par}. Le silence ne vaut pas acceptation.`,
                 `${b('Nullité partielle.')} Une stipulation contraire à la Loi est réputée non écrite ; elle n'affecte pas les autres.`,
                 `${b('Force majeure.')} Aucune partie n'est responsable de l'inexécution résultant d'un événement imprévisible et insurmontable, extérieur aux parties (Code Civil, art. 212).`,
-                `${b('Forme et signature.')} Le document est établi par écrit (Code Civil, art. 206) et signé par voie électronique dans l'outil PHMC-FR ; la signature électronique de chaque partie, horodatée, vaut signature manuscrite. Les notifications se font par ce même outil et par l'adresse électronique du compte ${duCompte}.`,
+                `${b('Forme et signature.')} Le document est établi par écrit (Code Civil, art. 206) et signé par voie électronique dans l'outil PHMC ; la signature électronique de chaque partie, horodatée, vaut signature manuscrite. Les notifications se font par ce même outil et par l'adresse électronique du compte ${duCompte}.`,
                 `${b('Langue.')} Le document est rédigé en langue française à la demande conjointe des parties, l'anglais étant la langue officielle de l'État (Constitution, art. III, section 6) ; une traduction peut être fournie sur demande.`,
             ] },
             ...(offre ? [offerLine(ctx)] : []),
@@ -614,7 +614,7 @@ const avenantContent = (ctx) => {
             blocs: () => [
                 'Une modification du contrat requiert l\'accord des deux parties : l\'Employé(e) est libre de la refuser, et son silence ne vaut pas acceptation. À défaut d\'acceptation dans le délai de validité de l\'offre, l\'avenant est caduc et le contrat se poursuit aux conditions antérieures (Code Civil, art. 203, 204 et 208).',
                 offerLine(ctx),
-                'La signature électronique de l\'outil PHMC-FR, horodatée, vaut signature manuscrite (Code Civil, art. 206).',
+                'La signature électronique de l\'outil PHMC, horodatée, vaut signature manuscrite (Code Civil, art. 206).',
             ],
         },
     ];
@@ -704,7 +704,7 @@ const convocationContent = (ctx) => {
         parties: notificationParties(ctx),
         preambule: [],
         articles: compile(definitions),
-        signatures: signaturesBlock(ctx, { kind: 'accuse', intro: 'La notification est réputée effectuée à la date de son envoi dans l\'outil PHMC-FR, à l\'adresse du compte de l\'employé(e) (Code de Procédure Judiciaire, art. 609, par analogie).' }),
+        signatures: signaturesBlock(ctx, { kind: 'accuse', intro: 'La notification est réputée effectuée à la date de son envoi dans l\'outil PHMC, à l\'adresse du compte de l\'employé(e) (Code de Procédure Judiciaire, art. 609, par analogie).' }),
         footer: footerLines(ctx),
     };
 };
@@ -761,7 +761,7 @@ const sanctionContent = (ctx) => {
         parties: notificationParties(ctx),
         preambule: [],
         articles: compile(definitions),
-        signatures: signaturesBlock(ctx, { kind: 'accuse', intro: 'La notification est réputée effectuée à la date de son envoi dans l\'outil PHMC-FR (Code de Procédure Judiciaire, art. 609, par analogie). La signature vaut accusé de réception, non acquiescement.' }),
+        signatures: signaturesBlock(ctx, { kind: 'accuse', intro: 'La notification est réputée effectuée à la date de son envoi dans l\'outil PHMC (Code de Procédure Judiciaire, art. 609, par analogie). La signature vaut accusé de réception, non acquiescement.' }),
         footer: footerLines(ctx),
     };
 };
@@ -854,7 +854,7 @@ const finContent = (ctx) => {
             kind: accord ? 'accord' : 'accuse',
             intro: accord
                 ? 'Fait à Los Santos, en deux exemplaires électroniques. En signant, l\'Employé(e) accepte la rupture d\'un commun accord dans les conditions ci-dessus.'
-                : 'La notification est réputée effectuée à la date de son envoi dans l\'outil PHMC-FR (Code de Procédure Judiciaire, art. 609, par analogie). La signature vaut accusé de réception, non acquiescement.',
+                : 'La notification est réputée effectuée à la date de son envoi dans l\'outil PHMC (Code de Procédure Judiciaire, art. 609, par analogie). La signature vaut accusé de réception, non acquiescement.',
         }),
         footer: footerLines(ctx),
     };

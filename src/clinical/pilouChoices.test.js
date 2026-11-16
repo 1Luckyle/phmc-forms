@@ -1,7 +1,7 @@
 import { MEDICATIONS } from './medications';
 import { findTerm } from './engine';
 import { buildCase } from './protocols';
-import { AGE_OPTIONS, WEIGHT_OPTIONS, HEIGHT_OPTIONS, ALLERGY_CHOICES, HISTORY_CHOICES, MEDICATION_CHOICES, joinChoices } from './pilouChoices';
+import { ALLERGY_CHOICES, HISTORY_CHOICES, MEDICATION_CHOICES, joinChoices } from './pilouChoices';
 
 jest.mock('../firebase', () => ({ database: {}, auth: {} }));
 jest.mock('firebase/database', () => ({ ref: jest.fn(), get: jest.fn(), set: jest.fn(), update: jest.fn(), onValue: jest.fn() }));
@@ -16,15 +16,16 @@ describe('choix de Pilou : tout est compris par le moteur', () => {
     test.each(HISTORY_CHOICES.map((c) => c.value))('antécédent « %s » reconnu', (label) => expect(findTerm(label, HISTORY_TERMS)).not.toBe(''));
     test.each(MEDICATION_CHOICES.map((c) => c.value))('traitement « %s » reconnu', (label) => expect(findTerm(label, MEDICATION_TERMS)).not.toBe(''));
 
-    test('listes âge, poids et taille : valeurs lisibles par le moteur', () => {
-        expect(AGE_OPTIONS[0]).toMatchObject({ value: '0' });
-        expect(AGE_OPTIONS.find((o) => o.value === '35').label).toBe('35 ans');
-        expect(WEIGHT_OPTIONS.map((o) => Number(o.value))).toEqual([...WEIGHT_OPTIONS.map((o) => Number(o.value))].sort((a, b) => a - b));
-        expect(WEIGHT_OPTIONS[0].value).toBe('1');
-        expect(WEIGHT_OPTIONS[WEIGHT_OPTIONS.length - 1].value).toBe('400');
-        expect(HEIGHT_OPTIONS[0].value).toBe('30');
-        expect(HEIGHT_OPTIONS[HEIGHT_OPTIONS.length - 1].value).toBe('260');
-        expect(AGE_OPTIONS[AGE_OPTIONS.length - 1].value).toBe('120');
+    test('âge, poids et taille saisis librement : n\'importe quelle valeur dans les bornes est prise en charge, le moteur fait ses tranches', () => {
+        [['0', '3.4', '51'], ['7', '23,5', '122'], ['16', '58.2', '167'], ['43', '81.7', '177'], ['88', '63', '158']].forEach(([ageYears, weightKg, heightCm]) => {
+            const result = buildCase({ ageYears, sex: 'Female', weightKg, heightCm, severity: 'Moderate', conditionIds: ['fracture_fermee'] });
+            expect(result).not.toBeNull();
+            expect(result.patient.ageYears).toBe(Number(ageYears));
+            expect(result.patient.weightKg).toBe(Number(weightKg.replace(',', '.')));
+            expect(result.patient.heightCm).toBe(Number(heightCm));
+            expect(result.patient.bmi).toBeGreaterThan(0);
+            expect(result.vitals.hr).toBeGreaterThan(0);
+        });
     });
 
     test('un choix d\'allergie change vraiment la prise en charge (la pénicilline écarte l\'amoxicilline)', () => {

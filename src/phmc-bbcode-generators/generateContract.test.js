@@ -8,7 +8,7 @@ const doc = (over = {}) => ({
     title: 'Contrat de travail à durée indéterminée', subtitle: 'Médecin', reference: 'PHMC-RH-2026-AB12C', dateText: 'Édité le 15/11/2026', service: 'phmc',
     visas: ['Vu le Code du Travail.'], parties: ['Entre le PHMC et M. Test.'], articles: [{ titre: 'Objet', blocs: ['Le présent contrat…'] }],
     signatures: { titre: 'Signatures', employer: { label: 'Employeur', name: 'Dr X', body: '[br][/br]', caption: 'Signature' }, employee: { label: 'Employé', name: 'M. Test', body: '{{SIGNATURE_SALARIE}}', caption: 'Signature{{DATE_SIGNATURE}}' } },
-    footer: ['v1 · Document généré par l\'outil PHMC-FR'], ...over,
+    footer: ['v1 · Document généré par l\'outil PHMC'], ...over,
 });
 
 describe('contrats : en-tête et pied de page des rapports', () => {
@@ -31,7 +31,7 @@ describe('contrats : en-tête et pied de page des rapports', () => {
         const text = generateContract(doc());
         expect(text.endsWith('[/center]')).toBe(true);
         expect(text.split(PHMC_FOOTER_MARK)).toHaveLength(2);
-        expect(text.indexOf('Document généré par l\'outil PHMC-FR')).toBeLessThan(text.indexOf(PHMC_FOOTER_MARK));
+        expect(text.indexOf('Document généré par l\'outil PHMC')).toBeLessThan(text.indexOf(PHMC_FOOTER_MARK));
         expect(withPhmcFooter(text, 3)).toBe(text);
     });
     test('l’aperçu HTML se construit sans balise orpheline', () => {

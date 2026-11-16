@@ -1,7 +1,6 @@
 import { bodyMeasureProblems } from './bodyMeasureRules';
 import { validateReport } from './formValidation';
 import { BODY_LIMITS, parseAgeYears, parseWeightKg, parseHeightCm, bmiOf, bmiCategory, isBmiImplausible } from '../clinical/bodyLimits';
-import { AGE_OPTIONS, WEIGHT_OPTIONS, HEIGHT_OPTIONS } from '../clinical/pilouChoices';
 import { buildCase } from '../clinical/protocols';
 
 jest.mock('../firebase', () => ({ database: {}, auth: {} }));
@@ -33,13 +32,8 @@ describe('bornes communes à tout le site', () => {
         expect(isBmiImplausible(bmiOf('300', '60'))).toBe(true);
         expect(isBmiImplausible(23.7)).toBe(false);
     });
-    test('les listes de Pilou couvrent exactement les mêmes bornes', () => {
-        expect(Number(AGE_OPTIONS[0].value)).toBe(BODY_LIMITS.ageYears.min);
-        expect(Number(AGE_OPTIONS[AGE_OPTIONS.length - 1].value)).toBe(BODY_LIMITS.ageYears.max);
-        expect(Number(WEIGHT_OPTIONS[0].value)).toBe(BODY_LIMITS.weightKg.min);
-        expect(Number(WEIGHT_OPTIONS[WEIGHT_OPTIONS.length - 1].value)).toBe(BODY_LIMITS.weightKg.max);
-        expect(Number(HEIGHT_OPTIONS[0].value)).toBe(BODY_LIMITS.heightCm.min);
-        expect(Number(HEIGHT_OPTIONS[HEIGHT_OPTIONS.length - 1].value)).toBe(BODY_LIMITS.heightCm.max);
+    test('bornes communes : celles que Pilou sait traiter', () => {
+        expect(BODY_LIMITS).toEqual({ ageYears: { min: 0, max: 120 }, weightKg: { min: 1, max: 400 }, heightCm: { min: 30, max: 260 } });
     });
     test('Pilou prend en charge les extrêmes : nourrisson de 1 kg, patient de 400 kg, 120 ans', () => {
         [{ ageYears: '0', weightKg: '1', heightCm: '30' }, { ageYears: '35', weightKg: '400', heightCm: '260' }, { ageYears: '120', weightKg: '40', heightCm: '150' }].forEach((patient) => {

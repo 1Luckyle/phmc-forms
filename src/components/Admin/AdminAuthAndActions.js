@@ -108,7 +108,7 @@ const sendAdminActionWebhook = async (adminEmail, action, details, categoryName 
             { name: "Détails", value: `\`\`\`${details.substring(0, 1000)}\`\`\``, inline: false },
         ],
         timestamp: new Date().toISOString(),
-        footer: { text: `PHMC-FR Tools | ${userTimezone}` }
+        footer: { text: `PHMC Tools | ${userTimezone}` }
     };
 
     try {
@@ -749,7 +749,7 @@ Clé : ${savedRoleData.cle}`,
         }
         if (granted) {
             if (showInAppNotification) showInAppNotification("Les notifications de bureau sont activées pour ce site ! Veuillez vérifier que les paramètres de votre système d’exploitation autorisent également les notifications de votre navigateur.", "check-circle", 7000);
-            showDesktopNotification("PHMC-FR Tools : Notifications activées", { body: "Vous recevrez désormais des notifications de bureau pour les actions administratives importantes. Assurez-vous que votre système d'exploitation autorise les notifications du navigateur.", icon: '/phmc512.png' });
+            showDesktopNotification("PHMC Tools : Notifications activées", { body: "Vous recevrez désormais des notifications de bureau pour les actions administratives importantes. Assurez-vous que votre système d'exploitation autorise les notifications du navigateur.", icon: '/phmc512.png' });
         } else {
             if (currentPermission === 'denied') {
                 if (showInAppNotification) showInAppNotification("Les notifications de bureau sont bloquées. Veuillez les activer dans les paramètres de votre navigateur.", "warning");

@@ -801,7 +801,7 @@ const OnboardingModal = ({
                 description: `**${staffMember.name}** a soumis une demande de création de compte.\nElle est en attente d'approbation par un administrateur.`,
                 fields,
                 timestamp: new Date().toISOString(),
-                footer: { text: "PHMC-FR Tools — En attente d'approbation admin" }
+                footer: { text: "PHMC Tools — En attente d'approbation admin" }
             };
 
             await fetch(webhookURL, {

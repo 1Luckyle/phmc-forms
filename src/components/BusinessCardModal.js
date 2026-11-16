@@ -162,7 +162,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
                 { name: "E-mail", value: cardEmail || "N/A", inline: true }
             ],
             footer: {
-                text: `l'outil PHMC-FR Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
+                text: `l'outil PHMC Tools | gh-pages ${commitInfo?.sha?.substring(0, 7) || 'N/A'}`
             },
             timestamp: new Date().toISOString()
         };

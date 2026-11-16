@@ -13,6 +13,8 @@ const BANDS = [
     { upTo: 65, hr: [60, 100, 74], rr: [12, 20, 15], sbp: 120, dbp: 77 },
     { upTo: 200, hr: [60, 100, 72], rr: [14, 22, 16], sbp: 132, dbp: 80 },
 ];
+/** Tranches d'âge et valeurs de repos (lecture seule) : le manuel médical de Pilou en tire son tableau des constantes normales. */
+export const AGE_BANDS = BANDS;
 const DEFAULT_ADULT_AGE = 35;
 export const bandOf = (ageYears) => {
     const age = Number.isFinite(ageYears) ? ageYears : DEFAULT_ADULT_AGE;

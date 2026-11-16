@@ -12,7 +12,7 @@ const ServiceUnavailable = () => {
         </h2>
         <div className="service-unavailable-emoji" role="img" aria-label="Sad face">😞</div>
         <div className="service-unavailable-footer">
-          &copy; {new Date().getFullYear()} PHMC-FR Tools &mdash; Merci de votre patience.
+          &copy; {new Date().getFullYear()} PHMC Tools &mdash; Merci de votre patience.
         </div>
       </div>
     </div>

@@ -55,7 +55,7 @@ export const sendAdminActionWebhook = async (actorEmail, action, details, catego
         description: lines.join('\n'),
         fields: [{ name: 'Détails', value: `\`\`\`${String(details || '').substring(0, 1000)}\`\`\``, inline: false }],
         timestamp: new Date().toISOString(),
-        footer: { text: `PHMC-FR Tools | ${timeZone}` },
+        footer: { text: `PHMC Tools | ${timeZone}` },
     };
     try {
         await fetch(webhookURL, {

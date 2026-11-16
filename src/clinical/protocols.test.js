@@ -5,10 +5,10 @@ jest.mock('../firebase', () => ({ database: {}, auth: {} }));
 jest.mock('firebase/database', () => ({ ref: jest.fn(), get: jest.fn(), set: jest.fn(), update: jest.fn(), onValue: jest.fn() }));
 
 describe('protocoles de Pilou : un protocole par motif', () => {
-    test('chaque motif a du matériel, des gestes, une surveillance et des mots de symptômes', () => {
+    test('chaque motif a du matériel, une surveillance et des mots de symptômes (les gestes sont dans pathways.test.js)', () => {
         const missing = CONDITIONS.filter((c) => {
             const protocol = PROTOCOLS[c.id];
-            return !protocol || protocol.equipment.length < 2 || protocol.gestures.length < 3 || protocol.monitoring.length < 1 || !protocol.symptoms;
+            return !protocol || protocol.equipment.length < 2 || protocol.monitoring.length < 1 || !protocol.symptoms;
         }).map((c) => c.id);
         expect(missing).toEqual([]);
     });
@@ -51,12 +51,13 @@ describe('prise en charge d\'un cas', () => {
         expect(buildCase({ ...adult, conditionIds: ['inconnu'] })).toBeNull();
     });
 
-    test('un adulte avec un syndrome coronarien : constantes, étapes, matériel, gestes, médicaments dosés, orientation', () => {
+    test('un adulte avec un syndrome coronarien : constantes, parcours, matériel, médicaments dosés, orientation', () => {
         const result = buildCase(adult);
         expect(result.conditions[0]).toMatchObject({ id: 'sca' });
         expect(result.conditions[0].steps.length).toBeGreaterThan(2);
         expect(result.conditions[0].equipment).toContain('Électrocardiogramme 12 dérivations');
-        expect(result.conditions[0].gestures.length).toBeGreaterThanOrEqual(3);
+        expect(result.timeline.find((phase) => phase.key === 'now').steps.map((step) => step.title)).toContain("Faire l'ECG");
+        expect(result.timeline.find((phase) => phase.key === 'start').steps.find((step) => step.id === 'start-equipment').points).toContain('Électrocardiogramme 12 dérivations');
         expect(result.vitals.hr).toBeGreaterThan(0);
         expect(result.meds.length).toBeGreaterThan(0);
         result.meds.forEach((m) => { expect(m.text).toMatch(/\d/); expect(m.name).toBeTruthy(); });
@@ -84,12 +85,14 @@ describe('prise en charge d\'un cas', () => {
         expect(names).not.toMatch(/amoxicilline|pénicilline/);
     });
 
-    test('plusieurs motifs : un bloc par motif, texte complet à copier', () => {
+    test('plusieurs motifs : un seul parcours, texte complet à copier', () => {
         const result = buildCase({ ...adult, conditionIds: ['sca', 'hypoglycemie'] });
         expect(result.conditions).toHaveLength(2);
         const text = caseToText(result);
         expect(text).toContain('PILOU — Douleur thoracique / syndrome coronarien + Hypoglycémie');
-        ['Étapes :', 'Matériel :', 'Gestes :', 'Surveillance :', 'MÉDICAMENTS', 'ORIENTATION :', 'Aide à la décision'].forEach((part) => expect(text).toContain(part));
+        expect(text).toContain('Patient : 45 ans, Homme, 80 kg, 178 cm, IMC 25,2 (surpoids) — gravité sévère');
+        ['PREMIER REGARD', 'GESTES IMMÉDIATS', 'EXAMEN ET BILAN', 'TRAITEMENT', 'SURVEILLANCE', 'ORIENTATION ET SUITES', 'Préparer le matériel', 'Administrer : ', 'Orienter : ', 'Aide à la décision'].forEach((part) => expect(text).toContain(part));
+        expect(text).toMatch(/\d+\. Resucrer par la bouche \(Hypoglycémie\) : /);
         expect(caseToText(null)).toBe('');
     });
 
@@ -97,6 +100,6 @@ describe('prise en charge d\'un cas', () => {
         const result = buildCase({ ageYears: 30, sex: 'Male', weightKg: 75, severity: 'Mild', conditionIds: ['plaie_superficielle'] });
         expect(result.destinationKey).toBe('Home');
         expect(result.prescription.length).toBeGreaterThan(0);
-        expect(caseToText(result)).toContain('ORDONNANCE DE SORTIE');
+        expect(caseToText(result)).toContain("Remettre l'ordonnance de sortie");
     });
 });

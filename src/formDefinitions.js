@@ -119,7 +119,7 @@ export const formDefinitions = [
     { version: 24, name: "[Civil] Formulaire de Libération Médicale", group: "PHMC", icon: Civilian, generator: generateMedicalRecordRelease, FieldComponent: MedicalRelease, titleKey: "liberationMedicale", sortOrder: 1, userTypes: ['civilian', 'phmcStaff', 'adminStaff', 'coroner', 'recruitment', 'other'], primaryFor: ['civilian'] },
     { version: 25, name: "[Civil] Dossier Médical Basique", group: "PHMC", icon: Civilian, generator: generateBasicPatientFile, FieldComponent: BasicPatientFile, titleKey: "dossierMedicalBasique", sortOrder: 2, userTypes: ['civilian', 'phmcStaff', 'adminStaff', 'coroner', 'recruitment', 'other'], primaryFor: ['civilian'] },
     { version: 26, name: "[Civil] Mise à Jour du Dossier Médical", group: "PHMC", icon: Civilian, generator: generateMedicalFileUpdate, FieldComponent: MedicalUpdate, titleKey: "miseAJourDossierMedical", sortOrder: 4, isHiddenInSelector: true, userTypes: ['civilian', 'phmcStaff', 'adminStaff', 'coroner', 'recruitment', 'other'], primaryFor: ['civilian'] },
-    // PHMC-FR Tools (Forensic Services next, then others)
+    // PHMC Tools (Forensic Services next, then others)
     { version: 1, name: "Rapport d'Enquête sur le Décès", group: "PHMC", icon: folder, generator: generateDeathReport, FieldComponent: DeathReport, titleKey: "servicesDeMedecineLegale", sortOrder: 5, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
     { version: 4, name: "Rapport d'Autopsie", group: "PHMC", icon: autopsy /* Placeholder */, generator: generateAutopsy, FieldComponent: Autopsy, titleKey: "rapportAutopsie", sortOrder: 7, isHiddenInSelector: true, userTypes: ['phmcStaff', 'coroner', 'other'], primaryFor: ['coroner'] },
     {

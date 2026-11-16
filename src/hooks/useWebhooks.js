@@ -57,7 +57,7 @@ export const useWebhooks = (formData, commitInfo, showNotification) => {
             color: embedColor,
             timestamp: new Date().toISOString(),
             footer: {
-                text: `l'outil PHMC-FR Tools | ${triggerSource}`
+                text: `l'outil PHMC Tools | ${triggerSource}`
             }
         };
 

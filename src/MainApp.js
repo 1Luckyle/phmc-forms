@@ -2090,7 +2090,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                                     // Outils réservés : recrutement (admins + recruteurs), formulaire AMA (médecins PHMC + admins).
                                                     key: 'work', label: 'Gestion & outils métier', items: [
                                                         toolAccess.messaging && { key: 'messaging', icon: 'fas fa-envelope', label: mailbox.unread > 0 ? `Messagerie interne (${mailbox.unread} non lu${mailbox.unread > 1 ? 's' : ''})` : 'Messagerie interne', onClick: closeAnd(() => { setMessagingInitialId(''); setShowMessaging(true); }) },
-                                                        toolAccess.pilou && { key: 'pilou', icon: 'fas fa-pills', label: 'Pilou — aide à la prise en charge', onClick: closeAnd(() => setShowPilou(true)) },
+                                                        toolAccess.pilou && { key: 'pilou', icon: 'fas fa-pills', label: 'Pilou — prise en charge et manuel médical', onClick: closeAnd(() => setShowPilou(true)) },
                                                         toolAccess.directory && { key: 'directory', icon: 'fas fa-address-book', label: "Annuaire & plan de l'hôpital", onClick: closeAnd(() => setShowDirectory(true)) },
                                                         // Administratif : un seul accès pour le recrutement, les sanctions et les contrats commerciaux (chacun selon ses droits).
                                                         toolAccess.administratif && { key: 'administratif', icon: 'fas fa-briefcase', label: 'Administratif', onClick: closeAnd(() => setShowAdminHub(true)) },
