@@ -333,6 +333,22 @@ export const MAIL_TEMPLATES = {
     },
 
     // ───────────── Général ─────────────
+    notification_generique: {
+        category: 'general', label: 'Notification de l\'outil (copie par mail)',
+        quand: 'Chaque fois qu\'une notification de la cloche est aussi envoyée par mail : rapport partagé, copie d\'un rapport, mail externe partagé, divulgation du dossier, décès signalé, ordonnance, rappel d\'entretien, document à signer, échéance d\'un certificat…',
+        destinataire: 'La personne notifiée', canal: 'Serveur (déclenché par la création de la notification)',
+        vars: [NOM, v('titre', 'Titre de la notification', 'Un rapport a été partagé avec vous'), v('texte', 'Détail (facultatif)', 'Certificat de vol — valable jusqu\'au 12/11/2027.'), v('site', 'Adresse de l\'outil', 'https://phmc-tools.com/')], required: ['titre'],
+        subject: '{{titre}} - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\n**{{titre}}**{{?texte}}\n\n{{texte}}{{/texte}}\n\nOuvrez [l'outil PHMC]({{site}}) : la cloche de notification vous mène directement à ce qui vous concerne.\n\n${SIG}`,
+    },
+    messagerie_recapitulatif: {
+        category: 'general', label: 'Récapitulatif des messages internes non lus',
+        quand: 'Automatiquement, chaque matin (9 h, heure de Paris), pour le personnel qui a des messages internes non lus depuis plus de 24 h (au plus un récapitulatif par jour).',
+        destinataire: 'Le membre du personnel', canal: 'Serveur (tâche planifiée « rappels quotidiens »)',
+        vars: [NOM, v('nombre', 'Nombre de messages non lus', '3'), v('liste', 'Liste des messages', ['Dr. Marie Dupont : Réunion de service', 'Direction : Planning de décembre'], { liste: true }), v('site', 'Adresse de l\'outil', 'https://phmc-tools.com/')], required: [],
+        subject: '{{nombre}} message(s) interne(s) non lu(s) - Pillbox Hill Medical Center',
+        body: `Bonjour {{nom}},\n\nVous avez **{{nombre}} message(s) interne(s) non lu(s)** dans la messagerie du PHMC :\n\n{{liste}}\n\nOuvrez [l'outil PHMC]({{site}}) puis la **Boîte à outils → « Messagerie interne »** pour les lire.\n\n${SIG}`,
+    },
     signature: {
         category: 'general', label: 'Formule de politesse commune ({{signature}})',
         quand: 'Ajoutée en fin de la plupart des mails ci-dessus par la variable {{signature}} : modifiez-la ici pour la changer partout.',

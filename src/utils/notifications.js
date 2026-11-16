@@ -40,10 +40,14 @@ export const NOTIFICATION_TYPES = {
     deces: { icon: 'fa-file-medical', color: '#ff7b72' },
 };
 
+// Types de notification qui partent TOUJOURS aussi par mail (cloche + mail) : rapport partagé, mail externe partagé, rapports partagés par une divulgation (« partage »), copie ou mention
+// dans un rapport (« copie »), décès signalé aux DMEC (« deces »). Tout autre événement s'y ajoute avec `mail: true`. Voir functions/index.js (mailOnNotification).
+export const MAIL_TYPES = new Set(['partage', 'copie', 'deces']);
+
 const FEED_LIMIT = 60;
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
 
-const buildEntry = ({ type, titre, texte, lien }) => {
+const buildEntry = ({ type, titre, texte, lien, mail }) => {
     const user = auth.currentUser;
     const entry = {
         type: NOTIFICATION_TYPES[type] ? type : 'demande',
@@ -53,6 +57,8 @@ const buildEntry = ({ type, titre, texte, lien }) => {
     };
     const body = clean(texte, 400);
     if (body) entry.texte = body;
+    // mail: true → la fonction serveur mailOnNotification envoie aussi cette notification par mail (voir functions/index.js).
+    if (mail === true || MAIL_TYPES.has(type)) entry.mail = true;
     if (lien && lien.cible) {
         entry.lien = { cible: clean(lien.cible, 40) };
         if (lien.section) entry.lien.section = clean(lien.section, 120);

@@ -116,7 +116,7 @@ const Contestations = ({ showNotification, adminName }) => {
             if (accept) await unlockPatient(item.patientID, adminName);
             await update(ref(database, `contestationsDeces/${item.patientID}`), { statut: accept ? 'acceptee' : 'rejetee', reponse, traiteLe: Date.now(), traitePar: String(adminName || '').slice(0, 120) });
             const uid = await findCivilianUidByPatientId(item.patientID);
-            if (uid) await notifyUser(uid, { type: 'statut', titre: accept ? 'Votre contestation a été acceptée' : 'Votre contestation a été rejetée', texte: reponse || (accept ? 'Votre accès au site est rétabli.' : '') });
+            if (uid) await notifyUser(uid, { mail: true, type: 'statut', titre: accept ? 'Votre contestation a été acceptée' : 'Votre contestation a été rejetée', texte: reponse || (accept ? 'Votre accès au site est rétabli.' : '') });
             showNotification(accept ? `${item.patientID} rétabli.` : 'Contestation rejetée.', 'check-circle');
             await reload();
         } catch (error) { showNotification(`Action impossible : ${error.message || error}`, 'error', 9000); } finally { setBusy(''); }

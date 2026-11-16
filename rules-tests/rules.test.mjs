@@ -650,6 +650,23 @@ await write('Table idsPatientParCompte : un admin la pose', true, 'A', 'idsPatie
 await read('Table idsPatientParCompte : S1 lit la sienne', true, 'S1', 'idsPatientParCompte/S1', staffAlive);
 await read('Table idsPatientParCompte : S2 ne lit pas celle de S1', false, 'S2', 'idsPatientParCompte/S1', staffAlive);
 
+console.log('--- notifications par mail et échéances ---');
+const note = (over = {}) => ({ type: 'partage', titre: 'Un rapport a été partagé avec vous', creeLe: 1, deUid: 'S1', ...over });
+await write('Notification avec mail: true acceptée', true, 'S1', 'notifications/S2/n1', note({ mail: true }));
+await write('Notification sans drapeau mail acceptée', true, 'S1', 'notifications/S2/n1', note());
+await write('Drapeau mail non booléen refusé', false, 'S1', 'notifications/S2/n1', note({ mail: 'oui' }));
+await write('Notification de groupe avec mail: true acceptée', true, 'S1', 'notificationsGroupes/admin/n1', note({ type: 'demande', mail: true }));
+const echeance = (over = {}) => ({ type: 'certificat_vol', finLe: 1900000000000, delaiJours: 30, patientID: 'PHMC-1', titre: 'Certificat de vol', auteurUid: 'S1', creeLe: 1, ...over });
+await write('Un soignant pose une échéance à son nom', true, 'S1', 'echeances/PHMC-1_certificat_vol_2027-11-10', echeance());
+await write('Une échéance au nom d\'un autre est refusée', false, 'S1', 'echeances/e1', echeance({ auteurUid: 'S2' }));
+await write('Une échéance de type inconnu est refusée', false, 'S1', 'echeances/e1', echeance({ type: 'autre' }));
+await write('Un préavis démesuré est refusé', false, 'S1', 'echeances/e1', echeance({ delaiJours: 999 }));
+await write('Un champ en trop est refusé (pas de notifie posé par un client)', false, 'S1', 'echeances/e1', echeance({ notifie: true }));
+await write('Un Civil ne pose pas d\'échéance', false, 'C', 'echeances/e1', echeance({ auteurUid: 'C' }));
+await write('Une échéance existante n\'est pas écrasée', false, 'S1', 'echeances/e2', echeance({ titre: 'Autre' }), (data) => { data.echeances = { e2: echeance() }; });
+await read('Un soignant ne lit pas les échéances', false, 'S1', 'echeances');
+await read('Un admin lit les échéances', true, 'A', 'echeances', (data) => { data.echeances = { e2: echeance() }; });
+
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);
 process.exit(failures === 0 ? 0 : 1);

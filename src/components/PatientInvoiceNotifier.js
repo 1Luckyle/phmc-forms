@@ -25,12 +25,14 @@ const closeStyle = {
     color: '#f85149', fontSize: '28px', lineHeight: 1, cursor: 'pointer',
 };
 
-const PatientInvoiceNotifier = ({ showNotification }) => {
+// reopenSignal : un compteur qui change quand une notification de la cloche demande la fenêtre de paiement (lien « factures ») ; elle se rouvre même si elle avait été fermée.
+const PatientInvoiceNotifier = ({ showNotification, reopenSignal = 0 }) => {
     const { myPatientID, currentEmployee, viewAs } = useEmployeeAuth();
     const [dueCount, setDueCount] = useState(0);
     const [total, setTotal] = useState(0);
     const [dismissedAt, setDismissedAt] = useState(null); // nombre de factures dues au moment de la fermeture
     const lastPatientRef = useRef(null);
+    useEffect(() => { if (reopenSignal) setDismissedAt(null); }, [reopenSignal]);
 
     // Nouvelle identité (connexion / déconnexion / simulation) : on repart de zéro.
     useEffect(() => {

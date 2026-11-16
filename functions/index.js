@@ -1,4 +1,5 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onValueCreated } from "firebase-functions/v2/database";
 import { setGlobalOptions } from "firebase-functions/v2";
 import admin from "firebase-admin";
 import fetch from "node-fetch";
@@ -6,6 +7,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import cors from 'cors';
 import crypto from 'crypto';
 import { renderMail, wrapMailHtml, PHMC_SITE_URL } from './mailTemplatesCore.js';
+import { unreadDigest, dueInterviews, staleApplications, unsignedDocuments, endingContracts, dueExpiries, frDateOf, frDateTimeOf } from './reminderCore.js';
 import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion, EMERGENCY_FIELDS, BACKGROUND_UPDATE_FIELDS, missingBackgroundItems, appendBackgroundItems } from './dossierCore.js';
 
 // Initialize Firebase Admin SDK
@@ -1283,6 +1285,15 @@ export const fleecaWebhook = onRequest({ secrets: [...FLEECA_SECRETS, 'EYEFIND_A
             } catch (mailError) {
                 console.warn(`Failed to send Eyefind Mail receipt for payment ${paymentId}:`, mailError);
             }
+            // Reçu dans la cloche du patient (au mieux), quand le paiement est rattaché à un patient.
+            try {
+                const paidPatient = (await db.ref(`fleecaPayments/${paymentId}/patientID`).once('value')).val();
+                if (paidPatient) {
+                    await notifyPatientAccount(paidPatient, { type: 'statut', titre: 'Paiement reçu : merci !', texte: `${Number(payload.amount || 0).toLocaleString('fr-FR')} $ — ${payload.description || 'services PHMC'}`, lien: { cible: 'dossierPatient' } });
+                }
+            } catch (notifyError) {
+                console.warn(`Notification de reçu non écrite pour ${paymentId}:`, notifyError);
+            }
         }
 
         res.status(200).send('OK');
@@ -2301,7 +2312,7 @@ const invoiceRecipientOf = (invoice) => {
     return deriveEyefindAddress(first, rest.join(' '));
 };
 
-const sendInvoiceMail = async ({ apiKey, to, patientName, invoices, reminder }) => {
+const sendInvoiceMail = async ({ apiKey, to, patientNode, patientName, invoices, reminder }) => {
     const total = invoices.reduce((sum, invoice) => sum + Number(invoice.montant || 0), 0);
     const mail = await composeServerMail(reminder ? 'facture_rappel' : 'facture_a_payer', {
         nom: patientName || '',
@@ -2311,6 +2322,11 @@ const sendInvoiceMail = async ({ apiKey, to, patientName, invoices, reminder }) 
         site: INVOICE_SITE_URL,
     });
     await sendEyefindMailInternal({ apiKey, to, ...mail });
+    // Même information dans la cloche du patient (au mieux : jamais bloquant), avec un lien vers la fenêtre de paiement.
+    await notifyPatientAccount(patientNode, {
+        type: 'statut', titre: reminder ? `Rappel : ${invoices.length} paiement(s) en attente` : (invoices.length > 1 ? `${invoices.length} rapports médicaux à régler` : 'Un rapport médical est à régler'),
+        texte: `Total à payer : ${formatInvoiceMoney(total)}. Ouvrez la fenêtre de paiement.`, lien: { cible: 'factures' },
+    });
 };
 
 // Dernière vérification juste avant d'écrire à un patient : on relit chaque facture, car elle a pu être supprimée
@@ -2387,7 +2403,7 @@ export const invoiceMailBatcher = onSchedule({
         }
         try {
             // Le mail liste TOUTES les factures dues du patient (pas seulement les nouvelles) : un seul récapitulatif.
-            await sendInvoiceMail({ apiKey, to, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: false });
+            await sendInvoiceMail({ apiKey, to, patientNode, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: false });
             unsent.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/mailEnvoyeLe`] = now; });
             await logServerActivity({ category: 'facturation', action: 'invoice_mail', summary: `Mail de facturation envoyé (patient ${patientNode}, ${items.length} facture(s))`, target: patientNode });
         } catch (error) {
@@ -2428,7 +2444,7 @@ export const invoiceDailyReminder = onSchedule({
         const to = invoiceRecipientOf(newest);
         if (!to) continue;
         try {
-            await sendInvoiceMail({ apiKey, to, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: true });
+            await sendInvoiceMail({ apiKey, to, patientNode, patientName: newest.patientNom, invoices: items.map(({ invoice }) => invoice), reminder: true });
             const updates = {};
             items.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/dernierRappelLe`] = now; });
             await db.ref().update(updates);
@@ -3015,4 +3031,182 @@ export const minorExemptionExpiry = onSchedule({ schedule: 'every day 03:30', ti
             console.error(`minorExemptionExpiry: échec pour ${patientNode}:`, error);
         }
     }
+});
+
+
+// ═════════════════════════ Notifications serveur, mails de la cloche, rappels ═════════════════════════
+// Notification d'un compte écrite PAR LE SERVEUR (SDK Admin : aucune règle à contourner). Même forme que src/utils/notifications.js ; deUid 'systeme'.
+// mail: true → la notification part aussi par mail (voir mailOnNotification). Retourne la clé de la notification.
+const pushServerNotification = async (path, { type = 'demande', titre, texte, lien, mail = false }) => {
+    const entry = { type, titre: String(titre || '').slice(0, 160), creeLe: Date.now(), deUid: 'systeme' };
+    if (texte) entry.texte = String(texte).slice(0, 400);
+    if (lien && lien.cible) entry.lien = { cible: String(lien.cible).slice(0, 40), ...(lien.section ? { section: String(lien.section).slice(0, 120) } : {}), ...(lien.id ? { id: String(lien.id).slice(0, 120) } : {}) };
+    if (mail) entry.mail = true;
+    const ref = db.ref(path).push();
+    await ref.set(entry);
+    return ref.key;
+};
+const notifyAccount = (uid, payload) => (uid ? pushServerNotification(`notifications/${uid}`, payload) : Promise.resolve(null));
+const notifyGroupServer = (group, payload) => pushServerNotification(`notificationsGroupes/${group}`, payload);
+
+// Compte Civil d'un patient (par son ID patient) ; null si introuvable.
+const civilianUidOfPatient = async (patientID) => {
+    const wanted = String(patientID || '').trim().toUpperCase();
+    if (!wanted) return null;
+    const snap = await db.ref('civilians').orderByChild('patientID').equalTo(wanted).limitToFirst(1).once('value');
+    if (snap.exists()) return Object.keys(snap.val())[0];
+    const alt = await db.ref('civilians').orderByChild('patientID').equalTo(String(patientID).trim()).limitToFirst(1).once('value');
+    return alt.exists() ? Object.keys(alt.val())[0] : null;
+};
+const notifyPatientAccount = async (patientID, payload) => {
+    try { await notifyAccount(await civilianUidOfPatient(patientID), payload); } catch (error) { console.warn(`Notification non écrite (patient ${patientID}) :`, error && error.message ? error.message : error); }
+};
+
+// Adresse mail d'un compte : celle de sa fiche (personnel, Civil), sinon celle du compte d'authentification.
+const emailOfUid = async (uid) => {
+    try {
+        const found = await findStaffEntryByUid(uid);
+        const email = String(found?.entry?.email || '').trim();
+        if (email) return { email, name: found.entry.displayName || found.entry.name || [found.entry.firstName, found.entry.lastName].filter(Boolean).join(' ') || '' };
+    } catch (error) { /* repli sur le compte */ }
+    try {
+        const user = await admin.auth().getUser(uid);
+        return user.email ? { email: user.email, name: user.displayName || '' } : null;
+    } catch (error) { return null; }
+};
+
+// Une notification créée avec mail: true (rapport partagé, copie, ordonnance, rappel…) part aussi par mail : un seul mécanisme pour tous les événements.
+// Au plus 20 mails par heure et par compte (un enchaînement de notifications ne doit pas inonder une boîte).
+export const mailOnNotification = onValueCreated({ ref: '/notifications/{uid}/{id}', instance: 'phmcfr-forms-default-rtdb', secrets: ['EYEFIND_API_KEY'] }, async (event) => {
+    const entry = event.data && event.data.val();
+    if (!entry || entry.mail !== true || !entry.titre) return;
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) { console.error('mailOnNotification: EYEFIND_API_KEY manquante.'); return; }
+    const uid = event.params.uid;
+    try {
+        if (!(await consumeRateLimit('notifMail', uid, { max: 20, windowMs: 60 * 60 * 1000 }))) return;
+        const target = await emailOfUid(uid);
+        if (!target) return;
+        const mail = await composeServerMail('notification_generique', { nom: target.name || 'Bonjour', titre: entry.titre, texte: entry.texte || '', site: PHMC_SITE_URL });
+        await sendEyefindMailInternal({ apiKey, to: target.email, ...mail });
+    } catch (error) {
+        console.warn(`mailOnNotification: échec pour ${uid}:`, error && error.body ? error.body : (error && error.message) || error);
+    }
+});
+
+// Notification du groupe « admin » créée avec mail: true (contestation de décès, divulgation à traiter à la main) : chaque administrateur la reçoit aussi par mail (au plus 20 par heure et par compte).
+export const mailOnAdminGroupNotification = onValueCreated({ ref: '/notificationsGroupes/admin/{id}', instance: 'phmcfr-forms-default-rtdb', secrets: ['EYEFIND_API_KEY'] }, async (event) => {
+    const entry = event.data && event.data.val();
+    if (!entry || entry.mail !== true || !entry.titre) return;
+    const apiKey = process.env.EYEFIND_API_KEY;
+    if (!apiKey) { console.error('mailOnAdminGroupNotification: EYEFIND_API_KEY manquante.'); return; }
+    const admins = Object.keys((await db.ref('adminUIDs').once('value')).val() || {});
+    for (const uid of admins) {
+        try {
+            if (!(await consumeRateLimit('notifMail', uid, { max: 20, windowMs: 60 * 60 * 1000 }))) continue;
+            const target = await emailOfUid(uid);
+            if (!target) continue;
+            const mail = await composeServerMail('notification_generique', { nom: target.name || 'Bonjour', titre: entry.titre, texte: entry.texte || '', site: PHMC_SITE_URL });
+            await sendEyefindMailInternal({ apiKey, to: target.email, ...mail });
+        } catch (error) {
+            console.warn(`mailOnAdminGroupNotification: échec pour ${uid}:`, error && error.body ? error.body : (error && error.message) || error);
+        }
+    }
+});
+
+// Une demande de compte du personnel (déposée AVANT la création du compte, donc sans notification côté application) ou une demande de modification de grade prévient les admins.
+export const notifyAdminsOfAccountRequest = onValueCreated({ ref: '/pendingAccountRequests/{emailKey}', instance: 'phmcfr-forms-default-rtdb' }, async (event) => {
+    const request = event.data && event.data.val();
+    if (!request) return;
+    await notifyGroupServer('admin', { type: 'compte', titre: 'Nouvelle demande de compte du personnel', texte: [request.name, request.rank || request.grade].filter(Boolean).join(' — ') || undefined, lien: { cible: 'admin', section: 'pendingAccounts' } });
+});
+export const notifyAdminsOfModificationRequest = onValueCreated({ ref: '/pendingModificationRequests/{id}', instance: 'phmcfr-forms-default-rtdb' }, async (event) => {
+    const request = event.data && event.data.val();
+    if (!request) return;
+    await notifyGroupServer('admin', { type: 'compte', titre: 'Nouvelle demande de modification de grade', texte: [request.name || request.nom, request.newRank || request.rank].filter(Boolean).join(' → ') || undefined, lien: { cible: 'admin', section: 'pendingModifications' } });
+});
+
+// Rappels quotidiens (9 h, heure de Paris) : récapitulatif des messages non lus, entretiens de demain, documents à signer, candidatures sans réponse, contrats qui se terminent,
+// échéances des certificats et ordonnances. Règles : reminderCore.js. Marqueurs rappelsEnvoyes/{clé} : jamais deux fois le même rappel. Chaque étape est isolée (une panne n'arrête pas les autres).
+export const dailyReminders = onSchedule({
+    schedule: 'every day 09:00',
+    timeZone: 'Europe/Paris',
+    secrets: ['EYEFIND_API_KEY'],
+    timeoutSeconds: 300,
+}, async () => {
+    const apiKey = process.env.EYEFIND_API_KEY;
+    const now = Date.now();
+    const sent = (await db.ref('rappelsEnvoyes').once('value')).val() || {};
+    const marks = {};
+    const step = async (label, fn) => { try { await fn(); } catch (error) { console.warn(`dailyReminders (${label}) :`, error && error.message ? error.message : error); } };
+
+    // 1. Messages internes non lus depuis plus de 24 h : un récapitulatif par mail et par jour.
+    await step('messagerie', async () => {
+        if (!apiKey) return;
+        const boxes = (await db.ref('messagerie').once('value')).val() || {};
+        for (const [uid, entries] of Object.entries(boxes)) {
+            const digest = unreadDigest(entries, now);
+            const marker = sent[`digest_${uid}`];
+            if (!digest || (marker && now - Number(marker) < 20 * 3600000)) continue;
+            const target = await emailOfUid(uid);
+            if (!target) continue;
+            const mail = await composeServerMail('messagerie_recapitulatif', {
+                nom: target.name || 'Bonjour', nombre: digest.count, liste: digest.more ? [...digest.items, `… et ${digest.more} autre(s)`] : digest.items, site: PHMC_SITE_URL,
+            });
+            await sendEyefindMailInternal({ apiKey, to: target.email, ...mail });
+            marks[`rappelsEnvoyes/digest_${uid}`] = now;
+        }
+    });
+
+    // 2. Candidatures : entretiens à venir (candidat et recruteur) ; candidatures sans réponse (recrutement).
+    await step('candidatures', async () => {
+        const candidatures = (await db.ref('candidatures').once('value')).val() || {};
+        for (const item of dueInterviews(candidatures, now)) {
+            if (sent[item.key]) continue;
+            const when = frDateTimeOf(item.when);
+            await notifyAccount(item.uid, { type: 'recrutement', titre: `Rappel : entretien le ${when}`, texte: item.poste ? `Candidature : ${item.poste}` : undefined, lien: { cible: 'candidature' }, mail: true });
+            if (item.recruteurUid) await notifyAccount(item.recruteurUid, { type: 'recrutement', titre: `Rappel : entretien le ${when}`, texte: [item.nom, item.poste].filter(Boolean).join(' — ') || undefined, lien: { cible: 'recrutement' } });
+            marks[`rappelsEnvoyes/${item.key}`] = now;
+        }
+        for (const item of staleApplications(candidatures, now)) {
+            if (sent[item.key]) continue;
+            await notifyGroupServer('recrutement', { type: 'recrutement', titre: `Candidature sans réponse depuis ${item.jours} jours`, texte: [item.nom, item.poste].filter(Boolean).join(' — ') || undefined, lien: { cible: 'recrutement' } });
+            marks[`rappelsEnvoyes/${item.key}`] = now;
+        }
+    });
+
+    // 3. Contrats et documents : relances de signature ; contrats signés qui se terminent.
+    await step('contrats', async () => {
+        const contrats = (await db.ref('contrats').once('value')).val() || {};
+        const markerOf = (key) => (sent[key] && typeof sent[key] === 'object' ? sent[key] : null);
+        for (const item of unsignedDocuments(contrats, now, Object.fromEntries(Object.keys(sent).filter((key) => key.startsWith('doc_')).map((key) => [key, markerOf(key) || {}])))) {
+            await notifyAccount(item.uid, { type: 'contrat', titre: `Document en attente de votre signature : ${item.titre}`, texte: 'Ouvrez « Mes documents administratifs » pour le lire et le signer.', lien: { cible: 'contrats' }, mail: true });
+            marks[`rappelsEnvoyes/${item.key}`] = { n: item.n, last: now };
+        }
+        for (const item of endingContracts(contrats, now)) {
+            if (sent[item.key]) continue;
+            const fin = frDateOf(item.fin);
+            await notifyAccount(item.uid, { type: 'contrat', titre: `Votre ${item.titre} se termine le ${fin}`, lien: { cible: 'contrats' }, mail: true });
+            await notifyGroupServer('recrutement', { type: 'contrat', titre: `Contrat qui se termine le ${fin}`, texte: [item.nom, item.titre].filter(Boolean).join(' — ') || undefined, lien: { cible: 'recrutement' } });
+            marks[`rappelsEnvoyes/${item.key}`] = now;
+        }
+    });
+
+    // 4. Échéances posées à l'enregistrement d'un certificat de vol, d'une évaluation d'aptitude ou d'une ordonnance : le patient (mail + cloche) et le soignant (cloche).
+    await step('echeances', async () => {
+        const echeances = (await db.ref('echeances').once('value')).val() || {};
+        for (const item of dueExpiries(echeances, now)) {
+            const fin = frDateOf(item.finLe);
+            const reste = item.joursRestants > 0 ? `dans ${item.joursRestants} jour(s)` : 'est arrivée à échéance';
+            const label = { certificat_vol: 'Votre certificat de vol', aptitude: 'Votre certificat d\'aptitude', ordonnance: 'Votre ordonnance' }[item.type] || 'Votre document';
+            const titre = item.joursRestants > 0 ? `${label} expire ${reste}` : `${label} ${reste}`;
+            const texte = [item.titre, `Valable jusqu'au ${fin}.`, item.type === 'ordonnance' ? 'Prenez rendez-vous si votre traitement doit être poursuivi.' : 'Prenez rendez-vous pour le renouveler.'].filter(Boolean).join(' ');
+            const patientUid = item.patientUid || await civilianUidOfPatient(item.patientID);
+            if (patientUid) await notifyAccount(patientUid, { type: 'statut', titre, texte, lien: { cible: 'dossierPatient' }, mail: true });
+            if (item.auteurUid && item.auteurUid !== patientUid) await notifyAccount(item.auteurUid, { type: 'statut', titre: `${item.patientNom || item.patientID || 'Patient'} : ${titre.replace(/^Votre /, '').replace(/^./, (c) => c.toLowerCase())}`, texte: item.titre || undefined, lien: { cible: 'rapports' } });
+            marks[`echeances/${item.id}/notifie`] = true;
+        }
+    });
+
+    if (Object.keys(marks).length > 0) await db.ref().update(marks);
 });

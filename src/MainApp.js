@@ -69,8 +69,10 @@ import ViewAsBanner from './components/ViewAsBanner';
 import { getToolAccess } from './utils/viewAs';
 import NotificationBell from './components/Notifications/NotificationBell';
 import ToolboxSections, { TOOLBOX_STORAGE_KEY } from './components/ToolboxSections';
-import { groupsFor, notifyUser, findStaffUidByNode } from './utils/notifications';
+import { groupsFor, notifyUser, findStaffUidByNode, findCivilianUidByPatientId } from './utils/notifications';
 import { reportCopyRecipients, copyNotificationContent } from './utils/reportCopyRecipients';
+import { registerExpiries } from './utils/reportExpiries';
+import { prescriptionLines } from './clinical/apply';
 import { comprehensiveSanitize } from './utils/patientRecords';
 import { queueDossierUpdate, hasDossierUpdateRules } from './utils/emergencyContactUpdates';
 import { MENTAL_HEALTH_VERSIONS } from './constants/careFormOptions';
@@ -237,6 +239,8 @@ function MainApp({
     const [showMessaging, setShowMessaging] = useState(false);
     // Pilou : aide à la prise en charge d'un cas (Boîte à outils).
     const [showPilou, setShowPilou] = useState(false);
+    // Cloche « facture à payer » : fait rouvrir la fenêtre de paiement (PatientInvoiceNotifier).
+    const [invoiceReopen, setInvoiceReopen] = useState(0);
     const [messagingInitialId, setMessagingInitialId] = useState('');
     const mailbox = useMailbox(auth.currentUser?.uid || (currentEmployee && currentEmployee.uid) || '', !!toolAccess.messaging);
     // Raccourcis de l'annuaire : ouvrir un outil déjà positionné sur la personne (voir DirectoryModal).
@@ -283,6 +287,7 @@ function MainApp({
             case 'divulgation': if (toolAccess.patientDossier) setShowPatientDossierModal(true); break;
             case 'decesSignales': if (toolAccess.deathSignals) setShowDeathSignals(true); break;
             case 'rapports': setShowSavedReports(true); break;
+            case 'factures': setInvoiceReopen((count) => count + 1); break;
             case 'incendie': if (toolAccess.fireManage) setShowFireManage(true); break;
             case 'takehome': if (toolAccess.takeHome) { setTakeHomeTab(lien.section === 'manage' && toolAccess.takeHomeManage ? 'manage' : 'mine'); setShowTakeHome(true); } break;
             case 'admin': navigate('/admin', { state: { section: lien.section } }); break;
@@ -1143,6 +1148,17 @@ function MainApp({
                     await notifyUser(uid, { type: 'copie', ...copyNotificationContent(bbCodeVersion, formData, recipient, staffName), lien: { cible: 'dossierPatient' } });
                 } catch (notifyError) { /* notification au mieux : l'enregistrement a réussi */ }
             }
+        }
+        // Ordonnance établie : le patient (compte Civil) est prévenu par la cloche et par mail ; l'échéance (fin de l'ordonnance, validité d'un certificat de vol ou d'une évaluation d'aptitude)
+        // est surveillée par le serveur, qui prévient quelques jours ou semaines avant. Au mieux : l'enregistrement a réussi.
+        if (result && result.success && !isCivilian && formData.patientID) {
+            try {
+                if (prescriptionLines(formData).length > 0) {
+                    const patientUid = await findCivilianUidByPatientId(formData.patientID);
+                    await notifyUser(patientUid, { type: 'statut', mail: true, titre: 'Une ordonnance a été établie à votre nom', texte: `${prescriptionLines(formData).length} médicament(s) prescrit(s) par ${formData.phmcEmployee || staffName || 'votre soignant'}. Retrouvez-la dans votre dossier patient.`, lien: { cible: 'dossierPatient' } });
+                }
+                await registerExpiries(bbCodeVersion, formData);
+            } catch (expiryError) { /* au mieux */ }
         }
         // Décès : un rapport de soins (urgences, opération) dont le patient est décédé pose une fiche pour le DMEC (corrigée ou retirée quand on corrige le rapport) ; le rapport de décès du DMEC créé
         // à partir de cette fiche la marque « traitée » (utils/deathSignals.js).
@@ -3026,7 +3042,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             mode={deleteAccountMode}
                             showNotification={showNotification}
                         />
-                        <PatientInvoiceNotifier showNotification={showNotification} />
+                        <PatientInvoiceNotifier showNotification={showNotification} reopenSignal={invoiceReopen} />
                         <CivilianProfileModal
                             show={showCivilProfile}
                             onHide={() => setShowCivilProfile(false)}

@@ -47,7 +47,7 @@ export const DeceasedPage = ({ patientID, marker, contest, onLogout }) => {
         try {
             const id = canonicalPatientId(patientID);
             await set(ref(database, `contestationsDeces/${id}`), { uid: auth.currentUser.uid, message: text.slice(0, MAX_MESSAGE), creeLe: Date.now(), statut: 'en_attente' });
-            await notifyGroup('admin', { type: 'demande', titre: `Contestation de décès : ${id}`, texte: text.slice(0, 200), lien: { cible: 'admin', section: 'users' } });
+            await notifyGroup('admin', { mail: true, type: 'demande', titre: `Contestation de décès : ${id}`, texte: text.slice(0, 200), lien: { cible: 'admin', section: 'users' } });
             setMessage('');
         } catch (err) { setError(err.message || "L'envoi a échoué."); } finally { setBusy(false); }
     };

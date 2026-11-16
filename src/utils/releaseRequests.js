@@ -169,14 +169,14 @@ export async function createReleaseRequest({ patientID, patientName, requester, 
     await set(ref(database, `releaseRequests/${id}`), payload);
     // Partie manuelle : l'administration est prévenue (les chefs de service la retrouvent dans le panneau du Dossier Patient).
     if (manuelle) {
-        await notifyGroup('admin', { type: 'demande', titre: 'Demande de divulgation à traiter à la main', texte: `${payload.patientNom || node} : ${autres || 'aucun rapport précis'}`, lien: { cible: 'divulgation', id } });
+        await notifyGroup('admin', { mail: true, type: 'demande', titre: 'Demande de divulgation à traiter à la main', texte: `${payload.patientNom || node} : ${autres || 'aucun rapport précis'}`, lien: { cible: 'divulgation', id } });
     }
     // Chaque médecin concerné est prévenu (au mieux : un échec ne bloque jamais l'enregistrement).
     const authors = practitionersOf(Object.values(elements).filter((item) => item.statut === ITEM_STATUS.WAITING).map((item) => ({ a: item.auteur })));
     await Promise.all(authors.map(async (name) => {
         const uid = await findStaffUidByNode(comprehensiveSanitize(name), comprehensiveSanitize);
         const mine = Object.values(elements).filter((item) => item.statut === ITEM_STATUS.WAITING && sameName(item.auteur, name)).length;
-        if (uid) await notifyUser(uid, { type: 'demande', titre: 'Demande de divulgation à traiter', texte: `${payload.patientNom || node} : ${mine} de vos rapports à partager`, lien: { cible: 'divulgation', id } });
+        if (uid) await notifyUser(uid, { mail: true, type: 'demande', titre: 'Demande de divulgation à traiter', texte: `${payload.patientNom || node} : ${mine} de vos rapports à partager`, lien: { cible: 'divulgation', id } });
     }));
     return { id, ...payload };
 }
@@ -296,7 +296,7 @@ export async function completeReleaseRequest(request, by) {
     if (await isReleasePaymentPending(request)) throw new Error('Le patient n’a pas encore payé son formulaire.');
     await update(ref(database, `releaseRequests/${request.id}`), { statut: RELEASE_STATUS.DONE, traiteLe: Date.now(), traitePar: String(by || 'personnel').slice(0, 120) });
     findCivilianUidByPatientId(request.patientNode).then((uid) => notifyUser(uid, {
-        type: 'statut', titre: 'Votre demande de divulgation a été traitée', texte: request.autres || undefined, lien: { cible: 'dossierPatient' },
+        mail: true, type: 'statut', titre: 'Votre demande de divulgation a été traitée', texte: request.autres || undefined, lien: { cible: 'dossierPatient' },
     }));
 }
 
