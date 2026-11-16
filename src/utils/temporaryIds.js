@@ -8,7 +8,7 @@
 import { ref, get, set, update, remove } from 'firebase/database';
 import { database, auth } from '../firebase';
 import { canonicalPatientId } from './patientId';
-import { findPatientNodes } from './patientRecords';
+import { findPatientNodes, shallowKeys } from './patientRecords';
 import { loadFreeze, isFrozen } from './judicialFreeze';
 import { logActivity } from './activityLog';
 import { notifyGroup } from './notifications';
@@ -124,6 +124,44 @@ export async function registerTemporaryId({ nom, byName = '' }) {
         } catch (error) { lastError = error; }
     }
     throw lastError || new Error("Impossible de créer l'identifiant temporaire.");
+}
+
+/**
+ * Nombre de rapports enregistrés sous chaque ID temporaire (index des dossiers : patientRecords/{ID}), pour le panneau admin. Lecture « shallow » : seuls les noms des rapports sont lus.
+ * → { [TMP-XXXXX]: nombre } ; un ID dont la lecture échoue est absent (pas de nombre affiché).
+ */
+export async function countTemporaryIdReports(ids = []) {
+    const allNodes = await shallowKeys('patientRecords');
+    if (!allNodes) return {};
+    const counts = {};
+    const wanted = [...new Set(ids.map((id) => canonicalPatientId(id)).filter(Boolean))];
+    for (let start = 0; start < wanted.length; start += 8) {
+        await Promise.all(wanted.slice(start, start + 8).map(async (id) => {
+            const nodes = allNodes.filter((node) => canonicalPatientId(node) === id);
+            let total = 0;
+            for (const node of nodes) {
+                const keys = await shallowKeys(`patientRecords/${node}`);
+                if (keys === null) return;
+                total += keys.length;
+            }
+            counts[id] = total;
+        }));
+    }
+    return counts;
+}
+
+/**
+ * Supprime un ID temporaire du registre (ADMIN, les règles Firebase le permettent). Les rapports déjà rangés sous cet ID ne sont PAS touchés : ils restent dans leurs dossiers,
+ * mais l'ID n'existe plus au registre (il ne peut plus recevoir d'ID réel depuis le panneau admin). `reports` : nombre de rapports concernés, pour le journal.
+ */
+export async function deleteTemporaryId({ id, byName = '', reports = 0 }) {
+    const temp = canonicalPatientId(id);
+    if (!isTemporaryId(temp)) throw new Error("Ce n'est pas un identifiant temporaire (TMP-XXXXX).");
+    await remove(ref(database, `identifiantsTemporaires/${temp}`));
+    logActivity({
+        category: 'rapports', action: 'temp_id_deleted', severity: 'warning', summary: `ID temporaire supprimé : ${temp}`,
+        details: `Rapports encore rangés sous cet ID : ${reports}\nPar : ${byName || 'admin'}`, target: temp,
+    });
 }
 
 /** Alias d'un ID temporaire déjà attribué : { statut, idReel } ou null (inconnu, ou lecture impossible). */

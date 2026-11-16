@@ -401,7 +401,9 @@ function MainApp({
     const [showBBCode, setShowBBCode] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     // BBCode désactivé par les admins : il ne reste que l'aperçu et le téléchargement HTML.
-    const { bbcodeEnabled, pbcEnabled } = useSiteConfig();
+    const { bbcodeEnabled, pbcEnabled, bingoEnabled } = useSiteConfig();
+    // Bouton et fenêtre du Bingo : réservés au personnel (getToolAccess) ET activés par les admins (Affichage) ; un admin garde le bouton, grisé, quand il est désactivé.
+    const bingoVisible = !!toolAccess.bingo && (bingoEnabled || !!isAdmin);
     const [bbCodeVersion, setBbCodeVersion] = useState(() => {
         const storedVersion = localStorage.getItem('bbCodeVersion');
         return storedVersion ? parseInt(storedVersion, 10) : (formDefinitions[0]?.version || 1);
@@ -2433,13 +2435,13 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                     <div className="output-container">
                         <div className="floating-admin-button-container">
                             {/* Bingo : réservé au personnel (voir getToolAccess). */}
-                            {toolAccess.bingo && (
+                            {bingoVisible && (
                                 <Button
                                     type="button"
-                                    variant="warning"
+                                    variant={bingoEnabled ? 'warning' : 'secondary'}
                                     className="changelog-button"
                                     onClick={() => setShowEmsBingoModal(true)}
-                                    title="Ouvrir le Bingo!"
+                                    title={bingoEnabled ? 'Ouvrir le Bingo!' : 'Bingo désactivé pour le personnel (réglage Affichage) : visible par les administrateurs seulement'}
                                     // disabled // [BINGO DISABLED]
                                 >
                                     <i className="fas fa-trophy"></i>
@@ -2469,7 +2471,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             coronerRecruitmentDetails={coronerRecruitmentDetails || {}}
                         />
 
-                        {toolAccess.bingo && (
+                        {bingoVisible && (
                         <EmsBingoModal
                             show={showEmsBingoModal}
                             onHide={handleHideEmsBingoModal}

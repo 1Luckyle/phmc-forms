@@ -15,7 +15,8 @@ const Row = ({ children, first = false }) => <div style={{ display: 'flex', gap:
 
 // Liste de choix simple : la valeur actuelle reste visible même si elle n'est pas dans la liste (ancien rapport).
 export const SimpleSelect = ({ name, value, onChange, options, placeholder, disabled = false, title, style }) => {
-    const items = options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option));
+    // Un choix sans texte (entrée vide de la liste en base) ne s'affiche jamais : il apparaissait comme une ligne blanche qui remettait juste le libellé du champ. L'ancienne valeur enregistrée reste affichée (voir « known »).
+    const items = options.map((option) => (typeof option === 'string' ? { value: option, label: option } : option)).filter((item) => item && String(item.label ?? '').trim() !== '');
     const known = !value || items.some((item) => item.value === value);
     return (
         <Form.Select name={name} value={value || ''} onChange={onChange} className="form-control" disabled={disabled} title={title} style={style}>

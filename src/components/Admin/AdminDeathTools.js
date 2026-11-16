@@ -8,7 +8,7 @@ import { Badge, Button, Form, Spinner } from 'react-bootstrap';
 import { ref, get, update } from 'firebase/database';
 import { database } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
-import { loadTemporaryIds, assignTemporaryId } from '../../utils/temporaryIds';
+import { loadTemporaryIds, assignTemporaryId, countTemporaryIdReports, deleteTemporaryId } from '../../utils/temporaryIds';
 import { unlockPatient } from '../../utils/deathReports';
 import { findCivilianUidByPatientId, notifyUser } from '../../utils/notifications';
 import { canonicalPatientId } from '../../utils/patientId';
@@ -22,8 +22,32 @@ const TemporaryIds = ({ showNotification, adminName }) => {
     const [loading, setLoading] = useState(false);
     const [targets, setTargets] = useState({});
     const [busy, setBusy] = useState('');
-    const reload = useCallback(async () => { setLoading(true); try { setRegistry(await loadTemporaryIds()); } catch (error) { setRegistry({}); } finally { setLoading(false); } }, []);
+    const [counts, setCounts] = useState({});
+    const reload = useCallback(async () => {
+        setLoading(true);
+        try {
+            const loaded = await loadTemporaryIds();
+            setRegistry(loaded);
+            // Nombre de rapports rangés sous chaque ID encore temporaire (ceux déjà attribués ont été transférés).
+            const open = Object.entries(loaded).filter(([, entry]) => entry && entry.statut !== 'attribue').map(([id]) => id);
+            setCounts(open.length ? await countTemporaryIdReports(open) : {});
+        } catch (error) { setRegistry({}); setCounts({}); } finally { setLoading(false); }
+    }, []);
     useEffect(() => { reload(); }, [reload]);
+
+    const remove = async (id) => {
+        const reports = counts[id];
+        const warning = reports > 0
+            ? `${id} porte ${reports} rapport${reports > 1 ? 's' : ''}. Ils ne seront PAS supprimés : ils restent dans leurs dossiers sous ${id}, mais cet ID disparaît du registre et ne pourra plus recevoir d'ID réel depuis ce panneau.\n\nSupprimer quand même ?`
+            : `Supprimer l'identifiant temporaire ${id} ? Aucun rapport n'y est rangé.`;
+        if (!window.confirm(warning)) return;
+        setBusy(id);
+        try {
+            await deleteTemporaryId({ id, byName: adminName, reports: reports || 0 });
+            showNotification(`${id} supprimé du registre.`, 'check-circle');
+            await reload();
+        } catch (error) { showNotification(`Suppression impossible : ${error.message || error}`, 'error', 9000); } finally { setBusy(''); }
+    };
 
     const assign = async (id) => {
         const real = canonicalPatientId(targets[id]);
@@ -53,6 +77,10 @@ const TemporaryIds = ({ showNotification, adminName }) => {
                         <Badge bg={entry.statut === 'attribue' ? 'success' : 'warning'} text={entry.statut === 'attribue' ? undefined : 'dark'}>{entry.statut === 'attribue' ? 'Attribué' : 'Temporaire'}</Badge>
                         <strong>{id}</strong><span>{entry.nom}</span>
                         <span style={muted}>créé par {entry.par || 'le DMEC'} le {when(entry.creeLe)}</span>
+                        {entry.statut !== 'attribue' && counts[id] !== undefined && (
+                            <Badge bg={counts[id] > 0 ? 'info' : 'secondary'} title="Rapports enregistrés sous cet ID temporaire (index des dossiers)">{counts[id]} rapport{counts[id] > 1 ? 's' : ''}</Badge>
+                        )}
+                        <Button size="sm" variant="outline-danger" className="ms-auto" disabled={busy === id} onClick={() => remove(id)} title="Supprimer cet identifiant temporaire du registre"><i className="fas fa-trash me-1"></i>Supprimer</Button>
                     </div>
                     {entry.statut === 'attribue'
                         ? <div style={muted}>Attribué à <strong>{entry.idReel}</strong> par {entry.attribuePar || 'un administrateur'} le {when(entry.attribueLe)}.</div>

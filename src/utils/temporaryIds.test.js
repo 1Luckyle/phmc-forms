@@ -183,3 +183,15 @@ describe('identifiants temporaires : registre et attribution (base simulée)', (
         expect(mockNotifyGroup).toHaveBeenCalledWith('admin', expect.objectContaining({ titre: expect.stringContaining('Dr. Légiste'), texte: expect.stringContaining('TMP-ABCDE → PHMC-2752') }));
     });
 });
+
+describe('panneau admin : nombre de rapports et suppression d’un ID temporaire', () => {
+    test('les deux fonctions existent', () => {
+        const module = require('./temporaryIds');
+        expect(typeof module.countTemporaryIdReports).toBe('function');
+        expect(typeof module.deleteTemporaryId).toBe('function');
+    });
+    test('refuse de supprimer autre chose qu’un identifiant temporaire', async () => {
+        const { deleteTemporaryId } = require('./temporaryIds');
+        await expect(deleteTemporaryId({ id: 'PHMC-2752' })).rejects.toThrow(/identifiant temporaire/);
+    });
+});

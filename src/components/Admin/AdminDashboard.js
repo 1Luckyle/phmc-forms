@@ -24,6 +24,7 @@ import DebugMailViewer from './DebugMailViewer';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 import BbcodeAccessSwitch from './BbcodeAccessSwitch';
 import PbcAccessSwitch from './PbcAccessSwitch';
+import BingoAccessSwitch from './BingoAccessSwitch';
 import AdminOverview from './AdminOverview';
 import useAdminCounts from './useAdminCounts';
 import { ADMIN_SECTION_GROUPS, ALL_ADMIN_SECTIONS, findAdminSection, filterAdminSections } from './adminNavigation';
@@ -424,6 +425,7 @@ const AdminDashboard = ({
                     <>
                         <BbcodeAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
                         <PbcAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
+                        <BingoAccessSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
                         <HeaderChoiceSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
                     </>
                 );

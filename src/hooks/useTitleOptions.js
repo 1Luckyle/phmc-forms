@@ -17,7 +17,8 @@ const useTitleOptions = () => {
             if (item && typeof item === 'object' && 'label' in item && 'value' in item) return item;
             const text = String(item && typeof item === 'object' ? (item.label ?? item.name ?? item.value ?? '') : item);
             return { value: text, label: text };
-        });
+        }).filter((option) => String(option.label ?? '').trim() !== ''); // une entrée vide de la base ne devient jamais une ligne blanche
+
     }, [raw]);
 };
 
