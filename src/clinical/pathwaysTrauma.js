@@ -146,7 +146,7 @@ export const TRAUMA_PATHWAYS = {
             "Lancer le bilan : groupage, bilan préopératoire, radiographie ou scanner si le patient est stable.",
         ],
         [
-            "Poser deux voies veineuses de gros calibre : acide tranexamique dans les 3 premières heures, remplissage limité (tension systolique visée autour de 90 mmHg).",
+            "Poser deux voies veineuses de gros calibre : 16 G (gris) ou 14 G (orange) au pli du coude pour remplir vite ; acide tranexamique dans les 3 premières heures, remplissage limité (tension systolique visée autour de 90 mmHg).",
             "Soulager : antalgique intraveineux titré, immobilisation du membre atteint.",
             "Prévenir l'infection : antibiotique intraveineux, rappel antitétanique.",
             "Conduire au bloc : sans attendre si le patient est instable ou si le tronc est touché ; le projectile n'est retiré que par le chirurgien.",
@@ -200,7 +200,7 @@ export const TRAUMA_PATHWAYS = {
             "Compléter : bandelette urinaire (sang), bilan sanguin et groupage ; scanner abdominal si le patient est stable.",
         ],
         [
-            "Poser deux voies veineuses : remplissage prudent, acide tranexamique en cas de choc hémorragique.",
+            "Poser deux voies veineuses : de gros calibre (16 G gris ou 14 G orange), remplissage prudent, acide tranexamique en cas de choc hémorragique.",
             "Soulager : antalgique intraveineux, sans attendre le diagnostic.",
             "Décider : bloc opératoire immédiat si le patient est instable avec une échographie positive ; sinon surveillance rapprochée et examens répétés.",
         ],
@@ -210,7 +210,7 @@ export const TRAUMA_PATHWAYS = {
             "Appeler l'équipe : annonce du polytraumatisé, rôles distribués, matériel de réanimation prêt.",
             "A – Voies aériennes : libérer en maintenant le rachis cervical, aspirer, canule ; collier cervical.",
             "B – Respiration : oxygène à haute concentration ; exsufflation si pneumothorax compressif.",
-            "C – Circulation : garrot ou compression de toute hémorragie visible, ceinture pelvienne si le bassin est douloureux, deux voies veineuses.",
+            "C – Circulation : garrot ou compression de toute hémorragie visible, ceinture pelvienne si le bassin est douloureux, deux voies veineuses de gros calibre (16 G ou 14 G).",
             "D – Conscience : Glasgow, pupilles, glycémie.",
             "E – Exposition : déshabiller entièrement, examiner le dos en bloc, puis couvrir et réchauffer.",
         ],

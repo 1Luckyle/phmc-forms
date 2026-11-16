@@ -14,6 +14,7 @@ const GREEN = '#3fb950';
 const AMBER = '#d29922';
 const PURPLE = '#bc8cff';
 const SKIN = '#e0ac8a';
+const WHITE = '#ffffff';
 
 const Svg = ({ w, h, label, children }) => (
     <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label} xmlns="http://www.w3.org/2000/svg" fontFamily="inherit">{children}</svg>
@@ -366,9 +367,133 @@ const Ladder = () => (
     </Svg>
 );
 
+// ───────────── Cathéters veineux périphériques (canules IV) ─────────────
+// [calibre, couleur, nom de la couleur, diamètre extérieur en mm, débit maximal (eau, théorique) en mL/min, usage sur deux lignes]
+const CANNULAS = [
+    ['26 G', '#a35be0', 'violet', 0.6, 19, ['Néonat,', 'bébés']],
+    ['24 G', '#f4d03f', 'jaune', 0.7, 22, ['Enfants,', 'veines fragiles']],
+    ['22 G', '#2f7fe0', 'bleu', 0.9, 35, ['Petites veines,', 'perf simple']],
+    ['20 G', '#f06fb0', 'rose', 1.1, 60, ['Le quotidien :', 'perf, antibio']],
+    ['18 G', '#2ea86b', 'vert', 1.3, 105, ['Remplissage,', 'transfusion']],
+    ['16 G', '#9aa1a9', 'gris', 1.7, 210, ['Remplissage', 'rapide']],
+    ['14 G', '#f39c2b', 'orange', 2.1, 345, ['Urgence vitale,', 'choc hémorragique']],
+];
+const Cannulas = () => (
+    <Svg w={720} h={318} label="Cathéters veineux par calibre : couleur, diamètre, débit et usage">
+        {CANNULAS.map(([gauge, color, colorName, mm, flow, usage], index) => {
+            const cx = 60 + index * 100;
+            const needle = 1.2 + mm * 1.4;
+            return (
+                <g key={gauge}>
+                    <line x1={cx} y1={14} x2={cx} y2={74} stroke="#c9d1d9" strokeWidth={needle} strokeLinecap="round" />
+                    <rect x={cx - needle / 2 - 1.5} y={36} width={needle + 3} height={38} rx={needle / 2} fill={color} opacity="0.55" />
+                    <path d={`M${cx - 6},72 L${cx + 6},72 L${cx + 10},98 L${cx - 10},98 Z`} fill={color} />
+                    <ellipse cx={cx - 16} cy={90} rx={9} ry={5.5} transform={`rotate(-12 ${cx - 16} 90)`} fill={color} opacity="0.85" />
+                    <ellipse cx={cx + 16} cy={90} rx={9} ry={5.5} transform={`rotate(12 ${cx + 16} 90)`} fill={color} opacity="0.85" />
+                    <rect x={cx - 8} y={98} width={16} height={28} rx={3} fill="#e6edf3" opacity="0.22" stroke="#8b949e" strokeWidth="1.5" />
+                    <rect x={cx - 3} y={104} width={6} height={16} rx={2} fill={color} opacity="0.6" />
+                    <rect x={cx - 6} y={126} width={12} height={12} rx={2} fill="none" stroke="#8b949e" strokeWidth="1.5" />
+                    <Txt x={cx} y={164} size={18} fill={color} weight={700}>{gauge}</Txt>
+                    <Txt x={cx} y={180} size={11.5} fill={INK} weight={600}>{colorName}</Txt>
+                    <Txt x={cx} y={194} size={11} fill={MUTED}>{`Ø ${String(mm).replace('.', ',')} mm`}</Txt>
+                    <rect x={cx - 40} y={204} width={80} height={8} rx={4} fill={LINE} />
+                    <rect x={cx - 40} y={204} width={Math.max(5, (80 * flow) / 345)} height={8} rx={4} fill={color} />
+                    <Txt x={cx} y={230} size={13} fill={INK} weight={700}>{`${flow} mL/min`}</Txt>
+                    <Lines x={cx} y={262} lines={usage} size={10.5} fill={INK} gap={13} />
+                </g>
+            );
+        })}
+        <Txt x={360} y={304} size={12.5} fill={AMBER} weight={600}>Plus le chiffre (G, « gauge ») est petit, plus le cathéter est gros et plus il débite.</Txt>
+    </Svg>
+);
+
+// ───────────── Électrodes ─────────────
+// Silhouette de face ou de dos, centrée sur x = 150 (tête, épaules, bras, tronc, jambes). Le tronc va de y = 62 à 232.
+const Body = ({ back = false, legs = false }) => (
+    <g fill={PANEL} stroke={MUTED} strokeWidth="2">
+        <circle cx={150} cy={38} r={20} />
+        <rect x={62} y={70} width={22} height={124} rx={11} /><rect x={216} y={70} width={22} height={124} rx={11} />
+        <rect x={85} y={62} width={130} height={170} rx={26} />
+        {legs && <><rect x={100} y={228} width={46} height={66} rx={18} /><rect x={154} y={228} width={46} height={66} rx={18} /></>}
+        <g fill="none" stroke={LINE} strokeWidth="2">
+            {back ? <><path d="M150,76 L150,222" /><path d="M118,96 Q132,112 134,134" /><path d="M182,96 Q168,112 166,134" /></> : <><path d="M150,80 L150,170" /><path d="M118,78 Q150,68 182,78" /></>}
+        </g>
+    </g>
+);
+const Pad = ({ x, y, w = 36, h = 48, rotate = 0, n }) => (
+    <g transform={`rotate(${rotate} ${x} ${y})`}>
+        <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx={8} fill={RED} fillOpacity="0.9" stroke={WHITE} strokeWidth="2" />
+        <circle cx={x} cy={y} r={11} fill={WHITE} /><Txt x={x} y={y + 5} size={14} fill="#0d1117" weight={700}>{n}</Txt>
+    </g>
+);
+
+const DefibPads = () => (
+    <Svg w={720} h={344} label="Placement des électrodes du défibrillateur chez l'adulte et variante antéro-postérieure">
+        <g transform="translate(20 6)">
+            <Body />
+            <Pad x={124} y={102} rotate={-18} n="1" />
+            <Pad x={198} y={170} w={32} h={52} rotate={4} n="2" />
+            <path d="M138,126 Q170,160 188,152" fill="none" stroke={AMBER} strokeWidth="2.5" strokeDasharray="5 4" /><Arrow x1={178} y1={150} x2={188} y2={152} color={AMBER} />
+        </g>
+        <Txt x={170} y={262} size={14.5} fill={BLUE} weight={700}>Adulte : position antéro-latérale</Txt>
+        <Lines x={170} y={298} lines={['1  sous la clavicule droite, à droite du sternum', '2  sur le côté gauche, sous l\'aisselle, au niveau du mamelon']} size={11.5} fill={INK} gap={17} />
+        <line x1={360} y1={20} x2={360} y2={330} stroke={LINE} strokeDasharray="4 5" />
+        <g transform="translate(468 38) scale(0.78) translate(-150 0)">
+            <Body />
+            <Pad x={168} y={116} w={38} h={50} n="1" />
+        </g>
+        <g transform="translate(618 38) scale(0.78) translate(-150 0)">
+            <Body back />
+            <Pad x={150} y={120} w={38} h={50} n="2" />
+        </g>
+        <Txt x={468} y={216} size={11.5} fill={MUTED}>de face</Txt><Txt x={618} y={216} size={11.5} fill={MUTED}>de dos</Txt>
+        <Txt x={540} y={246} size={14.5} fill={BLUE} weight={700}>Enfant, ou si le côté est impossible</Txt>
+        <Lines x={540} y={290} lines={['1  au centre du thorax, sur le cœur', '2  au milieu du dos, entre les omoplates', 'Électrodes pédiatriques avant 8 ans si disponibles']} size={11.5} fill={INK} gap={17} />
+    </Svg>
+);
+
+const ECG_LEADS = [
+    ['V1', '#e5484d', 140, 118], ['V2', '#f4d03f', 160, 118], ['V3', '#2ea86b', 173, 127], ['V4', '#8b5e3c', 187, 135], ['V5', '#3a3f47', 202, 135], ['V6', '#a35be0', 213, 135],
+];
+const EcgLeads = () => (
+    <Svg w={720} h={372} label="Placement des électrodes de l'électrocardiogramme : dérivations V1 à V6 et membres">
+        <g transform="translate(0 4) scale(1.2)">
+            <Body legs />
+            {/* membres : code de couleur européen */}
+            {[['RA', '#e5484d', 73, 176], ['LA', '#f4d03f', 227, 176], ['RL', '#3a3f47', 123, 270], ['LL', '#2ea86b', 177, 270]].map(([name, color, x, y]) => (
+                <g key={name}><circle cx={x} cy={y} r={10} fill={color} stroke={WHITE} strokeWidth="2" /><Txt x={x} y={y + 4} size={9.5} fill={color === '#f4d03f' ? '#0d1117' : WHITE} weight={700}>{name}</Txt></g>
+            ))}
+            <line x1={150} y1={134} x2={216} y2={134} stroke={BLUE} strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+            {ECG_LEADS.map(([name, color, x, y]) => (
+                <g key={name}><circle cx={x} cy={y} r={5.6} fill={color} stroke={WHITE} strokeWidth="1.4" /><Txt x={x} y={y - 8.5} size={8} fill={INK} weight={700}>{name.slice(1)}</Txt></g>
+            ))}
+        </g>
+        <Txt x={180} y={366} size={11} fill={MUTED}>Patient de face : sa droite est à gauche du dessin</Txt>
+        <g>
+            <Txt x={330} y={28} size={14.5} fill={BLUE} anchor="start" weight={700}>Les 6 électrodes sur le thorax (précordiales)</Txt>
+            {[['V1', '#e5484d', '4e espace entre les côtes, bord DROIT du sternum'], ['V2', '#f4d03f', '4e espace, bord GAUCHE du sternum'], ['V3', '#2ea86b', 'entre V2 et V4'],
+                ['V4', '#8b5e3c', '5e espace, sous le milieu de la clavicule gauche'], ['V5', '#3a3f47', 'même hauteur que V4, devant l\'aisselle'], ['V6', '#a35be0', 'même hauteur, au milieu de l\'aisselle']].map(([name, color, text], index) => (
+                <g key={name}>
+                    <circle cx={342} cy={56 + index * 28} r={8} fill={color} stroke={WHITE} strokeWidth="1.6" />
+                    <Txt x={358} y={61 + index * 28} size={12.5} fill={INK} anchor="start"><tspan fontWeight="700">{name}</tspan>{`  ${text}`}</Txt>
+                </g>
+            ))}
+            <Txt x={330} y={250} size={14.5} fill={BLUE} anchor="start" weight={700}>Les 4 électrodes des membres</Txt>
+            {[['RA', '#e5484d', 'rouge : bras droit'], ['LA', '#f4d03f', 'jaune : bras gauche'], ['LL', '#2ea86b', 'vert : jambe gauche'], ['RL', '#3a3f47', 'noir : jambe droite']].map(([name, color, text], index) => (
+                <g key={name}>
+                    <circle cx={342 + (index % 2) * 190} cy={276 + Math.floor(index / 2) * 28} r={8} fill={color} stroke={WHITE} strokeWidth="1.6" />
+                    <Txt x={358 + (index % 2) * 190} y={281 + Math.floor(index / 2) * 28} size={12.5} fill={INK} anchor="start">{text}</Txt>
+                </g>
+            ))}
+            <Txt x={330} y={346} size={11.5} fill={MUTED} anchor="start">Peau propre et sèche, poils rasés si besoin.</Txt>
+        </g>
+    </Svg>
+);
+
 export const FIGURES = {
     phases: Phases, abcde: Abcde, pupils: Pupils, 'pain-scale': PainScale, tourniquet: Tourniquet, rcp: Rcp, chain: Chain, injection: Injection,
     'rule-of-nines': RuleOfNines, 'burn-depth': BurnDepth, thorax: Thorax, ecg: Ecg, acr: Acr, fast: Fast, ladder: Ladder,
+    cannulas: Cannulas, 'defib-pads': DefibPads, 'ecg-leads': EcgLeads,
 };
 
 const ManualFigure = ({ id, caption }) => {
