@@ -26,6 +26,35 @@ const Arms = () => ARMS.map((path, index) => (
     </g>
 ));
 
+// Stéthoscope porté autour du cou : deux tubes qui partent des épaules (avec leurs embouts), se rejoignent en Y sur le torse, puis une seule tige descend jusqu'au pavillon.
+const TUBE = '#27476b';
+const METAL = '#d7dee6';
+const METAL_DARK = '#7b8794';
+const Stethoscope = () => {
+    const left = 'M52,104 C54,128 84,134 100,142';
+    const right = 'M148,104 C146,128 116,134 100,142';
+    const stem = 'M100,142 C100,152 99,158 100,166';
+    return (
+        <g className="pl-stetho">
+            {/* embouts auriculaires posés sur les épaules */}
+            <g fill={METAL} stroke={METAL_DARK} strokeWidth="1.5">
+                <rect x={46} y={92} width={8} height={15} rx={4} transform="rotate(-14 50 100)" />
+                <rect x={146} y={92} width={8} height={15} rx={4} transform="rotate(14 150 100)" />
+            </g>
+            {/* tubes : trait sombre, puis un fin reflet pour le volume */}
+            {[left, right, stem].map((d) => <path key={d} d={d} fill="none" stroke={TUBE} strokeWidth="6" strokeLinecap="round" />)}
+            {[left, right, stem].map((d) => <path key={`${d}-shine`} d={d} fill="none" stroke="#8fb4dd" strokeWidth="1.4" strokeLinecap="round" opacity="0.45" transform="translate(-1.2 -1)" />)}
+            {/* jonction en Y */}
+            <circle cx={100} cy={142} r={5} fill={METAL} stroke={METAL_DARK} strokeWidth="1.5" />
+            {/* pavillon : coque métal, membrane, reflet */}
+            <circle cx={100} cy={175} r={12.5} fill={METAL} stroke={METAL_DARK} strokeWidth="2" />
+            <circle cx={100} cy={175} r={8} fill="#a9b6c3" stroke={METAL_DARK} strokeWidth="1.5" />
+            <circle cx={100} cy={175} r={3} fill={METAL_DARK} />
+            <path d="M92.5,170 Q95,166.5 99,166.5" fill="none" stroke={WHITE} strokeWidth="1.8" strokeLinecap="round" opacity="0.8" />
+        </g>
+    );
+};
+
 const Star = ({ x, y, scale = 1 }) => <path transform={`translate(${x} ${y}) scale(${scale})`} d="M0,-8 L2,-2 L8,0 L2,2 L0,8 L-2,2 L-8,0 L-2,-2 Z" fill="#ffd33d" />;
 
 // Yeux ouverts : dx / dy décalent le regard, rx / ry la taille, pupil le rayon de la pupille.
@@ -102,15 +131,15 @@ const PilouMascot = ({ mood = 'neutral', size = 96, label = 'Pilou, la mascotte'
             <Arms />
             <g transform="translate(200 0) scale(-1 1)"><Arms /></g>
             {/* tête */}
-            <path d="M48,92 C48,48 72,26 100,26 C128,26 152,48 152,92 C152,108 140,116 128,118 L72,118 C60,116 48,108 48,92 Z" fill={BODY} />
+            <defs>
+                <linearGradient id="pl-mascot-head" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#ffa795" /><stop offset="1" stopColor="#f77f6a" /></linearGradient>
+            </defs>
+            <path d="M48,92 C48,48 72,26 100,26 C128,26 152,48 152,92 C152,108 140,116 128,118 L72,118 C60,116 48,108 48,92 Z" fill="url(#pl-mascot-head)" />
+            <g fill={BODY_DARK} opacity="0.3"><circle cx={118} cy={40} r={3.5} /><circle cx={130} cy={54} r={2.6} /><circle cx={104} cy={33} r={2.2} /><circle cx={70} cy={38} r={2} /></g>
             <ellipse cx={78} cy={46} rx={15} ry={8} transform="rotate(-28 78 46)" fill={WHITE} opacity="0.28" />
             <circle cx={66} cy={95} r={7} fill="#ff6f61" opacity="0.45" /><circle cx={134} cy={95} r={7} fill="#ff6f61" opacity="0.45" />
             {FACES[face]}
-            {/* stéthoscope : tube autour du cou, écouteurs, pavillon qui pend sur le torse */}
-            <path d="M68,116 C60,150 140,150 132,116" fill="none" stroke="#3d444d" strokeWidth="4.5" strokeLinecap="round" />
-            <circle cx={68} cy={116} r={4} fill="#8b949e" /><circle cx={132} cy={116} r={4} fill="#8b949e" />
-            <circle cx={100} cy={143} r={8.5} fill="#c9d1d9" stroke="#6e7681" strokeWidth="2" />
-            <circle cx={100} cy={143} r={3.5} fill="#8b949e" />
+            <Stethoscope />
         </svg>
     );
 };
