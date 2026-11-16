@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import BaseModal from '../BaseModal';
 import PilouCare from './PilouCare';
 import PilouManual from './PilouManual';
+import { PilouSays } from './PilouMascot';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
 import { SEVERITIES } from '../../clinical/vitals';
 import { ASSISTANT_NAME, ASSISTANT_EMOJI } from '../../clinical/assistantName';
@@ -68,7 +69,9 @@ const PilouModal = ({ show, onHide, showNotification }) => {
 
             {mode === 'home' && (
                 <div className="pl-home">
-                    <p className="pl-intro">Que voulez-vous faire ? {ASSISTANT_NAME} vous accompagne pendant une prise en charge, ou vous forme entre deux scènes. Aide au jeu de rôle : le soignant reste responsable de ses choix.</p>
+                    <PilouSays mood="neutral" size={96}>
+                        <p><strong>Bonjour, je suis {ASSISTANT_NAME} !</strong> Que voulez-vous faire ? Je vous accompagne pendant une prise en charge, ou je vous forme entre deux scènes. Aide au jeu de rôle : le soignant reste responsable de ses choix.</p>
+                    </PilouSays>
                     <div className="pl-choices">
                         <button type="button" className="pl-choice" onClick={() => setMode('care')}>
                             <i className="fas fa-user-injured"></i>

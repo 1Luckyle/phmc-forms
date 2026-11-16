@@ -3,6 +3,30 @@
 .pl-intro { color: #9da7b3; font-size: 0.9rem; margin-bottom: 12px; }
 .pl-modal button { font: inherit; }
 
+/* ── Mascotte : Pilou le poulpe ── */
+.pl-mascot { flex: 0 0 auto; overflow: visible; }
+.pl-mascot.animated .pl-arm { transform-box: fill-box; transform-origin: 50% 0; animation: pl-sway 3.4s ease-in-out infinite; }
+.pl-mascot.animated .pl-arm-2 { animation-delay: -0.8s; }
+.pl-mascot.animated .pl-arm-3 { animation-delay: -1.6s; }
+.pl-mascot.animated .pl-arm-4 { animation-delay: -2.4s; }
+.pl-mascot.animated .pl-eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: pl-blink 5.5s infinite; }
+.pl-mascot[data-mood="happy"].animated { animation: pl-hop 1.4s ease-in-out infinite; }
+@keyframes pl-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes pl-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@keyframes pl-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+    .pl-mascot.animated, .pl-mascot.animated .pl-arm, .pl-mascot.animated .pl-eyes { animation: none !important; }
+}
+.pl-says { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.pl-bubble { position: relative; background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 10px 14px; color: #c9d1d9; font-size: 0.92rem; line-height: 1.5; }
+.pl-bubble::before { content: ''; position: absolute; left: -7px; top: 50%; width: 12px; height: 12px; background: #0d1117; border-left: 1px solid #30363d; border-bottom: 1px solid #30363d; transform: translateY(-50%) rotate(45deg); }
+.pl-bubble p { margin: 0; }
+.pl-head-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pl-head-mood { flex: 0 0 auto; line-height: 0; }
+.pl-empty .pl-mascot { margin-bottom: 8px; }
+.pl-finished { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pm-note .pl-mascot { margin-top: -2px; }
+
 /* ── Onglets et accueil ── */
 .pl-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid #30363d; margin-bottom: 12px; }
 .pl-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; color: #9da7b3; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; }

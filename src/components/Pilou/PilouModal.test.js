@@ -135,6 +135,22 @@ describe('aide à la prise en charge', () => {
         expect(screen.getByText(`0 / ${total} étapes faites`)).toBeTruthy();
     });
 
+    test('l\'humeur de Pilou suit le cas : endormi sans cas, inquiet sur une alerte médicament, content quand tout est fait', async () => {
+        render(<PilouModal show onHide={() => {}} />);
+        fireEvent.click(screen.getByText('Commencer un cas'));
+        expect(document.querySelector('.pl-empty [data-mood="sleepy"]')).toBeTruthy();
+        pick('pilouAge', '35'); pick('pilouSexe', 'Male'); pick('pilouPoids', '75'); pick('pilouTaille', '178'); pick('pilouGravite', 'Severe');
+        await chooseCondition('Plaie par arme à feu');
+        // allergie sévère à la pénicilline : l'antibiotique porte une alerte
+        await act(async () => { fireEvent.keyDown(document.querySelector('[name="pilouAllergies"]').parentElement.querySelector('input[role="combobox"], input'), { key: 'ArrowDown', keyCode: 40 }); });
+        await act(async () => { fireEvent.click(screen.getByText('Pénicilline / amoxicilline')); });
+        expect(document.querySelector('.pl-head [data-mood]').getAttribute('data-mood')).toBe('alert');
+        document.querySelectorAll('input[id^="pilou-step-"]').forEach((box) => { if (!box.checked) fireEvent.click(box); });
+        expect(document.querySelector('.pl-head [data-mood]').getAttribute('data-mood')).toBe('happy');
+        openTab('Suivi pas à pas');
+        expect(screen.getByText(/Bravo, parcours terminé/)).toBeTruthy();
+    });
+
     test('cas en cours retrouvé à la réouverture ; un stockage abîmé redonne un cas vide', () => {
         window.sessionStorage.setItem(PILOU_STORAGE_KEY, JSON.stringify({ age: '30', sex: 'Female', weight: '60', height: '165', severity: 'Mild', selected: ['migraine', 'motif_supprime'], done: ['start-safety'], view: 'track' }));
         render(<PilouModal show onHide={() => {}} />);

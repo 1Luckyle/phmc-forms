@@ -8,6 +8,7 @@ import { MANUAL, searchManual, lessonOfCondition, vitalsRows, medsRows } from '.
 import { splitStep } from '../../clinical/pathways';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
 import ManualFigure from './ManualFigures';
+import PilouMascot from './PilouMascot';
 
 const Table = ({ head, rows }) => (
     <div className="pm-table-wrap"><table className="pm-table">
@@ -32,8 +33,8 @@ const Block = ({ block }) => {
         case 'vitalsTable': return <Table head={['Âge', 'Fréquence cardiaque (/min)', 'Fréquence respiratoire (/min)', 'Tension habituelle (mmHg)']} rows={vitalsRows()} />;
         case 'medsTable': return <Table head={['Médicament', 'Famille', 'Voies', 'Noms de marque']} rows={medsRows()} />;
         case 'figure': return <ManualFigure id={block.id} caption={block.caption} />;
-        case 'tip': return <div className="pm-note tip"><i className="fas fa-lightbulb"></i><div><strong>À retenir.</strong> {block.text}</div></div>;
-        case 'warn': return <div className="pm-note warn"><i className="fas fa-triangle-exclamation"></i><div><strong>Piège.</strong> {block.text}</div></div>;
+        case 'tip': return <div className="pm-note tip"><PilouMascot mood="thinking" size={44} label="" /><div><strong>À retenir.</strong> {block.text}</div></div>;
+        case 'warn': return <div className="pm-note warn"><PilouMascot mood="alert" size={44} label="" /><div><strong>Piège.</strong> {block.text}</div></div>;
         case 'rp': return <div className="pm-note rp"><i className="fas fa-masks-theater"></i><div><strong>En jeu.</strong>{block.lines.map((line) => <div key={line} className="pm-rp-line">{line}</div>)}</div></div>;
         default: return null;
     }

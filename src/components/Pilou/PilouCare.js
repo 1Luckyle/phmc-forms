@@ -18,6 +18,7 @@ import { flatSteps } from '../../clinical/pathways';
 import { lessonOfCondition } from '../../clinical/manual';
 import { BODY_LIMITS, LIMIT_HINTS, parseAgeYears, parseWeightKg, parseHeightCm } from '../../clinical/bodyLimits';
 import { SEX_OPTIONS, ALLERGY_CHOICES, HISTORY_CHOICES, MEDICATION_CHOICES, joinChoices } from '../../clinical/pilouChoices';
+import PilouMascot from './PilouMascot';
 
 const conditionOptions = CONDITION_GROUPS.map((group) => ({ label: group.label, options: group.options.map((c) => ({ value: c.id, label: c.label, search: [c.label, ...(c.aliases || [])].join(' ').toLowerCase() })) }));
 const filterConditions = (option, input) => !input || option.data.search.includes(input.toLowerCase());
@@ -105,7 +106,7 @@ const TrackView = ({ result, done, currentId, onToggle, onGoto, onComplete, onRe
             </div>
 
             {allDone && (
-                <div className="pl-finished"><i className="fas fa-circle-check"></i> Parcours terminé : toutes les étapes sont cochées. Pensez au rapport.
+                <div className="pl-finished"><PilouMascot mood="happy" size={52} label="" /><i className="fas fa-circle-check"></i> Bravo, parcours terminé : toutes les étapes sont cochées. Pensez au rapport.
                     <Button variant="link" size="sm" onClick={onResetProgress}>Recommencer le suivi</Button></div>
             )}
 
@@ -184,6 +185,9 @@ const PilouCare = ({ state, setState, onReset, onOpenLesson, showNotification })
         try { await navigator.clipboard.writeText(caseToText(result, state.done.filter((id) => steps.some((step) => step.id === id)))); notify('Prise en charge copiée.', 'check-circle'); } catch (error) { notify('Copie impossible dans ce navigateur.', 'error'); }
     };
     const selectedOptions = selected.map((id) => ({ value: id, label: CONDITION_BY_ID[id]?.label || id }));
+    // Humeur de Pilou : content quand tout est fait, inquiet dès qu'un médicament porte une alerte (allergie, interaction, dose), sinon au travail.
+    const hasAlert = !!result && result.meds.some((med) => med.level === 'error' || med.level === 'warn');
+    const mood = progress && progress.percent === 100 ? 'happy' : hasAlert ? 'alert' : 'neutral';
 
     return (
         <div className="pl-layout">
@@ -239,14 +243,19 @@ const PilouCare = ({ state, setState, onReset, onOpenLesson, showNotification })
 
             <div className="pl-result">
                 {!result && (
-                    <div className="pl-empty"><i className="fas fa-pills"></i><p>Renseignez les champs obligatoires : {ASSISTANT_NAME} affiche ici le parcours de prise en charge.</p>{missing.length > 0 && <small>Il manque : {missing.join(', ')}.</small>}</div>
+                    <div className="pl-empty"><PilouMascot mood="sleepy" size={130} label="" /><p>Renseignez les champs obligatoires : {ASSISTANT_NAME} se réveille et affiche ici le parcours de prise en charge.</p>{missing.length > 0 && <small>Il manque : {missing.join(', ')}.</small>}</div>
                 )}
                 {result && (
                     <>
                         <div className="pl-head">
-                            <div>
-                                <h5>{result.conditions.map((c) => c.label).join(' + ')}</h5>
-                                <div className="pl-sub">{patientLine(result)} — gravité <strong>{result.severity.label.toLowerCase()}</strong></div>
+                            <div className="pl-head-main">
+                                <span className="pl-head-mood" title={mood === 'alert' ? "Pilou a repéré une alerte sur un médicament : voir les encadrés orange ou rouges." : mood === 'happy' ? 'Toutes les étapes sont faites.' : undefined}>
+                                    <PilouMascot mood={mood} size={58} label="" />
+                                </span>
+                                <div>
+                                    <h5>{result.conditions.map((c) => c.label).join(' + ')}</h5>
+                                    <div className="pl-sub">{patientLine(result)} — gravité <strong>{result.severity.label.toLowerCase()}</strong></div>
+                                </div>
                             </div>
                             <Button variant="outline-info" size="sm" onClick={copy}><i className="fas fa-copy me-1"></i>Copier</Button>
                         </div>
