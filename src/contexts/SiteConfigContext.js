@@ -5,7 +5,7 @@
 //     Désactivé, le site ne propose plus que l'aperçu et le téléchargement HTML.
 //   • pbcEnabled : formulaires de la clinique de Paleto Bay (PBC) et choix « PBC » des candidatures. Désactivé, personne n'y accède (les agences à choisir comme
 //     destinataire ou requérant restent proposées). Stocké dans adminSettings/pbcAccess.
-//   • bingoEnabled : bouton d'accès au Bingo. Désactivé, il disparaît pour le personnel (les admins le gardent, grisé). Stocké dans adminSettings/bingoAccess.
+//   • bingoEnabled : bouton d'accès au Bingo. Désactivé, il disparaît pour le personnel (admins compris). Stocké dans adminSettings/bingoAccess.
 // Stockés dans adminSettings/bbcodeAccess (lecture publique, écriture admin : voir database.rules.json). La dernière valeur
 // connue est gardée dans le navigateur pour éviter un clignotement au chargement.
 import React, { createContext, useContext, useEffect, useState } from 'react';

@@ -402,8 +402,8 @@ function MainApp({
     const [showPreview, setShowPreview] = useState(false);
     // BBCode désactivé par les admins : il ne reste que l'aperçu et le téléchargement HTML.
     const { bbcodeEnabled, pbcEnabled, bingoEnabled } = useSiteConfig();
-    // Bouton et fenêtre du Bingo : réservés au personnel (getToolAccess) ET activés par les admins (Affichage) ; un admin garde le bouton, grisé, quand il est désactivé.
-    const bingoVisible = !!toolAccess.bingo && (bingoEnabled || !!isAdmin);
+    // Bouton et fenêtre du Bingo : réservés au personnel (getToolAccess) ET activés par les admins (Affichage) ; désactivé, ils disparaissent pour tout le monde, administrateurs compris.
+    const bingoVisible = !!toolAccess.bingo && bingoEnabled;
     const [bbCodeVersion, setBbCodeVersion] = useState(() => {
         const storedVersion = localStorage.getItem('bbCodeVersion');
         return storedVersion ? parseInt(storedVersion, 10) : (formDefinitions[0]?.version || 1);
@@ -2438,10 +2438,10 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                             {bingoVisible && (
                                 <Button
                                     type="button"
-                                    variant={bingoEnabled ? 'warning' : 'secondary'}
+                                    variant="warning"
                                     className="changelog-button"
                                     onClick={() => setShowEmsBingoModal(true)}
-                                    title={bingoEnabled ? 'Ouvrir le Bingo!' : 'Bingo désactivé pour le personnel (réglage Affichage) : visible par les administrateurs seulement'}
+                                    title="Ouvrir le Bingo!"
                                     // disabled // [BINGO DISABLED]
                                 >
                                     <i className="fas fa-trophy"></i>

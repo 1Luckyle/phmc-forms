@@ -1,7 +1,7 @@
 // src/components/Admin/BingoAccessSwitch.js
 //
-// Panneau admin → Affichage : active / désactive le bouton d'accès au Bingo pour TOUT le site. Désactivé, le bouton « Bingo » disparaît pour le personnel (et la fenêtre ne s'ouvre plus,
-// y compris par un lien direct) ; les administrateurs le voient encore, grisé, pour pouvoir tester. Les cartes, les cases cochées et le journal ne sont pas touchés (pour figer une partie,
+// Panneau admin → Affichage : active / désactive le bouton d'accès au Bingo pour TOUT le site. Désactivé, le bouton « Bingo » disparaît pour tout le monde, administrateurs compris (et la fenêtre ne s'ouvre plus,
+// y compris par un lien direct). Les cartes, les cases cochées et le journal ne sont pas touchés (pour figer une partie,
 // voir « Mettre la carte en pause » dans la section Bingo). Réglage stocké dans adminSettings/bingoAccess (lecture publique, écriture admin : voir database.rules.json).
 import React, { useState } from 'react';
 import { ref, set } from 'firebase/database';
@@ -17,7 +17,7 @@ const BingoAccessSwitch = ({ currentUser, showInAppNotification }) => {
         try {
             await set(ref(database, 'adminSettings/bingoAccess'), { enabled, updatedAt: Date.now(), updatedBy: currentUser?.email || null });
             if (showInAppNotification) {
-                showInAppNotification(enabled ? 'Accès au Bingo réactivé.' : 'Accès au Bingo désactivé : le bouton disparaît pour le personnel.', enabled ? 'check-circle' : 'info-circle');
+                showInAppNotification(enabled ? 'Accès au Bingo réactivé.' : 'Accès au Bingo désactivé : le bouton disparaît pour tout le monde.', enabled ? 'check-circle' : 'info-circle');
             }
         } catch (error) {
             console.error('Réglage Bingo impossible :', error);
@@ -38,7 +38,7 @@ const BingoAccessSwitch = ({ currentUser, showInAppNotification }) => {
                     </label>
                 </div>
                 <p className="text-muted small mb-2">
-                    Désactivé, le bouton « Bingo » disparaît pour tout le personnel et la fenêtre du Bingo ne s'ouvre plus (lien direct compris). Les administrateurs gardent le bouton, grisé, pour pouvoir tester.
+                    Désactivé, le bouton « Bingo » disparaît pour tout le monde, administrateurs compris, et la fenêtre du Bingo ne s'ouvre plus (lien direct compris).
                     Les cartes, les cases cochées et le journal sont conservés tels quels.
                 </p>
                 <p className="text-muted small mb-0">Le réglage s'applique à tous les visiteurs, immédiatement.</p>
