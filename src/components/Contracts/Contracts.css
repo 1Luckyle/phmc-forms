@@ -56,9 +56,8 @@
 }
 
 /* Documents en BBCode : même cadre d'aperçu que les rapports (feuille blanche), défilant dans la fenêtre. */
+/* Aperçu étendu en entier : le cadre mesure son contenu, la fenêtre défile (pas de petite fenêtre à l'intérieur). */
 .contract-frame {
-    max-height: 62vh;
-    overflow-y: auto;
     border-radius: 6px;
 }
 

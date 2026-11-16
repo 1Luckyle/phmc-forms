@@ -413,7 +413,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
     const title = isNew ? `Nouveau document — ${CONTRACT_TYPES[type]}` : `${CONTRACT_TYPES[type]} — ${contract.employeNom}`;
 
     return (
-        <BaseModal isOpen={show} onClose={onHide} title={title} modalSize="large" zIndex={1100} className="dark-ui">
+        <BaseModal isOpen={show} onClose={onHide} title={title} modalSize={readOnly ? 'large' : 'xl'} zIndex={1100} className="dark-ui">
             {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 
             {readOnly ? (
@@ -445,7 +445,8 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                     )}
                 </>
             ) : (
-                <>
+                <div className="row g-3">
+                    <div className="col-12 col-lg-6">
                     {isNew && (
                         <Form.Group className="mb-3">
                             <Form.Label>Type de document</Form.Label>
@@ -507,11 +508,6 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         </Alert>
                     )}
 
-                    <div className="small text-muted mb-1">Aperçu du document final (les articles sont fixés par le modèle) :</div>
-                    {preview
-                        ? <ContractDocument bbCode={preview.bbCode} title={preview.title} />
-                        : <Alert variant="secondary" className="py-2 mb-0">Choisissez le destinataire pour voir l'aperçu.</Alert>}
-
                     <div className="d-flex justify-content-end gap-2 mt-3">
                         <DebugFillButton onFill={debugFill} disabled={busy} />
                         <Button variant="secondary" onClick={onHide} disabled={busy}>Annuler</Button>
@@ -520,7 +516,14 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                             {busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-paper-plane me-1"></i>Enregistrer et envoyer</>}
                         </Button>
                     </div>
-                </>
+                    </div>
+                    <div className="col-12 col-lg-6">
+                    <div className="small text-muted mb-1">Aperçu du document final (les articles sont fixés par le modèle) :</div>
+                    {preview
+                        ? <ContractDocument bbCode={preview.bbCode} title={preview.title} />
+                        : <Alert variant="secondary" className="py-2 mb-0">Choisissez le destinataire pour voir l'aperçu.</Alert>}
+                    </div>
+                </div>
             )}
         </BaseModal>
     );
