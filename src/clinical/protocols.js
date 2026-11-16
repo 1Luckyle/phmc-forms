@@ -321,7 +321,9 @@ export const caseToText = (caseData, doneIds = []) => {
             number += 1;
             const mark = doneIds.length ? (done.has(step.id) ? '[x] ' : '[ ] ') : '';
             const headLine = `${mark}${number}. ${step.title}${step.tag ? ` (${step.tag})` : ''}${step.detail ? ` : ${step.detail}` : ''}`;
-            return step.points.length ? `${headLine}\n${step.points.map((point) => `   • ${point}`).join('\n')}` : headLine;
+            // Médicaments dosés que l'étape demande, puis ses autres précisions.
+            const doses = step.meds.map((med) => `   → ${med.text}${med.shared ? ` (déjà prévu pour « ${med.shared} » : une seule administration)` : ''}${med.alerts.length ? ` [${med.alerts.join(' ; ')}]` : ''}`);
+            return [headLine, ...doses, ...step.points.map((point) => `   • ${point}`)].join('\n');
         }),
     ].join('\n'));
     const end = 'Aide à la décision pour le jeu de rôle : le soignant reste responsable de ses choix.';

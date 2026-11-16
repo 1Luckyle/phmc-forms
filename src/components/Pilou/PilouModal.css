@@ -67,7 +67,7 @@
 .pl-phase-watch .pl-phase-title i { color: #d29922; }
 .pl-step { display: flex; align-items: flex-start; gap: 8px; border: 1px solid #21262d; border-left: 3px solid #30363d; border-radius: 6px; background: #0d1117; padding: 7px 8px 7px 10px; margin-bottom: 6px; }
 .pl-step.alert { border-left-color: #d29922; }
-.pl-step.med { border-left-color: #3fb950; }
+.pl-step.med, .pl-step.has-meds { border-left-color: #3fb950; }
 .pl-step.done { opacity: 0.6; }
 .pl-step.done .pl-step-title { text-decoration: line-through; }
 .pl-step .form-check { margin: 1px 0 0; padding-left: 1.4em; min-height: 0; }
@@ -80,6 +80,23 @@
 .pl-step-points.warn { color: #f0d58c; }
 .pl-step-points.error { color: #ffa198; }
 .pl-step-points.info { color: #9cc7ff; }
+/* Médicament dosé rattaché à une étape */
+.pl-doses { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.pl-dose { display: flex; gap: 8px; align-items: flex-start; background: #0f2a17; border: 1px solid #2ea043; border-radius: 6px; padding: 5px 9px; font-size: 0.88rem; color: #d2f5da; }
+.pl-dose > i { margin-top: 3px; color: #3fb950; }
+.pl-dose.warn { background: #3a2a0a; border-color: #9e6a03; color: #f0d58c; }
+.pl-dose.warn > i { color: #d29922; }
+.pl-dose.error { background: #2a0d0d; border-color: #da3633; color: #ffa198; }
+.pl-dose.error > i { color: #f85149; }
+.pl-dose-shared { font-size: 0.8rem; opacity: 0.85; }
+.pl-dose-alert { font-size: 0.8rem; margin-top: 2px; }
+.pl-medlist { margin-top: 10px; border: 1px solid #30363d; border-radius: 8px; padding: 6px 10px; background: #0d1117; }
+.pl-medlist summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #c9d1d9; }
+.pl-medlist summary i { margin-right: 7px; color: #3fb950; }
+.pl-medlist[open] summary { margin-bottom: 6px; }
+.pl-medlist .pl-dose { margin-bottom: 4px; }
+.pl-medlist-sub { font-size: 0.82rem; color: #9da7b3; margin-top: 4px; }
+.pl-outline-med { margin-left: 6px; font-size: 0.72rem; color: #3fb950; }
 .pl-follow { background: none; border: 0; color: #6e7681; cursor: pointer; padding: 2px 4px; }
 .pl-follow:hover { color: #58a6ff; }
 

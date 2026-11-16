@@ -363,7 +363,7 @@ export const MEDICAL_PATHWAYS = {
         [
             "Sédater par benzodiazépine : traitement de l'agitation, de la tension, de la tachycardie et de la douleur thoracique.",
             "Hydrater : perfusion pour protéger les reins.",
-            "Éviter les bêtabloquants : ils peuvent aggraver la tension sous cocaïne.",
+            "Éviter les bêtabloquants : ils peuvent aggraver la tension sous cocaïne ; en cas de douleur thoracique qui persiste, aspirine et avis cardiologique.",
             "Orienter : soins intensifs en cas d'hyperthermie, de convulsions ou de douleur thoracique ; sinon surveillance jusqu'au retour au calme.",
         ],
     ),
@@ -414,7 +414,7 @@ export const MEDICAL_PATHWAYS = {
             "Prélever et tracer : monoxyde de carbone dans le sang, lactates, ECG, troponine ; radiographie pulmonaire.",
         ],
         [
-            "Poursuivre l'oxygène pur : pendant au moins 6 heures.",
+            "Poursuivre l'oxygène pur : pendant au moins 6 heures ; salbutamol en nébulisation en cas de sifflements.",
             "Donner l'antidote du cyanure : hydroxocobalamine en cas de coma, de choc ou d'arrêt cardiaque après un incendie en lieu clos.",
             "Protéger les voies aériennes : intubation précoce si les voies aériennes sont brûlées ou si la voix se modifie.",
             "Discuter le caisson hyperbare : perte de connaissance, signes neurologiques, femme enceinte.",
@@ -469,7 +469,7 @@ export const MEDICAL_PATHWAYS = {
             "Chercher le déclencheur : infection, oubli d'insuline, pompe en panne, diabète encore inconnu.",
         ],
         [
-            "Réhydrater : sérum physiologique sur plusieurs heures, débit adapté au cœur et à l'âge.",
+            "Réhydrater : sérum physiologique sur plusieurs heures, débit adapté au cœur et à l'âge ; antiémétique si les vomissements persistent.",
             "Débuter l'insuline : intraveineuse continue, seulement après avoir vérifié le potassium.",
             "Corriger le potassium : apport dès que le taux baisse, contrôle toutes les heures.",
             "Hospitaliser : soins continus, glycémie toutes les heures.",

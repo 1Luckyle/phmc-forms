@@ -1,5 +1,5 @@
 import { CONDITIONS } from './conditions';
-import { PATHWAYS, PHASES, splitStep, flatSteps } from './pathways';
+import { PATHWAYS, PHASES, splitStep, flatSteps, locateMedStep } from './pathways';
 import { buildCase, caseToText, progressOf } from './protocols';
 import { BODY_REGIONS, PRECISIONS, TRAJECTORIES, INJURY_CONDITIONS, MUTILATIONS } from './injuries';
 import { REGION_CARE, PRECISION_CARE, TRAJECTORY_CARE, INJURY_KIND, injuryCareNotes, sanitizeInjuryDetails } from './injuryCare';
@@ -28,6 +28,11 @@ describe('parcours détaillés : un parcours par motif', () => {
             if (!title || title.length > 60 || detail.length < 15 || !/[.!?]$/.test(text)) bad.push(`${id}/${phase}: ${text.slice(0, 50)}`);
         })));
         expect(bad).toEqual([]);
+    });
+    test('chaque médicament qu\'un motif peut proposer est cité par une étape de son parcours (sa dose s\'y affiche)', () => {
+        const missing = [];
+        CONDITIONS.forEach((c) => (c.meds || []).forEach(([medId]) => { if (!locateMedStep(c.id, medId)) missing.push(`${c.id}: ${medId}`); }));
+        expect(missing).toEqual([]);
     });
     test('splitStep : avec et sans détail', () => {
         expect(splitStep('Comprimer : appui direct.')).toEqual({ title: 'Comprimer', detail: 'appui direct.' });
@@ -89,17 +94,42 @@ describe('le parcours complet d\'un cas', () => {
         expect(steps.length).toBeGreaterThan(25);
         // gravité sévère : renfort ; médicaments dosés dans le traitement ; transmissions (le patient ne rentre pas chez lui)
         expect(steps.map((step) => step.id)).toEqual(expect.arrayContaining(['start-safety', 'start-help', 'start-abcde', 'start-vitals', 'start-equipment', 'assess-history', 'assess-exams', 'watch-rhythm', 'end-destination', 'end-handover', 'end-report']));
-        const meds = steps.filter((step) => step.kind === 'med');
-        expect(meds.length).toBeGreaterThan(2);
-        meds.forEach((med) => { expect(med.phase).toBe('treat'); expect(med.title).toMatch(/^Administrer : .*\d/); });
-        // les médicaments se donnent avant l'étape de clôture du traitement (départ au bloc), après les gestes de soin
-        const titles = steps.map((step) => step.title);
-        const firstMed = titles.findIndex((title) => /^Administrer/.test(title));
-        const lastMed = titles.length - 1 - [...titles].reverse().findIndex((title) => /^Administrer/.test(title));
-        expect(titles.indexOf('Prévenir l\'infection')).toBeLessThan(firstMed);
-        expect(lastMed).toBeLessThan(titles.indexOf('Conduire au bloc'));
+        // chaque médicament est affiché, avec sa dose, sur l'étape qui le demande — plus de ligne « Administrer » à part
+        const medsOf = (title) => steps.find((step) => step.title === title).meds.map((med) => med.text.split(' ')[0]);
+        expect(medsOf('Oxygéner et réchauffer')).toEqual(['Oxygène']);
+        expect(medsOf('Poser deux voies veineuses de gros calibre')).toEqual(['Acide', 'Sérum']);
+        expect(medsOf('Soulager')).toEqual(['Fentanyl']);
+        expect(medsOf("Prévenir l'infection")).toEqual(['Céfazoline', 'Vaccin']);
+        expect(steps.filter((step) => /^Administrer/.test(step.title))).toEqual([]);
+        expect(steps.flatMap((step) => step.meds)).toHaveLength(result.meds.length);
+        steps.flatMap((step) => step.meds).forEach((med) => { expect(med.text).toMatch(/\d/); expect(med.shared).toBe(''); });
         expect(steps.find((step) => step.id === 'assess-exams').points.join(' ')).toMatch(/Résultat le plus probable — Radiographie : /);
         expect(steps.find((step) => step.id === 'watch-rhythm').detail).toMatch(/toutes les 15 minutes/);
+    });
+    test('quel que soit le motif et la gravité, tout médicament proposé est sur une étape, une seule fois', () => {
+        const loose = [];
+        CONDITIONS.forEach((condition) => ['Mild', 'Moderate', 'Severe', 'Critical'].forEach((severity) => {
+            const result = buildCase({ ...adult, severity, conditionIds: [condition.id] });
+            const steps = flatSteps(result.timeline);
+            const placed = steps.flatMap((step) => step.meds.map((med) => med.medId)).sort();
+            if (steps.some((step) => /^Administrer/.test(step.title)) || placed.join() !== result.meds.map((med) => med.medId).sort().join()) loose.push(`${condition.id}/${severity}`);
+        }));
+        expect(loose).toEqual([]);
+    });
+    test('deux motifs : le médicament commun est rappelé sur l\'étape de l\'autre motif, sans être compté deux fois', () => {
+        const result = buildCase({ ...adult, severity: 'Moderate', conditionIds: ['fracture_ouverte', 'plaie_arme_feu'] });
+        const steps = flatSteps(result.timeline);
+        const own = steps.find((step) => step.title === "Donner l'antibiotique dans l'heure" && step.tag === 'Fracture ouverte');
+        expect(own.meds.map((med) => [med.medId, med.shared])).toEqual([['cefazoline', ''], ['vaccin_tetanique', '']]);
+        const other = steps.find((step) => step.title === "Prévenir l'infection" && step.tag === 'Plaie par arme à feu');
+        expect(other.meds.map((med) => [med.medId, med.shared])).toEqual([['cefazoline', 'Fracture ouverte'], ['vaccin_tetanique', 'Fracture ouverte']]);
+        // l'antalgique de chaque motif reste sur son étape
+        expect(steps.find((step) => step.title === 'Soulager' && step.tag === 'Plaie par arme à feu').meds.map((med) => med.medId)).toEqual(['fentanyl']);
+        expect(steps.filter((step) => /^Administrer/.test(step.title))).toEqual([]);
+        expect(steps.flatMap((step) => step.meds).filter((med) => !med.shared)).toHaveLength(result.meds.length);
+        const text = caseToText(result);
+        expect(text).toMatch(/→ Céfazoline .*IV\n/);
+        expect(text).toMatch(/→ Céfazoline .*\(déjà prévu pour « Fracture ouverte » : une seule administration\)/);
     });
     test('les précisions sur les blessures entrent dans le parcours et dans le texte copié', () => {
         const result = buildCase({

@@ -27,9 +27,22 @@ const comma = (value) => String(value).replace('.', ',');
 
 const capitalize = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 
+// Médicament dosé pour ce patient, avec ses alertes ; `shared` : déjà compté pour un autre motif du cas.
+const Dose = ({ med }) => (
+    <div className={`pl-dose ${med.level && med.level !== 'ok' ? med.level : ''}`}>
+        <i className="fas fa-syringe"></i>
+        <div>
+            <strong>{med.text}</strong>
+            {med.shared && <span className="pl-dose-shared"> — déjà prévu pour « {med.shared} » : une seule administration</span>}
+            {(med.alerts || []).map((alert) => <div key={alert} className="pl-dose-alert"><i className="fas fa-circle-exclamation"></i> {alert}</div>)}
+        </div>
+    </div>
+);
+
 const StepBody = ({ step }) => (
     <>
         {step.detail && <div className="pl-step-detail">{capitalize(step.detail)}</div>}
+        {step.meds.length > 0 && <div className="pl-doses">{step.meds.map((med) => <Dose key={`${med.medId}-${med.text}`} med={med} />)}</div>}
         {step.points.length > 0 && <ul className={`pl-step-points${step.kind === 'med' && step.level && step.level !== 'ok' ? ` ${step.level}` : ''}`}>{step.points.map((point) => <li key={point}>{point}</li>)}</ul>}
     </>
 );
@@ -52,7 +65,7 @@ const FullView = ({ result, done, onToggle, onFollow }) => {
                         number += 1;
                         const isDone = done.has(step.id);
                         return (
-                            <div key={step.id} className={`pl-step ${step.kind}${isDone ? ' done' : ''}`}>
+                            <div key={step.id} className={`pl-step ${step.kind}${step.meds.length ? ' has-meds' : ''}${isDone ? ' done' : ''}`}>
                                 <Form.Check type="checkbox" id={`pilou-step-${step.id}`} checked={isDone} onChange={() => onToggle(step.id)} aria-label={`Étape faite : ${step.title}`} />
                                 <div className="pl-step-main">
                                     <div className="pl-step-title"><span className="pl-step-n">{number}</span>{step.title}{step.tag && <span className="pl-tag">{step.tag}</span>}</div>
@@ -120,7 +133,7 @@ const TrackView = ({ result, done, currentId, onToggle, onGoto, onComplete, onRe
                         {item.steps.map((s) => (
                             <div key={s.id} className={`pl-outline-step${s.id === step.id ? ' current' : ''}${done.has(s.id) ? ' done' : ''}`}>
                                 <Form.Check type="checkbox" id={`pilou-outline-${s.id}`} checked={done.has(s.id)} onChange={() => onToggle(s.id)} aria-label={`Étape faite : ${s.title}`} />
-                                <button type="button" onClick={() => onGoto(s.id)}>{s.title}{s.tag && <em> · {s.tag}</em>}</button>
+                                <button type="button" onClick={() => onGoto(s.id)}>{s.title}{s.meds.length > 0 && <i className="fas fa-syringe pl-outline-med" title="Médicament dosé à cette étape"></i>}{s.tag && <em> · {s.tag}</em>}</button>
                             </div>
                         ))}
                     </div>
@@ -251,6 +264,17 @@ const PilouCare = ({ state, setState, onReset, onOpenLesson, showNotification })
                                 return lesson ? <button key={condition.id} type="button" onClick={() => onOpenLesson(lesson)}><i className="fas fa-book-medical"></i>Manuel : {lesson.title}</button> : null;
                             })}
                         </div>
+
+                        {/* Tous les médicaments du cas, d'un coup d'œil ; chacun est aussi affiché sur l'étape du parcours qui le demande. */}
+                        {(result.meds.length > 0 || result.skipped.length > 0 || result.prescription.length > 0) && (
+                            <details className="pl-medlist">
+                                <summary><i className="fas fa-pills"></i>Médicaments et doses pour ce patient ({result.meds.length})</summary>
+                                {result.meds.length === 0 && <small className="text-muted">Aucun médicament proposé à cette gravité.</small>}
+                                {result.meds.map((med) => <Dose key={`${med.medId}-${med.text}`} med={{ ...med, shared: '' }} />)}
+                                {result.prescription.length > 0 && <div className="pl-medlist-sub"><strong>Ordonnance de sortie :</strong> {result.prescription.map((med) => med.text).join(' ; ')}</div>}
+                                {result.skipped.length > 0 && <div className="pl-medlist-sub"><strong>Écartés :</strong> {result.skipped.map((item) => `${item.name}${item.reasons.length ? ` (${item.reasons.join(' ; ')})` : ''}`).join(' — ')}</div>}
+                            </details>
+                        )}
 
                         <div className="pl-toolbar">
                             <div className="pl-views" role="tablist" aria-label="Affichage du parcours">

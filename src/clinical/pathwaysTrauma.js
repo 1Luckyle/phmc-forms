@@ -24,7 +24,7 @@ export const TRAUMA_PATHWAYS = {
             "Laver : irrigation abondante au sérum physiologique à la seringue, du centre vers l'extérieur, puis antiseptique.",
             "Anesthésier : infiltration de lidocaïne par les berges de la plaie, attendre 2 à 3 minutes avant de suturer.",
             "Fermer : points séparés, colle cutanée ou strips selon la taille et la zone ; pas de fermeture pour une morsure ou une plaie de plus de 24 heures.",
-            "Protéger : pansement sec stérile, rappel antitétanique si besoin, consignes (garder au sec 48 h, retrait des fils entre J7 et J10, signes d'infection).",
+            "Protéger : pansement sec stérile, antalgique simple pour les heures qui suivent, rappel antitétanique si besoin, consignes (garder au sec 48 h, retrait des fils entre J7 et J10, signes d'infection).",
         ],
     ),
     plaie_profonde: w(
@@ -39,6 +39,7 @@ export const TRAUMA_PATHWAYS = {
             "Radiographier : corps étranger, fracture associée ; statut antitétanique et circonstances (morsure, machine, verre).",
         ],
         [
+            "Soulager et sécuriser : antalgique adapté à la douleur, morphine titrée si elle est intense ; voie veineuse et acide tranexamique si le saignement a été abondant.",
             "Anesthésier et laver : anesthésie locale ou loco-régionale, lavage abondant sous pression, parage des tissus abîmés.",
             "Réparer par plans : muscle, plan sous-cutané puis peau ; drainage si décollement ; une morsure est laissée ouverte.",
             "Prévenir l'infection : antibioprophylaxie, rappel antitétanique.",
@@ -65,7 +66,7 @@ export const TRAUMA_PATHWAYS = {
     fracture_ouverte: w(
         [
             "Stopper l'hémorragie : compression directe autour du foyer, pansement compressif ; garrot en amont si le saignement ne cède pas, heure notée.",
-            "Couvrir l'os : compresses stériles humidifiées au sérum physiologique, sans repousser l'os ni explorer la plaie.",
+            "Couvrir l'os : compresses stériles humides, sans repousser l'os ni explorer la plaie.",
             "Immobiliser sans réduire : attelle dans la position trouvée, sauf membre sans pouls (réaligner doucement dans l'axe).",
         ],
         [
@@ -74,7 +75,7 @@ export const TRAUMA_PATHWAYS = {
             "Lancer le bilan : radiographie, bilan sanguin préopératoire et groupage, statut antitétanique.",
         ],
         [
-            "Poser une voie veineuse : antalgique puissant titré, remplissage si la tension est basse.",
+            "Poser une voie veineuse : antalgique puissant titré ; remplissage et acide tranexamique si la tension est basse ou le saignement important.",
             "Donner l'antibiotique dans l'heure : par voie intraveineuse (alternative en cas d'allergie), avec le rappel antitétanique.",
             "Préparer le bloc : patient à jeun, lavage chirurgical, parage puis ostéosynthèse ou fixateur externe dans les 6 heures.",
         ],
@@ -82,7 +83,7 @@ export const TRAUMA_PATHWAYS = {
     entorse_luxation: w(
         [
             "Mettre au repos : arrêt de l'appui ou de l'usage du membre, position qui soulage, soutenue par une écharpe ou un coussin.",
-            "Glacer et surélever : poche de glace enveloppée pendant 15 minutes, articulation au-dessus du niveau du cœur.",
+            "Glacer et soulager : poche de glace enveloppée pendant 15 minutes, articulation surélevée au-dessus du cœur, antalgique et anti-inflammatoire par la bouche.",
         ],
         [
             "Examiner l'articulation : gonflement, hématome, déformation, points douloureux précis sur l'os, stabilité.",
@@ -183,7 +184,7 @@ export const TRAUMA_PATHWAYS = {
             "Imager : échographie eFAST puis radiographie pulmonaire ; scanner si le traumatisme a été violent.",
         ],
         [
-            "Drainer : drain thoracique au 5e espace intercostal, sur la ligne axillaire antérieure, pour un pneumothorax ou un hémothorax important.",
+            "Drainer : drain thoracique au 5e espace intercostal, sur la ligne axillaire antérieure, pour un pneumothorax ou un hémothorax important ; acide tranexamique si l'hémorragie est massive.",
             "Soulager vraiment : antalgie suffisante pour respirer à fond et tousser, sinon l'infection pulmonaire guette.",
             "Hospitaliser : surveillance respiratoire continue ; bloc si le drain ramène d'emblée plus de 1,5 litre de sang.",
         ],

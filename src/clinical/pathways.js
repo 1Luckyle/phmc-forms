@@ -4,11 +4,78 @@
 //   1. Premier regard · 2. Gestes immédiats · 3. Examen et bilan · 4. Traitement · 5. Surveillance · 6. Orientation et suites.
 // Les étapes propres à chaque motif viennent de pathwaysTrauma.js et pathwaysMedical.js ; ce fichier y ajoute les étapes communes (bilan A B C D E, constantes, interrogatoire, examens,
 // médicaments dosés, surveillance, orientation) et les conduites tirées des précisions sur les blessures (injuryCare.js). Le suivi pas à pas de l'outil se fait sur cette liste.
-// Pur (ni React ni Firebase). À TENIR À JOUR : tout nouveau motif de conditions.js doit avoir son parcours (un test le vérifie).
+// MÉDICAMENTS : chaque médicament proposé est rattaché, avec sa dose, à l'étape qui en parle (« Soulager : antalgique intraveineux » montre « Fentanyl 50 µg — IV ») — voir MED_KEYWORDS.
+// Pur (ni React ni Firebase). À TENIR À JOUR : tout nouveau motif de conditions.js doit avoir son parcours, et chacun de ses médicaments une étape qui le cite (des tests le vérifient).
 import { TRAUMA_PATHWAYS } from './pathwaysTrauma';
 import { MEDICAL_PATHWAYS } from './pathwaysMedical';
+import { CONDITION_BY_ID } from './conditions';
+import { MEDICATION_BY_ID } from './medications';
 
 export const PATHWAYS = { ...TRAUMA_PATHWAYS, ...MEDICAL_PATHWAYS };
+
+// ───────────── Rattacher un médicament à l'étape qui le demande ─────────────
+// Mots (sans accents, en minuscules) par lesquels une étape désigne un médicament, du plus précis au plus général : le premier mot trouvé dans une étape du motif l'emporte.
+// Sans entrée, c'est le nom du médicament qui est cherché.
+const ANALGESIC = ['antalgi', 'soulager'];
+const ANTIBIOTIC = ['antibio'];
+const FLUIDS = ['serum physiologique', 'remplissage', 'remplir', 'perfus', 'rehydrat', 'hydrat'];
+export const MED_KEYWORDS = {
+    paracetamol: ['paracetamol', ...ANALGESIC],
+    ibuprofene: ['anti-inflammatoire', ...ANALGESIC],
+    ketoprofene: ['anti-inflammatoire', ...ANALGESIC],
+    tramadol: ANALGESIC,
+    morphine: ['morphine', ...ANALGESIC],
+    fentanyl: ANALGESIC,
+    ketamine: ['ketamine', ...ANALGESIC],
+    midazolam: ['benzodiazepine', 'sedation', 'sedati', 'sedater'],
+    diazepam: ['benzodiazepine', 'sedater'],
+    clonazepam: ['benzodiazepine'],
+    haloperidol: ['sedation', 'sedati'],
+    nitroglycerine: ['trinitrine', 'derive nitre'],
+    glucose30: ['glucose'],
+    acetylcysteine: ['acetylcysteine'],
+    charbon: ['charbon'],
+    thiamine: ['vitamine b1'],
+    oxygene: ['oxygener', 'oxygene'],
+    salbutamol: ['salbutamol', 'bronchodilatateur', 'nebulis'],
+    methylprednisolone: ['corticoide'],
+    prednisolone: ['corticoide'],
+    cetirizine: ['antihistaminique'],
+    furosemide: ['furosemide', 'diuretique'],
+    ondansetron: ['antiemetique'],
+    metoclopramide: ['antiemetique'],
+    phloroglucinol: ['antispasmodique'],
+    amoxicilline: ANTIBIOTIC, amoxicilline_clav: ANTIBIOTIC, ceftriaxone: ANTIBIOTIC, cefazoline: ANTIBIOTIC, clindamycine: ANTIBIOTIC, vancomycine: ANTIBIOTIC,
+    azithromycine: ANTIBIOTIC, ciprofloxacine: ANTIBIOTIC, metronidazole: ANTIBIOTIC,
+    vaccin_tetanique: ['antitetanique'],
+    immunoglobuline_tetanique: ['antitetanique'],
+    nacl09: FLUIDS,
+    ringer: FLUIDS,
+    lidocaine: ['lidocaine', 'anesthesie locale', 'anesthesier'],
+};
+const fold = (text) => String(text ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const keywordsOf = (medId) => MED_KEYWORDS[medId] || [fold((MEDICATION_BY_ID[medId] || {}).name || medId)];
+const isAntibiotic = (medId) => /Antibiotique/.test((MEDICATION_BY_ID[medId] || {}).category || '');
+
+/**
+ * Étape du parcours d'un motif qui demande ce médicament : { phase, index } ou null. On cherche d'abord dans les gestes immédiats, puis le traitement, puis le bilan
+ * (« rappel antitétanique » est vérifié au bilan mais fait au traitement).
+ */
+export const locateMedStep = (conditionId, medId) => {
+    const pathway = PATHWAYS[conditionId];
+    if (!pathway) return null;
+    const candidates = ['now', 'treat', 'assess'].flatMap((phase) => pathway[phase].map((text, index) => ({ phase, index, text: fold(text) })));
+    for (const keyword of keywordsOf(medId)) {
+        const hit = candidates.find((candidate) => candidate.text.includes(keyword));
+        if (hit) return { phase: hit.phase, index: hit.index };
+    }
+    return null;
+};
+// Un autre motif du cas aurait-il proposé ce médicament (ou, pour un antibiotique, un antibiotique) à cette gravité ? Il est alors rappelé sur son étape, sans être compté deux fois.
+const wouldUse = (conditionId, medId, severityIndex) => {
+    const ids = ((CONDITION_BY_ID[conditionId] || {}).meds || []).filter(([, , minSeverity = 0]) => severityIndex >= minSeverity).map(([id]) => id);
+    return ids.includes(medId) || (isAntibiotic(medId) && ids.some(isAntibiotic));
+};
 
 export const PHASES = [
     { key: 'start', label: 'Premier regard', icon: 'fa-eye', hint: "Les premières secondes : se protéger, repérer ce qui menace la vie, mesurer." },
@@ -50,12 +117,13 @@ const slug = (text) => String(text).toLowerCase().normalize('NFD').replace(/[^a-
  * Parcours complet d'un cas.
  * raw : { conditions: [{ id, label, equipment, monitoring }], severity: { index, label }, vitals, patient: { allergies, chronic, currentMeds }, adaptations, notices, injuryCare, meds, skipped,
  *         prescription, exams, expectedResults, routineCare, destination, destinationKey, advice }
- * → [{ key, label, icon, hint, steps: [{ id, phase, title, detail, points, tag, kind }] }] — kind : 'step' | 'med' | 'alert' ; tag : motif concerné ('' si l'étape est commune).
+ * → [{ key, label, icon, hint, steps: [{ id, phase, title, detail, points, meds, tag, kind }] }] — kind : 'step' | 'med' | 'alert' ; tag : motif concerné ('' si l'étape est commune) ;
+ *   meds : médicaments dosés que l'étape demande [{ medId, text, alerts, level, shared }] — shared : libellé du motif pour lequel il est déjà compté (à ne donner qu'une fois).
  */
 export const buildTimeline = (raw) => {
     const byPhase = Object.fromEntries(PHASES.map((phase) => [phase.key, []]));
     const single = raw.conditions.length === 1;
-    const push = (phase, id, title, detail = '', extra = {}) => byPhase[phase].push({ id, phase, title, detail, points: [], tag: '', kind: 'step', ...extra });
+    const push = (phase, id, title, detail = '', extra = {}) => byPhase[phase].push({ id, phase, title, detail, points: [], meds: [], tag: '', kind: 'step', ...extra });
     const pushText = (phase, id, text, extra = {}) => { const { title, detail } = splitStep(text); push(phase, id, title, detail, extra); };
     const tagOf = (condition) => (single ? '' : condition.label);
     const sev = raw.severity.index;
@@ -65,6 +133,22 @@ export const buildTimeline = (raw) => {
         push('treat', `med-${med.medId}-${med.regimenId}`, `Administrer : ${med.text}`, '', { points: med.alerts, kind: 'med', level: med.level, tag: med.forLabel && !single ? med.forLabel : '' });
     };
     const pushMeds = (condition) => raw.meds.filter((med) => med.forCondition === condition.id && !placedMeds.has(med)).forEach(pushMed);
+    // Chaque médicament va sur l'étape de son motif qui le demande ; s'il sert aussi à un autre motif du cas, il y est rappelé (« déjà prévu pour… »). Celui qu'aucune étape ne cite reste une étape « Administrer ».
+    const attached = new Map();
+    const attach = (conditionId, at, med, shared) => {
+        const key = `${conditionId}|${at.phase}|${at.index}`;
+        attached.set(key, [...(attached.get(key) || []), { medId: med.medId, text: med.text, alerts: med.alerts, level: med.level, shared }]);
+    };
+    raw.meds.forEach((med) => {
+        const own = locateMedStep(med.forCondition, med.medId);
+        if (!own) return;
+        attach(med.forCondition, own, med, '');
+        placedMeds.add(med);
+        raw.conditions.filter((condition) => condition.id !== med.forCondition && wouldUse(condition.id, med.medId, sev)).forEach((condition) => {
+            const other = locateMedStep(condition.id, med.medId);
+            if (other) attach(condition.id, other, med, med.forLabel);
+        });
+    });
 
     // 1. Premier regard
     push('start', 'start-safety', 'Se protéger et se présenter', "Gants, lieu sûr ; on se présente, on explique ce que l'on fait et on recueille l'identité du patient et son accord quand c'est possible.");
@@ -91,7 +175,7 @@ export const buildTimeline = (raw) => {
             const medsAt = phase === 'treat' ? (closing >= 0 ? closing : Math.max(0, texts.length - 1)) : -1;
             texts.forEach((text, index) => {
                 if (index === medsAt) pushMeds(condition);
-                pushText(phase, `${phase}-${condition.id}-${index}`, text, { tag: tagOf(condition) });
+                pushText(phase, `${phase}-${condition.id}-${index}`, text, { tag: tagOf(condition), meds: attached.get(`${condition.id}|${phase}|${index}`) || [] });
             });
             if (phase === 'treat' && !texts.length) pushMeds(condition);
         });

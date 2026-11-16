@@ -91,7 +91,8 @@ describe('prise en charge d\'un cas', () => {
         const text = caseToText(result);
         expect(text).toContain('PILOU — Douleur thoracique / syndrome coronarien + Hypoglycémie');
         expect(text).toContain('Patient : 45 ans, Homme, 80 kg, 178 cm, IMC 25,2 (surpoids) — gravité sévère');
-        ['PREMIER REGARD', 'GESTES IMMÉDIATS', 'EXAMEN ET BILAN', 'TRAITEMENT', 'SURVEILLANCE', 'ORIENTATION ET SUITES', 'Préparer le matériel', 'Administrer : ', 'Orienter : ', 'Aide à la décision'].forEach((part) => expect(text).toContain(part));
+        ['PREMIER REGARD', 'GESTES IMMÉDIATS', 'EXAMEN ET BILAN', 'TRAITEMENT', 'SURVEILLANCE', 'ORIENTATION ET SUITES', 'Préparer le matériel', 'Orienter : ', 'Aide à la décision'].forEach((part) => expect(text).toContain(part));
+        expect(text).toMatch(/\d+\. Donner l'aspirine \(Douleur thoracique \/ syndrome coronarien\) : .*\n {3}→ Aspirine \d+ mg/);
         expect(text).toMatch(/\d+\. Resucrer par la bouche \(Hypoglycémie\) : /);
         expect(caseToText(null)).toBe('');
     });

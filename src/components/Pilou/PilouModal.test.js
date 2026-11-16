@@ -75,7 +75,11 @@ describe('aide à la prise en charge', () => {
         await chooseCondition('Douleur thoracique / syndrome coronarien');
         ['Premier regard', 'Gestes immédiats', 'Examen et bilan', 'Traitement', 'Surveillance', 'Orientation et suites'].forEach((label) => expect(screen.getByText(label, { selector: 'h6' })).toBeTruthy());
         expect(screen.getByText("Faire l'ECG")).toBeTruthy();
-        expect(screen.getByText(/^Administrer : Aspirine/)).toBeTruthy();
+        // la dose est affichée sur l'étape qui demande le médicament, et dans le récapitulatif des médicaments
+        expect(within(screen.getByText("Donner l'aspirine").closest('.pl-step')).getByText(/^Aspirine \d+ mg/)).toBeTruthy();
+        expect(screen.queryByText(/^Administrer : /)).toBeNull();
+        expect(screen.getByText(/Médicaments et doses pour ce patient \(\d+\)/)).toBeTruthy();
+        expect(within(document.querySelector('.pl-medlist')).getByText(/^Aspirine \d+ mg/)).toBeTruthy();
         expect(screen.getByText(/0 \/ \d+ étapes faites/)).toBeTruthy();
         await act(async () => { fireEvent.click(screen.getByText('Copier')); });
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('PILOU — Douleur thoracique'));
