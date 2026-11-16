@@ -8,6 +8,7 @@ import { injuryLines, mutilationLabels, mutilationCareSteps } from './injuries';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
 import { missingBackgroundItems } from '../utils/dossierCore';
+import { parseWeightKg, parseHeightCm } from './bodyLimits';
 import { suggestPatient, patientNotices, defaultFindings, arrivalModeFor, examResultsFor, ADVICE_BY_GROUP, ADVICE_ADMITTED } from './context';
 
 // ───────────── Texte et patient ─────────────
@@ -19,17 +20,8 @@ export const findTerm = (text, terms) => {
     return (terms || []).find((term) => { const t = normalize(term); return t && haystack.includes(` ${t} `); }) || '';
 };
 
-export const parseWeightKg = (value) => {
-    const n = parseFloat(String(value ?? '').replace(',', '.'));
-    return Number.isFinite(n) && n >= 1 && n <= 400 ? n : null;
-};
-export const parseHeightCm = (value) => {
-    const text = String(value ?? '').replace(',', '.');
-    const n = parseFloat(text);
-    if (!Number.isFinite(n)) return null;
-    const cm = n < 3 ? n * 100 : n;
-    return cm >= 30 && cm <= 260 ? Math.round(cm) : null;
-};
+// Bornes et lecture de l'âge, du poids et de la taille : clinical/bodyLimits.js (communes à tout le site).
+export { parseWeightKg, parseHeightCm };
 export const estimateWeightKg = (ageYears) => {
     if (!Number.isFinite(ageYears)) return 70;
     if (ageYears < 1) return 7;

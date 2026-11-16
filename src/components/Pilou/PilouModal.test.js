@@ -8,26 +8,38 @@ jest.mock('../BaseModal', () => ({ __esModule: true, default: ({ children, title
 
 const PilouModal = require('./PilouModal').default;
 
+const pick = (name, value) => fireEvent.change(document.querySelector(`select[name="${name}"]`), { target: { value } });
+
 describe('Pilou dans la Boîte à outils', () => {
-    test('affiché au personnel soignant, au DMEC et aux admins ; jamais aux Civils ni à l\'administration seule', () => {
+    test('affiché aux soignants et aux admins seulement : ni Civils, ni DMEC, ni administration', () => {
         const base = { currentEmployee: { uid: 'u' }, staffName: 'Dr X', isCivilian: false };
         expect(getToolAccess({ ...base, isAdmin: true }).pilou).toBe(true);
-        expect(getToolAccess({ ...base, staffProfile: { type: 'PHMC', category: 'Médecin Titulaire' } }).pilou).toBeDefined();
+        expect(getToolAccess({ ...base, staffProfile: { type: 'PHMC', category: 'Médecin Titulaire' } }).pilou).toBe(true);
+        expect(getToolAccess({ ...base, staffProfile: { type: 'coroner', category: 'Médecin légiste' } }).pilou).toBe(false);
         expect(getToolAccess({ isCivilian: true, isAdmin: false }).pilou).toBe(false);
     });
 
-    test('symptômes → motif proposé → prise en charge complète, copiable', async () => {
+    test('tout est à choisir : listes obligatoires (rouge) et facultatives (bleu), aucune saisie libre', () => {
+        render(<PilouModal show onHide={() => {}} />);
+        expect(document.querySelector('[data-guide-zone]')).toBeTruthy();
+        ['pilouAge', 'pilouSexe', 'pilouPoids', 'pilouTaille', 'pilouGravite'].forEach((name) => expect(document.querySelector(`select[name="${name}"]`).required).toBe(true));
+        expect(document.querySelector('input[type="text"]:not([role]):not([id^="react-select"])')).toBeNull();
+        expect(document.querySelector('input[type="number"]')).toBeNull();
+        expect(document.querySelector('textarea')).toBeNull();
+        expect(screen.getByText('Obligatoire')).toBeTruthy();
+        expect(screen.getByText('Facultatif')).toBeTruthy();
+        expect(screen.getByText(/Il manque : l'âge, le sexe, le poids, la taille, au moins un motif/)).toBeTruthy();
+    });
+
+    test('champs obligatoires remplis + motif choisi → prise en charge complète, copiable', async () => {
         const notify = jest.fn();
         Object.assign(navigator, { clipboard: { writeText: jest.fn().mockResolvedValue() } });
         render(<PilouModal show onHide={() => {}} showNotification={notify} />);
-        expect(screen.getByText(/Choisissez au moins un motif/)).toBeTruthy();
-        fireEvent.change(screen.getByPlaceholderText('ex. 35 (0 = nourrisson)'), { target: { value: '45' } });
-        fireEvent.change(screen.getByPlaceholderText('ex. 75'), { target: { value: '80' } });
-        fireEvent.change(screen.getByPlaceholderText(/Décrivez ce que présente le patient/), { target: { value: 'douleur thoracique, oppression, bras gauche, sueurs' } });
-        const chip = await screen.findByTitle('Ajouter ce motif', {}, { timeout: 2000 }).catch(() => null);
-        expect(chip || screen.getAllByText(/syndrome coronarien/)[0]).toBeTruthy();
-        const buttons = screen.getAllByTitle('Ajouter ce motif');
-        await act(async () => { fireEvent.click(buttons[0]); });
+        pick('pilouAge', '45'); pick('pilouSexe', 'Male'); pick('pilouPoids', '80'); pick('pilouTaille', '175');
+        expect(screen.queryByText('Procédure, étape par étape')).toBeNull();
+        expect(screen.getByText(/Il manque : au moins un motif/)).toBeTruthy();
+        await act(async () => { fireEvent.keyDown(screen.getByText(/Choisir dans la liste \(plusieurs choix possibles\)/), { key: 'ArrowDown', keyCode: 40 }); });
+        await act(async () => { fireEvent.click(screen.getByText('Douleur thoracique / syndrome coronarien')); });
         expect(screen.getByText('Procédure, étape par étape')).toBeTruthy();
         expect(screen.getByText('Matériel à préparer')).toBeTruthy();
         expect(screen.getByText('Gestes à réaliser')).toBeTruthy();
@@ -36,6 +48,6 @@ describe('Pilou dans la Boîte à outils', () => {
         await act(async () => { fireEvent.click(screen.getByText('Copier')); });
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('PILOU —'));
         await act(async () => { fireEvent.click(screen.getByText('Nouveau patient')); });
-        expect(screen.getByText(/Choisissez au moins un motif/)).toBeTruthy();
+        expect(screen.getByText(/Il manque : l'âge/)).toBeTruthy();
     });
 });

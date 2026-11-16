@@ -9,6 +9,7 @@ import { CONDITIONS, CONDITION_BY_ID } from './conditions';
 import { MEDICATION_BY_ID } from './medications';
 import { buildSuggestions, patientFromForm, checkPrescription, entryText, prescriptionText, isPediatric, formatNumber } from './engine';
 import { vitalsFromForm, vitalsFormFields } from './vitals';
+import { bmiOf, bmiCategory } from './bodyLimits';
 
 // equipment : matériel à préparer · gestures : gestes à réaliser, dans l'ordre · monitoring : surveillance et signes d'alerte · symptoms : mots du langage courant
 const p = (equipment, gestures, monitoring, symptoms = '') => ({ equipment, gestures, monitoring, symptoms });
@@ -280,9 +281,10 @@ export const buildCase = (input = {}) => {
         const result = checkPrescription(entry, checkCtx);
         return { medId: entry.medId, name: MEDICATION_BY_ID[entry.medId]?.name || entry.medId, text, forLabel: labelOf(entry.forCondition), level: result.level, alerts: result.messages.filter((m) => m.level !== 'ok').map((m) => m.text) };
     };
-    const bmi = patient.weightKg && patient.heightCm ? Number((patient.weightKg / ((patient.heightCm / 100) ** 2)).toFixed(1)) : null;
+    const bmi = bmiOf(patient.weightKg, patient.heightCm);
+    const bmiInfo = bmiCategory(bmi, patient.ageYears);
     return {
-        patient: { ...patient, bmi },
+        patient: { ...patient, bmi, bmiLabel: bmiInfo ? bmiInfo.label : '', bmiLevel: bmiInfo ? bmiInfo.level : '' },
         severity: suggestions.severity,
         conditions: suggestions.conditions.map((condition) => ({
             id: condition.id, label: condition.label, group: condition.group, steps: condition.steps || [],
@@ -311,7 +313,7 @@ export const caseToText = (caseData) => {
     const p0 = caseData.patient;
     const head = [
         `PILOU — ${caseData.conditions.map((c) => c.label).join(' + ')}`,
-        `Patient : ${[p0.ageYears !== null && p0.ageYears !== undefined ? `${p0.ageYears} an${p0.ageYears > 1 ? 's' : ''}` : 'âge non renseigné', caseData.sexLabel, p0.weightKg ? `${formatNumber(p0.weightKg)} kg` : '', p0.heightCm ? `${p0.heightCm} cm` : ''].filter(Boolean).join(', ')} — gravité ${caseData.severity.label.toLowerCase()}`,
+        `Patient : ${[p0.ageYears !== null && p0.ageYears !== undefined ? `${p0.ageYears} an${p0.ageYears > 1 ? 's' : ''}` : 'âge non renseigné', caseData.sexLabel, p0.weightKg ? `${formatNumber(p0.weightKg)} kg` : '', p0.heightCm ? `${p0.heightCm} cm` : '', p0.bmi ? `IMC ${String(p0.bmi).replace('.', ',')} (${p0.bmiLabel})` : ''].filter(Boolean).join(', ')} — gravité ${caseData.severity.label.toLowerCase()}`,
         `Constantes attendues : FC ${caseData.vitals.hr}/min, PA ${caseData.vitals.sbp}/${caseData.vitals.dbp}, FR ${caseData.vitals.rr}/min, SpO2 ${caseData.vitals.spo2} %, T° ${String(caseData.vitals.temp).replace('.', ',')} °C, glycémie ${String(caseData.vitals.glu).replace('.', ',')} g/L, Glasgow ${caseData.vitals.gcs}`,
     ].join('\n');
     const blocks = caseData.conditions.map((c) => [

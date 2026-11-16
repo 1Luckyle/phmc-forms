@@ -33,7 +33,9 @@ import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { validateFlightCertificate } from './flightCertificate';
 import { validateMedicalCertificate } from './medicalCertificates';
 import { validateCareExtras } from './careFormRules';
-import { clinicalWarnings, parseWeightKg, parseHeightCm } from '../clinical/engine';
+import { clinicalWarnings } from '../clinical/engine';
+import { bodyMeasureProblems } from './bodyMeasureRules';
+import { BODY_LIMITS } from '../clinical/bodyLimits';
 import { reportCopyRecipients } from './reportCopyRecipients';
 
 const filled = (value) => (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value);
@@ -84,11 +86,10 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
     });
 
     // Cas particuliers (champs qui ne se résument pas à « rempli / vide »).
-    // Poids et taille du dossier médical (basique, avancé, section « Historique médical » de la mise à jour) : des valeurs lisibles (kg et cm).
-    if ([3, 25].includes(version) || (version === 26 && Array.isArray(data.UpdateMedicalFile) && data.UpdateMedicalFile.some((section) => section === 'Medical History' || section === 'MedicalHistory'))) {
-        if (filled(data.patientWeight) && parseWeightKg(data.patientWeight) === null) errors.push('Poids du patient : valeur invalide (en kilogrammes, par exemple 75).');
-        if (filled(data.patientHeight) && parseHeightCm(data.patientHeight) === null) errors.push('Taille du patient : valeur invalide (en centimètres, par exemple 178).');
-    }
+    // Âge, poids et taille : valeurs lisibles et dans les bornes communes à tout le site (clinical/bodyLimits.js), dans TOUS les formulaires qui les demandent (patient et défunt).
+    const body = bodyMeasureProblems(version, data);
+    body.errors.forEach((problem) => errors.push(problem));
+    body.warnings.forEach((problem) => warnings.push(problem));
     // Champs ajoutés aux formulaires de soins : conduite à tenir, contrainte, transfert, durée d'arrêt… (utils/careFormRules.js).
     validateCareExtras(version, data).forEach((problem) => errors.push(problem));
     // Assistant clinique du protocole d'urgence : prescriptions incohérentes (dose, allergie, traitement en cours…) → avertissements, jamais bloquants.
@@ -164,6 +165,7 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
         const date = parseDate(data.patientDateOfBirth);
         if (date && isFutureDate(date, 0)) errors.push('Date de naissance : elle ne peut pas être dans le futur.');
         else if (date && isImplausiblyOld(date)) errors.push('Date de naissance : année invalide.');
+        else if (date && (ageOn(data.patientDateOfBirth) ?? 0) > BODY_LIMITS.ageYears.max) errors.push(`Date de naissance : l'âge ne peut pas dépasser ${BODY_LIMITS.ageYears.max} ans.`);
     }
 
     // E-mail du patient : sert à lui écrire (factures, copies) sur les dossiers médicaux Civils.
@@ -330,6 +332,7 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     if (filled(data.applicantDOB)) {
         const date = parseDate(data.applicantDOB);
         if (!date || isFutureDate(date, 0) || isImplausiblyOld(date)) errors.push('Date de naissance : date invalide.');
+        else if ((ageOn(data.applicantDOB) ?? 0) > BODY_LIMITS.ageYears.max) errors.push(`Date de naissance : l'âge ne peut pas dépasser ${BODY_LIMITS.ageYears.max} ans.`);
     }
     // Le titre suit l'âge (même règle que les dossiers médicaux) : « Mineur » sous 18 ans, jamais au-delà.
     if (filled(data.applicantTitle) && filled(data.applicantDOB)) {

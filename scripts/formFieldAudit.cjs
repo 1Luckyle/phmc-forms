@@ -30,7 +30,8 @@ const IGNORE_IN_CODE = {
     19: ['XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults'],    // valeurs stockées derrière « Résultats d'imagerie »
     20: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased', 'patientNotes', 'paletoClinicDepartment'],   // patientNotes et paletoClinicDepartment : consultation de la clinique de Paleto Bay (21) seulement
     21: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'],
-    24: ['releaseReports', 'releasePractitionerAuto', 'phmcEmployee'],   // praticien déduit des rapports retenus, pas un champ de saisie
+    24: ['releaseReports', 'releasePractitionerAuto', 'phmcEmployee'],
+    26: ['patientDateOfBirth'],   // lue (âge pour l'IMC) par les champs de poids et de taille ; le champ du formulaire est patientDateOfBirthNew   // praticien déduit des rapports retenus, pas un champ de saisie
     35: ['appointmentTime'], 41: ['appointmentTime'],
     // Candidatures : un seul composant partagé (phmc-civilian-fields/shared/ApplicationFields.js) qui cite aussi les champs propres au paramédical et à l'expérience médicale.
     50: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 51: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 52: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate', 'oocMedicalExperience'], 53: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 54: ['emsPartTimeReason', 'oocOtherCharLicenseProof', 'dfpSanFireLink', 'dfpPhmcLink', 'dfpLegalFactionLink', 'SubmitDate'], 55: ['SubmitDate'],
