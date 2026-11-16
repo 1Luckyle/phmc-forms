@@ -40,7 +40,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'La personne qui a demandé le compte', canal: 'Application (action d\'un admin)',
         vars: [NOM, v('badge', 'Badge attribué', 'MD-1234')], required: [],
         subject: 'Votre compte PHMC a été approuvé',
-        body: `Bonjour {{nom}},\n\nVotre demande de compte auprès du **Pillbox Hill Medical Center** a été approuvée. Votre badge est **{{badge}}**.\n\nVous pouvez dès à présent vous connecter sur l'outil PHMC-FR.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nVotre demande de compte auprès du **Pillbox Hill Medical Center** a été approuvée. Votre badge est **{{badge}}**.\n\nVous pouvez dès à présent vous connecter sur l'outil PHMC.\n\n${SIG}`,
     },
     compte_refuse: {
         category: 'comptes', label: 'Demande de compte refusée',
@@ -88,7 +88,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le titulaire du compte Civil', canal: 'Application (action d\'un admin)',
         vars: [NOM], required: [],
         subject: 'Votre compte Civil a été supprimé - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nVotre compte Civil sur l'outil PHMC-FR a été supprimé par un administrateur. Vos informations personnelles sont supprimées ; vos dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nVotre compte Civil sur l'outil PHMC a été supprimé par un administrateur. Vos informations personnelles sont supprimées ; vos dossiers restent archivés et vous les retrouverez si vous recréez un compte.\n\n${SIG}`,
     },
 
     // ───────────── Recrutement ─────────────
@@ -106,7 +106,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le candidat', canal: 'Application (action d\'un recruteur)',
         vars: [NOM, v('poste', 'Poste visé', 'Médecin Titulaire'), v('recruteur', 'Recruteur qui examine', 'Rose Callahan')], required: [],
         subject: 'Votre candidature est en cours d\'examen - PHMC',
-        body: `Bonjour {{nom}},\n\nVotre candidature pour le poste « **{{poste}}** » est **en cours d'examen** par {{recruteur}}. Vous pouvez échanger avec le recrutement depuis l'outil PHMC-FR : **Boîte à outils → « Mon dossier candidat »**.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nVotre candidature pour le poste « **{{poste}}** » est **en cours d'examen** par {{recruteur}}. Vous pouvez échanger avec le recrutement depuis l'outil PHMC : **Boîte à outils → « Mon dossier candidat »**.\n\n${SIG}`,
     },
     entretien_programme: {
         category: 'recrutement', label: 'Entretien programmé',
@@ -157,7 +157,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le candidat accepté', canal: 'Application (action d\'un recruteur)',
         vars: [NOM], required: [],
         subject: 'Votre contrat vous attend - PHMC',
-        body: `Bonjour {{nom}},\n\nVotre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC-FR : dans la **Boîte à outils**, **« Mes documents administratifs »** vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nVotre contrat au Pillbox Hill Medical Center est en préparation. Connectez-vous à l'outil PHMC : dans la **Boîte à outils**, **« Mes documents administratifs »** vous permettra de le lire et de le signer. Vous pourrez y créer votre signature si vous n'en avez pas encore.\n\n${SIG}`,
     },
     candidature_message: {
         category: 'recrutement', label: 'Nouveau message sur une candidature',
@@ -165,7 +165,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le candidat', canal: 'Application (message d\'un recruteur)',
         vars: [NOM, v('poste', 'Poste visé', 'Médecin Titulaire')], required: [],
         subject: 'Nouveau message sur votre candidature - PHMC',
-        body: `Bonjour {{nom}},\n\nLe recrutement vous a écrit à propos de votre candidature pour le poste « **{{poste}}** ». Connectez-vous à l'outil PHMC-FR : **Boîte à outils → « Mon dossier candidat »** pour lire le message et y répondre.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nLe recrutement vous a écrit à propos de votre candidature pour le poste « **{{poste}}** ». Connectez-vous à l'outil PHMC : **Boîte à outils → « Mon dossier candidat »** pour lire le message et y répondre.\n\n${SIG}`,
     },
     recrutement_interne_accorde: {
         category: 'recrutement', label: 'Recrutement interne accordé',
@@ -191,7 +191,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'L\'employé ou le candidat accepté', canal: 'Application (envoi du document)',
         vars: [NOM, v('type_document', 'Type de document', 'CDI'), v('reference', 'Référence', 'PHMC-CT-2026-0042')], required: [],
         subject: 'Un document vous attend - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) a été préparé à votre attention. Connectez-vous à l'outil PHMC-FR, ouvrez la **Boîte à outils** puis **« Mes documents administratifs »** pour le lire et le signer.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) a été préparé à votre attention. Connectez-vous à l'outil PHMC, ouvrez la **Boîte à outils** puis **« Mes documents administratifs »** pour le lire et le signer.\n\n${SIG}`,
     },
     document_notifie: {
         category: 'contrats', label: 'Document notifié (convocation, sanction, fin de contrat)',
@@ -199,7 +199,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'L\'employé concerné', canal: 'Application (envoi du document)',
         vars: [NOM, v('type_document', 'Type de document', 'Convocation à un entretien préalable'), v('reference', 'Référence', 'PHMC-CV-2026-0007')], required: [],
         subject: 'Un document vous a été notifié - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) vous a été notifié. Connectez-vous à l'outil PHMC-FR, ouvrez la **Boîte à outils** puis **« Mes documents administratifs »** pour en prendre connaissance et accuser réception.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nUn document ({{type_document}}, réf. {{reference}}) vous a été notifié. Connectez-vous à l'outil PHMC, ouvrez la **Boîte à outils** puis **« Mes documents administratifs »** pour en prendre connaissance et accuser réception.\n\n${SIG}`,
     },
 
     // ───────────── Rapports & facturation ─────────────
@@ -225,7 +225,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le patient facturé', canal: 'Serveur (tâche planifiée « toutes les 5 minutes »)',
         vars: [NOM, v('nombre', 'Nombre de factures', '2'), v('factures', 'Liste des factures', ['Rapport médical : 750 $', 'Certificat : 750 $'], { liste: true }), v('total', 'Total à payer', '1 500 $'), v('site', 'Adresse de l\'outil', 'https://1luckyle.github.io/phmc-forms/')], required: [],
         subject: '{{nombre}} paiement(s) à effectuer - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nDes rapports médicaux ont été établis à votre nom et sont à régler.\n\n{{factures}}\n\nTotal à payer : **{{total}}**\n\nConnectez-vous à [l'outil PHMC-FR]({{site}}) : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nDes rapports médicaux ont été établis à votre nom et sont à régler.\n\n{{factures}}\n\nTotal à payer : **{{total}}**\n\nConnectez-vous à [l'outil PHMC]({{site}}) : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.\n\n${SIG}`,
     },
     facture_rappel: {
         category: 'rapports', label: 'Rappel de factures impayées',
@@ -233,7 +233,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'Le patient facturé', canal: 'Serveur (tâche planifiée « chaque jour à 18 h »)',
         vars: [NOM, v('nombre', 'Nombre de factures', '2'), v('factures', 'Liste des factures', ['Rapport médical : 750 $', 'Certificat : 750 $'], { liste: true }), v('total', 'Total à payer', '1 500 $'), v('site', 'Adresse de l\'outil', 'https://1luckyle.github.io/phmc-forms/')], required: [],
         subject: 'Rappel : {{nombre}} paiement(s) en attente - Pillbox Hill Medical Center',
-        body: `Bonjour {{nom}},\n\nUn petit rappel : les rapports médicaux suivants établis à votre nom sont toujours à régler.\n\n{{factures}}\n\nTotal à payer : **{{total}}**\n\nConnectez-vous à [l'outil PHMC-FR]({{site}}) : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.\n\n${SIG}`,
+        body: `Bonjour {{nom}},\n\nUn petit rappel : les rapports médicaux suivants établis à votre nom sont toujours à régler.\n\n{{factures}}\n\nTotal à payer : **{{total}}**\n\nConnectez-vous à [l'outil PHMC]({{site}}) : une fenêtre vous propose de payer chaque rapport ou tout d'un coup via Fleeca. Vous retrouvez aussi vos factures dans votre dossier patient.\n\n${SIG}`,
     },
 
     // ───────────── Sécurité du compte ─────────────
@@ -244,7 +244,7 @@ export const MAIL_TEMPLATES = {
         vars: [v('code', 'Code à 6 chiffres', '482913')], required: ['code'],
         note: 'La durée de validité (15 minutes) est fixée par le serveur : si vous la mentionnez, elle doit rester exacte.',
         subject: 'Code de vérification - PHMC',
-        body: `Votre code de vérification pour créer votre compte Civil PHMC-FR est :\n\n# {{code}}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
+        body: `Votre code de vérification pour créer votre compte Civil PHMC est :\n\n# {{code}}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
     },
     verification_changement_adresse: {
         category: 'securite', label: 'Code de vérification — changement d\'adresse',
@@ -253,7 +253,7 @@ export const MAIL_TEMPLATES = {
         vars: [v('code', 'Code à 6 chiffres', '482913')], required: ['code'],
         note: 'La durée de validité (15 minutes) est fixée par le serveur : si vous la mentionnez, elle doit rester exacte.',
         subject: 'Code de vérification - changement d\'adresse PHMC',
-        body: `Votre code de vérification pour changer l'adresse de votre compte PHMC-FR est :\n\n# {{code}}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
+        body: `Votre code de vérification pour changer l'adresse de votre compte PHMC est :\n\n# {{code}}\n\nCe code expire dans 15 minutes.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
     },
     adresse_modifiee_alerte: {
         category: 'securite', label: 'Alerte — adresse du compte modifiée',
@@ -261,7 +261,7 @@ export const MAIL_TEMPLATES = {
         destinataire: 'L\'ancienne adresse', canal: 'Serveur (après confirmation du changement)',
         vars: [v('nouvelle_adresse', 'Nouvelle adresse', 'jeantestard@mail.eyefind.fr')], required: ['nouvelle_adresse'],
         subject: 'Adresse de votre compte PHMC modifiée',
-        body: `L'adresse de votre compte PHMC-FR a été remplacée par **{{nouvelle_adresse}}**.\n\nSi vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.`,
+        body: `L'adresse de votre compte PHMC a été remplacée par **{{nouvelle_adresse}}**.\n\nSi vous n'êtes pas à l'origine de ce changement, contactez immédiatement un administrateur.`,
     },
 
     // ───────────── Take Home Car ─────────────
@@ -373,8 +373,8 @@ export const wrapMailHtml = (rawHtml) => {
     <tr>
       <td style="background-color:#010409;padding:16px 32px;text-align:center;color:#6e7681;font-size:12px;border-top:1px solid #30363d;">
         Pillbox Hill Medical Center — 76 Strawberry Ave, Los Santos<br />
-        Cet email est envoyé automatiquement par l'outil PHMC-FR, merci de ne pas y répondre directement.<br />
-        <a href="${PHMC_SITE_URL}" style="display:inline-block;margin-top:8px;color:#58a6ff;text-decoration:underline;font-weight:bold;">Ouvrir l'outil PHMC-FR</a>
+        Cet email est envoyé automatiquement par l'outil PHMC, merci de ne pas y répondre directement.<br />
+        <a href="${PHMC_SITE_URL}" style="display:inline-block;margin-top:8px;color:#58a6ff;text-decoration:underline;font-weight:bold;">Ouvrir l'outil PHMC</a>
       </td>
     </tr>
   </table>

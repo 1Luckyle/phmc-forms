@@ -200,8 +200,8 @@ export const getToolAccess = (identity) => {
         fireManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
         // Take Home Car : tout le personnel demande un véhicule et lit le règlement ; la Direction, l'administration et les admins accordent ou retirent.
         takeHome: isStaffMember || !!isAdmin,
-        // Pilou (aide à la prise en charge : procédure, matériel, gestes, médicaments dosés) : le personnel soignant, le DMEC et les admins.
-        pilou: !isCivilian && !!(isAdmin || (isStaffMember && careOrDmec)),
+        // Pilou (aide à la prise en charge : procédure, matériel, gestes, médicaments dosés) : le personnel soignant et les admins seulement.
+        pilou: !isCivilian && !!(isAdmin || (isStaffMember && families.includes('soignant'))),
         // Messagerie interne : tout le personnel et les admins (les règles Firebase appliquent la même condition : staffUIDs ou adminUIDs).
         messaging: isStaffMember || !!isAdmin,
         takeHomeManage: !!isAdmin || (isStaffMember && canManageFireSafety(staffProfile)),
