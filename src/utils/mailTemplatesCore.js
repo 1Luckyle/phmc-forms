@@ -335,8 +335,9 @@ export const MAIL_TEMPLATES = {
     // ───────────── Général ─────────────
     notification_generique: {
         category: 'general', label: 'Notification de l\'outil (copie par mail)',
-        quand: 'Chaque fois qu\'une notification de la cloche est aussi envoyée par mail : rapport partagé, copie d\'un rapport, mail externe partagé, divulgation du dossier, décès signalé, ordonnance, rappel d\'entretien, document à signer, échéance d\'un certificat…',
-        destinataire: 'La personne notifiée', canal: 'Serveur (déclenché par la création de la notification)',
+        quand: 'Chaque fois qu\'une notification de la cloche est aussi envoyée par mail : rapport partagé, copie d\'un rapport, mail externe partagé, divulgation du dossier, décès signalé, contestation de décès (administrateurs), ordonnance, rappel d\'entretien, document en attente de signature, contrat qui se termine, échéance d\'un certificat de vol, d\'aptitude ou d\'une ordonnance.',
+        destinataire: 'La personne notifiée (le patient, le soignant, le candidat ou les administrateurs selon l\'événement)', canal: 'Serveur (déclenché par la création de la notification ; rappels : tâche planifiée « rappels quotidiens », 9 h)',
+        note: 'Un seul modèle pour tous ces événements : le titre et le détail viennent de l\'événement lui-même. Les notifications de la cloche sans mail (factures, candidatures sans réponse, nouvelles demandes de compte ou de grade…) ne passent pas par ici. Limite : 20 mails par heure et par compte.',
         vars: [NOM, v('titre', 'Titre de la notification', 'Un rapport a été partagé avec vous'), v('texte', 'Détail (facultatif)', 'Certificat de vol — valable jusqu\'au 12/11/2027.'), v('site', 'Adresse de l\'outil', 'https://phmc-tools.com/')], required: ['titre'],
         subject: '{{titre}} - Pillbox Hill Medical Center',
         body: `Bonjour {{nom}},\n\n**{{titre}}**{{?texte}}\n\n{{texte}}{{/texte}}\n\nOuvrez [l'outil PHMC]({{site}}) : la cloche de notification vous mène directement à ce qui vous concerne.\n\n${SIG}`,
