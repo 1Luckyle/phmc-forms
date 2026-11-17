@@ -45,6 +45,68 @@ export const servicesPhrase = (text) => {
     return `${list.slice(0, -1).join(', ')} et ${list[list.length - 1]}`;
 };
 
+// ───────────── Notifications de fin de contrat : réponses par défaut ─────────────
+// SUGGESTIONS à cliquer (le texte reste libre et modifiable) : « Motifs détaillés » selon le motif de la fin de contrat, et « Restitutions et clôture des accès ».
+// Les motifs d'un licenciement doivent rester précis et vérifiables (Code du Gouvernement, art. 325) : à compléter avec les faits, les dates et les circonstances.
+export const FIN_MOTIF_PRESETS = {
+    fin_essai: [
+        'Période d\'essai non concluante au regard des compétences attendues pour le poste',
+        'Les attentes du poste ne correspondent pas au profil constaté pendant l\'essai',
+        'Difficultés persistantes d\'intégration dans l\'équipe malgré l\'accompagnement proposé',
+    ],
+    demission: [
+        'Démission remise par écrit à la Direction',
+        'Départ pour une autre structure',
+        'Raisons personnelles',
+    ],
+    rupture_amiable: [
+        'Rupture convenue d\'un commun accord entre l\'Employeur et l\'Employé(e)',
+        'Départ concerté dans le cadre d\'un projet professionnel de l\'Employé(e)',
+        'Chaque partie renonce à toute action relative à la rupture',
+    ],
+    licenciement: [
+        'Suppression du poste dans le cadre d\'une réorganisation du service',
+        'Inaptitude constatée à exercer les fonctions occupées',
+        'Insuffisance professionnelle persistante malgré les accompagnements proposés',
+        'Absences prolongées désorganisant le fonctionnement du service',
+        'Perte de la qualification ou de l\'autorisation nécessaire à l\'exercice de la fonction',
+    ],
+    licenciement_disciplinaire: [
+        'Manquement aux protocoles de soins mettant en danger un patient',
+        'Violation du secret médical',
+        'Absences injustifiées répétées',
+        'Comportement agressif ou irrespectueux envers un patient ou un collègue',
+        'Prise de service sous l\'emprise de substances',
+        'Usage abusif du matériel, des médicaments ou des accès de l\'Employeur',
+        'Faits déjà sanctionnés qui se répètent malgré les avertissements',
+    ],
+    plein_droit: [
+        'Décision de justice transmise à la Direction, pièce jointe au dossier',
+        'Cessation des fonctions constatée sans justificatif d\'absence',
+        'Perte d\'une condition légale d\'accès à l\'emploi public',
+    ],
+};
+export const finMotifPresets = (motif) => FIN_MOTIF_PRESETS[motif] || [];
+
+export const RESTITUTION_PRESETS = [
+    'badge d\'employé',
+    'clés des locaux et des casiers',
+    'matériel médical (stéthoscope, tablette, radio…)',
+    'véhicule de service',
+    'uniforme et équipements',
+    'documents et dossiers de l\'Employeur',
+    'clôture des accès informatiques et du compte',
+    'clôture de l\'accès à la messagerie et au forum',
+];
+
+/** Ajoute une réponse par défaut à un texte (sans doublon), séparée par `joiner` (retour à la ligne, ou « ; » dans une phrase). */
+export const appendPreset = (current, preset, joiner = '\n') => {
+    const text = String(current || '').trim();
+    const parts = text ? text.split(joiner.trim() === '' ? /\r?\n/ : joiner.trim()).map((part) => part.trim()).filter(Boolean) : [];
+    if (parts.includes(String(preset).trim())) return text;
+    return [...parts, String(preset).trim()].join(joiner);
+};
+
 // Critères ou objectifs types de la prime de rémunération (sélecteur) ; le texte reste libre.
 export const PRIME_CRITERIA = [
     'Assiduité et ponctualité sur la période',

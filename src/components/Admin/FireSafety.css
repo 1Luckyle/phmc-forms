@@ -17,6 +17,9 @@
 .dark-ui .fs-table .text-muted,
 .dark-ui .fs-table small:not(.text-success) { color: #4b5563 !important; }
 .fs-overdue { background: rgba(248, 81, 73, 0.08); }
+/* Fenêtre « Responsable et échéance » : au-dessus de la fenêtre « Gestion de la sécurité incendie » (z-index 1100) et de son voile. */
+.fs-assign-backdrop { z-index: 1190 !important; }
+.fs-assign-modal { z-index: 1200 !important; }
 .fs-wide { grid-column: 1 / -1; }
 /* Deux champs côte à côte sur toute la largeur (responsable plus large que l'échéance), alignés sur le bas même si un libellé passe à la ligne */
 .fs-pair.fs-pair-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }

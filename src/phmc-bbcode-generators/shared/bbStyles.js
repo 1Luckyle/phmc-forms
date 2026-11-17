@@ -31,11 +31,12 @@ export const sectionBanner = (title, { accent = BB_COLORS.red, size = null } = {
 //   careHeader({ title: "Protocole d'urgence", lines: `PATIENT : …\nDate : …`, pbc: false })
 export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
 export const PBC_LOGO = 'https://phmc-tools.com/img/phmcpaletobaylogo.png';
-export const careHeader = ({ title, lines = '', pbc = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
+// dmec : document du DMEC (ex. candidature en médecine légale) → le petit sceau du DMEC est ajouté à côté du logo, comme dans l'en-tête des rapports du DMEC (dmecHeaderLogos).
+export const careHeader = ({ title, lines = '', pbc = false, dmec = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
 
 [size=110]${lines}[/size]
 
-[/center][td][center][img]${pbc ? PBC_LOGO : PHMC_LOGO}[/img]
+[/center][td][center][img]${pbc ? PBC_LOGO : PHMC_LOGO}[/img]${dmec ? `[img]${DMEC_LOGO_SMALL}[/img]` : ''}
 [b][size=150]${String(title).toUpperCase()}[/size][/b][/center][/table][/divbox]`;
 
 // Pied de page commun à tous les rapports : coordonnées du Pillbox Hill Medical Center. Ajouté à la fin du BBCode, une seule fois, par withPhmcFooter

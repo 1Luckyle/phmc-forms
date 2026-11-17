@@ -20,6 +20,9 @@ export const debugFieldValue = (field) => {
         case 'number': return /dur[ée]e|jours?|pr[ée]avis|validit/i.test(`${field.key} ${label}`) ? '7' : '10';
         case 'date': return /fin|[ée]ch[ée]ance|jusqu|expir|retour|entretien/i.test(`${field.key} ${label}`) ? isoToday(30) : isoToday();
         case 'time': return '14:30';
+        case 'person': return 'Dr. Test Debug — Médecin Titulaire'; // personne désignée dans un document (menu du personnel) : un texte de test suffit
+        case 'persons': return undefined;
+        case 'horaires': return 'Lundi au vendredi : 08h00 – 16h00';
         case 'select': {
             const option = (field.options || []).find((item) => item && item.value !== '' && item.value != null && !item.disabled);
             return option ? option.value : undefined;

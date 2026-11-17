@@ -4,17 +4,18 @@
 // (le secret médical est un crime, Code Pénal art. 323 : mandat → Direction, consentement, danger vital, sinon refus poli), et un registre court de ces
 // demandes. Le registre ne contient JAMAIS de contenu médical : qui demande, quoi, sur quel fondement, décision. Chacun lit ses fiches ; les admins lisent
 // tout et peuvent corriger ou supprimer.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Form, Spinner, Table } from 'react-bootstrap';
 import BaseModal from '../BaseModal';
 import DebugFillButton from '../DebugFillButton';
 import '../DarkUi.css';
 import './LawEnforcement.css';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { useData } from '../../contexts/DataContext';
 import { readFamiliesOf } from '../../utils/reportAccess';
 import { copyToClipboard } from '../notificationService';
 import {
-    REQUEST_TYPES, LEGAL_BASES, DECISIONS, SCOPES, requestTypesFor, adviceFor, emptyRequest, validateRequest, saveRequest, loadMyRequests, loadAllRequests, deleteRequest,
+    REQUEST_TYPES, LEGAL_BASES, DECISIONS, SCOPES, OTHER_SERVICE, serviceOptionsFrom, serviceLabel, requestTypesFor, adviceFor, emptyRequest, validateRequest, saveRequest, loadMyRequests, loadAllRequests, deleteRequest,
 } from '../../utils/lawEnforcement';
 
 // ───────────────────────────── Aide-mémoire ─────────────────────────────
@@ -74,6 +75,8 @@ const Memo = ({ onRegister, showNotification, scope }) => {
 
 // ───────────────────────────── Registre ─────────────────────────────
 const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) => {
+    const { selectOptions } = useData() || {};
+    const services = useMemo(() => serviceOptionsFrom(selectOptions && selectOptions.requestingAgenciesOptions), [selectOptions]);
     const [form, setForm] = useState({ ...emptyRequest(scope), ...(preset || {}) });
     const [list, setList] = useState([]);
     const [all, setAll] = useState(false);
@@ -101,10 +104,12 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
     useEffect(() => { load(); }, [load]);
 
     const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    // Service : la valeur choisie est enregistrée telle quelle ; « Autre service » vide le texte, à saisir.
+    const chooseService = (e) => { const choice = e.target.value; setForm((prev) => ({ ...prev, serviceChoice: choice, service: choice === OTHER_SERVICE ? '' : choice })); };
     const errors = validateRequest(form);
     // Remplissage de test (mode debug, voir DebugFillButton) : une demande d'agent complète, sans aucun contenu médical.
     const debugFill = () => setForm((prev) => ({
-        ...prev, service: 'LSPD', agent: '4821 — Officier John Doe', type: Object.keys(requestTypesFor(scope))[0], patientID: 'PHMC-2752',
+        ...prev, service: 'LSPD', serviceChoice: 'LSPD', agent: '4821 — Officier John Doe', type: Object.keys(requestTypesFor(scope))[0], patientID: 'PHMC-2752',
         baseLegale: 'mandat', reference: 'Mandat n° 2026-0142', decision: 'transmis', note: 'Demande de test : renvoyée à la Direction.',
     }));
 
@@ -133,7 +138,16 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
                 <i className="fas fa-shield-halved me-1"></i>N'écrivez ici <strong>aucun contenu médical</strong> : seulement qui a demandé quoi, sur quel fondement, et ce que vous avez décidé.
             </Alert>
             <div className="adm-form-grid le-form" data-guide-zone>
-                <Form.Group><Form.Label>Service demandeur</Form.Label><Form.Control name="service" required data-guide="Le service de l'agent qui fait la demande (LSPD, LSSD, FIB…)." value={form.service} onChange={set('service')} placeholder="ex. LSPD, LSSD, FIB" maxLength={80} /></Form.Group>
+                <Form.Group><Form.Label>Service demandeur</Form.Label>
+                    <Form.Select name="serviceChoice" required data-guide="Le service de l'agent qui fait la demande : choisissez dans la liste (« Autre service » si le sien n'y figure pas)." value={form.serviceChoice || ''} onChange={chooseService}>
+                        <option value="">Choisir le service…</option>
+                        {services.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        <option value={OTHER_SERVICE}>Autre service…</option>
+                    </Form.Select>
+                    {form.serviceChoice === OTHER_SERVICE && (
+                        <Form.Control name="service" required className="mt-2" data-guide="Le nom du service de l'agent, puisqu'il ne figure pas dans la liste." value={form.service} onChange={set('service')} placeholder="Nom du service (ex. FIB)" maxLength={80} />
+                    )}
+                </Form.Group>
                 <Form.Group><Form.Label>Agent (nom, matricule)</Form.Label><Form.Control name="agent" required data-guide="Le nom ou le matricule de l'agent qui fait la demande." value={form.agent} onChange={set('agent')} placeholder="ex. Off. Dupont #4521" maxLength={120} /></Form.Group>
                 <Form.Group><Form.Label>Type de demande</Form.Label>
                     <Form.Select name="type" required data-guide="Ce que l'agent demande (information, réquisition, accès…)." value={form.type} onChange={set('type')}>{Object.entries(requestTypesFor(scope)).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
@@ -165,7 +179,7 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
                             {list.map((entry) => (
                                 <tr key={entry.id}>
                                     <td>{new Date(entry.le).toLocaleString('fr-FR')}</td>
-                                    <td>{entry.service}<small className="d-block text-muted">{entry.agent}</small></td>
+                                    <td>{serviceLabel(entry.service, services)}<small className="d-block text-muted">{entry.agent}</small></td>
                                     <td>{REQUEST_TYPES[entry.type] || entry.type}{entry.patientID && <small className="d-block text-muted">{entry.patientID}</small>}{entry.note && <small className="d-block text-muted">{entry.note}</small>}</td>
                                     <td>{LEGAL_BASES[entry.baseLegale] || entry.baseLegale}{entry.reference && <small className="d-block text-muted">Réf. {entry.reference}</small>}</td>
                                     <td><span className={`le-decision le-decision-${entry.decision}`}>{DECISIONS[entry.decision] || entry.decision}</span></td>

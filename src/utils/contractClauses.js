@@ -670,6 +670,7 @@ const convocationContent = (ctx) => {
                     ['Heure', clean(champs.heureEntretien) || '—'],
                     ['Lieu', clean(champs.lieuEntretien)],
                     ['Entretien mené par', clean(champs.conduitPar)],
+                    ...(parseServices(champs.personnelSupplementaire).length ? [['Personnel supplémentaire présent', parseServices(champs.personnelSupplementaire).map(clean).join(', ')]] : []),
                 ] },
                 `Cette convocation vous est remise au moins ${CONVOCATION_DELAI_HEURES} heures avant l'entretien, délai compté d'heure à heure (Code de Procédure Judiciaire, art. 114(c)). En cas d'empêchement, informez la Direction sans délai afin de convenir d'une autre date.`,
             ],
@@ -773,17 +774,19 @@ const finContent = (ctx) => {
     const refLabel = `${lcFirst(CONTRACT_TYPES[rc.typeContrat] || 'contrat')} signé le ${formatTimestampDateFr(ctx.refContract?.signeLe)} (réf. ${ctx.refContract?.reference || '—'})`;
     const preavis = Number(champs.preavisJours) || 0;
     const conv = ctx.convocation;
+    // Dispense d'exécuter le préavis : la rémunération versée pendant cette période est précisée.
+    const dispenseRemuneration = clean(champs.preavisRemuneration) ? `, à raison de ${b(clean(champs.preavisRemuneration))}` : '';
 
     const motifBlocs = {
         fin_essai: () => [`L'Employeur met fin à la période d'essai du ${refLabel}, moyennant le préavis de quarante-huit (48) heures prévu au contrat. ${clean(champs.motifsDetailles) ? `Motifs : ${clean(champs.motifsDetailles)}` : 'Les motifs sont communiqués sur demande (Code du Gouvernement, art. 325).'}`],
         fin_cdd: () => [`Le ${refLabel} arrive à son terme et prend fin de plein droit à la date indiquée ci-après, sans renouvellement.`],
         fin_stage: () => [`La convention de stage (${refLabel}) arrive à son terme à la date indiquée ci-après. Une attestation de stage est jointe à la présente.`],
-        demission: () => [`L'Employeur prend acte de la démission que vous lui avez remise le ${b(formatDateFr(champs.dateRemiseDemission))}, dans les conditions du ${refLabel}. ${preavis ? `Un préavis de ${b(dayWord(preavis))} s'applique${champs.preavisDispense ? ', dont l\'Employeur vous dispense d\'exécution (préavis rémunéré)' : ''}.` : ''}`],
+        demission: () => [`L'Employeur prend acte de la démission que vous lui avez remise le ${b(formatDateFr(champs.dateRemiseDemission))}, dans les conditions du ${refLabel}. ${preavis ? `Un préavis de ${b(dayWord(preavis))} s'applique${champs.preavisDispense ? `, dont l'Employeur vous dispense d'exécution (préavis rémunéré${dispenseRemuneration})` : ''}.` : ''}`],
         rupture_amiable: () => [`Les parties conviennent de mettre fin d'un commun accord au ${refLabel}, à la date indiquée ci-après (Code Civil, art. 201 et 206). Chacune renonce à toute action relative à la rupture, à l'exception des droits nés de l'exécution du contrat avant cette date. ${clean(champs.motifsDetailles) ? clean(champs.motifsDetailles) : ''}`],
         licenciement: () => [
             `Au terme de la procédure d'entretien préalable (convocation du ${b(formatTimestampDateFr(conv?.envoyeLe))}, entretien du ${b(formatDateFr(conv?.champs?.dateEntretien))}), l'Employeur vous notifie votre licenciement, qui n'est pas de nature disciplinaire, pour le motif réel et sérieux suivant :`,
             clean(champs.motifsDetailles),
-            `${preavis ? `Un préavis de ${b(dayWord(preavis))} s'applique${champs.preavisDispense ? ', dont l\'Employeur vous dispense d\'exécution (préavis rémunéré)' : ''}.` : ''}`,
+            `${preavis ? `Un préavis de ${b(dayWord(preavis))} s'applique${champs.preavisDispense ? `, dont l'Employeur vous dispense d'exécution (préavis rémunéré${dispenseRemuneration})` : ''}.` : ''}`,
         ],
         licenciement_disciplinaire: () => [
             `Au terme de la procédure d'entretien préalable (convocation du ${b(formatTimestampDateFr(conv?.envoyeLe))}, entretien du ${b(formatDateFr(conv?.champs?.dateEntretien))}), l'Employeur vous notifie votre licenciement pour faute${champs.fauteGrave ? ` ${b('grave')}, rendant impossible votre maintien dans l'établissement, y compris pendant un préavis` : `, assorti d'un préavis de ${b(dayWord(preavis))}`}. Faits retenus :`,

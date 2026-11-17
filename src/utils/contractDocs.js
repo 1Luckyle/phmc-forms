@@ -11,7 +11,7 @@
 //
 // Le contenu juridique (articles) est dans utils/contractClauses.js ; la mise en page BBCode dans phmc-bbcode-generators/generateContract.js.
 import { normalizeRank } from '../constants/ranks';
-import { joinServices } from '../constants/contractOptions';
+import { joinServices, finMotifPresets, RESTITUTION_PRESETS } from '../constants/contractOptions';
 import generateContract from '../phmc-bbcode-generators/generateContract';
 import { composeContractBb } from './contractCompose';
 import { buildDocumentContent } from './contractClauses';
@@ -63,6 +63,9 @@ export const statusLabel = (statut, typeKey, champs) => {
 // ───────────────────────────── Champs à remplir ─────────────────────────────
 // { key, label, type, required, placeholder, help, options, showIf(champs, ctx), half }
 //   type : text | textarea | date | time | number | select | checkbox | role | contratRef | convocationRef
+//          money (montant seul : le « $ » et le mode sont ajoutés, voir contractMoney.js) · horaires (sélecteur de plages, voir contractSchedule.js)
+//          person (un membre du personnel, liste à cliquer ; `personRole` : « Nom, grade ») · persons (plusieurs membres, texte séparé par « ; ») · presets (zone de texte + réponses par défaut à cliquer)
+//   Tout champ saisi au clavier (text, textarea, number, money, person, persons, presets) porte un `placeholder` (un test le vérifie). Le caractère obligatoire / facultatif se lit aux couleurs, pas dans le libellé.
 const f = (key, label, type = 'text', extra = {}) => ({ key, label, type, ...extra });
 
 const isCdd = (champs, ctx) => (ctx?.refContract ? ctx.refContract.champs?.typeContrat === 'cdd' : false) || champs.typeContrat === 'cdd';
@@ -72,16 +75,17 @@ export const DEFAULT_RATE_MODE = 'heure';
 export const RATE_MODE_LABELS = { heure: 'À l\'heure', semaine: 'À la semaine' };
 
 // Service(s) d'affectation : facultatif, un ou plusieurs services de l'hôpital (sélecteur), stockés dans un seul texte séparé par « ; ».
-const SERVICES_FIELD = f('affectation', 'Service(s) / unité(s) d\'affectation', 'services', { help: 'Facultatif : laissez vide ou cochez un ou plusieurs services.' });
+const SERVICES_FIELD = f('affectation', 'Service(s) / unité(s) d\'affectation', 'services', { help: 'Cochez un ou plusieurs services.' });
+const PERSON_PLACEHOLDER = 'Choisir une personne du personnel…';
 
 // Rémunération d'un contrat de travail : l'échelon de la grille est OBLIGATOIRE (toute fonction a un échelon défini) ; il fixe le montant, à l'heure ou à la
 // semaine au choix. Deux primes facultatives (jamais pour une convention de stage, dont la gratification est à part).
 const PAY_FIELDS = [
     f('echelon', 'Échelon de la grille salariale', 'echelon', { required: true, half: true, help: 'La grille est publiée par l\'employeur (Code du Gouvernement, art. 326).' }),
     f('modeRemuneration', 'Rémunération', 'rateMode', { required: true, half: true }),
-    f('remuneration', 'Rémunération brute', 'text', { required: true, placeholder: 'ex. 4 500 $ de l\'heure', half: true, help: 'Préremplie par l\'échelon et le mode choisis ; modifiable.' }),
-    f('primeEmbauche', 'Prime à l\'embauche', 'text', { placeholder: 'ex. 5 000 $, versés en une fois à la prise de fonctions', half: true, help: 'Facultatif.' }),
-    f('primeObjectifs', 'Prime selon critères ou objectifs — montant', 'text', { placeholder: 'ex. 2 000 $ par trimestre', half: true, help: 'Facultatif.' }),
+    f('remuneration', 'Rémunération brute', 'money', { required: true, placeholder: 'ex. 4 500 $ de l\'heure', half: true, help: 'Tapez le montant seul : le « $ » et le mode sont ajoutés. Préremplie par l\'échelon ; modifiable.' }),
+    f('primeEmbauche', 'Prime à l\'embauche', 'text', { placeholder: 'ex. 5 000 $, versés en une fois à la prise de fonctions', half: true }),
+    f('primeObjectifs', 'Prime selon critères ou objectifs — montant', 'text', { placeholder: 'ex. 2 000 $ par trimestre', half: true }),
     f('primeCriteres', 'Prime selon critères ou objectifs — critères', 'criteres', { placeholder: 'Critères ou objectifs fixés à l\'avance : choisissez-en dans la liste ou écrivez les vôtres', help: 'Obligatoire dès qu\'un montant est indiqué.' }),
 ];
 
@@ -90,27 +94,27 @@ const FIELDS = {
         f('poste', 'Fonction exercée', 'text', { required: true, placeholder: 'ex. Médecin urgentiste', half: true }),
         f('role', 'Grade', 'role', { required: true, half: true }),
         SERVICES_FIELD,
-        f('responsable', 'Responsable hiérarchique', 'text', { half: true }),
+        f('responsable', 'Responsable hiérarchique', 'person', { half: true, placeholder: PERSON_PLACEHOLDER }),
         f('dateDebut', 'Date de prise d\'effet', 'date', { required: true, half: true }),
         f('essaiJours', 'Période d\'essai (jours)', 'number', { placeholder: '0 = aucune', help: 'Maximum 60 jours pour un CDI.', half: true }),
         ...PAY_FIELDS,
-        f('horaires', 'Horaires / disponibilités', 'text', { placeholder: 'ex. 3 plages de 4 h par semaine, astreintes le week-end', half: true }),
-        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, help: 'Au-delà, l\'offre est caduque (Code Civil, art. 203).', half: true }),
-        f('clausesParticulieres', 'Clauses particulières', 'textarea', { placeholder: 'Facultatif : mission spéciale, formation exigée, astreinte…' }),
+        f('horaires', 'Horaires / disponibilités', 'horaires', { placeholder: 'ex. Lundi au vendredi : 08h00 – 16h00', half: true }),
+        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, placeholder: 'ex. 7', help: 'Au-delà, l\'offre est caduque (Code Civil, art. 203).', half: true }),
+        f('clausesParticulieres', 'Clauses particulières', 'textarea', { placeholder: 'ex. mission spéciale, formation exigée, astreinte…' }),
     ],
     cdd: [
         f('poste', 'Fonction exercée', 'text', { required: true, placeholder: 'ex. Infirmier(ère) de renfort', half: true }),
         f('role', 'Grade', 'role', { required: true, half: true }),
         SERVICES_FIELD,
-        f('responsable', 'Responsable hiérarchique', 'text', { half: true }),
+        f('responsable', 'Responsable hiérarchique', 'person', { half: true, placeholder: PERSON_PLACEHOLDER }),
         f('dateDebut', 'Date de début', 'date', { required: true, half: true }),
         f('dateFin', 'Date de fin (terme)', 'date', { required: true, half: true }),
         f('motifCdd', 'Motif du recours au CDD', 'textarea', { required: true, placeholder: 'ex. Remplacement d\'un praticien absent ; renfort durant une campagne de vaccination' }),
         f('essaiJours', 'Période d\'essai (jours)', 'number', { placeholder: '0 = aucune', help: 'Maximum 30 jours et la moitié de la durée du contrat.', half: true }),
         ...PAY_FIELDS,
-        f('horaires', 'Horaires / disponibilités', 'text', { half: true }),
-        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, half: true }),
-        f('clausesParticulieres', 'Clauses particulières', 'textarea'),
+        f('horaires', 'Horaires / disponibilités', 'horaires', { placeholder: 'ex. Lundi au vendredi : 08h00 – 16h00', half: true }),
+        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, placeholder: 'ex. 7', half: true }),
+        f('clausesParticulieres', 'Clauses particulières', 'textarea', { placeholder: 'ex. mission spéciale, formation exigée, astreinte…' }),
     ],
     stage: [
         f('poste', 'Intitulé du stage', 'text', { required: true, placeholder: 'ex. Stage d\'externat en médecine d\'urgence', half: true }),
@@ -120,22 +124,22 @@ const FIELDS = {
         f('dateDebut', 'Date de début', 'date', { required: true, half: true }),
         f('dateFin', 'Date de fin', 'date', { required: true, half: true }),
         f('objectifs', 'Objectifs pédagogiques et activités confiées', 'textarea', { required: true, placeholder: 'Ce que le stagiaire doit apprendre et les tâches qu\'il peut accomplir sous supervision' }),
-        f('horaires', 'Horaires de présence', 'text', { half: true }),
+        f('horaires', 'Horaires de présence', 'horaires', { placeholder: 'ex. Lundi au vendredi : 08h00 – 16h00', half: true }),
         f('gratification', 'Gratification', 'text', { placeholder: 'ex. 40 $ par journée de présence — vide = stage non gratifié', half: true }),
-        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, half: true }),
-        f('clausesParticulieres', 'Clauses particulières', 'textarea'),
+        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, placeholder: 'ex. 7', half: true }),
+        f('clausesParticulieres', 'Clauses particulières', 'textarea', { placeholder: 'ex. horaires adaptés à la formation, accès limité à certains services…' }),
     ],
     avenant: [
         f('contratRefId', 'Contrat modifié', 'contratRef', { required: true, help: 'Un contrat déjà signé par la personne.' }),
         f('dateEffet', 'Date d\'effet de l\'avenant', 'date', { required: true, half: true }),
-        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, half: true }),
+        f('validiteOffreJours', 'Validité de l\'offre (jours)', 'number', { required: true, placeholder: 'ex. 7', half: true }),
         f('motifAvenant', 'Raison de la modification', 'textarea', { required: true, placeholder: 'ex. Promotion au grade de Médecin Titulaire après évaluation favorable' }),
-        f('nouveauPoste', 'Nouvelle fonction', 'text', { half: true }),
+        f('nouveauPoste', 'Nouvelle fonction', 'text', { half: true, placeholder: 'ex. Médecin urgentiste référent' }),
         f('nouveauRole', 'Nouveau grade', 'role', { half: true }),
         f('nouvelleAffectation', 'Nouveau(x) service(s) d\'affectation', 'services', { half: true, help: 'Les services listés remplacent ceux du contrat.' }),
-        f('nouvelleRemuneration', 'Nouvelle rémunération brute', 'text', { half: true }),
-        f('nouveauxHoraires', 'Nouveaux horaires', 'text', { half: true }),
-        f('nouveauResponsable', 'Nouveau responsable hiérarchique', 'text', { half: true }),
+        f('nouvelleRemuneration', 'Nouvelle rémunération brute', 'money', { half: true, placeholder: 'ex. 4 500 $ de l\'heure', help: 'Montant seul : le « $ » et le mode du contrat sont ajoutés.' }),
+        f('nouveauxHoraires', 'Nouveaux horaires', 'horaires', { half: true, placeholder: 'ex. Lundi au vendredi : 08h00 – 16h00' }),
+        f('nouveauResponsable', 'Nouveau responsable hiérarchique', 'person', { half: true, placeholder: PERSON_PLACEHOLDER }),
         f('nouvelleDateFin', 'Nouvelle date de fin (prolongation du CDD)', 'date', { half: true, showIf: (champs, ctx) => isCdd({}, ctx) }),
         f('transformationCdi', 'Transformer le CDD en CDI', 'checkbox', { half: true, showIf: (champs, ctx) => isCdd({}, ctx) }),
     ],
@@ -143,19 +147,20 @@ const FIELDS = {
         f('objet', 'Objet de l\'entretien', 'select', {
             required: true, half: true, options: [{ value: 'sanction', label: 'Sanction disciplinaire envisagée' }, { value: 'licenciement', label: 'Licenciement envisagé' }],
         }),
-        f('conduitPar', 'Entretien mené par', 'text', { required: true, placeholder: 'Nom et fonction', half: true }),
+        f('conduitPar', 'Entretien mené par', 'person', { required: true, personRole: true, placeholder: 'Choisir la personne qui mène l\'entretien…', half: true }),
+        f('personnelSupplementaire', 'Personnel supplémentaire présent', 'persons', { personRole: true, placeholder: 'Ajouter des personnes présentes à l\'entretien (la personne convoquée est exclue)…', help: 'Les personnes choisies sont indiquées sur la convocation.' }),
         f('dateEntretien', 'Date de l\'entretien', 'date', { required: true, half: true }),
         f('heureEntretien', 'Heure', 'time', { required: true, half: true }),
         f('lieuEntretien', 'Lieu', 'text', { required: true, placeholder: 'ex. Bureau de la Direction, PHMC, Pillbox Hill' }),
         f('faitsReproches', 'Faits reprochés', 'textarea', { required: true, placeholder: 'Décrivez précisément les faits (dates, circonstances) : ils doivent être assez clairs pour que la personne prépare sa défense.' }),
         f('miseAPiedConservatoire', 'Suspendre à titre conservatoire jusqu\'à la décision (rémunération maintenue)', 'checkbox'),
-        f('dureeConservatoire', 'Durée de la suspension (jours)', 'number', { half: true, showIf: (champs) => !!champs.miseAPiedConservatoire, help: `Maximum ${MAX_CONSERVATOIRE_JOURS} jours.` }),
+        f('dureeConservatoire', 'Durée de la suspension (jours)', 'number', { half: true, placeholder: 'ex. 7', showIf: (champs) => !!champs.miseAPiedConservatoire, help: `Maximum ${MAX_CONSERVATOIRE_JOURS} jours.` }),
     ],
     sanction: [
         f('convocationRefId', 'Convocation à l\'entretien préalable', 'convocationRef', { required: true, help: 'La sanction ne peut être notifiée qu\'après un entretien précédé d\'une convocation.' }),
         f('typeSanction', 'Sanction prononcée', 'select', { required: true, half: true, options: Object.entries(SANCTIONS).map(([value, label]) => ({ value, label })) }),
         f('dateEffet', 'Date d\'effet', 'date', { required: true, half: true }),
-        f('dureeJours', 'Durée de la mise à pied (jours)', 'number', { half: true, showIf: (champs) => champs.typeSanction === 'mise_a_pied', help: `Maximum ${MAX_MISE_A_PIED_JOURS} jours.` }),
+        f('dureeJours', 'Durée de la mise à pied (jours)', 'number', { half: true, placeholder: 'ex. 3', showIf: (champs) => champs.typeSanction === 'mise_a_pied', help: `Maximum ${MAX_MISE_A_PIED_JOURS} jours.` }),
         f('nouveauRole', 'Grade après rétrogradation', 'role', { half: true, showIf: (champs) => champs.typeSanction === 'retrogradation' }),
         f('faitsRetenus', 'Faits retenus', 'textarea', { required: true, placeholder: 'Les faits établis à l\'issue de l\'entretien (pas davantage que ceux de la convocation).' }),
         f('motivation', 'Motivation de la décision', 'textarea', { placeholder: 'Réponse aux explications de la personne, circonstances prises en compte.' }),
@@ -165,20 +170,30 @@ const FIELDS = {
         f('contratRefId', 'Contrat concerné', 'contratRef', { required: true, help: 'Sert à établir l\'attestation de fin de fonctions (dates, fonction, grade).' }),
         f('dateEffet', 'Date de fin effective', 'date', { required: true, half: true }),
         f('dateRemiseDemission', 'Date de remise de la démission', 'date', { required: true, half: true, showIf: (champs) => champs.motif === 'demission' }),
-        f('preavisJours', 'Préavis (jours)', 'number', { half: true, showIf: (champs) => ['demission', 'licenciement', 'licenciement_disciplinaire'].includes(champs.motif), help: 'Usage : 14 jours pour une démission, 30 jours pour un licenciement (art. 14 du contrat).' }),
+        f('preavisJours', 'Préavis (jours)', 'number', { half: true, placeholder: 'ex. 14', showIf: (champs) => ['demission', 'licenciement', 'licenciement_disciplinaire'].includes(champs.motif), help: 'Usage : 14 jours pour une démission, 30 jours pour un licenciement (art. 14 du contrat).' }),
         f('preavisDispense', 'Employé(e) dispensé(e) d\'exécuter son préavis (rémunéré)', 'checkbox', { showIf: (champs) => ['demission', 'licenciement'].includes(champs.motif) }),
+        // Cochée : la rémunération versée pendant la dispense doit être indiquée (préremplie avec celle du contrat concerné, modifiable).
+        f('preavisRemuneration', 'Rémunération versée pendant la dispense de préavis', 'money', {
+            required: true, placeholder: 'ex. 4 500 $ de l\'heure', help: 'Montant seul : le « $ » et le mode du contrat sont ajoutés. Prérempli avec la rémunération du contrat concerné.',
+            showIf: (champs) => ['demission', 'licenciement'].includes(champs.motif) && !!champs.preavisDispense,
+        }),
         f('convocationRefId', 'Convocation à l\'entretien préalable', 'convocationRef', { required: true, showIf: (champs) => ['licenciement', 'licenciement_disciplinaire'].includes(champs.motif) }),
         f('fauteGrave', 'Faute grave (rupture immédiate, sans préavis)', 'checkbox', { showIf: (champs) => champs.motif === 'licenciement_disciplinaire' }),
         f('baseLegale', 'Fondement', 'select', {
             required: true, showIf: (champs) => champs.motif === 'plein_droit',
             options: Object.entries(FIN_BASES_LEGALES).map(([value, label]) => ({ value, label })),
         }),
-        f('motifsDetailles', 'Motifs détaillés', 'textarea', {
+        // Réponses par défaut à cliquer (selon le motif) ; le texte reste libre : les motifs d'un licenciement doivent être précis et vérifiables.
+        f('motifsDetailles', 'Motifs détaillés', 'presets', {
             placeholder: 'Les motifs doivent être précis et vérifiables : ils peuvent être exigés par l\'employé(e) (Code du Gouvernement, art. 325).',
             showIf: (champs) => !['fin_cdd', 'fin_stage'].includes(champs.motif),
+            presets: (champs) => finMotifPresets(champs.motif), presetJoin: '\n', presetLabel: 'Ajouter un motif par défaut…',
         }),
-        f('restitutions', 'Restitutions et clôture des accès', 'textarea', { placeholder: 'Badge, clés, matériel, comptes… (par défaut : badge, matériel, accès informatiques).' }),
-        f('validiteOffreJours', 'Validité de l\'offre de rupture (jours)', 'number', { half: true, showIf: (champs) => champs.motif === 'rupture_amiable', required: true }),
+        f('restitutions', 'Restitutions et clôture des accès', 'presets', {
+            placeholder: 'Badge, clés, matériel, comptes… (par défaut : badge, matériel, accès informatiques).',
+            presets: () => RESTITUTION_PRESETS, presetJoin: ' ; ', presetLabel: 'Ajouter une restitution par défaut…',
+        }),
+        f('validiteOffreJours', 'Validité de l\'offre de rupture (jours)', 'number', { half: true, placeholder: 'ex. 7', showIf: (champs) => champs.motif === 'rupture_amiable', required: true }),
     ],
 };
 

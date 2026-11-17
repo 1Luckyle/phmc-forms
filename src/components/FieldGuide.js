@@ -7,6 +7,8 @@
 //     d'un coup d'œil ce qu'il reste à compléter sans le confondre avec une erreur. Plus de rouge posé à la main champ par champ.
 // Les textes viennent de constants/fieldInfo.js (champs des formulaires) ; ailleurs, l'infobulle reprend le libellé ou l'indication du champ.
 // Ajouter `data-no-tip` sur un champ (ou un de ses parents) supprime son infobulle.
+// `data-mark-checks` sur une zone `data-guide-zone` : ses cases à cocher prennent aussi les couleurs (bleu facultatif, rouge obligatoire tant que la case est décochée) ; une liste de cases
+// (`data-check-list`, ou les services d'un contrat) est marquée d'un seul bloc.
 import { useEffect } from 'react';
 import { VERSION_FIELDS } from '../constants/formFieldCatalog';
 import { getFieldInfo } from '../constants/fieldInfo';
@@ -14,6 +16,7 @@ import { isFieldRequired, lockedReasonOf, requiredFieldsOf, subscribeFormOverrid
 import { startFormRulesSync } from '../utils/formRules';
 import './FieldGuide.css';
 
+let checkListCounter = 0;   // identifiant des listes de cases à cocher marquées d'un seul bloc (voir `data-mark-checks`)
 const SKIP_TYPES = new Set(['hidden', 'button', 'submit', 'reset', 'file', 'range', 'color', 'image', 'checkbox', 'radio', 'search']);
 const REASONS = { title: 'Compose le titre du rapport.', billing: 'Sert à la facturation du dossier.', author: 'Signe le rapport.', essential: "Indispensable au document." };
 
@@ -83,14 +86,33 @@ const resolveControl = (target) => {
     return null;
 };
 
+const GROUP_SELECTOR = '.form-group, .mb-1, .mb-2, .mb-3, .row, [class*="Group"]';
+// Étiquette du champ : en remontant depuis le champ, le PREMIER ancêtre qui porte une étiquette en enfant direct (Form.Group > Form.Label) ; à défaut, la première étiquette du groupe reconnu
+// (.form-group, .mb-3, .row…). Sans la première règle, un groupe sans classe reconnue (ex. les champs d'un contrat) remontait jusqu'à la grande ligne du formulaire et reprenait
+// l'étiquette du TOUT PREMIER champ pour chacun d'eux (infobulle « À renseigner : Type de document » sur « Nouvelle fonction »).
+const groupLabelOf = (anchor) => {
+    let node = anchor.parentElement;
+    while (node && node !== document.body) {
+        const direct = Array.from(node.children).find((child) => child.tagName === 'LABEL' && child.textContent.trim());
+        if (direct) return direct;
+        if (node.matches(GROUP_SELECTOR)) {
+            const near = node.querySelector('label');
+            return near && near.textContent.trim() ? near : null;
+        }
+        node = node.parentElement;
+    }
+    return null;
+};
+// « Nom du champ (facultatif) » → « Nom du champ » : l'indication de caractère facultatif se lit déjà sur la ligne « Facultatif » de l'infobulle.
+const cleanLabel = (text) => String(text || '').replace(/\s+/g, ' ').replace(/\s*\((facultatif|obligatoire)\)\s*$/i, '').trim();
+
 const labelOf = (field, anchor) => {
     if (field.id) {
         const explicit = document.querySelector(`label[for="${CSS.escape(field.id)}"]`);
-        if (explicit && explicit.textContent.trim()) return explicit.textContent.trim();
+        if (explicit && explicit.textContent.trim()) return cleanLabel(explicit.textContent);
     }
-    const group = anchor.closest('.form-group, .mb-1, .mb-2, .mb-3, .row, [class*="Group"]');
-    const near = group ? group.querySelector('label') : null;
-    if (near && near.textContent.trim()) return near.textContent.trim().replace(/\s+/g, ' ');
+    const near = groupLabelOf(anchor);
+    if (near) return cleanLabel(near.textContent);
     return field.getAttribute('aria-label') || field.placeholder || '';
 };
 
@@ -115,9 +137,7 @@ const hasLabel = (field, anchor) => {
         const explicit = document.querySelector(`label[for="${CSS.escape(field.id)}"]`);
         if (explicit && explicit.textContent.trim()) return true;
     }
-    const group = anchor.closest('.form-group, .mb-1, .mb-2, .mb-3, .row, [class*="Group"]');
-    const near = group ? group.querySelector('label') : null;
-    return !!(near && near.textContent.trim());
+    return !!groupLabelOf(anchor);
 };
 
 const describe = ({ field, anchor, name, type }) => {
@@ -302,6 +322,19 @@ const FieldGuide = () => {
                 zone.querySelectorAll('input, textarea, select').forEach((field) => {
                     if (field.closest('[data-no-mark]')) return;
                     if (isAuto && (field.closest('[data-guide-zone]') || field.closest('[data-form-zone]') || field.closest('table') || field.closest('.dropdown-menu'))) return;
+                    // Cases à cocher : marquées seulement dans une zone qui le demande (`data-mark-checks` : contrats, accords) — décochée = bleu (facultatif) ou rouge (obligatoire), cochée = rien.
+                    if (field.type === 'checkbox' && !isAuto && field.closest('[data-mark-checks]')) {
+                        if (field.disabled) return;
+                        // Une liste de cases (services d'affectation) se marque UNE fois, comme un seul champ : remplie dès qu'une case est cochée.
+                        const list = field.closest('[data-check-list], .contract-services');
+                        if (list) {
+                            if (!list.getAttribute('data-fg-id')) list.setAttribute('data-fg-id', String(++checkListCounter));
+                            add(`liste:${list.getAttribute('data-fg-id')}`, list, field.checked, false);
+                            return;
+                        }
+                        add(`case:${field.name || field.id || `__anonyme${anonymous++}`}`, field.closest('.form-check') || field.parentElement, field.checked, field.required || !!field.closest('[data-required]'));
+                        return;
+                    }
                     // Liste déroulante react-select : un seul repère par liste (sa zone de saisie interne n'est pas le champ).
                     const container = selectContainerOf(field);
                     if (container) {

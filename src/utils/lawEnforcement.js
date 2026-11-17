@@ -158,12 +158,32 @@ export const adviceFor = (answers = [], scope = 'soins') => {
 
 // ───────────────────────────── Registre ─────────────────────────────
 
-export const emptyRequest = (scope = 'soins') => ({ service: '', agent: '', type: scope === 'dmec' ? 'autopsie' : 'dossier', patientID: '', baseLegale: 'aucune', reference: '', decision: 'refuse', note: '' });
+// Service demandeur : menu déroulant. C'est la MÊME liste que l'« Agence » des rapports de décès (base Firebase : selectOptions/requestingAgenciesOptions) ; la liste ci-dessous ne sert que
+// tant qu'elle n'est pas chargée. « Autre service » ouvre un petit champ : un agent d'un service absent de la liste (FIB…) doit pouvoir être enregistré.
+export const OTHER_SERVICE = '__autre';
+export const DEFAULT_SERVICES = [
+    { value: 'LSPD', label: 'LSPD' }, { value: 'LSSD', label: 'LSSD' }, { value: 'LSFD', label: 'LSFD' }, { value: 'SANFIRE', label: 'SANFIRE' }, { value: 'SADCR', label: 'SADCR' },
+    { value: 'LSGOV', label: 'LSGOV' }, { value: 'PHMC', label: 'PHMC' }, { value: '911 Call', label: 'Emergency 911 Dispatch' }, { value: 'Protech', label: 'Protech Security Solutions' },
+];
+/** Services proposés : la liste de la base (tableau de { value, label } ou de textes), à défaut la liste par défaut. */
+export const serviceOptionsFrom = (raw) => {
+    const list = (Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []))
+        .map((item) => (typeof item === 'string' ? { value: item, label: item } : item && item.value ? { value: String(item.value), label: String(item.label || item.value) } : null))
+        .filter(Boolean);
+    return list.length ? list : DEFAULT_SERVICES;
+};
+/** Libellé lisible d'un service enregistré (« 911 Call » → « Emergency 911 Dispatch ») ; un texte libre ancien ou « autre service » est rendu tel quel. */
+export const serviceLabel = (value, options = DEFAULT_SERVICES) => (options.find((option) => option.value === value) || {}).label || value;
+
+// serviceChoice : valeur choisie dans le menu (ou OTHER_SERVICE) ; service : le texte final enregistré (la valeur choisie, ou le texte saisi pour « Autre service »).
+export const emptyRequest = (scope = 'soins') => ({ service: '', serviceChoice: '', agent: '', type: scope === 'dmec' ? 'autopsie' : 'dossier', patientID: '', baseLegale: 'aucune', reference: '', decision: 'refuse', note: '' });
 
 // → liste de messages d'erreur (vide si la fiche est valide).
 export const validateRequest = (form) => {
     const errors = [];
-    if (!String(form.service || '').trim()) errors.push('Indiquez le service demandeur (ex. LSPD).');
+    if (form.serviceChoice === OTHER_SERVICE) {
+        if (!String(form.service || '').trim()) errors.push('Précisez le service demandeur.');
+    } else if (!String(form.service || '').trim()) errors.push('Choisissez le service demandeur.');
     if (!String(form.agent || '').trim()) errors.push("Indiquez le nom ou le matricule de l'agent.");
     if (!REQUEST_TYPES[form.type]) errors.push('Choisissez le type de demande.');
     if (!LEGAL_BASES[form.baseLegale]) errors.push('Choisissez le fondement invoqué.');

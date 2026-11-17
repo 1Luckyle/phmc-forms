@@ -64,6 +64,35 @@ export const logActivity = ({ category = 'divers', action, summary, details, sev
     }
 };
 
+// ── Connexions : une ligne par personne et par période, pas une par onglet ni par rechargement ─────────────────
+// Une même personne qui rouvre l'outil plusieurs fois par jour (nouvel onglet, navigateur relancé, session rétablie) ne laisse qu'UNE ligne « Connexion » toutes les LOGIN_LOG_COOLDOWN_MS.
+// L'heure de la dernière ligne est gardée dans le navigateur (localStorage : partagé entre les onglets, conservé à sa fermeture). Une déconnexion VOLONTAIRE remet le compteur à zéro :
+// la connexion suivante est de nouveau journalisée (forgetLogin). Sans stockage disponible, on journalise comme avant.
+export const LOGIN_LOG_COOLDOWN_MS = 6 * 3600000;
+const loginKey = (uid, kind) => `activityLoginAt:${kind}:${uid}`;
+/** true s'il faut journaliser cette connexion (et mémorise l'instant), false si la même personne vient d'être journalisée. kind : 'site' (connexion à l'outil) ou 'admin' (panneau d'administration). */
+export const shouldLogLogin = (uid, kind = 'site', { now = Date.now(), storage } = {}) => {
+    if (!uid) return true;
+    try {
+        const store = storage || window.localStorage;
+        const last = Number(store.getItem(loginKey(uid, kind)));
+        // Une date dans le futur (horloge déréglée) ne bloque rien.
+        if (Number.isFinite(last) && last > 0 && last <= now && now - last < LOGIN_LOG_COOLDOWN_MS) return false;
+        store.setItem(loginKey(uid, kind), String(now));
+        return true;
+    } catch (error) {
+        return true;
+    }
+};
+/** À la déconnexion volontaire : la prochaine connexion de cette personne sera de nouveau journalisée. */
+export const forgetLogin = (uid, { storage } = {}) => {
+    if (!uid) return;
+    try {
+        const store = storage || window.localStorage;
+        ['site', 'admin'].forEach((kind) => store.removeItem(loginKey(uid, kind)));
+    } catch (error) { /* sans conséquence */ }
+};
+
 // ── Actions d'administration / de recrutement ───────────────────────────────────────────────────────────────
 // Les écrans appellent sendAdminActionWebhook(email, action, details, categoryName, …) : on y branche le journal.
 // La catégorie est déduite du libellé de l'action ; l'ouverture/fermeture de fenêtres n'est pas journalisée (bruit).

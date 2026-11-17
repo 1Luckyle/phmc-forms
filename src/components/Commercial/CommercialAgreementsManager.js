@@ -17,6 +17,7 @@ import BaseModal from '../BaseModal';
 import DebugFillButton from '../DebugFillButton';
 import { debugFillChamps } from '../../utils/debugAdminFill';
 import ContractDocument from '../Contracts/ContractDocument';
+import { SIDE_MENU_POPPER } from '../Contracts/sideMenu';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { loadStaffMembers, loadCivilians } from '../../utils/staffAdmin';
@@ -112,12 +113,13 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
                     </Form.Select>
                 );
             }
-            if (field.type === 'checkbox') return <Form.Check id={id} type="checkbox" label={field.label} checked={!!value} onChange={(e) => set(field.key, e.target.checked)} />;
+            if (field.type === 'checkbox') return <Form.Check id={id} name={field.key} type="checkbox" label={field.label} required={!!field.required} checked={!!value} onChange={(e) => set(field.key, e.target.checked)} />;
             return <Form.Control id={id} {...common} type={field.type === 'number' ? 'number' : field.type} min={field.type === 'number' ? 0 : undefined} value={value ?? ''} placeholder={field.placeholder} onChange={(e) => set(field.key, e.target.value)} />;
         })();
         return (
             <Form.Group key={field.key} className="mb-2">
-                {field.type !== 'checkbox' && <Form.Label htmlFor={id}>{field.label}{field.required && <span className="text-danger"> *</span>}</Form.Label>}
+                {/* Ni « * » ni « (facultatif) » : rouge = obligatoire, bleu = facultatif (légende au-dessus des champs), cases à cocher comprises. */}
+                {field.type !== 'checkbox' && <Form.Label htmlFor={id}>{field.label}</Form.Label>}
                 {control}
                 {field.help && <Form.Text className="text-muted d-block">{field.help}</Form.Text>}
             </Form.Group>
@@ -127,14 +129,15 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
     return (
         <div>
             <div className="row g-3">
-                <div className="col-12 col-lg-6">
+                <div className="col-12 col-lg-6" data-guide-zone data-mark-checks>
+                    <div className="field-legend"><span className="req"><i></i>Obligatoire</span><span className="opt"><i></i>Facultatif</span></div>
                     {groups.map(([group, groupFields]) => (
                         <fieldset key={group} className="border rounded p-3 mb-3" style={{ borderColor: '#30363d' }}>
                             <legend className="float-none w-auto px-2 fs-6">{group}</legend>
                             {groupFields.map(renderField)}
                             {group === 'La Partie' && (
                                 <Form.Group className="mb-2">
-                                    <Form.Label>Compte de la Partie (facultatif)</Form.Label>
+                                    <Form.Label>Compte de la Partie</Form.Label>
                                     <Select
                                         name="partieCompte"
                                         options={accounts}
@@ -355,9 +358,10 @@ const CommercialAgreementsManager = ({ showNotification }) => {
                     <option value="all">Tous les types</option>
                     {Object.entries(AGREEMENT_TYPES).map(([key, info]) => <option key={key} value={key}>{info.short}</option>)}
                 </Form.Select>
-                <Dropdown>
+                {/* Menu ouvert sur le côté du bouton (pas dessous) : toute la liste, descriptions comprises, reste lisible. */}
+                <Dropdown drop="end">
                     <Dropdown.Toggle variant="success" size="sm" disabled={loading}><i className="fas fa-plus-circle me-1"></i>Nouvel accord</Dropdown.Toggle>
-                    <Dropdown.Menu className="contracts-menu" popperConfig={{ strategy: 'fixed' }}>
+                    <Dropdown.Menu className="contracts-menu" popperConfig={SIDE_MENU_POPPER}>
                         {Object.entries(AGREEMENT_TYPES).map(([key, info]) => (
                             <Dropdown.Item key={key} onClick={() => setScreen({ name: 'edit', type: key })}>
                                 <i className={`fas ${info.icon} me-2`}></i><strong>{info.short}</strong>

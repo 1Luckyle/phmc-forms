@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithC
 import { ref, get, set, onValue } from 'firebase/database';
 import { canonicalPatientId } from '../utils/patientId';
 import { getViewAs, saveViewAs, buildSimulatedIdentity, deriveIdentity } from '../utils/viewAs';
-import { setActivityActor, logActivity } from '../utils/activityLog';
+import { setActivityActor, logActivity, shouldLogLogin, forgetLogin } from '../utils/activityLog';
 import { clearDeletedMark } from '../utils/deletedAccounts';
 import { adoptArchivedRecords } from '../utils/adoptArchives';
 
@@ -338,6 +338,7 @@ export const EmployeeAuthProvider = ({ children }) => {
             const leavingUid = auth.currentUser?.uid;
             await logActivity({ category: 'auth', action: 'logout', summary: `Déconnexion de ${realName || auth.currentUser?.email || 'un utilisateur'}` });
             try { if (leavingUid) sessionStorage.removeItem(`activityLogin:${leavingUid}`); } catch (storageError) { /* sans conséquence */ }
+            forgetLogin(leavingUid); // déconnexion volontaire : la prochaine connexion sera journalisée
             await signOut(auth);
             setCurrentEmployee(null);
             setEmployeeProfile(null);
@@ -454,6 +455,8 @@ export const EmployeeAuthProvider = ({ children }) => {
             if (sessionStorage.getItem(sessionKey)) return;
             sessionStorage.setItem(sessionKey, '1');
             adoptArchivedRecords();
+            // Connexions répétées (nouvel onglet, rechargement, session rétablie) : une seule ligne toutes les 6 h par personne.
+            if (!shouldLogLogin(user.uid)) return;
             logActivity({ category: 'auth', action: 'login', summary: `Connexion de ${realName || user.email || 'un utilisateur'}`, details: realRole ? `Rôle : ${realRole}` : undefined });
         } catch (e) { /* stockage indisponible : on ne journalise simplement pas la connexion */ }
     }, [isLoading, realName, realRole, isAdmin]);

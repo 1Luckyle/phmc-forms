@@ -538,6 +538,13 @@ function MainApp({
         setShowAgencySelector(true);
     };
 
+    // « Changer de Formulaire » : revient au choix du groupe de formulaires (PHMC, DMEC, recrutement…). Même action dans la Boîte à outils et à côté de « Carte de Visite & Signature ».
+    const openAgencyGroupSelector = () => {
+        localStorage.removeItem('selectedAgencyGroup');
+        setSelectedAgencyGroup(null);
+        setShowAgencyGroupSelectorModal(true);
+    };
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
@@ -2122,11 +2129,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                                         // Feedback : bug, idée de fonctionnalité ou nouveau formulaire, au choix dans un menu déroulant. Réservé aux comptes connectés (tous rôles) : le retour est enregistré à leur nom.
                                                         currentEmployee && { key: 'feedback', icon: 'fas fa-comment-dots', label: 'Feedback', onClick: closeAnd(() => { setFeatureModalMode('bug'); setShowFeatureRequestModal(true); }) },
                                                         {
-                                                            key: 'agency', icon: 'fas fa-users', label: 'Changer de Formulaire', onClick: closeAnd(() => {
-                                                                localStorage.removeItem('selectedAgencyGroup');
-                                                                setSelectedAgencyGroup(null);
-                                                                setShowAgencyGroupSelectorModal(true);
-                                                            }),
+                                                            key: 'agency', icon: 'fas fa-users', label: 'Changer de Formulaire', onClick: closeAnd(openAgencyGroupSelector),
                                                         },
                                                     ],
                                                 },
@@ -2178,6 +2181,18 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                     Carte de Visite &amp; Signature
                                 </Button>
                             )}
+
+                            {/* Raccourci vers le même choix que « Boîte à outils → Changer de Formulaire » : changer de groupe de formulaires (PHMC, DMEC, recrutement…) sans ouvrir le menu. */}
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                className="changelog-button"
+                                onClick={openAgencyGroupSelector}
+                                title="Changer de groupe de formulaires (PHMC, DMEC, recrutement…) : même choix que dans la Boîte à outils"
+                            >
+                                <i className="fas fa-users"></i>
+                                Changer de Formulaire
+                            </Button>
 
                             {bbcodeEnabled && (
 <Button

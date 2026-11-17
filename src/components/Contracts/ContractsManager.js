@@ -12,13 +12,17 @@
 // `scope` sépare les deux usages : « recruitment » (contrats, conventions, avenants : recruteurs et admins) et « discipline » (convocations, sanctions,
 // fins de contrat : jamais les recruteurs).
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Button, Dropdown, Form, Spinner, Table } from 'react-bootstrap';
+import { Alert, Badge, Button, Dropdown, Form, InputGroup, Spinner, Table } from 'react-bootstrap';
 import * as Sentry from '@sentry/react';
 import BaseModal from '../BaseModal';
 import DebugFillButton from '../DebugFillButton';
 import { debugFillChamps } from '../../utils/debugAdminFill';
 import '../DarkUi.css';
 import ContractDocument, { ContractExportBar } from './ContractDocument';
+import ScheduleField from './ScheduleField';
+import { SIDE_MENU_POPPER } from './sideMenu';
+import PersonSelect, { personGroups } from './PersonSelect';
+import { moneyDisplay, moneyText, moneyUnit } from '../../utils/contractMoney';
 import PersonnelFileDialog from './PersonnelFileDialog';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
@@ -26,7 +30,7 @@ import { normalizeRank, getRoleInfo, canManageDiscipline } from '../../constants
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { loadUserCreations } from '../../utils/userCreations';
 import { loadSalaryGrid, echelonOf, rateOf, formatRate, formatEchelonRates } from '../../utils/salaryGrid';
-import { HOSPITAL_SERVICES, PRIME_CRITERIA, parseServices, joinServices } from '../../constants/contractOptions';
+import { HOSPITAL_SERVICES, PRIME_CRITERIA, parseServices, joinServices, appendPreset } from '../../constants/contractOptions';
 import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import {
@@ -123,6 +127,11 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         .sort((a, b) => (b.envoyeLe || 0) - (a.envoyeLe || 0)), [ofEmployee]);
 
     const refContract = signedEmployment.find((c) => c.id === fields.contratRefId) || null;
+    // Préavis dispensé (fin de contrat) : la rémunération versée pendant la dispense se préremplit avec celle du contrat concerné (modifiable).
+    useEffect(() => {
+        if (readOnly || type !== 'fin' || !fields.preavisDispense || fields.preavisRemuneration || !refContract?.champs?.remuneration) return;
+        setFields((prev) => (prev.preavisRemuneration ? prev : { ...prev, preavisRemuneration: refContract.champs.remuneration }));
+    }, [readOnly, type, fields.preavisDispense, fields.preavisRemuneration, refContract]);
     const convocationObjet = type === 'sanction' ? 'sanction' : 'licenciement';
     const convocationChoices = useMemo(() => convocations.filter((c) => c.champs.objet === convocationObjet), [convocations, convocationObjet]);
     const convocation = convocations.find((c) => c.id === fields.convocationRefId) || null;
@@ -371,11 +380,60 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                 );
                 break;
             case 'checkbox':
-                control = <Form.Check type="checkbox" id={`field-${field.key}`} label={field.label} checked={!!fields[field.key]} onChange={set(field.key)} />;
+                control = <Form.Check type="checkbox" id={`field-${field.key}`} name={field.key} label={field.label} required={!!field.required} checked={!!fields[field.key]} onChange={set(field.key)} />;
                 break;
             case 'textarea':
                 control = <Form.Control as="textarea" rows={3} {...common} placeholder={field.placeholder} />;
                 break;
+            case 'money': {
+                // Rémunération : on ne tape que le montant ; le « $ » et le mode (de l'heure / par semaine) sont ajoutés au texte enregistré. Un avenant garde le mode du contrat modifié.
+                const mode = ['nouvelleRemuneration', 'preavisRemuneration'].includes(field.key) ? (refContract?.champs?.modeRemuneration || DEFAULT_RATE_MODE) : (fields.modeRemuneration || DEFAULT_RATE_MODE);
+                control = (
+                    <InputGroup>
+                        <Form.Control
+                            inputMode="numeric" name={field.key} required={!!field.required} data-guide={field.help || undefined} placeholder="ex. 4 500" autoComplete="off"
+                            value={moneyDisplay(value)} onChange={(e) => setFields((p) => ({ ...p, [field.key]: moneyText(e.target.value, mode) }))}
+                        />
+                        <InputGroup.Text>{moneyUnit(mode)}</InputGroup.Text>
+                    </InputGroup>
+                );
+                break;
+            }
+            case 'horaires':
+                control = <ScheduleField name={field.key} value={value} onChange={(text) => setFields((p) => ({ ...p, [field.key]: text }))} help={field.help} />;
+                break;
+            case 'person':
+            case 'persons': {
+                // Personnel : une liste à cliquer (on tape pour filtrer), jamais la personne concernée par le document ; pour « personnel supplémentaire », ni la personne qui mène l'entretien.
+                const multiple = field.type === 'persons';
+                const exclude = [employee?.displayName, multiple ? fields.conduitPar : ''].filter(Boolean);
+                control = (
+                    <div data-required={field.required ? '1' : undefined} data-guide={field.help || (multiple ? 'Les autres personnes présentes à l\'entretien (la personne convoquée est exclue).' : (field.required ? 'La personne désignée : cliquez dans la liste, tapez pour filtrer.' : 'Cliquez sur la bonne personne dans la liste (tapez pour filtrer).'))}>
+                        <PersonSelect
+                            name={field.key} multiple={multiple} placeholder={field.placeholder} groups={personGroups(staff, { withRole: !!field.personRole, exclude })}
+                            value={multiple ? parseServices(value) : value}
+                            onChange={(next) => setFields((p) => ({ ...p, [field.key]: multiple ? joinServices(next) : next }))}
+                        />
+                    </div>
+                );
+                break;
+            }
+            case 'presets': {
+                // Zone de texte avec des réponses par défaut à cliquer (ajoutées à la suite, sans doublon) ; le texte reste libre.
+                const presets = typeof field.presets === 'function' ? field.presets(fields) : (field.presets || []);
+                control = (
+                    <>
+                        {presets.length > 0 && (
+                            <Form.Select className="mb-1" data-no-mark value="" aria-label={field.presetLabel || 'Ajouter une réponse par défaut'} onChange={(e) => { if (e.target.value) setFields((p) => ({ ...p, [field.key]: appendPreset(p[field.key], e.target.value, field.presetJoin || '\n') })); }}>
+                                <option value="">{field.presetLabel || 'Ajouter une réponse par défaut…'}</option>
+                                {presets.map((preset) => <option key={preset} value={preset}>{preset}</option>)}
+                            </Form.Select>
+                        )}
+                        <Form.Control as="textarea" rows={3} {...common} placeholder={field.placeholder} />
+                    </>
+                );
+                break;
+            }
             case 'number':
                 control = <Form.Control inputMode="numeric" name={field.key} required={!!field.required} data-guide={field.help || undefined} value={value} onChange={(e) => setFields((p) => ({ ...p, [field.key]: e.target.value.replace(/\D/g, '') }))} placeholder={field.placeholder} />;
                 break;
@@ -390,11 +448,15 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         }
         return (
             <Form.Group key={field.key} className={field.half ? 'contract-field-half' : ''}>
-                {field.type !== 'checkbox' && <Form.Label>{field.label}{field.required ? '' : <small className="text-muted"> (facultatif)</small>}</Form.Label>}
-                {control}
-                {field.help && field.type !== 'checkbox' && <Form.Text className="text-muted d-block">{field.help}</Form.Text>}
-                {field.key === 'echelon' && echelonWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{echelonWarning}</Form.Text>}
-                {field.key === 'remuneration' && gridWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{gridWarning}</Form.Text>}
+                {/* Pas de « (facultatif) » dans le libellé : rouge = obligatoire, bleu = facultatif (légende au-dessus des champs). */}
+                {field.type !== 'checkbox' && <Form.Label>{field.label}</Form.Label>}
+                {/* Trois zones (étiquette, champ, aides) : les champs d'une même rangée s'alignent zone par zone (voir Contracts.css), même si une étiquette passe sur deux lignes. */}
+                <div className="contract-field-control">{control}</div>
+                <div className="contract-field-extra">
+                    {field.help && field.type !== 'checkbox' && field.type !== 'horaires' && <Form.Text className="text-muted d-block">{field.help}</Form.Text>}
+                    {field.key === 'echelon' && echelonWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{echelonWarning}</Form.Text>}
+                    {field.key === 'remuneration' && gridWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{gridWarning}</Form.Text>}
+                </div>
             </Form.Group>
         );
     };
@@ -492,9 +554,12 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
 
                     {!employee && <Alert variant="secondary" className="py-2">Choisissez le destinataire pour afficher les champs du document.</Alert>}
                     {employee && (
-                        <div className="contract-field-row" data-guide-zone>
-                            {visible.map(renderField)}
-                        </div>
+                        <>
+                            <div className="field-legend"><span className="req"><i></i>Obligatoire</span><span className="opt"><i></i>Facultatif</span></div>
+                            <div className="contract-field-row" data-guide-zone data-mark-checks>
+                                {visible.map(renderField)}
+                            </div>
+                        </>
                     )}
 
                     {type === 'convocation' && fields.dateEntretien && (
@@ -666,11 +731,12 @@ const ContractsManager = ({ showNotification, scope = 'recruitment', initialQuer
                 <Form.Select style={{ maxWidth: 230 }} value={group} onChange={(e) => setGroup(e.target.value)} aria-label="Filtrer par type de document">
                     {groupsForScope(scope).map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}
                 </Form.Select>
-                <Dropdown>
+                {/* Le menu s'ouvre sur le CÔTÉ du bouton (pas dessous : la fin de la liste sortait de l'écran) ; sans place à droite, il passe à gauche ; sa hauteur est limitée et défile. */}
+                <Dropdown drop="end">
                     <Dropdown.Toggle variant="success" size="sm" disabled={loading}>
                         <i className="fas fa-plus-circle me-1"></i>Nouveau document
                     </Dropdown.Toggle>
-                    <Dropdown.Menu className="contracts-menu" popperConfig={{ strategy: 'fixed' }}>
+                    <Dropdown.Menu className="contracts-menu" popperConfig={SIDE_MENU_POPPER}>
                         {typesForScope(scope).map((key) => (
                             <Dropdown.Item key={key} onClick={() => { setEditing(undefined); setNewType(key); }} title={TYPE_HELP[key]}>
                                 <i className={`fas ${CONTRACT_TYPE_INFO[key].icon} me-2`}></i>{CONTRACT_TYPES[key]}

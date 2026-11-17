@@ -216,8 +216,15 @@ const ActivityLog = ({
             </div>
 
             <div className="adm-card-body">
+                {mayHaveMore && (
+                    <div className="adm-notice">
+                        Seules les <strong>{entries.length} lignes les plus récentes</strong> de la période sont chargées : le journal en contient peut-être davantage (les compteurs ci-dessous ne portent que sur ces lignes).{' '}
+                        <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => setFetchLimit((n) => n + FETCH_STEP)}>Charger {FETCH_STEP} lignes de plus ancien</button>
+                        {' '}— ou réduisez la période.
+                    </div>
+                )}
                 <div className="adm-log-stats">
-                    <div><strong>{stats.total}</strong><span>événement{stats.total > 1 ? 's' : ''}</span></div>
+                    <div title={mayHaveMore ? 'Lignes chargées : il peut y en avoir davantage sur la période.' : undefined}><strong>{stats.total}{mayHaveMore && !hasFilters ? '+' : ''}</strong><span>événement{stats.total > 1 ? 's' : ''}{mayHaveMore ? ' chargés' : ''}</span></div>
                     <div className={stats.errors ? 'adm-log-stat-error' : ''}><strong>{stats.errors}</strong><span>erreur{stats.errors > 1 ? 's' : ''}</span></div>
                     <div className={stats.warnings ? 'adm-log-stat-warn' : ''}><strong>{stats.warnings}</strong><span>avertissement{stats.warnings > 1 ? 's' : ''}</span></div>
                     <div><strong>{stats.actors}</strong><span>personne{stats.actors > 1 ? 's' : ''}</span></div>

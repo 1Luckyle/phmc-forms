@@ -7,7 +7,27 @@ import generateAdmin from './generateAdmin';
 import generateNursing from './generateNursing';
 import generateCoroner from './generateCoroner';
 import generateEMS from './generateEMS';
-import { PHMC_FOOTER_MARK, PBC_FOOTER_MARK } from '../phmc-bbcode-generators/shared/bbStyles';
+import { PHMC_FOOTER_MARK, PBC_FOOTER_MARK, PHMC_LOGO, PBC_LOGO, DMEC_LOGO_SMALL } from '../phmc-bbcode-generators/shared/bbStyles';
+
+describe('candidatures : logos de l\'en-tête', () => {
+    test('DMEC : le petit sceau du DMEC est à côté du logo du PHMC, comme sur les rapports du DMEC', () => {
+        const text = generateCoroner({ applicantLocation: 'PHMC', applicantFirstName: 'Jean', applicantLastName: 'Test' });
+        expect(text).toContain(`[img]${PHMC_LOGO}[/img][img]${DMEC_LOGO_SMALL}[/img]`);
+        expect(text.split(DMEC_LOGO_SMALL)).toHaveLength(2);
+    });
+    test('les autres candidatures n\'ont pas le sceau du DMEC', () => {
+        [generatePhysician, generatePsych, generateAdmin, generateNursing, generateEMS].forEach((generate) => {
+            const text = generate({ applicantLocation: 'PHMC' });
+            expect(text).not.toContain(DMEC_LOGO_SMALL);
+            expect(text).toContain(`[img]${PHMC_LOGO}[/img]`);
+        });
+    });
+    test('candidature DMEC à la clinique de Paleto Bay : logo de la clinique, avec le sceau à côté', () => {
+        const text = generateCoroner({ applicantLocation: 'PBC' });
+        expect(text).toContain(`[img]${PBC_LOGO}[/img][img]${DMEC_LOGO_SMALL}[/img]`);
+        expect(text).not.toContain(`[img]${PHMC_LOGO}[/img]`);
+    });
+});
 
 describe('candidatures : pied de page du centre', () => {
     const generators = { generatePhysician, generatePsych, generateAdmin, generateNursing, generateCoroner, generateEMS };

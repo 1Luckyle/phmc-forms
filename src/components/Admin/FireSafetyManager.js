@@ -280,7 +280,8 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
             <DebugFillButton onFill={debugFill} className="me-2" />
             <Button variant="primary" onClick={add} disabled={busy || !form.etage.trim() || form.description.trim().length < 5}>Ajouter la non-conformité</Button>
 
-            <Modal show={!!assigning} onHide={() => setAssigning(null)} centered>
+            {/* Ouverte depuis « Gestion de la sécurité incendie » (BaseModal, z-index 1100) : sans classe dédiée, cette fenêtre (1055) s'ouvrirait DERRIÈRE. */}
+            <Modal show={!!assigning} onHide={() => setAssigning(null)} centered className="fs-assign-modal" backdropClassName="fs-assign-backdrop">
                 <Modal.Header closeButton><Modal.Title>Responsable et échéance</Modal.Title></Modal.Header>
                 <Modal.Body>
                     {assigning && (

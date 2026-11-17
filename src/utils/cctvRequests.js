@@ -40,6 +40,9 @@ export const isCctvFieldRequired = (label) => !OPTIONAL_FIELD_LABELS.includes(la
 // Tant que la demande n'est ni acceptée ni refusée, son auteur peut la modifier (et écrire dans le fil).
 export const isCctvEditable = (request) => CCTV_OPEN_STATUSES.includes(request?.statut);
 
+// Le demandeur supprime lui-même sa demande tant qu'elle est « nouvelle » : dès qu'elle est prise en charge (en cours, acceptée, refusée), elle reste au dossier de l'administration.
+export const isCctvDeletable = (request) => request?.statut === 'nouvelle';
+
 // Demande d'accès au traitement : ajuste le drapeau serveur d'après le rôle (sans effet si la personne n'a pas le rôle).
 let lastSync = 0;
 export const syncCctvAccess = async () => {
@@ -209,6 +212,27 @@ export const editCctvRequest = async ({ request, values, authorName }) => {
         details: modifs.map((modif) => modif.l).join(', '),
     });
     return { changed: true, modifs };
+};
+
+// Suppression de SA demande par son auteur (statut « nouvelle » seulement) : la demande et son entrée d'index partent en une seule écriture (les règles Firebase refont la vérification).
+export const deleteMyCctvRequest = async (request) => {
+    assertNotLocked();
+    const user = auth.currentUser;
+    if (!user) throw new Error('Connexion requise.');
+    if (request?.by?.uid !== user.uid) throw new Error('Seul l\'auteur de la demande peut la supprimer.');
+    if (!isCctvDeletable(request)) throw new Error('Cette demande a été prise en charge par l\'administration : elle ne peut plus être supprimée.');
+    try {
+        await update(ref(database), {
+            [`cctvRequests/${request.id}`]: null,
+            [`cctvParDemandeur/${user.uid}/${request.id}`]: null,
+        });
+    } catch (error) {
+        // Refus des règles : le plus souvent l'administration vient de prendre la demande en charge.
+        if (/permission[_ ]denied/i.test(String(error?.message || error))) throw new Error('Suppression refusée : la demande vient peut-être d\'être prise en charge par l\'administration.');
+        throw error;
+    }
+    logActivity({ category: 'demandes', action: 'cctv_deleted_by_author', summary: `Demande de vidéosurveillance supprimée par son auteur : ${request.titre || request.id}`, target: request.id });
+    notifyGroup('administration', { type: 'cctv', titre: 'Demande de vidéosurveillance retirée', texte: `${request.titre || 'Demande'} — ${request.by?.name || 'demandeur'}`, lien: { cible: 'cctv', section: 'manage' } });
 };
 
 // Historique d'une demande, du plus ancien au plus récent : dépôt, modifications du demandeur, changements de statut

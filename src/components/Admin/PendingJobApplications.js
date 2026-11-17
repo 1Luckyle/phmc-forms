@@ -29,7 +29,7 @@ import { logActivity } from '../../utils/activityLog';
 import ReportExpansion, { ExpandToggle, useExpansions } from '../ReportExpansion';
 import ApplicationThread from '../Recruitment/ApplicationThread';
 import InterviewModal from '../Recruitment/InterviewModal';
-import { describeInterview, interviewChanges, presentsLabel, saveDecharge } from '../../utils/interviews';
+import { describeInterview, interviewChanges, presentsLabel, saveDecharge, isAdministrativeMember } from '../../utils/interviews';
 import ForumHint from '../ForumHint';
 import useForumNotice from '../../hooks/useForumNotice';
 import { copyToClipboard } from '../notificationService';
@@ -468,7 +468,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '', initialO
                 show={!!interviewTarget} onHide={() => setInterviewTarget(null)}
                 application={interviewTarget?.application}
                 interview={interviewTarget?.editing ? interviewTarget.application.entretien || (interviewTarget.application.dateEntretien ? { date: interviewTarget.application.dateEntretien } : null) : null}
-                actor={{ name: actorName, uid: currentEmployee?.uid }}
+                actor={{ name: actorName, uid: currentEmployee?.uid, administrative: isAdministrativeMember(staffProfile) }}
                 onSubmit={(payload) => handleSaveInterview(interviewTarget.application, payload)}
             />
 

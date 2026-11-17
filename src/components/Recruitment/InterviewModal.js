@@ -37,8 +37,10 @@ const toLocalInput = (iso) => {
 const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit }) => {
     const [members, setMembers] = useState([]);
     const [when, setWhen] = useState('');
-    const [lead, setLead] = useState(null);
-    const [others, setOthers] = useState([]);
+    // On garde seulement les NOMS : l'option complète (rôle principal ET rôles secondaires, donc « administratif ou non ») est retrouvée dans la liste du personnel à chaque affichage.
+    // Sinon, une option figée avant la fin du chargement de la liste ignorerait les rôles de la personne (Direction en rôle secondaire, par exemple).
+    const [leadName, setLeadName] = useState('');
+    const [otherNames, setOtherNames] = useState([]);
     const [signature, setSignature] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -66,20 +68,23 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
             .sort((a, b) => a.label.localeCompare(b.label));
     }, [members]);
 
+    // Moi : retrouvé dans la liste du personnel (par nom) ; tant qu'elle n'est pas chargée, ou si je n'y figure pas, mes rôles connus de ma session (actor.administrative) servent de repli.
     const me = useMemo(() => {
         const known = people.find((person) => person.value === actor?.name);
-        return known || { value: actor?.name || 'Moi', label: `${actor?.name || 'Moi'} (vous)`, administrative: false };
+        return known || { value: actor?.name || 'Moi', label: `${actor?.name || 'Moi'} (vous)`, administrative: !!actor?.administrative };
     }, [people, actor]);
 
-    const optionOf = (name) => people.find((person) => person.value === name) || { value: name, label: name, administrative: false };
+    const optionOf = (name) => people.find((person) => person.value === name) || (name === me.value ? me : { value: name, label: name, administrative: false });
+    const lead = leadName ? optionOf(leadName) : null;
+    const others = otherNames.map(optionOf);
 
     useEffect(() => {
         if (!show) return;
         setError('');
         setSignature('');
         setWhen(toLocalInput(interview?.date));
-        setLead(interview?.recruteur?.nom ? optionOf(interview.recruteur.nom) : me);
-        setOthers((interview?.presents || []).map((person) => optionOf(person.nom)));
+        setLeadName(interview?.recruteur?.nom || actor?.name || 'Moi');
+        setOtherNames((interview?.presents || []).map((person) => person.nom));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [show, interview, application?.id]);
 
@@ -130,7 +135,7 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
                     <Form.Label>Qui mène le recrutement ? *</Form.Label>
                     <div data-required data-guide="La personne du personnel qui reçoit le candidat (par défaut : vous).">
                     <Select
-                        name="entretienResponsable" value={lead} onChange={setLead} options={people.length ? people : [me]} isDisabled={busy}
+                        name="entretienResponsable" value={lead} onChange={(option) => setLeadName(option ? option.value : '')} options={people.length ? people : [me]} isDisabled={busy}
                         styles={selectStyles} menuPortalTarget={document.body} placeholder="Choisir une personne du personnel…"
                         noOptionsMessage={() => 'Aucune personne trouvée'}
                     />
@@ -141,7 +146,7 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
                     <Form.Label>Autres personnes présentes</Form.Label>
                     <div data-guide="Facultatif : les autres personnes présentes à l'entretien.">
                     <Select
-                        name="entretienPresents" isMulti value={others} onChange={(value) => setOthers(value || [])} options={peopleOptions} isDisabled={busy}
+                        name="entretienPresents" isMulti value={others} onChange={(value) => setOtherNames((value || []).map((option) => option.value))} options={peopleOptions} isDisabled={busy}
                         styles={selectStyles} menuPortalTarget={document.body} placeholder="Ajouter des personnes présentes (facultatif)…"
                         noOptionsMessage={() => 'Aucune personne trouvée'}
                     />

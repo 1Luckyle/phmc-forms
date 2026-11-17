@@ -73,6 +73,8 @@
     --c: #58a6ff; padding: 2px 10px; font-size: 0.78rem; color: #e6edf3; background: #21262d; border: 1px solid #484f58; border-radius: 999px; cursor: pointer;
 }
 .cctv-quick button:hover, .cctv-status-row button:hover:not(:disabled) { background: #30363d; color: #fff; }
+.cctv-quick button.cctv-danger { color: #ff7b72; border-color: #8e2a28; }
+.cctv-quick button.cctv-danger:hover:not(:disabled) { background: #5c1a19; color: #fff; }
 .cctv-status-row button { border-color: color-mix(in srgb, var(--c) 70%, transparent); }
 .cctv-status-row button:disabled { opacity: 0.4; cursor: default; }
 

@@ -27,9 +27,10 @@ const jobBlock = (job, index) => {
 };
 
 /**
- * formData : les réponses du formulaire (+ positionDetailsData : postes de la catégorie, injectés par MainApp) ; options.categoryLabel : « Médecine »…
+ * formData : les réponses du formulaire (+ positionDetailsData : postes de la catégorie, injectés par MainApp) ; options.categoryLabel : « Médecine »… ; options.dmec : candidature au DMEC
+ * (le petit sceau du DMEC s'ajoute à côté du logo dans l'en-tête, comme sur les rapports du DMEC).
  */
-const generateApplicationDocument = (formData, { categoryLabel = '' } = {}) => {
+const generateApplicationDocument = (formData, { categoryLabel = '', dmec = false } = {}) => {
     const f = formData || {};
     const positions = f.positionDetailsData || {};
     const position = f.recruitmentPosition ? (positions[f.recruitmentPosition]?.nom || f.recruitmentPosition) : 'Poste non choisi';
@@ -83,7 +84,7 @@ const generateApplicationDocument = (formData, { categoryLabel = '' } = {}) => {
         ] : []),
     ]);
 
-    const document = `${careHeader({ title: 'Candidature', pbc, lines: `CANDIDAT : ${safe(name) || NOT_FILLED}${f.patientID ? ` (ID : ${safe(f.patientID)})` : ''}\nPoste : ${safe(position)}${categoryLabel ? `\nCentre de Carrières — ${categoryLabel}` : '\nCentre de Carrières'}` })}
+    const document = `${careHeader({ title: 'Candidature', pbc, dmec, lines: `CANDIDAT : ${safe(name) || NOT_FILLED}${f.patientID ? ` (ID : ${safe(f.patientID)})` : ''}\nPoste : ${safe(position)}${categoryLabel ? `\nCentre de Carrières — ${categoryLabel}` : '\nCentre de Carrières'}` })}
 ${sectionBanner('Identité')}
 ${identity}
 ${sectionBanner('Formation')}

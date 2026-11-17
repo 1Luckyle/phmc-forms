@@ -8,7 +8,7 @@ import { Button, Spinner } from 'react-bootstrap';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import {
     CCTV_STATUSES, CCTV_OPEN_STATUSES, CCTV_FIELD_LABELS, cctvStatusInfo, subscribeToAllCctvRequests, subscribeToMyCctvRequests,
-    addCctvReply, setCctvStatus, editCctvRequest, isCctvEditable, isCctvFieldRequired, historyOf, repliesOf,
+    addCctvReply, setCctvStatus, editCctvRequest, isCctvEditable, isCctvDeletable, deleteMyCctvRequest, isCctvFieldRequired, historyOf, repliesOf,
 } from '../../utils/cctvRequests';
 import './CctvRequests.css';
 import useWriteLock from '../../hooks/useWriteLock';
@@ -55,6 +55,14 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
     const modifiedSinceStaff = !!lastModification && lastModification.ts > lastStaffAction;
     const awaitingYou = manage ? (request.statut === 'nouvelle' || modifiedSinceStaff || (lastReply && !lastReply.par?.staff && CCTV_OPEN_STATUSES.includes(request.statut))) : (lastReply?.par?.staff);
     const canEdit = !manage && isCctvEditable(request);
+    // Suppression par l'auteur : seulement tant que l'administration ne l'a pas prise en charge (« Nouvelle »).
+    const canDelete = !manage && isCctvDeletable(request);
+    const deleteMine = async () => {
+        if (!window.confirm('Supprimer définitivement cette demande de vidéosurveillance ? Cette action est irréversible.')) return;
+        setBusy(true);
+        setError('');
+        try { await deleteMyCctvRequest(request); } catch (err) { setError(err?.message || 'Suppression impossible.'); setBusy(false); }
+    };
     const [editing, setEditing] = useState(null);   // { [libellé]: valeur } pendant la modification
     const [showHistory, setShowHistory] = useState(false);
 
@@ -157,10 +165,11 @@ const RequestCard = ({ request, manage, author, defaultOpen }) => {
                             </dl>
                             <div className="cctv-quick" style={{ marginTop: 0 }}>
                                 {canEdit && <button type="button" onClick={startEdit} disabled={locked} title={locked ? lockTitle : undefined}><i className="fas fa-pen me-1"></i>Modifier ma demande</button>}
+                                {canDelete && <button type="button" className="cctv-danger" onClick={deleteMine} disabled={busy || locked} title={locked ? lockTitle : 'Supprimer cette demande (possible tant qu\'elle est « Nouvelle »)'}><i className="fas fa-trash me-1"></i>Supprimer ma demande</button>}
                                 <button type="button" onClick={() => setShowHistory((value) => !value)}>
                                     <i className="fas fa-clock-rotate-left me-1"></i>{showHistory ? "Masquer l'historique" : `Historique (${history.length})`}
                                 </button>
-                                {!manage && !canEdit && <span>Demande traitée : elle ne peut plus être modifiée.</span>}
+                                {!manage && !canEdit && <span>Demande traitée : elle ne peut plus être modifiée ni supprimée.</span>}
                             </div>
                             {showHistory && (
                                 <ul className="cctv-history">

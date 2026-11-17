@@ -15,7 +15,7 @@ import ReviewPhraseRequestsModal from './ReviewPhraseRequestsModal';
 import * as Sentry from "@sentry/react";
 import UserManagementModal from './UserManagementModal';
 import AdminDashboard from './AdminDashboard';
-import { logAdminAction } from '../../utils/activityLog';
+import { logAdminAction, shouldLogLogin, forgetLogin } from '../../utils/activityLog';
 
 
 // Catégories de recrutement (référentiel constants/recruitment.js) indexées par leur ANCIENNE clé, que ce panneau
@@ -397,7 +397,8 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
                             // User just logged in as admin
                             setCurrentUser(user);
                             setFormData(prev => ({ ...prev, isAdminAuthenticated: true, adminUserEmail: user.email, adminDisplayData: null, adminSelectedCategoryName: null }));
-                            sendAdminActionWebhook(user.email, "Connexion Admin", "L'utilisateur s'est connecté avec succès au panneau d'administration.", null, userAgent, timeZone);
+                            // Une seule ligne « Connexion Admin » toutes les 6 h par administrateur (pas une par rechargement ou par onglet).
+                            if (shouldLogLogin(user.uid, 'admin')) sendAdminActionWebhook(user.email, "Connexion Admin", "L'utilisateur s'est connecté avec succès au panneau d'administration.", null, userAgent, timeZone);
                             if (showInAppNotification) showInAppNotification(`Bienvenue, ${user.email}!`, "check-circle");
                         } else {
                             // User is still logged in as admin
@@ -444,6 +445,7 @@ Déploiements affectés: ${lockdownConfig.affectedDeployments.join(', ')}`,
                     setFormData(prev => ({ ...prev, isAdminAuthenticated: false, adminUserEmail: null, adminDisplayData: null, adminSelectedCategoryName: null }));
                     setCurrentRecruitmentData({});
                     setSelectedRecruitmentCategory('');
+                    forgetLogin(currentUser?.uid); // déconnexion volontaire : la prochaine connexion sera journalisée
                     sendAdminActionWebhook(loggedOutEmail, "Déconnexion Admin", "L'utilisateur s'est déconnecté avec succès du panneau d'administration.", null, userAgent, timeZone);
                     if (showInAppNotification) showInAppNotification(`Déconnecté du panneau d'administration.`, "info-circle");
                 } else {

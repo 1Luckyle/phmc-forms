@@ -667,6 +667,35 @@ await write('Une échéance existante n\'est pas écrasée', false, 'S1', 'echea
 await read('Un soignant ne lit pas les échéances', false, 'S1', 'echeances');
 await read('Un admin lit les échéances', true, 'A', 'echeances', (data) => { data.echeances = { e2: echeance() }; });
 
+console.log('--- vidéosurveillance : suppression d\'une demande (debug) ---');
+const cctvSeed = (data) => {
+    data.cctvGestionnaires = { P: true };
+    data.cctvRequests = { q1: { ts: 1, maj: 1, statut: 'acceptee', titre: 'Entrée des urgences', by: { uid: 'S1', name: 'S1' }, champs: [{ l: 'Lieu', v: 'x' }] } };
+    data.cctvParDemandeur = { S1: { q1: true } };
+};
+const cctvDelete = async (label, expected, as) => scenario(label, expected, { as, op: 'update', path: '/', value: { 'cctvRequests/q1': null, 'cctvParDemandeur/S1/q1': null } }, cctvSeed);
+await cctvDelete('Un admin supprime une demande et son entrée d\'index en une seule écriture', true, 'A');
+await cctvDelete('Un gestionnaire non admin ne supprime pas une demande', false, 'P');
+await cctvDelete('Le demandeur ne supprime pas sa demande traitée', false, 'S1');
+await cctvDelete('Un autre soignant ne supprime pas la demande', false, 'S2');
+await write('Un admin efface une entrée de l\'index d\'un demandeur', true, 'A', 'cctvParDemandeur/S1/q1', null, cctvSeed);
+await write('Un admin ne pose pas une entrée d\'index au nom de quelqu\'un d\'autre', false, 'A', 'cctvParDemandeur/S1/q9', true, cctvSeed);
+await write('Un gestionnaire non admin n\'efface pas l\'index d\'un demandeur', false, 'P', 'cctvParDemandeur/S1/q1', null, cctvSeed);
+// Le demandeur supprime SA demande tant qu'elle est « nouvelle » (une seule écriture multi-chemins : demande + index).
+const cctvStatus = (statut) => (data) => { cctvSeed(data); data.cctvRequests.q1.statut = statut; };
+await scenario('Le demandeur supprime sa demande « nouvelle » (demande + index)', true, { as: 'S1', op: 'update', path: '/', value: { 'cctvRequests/q1': null, 'cctvParDemandeur/S1/q1': null } }, cctvStatus('nouvelle'));
+for (const statut of ['en_cours', 'acceptee', 'refusee', 'cloturee']) {
+    await scenario(`Le demandeur ne supprime pas sa demande « ${statut} »`, false, { as: 'S1', op: 'update', path: '/', value: { 'cctvRequests/q1': null, 'cctvParDemandeur/S1/q1': null } }, cctvStatus(statut));
+    await write(`Le demandeur ne supprime pas l'entrée d'index d'une demande « ${statut} »`, false, 'S1', 'cctvParDemandeur/S1/q1', null, cctvStatus(statut));
+}
+await scenario('Un autre soignant ne supprime pas la demande « nouvelle » d\'autrui', false, { as: 'S2', op: 'update', path: '/', value: { 'cctvRequests/q1': null, 'cctvParDemandeur/S1/q1': null } }, cctvStatus('nouvelle'));
+await write('Un autre soignant n\'efface pas la demande « nouvelle » d\'autrui seule', false, 'S2', 'cctvRequests/q1', null, cctvStatus('nouvelle'));
+await write('Un gestionnaire non admin ne supprime pas une demande « nouvelle »', false, 'P', 'cctvRequests/q1', null, cctvStatus('nouvelle'));
+await scenario('Le demandeur supprime sa demande « nouvelle » même avec des messages dans le fil', true, { as: 'S1', op: 'update', path: '/', value: { 'cctvRequests/q1': null, 'cctvParDemandeur/S1/q1': null } }, (data) => { cctvStatus('nouvelle')(data); data.cctvRequests.q1.reponses = { r1: { ts: 2, texte: 'Précision', par: { uid: 'S1', name: 'S1', staff: false } } }; });
+await write('Le demandeur ne se laisse pas écraser sa demande par une autre valeur', false, 'S1', 'cctvRequests/q1/statut', 'acceptee', cctvStatus('nouvelle'));
+await write('Le demandeur pose toujours sa propre entrée d\'index', true, 'S2', 'cctvParDemandeur/S2/q2', true, cctvSeed);
+await write('Le demandeur ne pose pas l\'entrée d\'un autre', false, 'S2', 'cctvParDemandeur/S1/q2', true, cctvSeed);
+
 await env.cleanup();
 console.log(failures === 0 ? `\nTOUT EST OK (${total} scénarios)` : `\n${failures} ÉCHEC(S) sur ${total} scénarios`);
 process.exit(failures === 0 ? 0 : 1);
