@@ -48,7 +48,7 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
             <div style={{ marginBottom: 6 }}><strong>Précisions sur les blessures</strong></div>
             <div className="helper-text" style={{ marginBottom: '0.6rem' }}>
                 {strict
-                    ? 'Facultatif. Une zone du corps par ligne : ajoutez une ligne (+) pour chaque autre zone, avec son côté, son nombre et ses précisions. Chaque choix ajoute sa conduite à tenir au parcours.'
+                    ? 'Une zone du corps par ligne : ajoutez une ligne (+) pour chaque autre zone, avec son côté, son nombre et ses précisions. Chaque choix ajoute sa conduite à tenir au parcours.'
                     : <>Une zone du corps par ligne : ajoutez une ligne (+) pour chaque autre zone, avec son côté, son nombre et ses précisions (à choisir dans la liste). À renseigner avant {ASSISTANT_LABEL}, qui reprend tout dans la plainte, le diagnostic et les soins.</>}
             </div>
             {injuryIds.map((conditionId) => {
@@ -101,13 +101,13 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                                     </div>
                                     {strict ? (
                                         <Select
-                                            isMulti isClearable closeMenuOnSelect={false} options={precisionOptions(conditionId)} styles={darkSelectStyles} className="form-control p-0" placeholder="Précisions sur cette zone (facultatif)" noOptionsMessage={() => 'Aucun autre choix'}
+                                            isMulti isClearable closeMenuOnSelect={false} options={precisionOptions(conditionId)} styles={darkSelectStyles} className="form-control p-0" placeholder="Précisions sur cette zone" noOptionsMessage={() => 'Aucun autre choix'}
                                             value={(Array.isArray(entry.precisions) ? entry.precisions : []).map((label) => ({ value: label, label }))}
                                             onChange={(selected) => updateRow(conditionId, position, { precisions: (selected || []).map((option) => option.value) })}
                                         />
                                     ) : (
                                         <CreatableSelect
-                                            isMulti isClearable options={precisionOptions(conditionId)} styles={darkSelectStyles} className="form-control p-0" placeholder="Précisions sur cette zone : choisissez ou saisissez (facultatif)" noOptionsMessage={() => 'Saisissez une précision'}
+                                            isMulti isClearable options={precisionOptions(conditionId)} styles={darkSelectStyles} className="form-control p-0" placeholder="Précisions sur cette zone : choisissez ou saisissez" noOptionsMessage={() => 'Saisissez une précision'}
                                             formatCreateLabel={(text) => `Ajouter « ${text} »`} value={(Array.isArray(entry.precisions) ? entry.precisions : []).map((label) => ({ value: label, label }))}
                                             onChange={(selected) => updateRow(conditionId, position, { precisions: (selected || []).map((option) => option.value) })}
                                         />
@@ -126,7 +126,7 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                 value={mutilations.map((value) => ({ value, label: (MUTILATION_BY_VALUE[value] || {}).label || value }))}
                 onChange={(selected) => setFormData((prev) => ({ ...prev, injuryMutilations: (selected || []).map((option) => option.value) }))}
             />
-            {!strict && <Form.Control type="text" name="injuryNote" value={formData.injuryNote || ''} onChange={(e) => setFormData((prev) => ({ ...prev, injuryNote: e.target.value }))} placeholder="Autres précisions sur les lésions (facultatif)" className="form-control mt-2" />}
+            {!strict && <Form.Control type="text" name="injuryNote" value={formData.injuryNote || ''} onChange={(e) => setFormData((prev) => ({ ...prev, injuryNote: e.target.value }))} placeholder="Autres précisions sur les lésions" className="form-control mt-2" />}
         </div>
     );
 };

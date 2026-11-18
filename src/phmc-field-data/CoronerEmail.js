@@ -129,7 +129,7 @@ const CoronerEmail = ({
         <>
             <Form.Label className="form-section-title">Courrier</Form.Label>
             <Form.Group className="mb-3">
-                <Form.Label>Objet (facultatif)</Form.Label>
+                <Form.Label>Objet</Form.Label>
                 <Form.Control type="text" name="dmecEmailSubject" value={formData.dmecEmailSubject || ''} maxLength={MAIL_LIMITS.subject} onChange={handleChange} placeholder={DMEC_EMAIL_DEFAULT_SUBJECT} className="form-control" />
             </Form.Group>
 

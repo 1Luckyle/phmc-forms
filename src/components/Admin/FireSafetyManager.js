@@ -192,15 +192,15 @@ const Controls = ({ data, onSaved, showNotification, adminName }) => {
                     </div>
                 ))}
             </div>
-            <Form.Group className="my-2" data-guide-zone><Form.Label>Notes <small className="text-muted">(facultatif)</small></Form.Label><Form.Control placeholder="Remarque sur ce contrôle (facultatif)" as="textarea" rows={2} maxLength={500} name="controleNotes" data-guide="Facultatif : une remarque sur ce contrôle." value={notes} onChange={(e) => setNotes(e.target.value)} /></Form.Group>
+            <Form.Group className="my-2" data-guide-zone><Form.Label>Notes</Form.Label><Form.Control placeholder="Remarque sur ce contrôle" as="textarea" rows={2} maxLength={500} name="controleNotes" data-guide="Une remarque sur ce contrôle." value={notes} onChange={(e) => setNotes(e.target.value)} /></Form.Group>
             {failed.length > 0 && (
                 <Alert variant="warning" className="py-2">
                     <Form.Check type="checkbox" id="fs-create-nc" checked={createNc} onChange={(e) => setCreateNc(e.target.checked)}
                         label={`Ouvrir une non-conformité pour chacun des ${failed.length} point${failed.length > 1 ? 's' : ''} non conforme${failed.length > 1 ? 's' : ''}`} />
                     {createNc && (
                         <div className="fs-pair mt-2" data-guide-zone>
-                            <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect name="controleResponsable" data-guide="Facultatif : la personne chargée de corriger les points non conformes." value={responsable} onChange={setResponsable} /></Form.Group>
-                            <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField name="controleEcheance" data-guide="Facultatif : la date limite de correction." value={echeance} onChange={(e) => setEcheance(e.target.value)} /></Form.Group>
+                            <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent)</small></Form.Label><ResponsableSelect name="controleResponsable" data-guide="La personne chargée de corriger les points non conformes." value={responsable} onChange={setResponsable} /></Form.Group>
+                            <Form.Group><Form.Label>Échéance</Form.Label><DateField name="controleEcheance" data-guide="La date limite de correction." value={echeance} onChange={(e) => setEcheance(e.target.value)} /></Form.Group>
                         </div>
                     )}
                 </Alert>
@@ -260,7 +260,7 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
         run(() => assignNonConformity(nc.id, { responsable, echeance: dateToMs(echeance) }), 'Responsable et échéance mis à jour.');
     };
     const resolve = (nc) => {
-        const note = window.prompt('Comment le problème a-t-il été corrigé ? (facultatif)', '');
+        const note = window.prompt('Comment le problème a-t-il été corrigé ?', '');
         if (note === null) return;
         run(() => resolveNonConformity(nc.id, { note, name: adminName }), 'Non-conformité résolue.');
     };
@@ -273,8 +273,8 @@ const NonConformities = ({ data, onSaved, showNotification, adminName }) => {
                     <Form.Select name="ncArticle" required data-guide="L'obligation de sécurité incendie qui n'est pas respectée." value={form.article} onChange={(e) => setForm({ ...form, article: e.target.value })}>{Object.entries(ARTICLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Description</Form.Label><Form.Control name="ncDescription" required data-guide="Décrivez le problème en quelques mots (5 caractères minimum)." value={form.description} maxLength={500} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="ex. Extincteur du couloir expiré" /></Form.Group>
                 <div className="fs-pair">
-                    <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent, facultatif)</small></Form.Label><ResponsableSelect name="ncResponsable" data-guide="Facultatif : la personne chargée de corriger le problème." value={form.responsable} onChange={(responsable) => setForm({ ...form, responsable })} /></Form.Group>
-                    <Form.Group><Form.Label>Échéance <small className="text-muted">(facultatif)</small></Form.Label><DateField name="ncEcheance" data-guide="Facultatif : la date limite de correction." value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
+                    <Form.Group><Form.Label>Responsable <small className="text-muted">(administratif ou polyvalent)</small></Form.Label><ResponsableSelect name="ncResponsable" data-guide="La personne chargée de corriger le problème." value={form.responsable} onChange={(responsable) => setForm({ ...form, responsable })} /></Form.Group>
+                    <Form.Group><Form.Label>Échéance</Form.Label><DateField name="ncEcheance" data-guide="La date limite de correction." value={form.echeance} onChange={(e) => setForm({ ...form, echeance: e.target.value })} /></Form.Group>
                 </div>
             </div>
             <DebugFillButton onFill={debugFill} className="me-2" />
@@ -367,13 +367,13 @@ const Drills = ({ data, onSaved, showNotification, adminName }) => {
     return (
         <>
             <div className="adm-form-grid" data-guide-zone>
-                <Form.Group><Form.Label>Zone <small className="text-muted">(vide = tout le bâtiment)</small></Form.Label><EtageInput name="exerciceZone" data-guide="Facultatif : la zone évacuée. Vide = tout le bâtiment." value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value })} emptyLabel="Tout le bâtiment" /></Form.Group>
+                <Form.Group><Form.Label>Zone <small className="text-muted">(vide = tout le bâtiment)</small></Form.Label><EtageInput name="exerciceZone" data-guide="La zone évacuée. Vide = tout le bâtiment." value={form.etage} onChange={(e) => setForm({ ...form, etage: e.target.value })} emptyLabel="Tout le bâtiment" /></Form.Group>
                 <Form.Group className="fs-wide"><Form.Label>Participants <small className="text-muted">(personnel, sélection multiple)</small></Form.Label><div data-guide="Le personnel qui a participé à l'exercice (au moins un participant, ou des autres personnes)."><ParticipantsSelect value={form.participants} onChange={(participants) => setForm({ ...form, participants })} /></div></Form.Group>
                 <div className="fs-pair fs-pair-even">
-                <Form.Group><Form.Label>Autres personnes <small className="text-muted">(patients, visiteurs — nombre, facultatif)</small></Form.Label><Form.Control placeholder="ex. 12" inputMode="numeric" name="exerciceAutres" data-guide="Facultatif : le nombre de patients ou de visiteurs évacués." value={form.autres} onChange={(e) => setForm({ ...form, autres: e.target.value.replace(/\D/g, '') })} /></Form.Group>
+                <Form.Group><Form.Label>Autres personnes <small className="text-muted">(patients, visiteurs — nombre)</small></Form.Label><Form.Control placeholder="ex. 12" inputMode="numeric" name="exerciceAutres" data-guide="Le nombre de patients ou de visiteurs évacués." value={form.autres} onChange={(e) => setForm({ ...form, autres: e.target.value.replace(/\D/g, '') })} /></Form.Group>
                 <Form.Group><Form.Label>Durée d'évacuation (minutes)</Form.Label><Form.Control placeholder="ex. 8" inputMode="numeric" name="exerciceDuree" required data-guide="La durée de l'évacuation, en minutes." value={form.duree} onChange={(e) => setForm({ ...form, duree: e.target.value.replace(/\D/g, '') })} /></Form.Group>
                 </div>
-                <Form.Group className="fs-wide"><Form.Label>Observations <small className="text-muted">(facultatif)</small></Form.Label><Form.Control placeholder="Ce qui s'est bien passé, ce qui est à améliorer (facultatif)" as="textarea" rows={2} maxLength={500} name="exerciceObservations" data-guide="Facultatif : ce qui s'est bien ou mal passé." value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} /></Form.Group>
+                <Form.Group className="fs-wide"><Form.Label>Observations</Form.Label><Form.Control placeholder="Ce qui s'est bien passé, ce qui est à améliorer" as="textarea" rows={2} maxLength={500} name="exerciceObservations" data-guide="Ce qui s'est bien ou mal passé." value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} /></Form.Group>
             </div>
             <DebugFillButton onFill={debugFill} className="me-2" />
             <Button variant="primary" onClick={submit} disabled={busy || total === 0 || !form.duree}>Enregistrer l'exercice{total > 0 ? ` (${total} participant${total > 1 ? 's' : ''})` : ''}</Button>

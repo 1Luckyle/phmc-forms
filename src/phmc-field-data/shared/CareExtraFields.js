@@ -61,7 +61,7 @@ export const ReferralFields = ({ formData, setFormData, handleChange, unrestrict
                 {formData.referralReason === 'Other' && (
                     <Field label="Précisez" basis={200}><Form.Control type="text" name="referralOther" value={formData.referralOther || ''} onChange={handleChange} placeholder="Motif d'adressage" className="form-control" /></Field>
                 )}
-                <Field label="Médecin adressant (facultatif)" basis={260}>
+                <Field label="Médecin adressant" basis={260}>
                     <CreatableSelect
                         name="referringDoctor" isClearable options={careOptions} value={doctor} styles={darkSelectStyles} className="form-control"
                         placeholder="Soignant du PHMC, ou saisir un nom extérieur"
@@ -71,7 +71,7 @@ export const ReferralFields = ({ formData, setFormData, handleChange, unrestrict
                 </Field>
             </div>
             <div style={row}>
-                <Field label="Accompagnant (facultatif)" basis={260}><Form.Control type="text" name="companionName" value={formData.companionName || ''} onChange={handleChange} placeholder="Nom de la personne qui accompagne le patient" className="form-control" /></Field>
+                <Field label="Accompagnant" basis={260}><Form.Control type="text" name="companionName" value={formData.companionName || ''} onChange={handleChange} placeholder="Nom de la personne qui accompagne le patient" className="form-control" /></Field>
                 <Field label="Lien avec le patient" basis={200}><Form.Control type="text" name="companionRelation" value={formData.companionRelation || ''} onChange={handleChange} placeholder="ex. Épouse, ami, policier" className="form-control" /></Field>
             </div>
         </>
@@ -119,8 +119,8 @@ export const AptitudeFields = ({ formData, setFormData, handleChange }) => {
                 <Form.Control as="textarea" rows={2} name="aptitudeRestrictions" value={formData.aptitudeRestrictions || ''} onChange={handleChange} placeholder="Restrictions (ex. pas de travail en hauteur, port de verres correcteurs)" className="form-control" />
             )}
             <div style={{ ...row, marginTop: '0.6rem' }}>
-                <Field label="Acuité visuelle (facultatif)" basis={200}><Form.Control type="text" name="visualAcuity" value={formData.visualAcuity || ''} onChange={handleChange} placeholder="ex. 10/10 corrigée" className="form-control" /></Field>
-                <Field label="Audition (facultatif)" basis={200}><Form.Control type="text" name="hearingValue" value={formData.hearingValue || ''} onChange={handleChange} placeholder="ex. Normale, déficit léger à droite" className="form-control" /></Field>
+                <Field label="Acuité visuelle" basis={200}><Form.Control type="text" name="visualAcuity" value={formData.visualAcuity || ''} onChange={handleChange} placeholder="ex. 10/10 corrigée" className="form-control" /></Field>
+                <Field label="Audition" basis={200}><Form.Control type="text" name="hearingValue" value={formData.hearingValue || ''} onChange={handleChange} placeholder="ex. Normale, déficit léger à droite" className="form-control" /></Field>
                 <Field label="Vaccinations" basis={200}><Choice name="vaccinationState" formData={formData} handleChange={handleChange} options={VACCINATION_STATES} placeholder="À jour ?" /></Field>
             </div>
             {formData.vaccinationState === 'No' && (
@@ -144,7 +144,7 @@ export const RiskFields = ({ formData, handleChange }) => {
                 <Field label={`Conduite à tenir${needsAction ? ' *' : ''}`} basis={260}><Choice name="riskAction" formData={formData} handleChange={handleChange} options={RISK_ACTIONS} placeholder="Conduite à tenir" /></Field>
                 <Field label="Hospitalisation sous contrainte" basis={260}><Choice name="involuntaryHold" formData={formData} handleChange={handleChange} options={INVOLUNTARY_HOLDS} placeholder="Non, ou fondement de la contrainte" /></Field>
             </div>
-            <Form.Control type="text" name="riskActionNote" value={formData.riskActionNote || ''} onChange={handleChange} placeholder="Précisions sur la conduite à tenir (facultatif)" className="form-control" />
+            <Form.Control type="text" name="riskActionNote" value={formData.riskActionNote || ''} onChange={handleChange} placeholder="Précisions sur la conduite à tenir" className="form-control" />
         </>
     );
 };
@@ -210,7 +210,7 @@ export const ConsultExtraFields = ({ formData, setFormData, handleChange, onPref
         </div>
         <Form.Label>Examens complémentaires prescrits (à réaliser)</Form.Label>
         <MultiChoice name="examsOrdered" formData={formData} setFormData={setFormData} options={EXAMS_ORDERED} placeholder="Radiographie, bilan sanguin… (choix multiple)" />
-        <Form.Control type="text" name="examsOrderedNote" value={formData.examsOrderedNote || ''} onChange={handleChange} placeholder="Précisions sur les examens (facultatif)" className="form-control mt-2" />
+        <Form.Control type="text" name="examsOrderedNote" value={formData.examsOrderedNote || ''} onChange={handleChange} placeholder="Précisions sur les examens" className="form-control mt-2" />
         <div style={{ ...row, marginTop: '0.6rem', alignItems: 'flex-end' }}>
             <Field label="Arrêt de travail délivré ?" basis={200}>
                 <SimpleSelect name="workStoppage" value={formData.workStoppage} onChange={handleChange} options={[{ value: 'No', label: 'Non' }, { value: 'Yes', label: 'Oui' }]} placeholder="Oui ou non" />
@@ -281,7 +281,7 @@ export const DeathFields = ({ formData, setFormData, handleChange, kind = 'emerg
                         <Field label="Réanimation" basis={300}><Choice name="careDeathResuscitation" formData={formData} handleChange={handleChange} options={DEATH_RESUSCITATION} placeholder="Réanimation tentée ?" /></Field>
                         <Field label="Famille" basis={240}><Choice name="careDeathFamily" formData={formData} handleChange={handleChange} options={DEATH_FAMILY} placeholder="Proche prévenu ?" /></Field>
                     </div>
-                    <Form.Control as="textarea" rows={2} name="careDeathResuscitationNote" value={formData.careDeathResuscitationNote || ''} onChange={handleChange} placeholder="Déroulé de la réanimation : manœuvres, médicaments, durée (facultatif)" className="form-control" />
+                    <Form.Control as="textarea" rows={2} name="careDeathResuscitationNote" value={formData.careDeathResuscitationNote || ''} onChange={handleChange} placeholder="Déroulé de la réanimation : manœuvres, médicaments, durée" className="form-control" />
                 </div>
         </>
     );

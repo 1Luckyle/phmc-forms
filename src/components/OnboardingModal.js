@@ -1335,7 +1335,7 @@ const OnboardingModal = ({
                                     name="middleName"
                                     value={accountData.middleName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Deuxième prénom (facultatif)"
+                                    placeholder="Deuxième prénom"
                                     style={formInputStyle}
                                 />
                             </div>
@@ -1345,11 +1345,11 @@ const OnboardingModal = ({
                                     name="address"
                                     value={accountData.address}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Adresse (facultatif)"
+                                    placeholder="Adresse"
                                     style={formInputStyle}
                                 />
                                 <div style={{ flex: 1 }}>
-                                    <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountDataChange({ target: { name: 'zip', value: zip } })} placeholder="Code postal (facultatif)" style={formInputStyle} />
+                                    <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountDataChange({ target: { name: 'zip', value: zip } })} placeholder="Code postal" style={formInputStyle} />
                                 </div>
                             </div>
                             <div style={formRowStyle}>
@@ -1658,7 +1658,7 @@ const OnboardingModal = ({
                                     name="middleName"
                                     value={accountData.middleName}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Deuxième prénom (facultatif)"
+                                    placeholder="Deuxième prénom"
                                     style={formInputStyle}
                                 />
                             </div>
@@ -1668,11 +1668,11 @@ const OnboardingModal = ({
                                     name="address"
                                     value={accountData.address}
                                     onChange={handleAccountDataChange}
-                                    placeholder="Adresse (facultatif)"
+                                    placeholder="Adresse"
                                     style={formInputStyle}
                                 />
                                 <div style={{ flex: 1 }}>
-                                    <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountDataChange({ target: { name: 'zip', value: zip } })} placeholder="Code postal (facultatif)" style={formInputStyle} />
+                                    <ZipCityField zip={accountData.zip} onZipChange={(zip) => handleAccountDataChange({ target: { name: 'zip', value: zip } })} placeholder="Code postal" style={formInputStyle} />
                                 </div>
                             </div>
                             <div style={formRowStyle}>

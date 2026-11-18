@@ -69,7 +69,7 @@ const CivilianProfileModal = ({ show, onHide, showNotification, onLoadForm }) =>
 
                     <div className="d-flex gap-3 flex-wrap">
                         <Form.Group className="mb-3 flex-grow-1"><Form.Label>Prénom</Form.Label><Form.Control name="civilPrenom" required value={values.firstName || ''} maxLength={40} onChange={set('firstName')} /></Form.Group>
-                        <Form.Group className="mb-3 flex-grow-1"><Form.Label>Deuxième prénom <small className="text-muted">(facultatif)</small></Form.Label><Form.Control name="civilDeuxiemePrenom" value={values.middleName || ''} maxLength={40} onChange={set('middleName')} /></Form.Group>
+                        <Form.Group className="mb-3 flex-grow-1"><Form.Label>Deuxième prénom</Form.Label><Form.Control name="civilDeuxiemePrenom" value={values.middleName || ''} maxLength={40} onChange={set('middleName')} /></Form.Group>
                         <Form.Group className="mb-3 flex-grow-1"><Form.Label>Nom</Form.Label><Form.Control name="civilNom" required value={values.lastName || ''} maxLength={40} onChange={set('lastName')} /></Form.Group>
                     </div>
                     <div className="d-flex gap-3 flex-wrap">

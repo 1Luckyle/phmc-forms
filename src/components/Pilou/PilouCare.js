@@ -216,13 +216,13 @@ const PilouCare = ({ state, setState, onReset, onOpenLesson, showNotification })
                     </Form.Select></Form.Group>
                 <Form.Group className="mt-2"><Form.Label>Allergies connues</Form.Label>
                     <Select isMulti name="pilouAllergies" value={asOptions(allergies)} options={ALLERGY_CHOICES} styles={selectStyles} closeMenuOnSelect={false}
-                        onChange={(options) => set({ allergies: (options || []).map((o) => o.value) })} placeholder="Aucune connue (facultatif)…" noOptionsMessage={() => 'Aucun autre choix'} /></Form.Group>
+                        onChange={(options) => set({ allergies: (options || []).map((o) => o.value) })} placeholder="Aucune connue…" noOptionsMessage={() => 'Aucun autre choix'} /></Form.Group>
                 <Form.Group className="mt-2"><Form.Label>Antécédents</Form.Label>
                     <Select isMulti name="pilouAntecedents" value={asOptions(chronic)} options={HISTORY_CHOICES} styles={selectStyles} closeMenuOnSelect={false}
-                        onChange={(options) => set({ chronic: (options || []).map((o) => o.value) })} placeholder="Aucun connu (facultatif)…" noOptionsMessage={() => 'Aucun autre choix'} /></Form.Group>
+                        onChange={(options) => set({ chronic: (options || []).map((o) => o.value) })} placeholder="Aucun connu…" noOptionsMessage={() => 'Aucun autre choix'} /></Form.Group>
                 <Form.Group className="mt-2"><Form.Label>Traitements en cours</Form.Label>
                     <Select isMulti name="pilouTraitements" value={asOptions(currentMeds)} options={MEDICATION_CHOICES} styles={selectStyles} closeMenuOnSelect={false}
-                        onChange={(options) => set({ currentMeds: (options || []).map((o) => o.value) })} placeholder="Aucun connu (facultatif)…" noOptionsMessage={() => 'Aucun autre choix'} /></Form.Group>
+                        onChange={(options) => set({ currentMeds: (options || []).map((o) => o.value) })} placeholder="Aucun connu…" noOptionsMessage={() => 'Aucun autre choix'} /></Form.Group>
 
                 <h6 className="pl-title mt-3"><i className="fas fa-stethoscope"></i>Les motifs</h6>
                 <Form.Group><Form.Label>Motif(s) de la prise en charge</Form.Label>

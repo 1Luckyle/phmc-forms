@@ -90,7 +90,7 @@ const JobsEditor = ({ formData, setFormData }) => {
                     </div>
                     <Form.Control as="textarea" rows={3} className="form-control mt-3" data-guide="Vos responsabilités et missions dans cet emploi." value={job.duties || ''} onChange={(event) => update(index, { duties: event.target.value })} placeholder="Vos responsabilités dans cet emploi" />
                     {job.left && (
-                        <Form.Control as="textarea" rows={2} className="form-control mt-3" data-guide="Pourquoi vous avez quitté cet emploi (facultatif)." value={job.leaveReason || ''} onChange={(event) => update(index, { leaveReason: event.target.value })} placeholder="Motif du départ (facultatif)" />
+                        <Form.Control as="textarea" rows={2} className="form-control mt-3" data-guide="Pourquoi vous avez quitté cet emploi." value={job.leaveReason || ''} onChange={(event) => update(index, { leaveReason: event.target.value })} placeholder="Motif du départ" />
                     )}
                 </div>
             ))}
@@ -264,7 +264,7 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
                     <NameFields
                         formData={formData} setFormData={setFormData} handleChange={handleChange} guard={guard}
                         fields={{ title: 'applicantTitle', first: 'applicantFirstName', middle: 'applicantMiddleName', last: 'applicantLastName' }}
-                        placeholders={{ first: 'Prénom', middle: 'Deuxième prénom (facultatif)', last: 'Nom de famille' }}
+                        placeholders={{ first: 'Prénom', middle: 'Deuxième prénom', last: 'Nom de famille' }}
                     />
                 </div>
             </Field>

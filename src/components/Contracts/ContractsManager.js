@@ -25,6 +25,9 @@ import PersonSelect, { personGroups } from './PersonSelect';
 import { moneyDisplay, moneyText, moneyUnit } from '../../utils/contractMoney';
 import PersonnelFileDialog from './PersonnelFileDialog';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import EstablishmentPicker from '../EstablishmentPicker';
+import { effectiveEstablishment, ranksForEstablishment, servicesForEstablishment, recipientAllowedIn } from '../../constants/establishments';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
 import { normalizeRank, getRoleInfo, canManageDiscipline, highestAdministrativeRole } from '../../constants/ranks';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
@@ -82,12 +85,16 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
     const [type, setType] = useState('cdi');
     const [employeeUid, setEmployeeUid] = useState('');
     const [candidateService, setCandidateService] = useState('phmc');
+    const [etablissement, setEtablissement] = useState('phmc');   // établissement émetteur : PHMC ou clinique de Paleto Bay (PBC)
     const [filter, setFilter] = useState('');
     const [fields, setFields] = useState(emptyContractFields('cdi'));
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [grid, setGrid] = useState(null);   // grille des rémunérations publiée (page Transparence)
 
+    const { pbcEnabled } = useSiteConfig();
+    // « pbc » seulement si les formulaires PBC sont activés (sinon le sélecteur disparaît et tout est PHMC).
+    const etab = effectiveEstablishment(etablissement, pbcEnabled);
     const isNew = !contract;
     const ownContract = !!contract && contract.employeUid === issuer.uid && !issuer.isAdmin;
     // Un document d'une personne qui n'est plus dans le personnel est une archive : consultable, jamais modifiable.
@@ -102,6 +109,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         setType(initialType);
         setEmployeeUid(contract?.employeUid || '');
         setCandidateService(contract?.service || 'phmc');
+        setEtablissement(contract?.etablissement || 'phmc');
         setFields({ ...emptyContractFields(initialType), ...(contract?.champs || {}), typeContrat: initialType });
     }, [show, contract, newType]);
 
@@ -114,12 +122,16 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         return staff.filter((m) => m.uid
             && (issuer.isAdmin || m.uid !== issuer.uid)
             && (employmentType || m.kind !== 'candidate')
+            && recipientAllowedIn(m, etab, (role) => getRoleInfo(role)?.pole)
             && (!q || m.displayName.toLowerCase().includes(q)));
-    }, [staff, filter, issuer.uid, issuer.isAdmin, employmentType]);
+    }, [staff, filter, issuer.uid, issuer.isAdmin, employmentType, etab]);
     const employee = staff.find((m) => m.uid === employeeUid) || null;
     const isCandidate = !!employee && employee.kind !== 'staff'; // compte Civil sans fiche : service à choisir
-    const service = isCandidate ? candidateService : (employee?.service || contract?.service || 'phmc');
-    const ranks = STAFF_SERVICES[service]?.ranks || [];
+    // Le PBC n'a pas de service DMEC : un candidat du PBC relève toujours de la liste PHMC.
+    const service = isCandidate ? (etab === 'pbc' ? 'phmc' : candidateService) : (employee?.service || contract?.service || 'phmc');
+    // Grades et services proposés : ceux de l'établissement (au PBC, ni grades ni service du DMEC).
+    const ranks = ranksForEstablishment(STAFF_SERVICES[service]?.ranks || [], etab);
+    const hospitalServices = servicesForEstablishment(HOSPITAL_SERVICES, etab);
 
     // Documents de la personne : contrats signés (pour un avenant ou une fin de contrat) et convocations envoyées (pour une sanction ou un licenciement).
     const ofEmployee = useMemo(() => contracts.filter((c) => c.employeUid === employeeUid && c.id !== contract?.id), [contracts, employeeUid, contract]);
@@ -142,6 +154,25 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
     const ctx = useMemo(() => ({ refContract, convocation }), [refContract, convocation]);
 
     const set = (field) => (e) => setFields((prev) => ({ ...prev, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+
+    // Passage au PBC : un destinataire du DMEC n'est pas possible ; les grades et services du DMEC déjà saisis sont retirés.
+    const onChangeEstablishment = (next) => {
+        if (next === etablissement) return;
+        setError('');
+        if (next === 'pbc') {
+            if (employee && !recipientAllowedIn(employee, 'pbc', (role) => getRoleInfo(role)?.pole)) {
+                setError('Le PBC n\'a pas de service DMEC : ce destinataire relève du DMEC, le document reste un document du PHMC.');
+                return;
+            }
+            setFields((prev) => ({
+                ...prev,
+                role: getRoleInfo(prev.role)?.pole === 'dmec' ? '' : prev.role,
+                affectation: joinServices(servicesForEstablishment(parseServices(prev.affectation), 'pbc')),
+                nouvelleAffectation: joinServices(servicesForEstablishment(parseServices(prev.nouvelleAffectation), 'pbc')),
+            }));
+        }
+        setEtablissement(next);
+    };
 
     const onChangeType = (nextType) => {
         autoRoleRef.current = null;
@@ -185,14 +216,14 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
         if (readOnly || !employee) return null;
         try {
             return buildContractBb({
-                type, service, employeeName: employee.displayName, employeeBadge: employee.badge, champs: fields,
+                type, service, etablissement: etab, employeeName: employee.displayName, employeeBadge: employee.badge, champs: fields,
                 issuer: { name: issuer.name, title: issuer.title }, id: contract?.id, timestamp: Date.now(), refContract, convocation,
             });
         } catch (err) {
             console.error('Aperçu impossible :', err);
             return null;
         }
-    }, [readOnly, employee, type, service, fields, issuer.name, issuer.title, contract, refContract, convocation]);
+    }, [readOnly, employee, type, service, etab, fields, issuer.name, issuer.title, contract, refContract, convocation]);
 
     // Ce qui reste à renseigner : pour ENREGISTRER (brouillon), puis ce qui ne bloquera qu'à l'ENVOI (délais de la procédure, dates passées…).
     const todo = useMemo(() => {
@@ -237,7 +268,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
             const warningText = warnings.length ? `\n\nAttention :\n- ${warnings.join('\n- ')}` : '';
             if (!window.confirm(`Envoyer « ${CONTRACT_TYPES[type]} » à ${employee.displayName} ?\n\nLe texte sera figé : pour le modifier ensuite, il faudra le retirer.${warningText}`)) return;
         }
-        const id = await saveContractDraft({ id: contract?.id, employee, service, champs: { ...fields, typeContrat: type }, issuer });
+        const id = await saveContractDraft({ id: contract?.id, employee, service, etablissement: etab, champs: { ...fields, typeContrat: type }, issuer });
         if (thenSend) {
             // Signature de l'émetteur : celle de « Mes créations » si elle existe (sinon son nom, en italique, tient lieu de signature).
             let signatureUrl = '';
@@ -329,10 +360,10 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                 break;
             case 'services': {
                 const selected = parseServices(value);
-                const extra = selected.filter((s) => !HOSPITAL_SERVICES.includes(s));   // texte libre d'un ancien document : conservé
+                const extra = selected.filter((s) => !hospitalServices.includes(s));   // texte libre d'un ancien document : conservé
                 control = (
                     <div className="contract-services">
-                        {[...HOSPITAL_SERVICES, ...extra].map((name) => (
+                        {[...hospitalServices, ...extra].map((name) => (
                             <Form.Check
                                 key={name} type="checkbox" id={`service-${field.key}-${name}`} label={name}
                                 checked={selected.includes(name)} onChange={(e) => toggleService(field.key, name, e.target.checked)}
@@ -540,6 +571,13 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         </Form.Group>
                     )}
 
+                    {!readOnly && (
+                        <EstablishmentPicker
+                            value={etab} onChange={onChangeEstablishment} disabled={busy} name="contractEtablissement" label="Document émis par"
+                            help="Le PBC ajoute son logo et ses coordonnées, et ne propose que ses grades et services (pas de DMEC)."
+                        />
+                    )}
+
                     <Form.Group className="mb-3" data-guide-zone>
                         <Form.Label>Destinataire</Form.Label>
                         {isNew ? (
@@ -564,7 +602,7 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         )}
                     </Form.Group>
 
-                    {isCandidate && (
+                    {isCandidate && etab !== 'pbc' && (
                         <Form.Group className="mb-3">
                             <Form.Label>Service</Form.Label>
                             <Form.Select value={candidateService} onChange={(e) => { setCandidateService(e.target.value); setFields((p) => ({ ...p, role: '' })); }}>

@@ -204,7 +204,7 @@ const useReportGovernance = ({ active, showNotification }) => {
                                 </Form.Select>
                             </Form.Group>
                             <Form.Group className="mb-2">
-                                <Form.Label>Référence <small className="text-muted">(n° de mandat, de dossier… facultatif)</small></Form.Label>
+                                <Form.Label>Référence <small className="text-muted">(n° de mandat, de dossier…)</small></Form.Label>
                                 <Form.Control maxLength={120} value={freezeForm.reference} onChange={(event) => setFreezeForm((f) => ({ ...f, reference: event.target.value }))} />
                             </Form.Group>
                             <Form.Group>

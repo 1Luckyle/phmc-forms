@@ -151,7 +151,7 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
                 <Form.Group><Form.Label>Agent (nom, matricule)</Form.Label><Form.Control name="agent" required data-guide="Le nom ou le matricule de l'agent qui fait la demande." value={form.agent} onChange={set('agent')} placeholder="ex. Off. Dupont #4521" maxLength={120} /></Form.Group>
                 <Form.Group><Form.Label>Type de demande</Form.Label>
                     <Form.Select name="type" required data-guide="Ce que l'agent demande (information, réquisition, accès…)." value={form.type} onChange={set('type')}>{Object.entries(requestTypesFor(scope)).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
-                <Form.Group><Form.Label>{scope === 'dmec' ? 'ID patient / défunt concerné' : 'ID patient concerné'} <small className="text-muted">(facultatif)</small></Form.Label><Form.Control name="patientID" data-guide="Facultatif : l'ID du patient concerné par la demande." value={form.patientID} onChange={set('patientID')} placeholder="ex. PHMC-2752" maxLength={40} /></Form.Group>
+                <Form.Group><Form.Label>{scope === 'dmec' ? 'ID patient / défunt concerné' : 'ID patient concerné'}</Form.Label><Form.Control name="patientID" data-guide="L'ID du patient concerné par la demande." value={form.patientID} onChange={set('patientID')} placeholder="ex. PHMC-2752" maxLength={40} /></Form.Group>
                 <Form.Group><Form.Label>Fondement invoqué</Form.Label>
                     <Form.Select name="baseLegale" required data-guide="Sur quel fondement l'agent demande : mandat, consentement ou danger vital. Sans fondement, rien ne se communique." value={form.baseLegale} onChange={set('baseLegale')}>{Object.entries(LEGAL_BASES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
                 {form.baseLegale === 'mandat' && (
@@ -159,8 +159,8 @@ const Registry = ({ preset, isAdmin, uid, staffName, showNotification, scope }) 
                 )}
                 <Form.Group><Form.Label>Décision</Form.Label>
                     <Form.Select name="decision" required data-guide="Ce que vous avez décidé : remis, refusé, renvoyé à la Direction…" value={form.decision} onChange={set('decision')}>{Object.entries(DECISIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Form.Select></Form.Group>
-                <Form.Group className="le-note"><Form.Label>Note <small className="text-muted">(facultatif, sans contenu médical)</small></Form.Label>
-                    <Form.Control placeholder="Précision utile, sans aucun contenu médical (facultatif)" as="textarea" rows={2} name="note" data-guide="Facultatif : une précision, sans aucun contenu médical." value={form.note} onChange={set('note')} maxLength={300} /></Form.Group>
+                <Form.Group className="le-note"><Form.Label>Note <small className="text-muted">(sans contenu médical)</small></Form.Label>
+                    <Form.Control placeholder="Précision utile, sans aucun contenu médical" as="textarea" rows={2} name="note" data-guide="Une précision, sans aucun contenu médical." value={form.note} onChange={set('note')} maxLength={300} /></Form.Group>
             </div>
             {errors.length > 0 && <small className="text-warning d-block mb-2">{errors[0]}</small>}
             <DebugFillButton onFill={debugFill} className="me-2" />

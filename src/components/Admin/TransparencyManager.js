@@ -162,8 +162,8 @@ const DirectionTab = ({ data, onSaved, showNotification, onLogAction }) => {
             </div>
 
             <div className="form-group tm-wide-field" data-guide-zone>
-                <label>Où adresser une demande d'accès aux informations <small className="text-muted">(facultatif)</small></label>
-                <Form.Control as="textarea" rows={3} name="contactDemandes" data-guide="Facultatif : où adresser une demande d'accès aux informations." value={contactDemandes} onChange={(e) => setContactDemandes(e.target.value)}
+                <label>Où adresser une demande d'accès aux informations</label>
+                <Form.Control as="textarea" rows={3} name="contactDemandes" data-guide="Où adresser une demande d'accès aux informations." value={contactDemandes} onChange={(e) => setContactDemandes(e.target.value)}
                     placeholder="ex. Écrivez à la Direction : une réponse est apportée sous 7 jours (Code du Gouvernement, art. 328)." />
             </div>
 
@@ -720,8 +720,8 @@ const ComptesTab = ({ data, onSaved, showNotification, onLogAction, adminName })
             </div>
 
             <Form.Group className="mb-3">
-                <Form.Label>Notes <small className="text-muted">(facultatif, publiées avec les comptes)</small></Form.Label>
-                <Form.Control as="textarea" rows={2} name="notes" data-guide="Facultatif : une remarque publiée avec les comptes." value={notes} onChange={(e) => touch(lignes, e.target.value)} placeholder="ex. Les dépenses liées à une enquête pénale sont regroupées sous « Dépenses d'enquête »." />
+                <Form.Label>Notes <small className="text-muted">(publiées avec les comptes)</small></Form.Label>
+                <Form.Control as="textarea" rows={2} name="notes" data-guide="Une remarque publiée avec les comptes." value={notes} onChange={(e) => touch(lignes, e.target.value)} placeholder="ex. Les dépenses liées à une enquête pénale sont regroupées sous « Dépenses d'enquête »." />
             </Form.Group>
             </fieldset>
 

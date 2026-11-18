@@ -133,7 +133,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Deuxième prénom</Form.Label>
-                        <Form.Control value={form.middleName} onChange={set('middleName')} placeholder="facultatif" />
+                        <Form.Control value={form.middleName} onChange={set('middleName')} placeholder="Deuxième prénom" />
                     </Form.Group>
                     <Form.Group className="flex-fill">
                         <Form.Label>Nom</Form.Label>
@@ -178,11 +178,11 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                 <div className="d-flex gap-2 mb-3 align-items-start">
                     <Form.Group style={{ flex: '2 1 0' }}>
                         <Form.Label className="text-nowrap">Adresse</Form.Label>
-                        <Form.Control value={form.address} onChange={set('address')} placeholder="facultatif" />
+                        <Form.Control value={form.address} onChange={set('address')} placeholder="Adresse" />
                     </Form.Group>
                     <Form.Group style={{ flex: '1 1 210px' }}>
                         <Form.Label className="text-nowrap">Ville / code postal</Form.Label>
-                        <ZipCityField zip={form.zip} onZipChange={(zip) => set('zip')({ target: { value: zip } })} placeholder="facultatif" />
+                        <ZipCityField zip={form.zip} onZipChange={(zip) => set('zip')({ target: { value: zip } })} placeholder="Code postal" />
                     </Form.Group>
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-end">

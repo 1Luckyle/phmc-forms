@@ -32,11 +32,12 @@ export const sectionBanner = (title, { accent = BB_COLORS.red, size = null } = {
 export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
 export const PBC_LOGO = 'https://phmc-tools.com/img/phmcpaletobaylogo.png';
 // dmec : document du DMEC (ex. candidature en médecine légale) → le petit sceau du DMEC est ajouté à côté du logo, comme dans l'en-tête des rapports du DMEC (dmecHeaderLogos).
-export const careHeader = ({ title, lines = '', pbc = false, dmec = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
+// withPhmcLogo : avec pbc, le logo du PHMC est gardé et celui du PBC s'ajoute à côté (documents administratifs : contrats, accords, AMA) ; sans lui, le PBC est seul (rapports de soins).
+export const careHeader = ({ title, lines = '', pbc = false, dmec = false, withPhmcLogo = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
 
 [size=110]${lines}[/size]
 
-[/center][td][center][img]${pbc ? PBC_LOGO : PHMC_LOGO}[/img]${dmec ? `[img]${DMEC_LOGO_SMALL}[/img]` : ''}
+[/center][td][center]${pbc ? `${withPhmcLogo ? `[img]${PHMC_LOGO}[/img]` : ''}[img]${PBC_LOGO}[/img]` : `[img]${PHMC_LOGO}[/img]`}${dmec ? `[img]${DMEC_LOGO_SMALL}[/img]` : ''}
 [b][size=150]${String(title).toUpperCase()}[/size][/b][/center][/table][/divbox]`;
 
 // Pied de page commun à tous les rapports : coordonnées du Pillbox Hill Medical Center. Ajouté à la fin du BBCode, une seule fois, par withPhmcFooter

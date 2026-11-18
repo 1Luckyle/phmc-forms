@@ -45,8 +45,8 @@ const FireReportModal = ({ show, onHide, showNotification }) => {
                     <option value="Extérieur du bâtiment">Extérieur du bâtiment</option>
                 </Form.Select>
                 {floorByLabel(form.etage) && (
-                    <Form.Select className="mt-2" name="lieu" data-guide="Facultatif : la pièce ou la zone précise de l'étage." value={form.lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} aria-label="Lieu précis">
-                        <option value="">Lieu précis (facultatif)…</option>
+                    <Form.Select className="mt-2" name="lieu" data-guide="La pièce ou la zone précise de l'étage." value={form.lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} aria-label="Lieu précis">
+                        <option value="">Lieu précis…</option>
                         {floorByLabel(form.etage).zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
                     </Form.Select>
                 )}

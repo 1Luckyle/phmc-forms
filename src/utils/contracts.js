@@ -21,6 +21,7 @@
 import { ref, get, set, update, remove, push } from 'firebase/database';
 import { database } from '../firebase';
 import { normalizeRank } from '../constants/ranks';
+import { normalizeEstablishment } from '../constants/establishments';
 import { releaseInternalStatusAfterContract } from './internalRecruitment';
 import { closeThreadsAfterContract } from './applicationThreads';
 import { requestRoleAfterContract } from './contractFollowUp';
@@ -69,6 +70,7 @@ export const normalizeContract = (raw, id = null) => {
         : null;
     const rawKind = source.typeEmploye ?? source.employeeKind;
     const service = source.service || 'phmc';
+    const etablissement = normalizeEstablishment(source.etablissement);
     const creeLe = source.creeLe ?? source.createdAt ?? null;
     const identifier = id ?? source.id ?? null;
     return {
@@ -78,6 +80,7 @@ export const normalizeContract = (raw, id = null) => {
         employeBadge: source.employeBadge ?? source.employeeBadge ?? '',
         employeEmail: source.employeEmail ?? source.employeeEmail ?? '',
         service,
+        etablissement,
         typeEmploye: rawKind === 'staff' ? 'personnel' : (rawKind === 'candidate' ? 'candidat' : (rawKind === 'recruiter' ? 'recruteur' : (rawKind || 'personnel'))),
         champs,
         statut: normalizeContractStatus(source.statut ?? source.status),
@@ -91,7 +94,7 @@ export const normalizeContract = (raw, id = null) => {
         // BBCode figé à l'envoi (absent des anciens contrats : ils n'ont que le texte brut).
         bbCodeFige: source.bbCodeFige ?? '',
         modele: source.modele ?? null,
-        reference: source.reference || buildReference({ service, id: identifier, timestamp: source.envoyeLe ?? source.sentAt ?? creeLe }),
+        reference: source.reference || buildReference({ service, etablissement, id: identifier, timestamp: source.envoyeLe ?? source.sentAt ?? creeLe }),
         offreExpireLe: source.offreExpireLe ?? null,
         emetteur: source.emetteur ?? null,
         signature,
@@ -157,7 +160,7 @@ const loadContract = async (id) => {
 // Crée ou met à jour un BROUILLON (un document envoyé doit d'abord être retiré).
 // `employee` : { uid, displayName, badge, email, kind: 'staff' | 'candidate' | 'recruiter' } (kind en anglais en
 // interne côté interface ; il est enregistré en français).
-export async function saveContractDraft({ id, employee, service, champs, issuer }) {
+export async function saveContractDraft({ id, employee, service, etablissement, champs, issuer }) {
     assertNotLocked();
     // Un recruteur ne rédige pas son propre contrat (aussi imposé par database.rules.json) ; un admin le peut.
     if (employee.uid === issuer.uid && !issuer.isAdmin) {
@@ -175,6 +178,7 @@ export async function saveContractDraft({ id, employee, service, champs, issuer 
         employeBadge: employee.badge || '',
         employeEmail: employee.email || '',
         service,
+        etablissement: normalizeEstablishment(etablissement),
         champs,
         typeEmploye,
         modifieLe: now,
@@ -215,7 +219,7 @@ export async function sendContract(id, issuer) {
     if (errors.length) throw new Error(errors.join(' '));
 
     const rendered = buildContractBb({
-        type, service: contract.service, employeeName: contract.employeNom, employeeBadge: contract.employeBadge, champs,
+        type, service: contract.service, etablissement: contract.etablissement, employeeName: contract.employeNom, employeeBadge: contract.employeBadge, champs,
         issuer, id, timestamp: now, refContract, convocation,
     });
     const days = Number(champs.validiteOffreJours) || 0;

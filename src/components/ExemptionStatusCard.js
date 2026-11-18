@@ -84,8 +84,8 @@ const ExemptionStatusCard = ({ showNotification, compact = false }) => {
                         {['faible_revenu', 'mineur', 'autre'].map((key) => <option key={key} value={key}>{EXEMPTION_MOTIFS[key]}</option>)}
                     </Form.Select>
                     <Form.Control
-                        as="textarea" rows={2} maxLength={500} size="sm" className="mb-2" name="details" data-guide="Facultatif : une précision utile à l'examen de votre demande."
-                        placeholder="Précision (facultatif)" value={details} onChange={(event) => setDetails(event.target.value)} disabled={busy}
+                        as="textarea" rows={2} maxLength={500} size="sm" className="mb-2" name="details" data-guide="Une précision utile à l'examen de votre demande."
+                        placeholder="Précision" value={details} onChange={(event) => setDetails(event.target.value)} disabled={busy}
                     />
                     <div className="d-flex gap-2">
                         <Button size="sm" variant="primary" onClick={send} disabled={busy}>{busy ? <Spinner size="sm" animation="border" /> : 'Envoyer la demande'}</Button>

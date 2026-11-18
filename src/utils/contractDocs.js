@@ -357,20 +357,20 @@ export const validateDocFields = (typeKey, champsInput, ctx = {}, { forSend = fa
 // ───────────────────────────── Construction ─────────────────────────────
 
 // Référence du document : PHMC-RH-2026-AB12C (service, année, 5 derniers caractères de l'identifiant). Avant l'enregistrement (aperçu), « XXXXX ».
-export const buildReference = ({ service, id, timestamp }) => {
+export const buildReference = ({ service, etablissement, id, timestamp }) => {
     const year = new Date(timestamp || Date.now()).getFullYear();
     const suffix = id ? String(id).replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase() : 'XXXXX';
-    return `${service === 'coroner' ? 'DMEC' : 'PHMC'}-RH-${year}-${suffix}`;
+    return `${etablissement === 'pbc' ? 'PBC' : (service === 'coroner' ? 'DMEC' : 'PHMC')}-RH-${year}-${suffix}`;
 };
 
 // Document structuré → BBCode (avec les repères de signature de l'employé, voir generateContract).
-// ctx : { type, service, employeeName, employeeBadge, champs, issuer:{ name, title, signatureUrl }, id, timestamp, refContract, convocation }
+// ctx : { type, service, etablissement ('phmc' | 'pbc'), employeeName, employeeBadge, champs, issuer:{ name, title, signatureUrl }, id, timestamp, refContract, convocation }
 export const buildContractBb = (ctx) => {
     const champs = { ...emptyContractFields(ctx.type), ...ctx.champs };
     const timestamp = ctx.timestamp || Date.now();
-    const reference = buildReference({ service: ctx.service, id: ctx.id, timestamp });
+    const reference = buildReference({ service: ctx.service, etablissement: ctx.etablissement, id: ctx.id, timestamp });
     const content = buildDocumentContent({ ...ctx, champs, timestamp, reference });
-    const bbCode = generateContract({ ...content, reference, service: ctx.service, dateText: `Édité le ${formatTimestampDateFr(timestamp)}` });
+    const bbCode = generateContract({ ...content, reference, service: ctx.service, etablissement: ctx.etablissement, dateText: `Édité le ${formatTimestampDateFr(timestamp)}` });
     return { bbCode, title: content.title, reference, plain: bbToPlainText(bbCode) };
 };
 

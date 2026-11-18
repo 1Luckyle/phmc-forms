@@ -122,17 +122,17 @@ const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion, onL
                     )}
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Deuxième prénom <small className="text-muted">(facultatif)</small></Form.Label>
-                        <Form.Control name="profileDeuxiemePrenom" data-guide="Facultatif : votre deuxième prénom, pour pré-remplir vos dossiers médicaux." value={middleName} maxLength={40} onChange={(e) => setMiddleName(e.target.value)} />
+                        <Form.Label>Deuxième prénom</Form.Label>
+                        <Form.Control name="profileDeuxiemePrenom" data-guide="Votre deuxième prénom, pour pré-remplir vos dossiers médicaux." value={middleName} maxLength={40} onChange={(e) => setMiddleName(e.target.value)} />
                     </Form.Group>
                     <div className="d-flex gap-3 flex-wrap">
                         <Form.Group className="mb-3" style={{ flex: '2 1 220px' }}>
-                            <Form.Label>Adresse <small className="text-muted">(facultatif)</small></Form.Label>
-                            <Form.Control name="profileAdresse" data-guide="Facultatif : votre adresse, pour pré-remplir vos dossiers médicaux." value={address} maxLength={150} onChange={(e) => setAddress(e.target.value)} />
+                            <Form.Label>Adresse</Form.Label>
+                            <Form.Control name="profileAdresse" data-guide="Votre adresse, pour pré-remplir vos dossiers médicaux." value={address} maxLength={150} onChange={(e) => setAddress(e.target.value)} />
                         </Form.Group>
                         <Form.Group className="mb-3" style={{ flex: '1 1 180px' }}>
                             <Form.Label>Ville / code postal</Form.Label>
-                            <ZipCityField zip={zip} onZipChange={setZip} placeholder="Code postal (facultatif)" />
+                            <ZipCityField zip={zip} onZipChange={setZip} placeholder="Code postal" />
                         </Form.Group>
                     </div>
                     <Form.Text className="text-muted d-block mb-3">
@@ -140,11 +140,11 @@ const MyProfileModal = ({ show, onHide, showNotification, onRequestDeletion, onL
                     </Form.Text>
                     <Form.Group className="mb-3">
                         <Form.Label>Téléphone</Form.Label>
-                        <Form.Control name="profileTelephone" data-guide="Facultatif : votre numéro de téléphone en jeu." value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />
+                        <Form.Control name="profileTelephone" data-guide="Votre numéro de téléphone en jeu." value={phNumber} maxLength={40} onChange={(e) => setPhNumber(e.target.value)} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Discord</Form.Label>
-                        <Form.Control name="profileDiscord" data-guide="Facultatif : votre identifiant Discord." value={discord} maxLength={64} onChange={(e) => setDiscord(e.target.value)} />
+                        <Form.Control name="profileDiscord" data-guide="Votre identifiant Discord." value={discord} maxLength={64} onChange={(e) => setDiscord(e.target.value)} />
                     </Form.Group>
                     {error && <Alert variant="danger" className="py-2">{error}</Alert>}
                     <div className="d-flex justify-content-end mb-4">

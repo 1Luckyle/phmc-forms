@@ -144,10 +144,10 @@ const InterviewModal = ({ show, onHide, application, interview, actor, onSubmit 
                 </Form.Group>
                 <Form.Group className="mb-3">
                     <Form.Label>Autres personnes présentes</Form.Label>
-                    <div data-guide="Facultatif : les autres personnes présentes à l'entretien.">
+                    <div data-guide="Les autres personnes présentes à l'entretien.">
                     <Select
                         name="entretienPresents" isMulti value={others} onChange={(value) => setOtherNames((value || []).map((option) => option.value))} options={peopleOptions} isDisabled={busy}
-                        styles={selectStyles} menuPortalTarget={document.body} placeholder="Ajouter des personnes présentes (facultatif)…"
+                        styles={selectStyles} menuPortalTarget={document.body} placeholder="Ajouter des personnes présentes…"
                         noOptionsMessage={() => 'Aucune personne trouvée'}
                     />
                     </div>

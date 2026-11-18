@@ -31,10 +31,10 @@ export const FLIGHT_CERT_CLASSES = {
 export const FLIGHT_CERT_CATEGORIES = ['Avion', 'Hélicoptère', 'Hydravion']; // art. 400
 
 export const FLIGHT_CERT_EXAMS = {
-    vision: { label: 'Vue (acuité visuelle)', criterion: 'Acuité suffisante, avec ou sans correction', valueLabel: 'Acuité mesurée (facultatif)', valuePlaceholder: 'ex. 10/10 corrigée' },
+    vision: { label: 'Vue (acuité visuelle)', criterion: 'Acuité suffisante, avec ou sans correction', valueLabel: 'Acuité mesurée', valuePlaceholder: 'ex. 10/10 corrigée' },
     colorVision: { label: 'Vision des couleurs', criterion: 'Distingue les signaux lumineux et les couleurs aéronautiques' },
     hearing: { label: 'Audition', criterion: 'Perçoit la voix et les communications radio' },
-    bloodPressure: { label: 'Tension artérielle et fréquence cardiaque', criterion: 'Valeurs compatibles avec le vol', valueLabel: 'Valeurs mesurées (facultatif)', valuePlaceholder: 'ex. 120/80 mmHg — 72 bpm' },
+    bloodPressure: { label: 'Tension artérielle et fréquence cardiaque', criterion: 'Valeurs compatibles avec le vol', valueLabel: 'Valeurs mesurées', valuePlaceholder: 'ex. 120/80 mmHg — 72 bpm' },
     cardio: { label: 'Cardiovasculaire (ECG)', criterion: 'Aucun trouble du rythme ou de la conduction incompatible avec le vol' },
     neuro: { label: 'Neurologique et équilibre', criterion: 'Aucun trouble de la conscience, de la coordination ou de l\'équilibre' },
     mental: { label: 'Santé mentale (entretien)', criterion: 'Aucun trouble incompatible avec la sécurité du vol' },

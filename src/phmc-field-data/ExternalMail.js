@@ -63,7 +63,7 @@ const ExternalMail = ({ formData, setFormData, handleChange, showNotification, p
                     <Form.Control type="text" name="externalMailRecipient" value={formData.externalMailRecipient || ''} maxLength={MAIL_LIMITS.name} onChange={handleChange} placeholder="ex: Madame Dupont, Los Santos Insurance" className="form-control" />
                 </div>
                 <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-                    <Form.Label>Adresse e-mail (facultatif)</Form.Label>
+                    <Form.Label>Adresse e-mail</Form.Label>
                     <Form.Control type="email" name="externalMailRecipientAddress" value={formData.externalMailRecipientAddress || ''} maxLength={MAIL_LIMITS.name} onChange={handleChange} placeholder="prenomnom@mail.eyefind.fr" className="form-control" />
                 </div>
             </div>

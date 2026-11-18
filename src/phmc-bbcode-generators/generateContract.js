@@ -11,7 +11,7 @@
 // Un bloc d'article est une chaîne (paragraphe) ou { liste: [...], numerotee?: true } | { tableau: [[libellé, valeur], …] } | { serment: texte }
 //   | { encart: texte }. Les textes peuvent contenir du BBCode inline généré par les gabarits ([b]…[/b]) ; les saisies des utilisateurs sont
 //   nettoyées AVANT (voir bbSafe).
-import { careHeader, dmecHeader, sectionBanner, phmcFooter } from './shared/bbStyles';
+import { careHeader, dmecHeader, sectionBanner, phmcFooter, pbcFooter } from './shared/bbStyles';
 
 // Repères remplacés au moment de l'AFFICHAGE par le bloc de signature de l'employé (le texte, lui, est figé à l'envoi). Pas de crochets : le
 // convertisseur BBCode les prendrait pour des balises.
@@ -48,14 +48,16 @@ ${name ? `${name}\n` : ''}${role ? `[size=85]${role}[/size]\n` : ''}${mention ? 
 
 const generateContract = (doc) => {
     const {
-        title, subtitle, reference, dateText, service, partiesTitre = 'Entre les soussignés', visas = [], parties = [], preambule = [], articles = [], signatures, footer = [],
+        title, subtitle, reference, dateText, service, etablissement, partiesTitre = 'Entre les soussignés', visas = [], parties = [], preambule = [], articles = [], signatures, footer = [],
     } = doc;
+    // Clinique de Paleto Bay : logos du PHMC et du PBC dans l'en-tête, pied de page de la clinique. (Le PBC n'a pas de DMEC : « pbc » l'emporte sur le service.)
+    const pbc = etablissement === 'pbc';
 
     // En-tête commun aux rapports : étiquette « Informations du document », puis la référence et la date d'édition ; le titre du document est en grand à droite, sous le logo.
     const headerTitle = String(title || '').toUpperCase();
-    const headerCell = service === 'coroner'
+    const headerCell = service === 'coroner' && !pbc
         ? `[divbox=white]${dmecHeader({ label: 'Informations du document', name: `Réf. ${reference}`, detail: dateText, title: headerTitle, subtitle: subtitle ? `[size=105]${subtitle}[/size]` : '' })}[/divbox]`
-        : careHeader({ title: headerTitle, label: 'Informations du document', lines: `Réf. ${reference}\n${dateText}${subtitle ? `\n${subtitle}` : ''}` });
+        : careHeader({ title: headerTitle, pbc, withPhmcLogo: true, label: 'Informations du document', lines: `Réf. ${reference}\n${dateText}${subtitle ? `\n${subtitle}` : ''}` });
 
     const visasBlock = visas.length
         ? `[divbox=white][size=90]${visas.map((visa) => `[i]${visa}[/i]`).join('\n')}[/size][/divbox]`
@@ -88,7 +90,7 @@ ${signatures.intro ? `[justify]${signatures.intro}[/justify]\n` : ''}[table][tr]
         sigBlock,
         footerBlock,
         '[/divbox]',
-        phmcFooter(),
+        pbc ? pbcFooter() : phmcFooter(),
     ].filter(Boolean).join('\n');
 };
 

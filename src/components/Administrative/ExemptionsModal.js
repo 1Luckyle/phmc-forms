@@ -89,8 +89,8 @@ const ExemptionsModal = ({ show, onHide, showNotification }) => {
                         </div>
                         <Form.Control
                             size="sm" className="my-2" maxLength={300} name={`note-${request.patientID}`}
-                            data-guide="Facultatif : un message transmis à la personne avec la décision."
-                            placeholder="Commentaire pour la personne (facultatif, envoyé avec la décision)"
+                            data-guide="Un message transmis à la personne avec la décision."
+                            placeholder="Commentaire pour la personne (envoyé avec la décision)"
                             value={noteOf(request.patientID)} onChange={(event) => setNote(request.patientID, event.target.value)}
                         />
                         <div className="d-flex gap-2">
@@ -109,8 +109,8 @@ const ExemptionsModal = ({ show, onHide, showNotification }) => {
                 <>
                     <div className="d-flex flex-wrap gap-2 mb-3" data-guide-zone>
                         <Form.Control size="sm" style={{ maxWidth: 160 }} name="patientID" required data-guide="L'ID patient à exempter (PHMC-1234)." placeholder="ID patient" value={manual.patientID} onChange={(event) => setManual({ ...manual, patientID: event.target.value })} />
-                        <Form.Control size="sm" style={{ maxWidth: 200 }} name="name" data-guide="Facultatif : son nom, pour le courriel." placeholder="Nom (facultatif)" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} />
-                        <Form.Control size="sm" style={{ maxWidth: 260 }} name="note" data-guide="Facultatif : un message transmis à la personne." placeholder="Commentaire (facultatif)" value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} />
+                        <Form.Control size="sm" style={{ maxWidth: 200 }} name="name" data-guide="Son nom, pour le courriel." placeholder="Nom" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} />
+                        <Form.Control size="sm" style={{ maxWidth: 260 }} name="note" data-guide="Un message transmis à la personne." placeholder="Commentaire" value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} />
                         <DebugFillButton size="sm" onFill={() => setManual({ patientID: 'PHMC-2752', name: 'Jean Testard', note: 'Exemption de test (debug).' })} />
                         {/* Bouton plein : un contour vert sur fond sombre, grisé tant que l'ID est vide, était presque invisible. */}
                         <Button size="sm" variant="success" className="fw-semibold text-white" title={isValidPatientId(manual.patientID) ? 'Accorder l\'exemption à cette personne' : 'Saisissez d\'abord un ID patient valide (ex. PHMC-1234)'} disabled={!isValidPatientId(manual.patientID) || busyId === 'manual'} onClick={() => run('manual', () => grantExemption({ patientID: manual.patientID, patientName: manual.name, name: actor, note: manual.note }).then(() => setManual({ patientID: '', name: '', note: '' })), 'Exemption accordée.')}>

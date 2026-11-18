@@ -83,7 +83,7 @@ export const CareEmployeeField = ({ formData, setFormData, options, label = "Ide
 
 // Soignants supplémentaires (multi-sélection, personnel soignant seulement) sous celui qui rédige le rapport : ils sont cités dans le rapport et reçoivent une notification qui les invite
 // à en récupérer une copie (utils/reportCopyRecipients.js). Le rédacteur ne se propose pas lui-même.
-export const ExtraStaffField = ({ formData, setFormData, options, label = 'Autres soignants présents (facultatif)' }) => {
+export const ExtraStaffField = ({ formData, setFormData, options, label = 'Autres soignants présents' }) => {
     const signer = formData.phmcEmployee || '';
     const groups = useMemo(() => careStaffOnly(options)
         .map((group) => ({ label: group.label, options: group.options.filter((option) => option.value !== signer).map((option) => ({ value: option.value, label: option.label })) }))

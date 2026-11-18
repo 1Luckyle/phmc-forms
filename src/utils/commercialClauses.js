@@ -26,6 +26,12 @@ const clean = bbSafe;
 const money = (value) => (value === '' || value == null || Number.isNaN(Number(value)) ? null : `${Number(value).toLocaleString('fr-FR')} $`);
 const dayWord = (n) => `${n} jour${Number(n) > 1 ? 's' : ''}`;
 
+// Clinique de Paleto Bay : c'est le PHMC qui contracte, par sa clinique (« le PHMC » reste le défini dans tous les articles).
+const PHMC_PBC = {
+    nom: 'Pillbox Hill Medical Center (PHMC), agissant par sa clinique de Paleto Bay (PBC)',
+    defini: 'établissement public de santé de l\'État de San Andreas, dont le siège est situé à l\'angle d\'Elgin Avenue et de Strawberry Avenue, Pillbox Hill, Los Santos, et dont la clinique de Paleto Bay est située Paleto Bay Blvd., BP 685, Paleto Bay',
+};
+
 const PHMC = {
     nom: 'Pillbox Hill Medical Center (PHMC)',
     defini: 'établissement public de santé de l\'État de San Andreas, dont le siège est situé à l\'angle d\'Elgin Avenue et de Strawberry Avenue, Pillbox Hill, Los Santos',
@@ -41,6 +47,7 @@ const partyBlocks = (ctx) => {
     const c = ctx.champs;
     const issuerIdentity = `${clean(ctx.issuer?.name) || 'la Direction'}${ctx.issuer?.title ? `, ${clean(ctx.issuer.title)}` : ''}`;
     const isPerson = c.partieForme === 'particulier';
+    const entity = ctx.etablissement === 'pbc' ? PHMC_PBC : PHMC;
     const quality = c.representantQualite === 'mandataire'
         ? `mandataire, muni(e) d'un mandat écrit${c.mandatReference ? ` (${clean(c.mandatReference)})` : ''}`
         : `${clean(c.representantFonction) || 'dirigeant(e)'}, dirigeant(e)`;
@@ -48,7 +55,7 @@ const partyBlocks = (ctx) => {
         ? `${b(clean(c.partieNom))}, personne physique, domicilié(e) ou établi(e) à ${clean(c.partieSiege)}, ci-après « ${b('la Partie')} »,`
         : `${b(clean(c.partieNom))}, ${clean(c.partieFormeLabel) || 'personne morale'}, dont le siège est situé à ${clean(c.partieSiege)}, représenté(e) par ${b(clean(c.representantNom))}, agissant en qualité de ${quality}, ci-après « ${b('la Partie')} »,`;
     return [
-        `${b(PHMC.nom)}, ${PHMC.defini}, représenté par ${issuerIdentity}, dûment habilité(e) à cet effet par délégation de la Direction (Code Civil, art. 113, 116 et 117), ci-après « ${b('le PHMC')} »,`,
+        `${b(entity.nom)}, ${entity.defini}, représenté par ${issuerIdentity}, dûment habilité(e) à cet effet par délégation de la Direction (Code Civil, art. 113, 116 et 117), ci-après « ${b('le PHMC')} »,`,
         b('ET'),
         partner,
         '[i]Ci-après désignés ensemble « les Parties ».[/i]',
@@ -265,6 +272,7 @@ export const buildAgreementDocument = (ctx) => {
         reference,
         dateText: `Fait à Los Santos, le ${formatTimestampDateFr(timestamp)}`,
         service: 'phmc',
+        etablissement: ctx.etablissement === 'pbc' ? 'pbc' : 'phmc',
         visas: [
             'Vu le Code Civil de San Andreas, titre I, chapitre 2 (les personnes morales) et chapitre 3 (représentation et mandat) ;',
             'Vu le Code Civil de San Andreas, titre II (les contrats), notamment ses articles 201 à 220 ;',

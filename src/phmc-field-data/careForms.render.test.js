@@ -141,7 +141,7 @@ describe('champs ajoutés aux formulaires de soins', () => {
         render(<Harness Component={PhysEval} extra={allProps} />);
         expect(document.querySelector('input[name="appointmentTime"]')).toBeTruthy();
         expect(screen.getByText("Motif d'adressage")).toBeTruthy();
-        expect(screen.getByText('Médecin adressant (facultatif)')).toBeTruthy();
+        expect(screen.getByText('Médecin adressant')).toBeTruthy();
         expect(document.querySelector('input[name="companionName"]')).toBeTruthy();
         expect(document.querySelector('select[name="referralReason"]').textContent).toContain('Adressé par les secours (EMS / 911)');
     });
@@ -293,7 +293,7 @@ describe('soignants : chirurgien et soignants supplémentaires', () => {
 
     test("protocole d'urgence : champ multi-sélection des soignants supplémentaires, sans le rédacteur", () => {
         render(<Harness Component={EmergencyForm} initial={{ phmcEmployee: 'Dr. Interne', extraStaff: [] }} extra={{ unrestrictedPhmcGroupedOptions: staff, admission: [], followup: [], painLevel: [], findings: [], lungs: [], pupils: [], wounds: [], ecg: [], sono: [], lab: [], bloodOxy: [], Imaging: [], XrayResults: [], ctResults: [], mriResults: [], ultrasoundResults: [], otherResults: [] }} />);
-        expect(screen.getByText('Autres soignants présents (facultatif)')).toBeTruthy();
+        expect(screen.getByText('Autres soignants présents')).toBeTruthy();
 
         fireEvent.keyDown(screen.getByText(/Ajouter les soignants qui ont participé/), { key: 'ArrowDown', keyCode: 40 });
         expect(screen.getByText('Dr. Medecin')).toBeTruthy();

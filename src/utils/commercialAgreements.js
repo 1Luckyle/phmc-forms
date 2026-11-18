@@ -20,6 +20,7 @@ import { buildAgreementDocument, WRITTEN_FORM_THRESHOLD, COMMERCIAL_MODEL_VERSIO
 import { logActivity } from './activityLog';
 import { notifyUser } from './notifications';
 import { assertNotLocked } from './lockdownGuard';
+import { normalizeEstablishment } from '../constants/establishments';
 
 // ───────────────────────────── Catalogue ─────────────────────────────
 
@@ -180,11 +181,11 @@ const stripBb = (bbCode) => String(bbCode || '')
     .trim();
 
 // → { bbCode, plain, reference }. `issuer` : { name, title, signatureUrl }.
-export const buildAgreementBb = ({ type, champs, issuer, id, timestamp }) => {
+export const buildAgreementBb = ({ type, champs, issuer, id, timestamp, etablissement }) => {
     const reference = referenceOf(id, timestamp);
     const partyFormLabel = (PARTY_FORMS.find((entry) => entry.value === champs.partieForme) || {}).label || '';
     const doc = buildAgreementDocument({
-        type, typeLabel: AGREEMENT_TYPES[type]?.label || '', champs: { ...champs, partieFormeLabel: partyFormLabel.toLowerCase() }, issuer, reference, timestamp,
+        type, etablissement: normalizeEstablishment(etablissement), typeLabel: AGREEMENT_TYPES[type]?.label || '', champs: { ...champs, partieFormeLabel: partyFormLabel.toLowerCase() }, issuer, reference, timestamp,
     });
     const bbCode = generateContract(doc);
     return { bbCode, plain: stripBb(bbCode), reference };
@@ -203,6 +204,7 @@ export const normalizeAgreement = (raw, id) => {
         id,
         type: typeOfAgreement(value.type),
         statut: AGREEMENT_STATUS[value.statut] ? value.statut : 'brouillon',
+        etablissement: normalizeEstablishment(value.etablissement),   // établissement émetteur : PHMC ou clinique de Paleto Bay (PBC)
         champs: { ...emptyAgreementFields(typeOfAgreement(value.type)), ...(value.champs || {}) },
         partieUid: value.partieUid || '',
         partieNom: value.partieNom || value.champs?.partieNom || '',
@@ -255,11 +257,12 @@ const loadOne = async (id) => {
 // ───────────────────────────── Direction / administration ─────────────────────────────
 
 // `partner` : { uid?, displayName? } — compte de la Partie si elle en a un (elle signera elle-même).
-export async function saveAgreementDraft({ id, type, champs, partner, issuer }) {
+export async function saveAgreementDraft({ id, type, etablissement, champs, partner, issuer }) {
     assertNotLocked();
     const now = Date.now();
     const base = {
         type,
+        etablissement: normalizeEstablishment(etablissement),
         champs,
         partieNom: champs.partieNom || '',
         partieUid: partner?.uid || null,
@@ -289,7 +292,7 @@ export async function sendAgreement(id, issuer) {
     const { errors, warnings } = validateAgreement(agreement.type, agreement.champs, { forSend: true });
     if (errors.length) throw new Error(errors.join(' '));
     const now = Date.now();
-    const rendered = buildAgreementBb({ type: agreement.type, champs: agreement.champs, issuer, id, timestamp: now });
+    const rendered = buildAgreementBb({ type: agreement.type, etablissement: agreement.etablissement, champs: agreement.champs, issuer, id, timestamp: now });
     const updates = {
         [`accordsCommerciaux/${id}/statut`]: 'envoye',
         [`accordsCommerciaux/${id}/bbCodeFige`]: rendered.bbCode,

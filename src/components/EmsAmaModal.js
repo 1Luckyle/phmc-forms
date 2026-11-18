@@ -20,6 +20,8 @@ import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { loadStaffMembers, rankLabel } from '../utils/staffAdmin';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import DebugFillButton from './DebugFillButton';
+import EstablishmentPicker from './EstablishmentPicker';
+import { effectiveEstablishment } from '../constants/establishments';
 import SignatureCreator from './SignatureCreator';
 import { ReportPreviewFrame } from './ReportExpansion';
 import { copyToClipboard } from './notificationService';
@@ -68,7 +70,9 @@ const civilianName = (c) => [c.firstName, c.middleName, c.lastName].filter(Boole
 const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) => {
     const { canUseAma, staffName, currentEmployee, isAdmin } = useEmployeeAuth();
     const [staffMembers, setStaffMembers] = useState([]);
-    const { bbcodeEnabled } = useSiteConfig();
+    const { bbcodeEnabled, pbcEnabled } = useSiteConfig();
+    const [etablissement, setEtablissement] = useState('phmc');       // émetteur : PHMC ou clinique de Paleto Bay (PBC)
+    const etab = effectiveEstablishment(etablissement, pbcEnabled);     // PHMC d'office quand les formulaires PBC sont désactivés
 
     const [employee, setEmployee] = useState(null);                  // { value: nom, uid, label }
     const [patientOptions, setPatientOptions] = useState([]);
@@ -102,6 +106,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         if (!show) return;
         setSaved(null);
         setCertified(false);
+        setEtablissement('phmc');
         setGuardianName('');
         setMinor(false);
         setEmancipated(false);
@@ -178,8 +183,8 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
 
     const bbCode = useMemo(() => generateAma({
         patientName, patientSignatureUrl: patientSignature?.url || '', guardianName, guardianRelation, minor, emancipated, date,
-        paramedicName: employee?.value || '', paramedicSignatureUrl: employeeSignature?.url || '',
-    }), [patientName, patientSignature, guardianName, guardianRelation, minor, emancipated, date, employee, employeeSignature]);
+        paramedicName: employee?.value || '', paramedicSignatureUrl: employeeSignature?.url || '', etablissement: etab,
+    }), [patientName, patientSignature, guardianName, guardianRelation, minor, emancipated, date, employee, employeeSignature, etab]);
 
     const handleDebugFill = () => {
         setDate(nowLabel());
@@ -214,7 +219,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
 
             const finalCode = generateAma({
                 patientName: patientName.trim(), patientSignatureUrl: signature.url, guardianName: guardianName.trim(), guardianRelation, minor, emancipated, date,
-                paramedicName: employee.value, paramedicSignatureUrl: employeeSignature.url,
+                paramedicName: employee.value, paramedicSignatureUrl: employeeSignature.url, etablissement: etab,
             });
             const title = buildReportTitle(40, { patientID, patientSignature: patientName.trim(), date }, 'Formulaire AMA');
             const reportKey = `${comprehensiveSanitize(title)}_${Date.now()}`;
@@ -223,6 +228,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
             await set(ref(database, reportPath), {
                 bbCodeVersion: 40,
                 kind: 'ama',
+                etablissement: etab,
                 bbCode: finalCode,
                 originalKey: title,
                 title,
@@ -236,6 +242,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                     ...effectiveGuardian({ guardianName, guardianRelation, minor, emancipated }),
                     minor,
                     emancipated: minor && emancipated,
+                    etablissement: etab,
                     paramedicName: employee.value,
                     paramedicSignatureUrl: employeeSignature.url,
                     date,
@@ -338,6 +345,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         <>
             <div className="ems-ama-modal-body" data-guide-zone>
                 <p className="text-muted small mb-2">Tous les champs sont obligatoires, sauf le représentant légal d'un patient majeur.</p>
+                <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={saving} name="amaEtablissement" label="Refus de soins auprès de" help="Le PBC ajoute son logo à l'en-tête ; le pied de page du document est celui de l'établissement choisi." />
                 <div className="ama-grid">
                     <Form.Group className="mb-2">
                         <Form.Label>Paramédic qui signe *</Form.Label>
@@ -394,7 +402,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                         <Form.Group className="mb-2">
                             <Form.Label>Représentant légal {minor ? '*' : '(nom, si applicable)'}</Form.Label>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <Form.Control size="sm" name="amaGuardian" required={minor} data-guide={minor ? 'Nom du parent ou tuteur qui signe à la place du mineur.' : 'Facultatif : seulement si un représentant légal est présent.'} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder={minor ? 'Prénom Nom' : 'Facultatif'} disabled={saving} />
+                                <Form.Control size="sm" name="amaGuardian" required={minor} data-guide={minor ? 'Nom du parent ou tuteur qui signe à la place du mineur.' : 'Seulement si un représentant légal est présent.'} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder="Prénom Nom du représentant légal" disabled={saving} />
                                 {minor && (
                                     <Form.Select size="sm" name="amaGuardianRelation" required data-guide="Lien entre le représentant légal et le patient mineur." value={guardianRelation} onChange={(e) => setGuardianRelation(e.target.value)} disabled={saving}>
                                         <option value="">Lien avec le patient…</option>

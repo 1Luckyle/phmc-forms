@@ -127,7 +127,7 @@ const SicknessEmail = ({
             )}
             {(has('restrictions') || formData.certificateExit === 'Sorties autorisées avec restrictions' || formData.fitnessConclusion === 'Apte avec restrictions') && (
                 <Form.Group className="mb-3">
-                    <Form.Label>{has('restrictions') ? 'Aménagements recommandés (facultatif)' : 'Restrictions'}</Form.Label>
+                    <Form.Label>{has('restrictions') ? 'Aménagements recommandés' : 'Restrictions'}</Form.Label>
                     <Form.Control as="textarea" rows={2} name="certificateRestrictions" value={formData.certificateRestrictions || ''} onChange={handleChange} placeholder="ex: Sorties de 10 h à 12 h seulement ; pas de port de charges lourdes" className="form-control" />
                 </Form.Group>
             )}

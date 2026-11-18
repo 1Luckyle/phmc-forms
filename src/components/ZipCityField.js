@@ -12,7 +12,7 @@ import { useCities, cityOfZip } from '../utils/cities';
 const OTHER = '__autre__';
 const DEFAULT_GUIDE = 'Choisissez la ville dans la liste : le code postal se renseigne tout seul. « Autre » permet de saisir une ville absente de la liste.';
 
-const ZipCityField = ({ zip = '', onZipChange, city = '', onCityChange, fieldName = '', style, placeholder = 'Code postal (facultatif)', disabled = false }) => {
+const ZipCityField = ({ zip = '', onZipChange, city = '', onCityChange, fieldName = '', style, placeholder = 'Code postal', disabled = false }) => {
     const cities = useCities();
     const match = cityOfZip(cities, zip);
     const withName = typeof onCityChange === 'function';

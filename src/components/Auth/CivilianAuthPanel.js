@@ -272,7 +272,7 @@ const CivilianAuthPanel = ({
                     </div>
                 )}
                 <Form.Group className="mb-3">
-                    <Form.Label>Deuxième prénom (optionnel)</Form.Label>
+                    <Form.Label>Deuxième prénom</Form.Label>
                     <Form.Control type="text" name="middleName" value={accountData.middleName} onChange={handleAccountChange} style={fieldBoxStyle} />
                 </Form.Group>
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -306,7 +306,7 @@ const CivilianAuthPanel = ({
                         <Form.Control type="text" name="phone" value={accountData.phone} onChange={handleAccountChange} style={fieldBoxStyle} />
                     </Form.Group>
                     <Form.Group className="mb-3" style={{ flex: 1 }}>
-                        <Form.Label>Discord (optionnel)</Form.Label>
+                        <Form.Label>Discord</Form.Label>
                         <Form.Control type="text" name="discord" value={accountData.discord} onChange={handleAccountChange} style={fieldBoxStyle} />
                     </Form.Group>
                 </div>

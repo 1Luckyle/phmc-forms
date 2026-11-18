@@ -80,7 +80,7 @@ const ClinicalMedications = ({ formData, setFormData, patient, tags, vitals, tit
                                 <Form.Control type="number" min="1" max="12" value={entry.count ?? 1} onChange={(e) => update(index, { count: e.target.value === '' ? '' : Math.max(1, Math.min(12, Number(e.target.value))) })} className="form-control" />
                             </div>
                             <div style={{ flex: '2 1 220px', minWidth: 0 }}>
-                                <Form.Label className="small mb-1">Précision (facultatif)</Form.Label>
+                                <Form.Label className="small mb-1">Précision</Form.Label>
                                 <Form.Control type="text" value={entry.note || ''} onChange={(e) => update(index, { note: e.target.value })} placeholder="Site d'injection, horaire…" className="form-control" />
                             </div>
                         </div>

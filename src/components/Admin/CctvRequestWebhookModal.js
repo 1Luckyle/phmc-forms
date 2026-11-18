@@ -209,7 +209,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                                 <div style={rowStyle}>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Grade</Form.Label>
-                                        <Form.Control type="text" value={rank} onChange={(e) => setRank(e.target.value)} placeholder="Grade de l'agent (facultatif)" />
+                                        <Form.Control type="text" value={rank} onChange={(e) => setRank(e.target.value)} placeholder="Grade de l'agent" />
                                     </Form.Group>
                                     <Form.Group style={fieldStyle}>
                                         <Form.Label>Agent demandeur</Form.Label>
@@ -283,7 +283,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                             </div>
 
                             <div style={sectionStyle}>
-                                <div style={sectionTitleStyle}>Détails (facultatif)</div>
+                                <div style={sectionTitleStyle}>Détails</div>
                                 <div style={rowStyle}>
                                     <Form.Group style={{ flex: '1 1 300px' }}>
                                         <Form.Label>Description des événements</Form.Label>

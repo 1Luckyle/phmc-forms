@@ -20,6 +20,8 @@ import ContractDocument from '../Contracts/ContractDocument';
 import { SIDE_MENU_POPPER } from '../Contracts/sideMenu';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import EstablishmentPicker from '../EstablishmentPicker';
+import { effectiveEstablishment } from '../../constants/establishments';
 import { loadStaffMembers, loadCivilians } from '../../utils/staffAdmin';
 import { loadUserCreations } from '../../utils/userCreations';
 import { normalizeRank, highestAdministrativeRole } from '../../constants/ranks';
@@ -53,6 +55,9 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
     const [champs, setChamps] = useState(() => ({ ...emptyAgreementFields(type), ...(agreement?.champs || {}) }));
     const [partnerUid, setPartnerUid] = useState(agreement?.partieUid || '');
     const [busy, setBusy] = useState(false);
+    const { pbcEnabled } = useSiteConfig();
+    const [etablissement, setEtablissement] = useState(agreement?.etablissement || 'phmc');   // émetteur : PHMC ou clinique de Paleto Bay (PBC)
+    const etab = effectiveEstablishment(etablissement, pbcEnabled);   // PHMC d'office quand les formulaires PBC sont désactivés
 
     const set = (key, value) => setChamps((previous) => ({ ...previous, [key]: value }));
     const fields = visibleFields(type, champs);
@@ -67,12 +72,12 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
 
     const preview = useMemo(() => {
         try {
-            return composeContractBb(buildAgreementBb({ type, champs, issuer, id: agreement?.id || 'APERCU', timestamp: Date.now() }).bbCode);
+            return composeContractBb(buildAgreementBb({ type, etablissement: etab, champs, issuer, id: agreement?.id || 'APERCU', timestamp: Date.now() }).bbCode);
         } catch (error) {
             console.error('Aperçu de l\'accord impossible :', error);
             return '';
         }
-    }, [type, champs, issuer, agreement]);
+    }, [type, etab, champs, issuer, agreement]);
 
     // Remplissage de test (mode debug, voir DebugFillButton) : chaque champ visible encore vide reçoit une valeur de test.
     const debugFill = () => setChamps((previous) => debugFillChamps((values) => visibleFields(type, values), previous));
@@ -83,7 +88,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
         if (alsoSend && !window.confirm(`Envoyer l'accord « ${champs.titre} » ? Le texte sera figé et signé par le PHMC.${partner ? ` ${partner.label} pourra le signer depuis « Mes documents administratifs ».` : ' La Partie n\'a pas de compte : vous consignerez sa signature ensuite.'}`)) return;
         setBusy(true);
         try {
-            const id = await saveAgreementDraft({ id: agreement?.id, type, champs, partner: partner ? { uid: partner.value, displayName: partner.name } : null, issuer });
+            const id = await saveAgreementDraft({ id: agreement?.id, type, etablissement: etab, champs, partner: partner ? { uid: partner.value, displayName: partner.name } : null, issuer });
             if (alsoSend) {
                 const result = await sendAgreement(id, issuer);
                 showNotification(`Accord envoyé (réf. ${result.reference}).${result.warnings.length ? ` ${result.warnings[0]}` : ''}`, 'success');
@@ -131,6 +136,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
         <div>
             <div className="row g-3">
                 <div className="col-12 col-lg-6" data-guide-zone data-mark-checks>
+                    <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={busy} name="agreementEtablissement" label="Accord conclu par" help="Le PBC ajoute son logo et ses coordonnées (en-tête et pied de page)." />
                     <div className="field-legend"><span className="req"><i></i>Obligatoire</span><span className="opt"><i></i>Facultatif</span></div>
                     {groups.map(([group, groupFields]) => (
                         <fieldset key={group} className="border rounded p-3 mb-3" style={{ borderColor: '#30363d' }}>
@@ -266,7 +272,7 @@ const AgreementView = ({ agreement, issuer, showNotification, onBack, onEdit, on
                             <div className="col-md-6"><Form.Control placeholder="Nom du signataire *" value={proof.nom} onChange={(e) => setProof({ ...proof, nom: e.target.value })} /></div>
                             <div className="col-md-6"><Form.Control placeholder="Fonction" value={proof.fonction} onChange={(e) => setProof({ ...proof, fonction: e.target.value })} /></div>
                             <div className="col-md-6"><Form.Control placeholder="Preuve (lien de l'image ou du document) *" value={proof.preuve} onChange={(e) => setProof({ ...proof, preuve: e.target.value })} /></div>
-                            <div className="col-md-6"><Form.Control placeholder="Lien de l'image de sa signature (facultatif)" value={proof.imageUrl} onChange={(e) => setProof({ ...proof, imageUrl: e.target.value })} /></div>
+                            <div className="col-md-6"><Form.Control placeholder="Lien de l'image de sa signature" value={proof.imageUrl} onChange={(e) => setProof({ ...proof, imageUrl: e.target.value })} /></div>
                         </div>
                         <Button className="mt-2" variant="success" disabled={busy} onClick={() => run(() => recordPartnerSignature(agreement.id, proof, issuer), 'Signature de la Partie consignée : accord en vigueur.')}>
                             <i className="fas fa-file-signature me-1"></i>Consigner la signature : accord en vigueur

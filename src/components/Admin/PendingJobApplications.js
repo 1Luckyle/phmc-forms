@@ -259,7 +259,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '', initialO
 
     // Annule l'entretien sans toucher à la candidature : elle repasse « en cours d'examen », prête pour un nouvel entretien.
     const handleCancelInterview = (application) => run(application, async () => {
-        const reason = window.prompt(`Annuler l'entretien de ${application.nomCandidat} ?\n\nMotif (facultatif, transmis au candidat) :`, '');
+        const reason = window.prompt(`Annuler l'entretien de ${application.nomCandidat} ?\n\nMotif (transmis au candidat) :`, '');
         if (reason === null) return;
         const note = reason.trim();
         const previous = application.entretien;
@@ -588,7 +588,7 @@ const PendingJobApplications = ({ showNotification, initialSearch = '', initialO
                                             </select>
                                             <textarea
                                                 className="rec-textarea" rows={3} value={draft.detail} onChange={(e) => patchRefusal(application, { detail: e.target.value })}
-                                                placeholder={draft.reason === OTHER_REASON ? 'Motif du refus (obligatoire)…' : 'Précisions pour le candidat (facultatif)…'}
+                                                placeholder={draft.reason === OTHER_REASON ? 'Motif du refus (obligatoire)…' : 'Précisions pour le candidat…'}
                                             />
                                             <div className="rec-refusal-actions">
                                                 <Button size="sm" variant="secondary" onClick={() => cancelRefusal(application)} disabled={busy}>Annuler</Button>

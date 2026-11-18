@@ -49,7 +49,7 @@ const RolePicker = ({
 
             {onExtraRanksChange && (
                 <Form.Group className="mb-3">
-                    <Form.Label>Rôles supplémentaires <small className="text-muted">(cumul, facultatif)</small></Form.Label>
+                    <Form.Label>Rôles supplémentaires <small className="text-muted">(cumul)</small></Form.Label>
                     {extraRanks.length > 0 && (
                         <div className="mb-2">
                             {extraRanks.map((value) => (

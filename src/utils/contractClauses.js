@@ -33,6 +33,13 @@ const EMPLOYERS = {
         nom: 'Pillbox Hill Medical Center (PHMC)',
         defini: 'établissement public de santé de l\'État de San Andreas, dont le siège est situé à l\'angle d\'Elgin Avenue et de Strawberry Avenue, Pillbox Hill, Los Santos',
     },
+    // Clinique de Paleto Bay : c'est le PHMC qui contracte, par sa clinique (le défini « l'Employeur » reste le même dans tous les articles).
+    pbc: {
+        court: 'le Pillbox Hill Medical Center (PHMC), au sein de sa clinique de Paleto Bay (PBC)',
+        du: 'de la clinique de Paleto Bay (PBC) du Pillbox Hill Medical Center',
+        nom: 'Pillbox Hill Medical Center (PHMC), agissant par sa clinique de Paleto Bay (PBC)',
+        defini: 'établissement public de santé de l\'État de San Andreas, dont le siège est situé à l\'angle d\'Elgin Avenue et de Strawberry Avenue, Pillbox Hill, Los Santos, et dont la clinique de Paleto Bay est située Paleto Bay Blvd., BP 685, Paleto Bay',
+    },
     coroner: {
         court: 'le Département de Pathologie et de Médecine Légale (DMEC) du Pillbox Hill Medical Center',
         du: 'du Département de Pathologie et de Médecine Légale (DMEC) du Pillbox Hill Medical Center',
@@ -40,6 +47,9 @@ const EMPLOYERS = {
         defini: 'service de l\'établissement public de santé Pillbox Hill Medical Center, dont le siège est situé à l\'angle d\'Elgin Avenue et de Strawberry Avenue, Pillbox Hill, Los Santos',
     },
 };
+
+// Employeur du document : la clinique de Paleto Bay (etablissement « pbc »), sinon le service (PHMC ou DMEC).
+const employerOf = (ctx) => (ctx.etablissement === 'pbc' ? EMPLOYERS.pbc : (EMPLOYERS[ctx.service] || EMPLOYERS.phmc));
 
 // ───────────────────────────── Utilitaires ─────────────────────────────
 
@@ -60,7 +70,7 @@ const isSupervisedRole = (role) => /externe|étudiant|interne|junior|stagiaire|a
 const poleOf = (service, role) => getRoleInfo(role)?.pole || (service === 'coroner' ? 'dmec' : 'soignant');
 
 const partiesBlocks = (ctx, { employeeLabel = 'l\'Employé(e)', employerLabel = 'l\'Employeur' } = {}) => {
-    const employer = EMPLOYERS[ctx.service] || EMPLOYERS.phmc;
+    const employer = employerOf(ctx);
     const issuerIdentity = `${clean(ctx.issuer?.name) || 'son service de recrutement'}${ctx.issuer?.title ? `, ${clean(ctx.issuer.title)}` : ''}`;
     return [
         `${b(employer.nom)}, ${employer.defini}, représenté par ${issuerIdentity}, dûment habilité(e) à cet effet par délégation de la Direction (Code Civil, art. 113, 116 et 117), ci-après « ${b(employerLabel)} »,`,
@@ -338,7 +348,7 @@ const primeBlocs = (champs) => {
 const employmentContent = (ctx) => {
     const { champs, service } = ctx;
     const cdd = champs.typeContrat === 'cdd';
-    const employer = EMPLOYERS[service] || EMPLOYERS.phmc;
+    const employer = employerOf(ctx);
     const role = normalizeRank(champs.role) || '—';
     const essai = Number(champs.essaiJours) || 0;
     const services = parseServices(champs.affectation);
@@ -455,7 +465,7 @@ const employmentContent = (ctx) => {
 const stageContent = (ctx) => {
     const { champs, service } = ctx;
     const role = normalizeRank(champs.role) || '—';
-    const employer = EMPLOYERS[service] || EMPLOYERS.phmc;
+    const employer = employerOf(ctx);
     const gratification = clean(champs.gratification);
     const definitions = [
         {
@@ -637,7 +647,7 @@ const avenantContent = (ctx) => {
 // ───────────────────────────── Convocation, sanction, fin ─────────────────────────────
 
 const notificationParties = (ctx) => {
-    const employer = EMPLOYERS[ctx.service] || EMPLOYERS.phmc;
+    const employer = employerOf(ctx);
     const issuerIdentity = `${clean(ctx.issuer?.name) || 'la Direction'}${ctx.issuer?.title ? `, ${clean(ctx.issuer.title)}` : ''}`;
     return [
         `${b('De la part de :')} ${b(employer.nom)}, représenté par ${issuerIdentity}.`,
@@ -823,7 +833,7 @@ const finContent = (ctx) => {
             id: 'attestation',
             titre: 'Attestation de fin de fonctions',
             blocs: () => [
-                `L'Employeur atteste que ${b(clean(ctx.employeeName))} a exercé au sein ${(EMPLOYERS[ctx.service] || EMPLOYERS.phmc).du}, en qualité de ${b(clean(rc.poste) || '—')} (grade : ${b(normalizeRank(rc.role) || '—')}), du ${b(formatDateFr(rc.dateDebut))} au ${b(formatDateFr(champs.dateEffet))}. Cette attestation est délivrée pour servir et valoir ce que de droit ; elle n'emporte aucune appréciation sur la qualité du service.`,
+                `L'Employeur atteste que ${b(clean(ctx.employeeName))} a exercé au sein ${employerOf(ctx).du}, en qualité de ${b(clean(rc.poste) || '—')} (grade : ${b(normalizeRank(rc.role) || '—')}), du ${b(formatDateFr(rc.dateDebut))} au ${b(formatDateFr(champs.dateEffet))}. Cette attestation est délivrée pour servir et valoir ce que de droit ; elle n'emporte aucune appréciation sur la qualité du service.`,
             ],
         },
         {

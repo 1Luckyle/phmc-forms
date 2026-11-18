@@ -259,7 +259,7 @@ const CivilianEditDialog = ({ show, onHide, civilian, showNotification, onDone }
             <Modal.Body>
                 <div className="d-flex gap-2 mb-3 align-items-end">
                     <Form.Group className="flex-fill"><Form.Label>Prénom</Form.Label><Form.Control placeholder="Prénom" value={form.firstName || ''} onChange={set('firstName')} /></Form.Group>
-                    <Form.Group className="flex-fill"><Form.Label>Deuxième prénom</Form.Label><Form.Control placeholder="Deuxième prénom (facultatif)" value={form.middleName || ''} onChange={set('middleName')} /></Form.Group>
+                    <Form.Group className="flex-fill"><Form.Label>Deuxième prénom</Form.Label><Form.Control placeholder="Deuxième prénom" value={form.middleName || ''} onChange={set('middleName')} /></Form.Group>
                     <Form.Group className="flex-fill"><Form.Label>Nom</Form.Label><Form.Control placeholder="Nom de famille" value={form.lastName || ''} onChange={set('lastName')} /></Form.Group>
                 </div>
                 <div className="d-flex gap-2 mb-3 align-items-end">

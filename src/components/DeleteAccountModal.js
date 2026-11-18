@@ -134,9 +134,9 @@ const DeleteAccountModal = ({ show, onHide, mode = 'civil', showNotification }) 
                     </p>
                     <Kept />
                     <Form.Group className="mb-3">
-                        <Form.Label>Motif <small className="text-muted">(facultatif)</small></Form.Label>
+                        <Form.Label>Motif</Form.Label>
                         <Form.Control
-                            as="textarea" rows={3} maxLength={500} name="motif" data-guide="Facultatif : pourquoi vous souhaitez supprimer votre compte (départ, doublon…)."
+                            as="textarea" rows={3} maxLength={500} name="motif" data-guide="Pourquoi vous souhaitez supprimer votre compte (départ, doublon…)."
                             value={reason} onChange={(event) => setReason(event.target.value)} disabled={busy}
                         />
                     </Form.Group>

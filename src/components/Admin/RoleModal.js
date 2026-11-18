@@ -351,7 +351,7 @@ const RoleModal = ({ show, onHide, category, showNotification, onRoleSaved, role
                                             onChange={(e) => { setPrefixTouched(true); changeNewRole('badgePrefix', e.target.value.toUpperCase().replace(/[^A-Z]/g, '')); }} />
                                     </BootstrapForm.Group>
                                     <BootstrapForm.Group>
-                                        <BootstrapForm.Label>Filière <small className="text-muted">(facultatif)</small></BootstrapForm.Label>
+                                        <BootstrapForm.Label>Filière</BootstrapForm.Label>
                                         <BootstrapForm.Control type="text" list="role-modal-filieres" value={newRole.filiere} placeholder={DEFAULT_FILIERE[newRole.pole]} maxLength={60}
                                             onChange={(e) => changeNewRole('filiere', e.target.value)} />
                                         <datalist id="role-modal-filieres">

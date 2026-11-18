@@ -57,7 +57,7 @@ const PendingAccountDeletions = ({ showNotification, currentUser }) => {
     };
 
     const refuse = async (request) => {
-        const note = window.prompt(`Refuser la demande de ${request.nom} ? Indiquez le motif (envoyé à la personne, facultatif) :`, '');
+        const note = window.prompt(`Refuser la demande de ${request.nom} ? Indiquez le motif (envoyé à la personne) :`, '');
         if (note === null) return;
         setBusyUid(request.uid);
         try {

@@ -111,7 +111,7 @@ const MyRequest = ({ requests, assignments, name, run, busy }) => {
                         {form.plate && <div className="mt-2"><VehiclePhoto plate={form.plate} /></div>}
                     </Form.Group>
                     <Form.Group className="mb-2">
-                        <Form.Label>Zone de stationnement <small className="text-muted">(facultatif{address ? ' · votre adresse par défaut' : ''})</small></Form.Label>
+                        <Form.Label>Zone de stationnement{address ? <small className="text-muted"> (votre adresse par défaut)</small> : null}</Form.Label>
                         <Form.Control maxLength={120} value={lieu} onChange={(e) => setForm({ ...form, lieu: e.target.value })} placeholder="ex. quartier de résidence" />
                     </Form.Group>
                     <Form.Group className="mb-3">
@@ -162,7 +162,7 @@ const Management = ({ requests, assignments, name, run, busy }) => {
                         groups={[{ label: 'Pour un accord', items: DECISION_PRESETS.accord }, { label: 'Pour un refus', items: DECISION_PRESETS.refus }]}
                         placeholder="Réponse toute faite pour le demandeur…" onPick={(text) => setNote(request.id, text)}
                     />
-                    <Form.Control size="sm" className="mb-2" maxLength={300} placeholder="Ou écrivez librement une remarque pour le demandeur (facultatif)" value={noteOf(request.id)} onChange={(e) => setNote(request.id, e.target.value)} />
+                    <Form.Control size="sm" className="mb-2" maxLength={300} placeholder="Ou écrivez librement une remarque pour le demandeur" value={noteOf(request.id)} onChange={(e) => setNote(request.id, e.target.value)} />
                     <div className="d-flex gap-2">
                         <Button size="sm" variant="success" disabled={busy || !!assignments[request.plaque]} onClick={() => run(() => decideRequest(request, { accept: true, note: noteOf(request.id), name }), 'Take Home Car accordé.')}>Accorder</Button>
                         <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => run(() => decideRequest(request, { accept: false, note: noteOf(request.id), name }), 'Demande refusée.')}>Refuser</Button>
@@ -188,7 +188,7 @@ const Management = ({ requests, assignments, name, run, busy }) => {
                                 <tr><td colSpan={4}>
                                     <PresetSelect groups={[{ items: DECISION_PRESETS.retrait }]} placeholder="Motif de retrait tout fait…" onPick={(text) => setNote(`w${vehicle.plate}`, text)} />
                                     <div className="d-flex gap-2">
-                                        <Form.Control size="sm" maxLength={300} placeholder="Ou écrivez librement le motif du retrait (facultatif, transmis au membre)" value={noteOf(`w${vehicle.plate}`)} onChange={(e) => setNote(`w${vehicle.plate}`, e.target.value)} />
+                                        <Form.Control size="sm" maxLength={300} placeholder="Ou écrivez librement le motif du retrait (transmis au membre)" value={noteOf(`w${vehicle.plate}`)} onChange={(e) => setNote(`w${vehicle.plate}`, e.target.value)} />
                                         <Button size="sm" variant="danger" disabled={busy} onClick={() => run(async () => { await withdrawVehicle(request, { note: noteOf(`w${vehicle.plate}`), name }); setWithdrawing(''); }, 'Véhicule retiré.')}>Confirmer</Button>
                                     </div>
                                 </td></tr>
