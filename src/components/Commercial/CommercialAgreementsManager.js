@@ -22,7 +22,7 @@ import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { loadStaffMembers, loadCivilians } from '../../utils/staffAdmin';
 import { loadUserCreations } from '../../utils/userCreations';
-import { normalizeRank } from '../../constants/ranks';
+import { normalizeRank, highestAdministrativeRole } from '../../constants/ranks';
 import { copyToClipboard } from '../notificationService';
 import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../../utils/reportExport';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../../utils/reportDocumentExport';
@@ -62,6 +62,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
         return [...map.entries()];
     }, [fields]);
     const { errors, warnings } = validateAgreement(type, champs);
+    const beforeSend = validateAgreement(type, champs, { forSend: true }).errors.filter((message) => !errors.includes(message)); // ce qui ne bloque qu'à l'envoi
     const partner = accounts.find((account) => account.value === partnerUid) || null;
 
     const preview = useMemo(() => {
@@ -153,7 +154,23 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
                             )}
                         </fieldset>
                     ))}
-                    {errors.length > 0 && <Alert variant="secondary" className="py-2 small mb-2"><strong>À compléter :</strong> {errors.slice(0, 4).join(' ')}</Alert>}
+                    {(errors.length > 0 || beforeSend.length > 0) && (
+                        <Alert variant="secondary" className="py-2 small mb-2">
+                            {errors.length > 0 && (
+                                <>
+                                    <strong>À renseigner pour enregistrer :</strong>
+                                    <ul className="mb-1 ps-3">{errors.map((message) => <li key={message}>{message}</li>)}</ul>
+                                </>
+                            )}
+                            {beforeSend.length > 0 && (
+                                <>
+                                    <strong>Avant l'envoi :</strong>
+                                    <ul className="mb-0 ps-3">{beforeSend.map((message) => <li key={message}>{message}</li>)}</ul>
+                                </>
+                            )}
+                        </Alert>
+                    )}
+                    {errors.length === 0 && beforeSend.length === 0 && <Alert variant="success" className="py-2 small mb-2"><i className="fas fa-circle-check me-1"></i>Tout est renseigné : vous pouvez enregistrer ou envoyer l'accord.</Alert>}
                     {warnings.map((warning) => <Alert key={warning} variant="info" className="py-2 small mb-2">{warning}</Alert>)}
                     <div className="d-flex gap-2 flex-wrap">
                         <Button variant="primary" onClick={() => save(false)} disabled={busy}>{busy ? <Spinner size="sm" animation="border" /> : <><i className="fas fa-floppy-disk me-1"></i>Enregistrer le brouillon</>}</Button>
@@ -295,7 +312,8 @@ const CommercialAgreementsManager = ({ showNotification }) => {
     const issuer = useMemo(() => ({
         uid: currentEmployee?.uid,
         name: staffName || [civilianProfile?.firstName, civilianProfile?.lastName].filter(Boolean).join(' ') || currentEmployee?.email || 'La Direction',
-        title: normalizeRank(staffProfile?.rank || staffProfile?.category || '') || (isAdmin ? 'Administration' : 'Direction'),
+        // Signe au nom du PHMC : son rôle administratif le plus élevé (principal ou supplémentaire), à défaut son rôle principal.
+        title: highestAdministrativeRole(staffProfile) || normalizeRank(staffProfile?.rank || staffProfile?.category || '') || (isAdmin ? 'Administration' : 'Direction'),
         signatureUrl,
     }), [currentEmployee, staffName, staffProfile, civilianProfile, isAdmin, signatureUrl]);
 

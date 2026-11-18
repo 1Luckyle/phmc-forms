@@ -15,6 +15,7 @@
 import { bbSafe, SIGNATURE_MARKER, SIGNATURE_DATE_MARKER } from '../phmc-bbcode-generators/generateContract';
 import { formatDateFr, formatTimestampDateFr } from './contractConstants';
 
+// Version des textes de loi relue pour ce modèle (mémo de maintenance) : elle n'est plus imprimée sur les documents.
 export const COMMERCIAL_LAW_VERSION = 'Textes consolidés du forum au 29 octobre 2026';
 export const COMMERCIAL_MODEL_VERSION = 'AC-2026.1';
 // Seuil au-delà duquel l'écrit est obligatoire (Code Civil, art. 206).
@@ -294,8 +295,8 @@ export const buildAgreementDocument = (ctx) => {
             },
         },
         footer: [
-            `${COMMERCIAL_MODEL_VERSION} · Document généré par l'outil PHMC · Réf. ${reference} · ${COMMERCIAL_LAW_VERSION}`,
-            'Accord confidentiel destiné aux seules Parties. Document de jeu de rôle (IC), sans valeur juridique réelle. Les signatures électroniques sont horodatées ; chaque Partie en conserve une copie.',
+            `${COMMERCIAL_MODEL_VERSION} · Document généré par l'outil PHMC · Réf. ${reference}`,
+            'Accord confidentiel destiné aux seules Parties. Les signatures électroniques sont horodatées ; chaque Partie en conserve une copie.',
         ],
     };
 };

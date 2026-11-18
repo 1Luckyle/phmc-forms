@@ -75,10 +75,10 @@
     white-space: nowrap;
 }
 
-/* Champs d'un document : grille à deux colonnes. Un champ « demi » prend une colonne, les autres (zones de texte, choix de document…) toute la largeur.
-   Chaque champ occupe trois pistes de la grille (étiquette · champ · aides) en « sous-grille » : deux champs côte à côte s'alignent piste par piste, donc leurs champs de saisie
-   restent à la même hauteur même quand l'une des étiquettes passe sur deux lignes (« Nouveau responsable hiérarchique (facultatif) »). Sans sous-grille (anciens navigateurs),
-   chaque champ garde simplement sa mise en page propre. */
+/* Champs d'un document : grille à deux colonnes. Un champ « demi » prend une colonne, les autres (zones de texte, horaires, choix de document…) toute la largeur.
+   Chaque champ occupe DEUX pistes de la grille en « sous-grille » : l'étiquette, puis le champ avec son aide juste dessous. Deux champs côte à côte s'alignent piste par piste : leurs
+   étiquettes sont à la même hauteur (l'étiquette courte se cale en bas quand l'autre passe sur deux lignes) et leurs champs de saisie commencent à la même ligne, tandis que chaque aide
+   reste collée à SON champ, quelle que soit la hauteur du voisin. Sans sous-grille (anciens navigateurs), chaque champ garde simplement sa mise en page propre. */
 .contract-field-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -90,7 +90,7 @@
 
 .contract-field-row > div {
     grid-column: 1 / -1;
-    grid-row: span 3;
+    grid-row: span 2;
     display: grid;
     grid-template-rows: subgrid;
     row-gap: 0;
@@ -104,22 +104,21 @@
 }
 
 .contract-field-row > div > .form-label { grid-row: 1; margin-bottom: 0.3rem; align-self: end; }
-.contract-field-row > div > .contract-field-control { grid-row: 2; min-width: 0; }
-.contract-field-row > div > .contract-field-extra { grid-row: 3; min-width: 0; }
-.contract-field-row > div > .contract-field-extra:empty { display: none; }
+.contract-field-row > div > .contract-field-body { grid-row: 2; min-width: 0; }
 
-/* Sélecteur d'horaires : plages « jours + heures ». */
-.contract-schedule { display: flex; flex-direction: column; gap: 0.5rem; }
-.contract-schedule-plage { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; padding: 0.5rem; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; }
-.contract-schedule-days { display: inline-flex; gap: 4px; }
+/* Sélecteur d'horaires : plages « jours + heures ». Les jours se resserrent au besoin (jamais de débordement) ; les heures passent à la ligne. */
+.contract-schedule { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.contract-schedule-plage { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding: 0.5rem 0.6rem; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; min-width: 0; }
+.contract-schedule-days { display: flex; gap: 4px; min-width: 0; flex: 0 1 auto; }
 .contract-schedule-days button {
-    width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 1px solid #30363d; background: #161b22; color: #c9d1d9; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    flex: 0 1 32px; min-width: 22px; aspect-ratio: 1; padding: 0; border-radius: 50%; border: 1px solid #30363d; background: #161b22; color: #c9d1d9; font-size: 0.8rem; font-weight: 600; cursor: pointer;
 }
 .contract-schedule-days button:hover:not(:disabled) { border-color: #58a6ff; }
 .contract-schedule-days button.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-.contract-schedule-times { display: inline-flex; align-items: center; gap: 0.4rem; }
+.contract-schedule-times { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; min-width: 0; }
 .contract-schedule-times .form-control { width: 7.2rem; }
 .contract-schedule-actions { display: flex; }
+.contract-schedule > .form-control { width: 100%; }
 
 .contract-field-row textarea { width: 100%; resize: vertical; }
 
@@ -130,7 +129,7 @@
 
 /* Anciens navigateurs sans sous-grille : chaque champ s'empile simplement. */
 @supports not (grid-template-rows: subgrid) {
-    .contract-field-row > div { display: block; }
+    .contract-field-row > div { display: block; grid-row: auto; }
 }
 
 /* Menu « Nouveau document » : fond sombre, texte clair (le bleu clair par défaut était illisible sur fond blanc). */

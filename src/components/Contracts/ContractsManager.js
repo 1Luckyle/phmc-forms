@@ -26,7 +26,7 @@ import { moneyDisplay, moneyText, moneyUnit } from '../../utils/contractMoney';
 import PersonnelFileDialog from './PersonnelFileDialog';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { STAFF_SERVICES, loadStaffMembers, loadCivilians, loadRecruiterUids, rankLabel } from '../../utils/staffAdmin';
-import { normalizeRank, getRoleInfo, canManageDiscipline } from '../../constants/ranks';
+import { normalizeRank, getRoleInfo, canManageDiscipline, highestAdministrativeRole } from '../../constants/ranks';
 import { loadContractCandidates, clearContractCandidate } from '../../utils/contractCandidates';
 import { loadUserCreations } from '../../utils/userCreations';
 import { loadSalaryGrid, echelonOf, rateOf, formatRate, formatEchelonRates } from '../../utils/salaryGrid';
@@ -60,7 +60,11 @@ const TYPE_HELP = {
     fin: 'Démission, licenciement, fin de CDD ou de stage, rupture amiable, fin de plein droit, avec attestation de fin de fonctions.',
 };
 
-const issuerTitleOf = (staffProfile, isAdmin) => {
+// Titre de celui ou celle qui signe au nom de l'Employeur : son rôle ADMINISTRATIF le plus élevé (Directeur(trice), Assistant(e) de Direction…), principal ou supplémentaire ;
+// à défaut son rôle principal.
+export const issuerTitleOf = (staffProfile, isAdmin) => {
+    const administrative = highestAdministrativeRole(staffProfile);
+    if (administrative) return administrative;
     const rank = normalizeRank(staffProfile?.rank || staffProfile?.category || '');
     if (rank) return rank;
     return isAdmin ? 'Administration' : 'Chargé(e) de recrutement';
@@ -189,6 +193,22 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
             return null;
         }
     }, [readOnly, employee, type, service, fields, issuer.name, issuer.title, contract, refContract, convocation]);
+
+    // Ce qui reste à renseigner : pour ENREGISTRER (brouillon), puis ce qui ne bloquera qu'à l'ENVOI (délais de la procédure, dates passées…).
+    const todo = useMemo(() => {
+        if (readOnly) return null;
+        try {
+            const base = validateDocFields(type, fields, ctx);
+            const forSend = validateDocFields(type, fields, ctx, { forSend: true });
+            return {
+                missing: [...(employee ? [] : ['Choisissez le destinataire du document.']), ...base.errors],
+                beforeSend: forSend.errors.filter((message) => !base.errors.includes(message)),
+                warnings: forSend.warnings,
+            };
+        } catch (err) {
+            return null;
+        }
+    }, [readOnly, type, fields, ctx, employee]);
 
     const guard = async (fn) => {
         setBusy(true);
@@ -450,9 +470,10 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
             <Form.Group key={field.key} className={field.half ? 'contract-field-half' : ''}>
                 {/* Pas de « (facultatif) » dans le libellé : rouge = obligatoire, bleu = facultatif (légende au-dessus des champs). */}
                 {field.type !== 'checkbox' && <Form.Label>{field.label}</Form.Label>}
-                {/* Trois zones (étiquette, champ, aides) : les champs d'une même rangée s'alignent zone par zone (voir Contracts.css), même si une étiquette passe sur deux lignes. */}
-                <div className="contract-field-control">{control}</div>
-                <div className="contract-field-extra">
+                {/* Deux zones : l'étiquette, puis le champ avec son aide juste dessous. Les champs d'une même rangée s'alignent zone par zone (voir Contracts.css) : leurs étiquettes et leurs champs de saisie
+                    sont à la même hauteur, et chaque aide reste collée à SON champ, quelle que soit la hauteur du voisin. */}
+                <div className="contract-field-body">
+                    <div className="contract-field-control">{control}</div>
                     {field.help && field.type !== 'checkbox' && field.type !== 'horaires' && <Form.Text className="text-muted d-block">{field.help}</Form.Text>}
                     {field.key === 'echelon' && echelonWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{echelonWarning}</Form.Text>}
                     {field.key === 'remuneration' && gridWarning && <Form.Text className="text-warning d-block"><i className="fas fa-triangle-exclamation me-1"></i>{gridWarning}</Form.Text>}
@@ -571,6 +592,32 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                         <Alert variant="warning" className="py-2 small">
                             Cette notification exige une convocation préalable à un entretien (objet « {convocationObjet} »). Créez et envoyez d'abord une <strong>convocation</strong>, attendez 72 heures, tenez l'entretien, puis revenez ici.
                         </Alert>
+                    )}
+
+                    {todo && (todo.missing.length > 0 || todo.beforeSend.length > 0 || todo.warnings.length > 0) && (
+                        <Alert variant="secondary" className="py-2 small mb-0 mt-3 contract-todo">
+                            {todo.missing.length > 0 && (
+                                <>
+                                    <strong>À renseigner pour enregistrer :</strong>
+                                    <ul className="mb-1 ps-3">{todo.missing.map((message) => <li key={message}>{message}</li>)}</ul>
+                                </>
+                            )}
+                            {todo.beforeSend.length > 0 && (
+                                <>
+                                    <strong>Avant l'envoi :</strong>
+                                    <ul className="mb-1 ps-3">{todo.beforeSend.map((message) => <li key={message}>{message}</li>)}</ul>
+                                </>
+                            )}
+                            {todo.missing.length === 0 && todo.warnings.length > 0 && (
+                                <>
+                                    <strong>À vérifier :</strong>
+                                    <ul className="mb-1 ps-3">{todo.warnings.map((message) => <li key={message}>{message}</li>)}</ul>
+                                </>
+                            )}
+                        </Alert>
+                    )}
+                    {todo && todo.missing.length === 0 && todo.beforeSend.length === 0 && todo.warnings.length === 0 && (
+                        <Alert variant="success" className="py-2 small mb-0 mt-3 contract-todo"><i className="fas fa-circle-check me-1"></i>Tout est renseigné : vous pouvez enregistrer ou envoyer le document.</Alert>
                     )}
 
                     <div className="d-flex justify-content-end gap-2 mt-3">

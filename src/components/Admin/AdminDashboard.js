@@ -601,7 +601,8 @@ const AdminDashboard = ({
                             <>
                                 <p className="text-muted">
                                     Quand cet interrupteur est activé, un bouton « Supprimer » apparaît dans l'historique des candidatures : chaque candidat peut
-                                    supprimer les siennes (« Mes candidatures ») et les admins et recruteurs celles de la liste de gestion. Utile pour nettoyer
+                                    supprimer les siennes (« Mes candidatures ») et les admins et recruteurs celles de la liste de gestion, ainsi que les demandes de
+                                    recrutement interne (onglet « Évolutions internes » ; le statut accordé encore actif est alors retiré). Utile pour nettoyer
                                     les candidatures de test ; à désactiver ensuite, car la suppression est définitive.
                                 </p>
                                 <SwitchRow

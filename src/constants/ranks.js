@@ -194,6 +194,17 @@ export const cleanExtraRanks = (extraRanks, mainRank) => {
 
 export const extraRanksOf = (member) => cleanExtraRanks(member?.extraRanks, member?.rank || member?.category);
 
+/**
+ * Rôle ADMINISTRATIF le plus élevé d'une personne (Directeur(trice), Assistant(e) de Direction, Personnel Administratif, Chargé(e) de Recrutement), qu'il soit son rôle principal ou un rôle
+ * supplémentaire ; '' si elle n'en a aucun. Sert de titre à celui ou celle qui signe un contrat, un accord ou un document administratif au nom de l'Employeur.
+ */
+export const highestAdministrativeRole = (member) => {
+    const roles = [member?.rank || member?.category, ...extraRanksOf(member)].filter(Boolean).map(normalizeRank);
+    const administrative = roles.filter((role) => getRoleInfo(role)?.pole === 'administration');
+    if (!administrative.length) return '';
+    return administrative.sort((a, b) => ROLES.indexOf(getRoleInfo(a)) - ROLES.indexOf(getRoleInfo(b)))[0];
+};
+
 // Toutes les familles d'une fiche : celle du rôle principal d'abord, puis celles des rôles supplémentaires.
 export const familiesOfMember = (member, service) => {
     const families = [familyOfMember(member, service)];

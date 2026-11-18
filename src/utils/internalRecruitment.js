@@ -107,6 +107,22 @@ export const revokeInternalStatus = async (request, { byName }) => {
     logActivity({ category: 'recrutement', action: 'internal_revoked', summary: `Statut de recrutement interne retiré : ${request.nom}`, target: request.nom });
 };
 
+// Suppression DÉFINITIVE d'une demande de recrutement interne (« Évolutions internes »), avec le statut accordé qui lui est lié s'il existe : sinon il resterait actif sans demande visible.
+// Réservé au mode debug « Autoriser la suppression des candidatures » (Admin → Debug) ; les règles Firebase donnent déjà l'écriture aux admins et aux recruteurs.
+export const deleteInternalRequest = async (request, { byName } = {}) => {
+    assertNotLocked();
+    if (!request || !request.uid) throw new Error('Demande introuvable.');
+    await update(ref(database), {
+        [`demandesMobilite/${request.uid}`]: null,
+        [`statutsMobilite/${request.uid}`]: null,
+    });
+    logActivity({
+        category: 'recrutement', action: 'internal_request_deleted', severity: 'warning', summary: `Demande de recrutement interne supprimée : ${request.nom || request.uid}`,
+        details: [`Statut : ${(INTERNAL_REQUEST_STATUS[request.statut] || {}).label || request.statut || '—'}`, request.actif ? 'Le statut de recrutement interne accordé a été retiré.' : '', byName ? `Par : ${clean(byName, 120)}` : ''].filter(Boolean).join('\n'),
+        target: request.nom || undefined,
+    });
+};
+
 // Candidatures encore en cours d'instruction : seules celles-ci sont mises en pause (une décision rendue ou un retrait ne bouge plus).
 const OPEN_STATUSES = ['soumise', 'en_examen', 'entretien_programme', 'entretien_effectue'];
 

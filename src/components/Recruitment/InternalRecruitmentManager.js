@@ -8,10 +8,11 @@ import { Button, Spinner } from 'react-bootstrap';
 import { ref, get } from 'firebase/database';
 import { database } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
+import { useDebug } from '../../contexts/DebugContext';
 import { sendTemplatedMail } from '../../utils/mailTemplates';
 import { sendAdminActionWebhook } from '../Admin/adminUtils';
 import {
-    INTERNAL_REQUEST_STATUS, loadInternalRequests, acceptInternalRequest, refuseInternalRequest, revokeInternalStatus,
+    INTERNAL_REQUEST_STATUS, loadInternalRequests, acceptInternalRequest, refuseInternalRequest, revokeInternalStatus, deleteInternalRequest,
 } from '../../utils/internalRecruitment';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -36,6 +37,7 @@ const staffEmailOf = async (uid) => {
 
 const InternalRecruitmentManager = ({ showNotification, onCountChange }) => {
     const { currentEmployee, isAdmin, staffName } = useEmployeeAuth();
+    const { debugDeleteApplicationsEnabled } = useDebug();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('en_attente');
@@ -100,6 +102,16 @@ const InternalRecruitmentManager = ({ showNotification, onCountChange }) => {
         notify(request, 'recrutement_interne_refuse', { motif: notes[request.uid] || '' });
     }, 'Demande refusée.');
 
+    // Suppression définitive (mode debug « Autoriser la suppression des candidatures », Admin → Debug) : la demande, et le statut accordé s'il est encore actif.
+    const remove = (request) => {
+        const warning = request.actif ? '\n\nSon statut de recrutement interne encore actif sera retiré : il ne pourra plus candidater.' : '';
+        if (!window.confirm(`Supprimer définitivement la demande de ${request.nom || 'cette personne'} ? Cette action est irréversible.${warning}`)) return;
+        act(request, async () => {
+            await deleteInternalRequest(request, { byName: actorName });
+            sendAdminActionWebhook(currentEmployee?.email, 'Demande de recrutement interne supprimée', `Membre : ${request.nom}`, null, actorLabel);
+        }, 'Demande supprimée.');
+    };
+
     const revoke = (request) => {
         if (!window.confirm(`Retirer le statut de recrutement interne à ${request.nom} ? Il ne pourra plus candidater.`)) return;
         act(request, async () => {
@@ -153,11 +165,16 @@ const InternalRecruitmentManager = ({ showNotification, onCountChange }) => {
                                 <Button size="sm" variant="danger" disabled={busy} onClick={() => refuse(request)}><i className="fas fa-xmark me-1"></i>Refuser</Button>
                             </div>
                         )}
-                        {request.statut === 'acceptee' && request.actif && (
-                            <div style={{ marginTop: '10px' }}>
-                                <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => revoke(request)}><i className="fas fa-ban me-1"></i>Retirer le statut</Button>
+                        {(request.statut === 'acceptee' && request.actif) || debugDeleteApplicationsEnabled ? (
+                            <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {request.statut === 'acceptee' && request.actif && (
+                                    <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => revoke(request)}><i className="fas fa-ban me-1"></i>Retirer le statut</Button>
+                                )}
+                                {debugDeleteApplicationsEnabled && (
+                                    <Button size="sm" variant="outline-danger" disabled={busy} onClick={() => remove(request)} title="Supprimer définitivement cette demande (mode debug activé dans Admin → Debug)"><i className="fas fa-trash me-1"></i>Supprimer</Button>
+                                )}
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 );
             })}
