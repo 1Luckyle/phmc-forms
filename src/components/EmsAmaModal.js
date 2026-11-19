@@ -21,11 +21,13 @@ import { loadStaffMembers, rankLabel } from '../utils/staffAdmin';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import DebugFillButton from './DebugFillButton';
 import EstablishmentPicker from './EstablishmentPicker';
+import MissingFieldsBlock from './MissingFieldsBlock';
 import { effectiveEstablishment } from '../constants/establishments';
 import SignatureCreator from './SignatureCreator';
 import { ReportPreviewFrame } from './ReportExpansion';
 import { copyToClipboard } from './notificationService';
 import generateAma, { effectiveGuardian } from '../phmc-bbcode-generators/generateAma';
+import generateHipaaNotice, { HIPAA_TITLE } from '../phmc-bbcode-generators/generateHipaaNotice';
 import { buildReportTitle } from '../utils/reportTitle';
 import {
     normalizePatientId, writeIndexEntry, comprehensiveSanitize, listIndexedPatientIds,
@@ -87,6 +89,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     const [employeeSignature, setEmployeeSignature] = useState(undefined);   // undefined = chargement, null = aucune
     const [patientSignature, setPatientSignature] = useState(undefined);
     const [saving, setSaving] = useState(false);
+    const [tab, setTab] = useState('ama');                        // 'ama' (refus de soins) | 'hipaa' (avis de confidentialité à remettre au patient)
     const [saved, setSaved] = useState(null);                        // { bbCode, title, patientID } après l'enregistrement
 
     // Paramédic : par défaut la personne connectée ; les autres fiches sont proposées (un admin signe pour qui il veut, mais la signature d'un
@@ -105,6 +108,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     useEffect(() => {
         if (!show) return;
         setSaved(null);
+        setTab('ama');
         setCertified(false);
         setEtablissement('phmc');
         setGuardianName('');
@@ -185,6 +189,9 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
         patientName, patientSignatureUrl: patientSignature?.url || '', guardianName, guardianRelation, minor, emancipated, date,
         paramedicName: employee?.value || '', paramedicSignatureUrl: employeeSignature?.url || '', etablissement: etab,
     }), [patientName, patientSignature, guardianName, guardianRelation, minor, emancipated, date, employee, employeeSignature, etab]);
+
+    // Avis relatif aux pratiques de confidentialité (H.I.P.A.A.) : le document que l'AMA déclare avoir été remis au patient, dans l'établissement choisi.
+    const hipaaBbCode = useMemo(() => generateHipaaNotice({ etablissement: etab, date: String(date || nowLabel()).slice(0, 10) }), [etab, date]);
 
     const handleDebugFill = () => {
         setDate(nowLabel());
@@ -306,10 +313,69 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     const ownSelected = employee?.value === staffName;
     const needsOwnSignature = employeeSignature === null && ownSelected;
 
+    // Ce qui reste à renseigner pour enregistrer l'AMA (mêmes conditions que le bouton « Signer et enregistrer »).
+    const missing = [
+        ...(staffName ? [] : ["Votre compte doit être lié à une fiche du personnel (sinon l'AMA ne peut pas être rangé dans vos rapports)."]),
+        ...(employee?.value ? [] : ['Paramédic qui signe']),
+        ...(employee?.value && employeeSignature === null ? [needsOwnSignature ? "Votre signature : créez-la plus bas, elle s'imprime sous votre nom." : "Signature du paramédic : cette personne doit d'abord créer la sienne."] : []),
+        ...(patientID ? [] : ['Patient (choisir un patient ou taper son ID)']),
+        ...(patientName.trim() ? [] : ['Nom du patient (imprimé)']),
+        ...(date.trim() ? [] : ['Date / heure']),
+        ...(minor && !emancipated && !guardianName.trim() ? ['Nom du représentant légal'] : []),
+        ...(minor && !emancipated && !guardianRelation ? ['Lien du représentant légal avec le patient'] : []),
+        ...(certified ? [] : ["Certification : cochez « Je certifie que c'est bien le patient (ou son représentant légal) qui signe »"]),
+    ];
+
+    // Onglets : le refus de soins (AMA) et l'Avis H.I.P.A.A. à remettre au patient.
+    const tabBar = (
+        <ul className="nav nav-tabs ama-tabs mb-3" role="tablist">
+            <li className="nav-item" role="presentation">
+                <button type="button" role="tab" aria-selected={tab === 'ama'} className={`nav-link ${tab === 'ama' ? 'active' : ''}`} onClick={() => setTab('ama')}>
+                    <i className="fas fa-file-signature me-1"></i>Refus de soins (AMA)
+                </button>
+            </li>
+            <li className="nav-item" role="presentation">
+                <button type="button" role="tab" aria-selected={tab === 'hipaa'} className={`nav-link ${tab === 'hipaa' ? 'active' : ''}`} onClick={() => setTab('hipaa')}>
+                    <i className="fas fa-user-shield me-1"></i>Avis H.I.P.A.A.
+                </button>
+            </li>
+        </ul>
+    );
+    const picker = <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={saving} name="amaEtablissement" label="Refus de soins auprès de" help="Le PBC ajoute son logo à l'en-tête ; le pied de page du document est celui de l'établissement choisi." />;
+    const hipaaPanel = (
+        <div className="ama-hipaa">
+            <p className="text-muted small mb-2">
+                L'AMA déclare que le patient a reçu une copie de cet avis : remettez-la-lui (copie, HTML, PDF ou image). Le texte suit l'établissement choisi ci-dessus.
+            </p>
+            <div className="d-flex flex-wrap gap-2 mb-3">
+                {bbcodeEnabled && (
+                    <Button variant="secondary" size="sm" title={COPY_BBCODE_HINT} onClick={() => copyToClipboard(hipaaBbCode, showNotification, 'BBCode copié !')}>
+                        <i className="fas fa-copy me-1"></i>Copier le BBCode
+                    </Button>
+                )}
+                <Button variant="secondary" size="sm" title={DOWNLOAD_HTML_HINT} onClick={() => downloadBbCodeAsHtml({ bbCode: hipaaBbCode, title: HIPAA_TITLE, showNotification })}>
+                    <i className="fas fa-file-code me-1"></i>Télécharger le HTML
+                </Button>
+                <Button variant="secondary" size="sm" title={PDF_EXPORT_LABEL} onClick={() => exportReportDocument('pdf', { bbCode: hipaaBbCode, title: HIPAA_TITLE, showNotification })}>
+                    <i className="fas fa-file-pdf me-1"></i>PDF
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => exportReportDocument('png', { bbCode: hipaaBbCode, title: HIPAA_TITLE, showNotification })}>
+                    <i className="fas fa-image me-1"></i>Image (PNG)
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => exportReportDocument('png-copy', { bbCode: hipaaBbCode, title: HIPAA_TITLE, showNotification })}>
+                    <i className="fas fa-clipboard me-1"></i>Copier l'image
+                </Button>
+            </div>
+            <ReportPreviewFrame bbCode={hipaaBbCode} title={HIPAA_TITLE} height={520} />
+        </div>
+    );
+
     // Après l'enregistrement : le document est prêt, avec ses exports.
     if (saved) {
         return shell(
             <div className="ems-ama-modal-body">
+                {tabBar}
+                {tab === 'hipaa' ? <>{picker}{hipaaPanel}</> : <>
                 <Alert variant="success">
                     <strong>AMA enregistré.</strong> Il est dans vos « Rapports enregistrés » et partagé avec le patient ({saved.patientID}) : il le retrouve dans son dossier.
                 </Alert>
@@ -337,6 +403,7 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                     <Button variant="primary" onClick={() => setSaved(null)}>Nouvel AMA</Button>
                     <Button variant="outline-secondary" onClick={onHide}>Fermer</Button>
                 </div>
+                </>}
             </div>
         );
     }
@@ -344,8 +411,10 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
     return shell(
         <>
             <div className="ems-ama-modal-body" data-guide-zone>
+                {tabBar}
+                {picker}
+                {tab === 'hipaa' ? hipaaPanel : <>
                 <p className="text-muted small mb-2">Tous les champs sont obligatoires, sauf le représentant légal d'un patient majeur.</p>
-                <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={saving} name="amaEtablissement" label="Refus de soins auprès de" help="Le PBC ajoute son logo à l'en-tête ; le pied de page du document est celui de l'établissement choisi." />
                 <div className="ama-grid">
                     <Form.Group className="mb-2">
                         <Form.Label>Paramédic qui signe *</Form.Label>
@@ -457,13 +526,20 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
                     label={<><strong>Je certifie que c'est bien le patient (ou son représentant légal) qui signe</strong> ce refus de soins, après lui avoir expliqué les risques et les options, et en sa présence.</>}
                 />
 
+                <MissingFieldsBlock missing={missing} title="À renseigner pour enregistrer l'AMA :" okText="Tout est renseigné : vous pouvez signer et enregistrer l'AMA." />
+
                 <h6 className="mt-3">Aperçu du document</h6>
                 <ReportPreviewFrame bbCode={bbCode} title="Formulaire AMA" height={460} />
+                </>}
             </div>
-            <DebugFillButton onFill={handleDebugFill} disabled={saving} className="ems-ama-save-button" />
-            <Button className="ems-ama-save-button" onClick={handleSave} disabled={saving || !certified || !employeeSignature?.url || !patientID || !patientName.trim() || !date.trim() || (minor && !emancipated && (!guardianName.trim() || !guardianRelation))}>
-                {saving ? 'Enregistrement…' : 'Signer et enregistrer l\'AMA'}
-            </Button>
+            {tab === 'ama' && (
+                <>
+                    <DebugFillButton onFill={handleDebugFill} disabled={saving} className="ems-ama-save-button" />
+                    <Button className="ems-ama-save-button" onClick={handleSave} disabled={saving || missing.length > 0}>
+                        {saving ? 'Enregistrement…' : 'Signer et enregistrer l\'AMA'}
+                    </Button>
+                </>
+            )}
         </>
     );
 };

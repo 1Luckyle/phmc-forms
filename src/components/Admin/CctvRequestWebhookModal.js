@@ -4,12 +4,13 @@
 // BLOQUÉ tant qu'on n'est pas connecté (se connecter ou créer un compte d'abord). L'envoi n'est possible que si
 // tous les champs obligatoires sont remplis : agent demandeur, département, téléphone, Discord, date ET heure de
 // l'incident, raison (avec précision si « Autre ») et au moins une caméra.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { Button, Form, Spinner } from 'react-bootstrap';
 import Select from 'react-select';
 import * as Sentry from "@sentry/react";
 import DebugFillButton from '../DebugFillButton';
+import MissingFieldsBlock from '../MissingFieldsBlock';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 
 // Caméras du PHMC pouvant être demandées (une ou plusieurs).
@@ -93,6 +94,7 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
     const [oocNotes, setOocNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [attempted, setAttempted] = useState(false);
+    const missingRef = useRef(null);
 
     useEffect(() => {
         if (!show) {
@@ -140,7 +142,8 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
         }
         setAttempted(true);
         if (missing.length > 0) {
-            showNotification(`Champs obligatoires manquants :\n${missing.map((label) => `• ${label}`).join('\n')}`, 'warning', 8000);
+            // Plus de notification : le bloc « À renseigner » (sous le formulaire) liste ce qui manque ; on y amène la vue.
+            missingRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
             return;
         }
 
@@ -297,6 +300,13 @@ const CctvRequestWebhookModal = ({ show, onHide, onSubmit, showNotification, onL
                             </div>
                         </fieldset>
                     </Form>
+
+                    {isLoggedIn && (
+                        <MissingFieldsBlock
+                            ref={missingRef} missing={missing} highlight={attempted}
+                            title="À renseigner pour envoyer la demande :" okText="Tout est renseigné : vous pouvez envoyer la demande."
+                        />
+                    )}
                 </div>
 
                 <div style={footerStyle}>

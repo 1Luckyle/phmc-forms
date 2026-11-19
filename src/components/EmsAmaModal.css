@@ -72,3 +72,9 @@
 @media (max-width: 700px) {
     .ems-ama-modal .ama-grid, .ems-ama-modal .ama-signatures { grid-template-columns: 1fr; }
 }
+
+/* Onglets « Refus de soins (AMA) » / « Avis H.I.P.A.A. ». */
+.ems-ama-modal .ama-tabs { border-bottom-color: #30363d; }
+.ems-ama-modal .ama-tabs .nav-link { color: #9aa7b4; background: transparent; }
+.ems-ama-modal .ama-tabs .nav-link:hover { color: #e6edf3; border-color: #30363d #30363d transparent; }
+.ems-ama-modal .ama-tabs .nav-link.active { color: #e6edf3; background: #161b22; border-color: #30363d #30363d #161b22; }
