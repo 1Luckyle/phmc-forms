@@ -36,12 +36,13 @@ export const PBC_LOGO = 'https://phmc-tools.com/img/phmcpaletobaylogo.png';
 // compactLogos : deux logos dans une cellule étroite (aperçu d'un document administratif) → ils sont réduits à la même taille pour rester alignés sur une seule ligne, au lieu de passer l'un sous l'autre ([img=largeur] : aperçu, HTML, PDF ; sur le forum, la copie du BBCode retire la largeur).
 export const PAIR_LOGO_WIDTH = 90;
 export const PAIR_DMEC_WIDTH = 72;
+export const PAIR_PBC_WIDTH = 72;   // le logo du PBC est un peu plus petit que celui du PHMC
 const sizedImg = (url, width) => (width ? `[img=${width}]${url}[/img]` : `[img]${url}[/img]`);
 export const careHeader = ({ title, lines = '', pbc = false, dmec = false, withPhmcLogo = false, compactLogos = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
 
 [size=110]${lines}[/size]
 
-[/center][td][center]${pbc ? `${withPhmcLogo ? sizedImg(PHMC_LOGO, compactLogos && PAIR_LOGO_WIDTH) : ''}${sizedImg(PBC_LOGO, compactLogos && withPhmcLogo && PAIR_LOGO_WIDTH)}` : sizedImg(PHMC_LOGO, compactLogos && dmec && PAIR_LOGO_WIDTH)}${dmec ? sizedImg(DMEC_LOGO_SMALL, compactLogos && PAIR_DMEC_WIDTH) : ''}
+[/center][td][center]${pbc ? `${withPhmcLogo ? sizedImg(PHMC_LOGO, compactLogos && PAIR_LOGO_WIDTH) : ''}${sizedImg(PBC_LOGO, compactLogos && withPhmcLogo && PAIR_PBC_WIDTH)}` : sizedImg(PHMC_LOGO, compactLogos && dmec && PAIR_LOGO_WIDTH)}${dmec ? sizedImg(DMEC_LOGO_SMALL, compactLogos && PAIR_DMEC_WIDTH) : ''}
 [b][size=150]${String(title).toUpperCase()}[/size][/b][/center][/table][/divbox]`;
 
 // Pied de page commun à tous les rapports : coordonnées du Pillbox Hill Medical Center. Ajouté à la fin du BBCode, une seule fois, par withPhmcFooter

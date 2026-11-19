@@ -64,7 +64,7 @@ describe('contrats : logos et pied de page selon l’établissement', () => {
     });
     test('PBC : logos du PHMC et du PBC, pied de page de la clinique, employeur « par sa clinique »', () => {
         const { bbCode, reference } = build({ etablissement: 'pbc' });
-        expect(header(bbCode)).toContain(`[img=90]${PHMC_LOGO}[/img][img=90]${PBC_LOGO}[/img]`);
+        expect(header(bbCode)).toContain(`[img=90]${PHMC_LOGO}[/img][img=72]${PBC_LOGO}[/img]`);
         expect(bbCode).toContain(PBC_FOOTER_MARK);
         expect(bbCode).not.toContain(PHMC_FOOTER_MARK);
         expect(bbCode).toContain('agissant par sa clinique de Paleto Bay (PBC)');
@@ -94,7 +94,7 @@ describe('accords commerciaux : logos et pied de page selon l’établissement',
     });
     test('PBC : deux logos, pied de page de la clinique, le PHMC contracte par sa clinique', () => {
         const bb = build('pbc');
-        expect(header(bb)).toContain(`[img=90]${PHMC_LOGO}[/img][img=90]${PBC_LOGO}[/img]`);
+        expect(header(bb)).toContain(`[img=90]${PHMC_LOGO}[/img][img=72]${PBC_LOGO}[/img]`);
         expect(bb).toContain(PBC_FOOTER_MARK);
         expect(bb).not.toContain(PHMC_FOOTER_MARK);
         expect(bb).toContain('agissant par sa clinique de Paleto Bay (PBC)');
@@ -115,7 +115,7 @@ describe('AMA : logos et pied de page selon l’établissement', () => {
     });
     test('PBC : deux logos, la clinique est dégagée de responsabilité, pied de page de la clinique', () => {
         const bb = generateAma({ ...params, etablissement: 'pbc' });
-        expect(header(bb)).toContain(`[img=90]${PHMC_LOGO}[/img][img=90]${PBC_LOGO}[/img]`);
+        expect(header(bb)).toContain(`[img=90]${PHMC_LOGO}[/img][img=72]${PBC_LOGO}[/img]`);
         expect(bb).toContain('Clinique PHMC de Paleto Bay (PBC)');
         expect(bb).not.toContain('Pillbox Hill Emergency Medical Service');
         expect(bb).toContain(PBC_FOOTER_MARK);

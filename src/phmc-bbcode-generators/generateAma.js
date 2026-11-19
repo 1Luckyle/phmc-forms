@@ -3,7 +3,7 @@
 // Formulaire AMA (Contre Avis Médical — refus de traitement médical), reconstitué en BBCode : il se copie, se télécharge en HTML / PDF /
 // image comme n'importe quel autre rapport, et n'est plus une image téléversée sur ImgBB. Seules les SIGNATURES (images, une par personne)
 // sont des images : celle du patient (rangée à son ID patient), celle du paramédic (sa signature créée dans « Ma signature »).
-import { PHMC_LOGO, PBC_LOGO, PAIR_LOGO_WIDTH, phmcFooter, pbcFooter } from './shared/bbStyles';
+import { PHMC_LOGO, PBC_LOGO, PAIR_LOGO_WIDTH, PAIR_PBC_WIDTH, phmcFooter, pbcFooter } from './shared/bbStyles';
 
 // Établissement qui émet l'AMA : le PHMC (logo du PHMC, pied de page du PHMC) ou sa clinique de Paleto Bay (logos du PHMC et du PBC, pied de page de la clinique).
 const isPbc = (etablissement) => etablissement === 'pbc';
@@ -31,7 +31,7 @@ export const effectiveGuardian = ({ guardianName = '', guardianRelation = '', mi
 
 const renderAma = ({
     patientName = '', patientSignatureUrl = '', guardianName = '', guardianRelation = '', minor = false, emancipated = false, date = '', paramedicName = '', paramedicSignatureUrl = '', etablissement = 'phmc',
-} = {}) => `[divbox=white][center]${isPbc(etablissement) ? `[img=${PAIR_LOGO_WIDTH}]${PHMC_LOGO}[/img][img=${PAIR_LOGO_WIDTH}]${PBC_LOGO}[/img]` : `[img]${PHMC_LOGO}[/img]`}[/center][/divbox]
+} = {}) => `[divbox=white][center]${isPbc(etablissement) ? `[img=${PAIR_LOGO_WIDTH}]${PHMC_LOGO}[/img][img=${PAIR_PBC_WIDTH}]${PBC_LOGO}[/img]` : `[img]${PHMC_LOGO}[/img]`}[/center][/divbox]
 [divbox=white][br][/br][center][size=150][b]CONTRE AVIS MÉDICAL (AMA)[/b][/size]
 [b]Refus de traitement médical[/b][/center]
 [hr][/hr]
