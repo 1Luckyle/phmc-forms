@@ -56,8 +56,8 @@ const generateContract = (doc) => {
     // En-tête commun aux rapports : étiquette « Informations du document », puis la référence et la date d'édition ; le titre du document est en grand à droite, sous le logo.
     const headerTitle = String(title || '').toUpperCase();
     const headerCell = service === 'coroner' && !pbc
-        ? `[divbox=white]${dmecHeader({ label: 'Informations du document', name: `Réf. ${reference}`, detail: dateText, title: headerTitle, subtitle: subtitle ? `[size=105]${subtitle}[/size]` : '' })}[/divbox]`
-        : careHeader({ title: headerTitle, pbc, withPhmcLogo: true, label: 'Informations du document', lines: `Réf. ${reference}\n${dateText}${subtitle ? `\n${subtitle}` : ''}` });
+        ? `[divbox=white]${dmecHeader({ compactLogos: true, label: 'Informations du document', name: `Réf. ${reference}`, detail: dateText, title: headerTitle, subtitle: subtitle ? `[size=105]${subtitle}[/size]` : '' })}[/divbox]`
+        : careHeader({ title: headerTitle, pbc, withPhmcLogo: true, compactLogos: pbc, label: 'Informations du document', lines: `Réf. ${reference}\n${dateText}${subtitle ? `\n${subtitle}` : ''}` });
 
     const visasBlock = visas.length
         ? `[divbox=white][size=90]${visas.map((visa) => `[i]${visa}[/i]`).join('\n')}[/size][/divbox]`

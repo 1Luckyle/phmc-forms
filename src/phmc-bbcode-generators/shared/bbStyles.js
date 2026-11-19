@@ -33,11 +33,15 @@ export const PHMC_LOGO = 'https://phmc-tools.com/img/phmc.png';
 export const PBC_LOGO = 'https://phmc-tools.com/img/phmcpaletobaylogo.png';
 // dmec : document du DMEC (ex. candidature en médecine légale) → le petit sceau du DMEC est ajouté à côté du logo, comme dans l'en-tête des rapports du DMEC (dmecHeaderLogos).
 // withPhmcLogo : avec pbc, le logo du PHMC est gardé et celui du PBC s'ajoute à côté (documents administratifs : contrats, accords, AMA) ; sans lui, le PBC est seul (rapports de soins).
-export const careHeader = ({ title, lines = '', pbc = false, dmec = false, withPhmcLogo = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
+// compactLogos : deux logos dans une cellule étroite (aperçu d'un document administratif) → ils sont réduits à la même taille pour rester alignés sur une seule ligne, au lieu de passer l'un sous l'autre ([img=largeur] : aperçu, HTML, PDF ; sur le forum, la copie du BBCode retire la largeur).
+export const PAIR_LOGO_WIDTH = 90;
+export const PAIR_DMEC_WIDTH = 72;
+const sizedImg = (url, width) => (width ? `[img=${width}]${url}[/img]` : `[img]${url}[/img]`);
+export const careHeader = ({ title, lines = '', pbc = false, dmec = false, withPhmcLogo = false, compactLogos = false, label = 'Informations du patient' }) => `[divbox=white][table][tr][td][center][br][/br][br][/br][b]${label}[/b]
 
 [size=110]${lines}[/size]
 
-[/center][td][center]${pbc ? `${withPhmcLogo ? `[img]${PHMC_LOGO}[/img]` : ''}[img]${PBC_LOGO}[/img]` : `[img]${PHMC_LOGO}[/img]`}${dmec ? `[img]${DMEC_LOGO_SMALL}[/img]` : ''}
+[/center][td][center]${pbc ? `${withPhmcLogo ? sizedImg(PHMC_LOGO, compactLogos && PAIR_LOGO_WIDTH) : ''}${sizedImg(PBC_LOGO, compactLogos && withPhmcLogo && PAIR_LOGO_WIDTH)}` : sizedImg(PHMC_LOGO, compactLogos && dmec && PAIR_LOGO_WIDTH)}${dmec ? sizedImg(DMEC_LOGO_SMALL, compactLogos && PAIR_DMEC_WIDTH) : ''}
 [b][size=150]${String(title).toUpperCase()}[/size][/b][/center][/table][/divbox]`;
 
 // Pied de page commun à tous les rapports : coordonnées du Pillbox Hill Medical Center. Ajouté à la fin du BBCode, une seule fois, par withPhmcFooter
@@ -107,15 +111,15 @@ export const DMEC_LOGO = 'https://phmc-tools.com/img/dmec-seal.png';
 // Même sceau en petit (public/img/dmec-seal-small.png) : à côté du logo PHMC dans l'en-tête des rapports du DMEC, comme le logo de Paleto Bay à côté de celui du PHMC.
 export const DMEC_LOGO_SMALL = 'https://phmc-tools.com/img/dmec-seal-small.png';
 // Logos de l'en-tête des rapports du DMEC : le logo du PHMC, et le sceau du DMEC plus petit à côté.
-export const dmecHeaderLogos = () => `[img]${PHMC_LOGO}[/img][img]${DMEC_LOGO_SMALL}[/img]`;
+export const dmecHeaderLogos = ({ compact = false } = {}) => `${sizedImg(PHMC_LOGO, compact && PAIR_LOGO_WIDTH)}${sizedImg(DMEC_LOGO_SMALL, compact && PAIR_DMEC_WIDTH)}`;
 
 // En-tête d'un rapport : à gauche l'étiquette du dossier, le défunt et son identifiant ; à droite le logo et le titre du rapport.
 //   dmecHeader({ label: 'Informations du défunt', name: 'Jane Doe', detail: 'ID Patient : PHMC-12', title: 'RAPPORT D\'AUTOPSIE', subtitle: '…' })
-export const dmecHeader = ({ label, name, detail = '', title, subtitle = '' }) => `[table][tr][td][center][br][/br][br][/br][b]${label}[/b]
+export const dmecHeader = ({ label, name, detail = '', title, subtitle = '', compactLogos = false }) => `[table][tr][td][center][br][/br][br][/br][b]${label}[/b]
 
 [size=110]${name}${detail ? `\n${detail}` : ''}[/size]
 
-[/center][td][center]${dmecHeaderLogos()}
+[/center][td][center]${dmecHeaderLogos({ compact: compactLogos })}
 [b][size=150]${title}[/size][/b]${subtitle ? `\n${subtitle}` : ''}[/center][/table]`;
 
 // Tableau « étiquette : valeur ». Chaque ligne est une liste de 1 à 3 paires [étiquette, valeur] ; une ligne à une seule paire prend toute la largeur.

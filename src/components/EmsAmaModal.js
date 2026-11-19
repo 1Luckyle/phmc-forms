@@ -341,11 +341,11 @@ const EmsAmaModal = ({ show, onHide, showNotification, uploadImageDetailed }) =>
             </li>
         </ul>
     );
-    const picker = <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={saving} name="amaEtablissement" label="Refus de soins auprès de" help="Le PBC ajoute son logo à l'en-tête ; le pied de page du document est celui de l'établissement choisi." />;
+    const picker = <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={saving} name="amaEtablissement" label="Refus de soins auprès de" />;
     const hipaaPanel = (
         <div className="ama-hipaa">
             <p className="text-muted small mb-2">
-                L'AMA déclare que le patient a reçu une copie de cet avis : remettez-la-lui (copie, HTML, PDF ou image). Le texte suit l'établissement choisi ci-dessus.
+                L'AMA déclare que le patient a reçu une copie de cet avis : remettez-la-lui (copie, HTML, PDF ou image).
             </p>
             <div className="d-flex flex-wrap gap-2 mb-3">
                 {bbcodeEnabled && (

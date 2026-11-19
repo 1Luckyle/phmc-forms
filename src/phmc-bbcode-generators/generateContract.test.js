@@ -24,7 +24,7 @@ describe('contrats : en-tête et pied de page des rapports', () => {
     });
     test('documents du DMEC : logo PHMC et sceau du DMEC dans l’en-tête', () => {
         const text = generateContract(doc({ service: 'coroner' }));
-        expect(text).toContain('[img]https://phmc-tools.com/img/phmc.png[/img][img]https://phmc-tools.com/img/dmec-seal-small.png[/img]');
+        expect(text).toContain('[img=90]https://phmc-tools.com/img/phmc.png[/img][img=72]https://phmc-tools.com/img/dmec-seal-small.png[/img]');
         expect(text.split('[/divbox]')[0]).toContain('[b]Informations du document[/b]');
     });
     test('se termine par le pied de page commun du PHMC (une seule fois), après la mention légale du contrat', () => {

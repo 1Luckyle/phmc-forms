@@ -22,7 +22,7 @@ const generateHipaaNotice = ({ etablissement = 'phmc', date = '' } = {}) => {
     const footer = pbc ? pbcFooter() : phmcFooter();
 
     const header = careHeader({
-        title: 'Avis de confidentialité', pbc, withPhmcLogo: true, label: 'Informations du document',
+        title: 'Avis de confidentialité', pbc, withPhmcLogo: true, compactLogos: pbc, label: 'Informations du document',
         lines: `${HIPAA_TITLE}${date ? `\nRemis le ${date}` : ''}`,
     });
 

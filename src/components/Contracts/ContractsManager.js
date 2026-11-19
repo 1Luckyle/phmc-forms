@@ -574,7 +574,6 @@ const ContractEditor = ({ show, onHide, contract, newType, staff, contracts, iss
                     {!readOnly && (
                         <EstablishmentPicker
                             value={etab} onChange={onChangeEstablishment} disabled={busy} name="contractEtablissement" label="Document émis par"
-                            help="Le PBC ajoute son logo et ses coordonnées, et ne propose que ses grades et services (pas de DMEC)."
                         />
                     )}
 

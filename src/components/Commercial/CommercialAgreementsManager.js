@@ -136,7 +136,7 @@ const AgreementEditor = ({ type, agreement, accounts, issuer, showNotification, 
         <div>
             <div className="row g-3">
                 <div className="col-12 col-lg-6" data-guide-zone data-mark-checks>
-                    <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={busy} name="agreementEtablissement" label="Accord conclu par" help="Le PBC ajoute son logo et ses coordonnées (en-tête et pied de page)." />
+                    <EstablishmentPicker value={etab} onChange={setEtablissement} disabled={busy} name="agreementEtablissement" label="Accord conclu par" />
                     <div className="field-legend"><span className="req"><i></i>Obligatoire</span><span className="opt"><i></i>Facultatif</span></div>
                     {groups.map(([group, groupFields]) => (
                         <fieldset key={group} className="border rounded p-3 mb-3" style={{ borderColor: '#30363d' }}>
