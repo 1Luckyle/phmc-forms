@@ -38,6 +38,6 @@ describe('champs du système de santé en jeu', () => {
         const { container } = render(<InjuryDetails formData={{ injuryDetails: [{ conditionId: 'plaie_arme_feu', region: 'cou', count: '1', precisions: [] }] }} setFormData={noop} ids={['plaie_arme_feu']} />);
         const select = container.querySelector('select[name="injuryGrade-plaie_arme_feu-0"]');
         expect(select).toBeTruthy();
-        expect(select.options[0].textContent).toBe('Proposée : Critique');
+        expect(select.options[0].textContent).toBe('Critique (proposée)');
     });
 });

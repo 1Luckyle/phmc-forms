@@ -522,8 +522,8 @@ describe('urgences : précisions sur les blessures, sous les motifs et avant Pil
         expect(after(block, screen.getByText(/Suggestions/))).toBe(true);
         expect(screen.getByText('Plaie par arme à feu', { selector: 'strong' })).toBeTruthy();
         expect(screen.getByText("Fracture fermée d'un membre", { selector: 'strong' })).toBeTruthy();
-        expect(screen.getByText("Nombre d'impacts")).toBeTruthy();
-        expect(screen.getByText('Nombre de fractures')).toBeTruthy();
+        expect(screen.getByTitle("Nombre d'impacts")).toBeTruthy(); // libellé court « Nombre », intitulé complet au survol
+        expect(screen.getByTitle('Nombre de fractures')).toBeTruthy();
         // Le trajet du projectile ne concerne que la balle.
         expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(1);
         expect(screen.getByText('Mutilations et atteintes associées')).toBeTruthy();
