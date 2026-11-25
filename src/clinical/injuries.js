@@ -10,6 +10,7 @@
 //   injuryMutilations : [code]    (pertes de dents, atteinte de l'œil, de l'oreille, amputations…)
 //   injuryNote        : texte libre
 import { CONDITION_BY_ID } from './conditions';
+import { gradeOfRow, gradeLabel, GUNSHOT_VEST_PRECISION } from './gameplay';
 
 // Motifs de prise en charge qui se localisent et se comptent. `unit` : [singulier, pluriel] du nombre.
 export const INJURY_CONDITIONS = {
@@ -53,7 +54,7 @@ export const PRECISIONS = {
     plaie_superficielle: WOUND_PRECISIONS,
     plaie_profonde: WOUND_PRECISIONS,
     plaie_arme_blanche: [...WOUND_PRECISIONS, 'Plaie pénétrante'],
-    plaie_arme_feu: ["Orifice d'entrée seul", "Orifices d'entrée et de sortie", 'Balle logée palpable', 'Tir à bout portant', 'Éclats de projectile', 'Saignement actif', 'Saignement contrôlé', 'Atteinte osseuse suspectée', 'Atteinte vasculaire suspectée', 'Atteinte nerveuse suspectée'],
+    plaie_arme_feu: ["Orifice d'entrée seul", "Orifices d'entrée et de sortie", 'Balle logée palpable', 'Tir à bout portant', 'Éclats de projectile', 'Saignement actif', 'Saignement contrôlé', 'Atteinte osseuse suspectée', 'Atteinte vasculaire suspectée', 'Atteinte nerveuse suspectée', GUNSHOT_VEST_PRECISION],
     fracture_fermee: FRACTURE_PRECISIONS,
     fracture_ouverte: ['Os visible', 'Plaie souillée', 'Saignement actif', 'Déplacée', 'Comminutive', 'Pouls distal absent', 'Atteinte nerveuse suspectée', 'Garrot posé'],
     entorse_luxation: ['Gonflement', 'Hématome', 'Instabilité', 'Déformation', 'Luxation réduite', 'Appui impossible', 'Pouls distal présent'],
@@ -109,11 +110,14 @@ const regionPhrase = (row) => {
     return `${joinFr(labels)}${SIDE_PHRASE[row.side] ? ` (${SIDE_PHRASE[row.side]})` : ''}`;
 };
 
-// Une ligne : « 2 impacts de balle — cuisse (côté droit), balle logée, précision ».
+// Une ligne : « 2 impacts de balle — cuisse (côté droit), gravité grave, balle logée, précision ». La gravité (choisie, ou proposée d'après le motif et la zone,
+// voir gameplay.js) n'est imprimée que si la ligne a déjà une zone ou un nombre : une ligne vide n'imprime toujours rien.
 const rowPhrase = (conditionId, row) => {
     const head = [countPhrase(conditionId, row.count), regionPhrase(row)].filter(Boolean).join(' — ');
+    const grade = head ? gradeLabel(gradeOfRow({ ...row, conditionId })) : '';
     return [
         head,
+        grade ? `gravité ${grade.toLowerCase()}` : '',
         INJURY_CONDITIONS[conditionId].trajectory && TRAJECTORY_PHRASE[row.trajectory] ? TRAJECTORY_PHRASE[row.trajectory] : '',
         ...asList(row.precisions).map((precision) => String(precision || '').trim()),
         String(row.note || '').trim(),

@@ -82,7 +82,7 @@ describe('patient décédé : pas de soins systématiques ni d’orientation de 
 
     test('BBCode : la durée de prise en charge reste, pas le reste', () => {
         const alive = emergencyExtrasBBCode({ ...care, dischargeDestination: 'Home' });
-        expect(alive).toContain('Soins systématiques réalisés');
+        expect(alive).toContain('Gestes et soins réalisés');
         expect(alive).toContain('Orientation de sortie');
         const dead = emergencyExtrasBBCode({ ...care, careDeceased: 'Yes' });
         expect(dead).toContain('Prise en charge');

@@ -15,8 +15,13 @@ import { emergencyContactChanges, aptitudeValidUntil, minutesBetween, durationLa
 import {
     REFERRAL_REASONS, SURGERY_CHARACTERS, ASA_CLASSES, POST_OP_MONITORING, EVAL_REASONS, APTITUDE_CONCLUSIONS, APTITUDE_VALIDITY_MONTHS, DEFAULT_APTITUDE_MONTHS, VACCINATION_STATES,
     RISK_LEVELS, RISK_ACTIONS, INVOLUNTARY_HOLDS, ARRIVAL_MODES, DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, RISK_NEEDING_ACTION,
-    deathMannersFor, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
+    deathMannersFor, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY, BLOOD_TYPES, FOLLOWUP_PLACES,
 } from '../../constants/careFormOptions';
+import {
+    BLEEDING_STATES, BLEEDING_CONTROLS, needsConvalescence, CONVALESCENCE_TEXT, needsFollowupAppointment, FOLLOWUP_MAX_DAYS,
+} from '../../clinical/gameplay';
+import { addDaysIso } from '../../clinical/engine';
+import { todayIso } from '../../utils/appointmentDate';
 import { buildDeathSuggestion } from '../../clinical/death';
 import { applyPatch } from '../../clinical/apply';
 import { currentTime } from '../../clinical/context';
@@ -195,10 +200,60 @@ export const EmergencyDischargeFields = ({ formData, setFormData, handleChange }
                 <Field label="Établissement de transfert" basis={240}><Form.Control type="text" name="transferTo" value={formData.transferTo || ''} onChange={handleChange} placeholder="Établissement" className="form-control" /></Field>
             )}
         </div>
-        <Form.Label>Soins systématiques réalisés</Form.Label>
-        <MultiChoice name="routineCare" formData={formData} setFormData={setFormData} options={ROUTINE_CARE} placeholder="Antitétanique, antalgie, pansement… (choix multiple)" />
+        <Form.Label>Gestes et soins réalisés</Form.Label>
+        <MultiChoice name="routineCare" formData={formData} setFormData={setFormData} options={ROUTINE_CARE} placeholder="Garrot, pansement, attelle, groupage, antalgie… (choix multiple)" />
+        {/* Groupage sanguin réalisé : le groupe trouvé s'imprime dans le rapport. */}
+        {Array.isArray(formData.routineCare) && formData.routineCare.includes('BloodTyping') && (
+            <div style={{ ...row, marginTop: '0.6rem' }}>
+                <Field label="Groupe sanguin (groupage)" basis={200}><Choice name="bloodTypeResult" formData={formData} handleChange={handleChange} options={BLOOD_TYPES} placeholder="Groupe trouvé" /></Field>
+            </div>
+        )}
+        {needsConvalescence(formData) && formData.dischargeDestination !== 'Death' && (
+            <span className="helper-text" style={{ color: '#79c0ff' }}><i className="fas fa-person-walking me-1"></i>Imprimé dans le rapport : {CONVALESCENCE_TEXT}</span>
+        )}
     </>
 );
+
+// ── Protocole d'urgence : hémorragie (le jeu la déclenche par une balle ou une lame ; elle s'arrête avec un garrot ou un pansement) ──
+export const BleedingFields = ({ formData, setFormData, handleChange }) => (
+    <div style={{ ...row, marginTop: '0.6rem' }}>
+        <Field label="Hémorragie" basis={220}><Choice name="bleedingState" formData={formData} handleChange={handleChange} options={BLEEDING_STATES} placeholder="Saignement en cours ?" /></Field>
+        {formData.bleedingState === 'Controlled' && (
+            <div style={cell(320)}>
+                <Form.Label>Moyen d'arrêt</Form.Label>
+                <MultiChoice name="bleedingControl" formData={formData} setFormData={setFormData} options={BLEEDING_CONTROLS} placeholder="Garrot, pansement… (choix multiple)" />
+            </div>
+        )}
+    </div>
+);
+
+// ── Rendez-vous de suivi : dans les 14 jours (suivi recommandé ou procédure élective) ──
+export const FollowupAppointmentFields = ({ formData, handleChange }) => {
+    if (!needsFollowupAppointment(formData)) return null;
+    const from = /^\d{4}-\d{2}-\d{2}$/.test(String(formData.date || '')) ? formData.date : todayIso();
+    const until = addDaysIso(from, FOLLOWUP_MAX_DAYS);
+    const late = formData.followupDate && until && formData.followupDate > until;
+    return (
+        <>
+            <div style={{ ...row, marginTop: '0.6rem' }}>
+                <Field label="Date du rendez-vous" basis={170}>
+                    <Form.Control type="date" name="followupDate" value={formData.followupDate || ''} min={from} max={until} onChange={handleChange} className="form-control" />
+                </Field>
+                <Field label="Heure" basis={120}>
+                    <Form.Control type="time" name="followupTime" value={formData.followupTime || ''} onChange={handleChange} className="form-control" />
+                </Field>
+                <Field label="Lieu du rendez-vous" basis={240}><Choice name="followupPlace" formData={formData} handleChange={handleChange} options={FOLLOWUP_PLACES} placeholder="Hôpital, caserne du LSFD, domicile…" /></Field>
+            </div>
+            <Form.Check
+                type="checkbox" id="followupSms" name="followupSms" label="Patient convoqué par SMS" checked={!!formData.followupSms}
+                onChange={(e) => handleChange({ target: { name: 'followupSms', value: e.target.checked, type: 'text' } })}
+            />
+            <span className="helper-text" style={late ? { color: '#ff7b72' } : undefined}>
+                {late ? `Le rendez-vous doit être fixé dans les ${FOLLOWUP_MAX_DAYS} jours (au plus tard le ${frDate(until)}).` : `Rendez-vous dans les ${FOLLOWUP_MAX_DAYS} jours qui suivent (au plus tard le ${frDate(until)}).`}
+            </span>
+        </>
+    );
+};
 
 // ── Consultation générale ──
 export const ConsultExtraFields = ({ formData, setFormData, handleChange, onPrefillSickLeave }) => (

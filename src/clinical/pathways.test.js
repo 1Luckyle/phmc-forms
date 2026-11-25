@@ -136,7 +136,7 @@ describe('le parcours complet d\'un cas', () => {
             ...adult, conditionIds: ['plaie_arme_feu'], injuryMutilations: ['eye', 'inconnu'],
             injuryDetails: [{ conditionId: 'plaie_arme_feu', region: 'cuisse', side: 'Right', count: '2', trajectory: 'Lodged', precisions: ['Saignement actif'] }],
         });
-        expect(result.injuries).toEqual(['Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), balle logée, Saignement actif']);
+        expect(result.injuries).toEqual(['Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), gravité grave, balle logée, Saignement actif']);
         expect(result.mutilations).toEqual(["Atteinte de l'œil (perforation, énucléation)"]);
         const now = result.timeline.find((phase) => phase.key === 'now').steps;
         expect(now.some((step) => step.title === 'Saignement actif' && step.tag === 'Blessures' && step.kind === 'alert')).toBe(true);

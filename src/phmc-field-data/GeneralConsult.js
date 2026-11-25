@@ -3,7 +3,7 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 import PatientContextFields from './shared/PatientContextFields';
 import CareFormHeader from './shared/CareFormHeader';
-import { ConsultExtraFields } from './shared/CareExtraFields';
+import { ConsultExtraFields, FollowupAppointmentFields } from './shared/CareExtraFields';
 import ClinicalAssistant from './shared/ClinicalAssistant';
 
 // Valeurs chiffrées facultatives des signes vitaux (voir EmergencyForm).
@@ -368,6 +368,7 @@ const GeneralConsult = ({
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </Form.Select>
+                            <FollowupAppointmentFields formData={formData} handleChange={handleChange} />
 
                                 <ConsultExtraFields formData={formData} setFormData={setFormData} handleChange={handleChange} onPrefillSickLeave={onPrefillSickLeave} />
                             </>

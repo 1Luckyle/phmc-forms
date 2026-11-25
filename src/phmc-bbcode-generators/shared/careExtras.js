@@ -6,7 +6,11 @@ import { sectionBanner, BB_COLORS } from './bbStyles';
 import {
     labelOf, SURGERY_CHARACTERS, ASA_CLASSES, POST_OP_MONITORING, EVAL_REASONS, VACCINATION_STATES, RISK_LEVELS, RISK_ACTIONS, INVOLUNTARY_HOLDS,
     DISCHARGE_DESTINATIONS, ROUTINE_CARE, ORIENTED_SERVICES, EXAMS_ORDERED, REFERRAL_REASONS, ARRIVAL_MODES, deathMannerLabel, DEATH_RESUSCITATION, DEATH_FAMILY, DEATH_BODY,
+    FOLLOWUP_PLACES,
 } from '../../constants/careFormOptions';
+import {
+    BLEEDING_STATES, BLEEDING_CONTROLS, needsConvalescence, CONVALESCENCE_TEXT, needsFollowupAppointment, worstGrade, gradeLabel,
+} from '../../clinical/gameplay';
 import { minutesBetween, durationLabel, aptitudeValidUntil } from '../../utils/careFormRules';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
 import { injuryLines, mutilationLabels } from '../../clinical/injuries';
@@ -124,13 +128,56 @@ export const emergencyExtrasBBCode = (f) => {
     // Patient décédé : ni soins systématiques, ni orientation de sortie (le décès a sa propre section) ; seule la durée de prise en charge reste.
     const deceased = f.careDeceased === 'Yes';
     const destination = labelOf(DISCHARGE_DESTINATIONS, f.dischargeDestination) + (f.dischargeDestination === 'Transfer' && filled(f.transferTo) ? ` : ${text(f.transferTo)}` : '');
+    const typed = !deceased && Array.isArray(f.routineCare) && f.routineCare.includes('BloodTyping') && filled(f.bloodTypeResult);
     const lines = joinLines([
-        deceased ? '' : line('Soins systématiques réalisés', multiLabels(ROUTINE_CARE, f.routineCare)),
+        deceased ? '' : line('Gestes et soins réalisés', multiLabels(ROUTINE_CARE, f.routineCare)),
+        typed ? line('Groupe sanguin (groupage)', text(f.bloodTypeResult)) : '',
+        // Convalescence du jeu (pas de course pendant 20 minutes) : blessure grave ou critique, ou sortie d'une hospitalisation.
+        needsConvalescence(f) && f.dischargeDestination !== 'Death' ? line('Convalescence', CONVALESCENCE_TEXT.replace(/^Convalescence : /, '')) : '',
         line('Prise en charge', filled(f.careStartTime) || filled(f.careEndTime)
             ? `${filled(f.careStartTime) ? `de ${text(f.careStartTime)}` : ''}${filled(f.careEndTime) ? ` à ${text(f.careEndTime)}` : ''}${minutes !== null ? ` (${durationLabel(minutes)})` : ''}`.trim() : ''),
         deceased ? '' : line('Orientation de sortie', destination),
     ]);
     return lines ? `${lines}\n[br][/br]\n` : '';
+};
+
+// ── Protocole d'urgence : hémorragie (ligne de tableau des constatations) ; vide si rien n'est renseigné ──
+export const bleedingBBCode = (f) => {
+    if (!filled(f.bleedingState)) return '';
+    const controls = f.bleedingState === 'Controlled' ? multiLabels(BLEEDING_CONTROLS, f.bleedingControl) : '';
+    const box = (value) => (f.bleedingState === value ? '[cbc]' : '[cb]');
+    return `
+[table][tr][td][center]Hémorragie: ${box('None')} Aucune ${box('Active')} Active ${box('Controlled')} Contrôlée[/center]
+[td][center]Moyen d'arrêt: ${controls || (f.bleedingState === 'Active' ? 'à arrêter' : 'N/A')}[/center][/table]`;
+};
+
+// ── Protocole d'urgence : bilan ABCDE, reconstitué à partir des constatations déjà saisies (rien n'est saisi deux fois) ; vide s'il y a moins de deux lignes ──
+const BREATHING_LABELS = { patientBreathingNormal: 'normale', patientBreathingSlow: 'lente', patientBreathingFast: 'rapide', patientBreathingObstructed: 'obstruée' };
+const LUNG_LABELS = { patientNormal: 'auscultation normale', patientRhonchi: 'ronchi', patientCrack: 'crépitants' };
+const HEART_LABELS = { patientHeartRateNormal: 'normale', patientHeartRateBradycardia: 'bradycardie', patientHeartRateTachycardia: 'tachycardie' };
+const PRESSURE_LABELS = { patientBloodPressureNormal: 'normale', patientBloodPressureHypotension: 'hypotension', patientBloodPressureHypertension: 'hypertension' };
+const PUPIL_LABELS = { patientPupilsNormal: 'normales', patientPupilsAbnormal: 'anormales' };
+const TEMP_LABELS = { patientTempNormal: 'normale', patientHypothermic: 'hypothermie', patientHyperthermic: 'hyperthermie' };
+const parts = (...items) => items.filter(Boolean).join(', ');
+export const abcdeRows = (f) => [
+    ['A — Voies aériennes', f.breathing ? (f.breathing === 'patientBreathingObstructed' ? 'obstruées' : 'libres') : ''],
+    ['B — Respiration', parts(BREATHING_LABELS[f.breathing] ? `respiration ${BREATHING_LABELS[f.breathing]}` : '', filled(f.respiratoryRateValue) ? `FR ${text(f.respiratoryRateValue)}/min` : '', filled(f.spo2Value) ? `SpO2 ${text(f.spo2Value)} %` : '', LUNG_LABELS[f.lungs] || '')],
+    ['C — Circulation', parts(filled(f.heartRateValue) ? `FC ${text(f.heartRateValue)} bpm` : (HEART_LABELS[f.heartRate] ? `pouls ${HEART_LABELS[f.heartRate]}` : ''), filled(f.bloodPressureValue) ? `TA ${text(f.bloodPressureValue)} mmHg` : (PRESSURE_LABELS[f.bloodPressure] ? `tension ${PRESSURE_LABELS[f.bloodPressure]}` : ''), labelOf(BLEEDING_STATES, f.bleedingState).toLowerCase())],
+    ['D — Neurologique', parts(filled(f.gcsScore) ? `Glasgow ${text(f.gcsScore)}/15` : '', PUPIL_LABELS[f.pupils] ? `pupilles ${PUPIL_LABELS[f.pupils]}` : '', filled(f.glucoseValue) ? `glycémie ${text(f.glucoseValue)} g/L` : '')],
+    ['E — Exposition', parts(filled(f.temperatureValue) ? `T° ${text(f.temperatureValue)} °C` : (TEMP_LABELS[f.temperature] ? `température ${TEMP_LABELS[f.temperature]}` : ''), worstGrade(f) ? `blessure la plus sévère : ${gradeLabel(worstGrade(f)).toLowerCase()}` : '')],
+].filter(([, value]) => value);
+export const abcdeBBCode = (f) => {
+    const rows = abcdeRows(f);
+    if (rows.length < 2) return '';
+    return `\n[table]\n${rows.map(([label, value]) => `[tr][td][b]${label}[/b][/td][td]${value}[/td][/tr]`).join('\n')}\n[/table]`;
+};
+
+// ── Rendez-vous de suivi (urgences, consultations) : vide sans date ni lieu ──
+export const followupAppointmentBBCode = (f) => {
+    if (!needsFollowupAppointment(f) || (!filled(f.followupDate) && !filled(f.followupPlace))) return '';
+    const when = [filled(f.followupDate) ? `le ${frDate(f.followupDate)}` : '', filled(f.followupTime) ? `à ${text(f.followupTime)}` : ''].filter(Boolean).join(' ');
+    const where = labelOf(FOLLOWUP_PLACES, f.followupPlace);
+    return `[u]Rendez-vous de suivi: [/u] ${[when, where].filter(Boolean).join(' — ')}${f.followupSms === true || f.followupSms === 'true' ? ' (convocation envoyée par SMS)' : ''}\n`;
 };
 
 // ── Consultation générale (lignes à insérer dans la cellule « Thérapie ») ──

@@ -38,6 +38,10 @@ const DECEASED = rule('le patient est déclaré décédé', (d) => d.careDecease
 const ALIVE = rule('le patient n\'est pas déclaré décédé', (d) => d.careDeceased !== 'Yes');
 const CARE_DEATH_FIELDS = ['careDeathTime', 'careDeathCause', 'careDeathManner', 'careDeathResuscitation', 'careDeathResuscitationNote', 'careDeathFamily', 'careDeathBody'];
 
+// Rendez-vous de suivi (urgences, consultations) : seulement pour un suivi « recommandé » ou une « procédure élective », patient vivant (clinical/gameplay.js).
+const FOLLOWUP_APPOINTMENT = rule('le suivi est « Recommandé » ou « Procédure élective » (patient non décédé)', (d) => d.careDeceased !== 'Yes' && ['Recommended', 'Electiveprocedure'].includes(d.followup));
+const FOLLOWUP_APPOINTMENT_RULES = { followupDate: FOLLOWUP_APPOINTMENT, followupTime: FOLLOWUP_APPOINTMENT, followupPlace: FOLLOWUP_APPOINTMENT, followupSms: FOLLOWUP_APPOINTMENT };
+
 // Demandeur (forces de l'ordre) du rapport de décès : la case « demande d'un officier » ouvre les champs.
 const REQUESTING_OFFICER = {
     requestingOfficer: rule('la case « demande d\'un officier » est cochée', (d) => isYes(d.showRequestingOfficerInput)),
@@ -162,14 +166,19 @@ export const FIELD_CONDITIONS = {
         admission: ALIVE, followup: ALIVE, patientMedicine: ALIVE, routineCare: ALIVE, dischargeDestination: ALIVE,
         transferTo: rule('le patient n\'est pas décédé et l\'orientation de sortie est un transfert', (d) => d.careDeceased !== 'Yes' && d.dischargeDestination === 'Transfer'),
         CombinedImagingResults: rule('un examen d\'imagerie est demandé', (d) => filled(d.Imaging) && !includesAny(d.Imaging, 'NoneRequired')),
+        bleedingControl: rule('l\'hémorragie est déclarée « contrôlée »', (d) => d.bleedingState === 'Controlled'),
+        bloodTypeResult: rule('le patient n\'est pas décédé et le groupage sanguin est coché', (d) => d.careDeceased !== 'Yes' && includesAny(d.routineCare, 'BloodTyping')),
+        ...FOLLOWUP_APPOINTMENT_RULES,
     },
     20: {
         orientedServiceOther: rule('le service orienté est « Autre »', (d) => d.orientedService === 'Other'),
         workStoppageDays: rule('un arrêt de travail est prescrit (« Oui »)', (d) => d.workStoppage === 'Yes'),
+        ...FOLLOWUP_APPOINTMENT_RULES,
     },
     21: {
         orientedServiceOther: rule('le service orienté est « Autre »', (d) => d.orientedService === 'Other'),
         workStoppageDays: rule('un arrêt de travail est prescrit (« Oui »)', (d) => d.workStoppage === 'Yes'),
+        ...FOLLOWUP_APPOINTMENT_RULES,
     },
     24: {
         guardianName: rule('le patient a moins de 18 ans et n\'est pas émancipé', (d) => isMinorPatient({ birthDate: d.patientDateOfBirth, titleIsMinor: d.patientTitle === 'Mineur' }) && !d.patientEmancipated),

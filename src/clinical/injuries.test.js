@@ -44,19 +44,19 @@ describe('blessures : localisation, multiplicité et mutilations', () => {
     test('une phrase par motif, une zone par ligne : nombre, zone et côté, trajet de la balle, précision', () => {
         const lines = injuryLines(form);
         expect(lines).toHaveLength(2);
-        expect(lines[0]).toBe('Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), balle logée, Saignement actif ; 1 impact de balle — abdomen (côté gauche)');
-        expect(lines[1]).toBe("Fracture fermée d'un membre : 1 fracture — avant-bras (côté gauche)");
+        expect(lines[0]).toBe('Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), gravité grave, balle logée, Saignement actif ; 1 impact de balle — abdomen (côté gauche), gravité grave');
+        expect(lines[1]).toBe("Fracture fermée d'un membre : 1 fracture — avant-bras (côté gauche), gravité modérée");
         // Un motif non sélectionné, ou sans aucune précision, n'imprime rien.
         expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'plaie_arme_feu', count: '2' }] })).toEqual([]);
         expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', region: '', side: '', count: '', note: '' }] })).toEqual([]);
         // Accord au singulier / pluriel ; « 5 ou plus » ; même motif sur des zones de côtés différents.
-        expect(injuryLines({ clinicalConditions: ['plaie_arme_blanche'], injuryDetails: [{ conditionId: 'plaie_arme_blanche', count: '1', region: 'thorax' }] })[0]).toBe('Plaie par arme blanche : 1 plaie par arme blanche — thorax');
+        expect(injuryLines({ clinicalConditions: ['plaie_arme_blanche'], injuryDetails: [{ conditionId: 'plaie_arme_blanche', count: '1', region: 'thorax' }] })[0]).toBe('Plaie par arme blanche : 1 plaie par arme blanche — thorax, gravité modérée');
         const knife = injuryLines({ clinicalConditions: ['plaie_arme_blanche'], injuryDetails: [{ conditionId: 'plaie_arme_blanche', count: '5+', region: 'dos', side: 'Both' }, { conditionId: 'plaie_arme_blanche', count: '1', region: 'cou' }] })[0];
-        expect(knife).toBe('Plaie par arme blanche : 5 ou plus plaies par arme blanche — dos (des deux côtés) ; 1 plaie par arme blanche — cou');
+        expect(knife).toBe('Plaie par arme blanche : 5 ou plus plaies par arme blanche — dos (des deux côtés), gravité grave ; 1 plaie par arme blanche — cou, gravité critique');
         // Une ligne sans nombre ni zone, au milieu des autres, est ignorée.
-        expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', region: 'main', side: 'Right', count: '1' }, { conditionId: 'brulure', region: '', count: '' }] })[0]).toBe('Brûlure : 1 zone brûlée — main (côté droit)');
+        expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', region: 'main', side: 'Right', count: '1' }, { conditionId: 'brulure', region: '', count: '' }] })[0]).toBe('Brûlure : 1 zone brûlée — main (côté droit), gravité modérée');
         // Les lignes d'avant le choix d'une zone unique (plusieurs zones dans une ligne) restent lisibles.
-        expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', regions: ['dos', 'cou'], side: 'Both' }] })[0]).toBe('Brûlure : dos et cou (des deux côtés)');
+        expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', regions: ['dos', 'cou'], side: 'Both' }] })[0]).toBe('Brûlure : dos et cou (des deux côtés), gravité modérée');
     });
 
     test('précisions prêtes à choisir : une liste par motif, sans doublon ; elles s’impriment avant la précision libre', () => {
@@ -67,7 +67,7 @@ describe('blessures : localisation, multiplicité et mutilations', () => {
         expect(precisionOptions('plaie_arme_feu')).toContainEqual({ value: 'Balle logée palpable', label: 'Balle logée palpable' });
         expect(precisionOptions('inconnu')).toEqual([]);
         const line = injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', region: 'main', side: 'Right', count: '1', precisions: ['2e degré superficiel', 'Phlyctènes'], note: 'Eau bouillante' }] })[0];
-        expect(line).toBe('Brûlure : 1 zone brûlée — main (côté droit), 2e degré superficiel, Phlyctènes, Eau bouillante');
+        expect(line).toBe('Brûlure : 1 zone brûlée — main (côté droit), gravité modérée, 2e degré superficiel, Phlyctènes, Eau bouillante');
         // Une ligne qui n'a que des précisions (sans zone ni nombre) s'imprime aussi.
         expect(injuryLines({ clinicalConditions: ['brulure'], injuryDetails: [{ conditionId: 'brulure', precisions: ['3e degré'] }] })[0]).toBe('Brûlure : 3e degré');
     });
@@ -93,7 +93,7 @@ describe('Pilou reprend les blessures dans sa rédaction', () => {
 
     test('plainte, diagnostics et soins mentionnent localisation, mutilations et conduite à tenir', () => {
         const s = suggestions({ ...form, clinicalConditions: ['plaie_arme_feu', 'fracture_fermee'] });
-        expect(s.text.complaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), balle logée, Saignement actif ; 1 impact de balle — abdomen (côté gauche)');
+        expect(s.text.complaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), gravité grave, balle logée, Saignement actif ; 1 impact de balle — abdomen (côté gauche), gravité grave');
         expect(s.text.complaint).toContain("Mutilation(s) : perte de dent(s), atteinte de l'œil (perforation, énucléation).");
         expect(s.text.diagnosis).toMatch(/Localisation : Plaie par arme à feu : 2 impacts de balle — cuisse/);
         expect(s.text.secondary).toContain('Mutilation(s) : perte de dent(s)');
@@ -121,7 +121,7 @@ describe('rapport : localisation des blessures', () => {
     test('anamnèse : puces par blessure, mutilations et précision, sous les motifs', () => {
         const bb = clinicalAnamnesisBBCode(form);
         expect(bb).toContain('[u]Localisation des blessures: [/u]');
-        expect(bb).toContain('• Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), balle logée, Saignement actif ; 1 impact de balle — abdomen (côté gauche)');
+        expect(bb).toContain('• Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), gravité grave, balle logée, Saignement actif ; 1 impact de balle — abdomen (côté gauche), gravité grave');
         expect(bb).toContain("• Mutilation(s) : Perte de dent(s), Atteinte de l'œil (perforation, énucléation)");
         expect(bb).toContain('• Agression au bar.');
         expect(bb.indexOf('Motifs de prise en charge')).toBeLessThan(bb.indexOf('Localisation des blessures'));

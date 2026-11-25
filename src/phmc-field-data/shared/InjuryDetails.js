@@ -11,10 +11,11 @@ import { darkSelectStyles } from './selectStyles';
 import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
 import { INJURY_CONDITIONS, isInjuryCondition, BODY_REGION_GROUPS, REGION_LABEL, SIDES, COUNTS, TRAJECTORIES, MUTILATIONS, MUTILATION_BY_VALUE, precisionOptions } from '../../clinical/injuries';
+import { INJURY_GRADES, suggestedGrade, gradeLabel } from '../../clinical/gameplay';
 
 const row = { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: '0.5rem' };
 const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
-const emptyRow = (conditionId) => ({ conditionId, region: '', side: '', count: '', precisions: [], note: '' });
+const emptyRow = (conditionId) => ({ conditionId, region: '', side: '', count: '', grade: '', precisions: [], note: '' });
 
 // strict : outil Pilou de la Boîte à outils — tout se choisit dans les listes (pas de précision saisie librement, pas de champ « Autres précisions »), car Pilou ne tire une conduite à tenir que de ses propres choix.
 const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
@@ -93,6 +94,14 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                                                 </Form.Select>
                                             </div>
                                         )}
+                                        <div style={cell(170)}>
+                                            {position === 0 && <Form.Label className="small mb-1">Gravité</Form.Label>}
+                                            {/* Vide = gravité proposée d'après le motif, la zone et les précisions (balle à la tête ou au cou : critique…), voir clinical/gameplay.js. */}
+                                            <Form.Select name={`injuryGrade-${suffix}`} value={entry.grade || ''} onChange={(e) => updateRow(conditionId, position, { grade: e.target.value })} className="form-control" title="Légère, modérée, grave ou critique : proposée d'après le motif, la zone et les précisions">
+                                                <option value="">{suggestedGrade(conditionId, entry) ? `Proposée : ${gradeLabel(suggestedGrade(conditionId, entry))}` : 'Non précisée'}</option>
+                                                {INJURY_GRADES.map((grade) => <option key={grade.value} value={grade.value}>{grade.label}</option>)}
+                                            </Form.Select>
+                                        </div>
                                         {rows.length > 1 && (
                                             <div style={{ flex: '0 0 auto', alignSelf: position === 0 ? 'flex-end' : 'center' }}>
                                                 <Button variant="outline-danger" size="sm" onClick={() => removeRow(conditionId, position)} aria-label="Retirer cette ligne" title="Retirer cette ligne"><i className="fas fa-xmark"></i></Button>

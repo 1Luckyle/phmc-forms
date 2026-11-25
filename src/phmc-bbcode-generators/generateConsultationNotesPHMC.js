@@ -1,6 +1,6 @@
 import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
-import { consultExtrasBBCode, clinicalAnamnesisBBCode, treatmentBBCode } from './shared/careExtras';
+import { consultExtrasBBCode, clinicalAnamnesisBBCode, treatmentBBCode, followupAppointmentBBCode } from './shared/careExtras';
 import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
 
 const generateConsultationNotesPHMC = (formData) => {
@@ -89,7 +89,7 @@ ${treatmentBBCode(formData, { consignes: medicationBBCode, emptyText: 'Plan de t
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
-[/left][/list][/table]`;
+${followupAppointmentBBCode(formData)}[/left][/list][/table]`;
     return bbCode;
 };
 

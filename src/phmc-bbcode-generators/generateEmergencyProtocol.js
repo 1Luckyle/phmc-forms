@@ -3,7 +3,7 @@ import { buildLabBBCode } from './shared/labResults';
 import { buildPatientContextBBCode, signedLine } from './shared/patientContext';
 import { buildVitalValuesBBCode, ARRIVAL_MODE_LABELS } from './shared/vitalValues';
 import { checkbox, careHeader, sectionBanner } from './shared/bbStyles';
-import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, treatmentBBCode, deathBBCode } from './shared/careExtras';
+import { emergencyExtrasBBCode, arrivalModeLabel, clinicalAnamnesisBBCode, treatmentBBCode, deathBBCode, bleedingBBCode, abcdeBBCode, followupAppointmentBBCode } from './shared/careExtras';
 
 // Soignants supplémentaires cités dans l'en-tête (le rédacteur, qui signe, n'y figure pas deux fois).
 const extraStaffLine = (formData) => {
@@ -87,7 +87,7 @@ ${checkbox(formData.admission === 'No')} Non
 ${checkbox(formData.followup === 'AsNeeded')} Au besoin
 ${checkbox(formData.followup === 'Recommended')} Recommandé
 ${checkbox(formData.followup === 'Electiveprocedure')} Procédure élective (Non-urgent / Non-planifié)
-
+${followupAppointmentBBCode(formData)}
 `;
 
     let bbCode = `${careHeader({ title: "PROTOCOLE D'URGENCE", pbc: false, lines: `PATIENT: ${patientName || 'N/A'}
@@ -117,10 +117,11 @@ ${sectionBanner(`Constatations`)}
 [table][tr][td][center]État de santé général (ESG): ${checkbox(formData.findings === 'patientNormal')} Normal ${checkbox(formData.findings === 'patientImpared')} Altéré[/center]
 [td][center]Poumons (Auscultation): ${checkbox(formData.lungs === 'patientNormal')} Normal ${checkbox(formData.lungs === 'patientRhonchi')} Ronchi ${checkbox(formData.lungs === 'patientCrack')} Crépitants [/center][/table]
 [table][tr][td][center]Pupilles: ${checkbox(formData.pupils === 'patientPupilsNormal')} Normales ${checkbox(formData.pupils === 'patientPupilsAbnormal')} Anormales [/center]
-[td][center]Blessures: ${checkbox(formData.wounds === 'patientFractures')} Fracture(s) ${checkbox(formData.wounds === 'patientBleeding')} Saignement ${checkbox(formData.wounds === 'patientHematoma')} Hématome ${checkbox(formData.wounds === 'patientNoWounds')} Aucune [/center][/table]${imagingSectionBBCode}
+[td][center]Blessures: ${checkbox(formData.wounds === 'patientFractures')} Fracture(s) ${checkbox(formData.wounds === 'patientBleeding')} Saignement ${checkbox(formData.wounds === 'patientHematoma')} Hématome ${checkbox(formData.wounds === 'patientNoWounds')} Aucune [/center][/table]${bleedingBBCode(formData)}${imagingSectionBBCode}
 [table][tr][td][center]ECG: ${checkbox(formData.ecg === 'patientSinusRhythm')} Rythme sinusal ${checkbox(formData.ecg === 'patientArrhythmia')} Arythmie ${checkbox(formData.ecg === 'patientInfaction')} Infarctus [/center]
 [td][center]Sono: ${checkbox(formData.sono === 'patientNormal')} Normal ${checkbox(formData.sono === 'patientFluids')} Fluides ${checkbox(formData.sono === 'patientTissue')} Changement tissulaire[/center][/table]
-${buildLabBBCode(formData)}
+${buildLabBBCode(formData)}${abcdeBBCode(formData) ? `
+${sectionBanner('Bilan ABCDE')}${abcdeBBCode(formData)}` : ''}
 ${sectionBanner(`Diagnostic préliminaire`)}
 [table][tr][td][left][list=none][u]Diagnostic primaire: [/u][br][/br]
 ${patientDiagnosis || 'N/A'}

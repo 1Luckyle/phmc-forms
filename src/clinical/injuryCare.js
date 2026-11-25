@@ -67,6 +67,7 @@ export const PRECISION_CARE = {
     'Profonde (plan musculaire)': ['treat', "Muscle atteint : suture par plans (muscle, sous-peau, peau), antibioprophylaxie, contrôle à 48 heures."],
     'Saignement actif': ['now', "Saignement actif : compression directe immédiate et continue, pansement compressif ; garrot si c'est un membre et que la compression échoue."],
     'Saignement contrôlé': ['assess', "Saignement contrôlé : ne pas retirer le pansement qui tient, surveiller toute reprise du saignement."],
+    'Impact arrêté par le gilet pare-balles': ['assess', "Impact arrêté par le gilet : retirer le gilet, rechercher une contusion profonde sous l'impact (côtes, poumon, abdomen) ; blessure en général légère."],
     'Plaie souillée': ['treat', "Plaie souillée : lavage abondant et prolongé, brossage si besoin, antibioprophylaxie, rappel antitétanique ; fermeture différée si la plaie est très sale."],
     'Corps étranger': ['assess', "Corps étranger : radiographie avant l'exploration ; retiré s'il est accessible, laissé en place et calé s'il est profond ou planté."],
     'Atteinte tendineuse suspectée': ['assess', "Tendon suspect : tester chaque mouvement contre résistance ; attelle en position de repos et avis chirurgical, une simple suture de la peau ne suffit pas."],

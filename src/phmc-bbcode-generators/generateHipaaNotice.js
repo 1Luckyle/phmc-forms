@@ -43,6 +43,9 @@ const generateHipaaNotice = ({ etablissement = 'phmc', date = '' } = {}) => {
                 '[b]Pour la sécurité des personnes :[/b] pour prévenir une menace grave et imminente pour la santé ou la sécurité d\'une personne ou du public.',
             ]),
             text('Toute autre utilisation ou communication, notamment à votre famille, à votre employeur, à un tiers ou à la presse, exige votre autorisation écrite. Vous pouvez retirer cette autorisation à tout moment, pour l\'avenir.')),
+        section('Dossier partagé et forces de l\'ordre',
+            text('Votre dossier médical est unique : il est partagé entre les soignants du Pillbox Hill Medical Center et les ambulanciers du Los Santos Fire Department (LSFD) en service, pour assurer la continuité de vos soins. Chaque consultation de votre dossier est enregistrée.'),
+            text('Les forces de l\'ordre ne reçoivent jamais votre dossier médical : seul le rapport d\'intervention peut leur être transmis, dans les limites prévues ci-dessus.')),
         section('Vos droits',
             text('Vous avez le droit de :'),
             list([

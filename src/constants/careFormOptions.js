@@ -77,6 +77,10 @@ export const ARRIVAL_MODES = list([
     ['Helicopter', 'Hélicoptère'],
     ['Police', "Amené par les forces de l'ordre"],
     ['Transfer', 'Transfert depuis un autre établissement'],
+    // Prises en charge du système de santé en jeu (soins sur place, premiers soins par la police, appel d'un soignant depuis l'hôpital).
+    ['OnSiteCare', 'Pris en charge sur place par les secours (LSFD / PHMC)'],
+    ['PoliceFirstAid', "Premiers soins par les forces de l'ordre, puis transport"],
+    ['HospitalRequest', "Demande de soins depuis l'hôpital (soignant appelé)"],
     ['Other', 'Autre'],
 ]);
 export const DISCHARGE_DESTINATIONS = list([
@@ -97,7 +101,24 @@ export const ROUTINE_CARE = list([
     ['Infusion', 'Perfusion'],
     ['Oxygen', 'Oxygénothérapie'],
     ['Antibiotic', 'Antibioprophylaxie'],
+    // Gestes du panneau soignant en jeu (garrot, pansement, attelle, groupage, glycémie).
+    ['Tourniquet', 'Garrot'],
+    ['HemostaticDressing', 'Pansement compressif / hémostatique'],
+    ['Splint', 'Attelle (membre)'],
+    ['BloodTyping', 'Groupage sanguin'],
+    ['CapillaryGlucose', 'Glycémie capillaire'],
     ['None', 'Aucun soin systématique'],
+]);
+// Groupage sanguin (soin « BloodTyping ») : groupe trouvé.
+export const BLOOD_TYPES = list(['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((type) => [type, type]));
+
+// ── Rendez-vous de suivi (urgences, consultation générale) : dans les 14 jours, dans un des hôpitaux, à la caserne du LSFD ou chez le patient ──
+export const FOLLOWUP_PLACES = list([
+    ['PillboxHill', 'Pillbox Hill Medical Center'],
+    ['SandyShores', 'Centre médical de Sandy Shores'],
+    ['PaletoBay', 'Clinique de Paleto Bay'],
+    ['LsfdStation', 'Caserne du LSFD'],
+    ['Home', 'Domicile du patient'],
 ]);
 
 // ── Consultation générale ──

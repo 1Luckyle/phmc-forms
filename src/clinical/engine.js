@@ -5,6 +5,7 @@
 import { MEDICATION_BY_ID, regimenOf, PENICILLIN_ALLERGY, CEPHALOSPORIN_ALLERGY } from './medications';
 import { CONDITION_BY_ID, HISTORY_HINTS } from './conditions';
 import { injuryLines, mutilationLabels, mutilationCareSteps } from './injuries';
+import { gameplayCareSteps, gameplayRoutineCare, prescriptionLimitMessages, intakeHoursPhrase } from './gameplay';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
 import { missingBackgroundItems } from '../utils/dossierCore';
@@ -162,6 +163,9 @@ export const checkPrescription = (entry, ctx = {}) => {
         if (regimen.intervalHours && regimen.intervalHours >= 1 && count > Math.floor(24 / regimen.intervalHours)) add('warn', `${count} prises par 24 h : l'intervalle minimal est de ${formatNumber(regimen.intervalHours)} h.`);
     }
 
+    // Ordonnance délivrée en pharmacie : 6 prises par jour, 30 jours et 30 unités au plus (gameplay.js).
+    prescriptionLimitMessages(entry).forEach((message) => add(message.level, message.text));
+
     // Allergies, antécédents, traitements en cours.
     const allergyHit = findTerm(patient.allergies, med.allergy);
     if (allergyHit) add('error', `Allergie signalée (« ${allergyHit} ») : ${med.name} contre-indiqué.`);
@@ -263,7 +267,9 @@ export const prescriptionText = (entry) => {
     if (!base) return '';
     const days = Math.floor(Number(entry?.days));
     const start = frIso(entry?.startDate);
-    return `${base}${start ? `, à partir du ${start}` : ''}${days > 0 ? `, pendant ${days} jour${days > 1 ? 's' : ''}` : ''}`;
+    // Heures de prise de l'application Santé (1 à 6 prises par jour) : « à 8 h, 14 h et 20 h ».
+    const hours = intakeHoursPhrase(entry?.count);
+    return `${base}${hours ? `, ${hours}` : ''}${start ? `, à partir du ${start}` : ''}${days > 0 ? `, pendant ${days} jour${days > 1 ? 's' : ''}` : ''}`;
 };
 
 /** Les morceaux d'une ligne d'ordonnance (tableau de l'ordonnance) : { name, posology, note, start, days, end } ; null si la ligne est inutilisable. */
@@ -276,7 +282,8 @@ export const prescriptionParts = (entry) => {
     const frequency = count > 1 ? `, ${count} prises/24 h${regimen.intervalHours >= 1 ? ` (toutes les ${formatNumber(regimen.intervalHours)} h)` : ''}` : '';
     const days = Math.floor(Number(entry.days)) > 0 ? Math.floor(Number(entry.days)) : 0;
     const startDate = dayNumber(entry.startDate) !== null ? String(entry.startDate).slice(0, 10) : '';
-    return { name: med.name, posology: `${dose} — ${regimen.route}${frequency}`, note: String(entry.note || '').trim(), start: startDate, days, end: startDate && days ? addDaysIso(startDate, days - 1) : '' };
+    const hours = intakeHoursPhrase(count);
+    return { name: med.name, posology: `${dose} — ${regimen.route}${frequency}${hours ? `, ${hours}` : ''}`, note: String(entry.note || '').trim(), start: startDate, days, end: startDate && days ? addDaysIso(startDate, days - 1) : '' };
 };
 
 /** Texte d'une ligne de prescription, tel qu'imprimé dans le rapport. */
@@ -350,7 +357,8 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
     const surgical = sev.index >= 2 && conditions.some((c) => c.surgical);
     const destination = surgical ? 'OperatingRoom' : admitted ? (conditions.map((c) => c.admitTo).find(Boolean) || 'Ward') : 'Home';
     const imaging = [...new Set(conditions.flatMap((c) => c.imaging || []))];
-    const routineCare = [...new Set(conditions.flatMap((c) => c.routineCare || []))];
+    // Soins des motifs, plus les gestes que demandent la gravité et l'hémorragie (garrot ou pansement, attelle : voir gameplay.js).
+    const routineCare = [...new Set([...conditions.flatMap((c) => c.routineCare || []), ...gameplayRoutineCare(formData)])];
 
     const checkCtx = { patient, vitals: vitalsFromForm({ ...formData, ...vitalsFormFields(values) }), tags };
     const meds = [];
@@ -391,12 +399,13 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
     const mutilations = mutilationLabels(formData);
     const mutilationSentence = mutilations.length ? `Mutilation(s) : ${mutilations.map((label) => label.charAt(0).toLowerCase() + label.slice(1)).join(', ')}.` : '';
     const mutilationCare = mutilationCareSteps(formData);
+    const gameplaySteps = gameplayCareSteps(formData);
     const text = {
         complaint: [conditions.map((c) => c.complaint).filter(Boolean).join(' ; '), injuries ? `Lésions : ${injuries}.` : '', mutilationSentence].filter(Boolean).join(' '),
         mechanism: conditions.map((c) => c.mechanism).find(Boolean) || '',
         diagnosis: [conditions[0].diagnosis, injuries ? `Localisation : ${injuries}.` : ''].filter(Boolean).join(' '),
         secondary: [conditions.slice(1).map((c) => c.diagnosis).join(' ; '), mutilationSentence].filter(Boolean).join(' ; '),
-        procedure: [procedure, mutilationCare.length ? `Mutilations :\n${mutilationCare.map((step) => `- ${step}`).join('\n')}` : ''].filter(Boolean).join('\n\n'),
+        procedure: [procedure, gameplaySteps.length ? `Gestes d'urgence :\n${gameplaySteps.map((step) => `- ${step}`).join('\n')}` : '', mutilationCare.length ? `Mutilations :\n${mutilationCare.map((step) => `- ${step}`).join('\n')}` : ''].filter(Boolean).join('\n\n'),
         advice,
     };
     return {

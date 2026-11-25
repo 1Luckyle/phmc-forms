@@ -393,7 +393,7 @@ describe('opération : libellés en français ; patient décédé : plus de suit
         expect(screen.queryByText('Orientation de sortie')).toBeNull();
         // Ni orientation de sortie ni soins systématiques : tout le bloc « Sortie et soins systématiques » disparaît.
         expect(screen.queryByText('Sortie et soins systématiques')).toBeNull();
-        expect(screen.queryByText('Soins systématiques réalisés')).toBeNull();
+        expect(screen.queryByText('Gestes et soins réalisés')).toBeNull();
         // Aucune ordonnance : ni case, ni encadré ; la ligne déjà mise sur l'ordonnance est masquée, le médicament administré reste.
         expect(document.querySelectorAll('input[id^="rx-"]')).toHaveLength(0);
         expect(screen.queryByText("Tout mettre sur l'ordonnance")).toBeNull();
@@ -585,7 +585,7 @@ describe('urgences : précisions sur les blessures, sous les motifs et avant Pil
         }} extra={emergencyProps} />);
         await act(async () => { screen.getByText('Tout appliquer').click(); });
         const state = stateOf();
-        expect(state.patientChiefComplaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), balle logée ; 1 impact de balle — abdomen (côté gauche).');
+        expect(state.patientChiefComplaint).toContain('Lésions : Plaie par arme à feu : 2 impacts de balle — cuisse (côté droit), gravité grave, balle logée ; 1 impact de balle — abdomen (côté gauche), gravité grave.');
         expect(state.patientChiefComplaint).toContain('Mutilation(s) : perte de dent(s)');
         expect(state.patientDiagnosis).toContain('Localisation : Plaie par arme à feu : 2 impacts de balle — cuisse');
         expect(state.patientSecondaryDiagnosis).toContain('Mutilation(s) : perte de dent(s)');

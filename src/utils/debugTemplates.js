@@ -897,10 +897,12 @@ const careExtras = (version, h) => {
         patientEmergencyContact: 'Marie Testard', patientEmergencyContactTitle: 'Mrs', patientEmergencyContactFirstName: 'Marie', patientEmergencyContactMiddleName: '', patientEmergencyContactLastName: 'Testard',
         patientEmergencyContactRelation: 'Épouse', patientEmergencyContactNumber: '555-0199', patientEmergencyContactDiscord: 'marie.testard',
     };
+    // Rendez-vous de suivi (urgences, consultations) : suivi recommandé, dans 3 jours, à Pillbox Hill, convocation par SMS.
+    const followupAppointment = { followup: 'Recommended', followupDate: addDaysIso(h.today, 3), followupTime: '15:00', followupPlace: 'PillboxHill', followupSms: true };
     const mental = { riskSuicide: 'Low', riskDanger: 'None', riskAction: 'CloseFollowUp', riskActionNote: 'Revoir sous une semaine.', involuntaryHold: 'No', ...emergencyContact };
     const aptitude = { evalReason: 'Renewal', aptitudeConclusion: 'Apte avec restrictions', aptitudeRestrictions: 'Port de verres correcteurs.', aptitudeValidityMonths: '12', visualAcuity: '10/10 corrigée', hearingValue: 'Normale', vaccinationState: 'Yes' };
     const consult = {
-        orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3',
+        orientedService: 'InternalMedicine', examsOrdered: ['Blood', 'Xray'], examsOrderedNote: 'À jeun.', workStoppage: 'Yes', workStoppageDays: '3', ...followupAppointment,
         patientWeight: '75', patientHeight: '178', clinicalConditions: ['migraine'], clinicalSeverity: 'Mild',
         clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }],
     };
@@ -914,7 +916,8 @@ const careExtras = (version, h) => {
             extraStaff: h.extraStaff(1),
             injuryDetails: [{ conditionId: 'fracture_fermee', region: 'poignet', side: 'Right', count: '1', precisions: ['Déformation visible', 'Non déplacée'], note: 'Déformation en dos de fourchette.' }, { conditionId: 'plaie_superficielle', region: 'main', side: 'Right', count: '2', precisions: ['Plaie nette', 'Saignement contrôlé'], note: '' }, { conditionId: 'plaie_superficielle', region: 'genou', side: 'Left', count: '1', precisions: ['Plaie souillée'], note: '' }],
             injuryMutilations: [], injuryNote: 'Chute de deux mètres, réception sur la main droite.',
-            careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia'],
+            careStartTime: '14:35', careEndTime: '15:20', dischargeDestination: 'ObservationBox', routineCare: ['Tetanus', 'Analgesia', 'Splint', 'BloodTyping'], bloodTypeResult: 'O+',
+            bleedingState: 'Controlled', bleedingControl: ['Dressing'], ...followupAppointment,
             patientWeight: '75', patientHeight: '178', clinicalConditions: ['fracture_fermee', 'plaie_superficielle'], clinicalSeverity: 'Moderate',
             clinicalMeds: [{ medId: 'paracetamol', regimenId: 'po', dose: 1000, count: 3, note: '', prescribed: true, days: 5 }, { medId: 'vaccin_tetanique', regimenId: 'im', dose: 0.5, count: 1, note: 'Rappel' }],
         },
@@ -954,6 +957,8 @@ export const getDebugTemplate = (version, ctx, scenario = '') => {
         ...(Number(version) === 35 ? {} : { patientDateOfBirth: helpers.patient.dob }),
         ...careExtras(Number(version), helpers),
         ...template,
+        // Urgences et consultations : suivi « recommandé », pour que le rendez-vous de suivi (rempli par careExtras) s'affiche.
+        ...([19, 20, 21].includes(Number(version)) ? { followup: 'Recommended' } : {}),
         ...deathScenario(Number(version), scenario),
     };
 };
