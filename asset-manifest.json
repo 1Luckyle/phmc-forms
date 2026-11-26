@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.505fc236.css",
-    "main.js": "/static/js/main.8d53fc24.js",
+    "main.js": "/static/js/main.8201a056.js",
     "static/js/8211.787b87da.chunk.js": "/static/js/8211.787b87da.chunk.js",
     "static/js/7775.580bd87c.chunk.js": "/static/js/7775.580bd87c.chunk.js",
     "static/js/7913.6c09d2c5.chunk.js": "/static/js/7913.6c09d2c5.chunk.js",
@@ -105,7 +105,7 @@
     "static/js/2316.aee5f917.chunk.js": "/static/js/2316.aee5f917.chunk.js",
     "static/js/6205.cd4c966e.chunk.js": "/static/js/6205.cd4c966e.chunk.js",
     "static/js/6583.90110212.chunk.js": "/static/js/6583.90110212.chunk.js",
-    "static/js/2318.03d8f36c.chunk.js": "/static/js/2318.03d8f36c.chunk.js",
+    "static/js/2318.6c9ad436.chunk.js": "/static/js/2318.6c9ad436.chunk.js",
     "static/media/business-card.png": "/static/media/business-card.081ec13cdb1b9bb68ce0.png",
     "static/media/female-body-silhouette.png": "/static/media/female-body-silhouette.b8b3675a61aac36b0670.png",
     "static/media/Declasse Alamo Unmarked.jpg": "/static/media/Declasse Alamo Unmarked.aa51a73c4df7e6268b0b.jpg",
@@ -156,7 +156,7 @@
     "static/media/fa-v4compatibility.woff2": "/static/media/fa-v4compatibility.ea8f94e1d22e0d35ccd4.woff2",
     "index.html": "/index.html",
     "main.505fc236.css.map": "/static/css/main.505fc236.css.map",
-    "main.8d53fc24.js.map": "/static/js/main.8d53fc24.js.map",
+    "main.8201a056.js.map": "/static/js/main.8201a056.js.map",
     "7775.580bd87c.chunk.js.map": "/static/js/7775.580bd87c.chunk.js.map",
     "7913.6c09d2c5.chunk.js.map": "/static/js/7913.6c09d2c5.chunk.js.map",
     "351.d38236e8.chunk.js.map": "/static/js/351.d38236e8.chunk.js.map",
@@ -259,10 +259,10 @@
     "2316.aee5f917.chunk.js.map": "/static/js/2316.aee5f917.chunk.js.map",
     "6205.cd4c966e.chunk.js.map": "/static/js/6205.cd4c966e.chunk.js.map",
     "6583.90110212.chunk.js.map": "/static/js/6583.90110212.chunk.js.map",
-    "2318.03d8f36c.chunk.js.map": "/static/js/2318.03d8f36c.chunk.js.map"
+    "2318.6c9ad436.chunk.js.map": "/static/js/2318.6c9ad436.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.505fc236.css",
-    "static/js/main.8d53fc24.js"
+    "static/js/main.8201a056.js"
   ]
 }
