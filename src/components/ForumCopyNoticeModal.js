@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { useSiteConfig, useSiteMode } from '../contexts/SiteConfigContext';
 
 // Fenêtres d'aide affichées après une copie du BBCode ou un téléchargement du HTML :
 //   • BBCode copié  → destiné au forum PHMC (pas encore disponible actuellement), PAS au forum GTA World (Invision Community) ;
@@ -40,6 +40,9 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
     const isHtml = kind === 'html';
     // BBCode désactivé par les admins : plus aucune mention du BBCode ni du forum PHMC.
     const { bbcodeEnabled } = useSiteConfig();
+    // « forum GTA World » ; en version classique, « forum du serveur » (aucune mention de GTA World).
+    const { isClassic } = useSiteMode();
+    const forum = isClassic ? 'forum du serveur' : 'forum GTA World';
 
     return (
         <Modal show={show} onHide={close} centered>
@@ -55,7 +58,7 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
                         <div style={rowStyle}>
                             <i className="fas fa-circle-check" style={{ color: '#3fb950', fontSize: '1.3rem', marginTop: '2px' }}></i>
                             <span>
-                                Le HTML est destiné au <strong>forum GTA World</strong> : le copier-coller de ce fichier y fonctionne.
+                                Le HTML est destiné au <strong>{forum}</strong> : le copier-coller de ce fichier y fonctionne.
                             </span>
                         </div>
                         {bbcodeEnabled && (
@@ -84,14 +87,14 @@ const ForumCopyNoticeModal = ({ kind, show, onHide, onDownloadHtml }) => {
                         <div style={rowStyle}>
                             <i className="fas fa-circle-xmark" style={{ color: '#f85149', fontSize: '1.3rem', marginTop: '2px' }}></i>
                             <span>
-                                Il <strong>ne fonctionne pas sur le forum GTA World</strong> : ce forum ne reconnaît pas ces balises et le rapport
+                                Il <strong>ne fonctionne pas sur le {forum}</strong> : ce forum ne reconnaît pas ces balises et le rapport
                                 s'y afficherait cassé.
                             </span>
                         </div>
                         <div style={{ ...rowStyle, marginBottom: 0 }}>
                             <i className="fas fa-lightbulb" style={{ color: '#d29922', fontSize: '1.3rem', marginTop: '2px' }}></i>
                             <span>
-                                Pour publier sur le forum GTA World, utilisez <strong>« Télécharger le HTML »</strong> : le HTML est fait pour
+                                Pour publier sur le {forum}, utilisez <strong>« Télécharger le HTML »</strong> : le HTML est fait pour
                                 <strong> ce forum</strong> (le BBCode est réservé au forum PHMC).
                             </span>
                         </div>

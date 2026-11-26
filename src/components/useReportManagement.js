@@ -17,7 +17,7 @@ import { sendTemplatedMail } from '../utils/mailTemplates';
 import { migrateInternalEmailData } from '../utils/internalEmail';
 import { sendPhmcRecruitmentWebhook } from './notificationService';
 import { buildReportTitle } from '../utils/reportTitle';
-import { recordInvoiceForReport } from '../utils/patientInvoices';
+import { recordInvoiceForReport, settleInvoices } from '../utils/patientInvoices';
 import { createReleaseRequest, canShareReport, isServiceChief, practitionerLabel, RELEASE_VERSION } from '../utils/releaseRequests';
 import { requestExemption } from '../utils/exemptions';
 import { validateReport, validateApplication, formatIssues } from '../utils/formValidation';
@@ -438,7 +438,7 @@ export const useReportManagement = (
                     // Jeton gratuit : dépensé (compteur - 1) puis facture « sans paiement ». Formulaire de dossier repris : sa facture existe déjà (jamais réécrite).
                     if (dossierToken) dossierToken = await spendDossierToken(dossierContext.patientNode, bbCodeVersion, dossierContext.tokens);
                     if (!(editingForm && editingForm.invoice)) {
-                        await recordInvoiceForReport({
+                        const invoice = await recordInvoiceForReport({
                             patientID: formData.patientID,
                             indexKey: sanitizedKey,
                             reportPath,
@@ -447,6 +447,15 @@ export const useReportManagement = (
                             formData: dossierToken ? { ...formData, dossierJeton: true } : formData,
                             createdBy: currentAuthor,
                         });
+                        // Version classique : « Réglé sur place » coché par le personnel → la facture est marquée payée, encaissée par lui (serveur).
+                        if (invoice && invoice.statut === 'a_payer' && formData.regleSurPlace === true && !isOwnedByThisCivilian) {
+                            try {
+                                await settleInvoices({ patientID: formData.patientID, invoiceIds: [sanitizedKey], action: 'payer', note: 'Réglé sur place à l\'enregistrement' });
+                            } catch (settleError) {
+                                console.warn('Could not mark the invoice as paid:', settleError);
+                                showNotification(`Rapport enregistré, mais la facture n'a pas pu être marquée payée (${settleError.message}). Faites-le depuis le dossier du patient.`, 'warning', 10000);
+                            }
+                        }
                     }
                 } catch (invoiceError) {
                     console.warn('Could not record patient invoice:', invoiceError);

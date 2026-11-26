@@ -14,7 +14,8 @@
 //   **gras**   *italique*   [texte du lien](https://adresse)   (seuls les liens http et https sont acceptés)
 import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase';
-import { LEGAL_NOTICE_TEXT, LEGAL_NOTICE_UPDATE } from './legalNotice';
+import { LEGAL_NOTICE_TEXT, LEGAL_NOTICE_UPDATE, LEGAL_NOTICE_TEXT_CLASSIC } from './legalNotice';
+import { isClassicNow } from './siteModeNow';
 
 export const POLICY_PATH = 'adminSettings/politiqueConfidentialite';
 export const MAX_POLICY_LENGTH = 40000;
@@ -106,6 +107,27 @@ ${LEGAL_NOTICE_TEXT}
 
 Questions : posez-les sur le [serveur Discord du PHMC](https://discord.gg/Qupn5tWc6H).`;
 
+// VERSION CLASSIQUE du site (constants/siteMode.js) : connexion avec Discord, adresses fictives, paiement en jeu, notifications du site ; aucune
+// référence à GTA World, Eyefind ni Fleeca. Les passages propres à la version GTA World sont remplacés ; le reste du texte est identique.
+const CLASSIC_POLICY_REPLACEMENTS = [
+    [/^Cette politique couvre[^\n]*\n\nCe site Web traite[^\n]*\n\nNous sommes en pleine conformité[^\n]*\n/,
+        "Cette politique couvre l'utilisation des outils PHMC-FR.\n\nCe site Web traite des informations **IN CHARACTER** relatives à l'utilisation du Pillbox Hill Medical Center (une faction de jeu de rôle), ainsi que quelques informations **HORS PERSONNAGE** (identifiant Discord, Discord, fuseau horaire) nécessaires aux comptes et aux candidatures.\n"],
+    [/- \*\*Compte :\*\*[^\n]*/,
+        "- **Compte :** identifiant de votre compte Discord (pour vous reconnaître à la connexion : ni mot de passe, ni adresse mail Discord), vos personnages (prénom, nom, ID patient conservé même si le compte est supprimé) et l'adresse fictive du PHMC créée avec le compte (prenom.nom@phmc.health, qui ne reçoit aucun message)."],
+    [/ et son adresse e-mail \(par code de vérification\) depuis « Mon profil »\./, ' depuis « Mon profil ».'],
+    [/Les paiements passent par Fleeca[^\n]*/,
+        "Les paiements se font en jeu : le membre du personnel qui encaisse marque la facture payée ; nous gardons la date, le montant et son nom."],
+    [/- \*\*Eyefind Mail \(messagerie du serveur\) :\*\*[^\n]*/,
+        "- **Notifications du site :** compte validé, candidature reçue, entretien, réponse à une candidature, contrat à signer, paiement enregistré, changement de grade, et, pour les factures impayées, un rappel tant que des factures restent à payer. Aucun mail n'est envoyé."],
+    [/- \*\*Fleeca \(GTA World\)\*\*[^\n]*/,
+        "- [Discord](https://discord.com/privacy) : connexion à votre compte (portée « identify » seulement : votre identifiant et votre nom d'utilisateur)."],
+    [/et la connexion passe par votre compte GTA World[^\n]*/,
+        "et la connexion passe par votre compte Discord : aucun mot de passe n'est saisi ni stocké sur ce site."],
+];
+const classicPolicyText = (text) => CLASSIC_POLICY_REPLACEMENTS.reduce((out, [from, to]) => out.replace(from, to), text)
+    .replace(LEGAL_NOTICE_TEXT, LEGAL_NOTICE_TEXT_CLASSIC);
+export const DEFAULT_POLICY_TEXT_CLASSIC = classicPolicyText(DEFAULT_POLICY_TEXT);
+
 // ───────────────────────────── Analyse du texte (pure) ─────────────────────────────
 
 const INLINE = /(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|\[[^\]]+\]\(https?:\/\/[^\s)]+\))/;
@@ -163,7 +185,16 @@ export const DOCUMENTS = {
     politique: { path: POLICY_PATH, texte: DEFAULT_POLICY_TEXT, miseAJour: DEFAULT_UPDATE, label: 'Politique de confidentialité', icon: 'fa-user-shield' },
     mentions: { path: LEGAL_PATH, texte: LEGAL_NOTICE_TEXT, miseAJour: LEGAL_NOTICE_UPDATE, label: 'Mentions légales', icon: 'fa-scale-balanced' },
 };
-export const documentInfo = (kind) => DOCUMENTS[kind] || DOCUMENTS.politique;
+// Version classique du site : chaque document a son texte d'origine et son propre nœud (une version publiée pour GTA World ne s'affiche jamais en
+// version classique, et inversement) ; l'éditeur du panneau admin modifie celui de la version active.
+export const DOCUMENTS_CLASSIC = {
+    politique: { ...DOCUMENTS.politique, path: `${POLICY_PATH}Classique`, texte: DEFAULT_POLICY_TEXT_CLASSIC },
+    mentions: { ...DOCUMENTS.mentions, path: `${LEGAL_PATH}Classique`, texte: LEGAL_NOTICE_TEXT_CLASSIC },
+};
+export const documentInfo = (kind) => {
+    const set = isClassicNow() ? DOCUMENTS_CLASSIC : DOCUMENTS;
+    return set[kind] || set.politique;
+};
 
 export const defaultPolicy = (kind = 'politique') => ({ texte: documentInfo(kind).texte, miseAJour: documentInfo(kind).miseAJour, majLe: null, majPar: '', historique: [], personnalisee: false });
 

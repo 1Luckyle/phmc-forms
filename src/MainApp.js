@@ -92,7 +92,8 @@ import { getEmployeeDisplayName } from './utils/employeeName';
 import { mergeResultOptions, mergeDepartmentOptions, IMAGING_RESULT_ADDITIONS, LAB_RESULT_ADDITIONS } from './constants/clinicalOptions';
 import PatientInvoiceNotifier from './components/PatientInvoiceNotifier';
 import { ReportPreviewFrame } from './components/ReportExpansion';
-import { useSiteConfig } from './contexts/SiteConfigContext';
+import { useSiteConfig, useSiteMode } from './contexts/SiteConfigContext';
+import { DISCORD_ONBOARDING_KEY, DISCORD_LOGIN_RESULT_KEY } from './utils/discordOAuth';
 import ImmersiveHeader from './components/ImmersiveHeader';
 import { exportReportDocument } from './utils/reportDocumentExport';
 import { getRoleInfo, sortKeyOfRank, extraRanksOf, familiesOfMember } from './constants/ranks';
@@ -314,7 +315,8 @@ function MainApp({
         // Présent si l'utilisateur vient de lancer une connexion GTA World depuis la
         // création de compte (OnboardingModal) et revient d'une redirection OAuth :
         // il faut rouvrir l'onboarding même si elle avait déjà été complétée avant.
-        const gtawOnboardingPending = sessionStorage.getItem('gtaw-onboarding-pending') || sessionStorage.getItem('gtaw-onboarding-login');
+        // Idem au retour de Discord (version classique), lancé depuis le guide.
+        const gtawOnboardingPending = sessionStorage.getItem('gtaw-onboarding-pending') || sessionStorage.getItem('gtaw-onboarding-login') || sessionStorage.getItem(DISCORD_ONBOARDING_KEY);
 
         if (userPreferences) {
             try {
@@ -360,6 +362,24 @@ function MainApp({
             }
         } catch (error) {
             console.warn('Failed to parse GTA World login result:', error);
+        }
+        // Version classique : retour de Discord lancé depuis « Se connecter » (DiscordCallback). Un seul compte : déjà connecté.
+        try {
+            const discordRaw = sessionStorage.getItem(DISCORD_LOGIN_RESULT_KEY);
+            if (discordRaw) {
+                sessionStorage.removeItem(DISCORD_LOGIN_RESULT_KEY);
+                const result = JSON.parse(discordRaw);
+                if (result.choices) {
+                    setAccountChoices(result.choices);
+                } else if (result.notLinked) {
+                    showNotification("Aucun compte n'est encore lié à votre compte Discord : créons-le avec le Guide de Configuration !", 'info-circle', 10000);
+                    restartOnboarding();
+                } else if (result.error) {
+                    showNotification(`Échec de la connexion avec Discord : ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.warn('Résultat de connexion Discord illisible :', error);
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -410,6 +430,8 @@ function MainApp({
     const [showPreview, setShowPreview] = useState(false);
     // BBCode désactivé par les admins : il ne reste que l'aperçu et le téléchargement HTML.
     const { bbcodeEnabled, pbcEnabled, bingoEnabled } = useSiteConfig();
+    const { isClassic } = useSiteMode();
+    const loginProviderName = isClassic ? 'Discord' : 'GTA World';
     // Bouton et fenêtre du Bingo : réservés au personnel (getToolAccess) ET activés par les admins (Affichage) ; désactivé, ils disparaissent pour tout le monde, administrateurs compris.
     const bingoVisible = !!toolAccess.bingo && bingoEnabled;
     const [bbCodeVersion, setBbCodeVersion] = useState(() => {
@@ -1046,7 +1068,7 @@ function MainApp({
             setAccountChoices(null);
         } catch (error) {
             console.error('Connexion au compte choisi impossible :', error);
-            showNotification('Connexion impossible : le lien de connexion a expiré, recommencez avec GTA World.', 'error');
+            showNotification(`Connexion impossible : le lien de connexion a expiré, recommencez avec ${loginProviderName}.`, 'error');
             setAccountChoices(null);
         }
     };
@@ -2441,8 +2463,9 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                         <p>Vous devez être connecté (Personnel PHMC/DMEC ou Civil) pour remplir un formulaire.</p>
                                         <p style={{ maxWidth: '520px', margin: '0 auto 18px' }}>
                                             <strong>Première visite ?</strong> Cliquez sur <strong>« Créer un compte »</strong> : le
-                                            {' '}<strong>Guide de Configuration</strong> vous accompagne pas à pas (personnage GTA World, vérification de
-                                            votre e-mail Eyefind Mail, préférences). Vous avez déjà un compte ? Utilisez « Se connecter ».
+                                            {' '}<strong>Guide de Configuration</strong> vous accompagne pas à pas ({isClassic
+                                                ? 'connexion avec Discord, choix de votre personnage, préférences'
+                                                : 'personnage GTA World, vérification de votre e-mail Eyefind Mail, préférences'}). Vous avez déjà un compte ? Utilisez « Se connecter ».
                                         </p>
                                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                                             <Button variant="success" size="lg" onClick={handleOpenSignup}>
@@ -2551,7 +2574,7 @@ Enregistrer quand même sur ${choice.patientID} ?`)) return;
                                 </Modal.Title>
                             </Modal.Header>
                             <Modal.Body style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>
-                                <p>Plusieurs comptes sont liés à votre compte GTA World. Choisissez celui avec lequel vous connecter :</p>
+                                <p>Plusieurs comptes sont liés à votre compte {loginProviderName}. Choisissez celui avec lequel vous connecter :</p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {(accountChoices || []).map((choice, index) => (
                                         <button

@@ -19,7 +19,10 @@ const read = (file) => fs.readFileSync(file, 'utf8');
 const IGNORE_IN_CODE = {
     '*': ['patientName', 'patientNameNew', 'lastName', 'date', 'payNow', 'fleecaPaymentId', 'patientTitleOptions', 'decedentName', 'extraStaff', 'massFatality', 'decedents', 'autopsyDiagramMarkers', 'applicantTitleAndFullName',
         // Recomposés ou déduits : nom complet (prénom + deuxième prénom + nom), rôle de l'employé, âge tiré de la date de naissance. Ce ne sont pas des champs de saisie.
-        'phmcRank', 'patientAgeYears', 'witnessName', 'attorneyName', 'patientEmergencyContact'],   // nom composé des candidatures : pas une saisie
+        'phmcRank', 'patientAgeYears', 'witnessName', 'attorneyName', 'patientEmergencyContact',   // nom composé des candidatures : pas une saisie
+        // Nom de secours lu par TemporaryIdPicker (ID temporaire) quand il gère le champ du défunt ; sous l'ID patient des formulaires du personnel (CarePatientTemporaryId,
+        // version classique), le nom vient des champs du patient : ce n'est jamais une saisie de ces formulaires.
+        'decedentOOC'],
     1: ['evidenceLocker', 'decedentHeight', 'decedentWeight', 'patientDateOfBirth'],   // taille et poids : seulement à l'autopsie (showMeasures) ; patientDateOfBirth : valeur par défaut du composant partagé BirthOrAgeFields (ici « decedentDateOfBirth »)
     4: ['patientDateOfBirth'], 37: ['patientDateOfBirth'],   // idem : le composant partagé BirthOrAgeFields reçoit « decedentDateOfBirth »
     28: ['patientCurrentMedicine'], 29: ['patientCurrentMedicine'],

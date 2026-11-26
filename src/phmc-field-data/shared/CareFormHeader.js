@@ -17,6 +17,7 @@ import { todayIso } from '../../utils/appointmentDate';
 import PhmcEmployeeSelect, { careStaffOnly } from './PhmcEmployeeSelect';
 import { darkSelectStyles } from './selectStyles';
 import { ReferralFields } from './CareExtraFields';
+import CarePatientTemporaryId from './CarePatientTemporaryId';
 
 const rowStyle = { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' };
 const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
@@ -48,6 +49,7 @@ export const PatientIdentityFields = ({ formData, setFormData, handleChange, idP
                 <div style={cell(260)}>
                     <Form.Label>ID du patient</Form.Label>
                     <Form.Control type="text" name="patientID" value={formData.patientID || ''} onChange={handleChange} placeholder={idPlaceholder} className="form-control" />
+                    <CarePatientTemporaryId formData={formData} setFormData={setFormData} />
                 </div>
             </div>
             <DossierNotice patientID={formData.patientID} />

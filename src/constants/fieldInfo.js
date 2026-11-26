@@ -4,6 +4,7 @@
 // qu'il faut renseigner. Le moteur (components/FieldGuide.js) y ajoute « Obligatoire / Facultatif » d'après les règles du back-office
 // (utils/formRulesCore.js), donc inutile de le répéter ici. Une clé commune à plusieurs formulaires qui change de sens se précise dans VERSION_FIELD_INFO.
 // Les champs de la candidature (applicant…, edu…, ooc…) y figurent aussi.
+import { exampleEmail, siteText } from '../utils/siteModeNow';
 
 const SELECT = "Choisissez dans la liste (vous pouvez taper pour rechercher).";
 const EEM = "Examen de l'état mental : choisissez la constatation correspondant au patient.";
@@ -478,12 +479,13 @@ export const getFieldInfo = (version, key, type = 'text') => {
         date: `${label} : choisissez la date dans le calendrier.`,
         'datetime-local': `${label} : choisissez la date et l'heure.`,
         time: `${label} : indiquez l'heure.`,
-        email: `${label} : adresse e-mail valide, par exemple prenomnom@mail.eyefind.fr.`,
+        email: `${label} : adresse e-mail valide, par exemple ${exampleEmail()}.`,
         number: `${label} : indiquez un nombre.`,
         select: `${label} : ${SELECT.charAt(0).toLowerCase()}${SELECT.slice(1)}`,
         textarea: `${label} : rédigez librement.`,
         checkbox: `Cochez cette case pour : ${label.toLowerCase()}.`,
         radio: `Choisissez : ${label.toLowerCase()}.`,
     }[type] || `${label} : à renseigner.`;
-    return { label, help: entry?.[1] || generic };
+    // Version classique : les exemples d'adresse Eyefind deviennent des adresses fictives @phmc.health (utils/siteModeNow.js).
+    return { label, help: siteText(entry?.[1] || generic) };
 };

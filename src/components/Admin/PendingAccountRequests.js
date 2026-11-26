@@ -14,6 +14,7 @@ import { convertCivilianToStaff, badgeDigits, syncStaffUids } from '../../utils/
 import { getAppBase } from '../../utils/siteUrl';
 import { clearDeletedMark, staffPatientIdOf } from '../../utils/deletedAccounts';
 import { clearContractCandidate } from '../../utils/contractCandidates';
+import { postJson, DISCORD_URLS } from '../../utils/discordOAuth';
 
 // map|array|null -> array
 const ensureArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
@@ -63,10 +64,13 @@ const createUserWithSecondaryApp = async (email, password) => {
 // passe, donc on passe par l'Admin SDK côté serveur (voir createGtawEmployeeAccount
 // dans functions/index.js) : l'employé se connectera ensuite uniquement via
 // gtawEmployeeLogin (bouton « Se connecter avec GTA World »).
+// La fonction est réservée aux admins : on envoie le jeton de l'admin connecté.
 const createGtawUserAccount = async (email) => {
+    const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+    if (!idToken) throw new Error('Session admin expirée : reconnectez-vous.');
     const response = await fetch('https://europe-west1-phmcfr-forms.cloudfunctions.net/createGtawEmployeeAccount', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({ email }),
     });
     const data = await response.json();
@@ -74,6 +78,13 @@ const createGtawUserAccount = async (email) => {
         throw new Error(data.message || 'Erreur lors de la création du compte GTA World.');
     }
     return { uid: data.uid };
+};
+
+// Demande faite avec Discord (version classique) : { uid } (compte de connexion créé) ou { civilUid } (compte Civil à convertir).
+const approveDiscordRequest = async (email) => {
+    const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+    if (!idToken) throw new Error('Session admin expirée : reconnectez-vous.');
+    return postJson(DISCORD_URLS.approveStaff, { emailKey: String(email || '').replace(/[.#$[\]]/g, '_') }, idToken);
 };
 
 const PendingAccountRequests = ({ showNotification, currentUser }) => {
@@ -145,12 +156,17 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 return;
             }
 
+            // Demande faite avec Discord (version classique) : le serveur crée le compte de connexion du personnage, ou signale son
+            // compte Civil (converti ci-dessous).
+            const discordApproval = request.viaDiscord ? await approveDiscordRequest(request.email) : null;
+            const civilUid = request.civilUid || (discordApproval && discordApproval.civilUid) || null;
+
             // Le même personnage a déjà un compte Civil (créé en attendant cette validation) : on le CONVERTIT en compte du
             // personnel (même identifiant de connexion, profil et rapports conservés) au lieu d'en créer un second.
-            if (request.civilUid || request.gtawCharacterId != null) {
+            if (civilUid || request.gtawCharacterId != null) {
                 const civiliansSnap = await get(ref(database, 'civilians'));
                 const civilians = Object.values(civiliansSnap.val() || {});
-                const civil = (request.civilUid && civilians.find((entry) => entry && entry.uid === request.civilUid))
+                const civil = (civilUid && civilians.find((entry) => entry && entry.uid === civilUid))
                     || civilians.find((entry) => entry && entry.uid && entry.gtawCharacterId != null && request.gtawCharacterId != null
                         && String(entry.gtawCharacterId) === String(request.gtawCharacterId));
                 if (civil) {
@@ -176,7 +192,11 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
             // secondaire pour ne PAS déconnecter l'admin sur l'instance principale.
             let needsPasswordEmail = false;
             let user;
-            if (request.gtawCharacterId != null) {
+            if (discordApproval && discordApproval.uid) {
+                user = { uid: discordApproval.uid };
+            } else if (request.viaDiscord) {
+                throw new Error('Le compte Civil de ce personnage est introuvable : rechargez les demandes et réessayez.');
+            } else if (request.gtawCharacterId != null) {
                 user = await createGtawUserAccount(request.email);
             } else {
                 // Ancienne demande (avant ce correctif) : son mot de passe est encore dans la base, on s'en sert une dernière fois.
@@ -209,6 +229,8 @@ const PendingAccountRequests = ({ showNotification, currentUser }) => {
                 createdAt: new Date().toISOString(),
                 ...(request.gtawCharacterId != null && { gtawCharacterId: request.gtawCharacterId }),
                 ...(request.gtawUserId != null && { gtawUserId: request.gtawUserId }),
+                // Compte Discord : l'ID patient est celui du personnage (conservé à vie), pas celui tiré du badge.
+                ...(request.viaDiscord && request.patientID ? { patientID: request.patientID, origineCompte: 'discord' } : {}),
             };
 
             // Enregistrer dans la base de données (l'admin est toujours connecté)
@@ -470,7 +492,12 @@ Compte : ${request.email}`, categoryName: request.isCoroner ? 'DMEC' : 'PHMC' })
                                 )}
                             </td>
                             <td>
-                                {request.gtawCharacterId != null ? (
+                                {request.viaDiscord ? (
+                                    <span title={`Compte Discord vérifié · ID patient du personnage : ${request.patientID || '—'}`} style={{ color: '#5865F2' }}>
+                                        <i className="fab fa-discord" style={{ marginRight: '5px' }}></i>
+                                        Discord
+                                    </span>
+                                ) : request.gtawCharacterId != null ? (
                                     <span title={`Personnage GTA World #${request.gtawCharacterId}`} style={{ color: '#ff8c00' }}>
                                         <i className="fas fa-gamepad" style={{ marginRight: '5px' }}></i>
                                         GTA World

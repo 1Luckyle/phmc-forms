@@ -9,7 +9,9 @@ import { Form } from 'react-bootstrap';
 import usePatientNameParts from '../../hooks/usePatientNameParts';
 import ZipCityField from '../../components/ZipCityField';
 import ComboSelect from './ComboSelect';
+import CarePatientTemporaryId from './CarePatientTemporaryId';
 import { GENDER_OPTIONS, ETHNICITY_OPTIONS, toFrenchGender } from '../../utils/patientIdentity';
+import { exampleEmail } from '../../utils/siteModeNow';
 
 const Row = ({ children, first = false }) => <div style={{ display: 'flex', gap: '10px', marginTop: first ? 0 : '1rem', flexWrap: 'wrap' }}>{children}</div>;
 
@@ -44,6 +46,7 @@ const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patie
     return (
         <>
             {fields.id && <Row first>{text(fields.id, 'ID Patient')}</Row>}
+            {fields.id && <CarePatientTemporaryId formData={formData} setFormData={setFormData} idField={fields.id} nameFields={[fields.first, fields.middle, fields.last]} fullNameField={fields.full} />}
             <Row first={!fields.id}>
                 <SimpleSelect
                     name={fields.title} value={formData[fields.title]} onChange={handleChange} placeholder="Titre" style={{ flex: '0 0 150px', minWidth: '130px' }}
@@ -76,7 +79,7 @@ const PatientGeneralInfo = ({ formData, setFormData, handleChange, fields, patie
             </Row>
             <Row>
                 {text(fields.phone, 'Numéro de téléphone du patient')}
-                {fields.email && <Form.Control type="email" name={fields.email} value={formData[fields.email] || ''} onChange={handleChange} placeholder="Adresse email (ex: prenomnom@mail.eyefind.fr)" className="form-control" />}
+                {fields.email && <Form.Control type="email" name={fields.email} value={formData[fields.email] || ''} onChange={handleChange} placeholder={`Adresse email (ex: ${exampleEmail()})`} className="form-control" />}
                 {fields.discord && text(fields.discord, '(( Pseudo Discord du patient ))')}
             </Row>
         </>

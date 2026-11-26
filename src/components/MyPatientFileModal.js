@@ -28,6 +28,7 @@ import { downloadBbCodeAsHtml, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../u
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
+import { isClassicNow } from '../utils/siteModeNow';
 
 const overlayStyle = {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -124,7 +125,7 @@ const MyPatientFileModal = ({ show, onHide, showNotification, onLoadForm }) => {
                 {myPatientID ? (
                     <p>
                         ID patient : <strong>{myPatientID}</strong>
-                        <span style={{ color: '#8b949e', fontSize: '0.85em', marginLeft: '8px' }}>(unique, lié à votre UCP)</span>
+                        <span style={{ color: '#8b949e', fontSize: '0.85em', marginLeft: '8px' }}>{isClassicNow() ? '(unique, conservé même si vous supprimez votre compte)' : '(unique, lié à votre UCP)'}</span>
                     </p>
                 ) : (
                     <p style={{ color: '#d29922' }}>

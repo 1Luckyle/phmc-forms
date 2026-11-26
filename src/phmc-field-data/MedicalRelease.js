@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
-import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import SitePaymentPanel from '../components/SitePaymentPanel';
 import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
@@ -14,6 +14,7 @@ import PatientGeneralInfo from './shared/PatientGeneralInfo';
 import { darkSelectStyles } from './shared/selectStyles';
 import ReleaseReportPicker from './shared/ReleaseReportPicker';
 import { practitionerLabel, practitionersOf } from '../utils/releaseRequests';
+import { isClassicNow } from '../utils/siteModeNow';
 
 // Champs d'identité de la demande de divulgation (prénom, deuxième prénom et nom sont déjà séparés ; pas de nom complet à recomposer).
 const RELEASE_FIELDS = {
@@ -282,13 +283,14 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case pour générer un lien de paiement Fleeca. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).
+                        {isClassicNow() ? 'Le paiement se fait en jeu, auprès du personnel du PHMC : une facture « à payer » est créée à votre nom à l’enregistrement.' :'Cochez cette case pour générer un lien de paiement Fleeca. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).'}
                     </span>
                 </Form.Group>
             )}
 
             {!filledByStaff && (formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
-                <FleecaPaymentPanel
+                <SitePaymentPanel
+                    formData={formData} setFormData={setFormData}
                     amount={approximateCost}
                     description={`Dossier médical - ${formData.patientFirstName || ''} ${formData.patientLastName || ''}`.trim()}
                     paymentId={formData.fleecaPaymentId}

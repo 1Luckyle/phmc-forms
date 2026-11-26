@@ -4,6 +4,7 @@ import { Form, Button } from 'react-bootstrap';
 import { createFleecaPayment } from '../utils/fleecaPayment';
 import { getPrice, usePrices } from '../utils/pricing';
 import { formatMoney } from '../utils/patientBilling';
+import { useSiteMode } from '../contexts/SiteConfigContext';
 import {
     prepareCoronerReport, mergeNameList, sameReport, CORONER_REPORT_VERSIONS, CORONER_REPORT_LABELS,
 } from '../utils/coronerAttachments';
@@ -43,6 +44,11 @@ const CoronerEmail = ({
 }) => {
     const notify = showNotification || (() => {});
     usePrices(); // se redessine si un admin change les tarifs
+    // Version classique : frais réglés en jeu, sans lien Fleeca (generateEmail lit formData.paiementEnJeu).
+    const { isClassic } = useSiteMode();
+    useEffect(() => {
+        setFormData((prev) => ((prev.paiementEnJeu === true) === isClassic ? prev : { ...prev, paiementEnJeu: isClassic }));
+    }, [isClassic, setFormData]);
 
     // Get agencyDataStore from context
     const { agencyDataStore, isLoadingData } = useData();
@@ -211,6 +217,11 @@ const CoronerEmail = ({
             <span className="helper-text">Plusieurs défunts : chacun a son ID patient, le titre du rapport est la suite de ces ID et le rapport est lié au dossier de chacun. Les défunts des rapports joints ci-dessous s'ajoutent automatiquement (nom IC et Discord) : inutile de les saisir une seconde fois.</span>
 
             <Form.Label className="form-section-title">Frais de demande</Form.Label>
+            {isClassic ? (
+                <span className="helper-text d-block mb-3">
+                    Frais de demande : {formatMoney(getPrice('fraisDemandeAutopsie'))}, à régler en jeu auprès du DMEC. Le courriel l'indique au demandeur.
+                </span>
+            ) : (
             <Form.Group className="mb-3">
                 <Form.Label>Lien de paiement Fleeca (frais de demande, {formatMoney(getPrice('fraisDemandeAutopsie'))})</Form.Label>
                 <div>
@@ -238,6 +249,7 @@ const CoronerEmail = ({
                     Génère un vrai lien de paiement Fleeca à inclure dans l'email, à la place de l'ancien RIB/virement manuel.
                 </span>
             </Form.Group>
+            )}
 
             <Form.Label className="form-section-title">Rapports joints</Form.Label>
             <Form.Group className="mb-3">

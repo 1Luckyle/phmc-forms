@@ -434,6 +434,7 @@ export const EmployeeAuthProvider = ({ children }) => {
         : String(staffProfile?.badge || '').replace(/\D/g, '');
     const myPatientID = canonicalPatientId(
         effective.civilianProfile?.patientID
+        || staffProfile?.patientID // compte Discord (version classique) : l'ID patient du personnage
         || (staffProfile?.gtawCharacterId != null ? `PHMC-${staffProfile.gtawCharacterId}` : '')
         || (staffBadgeDigits ? `PHMC-${staffBadgeDigits}` : '')
     );

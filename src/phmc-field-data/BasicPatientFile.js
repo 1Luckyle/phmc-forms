@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import BodyMeasureFields from './shared/BodyMeasureFields';
 import { Form, Button } from 'react-bootstrap';
 import './phmc-tooltips.css';
-import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import SitePaymentPanel from '../components/SitePaymentPanel';
 import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
@@ -238,7 +238,8 @@ const BasicPatientFile = ({
                     )}
 
                     {isPayNow && approximateCost > 0 && (
-                        <FleecaPaymentPanel
+                        <SitePaymentPanel
+                            formData={formData} setFormData={setFormData}
                             amount={approximateCost}
                             description={`Dossier patient de base${formData.patientName ? ' - ' + formData.patientName : ''}`}
                             paymentId={formData.fleecaPaymentId}

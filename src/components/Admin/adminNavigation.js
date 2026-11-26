@@ -55,8 +55,13 @@ export const ADMIN_SECTION_GROUPS = [
                 keywords: 'personnel civil rôle grade recruteur compte migration badge',
             },
             {
+                key: 'siteMode', icon: 'fa-code-branch', label: 'Version du site',
+                description: 'Version GTA World ou version PHMC classique (sans GTA World) pour tout le site.',
+                keywords: 'mode version gta world classique discord fleeca eyefind anonyme',
+            },
+            {
                 key: 'authMethods', icon: 'fa-key', label: 'Méthodes de connexion',
-                description: 'Connexion par GTA World seulement, ou aussi par e-mail et mot de passe.',
+                description: 'Méthodes de connexion et de création de compte proposées au personnel.',
                 keywords: 'login gta world email mot de passe',
             },
         ],

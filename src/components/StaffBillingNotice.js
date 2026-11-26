@@ -6,12 +6,14 @@
 // connexion, relancé par mail, et la paie depuis son dossier patient.
 import React from 'react';
 import { Form } from 'react-bootstrap';
-import FleecaPaymentPanel from './FleecaPaymentPanel';
+import SitePaymentPanel from './SitePaymentPanel';
+import { useSiteMode } from '../contexts/SiteConfigContext';
 import { computeBilling, EXEMPTABLE_VERSIONS, formatMoney } from '../utils/patientBilling';
 import ExemptionNote from './ExemptionNote';
 
 const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description, exemption }) => {
     const { baseAmount, exempt, exemptPending, amount } = computeBilling(bbCodeVersion, formData);
+    const { isClassic } = useSiteMode();
     const canExempt = EXEMPTABLE_VERSIONS.includes(Number(bbCodeVersion));
 
     if (baseAmount <= 0) return null;
@@ -24,7 +26,7 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description,
             // Cochée : exemption établie (drapeau, mineur) ou DEMANDE ; décochée : on ne la repose plus d'office.
             exemptSource: checked ? (exemption?.reason || 'demande') : null,
             exemptOptOut: !checked,
-            ...(checked ? { fleecaPaymentId: null, paymentProofPhotos: '' } : {}),
+            ...(checked ? { fleecaPaymentId: null, paymentProofPhotos: '', regleSurPlace: false } : {}),
         }));
     };
 
@@ -42,7 +44,9 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description,
             <span className="helper-text">
                 {exempt
                     ? (exemptPending ? 'Une facture « en attente de traitement pour l\'exemption » sera créée : elle ne sera à payer que si l\'exemption est refusée.' : 'Aucune facture à payer ne sera créée pour ce rapport.')
-                    : "Demandez au patient de payer maintenant via Fleeca (lien ci-dessous). S'il n'a pas payé à l'enregistrement, une facture est créée à son nom : il en est notifié à sa connexion, relancé par mail, et la règle depuis son dossier patient. Son état (à payer / payé) est visible dans les rapports."}
+                    : (isClassic
+                        ? "Le patient règle en jeu. S'il a déjà payé, cochez « Réglé sur place » ; sinon une facture est créée à son nom : il en est notifié, et un membre du personnel la marque payée depuis son dossier une fois réglée. Son état (à payer / payé) est visible dans les rapports."
+                        : "Demandez au patient de payer maintenant via Fleeca (lien ci-dessous). S'il n'a pas payé à l'enregistrement, une facture est créée à son nom : il en est notifié à sa connexion, relancé par mail, et la règle depuis son dossier patient. Son état (à payer / payé) est visible dans les rapports.")}
             </span>
 
             {canExempt && (
@@ -59,7 +63,10 @@ const StaffBillingNotice = ({ bbCodeVersion, formData, setFormData, description,
             )}
 
             {!exempt && (
-                <FleecaPaymentPanel
+                <SitePaymentPanel
+                    staff
+                    formData={formData}
+                    setFormData={setFormData}
                     amount={amount}
                     description={description}
                     paymentId={formData.fleecaPaymentId}

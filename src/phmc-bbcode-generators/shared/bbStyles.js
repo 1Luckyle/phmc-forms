@@ -6,6 +6,7 @@
 
 import { isPbcVersion } from '../../utils/formAccess';
 import { normalizeRank } from '../../constants/ranks';
+import { phmcContactEmail } from '../../utils/siteModeNow';
 
 export const BB_COLORS = {
     red: '#FF0000',     // chevron « > » des bandeaux (PHMC, DMEC)
@@ -51,7 +52,7 @@ export const PHMC_FOOTER_MARK = 'Elgin Avenue/Strawberry Avenue, Pillbox Hill';
 export const phmcFooter = () => `[hr][/hr]
 [center][size=85][b]Pillbox Hill Medical Center[/b]
 ${PHMC_FOOTER_MARK}, Los Santos, SA
-Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
+Téléphone: 50056 — Courriel: ${phmcContactEmail()}
 [url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
 
 // Pied de page des formulaires de la clinique de Paleto Bay (PBC) : ses propres coordonnées (celles de son en-tête), pas celles de l'hôpital.
@@ -59,7 +60,7 @@ export const PBC_FOOTER_MARK = 'Paleto Bay Blvd., BP 685';
 export const pbcFooter = () => `[hr][/hr]
 [center][size=85][b]Clinique de Paleto Bay[/b]
 ${PBC_FOOTER_MARK}, Paleto Bay, San Andreas
-Téléphone: 50056 — Courriel: info.phmc@mail.eyefind.fr
+Téléphone: 50056 — Courriel: ${phmcContactEmail()}
 [url=https://phmc-tools.com]phmc-tools.com[/url][/size][/center]`;
 
 // Formulaires qui portent déjà ce pied de page dans leur propre texte (courriels du PHMC) : rien n'est ajouté.

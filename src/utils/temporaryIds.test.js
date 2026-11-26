@@ -159,6 +159,43 @@ describe('identifiants temporaires : registre et attribution (base simulée)', (
         expect(mockDb.patientsDecedes['TMP-ABCDE']).toBeUndefined();
     });
 
+    test('patient soigné sans compte : son dossier médical et ses factures dues passent sur son ID ; les factures payées restent', async () => {
+        mockDb = {
+            patientRecords: { 'TMP-ABCDE': { k1: { reportPath: 'savedReports/D_One/k1', title: '[TMP-ABCDE] Protocole d’urgence' } } },
+            savedReports: { D_One: { k1: { title: '[TMP-ABCDE] Protocole d’urgence', bbCode: 'x', data: { patientID: 'TMP-ABCDE' } } } },
+            dossiersPatients: { 'TMP-ABCDE': { donnees: { groupeSanguin: 'O+' } } },
+            facturesPatients: { 'TMP-ABCDE': {
+                k1: { montant: 500, statut: 'a_payer', creeLe: 1 },
+                k2: { montant: 0, statut: 'sans_paiement', creeLe: 2 },
+                k3: { montant: 300, statut: 'paye', creeLe: 3 },
+            } },
+        };
+        const result = await assignTemporaryId({ tempId: 'TMP-ABCDE', realId: 'PHMC-01234' });
+        expect(result).toMatchObject({ moved: 1, dossier: 'transfere', invoices: 2, paidLeft: 1 });
+        expect(mockDb.dossiersPatients['PHMC-01234']).toEqual({ donnees: { groupeSanguin: 'O+' } });
+        expect(mockDb.dossiersPatients['TMP-ABCDE']).toBeUndefined();
+        expect(Object.keys(mockDb.facturesPatients['PHMC-01234']).sort()).toEqual(['k1', 'k2']);
+        expect(mockDb.facturesPatients['TMP-ABCDE']).toEqual({ k3: expect.objectContaining({ statut: 'paye' }) });
+    });
+
+    test('l’ID réel a déjà un dossier médical : il prime, celui de l’ID temporaire reste en place', async () => {
+        mockDb = {
+            dossiersPatients: { 'TMP-ABCDE': { donnees: { a: 1 } }, 'PHMC-01234': { donnees: { b: 2 } } },
+        };
+        const result = await assignTemporaryId({ tempId: 'TMP-ABCDE', realId: 'PHMC-01234' });
+        expect(result.dossier).toBe('conserve');
+        expect(mockDb.dossiersPatients['PHMC-01234']).toEqual({ donnees: { b: 2 } });
+        expect(mockDb.dossiersPatients['TMP-ABCDE']).toEqual({ donnees: { a: 1 } });
+    });
+
+    test('même personne : mots du nom dans n’importe quel ordre, sans accents ; un nom partiel de deux mots suffit', () => {
+        const { namesMatch } = require('./temporaryIds');
+        expect(namesMatch('Éloïse Müller', 'muller eloise')).toBe(true);
+        expect(namesMatch('Jean Paul Dupont', 'Jean Dupont')).toBe(true);
+        expect(namesMatch('Jean', 'Jean Dupont')).toBe(false);
+        expect(namesMatch('', 'Jean')).toBe(false);
+    });
+
     test('refus : ce n’est pas un ID temporaire, ID réel invalide ou identique', async () => {
         await expect(assignTemporaryId({ tempId: 'PHMC-1', realId: 'PHMC-2' })).rejects.toThrow(/temporaire/);
         await expect(assignTemporaryId({ tempId: 'TMP-ABCDE', realId: '' })).rejects.toThrow(/ID réel/);

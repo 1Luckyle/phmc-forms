@@ -4,8 +4,11 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildGtawAuthUrl } from '../../utils/gtawOAuth';
+import { buildDiscordAuthUrl } from '../../utils/discordOAuth';
+import { useSiteMode } from '../../contexts/SiteConfigContext';
 
 const GtaLogin = () => {
+    const { isClassic } = useSiteMode();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -54,6 +57,15 @@ const GtaLogin = () => {
         }
     };
 
+    // Version classique : Discord (retour vers /admin une fois connecté).
+    const handleDiscordLogin = () => {
+        try {
+            window.location.href = buildDiscordAuthUrl({ type: 'login', returnTo: '/admin' });
+        } catch (err) {
+            setError(err.message || 'Impossible de démarrer la connexion avec Discord.');
+        }
+    };
+
     return (
         <div style={{ maxWidth: '400px', margin: 'auto', paddingTop: '50px' }}>
             <form onSubmit={handleLogin}>
@@ -62,14 +74,14 @@ const GtaLogin = () => {
                 {error && <p style={{ color: 'red' }}>{error}</p>}
                 <button
                     type="button"
-                    onClick={handleGtawLogin}
+                    onClick={isClassic ? handleDiscordLogin : handleGtawLogin}
                     style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                         width: '100%', padding: '10px', marginBottom: '15px',
-                        backgroundColor: '#1a1a1a', color: '#fff', border: '1px solid #ff8c00'
+                        backgroundColor: '#1a1a1a', color: '#fff', border: `1px solid ${isClassic ? '#5865F2' : '#ff8c00'}`
                     }}
                 >
-                    Se connecter avec GTA World
+                    {isClassic ? <><i className="fab fa-discord"></i> Se connecter avec Discord</> : 'Se connecter avec GTA World'}
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0' }}>
                     <div style={{ flex: 1, height: '1px', backgroundColor: '#ccc' }}></div>

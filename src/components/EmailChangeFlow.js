@@ -10,8 +10,24 @@
 import React, { useState } from 'react';
 import { Alert, Button, Form, Spinner } from 'react-bootstrap';
 import { EYEFIND_MAIL_SIGNUP_URL, isEyefindAddress, requestStaffEmailChange, confirmStaffEmailChange } from '../utils/eyefindMail';
+import { useSiteMode } from '../contexts/SiteConfigContext';
 
 const EmailChangeFlow = ({ currentEmail, targetUid = null, onChanged }) => {
+    // Version classique : l'adresse est l'adresse fictive du PHMC créée avec le compte (prenom.nom@phmc.health) ; elle ne reçoit rien et ne se change pas.
+    const { isClassic } = useSiteMode();
+    if (isClassic) {
+        return (
+            <div>
+                <Form.Label>Adresse du compte</Form.Label>
+                <Form.Control value={currentEmail || ''} disabled />
+                <Form.Text className="text-muted">Adresse fictive du PHMC, créée avec le compte : elle ne reçoit aucun message (les notifications arrivent sur le site) et ne se modifie pas.</Form.Text>
+            </div>
+        );
+    }
+    return <EyefindEmailChangeFlow currentEmail={currentEmail} targetUid={targetUid} onChanged={onChanged} />;
+};
+
+const EyefindEmailChangeFlow = ({ currentEmail, targetUid = null, onChanged }) => {
     const [step, setStep] = useState('idle'); // idle | edit | code
     const [newEmail, setNewEmail] = useState('');
     const [code, setCode] = useState('');

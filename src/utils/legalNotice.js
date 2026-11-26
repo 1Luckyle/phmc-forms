@@ -29,3 +29,8 @@ Ce site est un **outil communautaire destiné à un univers de jeu de rôle fict
 ## Données personnelles
 
 Le traitement des données personnelles est décrit dans la politique de confidentialité (lien « Voir la politique de confidentialité » en bas de page).`;
+
+// VERSION CLASSIQUE du site (constants/siteMode.js) : mêmes mentions, sans référence au serveur GTA World.
+export const LEGAL_NOTICE_TEXT_CLASSIC = LEGAL_NOTICE_TEXT
+    .replace('(joueur du serveur GTA World FR)', '(joueur de la communauté de jeu de rôle)')
+    .replace('(serveur GTA World FR)', '(serveur de jeu de rôle)');

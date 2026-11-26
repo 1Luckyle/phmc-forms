@@ -2,6 +2,7 @@ import React from 'react';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select'; // Make sure react-select is imported
 import NameFields from './shared/NameFields';
+import CarePatientTemporaryId from './shared/CarePatientTemporaryId';
 import PhmcEmployeeSelect, { withDmecOptions } from './shared/PhmcEmployeeSelect';
 
 // Patient : titre et nom en trois champs (le nom complet « patientName » est recomposé tout seul).
@@ -35,6 +36,7 @@ const PHMCCommentaryNoteQuestions = ({
                 className="form-control"
                 style={{ marginTop: '10px' }}
             />
+            <CarePatientTemporaryId formData={formData} setFormData={setFormData} />
 
             <Form.Label className="form-section-title">Note de service</Form.Label>
             <Form.Label>Date:</Form.Label>

@@ -9,6 +9,7 @@ import { MyCreationPanel } from './MyCreationPanel';
 import { CREATION_KINDS, loadUserCreations, saveUserCreation, removeUserCreation } from '../utils/userCreations';
 import { logActivity } from '../utils/activityLog';
 import './MyCreations.css';
+import { testEmail } from '../utils/siteModeNow';
 
 const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleImageUpload, uploadImageDetailed, uid, defaultName, signatureOnly = false, civilian = false, patientID = '' }) => {
     const [name, setName] = useState('');
@@ -73,7 +74,7 @@ const BusinessCardModal = ({ show, onHide, showNotification, commitInfo, handleI
         setName('Jean Testard');
         setRank('Médecin Résident');
         setPhoneNumber('555-0142');
-        setEmail('jean.testard@mail.eyefind.fr');
+        setEmail(testEmail('jean', 'testard'));
     };
 
     const processWebhookQueue = useCallback(async () => {

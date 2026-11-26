@@ -20,6 +20,7 @@
 //   - envoi : poste choisi ET encore ouvert, TOUT le formulaire rempli sans exception (aucune longueur minimale),
 //     e-mail / téléphone / date de naissance de forme valide, et pas de réenvoi pendant qu'un entretien est en cours.
 import { canonicalPatientId } from './patientId';
+import { exampleEmail } from './siteModeNow';
 import {
     CATEGORY_BY_BBCODE_VERSION, getCategoryPositions, isPositionClosed, matchesPosition,
 } from '../constants/recruitment';
@@ -170,7 +171,7 @@ export const validateReport = (bbCodeVersion, formData = {}, { isCivilian = fals
 
     // E-mail du patient : sert à lui écrire (factures, copies) sur les dossiers médicaux Civils.
     if (CIVIL_MEDICAL_VERSIONS.includes(version) && filled(data.patientEmail) && !isValidEmail(data.patientEmail)) {
-        errors.push("E-mail du patient : format invalide (ex. prenomnom@mail.eyefind.fr).");
+        errors.push(`E-mail du patient : format invalide (ex. ${exampleEmail()}).`);
     }
 
     // ID patient.
@@ -327,7 +328,7 @@ export const validateApplication = (bbCodeVersion, formData = {}, { mode = 'subm
     if (filled(data.patientID) && applicantPatientId && canonicalPatientId(data.patientID) !== canonicalPatientId(applicantPatientId)) {
         errors.push(`ID patient : il doit être le vôtre (${canonicalPatientId(applicantPatientId)}) : une candidature ne peut être enregistrée que sous l'ID de votre compte.`);
     }
-    if (filled(data.applicantEmail) && !isValidEmail(data.applicantEmail)) errors.push('E-mail : format invalide (ex. prenomnom@mail.eyefind.fr).');
+    if (filled(data.applicantEmail) && !isValidEmail(data.applicantEmail)) errors.push(`E-mail : format invalide (ex. ${exampleEmail()}).`);
     if (filled(data.applicantPhone) && !isValidPhone(data.applicantPhone)) errors.push('Téléphone : numéro invalide (chiffres, espaces ou tirets).');
     if (filled(data.applicantDOB)) {
         const date = parseDate(data.applicantDOB);

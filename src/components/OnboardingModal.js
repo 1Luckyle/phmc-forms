@@ -18,6 +18,9 @@ import CivilianAuthPanel from './Auth/CivilianAuthPanel';
 import DebugFillButton from './DebugFillButton';
 import PrivacyPolicyContent from './PrivacyPolicyContent';
 import AuthEntryBlock from './Auth/AuthEntryBlock';
+import DiscordAccountPanel from './Auth/DiscordAccountPanel';
+import { DISCORD_ONBOARDING_KEY } from '../utils/discordOAuth';
+import { useSiteMode } from '../contexts/SiteConfigContext';
 
 import ZipCityField from './ZipCityField';
 import { getAppBase } from '../utils/siteUrl';
@@ -163,6 +166,7 @@ const OnboardingModal = ({
     const employeeAuth = useEmployeeAuth();
     const { requestEmployeeAccount, loginEmployee, employeeProfile, currentEmployee } = employeeAuth;
     const { gtawOnly } = useAuthMethodsConfig();
+    const { isClassic } = useSiteMode();
     const [currentStep, setCurrentStep] = useState(ONBOARDING_STEPS.WELCOME);
     const [selectedUserType, setSelectedUserType] = useState(null);
     const [selectedRole, setSelectedRole] = useState(null);
@@ -216,6 +220,28 @@ const OnboardingModal = ({
             // rouvre directement sur la sélection du personnage plutôt que de tout
             // réinitialiser à l'écran de bienvenue.
             let resumedFromGtaw = false;
+            // Version classique : retour de Discord (DiscordCallback) → on rouvre l'étape de connexion du type d'utilisateur choisi, où
+            // DiscordAccountPanel lit le résultat (personnages du compte Discord).
+            try {
+                const discordRaw = sessionStorage.getItem(DISCORD_ONBOARDING_KEY);
+                if (discordRaw) {
+                    sessionStorage.removeItem(DISCORD_ONBOARDING_KEY);
+                    const pendingDiscord = JSON.parse(discordRaw) || {};
+                    const discordUserType = pendingDiscord.userType || USER_TYPES.CIVILIAN;
+                    const civilFlow = discordUserType === USER_TYPES.CIVILIAN || discordUserType === USER_TYPES.RECRUITMENT;
+                    resumedFromGtaw = true;
+                    setSelectedUserType(discordUserType);
+                    setSelectedRole(null);
+                    setShowAccountCreation(false);
+                    setAccountCreationMethod(null);
+                    setShowLogin(false);
+                    setLoginChoices(null);
+                    setCompanionCivil(null);
+                    setCurrentStep(civilFlow ? ONBOARDING_STEPS.CIVIL_AUTH : ONBOARDING_STEPS.ROLE_SPECIFIC);
+                }
+            } catch (err) {
+                console.warn('Failed to resume Discord login state:', err);
+            }
             try {
                 const loginRaw = sessionStorage.getItem('gtaw-onboarding-login');
                 if (loginRaw) {
@@ -1272,7 +1298,50 @@ const OnboardingModal = ({
         </div>
     );
 
+    // Version classique (sans GTA World) : Personnel PHMC / DMEC → connexion ou demande de compte avec Discord (DiscordAccountPanel).
+    const renderDiscordStaffStep = () => {
+        const isCoroner = selectedUserType === USER_TYPES.CORONER;
+        const roleChoices = isCoroner ? [] : (selectedUserType === USER_TYPES.ADMIN_STAFF ? ADMIN_ROLE_CHOICES : CARE_ROLE_CHOICES);
+        return (
+            <div style={stepContentStyle}>
+                <h2 style={stepTitleStyle}>
+                    {isCoroner ? 'Connexion ou demande de compte du DMEC' : `Connexion ou demande de compte ${selectedUserType === USER_TYPES.ADMIN_STAFF ? 'Personnel administratif' : 'Personnel soignant'}`}
+                </h2>
+                <p style={stepDescriptionStyle}>
+                    Tout le monde peut demander un compte du personnel : un administrateur le valide et attribue le grade et les accès.
+                    En attendant, vous pouvez utiliser le site avec un compte Civil.
+                </p>
+                {roleChoices.length > 0 && (
+                    <div style={roleGridStyle}>
+                        {roleChoices.map((role) => (
+                            <div key={role.id} style={roleInfoCardStyle}>
+                                <i className={role.icon} style={roleIconStyle}></i>
+                                <h5 style={roleButtonTitleStyle}>{role.title}</h5>
+                                <p style={roleButtonDescStyle}>{role.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div style={accountFormStyle}>
+                    <DiscordAccountPanel
+                        kind="staff"
+                        userType={selectedUserType}
+                        isCoroner={isCoroner}
+                        rankOptions={isCoroner ? CORONER_RANKS : phmcRanksFor(selectedUserType)}
+                        showNotification={showNotification}
+                        onAuthenticated={() => {
+                            setLoggedIn(true);
+                            setTimeout(() => setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW), 1200);
+                        }}
+                        onStaffRequested={() => setAccountCreated(true)}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     const renderRoleSpecificStep = () => {
+        if (isClassic && (isPhmcStaffType(selectedUserType) || selectedUserType === USER_TYPES.CORONER)) return renderDiscordStaffStep();
         if (loginChoices) return renderLoginChoices();
         if (isPhmcStaffType(selectedUserType)) {
             if (showAccountCreation && !accountCreationMethod) {
@@ -1947,6 +2016,14 @@ const OnboardingModal = ({
                     </>}
             </p>
             <div style={accountFormStyle}>
+                {isClassic ? (
+                    <DiscordAccountPanel
+                        kind="civil"
+                        userType={selectedUserType}
+                        showNotification={showNotification}
+                        onAuthenticated={() => setTimeout(() => setCurrentStep(ONBOARDING_STEPS.FORM_PREVIEW), 1200)}
+                    />
+                ) : (
                 <CivilianAuthPanel
                     initialCharacter={companionCivil?.character || null}
                     initialEmail={companionCivil?.email || ''}
@@ -1961,6 +2038,7 @@ const OnboardingModal = ({
                         }, 1200);
                     }}
                 />
+                )}
             </div>
         </div>
     );

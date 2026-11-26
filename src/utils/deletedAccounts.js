@@ -15,6 +15,7 @@ const NODE = 'comptesSupprimes';
 // (Même règle que « myPatientID » dans EmployeeAuthContext.)
 export const staffPatientIdOf = (member, civilPatientId = '') => {
     if (civilPatientId) return canonicalPatientId(civilPatientId);
+    if (member?.patientID) return canonicalPatientId(member.patientID); // compte Discord (version classique)
     if (member?.gtawCharacterId != null) return canonicalPatientId(`PHMC-${member.gtawCharacterId}`);
     const badge = String(member?.badge || '');
     const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');

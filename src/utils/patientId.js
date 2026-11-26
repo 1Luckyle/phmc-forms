@@ -64,6 +64,8 @@ export const completePatientIdInput = (input) => {
 // les règles Firebase s'en servent (idsPatientParCompte) pour bloquer un compte du personnel dont le patient est déclaré décédé.
 export const staffPatientId = (member) => {
     if (!member) return '';
+    // Compte créé avec Discord (version classique) : l'ID patient du personnage, conservé à vie.
+    if (member.patientID) return canonicalPatientId(member.patientID);
     if (member.gtawCharacterId != null && String(member.gtawCharacterId).trim() !== '') return canonicalPatientId(`PHMC-${String(member.gtawCharacterId).trim()}`);
     const badge = String(member.badge || '');
     const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');

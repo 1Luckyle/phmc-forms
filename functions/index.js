@@ -8,6 +8,8 @@ import cors from 'cors';
 import crypto from 'crypto';
 import { renderMail, wrapMailHtml, PHMC_SITE_URL } from './mailTemplatesCore.js';
 import { unreadDigest, dueInterviews, staleApplications, unsignedDocuments, endingContracts, dueExpiries, frDateOf, frDateTimeOf } from './reminderCore.js';
+import { CLASSIC_NOTIFY_TEMPLATES, mailTextForNotification, cleanTemplateVars } from './classicMailCore.js';
+import { cleanName, isValidName, fakeEmailFor, emailKeyOf, sanitizeCivilProfile, sanitizeStaffRequest, characterView, withTitlePrefix, openTemporaryIdsFor, TICKET_TTL_MS as DISCORD_TICKET_TTL_MS, MAX_CHARACTERS as DISCORD_MAX_CHARACTERS } from './discordCore.js';
 import { extractDossierValues, isContactOnlyUpdate, formPhase, refundsToken, profilePatch, dossierKindOf, UPDATE_VERSION, isInitialVersion, EMERGENCY_FIELDS, BACKGROUND_UPDATE_FIELDS, missingBackgroundItems, appendBackgroundItems } from './dossierCore.js';
 
 // Initialize Firebase Admin SDK
@@ -314,6 +316,34 @@ const corsHandler = cors({
 const allowedCorsOrigin = (req) => {
     const origin = req.get('origin');
     return ALLOWED_CORS_ORIGINS.includes(origin) ? origin : DEFAULT_CORS_ORIGIN;
+};
+
+// ─── Version du site (src/constants/siteMode.js) ─────────────────────────────────────────────────────────────
+// adminSettings/siteMode/mode : 'gtaw' (par défaut, réglage absent ou illisible) ou 'classique' (sans GTA World).
+// Les fonctions propres à une version refusent de travailler dans l'autre : connexion GTA World, liens Fleeca et mails
+// Eyefind n'existent qu'en version GTA World. Le webhook et le contrôle de statut Fleeca restent actifs dans les deux
+// versions, pour qu'un paiement lancé avant la bascule soit quand même enregistré.
+const SITE_MODE_CLASSIC = 'classique';
+const readSiteMode = async () => {
+    try {
+        const value = (await db.ref('adminSettings/siteMode/mode').once('value')).val();
+        return value === SITE_MODE_CLASSIC ? SITE_MODE_CLASSIC : 'gtaw';
+    } catch (error) {
+        console.warn('Version du site illisible, version GTA World retenue :', error);
+        return 'gtaw';
+    }
+};
+// Répond 403 et renvoie true si la version active n'est pas `wanted`.
+const refuseOutsideSiteMode = async (res, wanted) => {
+    const mode = await readSiteMode();
+    if (mode === wanted) return false;
+    res.status(403).json({
+        error: 'site-mode', mode,
+        message: wanted === 'gtaw'
+            ? 'Cette fonction n\'est disponible que sur la version GTA World du site.'
+            : 'Cette fonction n\'est disponible que sur la version PHMC classique du site.',
+    });
+    return true;
 };
 
 // Secrets Google Secret Manager requis par exchangeGtawAuthCode (client OAuth
@@ -636,6 +666,7 @@ export const exchangeAuthCodeForToken = onRequest({ secrets: GTAW_OAUTH_SECRETS 
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     // Handle data from both httpsCallable (req.body.data) and direct fetch (req.body)
     const data = req.body.data || req.body;
@@ -818,6 +849,7 @@ export const gtawEmployeeLogin = onRequest({ secrets: GTAW_OAUTH_SECRETS }, asyn
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const data = req.body.data || req.body;
     // gtawCharacterId : personnage précis choisi côté client (sélecteur intelligent,
@@ -967,6 +999,16 @@ export const createGtawEmployeeAccount = onRequest({}, async (req, res) => {
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
+
+    // Réservée aux admins (approbation d'une demande de compte) : sans ce contrôle, n'importe qui pouvait créer un compte
+    // pour n'importe quelle adresse et la bloquer pour son vrai titulaire.
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+    if (!(await isAdminCaller(caller))) {
+        res.status(403).json({ error: 'permission-denied', message: 'Seul un administrateur peut créer ce compte.' });
+        return;
+    }
 
     const data = req.body.data || req.body;
     const { email } = data || {};
@@ -1038,6 +1080,7 @@ export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const data = req.body.data || req.body;
     const { email } = data || {};
@@ -1105,6 +1148,376 @@ export const createGtawCivilianAccount = onRequest({}, async (req, res) => {
     }
 });
 
+// ─── Connexion Discord (version PHMC classique) ─────────────────────────────────────────────────────────────
+// Modèle et fonctions pures : functions/discordCore.js (personnages d'un compte Discord, ID patient conservé pour toujours, adresse fictive
+// prenom.nom@phmc.health). Nœuds serveur, jamais lisibles ni modifiables par le navigateur (database.rules.json) :
+//   discordPersonnages/{discordId}/{persoId}, discordTickets/{ticket}, discordDemandes/{clé de la demande de compte}.
+// Secrets (Secret Manager) : DISCORD_CLIENT_ID et DISCORD_CLIENT_SECRET, lus seulement par discordExchange.
+const DISCORD_SECRETS = ['DISCORD_CLIENT_ID', 'DISCORD_CLIENT_SECRET'];
+const DISCORD_API = 'https://discord.com/api/v10';
+// Adresses de retour acceptées : exactement celles enregistrées dans l'application Discord (OAuth2 → Redirects).
+const DISCORD_REDIRECT_URIS = ['https://phmc-tools.com/', 'http://localhost:3000/'];
+
+// CORS + méthode (+ version classique si `classicOnly`) : false si la réponse est déjà partie.
+const discordPreamble = async (req, res, { classicOnly = true } = {}) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return false; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return false; }
+    if (classicOnly && await refuseOutsideSiteMode(res, SITE_MODE_CLASSIC)) return false;
+    return true;
+};
+
+// Ticket : preuve, valable 30 minutes, que ce navigateur s'est identifié avec ce compte Discord. Les créations de compte l'exigent :
+// l'identifiant Discord n'est jamais pris tel quel depuis le navigateur.
+const createDiscordTicket = async (discordId) => {
+    const ticket = crypto.randomBytes(24).toString('hex');
+    await db.ref(`discordTickets/${ticket}`).set({ discordId, exp: Date.now() + DISCORD_TICKET_TTL_MS });
+    return ticket;
+};
+const readDiscordTicket = async (ticket, res) => {
+    if (!/^[a-f0-9]{48}$/.test(String(ticket || ''))) {
+        res.status(401).json({ error: 'ticket-invalide', message: 'Session Discord invalide : reconnectez-vous avec Discord.' });
+        return null;
+    }
+    const value = (await db.ref(`discordTickets/${ticket}`).once('value')).val();
+    if (!value || !value.discordId || value.exp < Date.now()) {
+        res.status(401).json({ error: 'ticket-expire', message: 'Session Discord expirée : reconnectez-vous avec Discord.' });
+        return null;
+    }
+    return String(value.discordId);
+};
+const purgeExpiredDiscordTickets = async () => {
+    const tickets = (await db.ref('discordTickets').orderByChild('exp').endAt(Date.now()).limitToFirst(200).once('value')).val() || {};
+    const updates = {};
+    Object.keys(tickets).forEach((key) => { updates[`discordTickets/${key}`] = null; });
+    if (Object.keys(updates).length) await db.ref().update(updates);
+};
+
+const loadStaffLists = async () => {
+    const [phmc, coroner] = await Promise.all(['staff/phmc', 'staff/coroner'].map(async (path) => Object.values((await db.ref(path).once('value')).val() || {})));
+    return { phmc, coroner };
+};
+
+// Compte actif d'un uid : { type: 'phmc' | 'coroner' | 'civilian', label, detail }, ou null (compte de connexion supprimé, ou sans aucun profil).
+const accountOfUid = async (uid, staffLists = null) => {
+    if (!uid) return null;
+    try { await admin.auth().getUser(uid); } catch (error) { return null; }
+    const lists = staffLists || await loadStaffLists();
+    for (const type of ['phmc', 'coroner']) {
+        const member = lists[type].find((entry) => entry && entry.uid === uid);
+        if (member) return { type, label: member.name || '', detail: member.rank || member.category || '' };
+    }
+    const civil = (await db.ref(`civilians/${uid}`).once('value')).val();
+    if (civil) return { type: 'civilian', label: [civil.firstName, civil.lastName].filter(Boolean).join(' '), detail: '' };
+    return null;
+};
+
+// Nouvel ID patient (PHMC-XXXXX) : jamais celui d'un civil, d'un personnage Discord, d'un compte supprimé ou d'un badge du personnel.
+const generateClassicPatientId = async () => {
+    const existing = new Set();
+    Object.values((await db.ref('civilians').once('value')).val() || {}).forEach((civil) => { if (civil && civil.patientID) existing.add(String(civil.patientID).toUpperCase()); });
+    Object.values((await db.ref('discordPersonnages').once('value')).val() || {}).forEach((byId) => Object.values(byId || {}).forEach((perso) => {
+        if (perso && perso.patientID) existing.add(String(perso.patientID).toUpperCase());
+    }));
+    Object.keys((await db.ref('comptesSupprimes').once('value')).val() || {}).forEach((id) => existing.add(String(id).toUpperCase()));
+    const { phmc, coroner } = await loadStaffLists();
+    [...phmc, ...coroner].forEach((member) => {
+        const digits = String((member && member.badge) || '').replace(/\D/g, '');
+        if (digits) existing.add(`PHMC-${digits}`);
+    });
+    let candidate;
+    do {
+        candidate = `PHMC-${String(crypto.randomInt(0, 100000)).padStart(5, '0')}`;
+    } while (existing.has(candidate));
+    return candidate;
+};
+
+// Adresse fictive libre pour ce nom (comptes, demandes en attente et personnages déjà enregistrés).
+const allocateFakeEmail = async (firstName, lastName) => {
+    const taken = new Set();
+    const add = (value) => { if (value) taken.add(String(value).toLowerCase()); };
+    Object.values((await db.ref('civilians').once('value')).val() || {}).forEach((civil) => add(civil && civil.email));
+    Object.values((await db.ref('pendingAccountRequests').once('value')).val() || {}).forEach((request) => add(request && request.email));
+    Object.values((await db.ref('discordPersonnages').once('value')).val() || {}).forEach((byId) => Object.values(byId || {}).forEach((perso) => add(perso && perso.email)));
+    const { phmc, coroner } = await loadStaffLists();
+    [...phmc, ...coroner].forEach((member) => add(member && member.email));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+        const email = fakeEmailFor(firstName, lastName, taken);
+        try {
+            await admin.auth().getUserByEmail(email);
+            taken.add(email); // déjà un compte de connexion avec cette adresse
+        } catch (error) {
+            if (error.code === 'auth/user-not-found') return email;
+            throw error;
+        }
+    }
+    throw new Error('Aucune adresse disponible pour ce nom.');
+};
+
+// Compte de connexion SANS mot de passe pour cette adresse. Un compte existant sans aucun profil (résidu d'une création interrompue) est
+// remplacé ; un vrai compte ne l'est jamais.
+const createLoginForEmail = async (email) => {
+    try {
+        return await admin.auth().createUser({ email });
+    } catch (error) {
+        if (error.code !== 'auth/email-already-exists') throw error;
+        const existing = await admin.auth().getUserByEmail(email);
+        if (await accountOfUid(existing.uid)) throw { status: 409, body: { error: 'email-already-exists', message: 'Cette adresse est déjà utilisée par un compte.' } };
+        console.warn(`Compte de connexion orphelin ${existing.uid} (${email}) remplacé.`);
+        await admin.auth().deleteUser(existing.uid);
+        return admin.auth().createUser({ email });
+    }
+};
+
+const sameName = (a, b) => cleanName(a).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === cleanName(b).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+// Personnage visé par une création : existant (persoId) ou nouveau (nouveau: { firstName, lastName }). Un nouveau personnage au même nom
+// qu'un personnage existant de ce compte Discord est le MÊME personnage (pas de doublon, même ID patient).
+const resolveDiscordCharacter = async (discordId, data) => {
+    const base = db.ref(`discordPersonnages/${discordId}`);
+    if (data.persoId != null) {
+        const persoId = String(data.persoId);
+        if (!/^[A-Za-z0-9_-]{1,40}$/.test(persoId)) throw { status: 400, body: { error: 'invalid-argument', message: 'Personnage invalide.' } };
+        const entry = (await base.child(persoId).once('value')).val();
+        if (!entry) throw { status: 404, body: { error: 'personnage-introuvable', message: 'Ce personnage n\'existe pas sur votre compte Discord.' } };
+        return { persoId, entry };
+    }
+    const firstName = cleanName(data.nouveau && data.nouveau.firstName);
+    const lastName = cleanName(data.nouveau && data.nouveau.lastName);
+    if (!isValidName(firstName) || !isValidName(lastName)) {
+        throw { status: 400, body: { error: 'nom-invalide', message: 'Prénom et nom du personnage requis (lettres, espaces, tirets ou apostrophes, 40 caractères au plus).' } };
+    }
+    const existing = (await base.once('value')).val() || {};
+    const same = Object.entries(existing).find(([, perso]) => perso && sameName(perso.prenom, firstName) && sameName(perso.nom, lastName));
+    if (same) return { persoId: same[0], entry: same[1] };
+    if (Object.keys(existing).length >= DISCORD_MAX_CHARACTERS) {
+        throw { status: 400, body: { error: 'trop-de-personnages', message: `Un compte Discord peut porter ${DISCORD_MAX_CHARACTERS} personnages au plus.` } };
+    }
+    const entry = { prenom: firstName, nom: lastName, patientID: await generateClassicPatientId(), creeLe: Date.now() };
+    const created = base.push();
+    await created.set(entry);
+    await notifyTemporaryIdMatches(entry).catch((error) => console.warn('ID temporaires non signalés :', error));
+    return { persoId: created.key, entry };
+};
+
+// Nouveau personnage : le personnel l'a peut-être déjà soigné sous un ID temporaire (patient sans compte). Les admins sont prévenus, pour lui attribuer
+// son ID (panneau admin → Utilisateurs → Décès et identifiants temporaires) ; rien n'est rattaché automatiquement.
+const notifyTemporaryIdMatches = async (entry) => {
+    const name = `${entry.prenom} ${entry.nom}`.trim();
+    const matches = openTemporaryIdsFor((await db.ref('identifiantsTemporaires').once('value')).val() || {}, name);
+    if (!matches.length) return;
+    await notifyGroupServer('admin', {
+        type: 'demande',
+        titre: `Nouveau compte : ${name} (${entry.patientID})`,
+        texte: `ID temporaire${matches.length > 1 ? 's' : ''} au même nom : ${matches.map((match) => `${match.id} (${match.nom})`).join(', ')}. Si c'est la même personne, attribuez-lui ${entry.patientID} : ses rapports, son dossier et ses factures seront transférés.`,
+        lien: { cible: 'admin', section: 'users' },
+    });
+};
+
+// Personnages d'un compte Discord, avec un jeton de connexion pour chacun qui a un compte actif.
+const listDiscordCharacters = async (discordId) => {
+    const all = (await db.ref(`discordPersonnages/${discordId}`).once('value')).val() || {};
+    const staffLists = await loadStaffLists();
+    const out = [];
+    for (const [persoId, entry] of Object.entries(all).sort(([, a], [, b]) => (a.creeLe || 0) - (b.creeLe || 0))) {
+        if (!entry) continue;
+        let account = null;
+        const found = await accountOfUid(entry.uid, staffLists);
+        if (found) {
+            account = { ...found, customToken: await admin.auth().createCustomToken(entry.uid, { discordLogin: true }) };
+        } else if (entry.uid) {
+            // Compte supprimé : le personnage et son ID patient restent, prêts pour un nouveau compte.
+            await db.ref(`discordPersonnages/${discordId}/${persoId}/uid`).remove();
+        }
+        let pending = false;
+        if (entry.email) {
+            const request = (await db.ref(`pendingAccountRequests/${emailKeyOf(entry.email)}`).once('value')).val();
+            pending = !!(request && request.status === 'pending');
+        }
+        out.push(characterView(persoId, entry, { account, pending }));
+    }
+    return out;
+};
+
+const sendDiscordError = (res, error, context) => {
+    if (error && error.status && error.body) { res.status(error.status).json(error.body); return; }
+    console.error(`${context} :`, error);
+    res.status(500).json({ error: 'internal', message: 'Une erreur interne est survenue.', details: error && error.message });
+};
+
+// Retour de Discord : échange le code contre l'identité du joueur, puis renvoie ses personnages (et un ticket pour en créer).
+export const discordExchange = onRequest({ secrets: DISCORD_SECRETS }, async (req, res) => {
+    if (!(await discordPreamble(req, res))) return;
+    const data = req.body.data || req.body || {};
+    const code = String(data.code || '');
+    const redirectUri = String(data.redirectUri || '');
+    if (!code || code.length > 200 || !DISCORD_REDIRECT_URIS.includes(redirectUri)) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Retour de Discord invalide.' });
+        return;
+    }
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+        res.status(500).json({ error: 'internal', message: 'La connexion Discord n\'est pas configurée.' });
+        return;
+    }
+    try {
+        const tokenResponse = await fetch(`${DISCORD_API}/oauth2/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'authorization_code', code, redirect_uri: redirectUri }).toString(),
+        });
+        const tokenData = await tokenResponse.json().catch(() => ({}));
+        if (!tokenResponse.ok || !tokenData.access_token) {
+            res.status(401).json({ error: 'discord-refus', message: 'Discord a refusé la connexion : recommencez.' });
+            return;
+        }
+        const userResponse = await fetch(`${DISCORD_API}/users/@me`, { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
+        const discordUser = await userResponse.json().catch(() => ({}));
+        const discordId = String(discordUser.id || '');
+        if (!userResponse.ok || !/^\d{5,25}$/.test(discordId)) {
+            res.status(502).json({ error: 'discord-indisponible', message: 'Impossible de lire votre compte Discord : réessayez.' });
+            return;
+        }
+        await purgeExpiredDiscordTickets().catch((error) => console.warn('Tickets Discord expirés non purgés :', error));
+        const ticket = await createDiscordTicket(discordId);
+        const characters = await listDiscordCharacters(discordId);
+        res.status(200).json({ ticket, expiresAt: Date.now() + DISCORD_TICKET_TTL_MS, discordUsername: String(discordUser.username || '').slice(0, 60), characters });
+    } catch (error) {
+        sendDiscordError(res, error, 'Connexion Discord');
+    }
+});
+
+// Compte Civil (libre) pour un personnage du compte Discord : renvoie un jeton de connexion.
+export const discordCreateCivil = onRequest({}, async (req, res) => {
+    if (!(await discordPreamble(req, res))) return;
+    const data = req.body.data || req.body || {};
+    try {
+        const discordId = await readDiscordTicket(data.ticket, res);
+        if (!discordId) return;
+        const { persoId, entry } = await resolveDiscordCharacter(discordId, data);
+        if (await accountOfUid(entry.uid)) {
+            res.status(409).json({ error: 'deja-un-compte', message: 'Ce personnage a déjà un compte : connectez-vous avec.' });
+            return;
+        }
+        const email = entry.email || await allocateFakeEmail(entry.prenom, entry.nom);
+        const user = await createLoginForEmail(email);
+        const profile = {
+            ...sanitizeCivilProfile(data.profile),
+            firstName: entry.prenom,
+            lastName: entry.nom,
+            uid: user.uid,
+            email,
+            patientID: entry.patientID,
+            origineCompte: 'discord',
+            createdAt: new Date().toISOString(),
+        };
+        await db.ref(`civilians/${user.uid}`).set(profile);
+        await db.ref(`discordPersonnages/${discordId}/${persoId}`).update({ uid: user.uid, email });
+        const customToken = await admin.auth().createCustomToken(user.uid, { discordLogin: true });
+        res.status(200).json({ uid: user.uid, customToken, patientID: entry.patientID, email, persoId });
+    } catch (error) {
+        sendDiscordError(res, error, 'Création de compte Civil (Discord)');
+    }
+});
+
+// Demande de compte du personnel pour un personnage du compte Discord : validée ensuite par un admin (discordApproveStaff).
+export const discordRequestStaff = onRequest({}, async (req, res) => {
+    if (!(await discordPreamble(req, res))) return;
+    const data = req.body.data || req.body || {};
+    try {
+        const discordId = await readDiscordTicket(data.ticket, res);
+        if (!discordId) return;
+        const fields = sanitizeStaffRequest(data.request);
+        if (!fields.rank || !fields.badge || !fields.discord || !fields.phNumber) {
+            res.status(400).json({ error: 'invalid-argument', message: 'Fonction, badge, Discord et téléphone sont requis.' });
+            return;
+        }
+        const { persoId, entry } = await resolveDiscordCharacter(discordId, data);
+        const current = await accountOfUid(entry.uid);
+        if (current && current.type !== 'civilian') {
+            res.status(409).json({ error: 'deja-personnel', message: 'Ce personnage a déjà un compte du personnel : connectez-vous avec.' });
+            return;
+        }
+        const email = entry.email || await allocateFakeEmail(entry.prenom, entry.nom);
+        const key = emailKeyOf(email);
+        const existing = (await db.ref(`pendingAccountRequests/${key}`).once('value')).val();
+        if (existing && existing.status === 'pending') {
+            res.status(409).json({ error: 'demande-en-attente', message: 'Une demande est déjà en attente de validation pour ce personnage.' });
+            return;
+        }
+        // Titre « Dr. » / « Pr. » choisi par un médecin : sur le prénom de la demande seulement.
+        const requestFirstName = withTitlePrefix(entry.prenom, data.titlePrefix);
+        const request = {
+            ...fields,
+            name: `${requestFirstName} ${entry.nom}`.trim(),
+            firstName: requestFirstName,
+            lastName: entry.nom,
+            email,
+            isCoroner: data.isCoroner === true,
+            requestedAt: new Date().toISOString(),
+            status: 'pending',
+            viaDiscord: true,
+            patientID: entry.patientID,
+            ...(current ? { civilUid: entry.uid } : {}),
+        };
+        await db.ref(`discordDemandes/${key}`).set({ discordId, persoId, creeLe: Date.now() });
+        await db.ref(`discordPersonnages/${discordId}/${persoId}`).update({ email });
+        await db.ref(`pendingAccountRequests/${key}`).set(request);
+        res.status(200).json({ ok: true, email, persoId, patientID: entry.patientID, hasCivil: !!current });
+    } catch (error) {
+        sendDiscordError(res, error, 'Demande de compte du personnel (Discord)');
+    }
+});
+
+// Validation par un admin d'une demande faite avec Discord : crée le compte de connexion du personnage (ou signale son compte Civil, que
+// le panneau convertit en compte du personnel). Admins seulement ; disponible dans les deux versions (une demande déjà déposée reste traitable).
+export const discordApproveStaff = onRequest({}, async (req, res) => {
+    if (!(await discordPreamble(req, res, { classicOnly: false }))) return;
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+    if (!(await isAdminCaller(caller))) {
+        res.status(403).json({ error: 'permission-denied', message: 'Seul un administrateur peut valider une demande.' });
+        return;
+    }
+    const data = req.body.data || req.body || {};
+    const key = String(data.emailKey || '');
+    if (!/^[^/.#$[\]]{1,200}$/.test(key)) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Demande invalide.' });
+        return;
+    }
+    try {
+        const request = (await db.ref(`pendingAccountRequests/${key}`).once('value')).val();
+        const link = (await db.ref(`discordDemandes/${key}`).once('value')).val();
+        if (!request || !request.viaDiscord || !link) {
+            res.status(404).json({ error: 'demande-introuvable', message: 'Demande Discord introuvable (déjà traitée ?).' });
+            return;
+        }
+        const entryRef = db.ref(`discordPersonnages/${link.discordId}/${link.persoId}`);
+        const entry = (await entryRef.once('value')).val();
+        if (!entry) {
+            res.status(404).json({ error: 'personnage-introuvable', message: 'Le personnage de cette demande n\'existe plus.' });
+            return;
+        }
+        const current = await accountOfUid(entry.uid);
+        if (current && current.type === 'civilian') {
+            res.status(200).json({ civilUid: entry.uid, patientID: entry.patientID });
+            return;
+        }
+        if (current) {
+            res.status(409).json({ error: 'deja-personnel', message: 'Ce personnage a déjà un compte du personnel.' });
+            return;
+        }
+        const user = await createLoginForEmail(request.email);
+        await entryRef.update({ uid: user.uid, email: request.email });
+        await db.ref(`discordDemandes/${key}`).remove();
+        res.status(200).json({ uid: user.uid, patientID: entry.patientID });
+    } catch (error) {
+        sendDiscordError(res, error, 'Validation d\'une demande Discord');
+    }
+});
+
 // --- Fleeca Payment Gateway (v2) ---
 // Remplace les liens de paiement manuels (« connectez-vous à Fleeca et payez
 // le compte X, puis collez une capture d'écran comme preuve ») par de vrais
@@ -1134,6 +1547,7 @@ export const createFleecaPayment = onRequest({ secrets: FLEECA_SECRETS }, async 
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const apiKey = process.env.FLEECA_API_KEY;
     if (!apiKey) {
@@ -1451,6 +1865,8 @@ const sanitizeEmailKey = (email) => (email || '').toLowerCase().trim().replace(/
 // et les envois internes (ex. reçu de paiement depuis fleecaWebhook), pour
 // éviter un aller-retour HTTP inutile vers soi-même.
 const sendEyefindMailInternal = async ({ apiKey, to, subject, body, html }) => {
+    // Version classique : Eyefind n'existe pas, rien ne part (déclencheurs, rappels, reçus compris).
+    if ((await readSiteMode()) === SITE_MODE_CLASSIC) return { ok: true, skipped: 'site-mode-classique' };
     const eyefindResponse = await fetch(EYEFIND_API_URL, {
         method: 'POST',
         headers: {
@@ -1585,6 +2001,8 @@ export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (re
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    // Version classique : pas d'Eyefind. Les mails qui n'ont pas d'équivalent sur le site deviennent une notification (voir plus bas).
+    if ((await readSiteMode()) === SITE_MODE_CLASSIC) { await mailAsNotificationInClassic(req, res); return; }
 
     const apiKey = process.env.EYEFIND_API_KEY;
     if (!apiKey) {
@@ -1646,6 +2064,45 @@ export const sendEyefindMail = onRequest({ secrets: EYEFIND_SECRETS }, async (re
     }
 });
 
+// ─── Mails du site en VERSION CLASSIQUE ─────────────────────────────────────────────────────────────────────
+// Eyefind n'existe pas : un mail envoyé par le site (sendTemplatedMail, src/utils/mailTemplates.js) dont le destinataire n'a AUCUN autre avis sur
+// le site devient une notification de son compte. Le texte est recomposé ICI à partir du modèle (jamais repris du navigateur). Les autres modèles
+// ont déjà leur notification, posée par le code qui envoie le mail (contrats, Take Home Car, suivi des candidatures, décisions d'exemption,
+// paiements, rappels planifiés), ou visent un compte supprimé : rien n'est ajouté pour eux.
+// Liste des modèles convertis et mise en forme du texte : functions/classicMailCore.js.
+const mailAsNotificationInClassic = async (req, res) => {
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+    const data = req.body.data || req.body || {};
+    const template = String(data.template || '');
+    const target = CLASSIC_NOTIFY_TEMPLATES[template];
+    if (!target) { res.status(200).json({ ok: true, skipped: 'site-mode-classique' }); return; }
+    const recipient = String(data.to || '').trim().toLowerCase();
+    if (!recipient || recipient.length > 200) { res.status(400).json({ error: 'invalid-argument', message: 'Destinataire invalide.' }); return; }
+    try {
+        // Mêmes droits que pour un mail : le personnel écrit à n'importe quel compte, un Civil seulement au sien.
+        const isStaffCaller = await isStaffLikeCaller(caller.uid);
+        if (!isStaffCaller && String(caller.email || (await admin.auth().getUser(caller.uid)).email || '').toLowerCase() !== recipient) {
+            res.status(403).json({ error: 'forbidden', message: 'Vous ne pouvez prévenir que votre propre compte.' });
+            return;
+        }
+        if (!(await consumeRateLimit('sendMailCaller', caller.uid, isStaffCaller ? MAIL_LIMIT_STAFF : MAIL_LIMIT_SELF))) {
+            res.status(429).json({ error: 'too-many-requests', message: 'Trop d\'envois en peu de temps. Réessayez dans quelques minutes.' });
+            return;
+        }
+        let uid = null;
+        try { uid = (await admin.auth().getUserByEmail(recipient)).uid; } catch (error) { uid = null; }
+        if (!uid) { res.status(200).json({ ok: true, skipped: 'compte-introuvable' }); return; }
+        const vars = cleanTemplateVars(data.vars); // noms, poste, grade… : texte court seulement
+        const mail = await composeServerMail(template, vars);
+        await notifyAccount(uid, { type: target.type, titre: mail.subject, texte: mailTextForNotification(mail.body) || undefined, ...(target.lien ? { lien: target.lien } : {}) });
+        res.status(200).json({ ok: true, notified: true });
+    } catch (error) {
+        console.error('Notification à la place d\'un mail :', error);
+        res.status(500).json({ error: 'internal', message: 'Notification non envoyée.' });
+    }
+};
+
 // --- Vérification d'adresse Eyefind Mail (obligatoire avant un compte Civil) ---
 // Un civil doit prouver qu'il contrôle réellement l'adresse Eyefind Mail
 // (format prenomnom@mail.eyefind.fr, créée sur https://eyefind.fr/mail.php)
@@ -1671,6 +2128,7 @@ export const sendEmailVerificationCode = onRequest({ secrets: EYEFIND_SECRETS },
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const apiKey = process.env.EYEFIND_API_KEY;
     if (!apiKey) {
@@ -1746,6 +2204,7 @@ export const verifyEmailCode = onRequest({}, async (req, res) => {
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const data = req.body.data || req.body;
     const email = (data?.email || '').trim();
@@ -1881,6 +2340,7 @@ export const requestStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
     setJsonCors(req, res);
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const apiKey = process.env.EYEFIND_API_KEY;
     if (!apiKey) {
@@ -1958,6 +2418,7 @@ export const confirmStaffEmailChange = onRequest({ secrets: EYEFIND_SECRETS }, a
     setJsonCors(req, res);
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const data = req.body.data || req.body;
     const code = String(data?.code || '').trim();
@@ -2159,6 +2620,14 @@ const settleInvoicesOfPayment = async (paymentId, payment) => {
     return Object.keys(covered).length;
 };
 
+// L'appelant (jeton déjà vérifié) figure-t-il dans adminUsers (par e-mail ou uid, comme deleteUserAccount) ?
+const isAdminCaller = async (decodedToken) => {
+    const adminUsers = (await db.ref('adminUsers').once('value')).val();
+    const adminList = Array.isArray(adminUsers) ? adminUsers : Object.values(adminUsers || {});
+    return adminList.some((a) => a === decodedToken.email || a === decodedToken.uid
+        || (a && typeof a === 'object' && (a.email === decodedToken.email || a.uid === decodedToken.uid)));
+};
+
 const verifyCallerToken = async (req, res) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -2181,6 +2650,7 @@ export const createInvoicePayment = onRequest({ secrets: FLEECA_SECRETS }, async
     setJsonCors(req, res);
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+    if (await refuseOutsideSiteMode(res, 'gtaw')) return;
 
     const apiKey = process.env.FLEECA_API_KEY;
     if (!apiKey) {
@@ -2323,9 +2793,11 @@ const sendInvoiceMail = async ({ apiKey, to, patientNode, patientName, invoices,
     });
     await sendEyefindMailInternal({ apiKey, to, ...mail });
     // Même information dans la cloche du patient (au mieux : jamais bloquant), avec un lien vers la fenêtre de paiement.
+    // Version classique : rien ne part par mail, la cloche est le seul avis ; le paiement se fait en jeu.
+    const classic = (await readSiteMode()) === SITE_MODE_CLASSIC;
     await notifyPatientAccount(patientNode, {
         type: 'statut', titre: reminder ? `Rappel : ${invoices.length} paiement(s) en attente` : (invoices.length > 1 ? `${invoices.length} rapports médicaux à régler` : 'Un rapport médical est à régler'),
-        texte: `Total à payer : ${formatInvoiceMoney(total)}. Ouvrez la fenêtre de paiement.`, lien: { cible: 'factures' },
+        texte: `Total à payer : ${formatInvoiceMoney(total)}. ${classic ? 'À régler en jeu, auprès du personnel du PHMC.' : 'Ouvrez la fenêtre de paiement.'}`, lien: { cible: 'factures' },
     });
 };
 
@@ -2374,6 +2846,103 @@ const collectPendingInvoices = async () => {
     return groups;
 };
 
+// ─── Paiements EN JEU (version PHMC classique) ─────────────────────────────────────────────────────────────
+// Sans Fleeca, le patient règle en jeu et le personnel coche la facture (src/utils/patientInvoices.js : settleInvoices).
+//   • 'payer'     : tout membre actif du personnel (staffUIDs) ou un admin → statut « paye », payeLe, encaissePar ;
+//   • 'annuler'   : la Comptabilité (admins, comptabiliteGestionnaires) → un paiement coché par erreur redevient « à payer » ;
+//   • 'dispenser' : la Comptabilité → « sans paiement » (geste commercial, erreur de facturation).
+// Jamais sur une facture dont on est soi-même le patient. Chaque action est inscrite dans la facture (historique) ; le patient est prévenu.
+// Le statut « paye » reste écrit par le serveur seulement (database.rules.json), comme avec Fleeca.
+const SETTLE_ACTIONS = {
+    payer: { from: ['a_payer'], to: 'paye', comptabilite: false },
+    annuler: { from: ['paye'], to: 'a_payer', comptabilite: true },
+    dispenser: { from: ['a_payer'], to: 'sans_paiement', comptabilite: true },
+};
+export const settleInvoices = onRequest({}, async (req, res) => {
+    await new Promise((resolve) => corsHandler(req, res, resolve));
+    setJsonCors(req, res);
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+    if (await refuseOutsideSiteMode(res, SITE_MODE_CLASSIC)) return;
+    const caller = await verifyCallerToken(req, res);
+    if (!caller) return;
+
+    const data = req.body.data || req.body;
+    const patientNode = String(data?.patientID || '').trim();
+    const invoiceIds = Array.isArray(data?.invoiceIds) ? [...new Set(data.invoiceIds.map(String))] : [];
+    const action = SETTLE_ACTIONS[data?.action] ? data.action : null;
+    const note = String(data?.note || '').trim().slice(0, 200);
+    if (!action || !/^[A-Za-z0-9_-]{1,40}$/.test(patientNode) || invoiceIds.length === 0 || invoiceIds.length > 50 || invoiceIds.some((id) => !/^[^/.#$[\]]{1,200}$/.test(id))) {
+        res.status(400).json({ error: 'invalid-argument', message: 'Action, ID patient ou factures invalides.' });
+        return;
+    }
+    try {
+        const isAdmin = (await db.ref(`adminUIDs/${caller.uid}`).once('value')).val() === true;
+        const isStaff = (await db.ref(`staffUIDs/${caller.uid}`).once('value')).val() === true;
+        const isComptable = isAdmin || (await db.ref(`comptabiliteGestionnaires/${caller.uid}`).once('value')).val() === true;
+        const rule = SETTLE_ACTIONS[action];
+        if (rule.comptabilite ? !isComptable : !(isStaff || isAdmin)) {
+            res.status(403).json({ error: 'permission-denied', message: rule.comptabilite ? 'Réservé à la Comptabilité (Direction, Assistant(e) de Direction, administrateurs).' : 'Réservé au personnel du PHMC.' });
+            return;
+        }
+        // Jamais sur sa propre facture (ses ID patient : profil Civil, fiche du personnel).
+        const ownIds = await archivePatientIdsOfUid(caller.uid);
+        const civil = (await db.ref(`civilians/${caller.uid}`).once('value')).val();
+        if (civil && civil.patientID) ownIds.add(String(civil.patientID).trim().toUpperCase());
+        if (ownIds.has(patientNode.toUpperCase()) || ownIds.has(archivePatientId(patientNode))) {
+            res.status(403).json({ error: 'propre-facture', message: 'Vous ne pouvez pas régler vous-même une facture dont vous êtes le patient : demandez à un collègue.' });
+            return;
+        }
+
+        const lists = await loadStaffLists();
+        const member = [...lists.phmc, ...lists.coroner].find((entry) => entry && entry.uid === caller.uid);
+        const byName = (member && member.name) || caller.email || 'Personnel';
+        const now = Date.now();
+        const updates = {};
+        const done = [];
+        const skipped = [];
+        let total = 0;
+        for (const invoiceId of invoiceIds) {
+            const invoice = (await db.ref(`facturesPatients/${patientNode}/${invoiceId}`).once('value')).val();
+            if (!invoice || !rule.from.includes(invoice.statut) || (action === 'payer' && invoice.exemptionEnAttente)) { skipped.push(invoiceId); continue; }
+            const base = `facturesPatients/${patientNode}/${invoiceId}`;
+            updates[`${base}/statut`] = rule.to;
+            updates[`${base}/historique/${db.ref().push().key}`] = { action, le: now, par: byName.slice(0, 120), parUid: caller.uid, ...(note ? { note } : {}) };
+            if (action === 'payer') {
+                updates[`${base}/payeLe`] = now;
+                updates[`${base}/encaissePar`] = { nom: byName.slice(0, 120), uid: caller.uid };
+                updates[`${base}/modePaiement`] = 'en_jeu';
+                updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
+            } else if (action === 'annuler') {
+                updates[`${base}/payeLe`] = null;
+                updates[`${base}/encaissePar`] = null;
+                updates[`${base}/modePaiement`] = null;
+                updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = invoice.creeLe || now;
+            } else {
+                updates[`facturesEnAttente/${patientNode}/${invoiceId}`] = null;
+            }
+            total += Number(invoice.montant || 0);
+            done.push(invoiceId);
+        }
+        if (done.length === 0) {
+            res.status(409).json({ error: 'rien-a-faire', message: 'Aucune facture dans l\'état attendu (déjà réglée, annulée ou en attente d\'exemption ?).', skipped });
+            return;
+        }
+        await db.ref().update(updates);
+        const amount = `${total.toLocaleString('fr-FR')} $`;
+        const notice = {
+            payer: { titre: 'Paiement reçu : merci !', texte: `${amount} réglé${done.length > 1 ? `s (${done.length} factures)` : ''} auprès de ${byName}.` },
+            annuler: { titre: 'Paiement annulé', texte: `Le paiement de ${amount} a été annulé par la Comptabilité : la facture est de nouveau à régler.${note ? ` Motif : ${note}` : ''}` },
+            dispenser: { titre: 'Facture dispensée', texte: `${amount} : vous n'avez rien à régler pour ${done.length > 1 ? 'ces factures' : 'cette facture'}.${note ? ` Motif : ${note}` : ''}` },
+        }[action];
+        await notifyPatientAccount(patientNode, { type: 'statut', ...notice, lien: { cible: 'dossierPatient' } });
+        res.status(200).json({ ok: true, done, skipped, total });
+    } catch (error) {
+        console.error('Règlement de factures :', error);
+        res.status(500).json({ error: 'internal', message: 'Impossible de mettre à jour les factures.', details: error && error.message });
+    }
+});
+
 // Mails groupés : toutes les 5 minutes, un seul mail par patient pour les factures encore jamais
 // notifiées, une fois la dernière d'entre elles vieille de 5 minutes (le temps qu'un médecin enchaîne
 // plusieurs rapports pour le même patient).
@@ -2383,7 +2952,8 @@ export const invoiceMailBatcher = onSchedule({
     secrets: ['EYEFIND_API_KEY'],
 }, async () => {
     const apiKey = process.env.EYEFIND_API_KEY;
-    if (!apiKey) { console.error('invoiceMailBatcher: EYEFIND_API_KEY manquante.'); return; }
+    // Version classique : aucun mail, mais la cloche du patient est tenue à jour ; la clé Eyefind n'y est donc pas nécessaire.
+    if (!apiKey && (await readSiteMode()) !== SITE_MODE_CLASSIC) { console.error('invoiceMailBatcher: EYEFIND_API_KEY manquante.'); return; }
     const now = Date.now();
     const groups = await collectPendingInvoices();
     for (const { patientNode, items: collected } of groups) {
@@ -2399,6 +2969,14 @@ export const invoiceMailBatcher = onSchedule({
             // Aucune adresse exploitable : inutile de réessayer, la notification à la connexion reste.
             unsent.forEach(({ id }) => { updates[`facturesPatients/${patientNode}/${id}/mailEnvoyeLe`] = now; updates[`facturesPatients/${patientNode}/${id}/mailErreur`] = 'adresse-introuvable'; });
             await db.ref().update(updates);
+            // Version classique : pas de mail du tout, seule la cloche prévient ; elle ne dépend pas d'une adresse.
+            if ((await readSiteMode()) === SITE_MODE_CLASSIC) {
+                const total = items.reduce((sum, { invoice }) => sum + Number(invoice.montant || 0), 0);
+                await notifyPatientAccount(patientNode, {
+                    type: 'statut', titre: items.length > 1 ? `${items.length} rapports médicaux à régler` : 'Un rapport médical est à régler',
+                    texte: `Total à payer : ${formatInvoiceMoney(total)}, à régler en jeu auprès du personnel du PHMC.`, lien: { cible: 'factures' },
+                });
+            }
             continue;
         }
         try {
@@ -2430,7 +3008,8 @@ export const invoiceDailyReminder = onSchedule({
     secrets: ['EYEFIND_API_KEY'],
 }, async () => {
     const apiKey = process.env.EYEFIND_API_KEY;
-    if (!apiKey) { console.error('invoiceDailyReminder: EYEFIND_API_KEY manquante.'); return; }
+    // Version classique : aucun mail, mais la cloche du patient est tenue à jour ; la clé Eyefind n'y est donc pas nécessaire.
+    if (!apiKey && (await readSiteMode()) !== SITE_MODE_CLASSIC) { console.error('invoiceDailyReminder: EYEFIND_API_KEY manquante.'); return; }
     const now = Date.now();
     const groups = await collectPendingInvoices();
     for (const { patientNode, items: collected } of groups) {
@@ -2708,6 +3287,7 @@ const archivePatientIdsOfUid = async (uid) => {
         const members = Object.values((await db.ref(`staff/${list}`).once('value')).val() || {});
         const member = members.find((entry) => entry && entry.uid === uid);
         if (member) {
+            if (member.patientID) ids.add(archivePatientId(member.patientID)); // compte Discord (version classique)
             if (member.gtawCharacterId != null) ids.add(archivePatientId(`PHMC-${member.gtawCharacterId}`));
             const badge = String(member.badge || '');
             ids.add(archivePatientId(badge.includes('-') ? badge.split('-').slice(1).join('') : badge));
@@ -2825,6 +3405,7 @@ export const adoptArchivedRecords = onRequest({}, async (req, res) => {
 // Le dossier n'est JAMAIS écrit par un client : seule cette fonction le modifie, ce qui garde les données intactes si un formulaire est supprimé ensuite.
 // ───────────────────────────────────────────────────────────────────────────────
 const staffPatientNodeOf = (member) => {
+    if (member && member.patientID) return String(member.patientID); // compte Discord (version classique)
     if (member && member.gtawCharacterId != null) return `PHMC-${member.gtawCharacterId}`;
     const badge = String((member && member.badge) || '');
     const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');

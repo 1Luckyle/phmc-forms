@@ -7,10 +7,15 @@ import { auth } from '../../firebase';
 import { buildGtawAuthUrl } from '../../utils/gtawOAuth';
 import { getAppBase } from '../../utils/siteUrl';
 import { useAuthMethodsConfig } from '../../hooks/useAuthMethodsConfig';
+import { buildDiscordAuthUrl } from '../../utils/discordOAuth';
+import { useSiteMode } from '../../contexts/SiteConfigContext';
 
 const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
     const { loginEmployee } = useEmployeeAuth();
-    const { gtawOnly } = useAuthMethodsConfig();
+    const { gtawOnly: gtawOnlySetting } = useAuthMethodsConfig();
+    const { isClassic } = useSiteMode();
+    // Version classique : Discord seulement (le réglage « e-mail et mot de passe » ne concerne que la version GTA World).
+    const gtawOnly = isClassic ? true : gtawOnlySetting;
     const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [error, setError] = useState('');
@@ -90,6 +95,16 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
         }
     };
 
+    // Version classique : connexion avec Discord (DiscordCallback connecte directement s'il n'y a qu'un compte).
+    const handleDiscordLogin = () => {
+        try {
+            window.location.href = buildDiscordAuthUrl({ type: 'login' });
+        } catch (err) {
+            console.error('Connexion Discord impossible :', err);
+            setError(err.message || 'Impossible de démarrer la connexion avec Discord.');
+        }
+    };
+
     const handlePasswordReset = async () => {
         if (!loginData.email) {
             setError('Veuillez entrer votre adresse email pour réinitialiser le mot de passe.');
@@ -151,6 +166,26 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
                     </Alert>
                 )}
                 
+                {isClassic ? (
+                    <button
+                        type="button"
+                        onClick={handleDiscordLogin}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+                            backgroundColor: '#1a1a1a', border: '1px solid #5865F2',
+                            borderRadius: '8px', padding: '12px 15px', color: '#fff',
+                            cursor: 'pointer', textAlign: 'left', marginBottom: '15px'
+                        }}
+                    >
+                        <i className="fab fa-discord" style={{ fontSize: '1.3rem', color: '#5865F2' }}></i>
+                        <span>
+                            <strong style={{ display: 'block' }}>Se connecter avec Discord</strong>
+                            <span style={{ fontSize: '0.85em', color: '#ccc' }}>
+                                Personnel PHMC / DMEC ou Civil : choisissez ensuite votre personnage s'il en a plusieurs
+                            </span>
+                        </span>
+                    </button>
+                ) : (
                 <button
                     type="button"
                     onClick={handleGtawLogin}
@@ -169,6 +204,7 @@ const EmployeeLoginModal = ({ show, onHide, onSuccess, onCreateAccount }) => {
                         </span>
                     </span>
                 </button>
+                )}
 
                 {gtawOnly ? (
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

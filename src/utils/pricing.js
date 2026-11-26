@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../firebase';
+import { isClassicNow } from './siteModeNow';
 
 // Chaque tarif : valeur par défaut (en dollars), nom affiché dans le panneau admin, et ce qu'il couvre.
 export const PRICE_DEFINITIONS = [
@@ -31,7 +32,12 @@ export const PRICE_DEFINITIONS = [
     },
     {
         key: 'fraisDemandeAutopsie', default: 2000, label: "Frais de demande d'autopsie / certificat",
-        description: "E-mail de demande du DMEC (rapport d'autopsie, certificat de décès) : frais fixes réglés par lien Fleeca.",
+        // Version classique : réglés en jeu (pas de Fleeca).
+        get description() {
+            return isClassicNow()
+                ? "E-mail de demande du DMEC (rapport d'autopsie, certificat de décès) : frais fixes, réglés en jeu auprès du DMEC."
+                : "E-mail de demande du DMEC (rapport d'autopsie, certificat de décès) : frais fixes réglés par lien Fleeca.";
+        },
     },
 ];
 

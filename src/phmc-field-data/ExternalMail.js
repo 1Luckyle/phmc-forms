@@ -9,6 +9,7 @@ import RichMessageEditor from '../components/Messaging/RichMessageEditor';
 import PhmcEmployeeSelect, { withDmecOptions } from './shared/PhmcEmployeeSelect';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { MAIL_LIMITS } from '../utils/internalMail';
+import { exampleEmail } from '../utils/siteModeNow';
 
 const pad = (n) => String(n).padStart(2, '0');
 const todayFr = () => { const now = new Date(); return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`; };
@@ -64,7 +65,7 @@ const ExternalMail = ({ formData, setFormData, handleChange, showNotification, p
                 </div>
                 <div style={{ flex: '1 1 240px', minWidth: 0 }}>
                     <Form.Label>Adresse e-mail</Form.Label>
-                    <Form.Control type="email" name="externalMailRecipientAddress" value={formData.externalMailRecipientAddress || ''} maxLength={MAIL_LIMITS.name} onChange={handleChange} placeholder="prenomnom@mail.eyefind.fr" className="form-control" />
+                    <Form.Control type="email" name="externalMailRecipientAddress" value={formData.externalMailRecipientAddress || ''} maxLength={MAIL_LIMITS.name} onChange={handleChange} placeholder={exampleEmail()} className="form-control" />
                 </div>
             </div>
 

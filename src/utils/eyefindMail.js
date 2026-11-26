@@ -46,7 +46,9 @@ export const deriveEyefindAddress = (firstName, lastName) => {
 // plutôt { ok: false, error, message } pour que l'appelant puisse choisir de
 // les ignorer silencieusement (un mail raté ne doit jamais bloquer l'action
 // principale : approbation de compte, changement de grade, etc.).
-export const sendEyefindMail = async ({ to, subject, body, html }) => {
+// template / vars (envoyés par sendTemplatedMail) : en version classique du site, le serveur n'envoie pas de mail mais, pour les modèles sans
+// autre avis sur le site, recompose le texte depuis le modèle et en fait une notification du compte destinataire (functions/classicMailCore.js).
+export const sendEyefindMail = async ({ to, subject, body, html, template, vars }) => {
     if (!to || !subject || !body) {
         return { ok: false, error: 'invalid-argument', message: 'Destinataire, sujet et corps du mail sont obligatoires.' };
     }
@@ -61,7 +63,7 @@ export const sendEyefindMail = async ({ to, subject, body, html }) => {
         const response = await fetch(SEND_MAIL_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-            body: JSON.stringify({ to, subject, body, html }),
+            body: JSON.stringify({ to, subject, body, html, ...(template ? { template, vars: vars || {} } : {}) }),
         });
 
         const text = await response.text();

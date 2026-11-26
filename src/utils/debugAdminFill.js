@@ -1,3 +1,4 @@
+import { testEmail } from './siteModeNow';
 // src/utils/debugAdminFill.js
 //
 // Données de test des formulaires d'ADMINISTRATION (contrats, accords commerciaux, sécurité incendie…) pour le bouton « Remplir (debug) » (components/DebugFillButton.js : visible seulement quand un
@@ -27,7 +28,7 @@ export const debugFieldValue = (field) => {
             const option = (field.options || []).find((item) => item && item.value !== '' && item.value != null && !item.disabled);
             return option ? option.value : undefined;
         }
-        case 'email': return 'test.debug@mail.eyefind.fr';
+        case 'email': return testEmail('test', 'debug');
         case 'tel': return '555-0100';
         case 'url': return 'https://phmc-tools.com';
         case 'checkbox': return undefined; // une case n'est jamais cochée d'office

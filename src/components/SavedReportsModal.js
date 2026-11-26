@@ -30,6 +30,7 @@ import useReportGovernance from '../hooks/useReportGovernance';
 import PublishedDeathReportsModal from './PublishedDeathReportsModal';
 import { ExternalMailShareDialog, SharedExternalMails } from './ExternalMailShare';
 import { isExternalMail, purgeMailShares } from '../utils/externalMails';
+import { siteText } from '../utils/siteModeNow';
 
 const modalStyle = {
     position: 'fixed',
@@ -662,7 +663,7 @@ const SavedReportsModal = ({
     // Menu « Copier ▾ » d'une ligne : BBCode + titre (ou titre + lien de l'image pour un AMA).
     const renderCopyMenu = (report) => (
         <Dropdown className="d-inline-block">
-            <Dropdown.Toggle size="sm" variant="secondary" title={bbcodeEnabled ? 'Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…' : 'Télécharger le HTML, copier le titre…'}>
+            <Dropdown.Toggle size="sm" variant="secondary" title={bbcodeEnabled ? siteText('Copier le BBCode (forum PHMC), télécharger le HTML (forum GTA World), copier le titre…') : 'Télécharger le HTML, copier le titre…'}>
                 Copier
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>

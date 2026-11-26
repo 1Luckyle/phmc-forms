@@ -55,7 +55,7 @@ export const sendTemplatedMail = async (id, { to, vars }) => {
     try {
         if (!to) return { ok: false, error: 'invalid-argument', message: 'Aucune adresse de destination.' };
         const mail = await composeMail(id, vars);
-        const result = await sendEyefindMail({ to, ...mail });
+        const result = await sendEyefindMail({ to, ...mail, template: id, vars });
         if (!result.ok) console.warn(`Mail « ${id} » non envoyé :`, result.error, result.message);
         return result;
     } catch (error) {

@@ -27,6 +27,7 @@ export const isSelfPatient = (self, patientNode) => !!self && !!self.myPatientID
 // dans « Mon profil »). Sert à la vue du personnel, pour qu'elle montre le même dossier que le patient. {} si le patient n'a pas de compte.
 // ID patient d'une fiche du personnel (comme staffPatientNodeOf côté serveur).
 const staffPatientNode = (member) => {
+    if (member && member.patientID) return String(member.patientID); // compte Discord (version classique)
     if (member && member.gtawCharacterId != null) return `PHMC-${member.gtawCharacterId}`;
     const badge = String((member && member.badge) || '');
     const digits = badge.includes('-') ? badge.split('-').slice(1).join('') : badge.replace(/\D/g, '');

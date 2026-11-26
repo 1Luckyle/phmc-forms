@@ -18,6 +18,7 @@ import { DEATH_CAUSE_PRESETS } from '../constants/deathPresets';
 import { toFrenchGender } from './patientIdentity';
 import { addDaysIso } from '../clinical/engine';
 import { FLIGHT_CERT_CLASSES, examResultKey } from './flightCertificate';
+import { testEmail } from './siteModeNow';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -170,7 +171,7 @@ const buildHelpers = (ctx = {}) => {
         address: civil?.address || '1234 Vinewood Blvd, Los Santos',
         zip: civil?.zip || '90001',
         phone: civil?.phone || '555-0142',
-        email: civil?.email || 'jean.testard@eyefind.info',
+        email: civil?.email || testEmail('jean', 'testard'),
         discord: civil?.discord || 'jean.testard',
     };
 
@@ -691,7 +692,7 @@ const TEMPLATES = {
         phmcEmployee: h.phmc.phmcEmployee || '',
         externalMailSubject: 'Confirmation de rendez-vous',
         externalMailRecipient: 'Madame Dupont',
-        externalMailRecipientAddress: 'dupont@mail.eyefind.fr',
+        externalMailRecipientAddress: testEmail('marc', 'dupont'),
         externalMailFonction: 'Médecin Titulaire',
         externalMailService: 'Médecine interne',
         externalMailBody: 'Bonjour,\n\nNous vous confirmons votre rendez-vous au Pillbox Hill Medical Center.\n\n[b]Merci de vous présenter 15 minutes à l\'avance.[/b]',

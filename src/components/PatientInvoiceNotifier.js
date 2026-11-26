@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import PatientInvoicesPanel from './PatientInvoicesPanel';
+import { useSiteMode } from '../contexts/SiteConfigContext';
 import { INVOICE_STATUS, formatMoney, totalDue } from '../utils/patientBilling';
 
 const overlayStyle = {
@@ -27,6 +28,7 @@ const closeStyle = {
 
 // reopenSignal : un compteur qui change quand une notification de la cloche demande la fenêtre de paiement (lien « factures ») ; elle se rouvre même si elle avait été fermée.
 const PatientInvoiceNotifier = ({ showNotification, reopenSignal = 0 }) => {
+    const { isClassic } = useSiteMode();
     const { myPatientID, currentEmployee, viewAs } = useEmployeeAuth();
     const [dueCount, setDueCount] = useState(0);
     const [total, setTotal] = useState(0);
@@ -71,9 +73,11 @@ const PatientInvoiceNotifier = ({ showNotification, reopenSignal = 0 }) => {
                             Vous avez {dueCount} paiement{dueCount > 1 ? 's' : ''} en attente
                         </h5>
                         <p style={{ color: '#8b949e', fontSize: '0.9em' }}>
-                            Des rapports médicaux établis à votre nom sont à régler ({formatMoney(total)} au total). Vous pouvez payer
-                            chaque rapport séparément ou tout régler d'un coup via Fleeca. Ce rappel réapparaît à chaque connexion tant
-                            que ce n'est pas payé ; vous retrouverez aussi vos factures dans votre dossier patient.
+                            Des rapports médicaux établis à votre nom sont à régler ({formatMoney(total)} au total).{' '}
+                            {isClassic
+                                ? 'Le paiement se fait en jeu, auprès du personnel du PHMC : il marquera vos factures comme payées.'
+                                : "Vous pouvez payer chaque rapport séparément ou tout régler d'un coup via Fleeca."}
+                            {' '}Ce rappel réapparaît à chaque connexion tant que ce n'est pas payé ; vous retrouverez aussi vos factures dans votre dossier patient.
                         </p>
                         <PatientInvoicesPanel patientID={myPatientID} showNotification={showNotification} showPaidHistory={false} />
                         <div style={{ textAlign: 'right', marginTop: '14px' }}>

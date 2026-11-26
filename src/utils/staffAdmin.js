@@ -505,6 +505,8 @@ export async function convertCivilianToStaff(civilian, { service, rank, badgeDig
         convertedFromCivilianAt: new Date().toISOString(),
         ...(civilian.gtawCharacterId != null && { gtawCharacterId: civilian.gtawCharacterId }),
         ...(civilian.gtawUserId != null && { gtawUserId: civilian.gtawUserId }),
+        // Compte Discord (version classique) : la fiche garde l'ID patient du personnage.
+        ...(civilian.origineCompte === 'discord' && civilian.patientID ? { patientID: civilian.patientID, origineCompte: 'discord' } : {}),
     };
     await set(push(ref(database, cfg.path)), entry);
     await clearDeletedMark(staffPatientIdOf(entry, civilian.patientID));
@@ -527,7 +529,7 @@ export async function convertStaffToCivilian(member, civilData = {}) {
     let createdProfile = null;
     if (!civilSnap.exists()) {
         const patientID = canonicalPatientId(
-            civilData.patientID || (member.gtawCharacterId != null ? `PHMC-${member.gtawCharacterId}` : '')
+            civilData.patientID || member.patientID || (member.gtawCharacterId != null ? `PHMC-${member.gtawCharacterId}` : '')
         );
         if (!patientID) throw new Error('Un ID patient est nécessaire pour créer le profil Civil.');
         const parts = (member.displayName || member.name || '').split(' ');

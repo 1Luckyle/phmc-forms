@@ -118,6 +118,37 @@ export async function loadInvoiceIndex(inputId) {
 
 export { totalDue };
 
+// VERSION CLASSIQUE (paiement en jeu) : le personnel règle des factures (Cloud Function settleInvoices).
+// action : 'payer' (personnel), 'annuler' ou 'dispenser' (Comptabilité). → { done, skipped, total }
+const SETTLE_INVOICES_URL = 'https://europe-west1-phmcfr-forms.cloudfunctions.net/settleInvoices';
+export async function settleInvoices({ patientID, invoiceIds, action, note = '' }) {
+    const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+    if (!token) throw new Error('Connexion requise.');
+    const response = await fetch(SETTLE_INVOICES_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ patientID: canonicalPatientId(patientID), invoiceIds, action, note }),
+    });
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch (error) { throw new Error(`Réponse invalide du serveur (${response.status}).`); }
+    if (!response.ok) throw new Error(data.message || data.error || 'Impossible de mettre à jour les factures.');
+    return data;
+}
+
+// Toutes les factures encore dues, tous patients confondus (panneau « Factures en attente » de la Comptabilité) :
+// [{ id, patientNode, ...facture }] des plus anciennes aux plus récentes. Lecture réservée au personnel (database.rules.json).
+export async function loadAllDueInvoices() {
+    const snap = await get(ref(database, 'facturesPatients'));
+    const out = [];
+    Object.entries(snap.val() || {}).forEach(([patientNode, invoices]) => {
+        Object.entries(invoices || {}).forEach(([id, invoice]) => {
+            if (invoice && invoice.statut === INVOICE_STATUS.A_PAYER) out.push({ id, patientNode, ...invoice });
+        });
+    });
+    return out.sort((a, b) => (a.creeLe || 0) - (b.creeLe || 0));
+}
+
 // Crée UN lien Fleeca couvrant les factures demandées (une ou toutes). Le montant est recalculé côté
 // serveur d'après les factures — jamais d'après ce que le navigateur envoie.
 // Retourne { payment_id, payment_link, amount }.

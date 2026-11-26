@@ -41,7 +41,8 @@ import ForumHint from './ForumHint';
 import useForumNotice from '../hooks/useForumNotice';
 import { downloadBbCodeAsHtml, combineBbCodes, combineBbCodesForExport, COPY_BBCODE_HINT, DOWNLOAD_HTML_HINT } from '../utils/reportExport';
 import ReportExpansion, { ExpandToggle, useExpansions } from './ReportExpansion';
-import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { useSiteConfig, useSiteMode } from '../contexts/SiteConfigContext';
+import PatientInvoicesPanel from './PatientInvoicesPanel';
 import { exportReportDocument, PDF_EXPORT_LABEL } from '../utils/reportDocumentExport';
 import { loadDeletedMark } from '../utils/deletedAccounts';
 import { logActivity } from '../utils/activityLog';
@@ -157,6 +158,9 @@ const PatientDossierModal = ({
     const [hiddenCounts, setHiddenCounts] = useState({ dmec: 0, soignant: 0 });
     const hiddenCount = seesEverything ? 0 : (viewerFamilies.dmec ? hiddenCounts.soignant : hiddenCounts.dmec);
     const { bbcodeEnabled } = useSiteConfig();
+    // Version classique : le personnel enregistre ici les paiements reçus en jeu (factures du patient).
+    const { isClassic } = useSiteMode();
+    const [showInvoices, setShowInvoices] = useState(false);
     const { open: openRows, toggle: toggleRow, setTab: setRowTab } = useExpansions();
 
     // Liste déroulante : patients avec compte (civils) + patients sans compte, connus
@@ -714,6 +718,19 @@ const PatientDossierModal = ({
                                     <span className={`rpt-stat${stats.unpaid > 0 ? ' warn' : ''}`}><b>{stats.unpaid}</b><span>À payer{stats.unpaid > 0 ? ` (${formatMoney(stats.unpaidAmount)})` : ''}</span></span>
                                 </span>
                             </div>
+
+                            {isClassic && isStaffViewer && (
+                                <div style={{ margin: '8px 0' }}>
+                                    <Button size="sm" variant={stats.unpaid > 0 ? 'outline-warning' : 'outline-secondary'} onClick={() => setShowInvoices((open) => !open)}>
+                                        <i className="fas fa-hand-holding-dollar me-1"></i>{showInvoices ? 'Masquer les factures' : `Factures du patient${stats.unpaid > 0 ? ` · ${stats.unpaid} à payer` : ''}`}
+                                    </Button>
+                                    {showInvoices && (
+                                        <div style={{ marginTop: 8 }}>
+                                            <PatientInvoicesPanel staffMode patientID={searchedPatientId} showNotification={showNotification} onInvoices={() => setInvoiceRefresh((n) => n + 1)} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="rpt-toolbar">
                                 <div className="rpt-toolbar-row">

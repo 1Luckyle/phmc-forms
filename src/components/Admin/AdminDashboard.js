@@ -15,7 +15,7 @@ import PendingModificationRequests from './PendingModificationRequests';
 import PendingAccountDeletions from './PendingAccountDeletions';
 import HeaderChoiceSwitch from './HeaderChoiceSwitch';
 import { useDebug } from '../../contexts/DebugContext';
-import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useSiteConfig, useSiteMode } from '../../contexts/SiteConfigContext';
 import UsersHub from './users/UsersHub';
 import DebugWhitelist from './DebugWhitelist';
 import DebugSeasonTester from './DebugSeasonTester';
@@ -24,6 +24,7 @@ import DebugMailViewer from './DebugMailViewer';
 import PendingImageDeletions, { useImgbbQueueCount } from './PendingImageDeletions';
 import BbcodeAccessSwitch from './BbcodeAccessSwitch';
 import PbcAccessSwitch from './PbcAccessSwitch';
+import SiteModeSwitch from './SiteModeSwitch';
 import BingoAccessSwitch from './BingoAccessSwitch';
 import AdminOverview from './AdminOverview';
 import useAdminCounts from './useAdminCounts';
@@ -154,6 +155,7 @@ const AdminDashboard = ({
     const imageCount = useImgbbQueueCount();
     const counts = useAdminCounts();
     const { bbcodeEnabled } = useSiteConfig();
+    const { isClassic } = useSiteMode();
     const badgeValues = { accounts: counts.accounts, modifications: counts.modifications, images: imageCount, requests: counts.requests, deletions: counts.deletions };
 
     const {
@@ -343,7 +345,24 @@ const AdminDashboard = ({
                     />
                 );
 
+            case 'siteMode':
+                return (
+                    <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                        <SiteModeSwitch currentUser={currentUser} showInAppNotification={showInAppNotification} />
+                    </SectionCard>
+                );
+
             case 'authMethods':
+                if (isClassic) {
+                    return (
+                        <SectionCard icon={current.icon} title={current.label} description={current.description}>
+                            <p className="text-muted mb-0">
+                                Version PHMC classique : connexion et création de compte avec <strong>Discord</strong> uniquement (compte Civil libre, compte du personnel
+                                validé par un administrateur). La connexion au panneau admin (/login) garde aussi l'e-mail et le mot de passe.
+                            </p>
+                        </SectionCard>
+                    );
+                }
                 return (
                     <SectionCard icon={current.icon} title={current.label} description={current.description}>
                         <p className="text-muted">

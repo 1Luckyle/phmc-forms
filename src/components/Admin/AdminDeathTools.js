@@ -1,14 +1,16 @@
 // src/components/Admin/AdminDeathTools.js
 //
 // Panneau admin (Utilisateurs) : « Décès et identifiants temporaires ».
-//   • ID temporaires du DMEC : attribuer l'ID réel (transfère tous les rapports, le marqueur de décès et les rapports publics : utils/temporaryIds.js) ;
+//   • ID temporaires (défunts du DMEC ; en version classique, aussi les patients soignés sans compte) : attribuer l'ID réel (transfère tous les rapports, le marqueur de décès,
+//     les rapports publics, le dossier médical et les factures dues : utils/temporaryIds.js), avec les comptes au même nom proposés ;
 //   • contestations de décès des patients (comptes Civils déclarés décédés) : rétablir le patient (lève le blocage) ou rejeter, avec une réponse que le patient lit.
 import React, { useCallback, useEffect, useState } from 'react';
 import { Badge, Button, Form, Spinner } from 'react-bootstrap';
 import { ref, get, update } from 'firebase/database';
 import { database } from '../../firebase';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
-import { loadTemporaryIds, assignTemporaryId, countTemporaryIdReports, deleteTemporaryId } from '../../utils/temporaryIds';
+import { loadTemporaryIds, assignTemporaryId, countTemporaryIdReports, deleteTemporaryId, namesMatch } from '../../utils/temporaryIds';
+import { staffPatientId } from '../../utils/patientId';
 import { unlockPatient } from '../../utils/deathReports';
 import { findCivilianUidByPatientId, notifyUser } from '../../utils/notifications';
 import { canonicalPatientId } from '../../utils/patientId';
@@ -17,12 +19,35 @@ const card = { border: '1px solid #30363d', borderRadius: 6, padding: '10px 12px
 const muted = { color: '#8b949e', fontSize: '0.8rem' };
 const when = (ms) => (ms ? new Date(Number(ms)).toLocaleString() : '');
 
+// Comptes à proposer : profils Civils (leur ID patient) et fiches du personnel (ID patient du personnage ou du badge). Lecture best effort : sans droit de lecture, aucune proposition.
+const loadAccountsForMatching = async () => {
+    const out = [];
+    try {
+        Object.values((await get(ref(database, 'civilians'))).val() || {}).forEach((civil) => {
+            const nom = [civil?.firstName, civil?.middleName, civil?.lastName].filter(Boolean).join(' ');
+            if (civil?.patientID && nom) out.push({ patientID: canonicalPatientId(civil.patientID), nom, type: 'Civil' });
+        });
+    } catch (error) { /* lecture refusée */ }
+    for (const [path, type] of [['staff/phmc', 'Personnel PHMC'], ['staff/coroner', 'DMEC']]) {
+        try {
+            Object.values((await get(ref(database, path))).val() || {}).forEach((member) => {
+                const patientID = staffPatientId(member);
+                const nom = member?.name || [member?.firstName, member?.lastName].filter(Boolean).join(' ');
+                if (patientID && nom && !out.some((entry) => entry.patientID === patientID)) out.push({ patientID, nom, type });
+            });
+        } catch (error) { /* lecture refusée */ }
+    }
+    return out;
+};
+
 const TemporaryIds = ({ showNotification, adminName }) => {
     const [registry, setRegistry] = useState({});
     const [loading, setLoading] = useState(false);
     const [targets, setTargets] = useState({});
     const [busy, setBusy] = useState('');
     const [counts, setCounts] = useState({});
+    // Comptes existants (Civils et personnel) : [{ patientID, nom, type }], pour proposer l'ID réel d'un ID temporaire au même nom.
+    const [accounts, setAccounts] = useState([]);
     const reload = useCallback(async () => {
         setLoading(true);
         try {
@@ -31,6 +56,7 @@ const TemporaryIds = ({ showNotification, adminName }) => {
             // Nombre de rapports rangés sous chaque ID encore temporaire (ceux déjà attribués ont été transférés).
             const open = Object.entries(loaded).filter(([, entry]) => entry && entry.statut !== 'attribue').map(([id]) => id);
             setCounts(open.length ? await countTemporaryIdReports(open) : {});
+            setAccounts(open.length ? await loadAccountsForMatching() : []);
         } catch (error) { setRegistry({}); setCounts({}); } finally { setLoading(false); }
     }, []);
     useEffect(() => { reload(); }, [reload]);
@@ -56,7 +82,9 @@ const TemporaryIds = ({ showNotification, adminName }) => {
         setBusy(id);
         try {
             const result = await assignTemporaryId({ tempId: id, realId: real, byName: adminName });
-            showNotification(`${id} → ${real} : ${result.moved} rapport(s) transféré(s)${result.frozen.length ? `, ${result.frozen.length} ignoré(s) (gel judiciaire)` : ''}${result.deathMarker ? ', patient déclaré décédé' : ''}.`, 'check-circle', 9000);
+            showNotification(`${id} → ${real} : ${result.moved} rapport(s) transféré(s)${result.frozen.length ? `, ${result.frozen.length} ignoré(s) (gel judiciaire)` : ''}${result.deathMarker ? ', patient déclaré décédé' : ''}`
+                + `${result.dossier === 'transfere' ? ', dossier médical transféré' : ''}${result.dossier === 'conserve' ? `, dossier médical laissé sous ${id} (${real} a déjà le sien)` : ''}`
+                + `${result.invoices ? `, ${result.invoices} facture(s) transférée(s)` : ''}${result.paidLeft ? `, ${result.paidLeft} facture(s) payée(s) laissée(s) sous ${id}` : ''}.`, 'check-circle', 12000);
             await reload();
         } catch (error) { showNotification(`Attribution impossible : ${error.message || error}`, 'error', 9000); } finally { setBusy(''); }
     };
@@ -65,10 +93,13 @@ const TemporaryIds = ({ showNotification, adminName }) => {
     return (
         <div className="mb-4">
             <div className="d-flex align-items-center mb-2">
-                <strong><i className="fas fa-id-badge me-2"></i>Identifiants temporaires du DMEC</strong>
+                <strong><i className="fas fa-id-badge me-2"></i>Identifiants temporaires</strong>
                 <Button size="sm" variant="outline-secondary" className="ms-auto" onClick={reload} disabled={loading}><i className="fas fa-rotate me-1"></i>Actualiser</Button>
             </div>
-            <div style={{ ...muted, marginBottom: 8 }}>Un défunt sans ID patient reçoit un ID temporaire pour relier ses rapports. Attribuez-lui l'ID réel quand il est connu : les rapports sont transférés.</div>
+            <div style={{ ...muted, marginBottom: 8 }}>
+                Un défunt sans ID patient, ou un patient soigné avant d'avoir un compte, reçoit un ID temporaire pour relier ses rapports. Attribuez-lui l'ID réel quand il est connu
+                (ou quand la personne ouvre son compte) : les rapports, le dossier médical et les factures dues sont transférés.
+            </div>
             {loading && <Spinner size="sm" animation="border" />}
             {!loading && entries.length === 0 && <div style={muted}>Aucun identifiant temporaire.</div>}
             {entries.map(([id, entry]) => (
@@ -85,10 +116,27 @@ const TemporaryIds = ({ showNotification, adminName }) => {
                     {entry.statut === 'attribue'
                         ? <div style={muted}>Attribué à <strong>{entry.idReel}</strong> par {entry.attribuePar || 'un administrateur'} le {when(entry.attribueLe)}.</div>
                         : (
-                            <div className="d-flex gap-2 mt-2 flex-wrap">
-                                <Form.Control size="sm" type="text" placeholder="ID réel (ex. PHMC-2752)" value={targets[id] || ''} onChange={(event) => setTargets((prev) => ({ ...prev, [id]: event.target.value }))} style={{ maxWidth: 220 }} />
-                                <Button size="sm" variant="primary" disabled={busy === id} onClick={() => assign(id)}>{busy === id ? <Spinner size="sm" animation="border" /> : "Attribuer l'ID réel"}</Button>
-                            </div>
+                            <>
+                                <div className="d-flex gap-2 mt-2 flex-wrap">
+                                    <Form.Control size="sm" type="text" placeholder="ID réel (ex. PHMC-2752)" value={targets[id] || ''} onChange={(event) => setTargets((prev) => ({ ...prev, [id]: event.target.value }))} style={{ maxWidth: 220 }} />
+                                    <Button size="sm" variant="primary" disabled={busy === id} onClick={() => assign(id)}>{busy === id ? <Spinner size="sm" animation="border" /> : "Attribuer l'ID réel"}</Button>
+                                </div>
+                                {/* Comptes au même nom (par exemple un patient soigné sans compte, qui vient d'ouvrir le sien) : un clic remplit l'ID réel, l'attribution reste à confirmer. */}
+                                {(() => {
+                                    const matches = accounts.filter((account) => namesMatch(account.nom, entry.nom)).slice(0, 5);
+                                    if (!matches.length) return null;
+                                    return (
+                                        <div className="d-flex gap-2 mt-2 flex-wrap align-items-center">
+                                            <span style={muted}>Compte{matches.length > 1 ? 's' : ''} au même nom :</span>
+                                            {matches.map((account) => (
+                                                <Button key={account.patientID} size="sm" variant="outline-info" onClick={() => setTargets((prev) => ({ ...prev, [id]: account.patientID }))} title="Remplir l'ID réel avec ce compte (à confirmer avec « Attribuer l'ID réel »)">
+                                                    {account.patientID} · {account.nom} ({account.type})
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
+                            </>
                         )}
                 </div>
             ))}

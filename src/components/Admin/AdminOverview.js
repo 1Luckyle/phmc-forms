@@ -2,6 +2,7 @@
 //
 // Accueil du panneau admin : ce qui attend une action, l'état des réglages importants et des raccourcis.
 import React from 'react';
+import { useSiteMode } from '../../contexts/SiteConfigContext';
 
 const Tile = ({ icon, label, value, hint, tone = 'neutral', onClick }) => (
     <button type="button" className={`adm-tile adm-tile-${tone}`} onClick={onClick}>
@@ -24,6 +25,7 @@ const StateRow = ({ label, value, tone, onClick, detail }) => (
 const AdminOverview = ({
     counts, imageCount, lockdownConfig, bbcodeEnabled, authConfig, debugAutofillEnabled, debugDeleteApplicationsEnabled, onOpen,
 }) => {
+    const { isClassic } = useSiteMode();
     const todo = (count) => (count > 0 ? 'alert' : 'ok');
     const total = (counts.accounts || 0) + (counts.modifications || 0) + (counts.requests || 0) + (counts.deletions || 0) + (imageCount || 0);
 
@@ -46,6 +48,10 @@ const AdminOverview = ({
                 <h3 className="adm-block-title">État du site</h3>
                 <div className="adm-states">
                     <StateRow
+                        label="Version du site" detail="GTA World ou PHMC classique (sans GTA World)"
+                        value={isClassic ? 'PHMC classique' : 'GTA World'} tone={isClassic ? 'info' : 'neutral'} onClick={() => onOpen('siteMode')}
+                    />
+                    <StateRow
                         label="Confinement" detail="Verrouillage du site pour les visiteurs"
                         value={lockdownConfig.enabled ? 'ACTIF' : 'inactif'} tone={lockdownConfig.enabled ? 'alert' : 'ok'} onClick={() => onOpen('lockdown')}
                     />
@@ -55,7 +61,7 @@ const AdminOverview = ({
                     />
                     <StateRow
                         label="Connexion" detail="Méthodes proposées au personnel"
-                        value={authConfig && authConfig.gtawOnly === false ? 'GTA World + e-mail' : 'GTA World uniquement'} tone="neutral" onClick={() => onOpen('authMethods')}
+                        value={isClassic ? 'Discord' : (authConfig && authConfig.gtawOnly === false ? 'GTA World + e-mail' : 'GTA World uniquement')} tone="neutral" onClick={() => onOpen('authMethods')}
                     />
                     <StateRow
                         label="Remplissage de test (debug)" detail="Bouton « Remplir (debug) » de la liste blanche"

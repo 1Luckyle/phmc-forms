@@ -14,6 +14,8 @@ import TransparencyManager from '../Admin/TransparencyManager';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useAccountingAccess } from '../../utils/accountingAccess';
 import { logAdminAction } from '../../utils/activityLog';
+import { useSiteMode } from '../../contexts/SiteConfigContext';
+import DueInvoicesManager from './DueInvoicesManager';
 
 const SECTIONS = [
     {
@@ -26,14 +28,22 @@ const SECTIONS = [
     },
 ];
 
+// Version classique du site (paiement en jeu) : les factures encore dues, à encaisser.
+const DUE_SECTION = {
+    key: 'dueInvoices', icon: 'fa-hand-holding-dollar', label: 'Factures en attente', log: 'Factures',
+    description: 'Les factures que les patients doivent encore régler en jeu : marquer un paiement, l\'annuler ou dispenser une facture.',
+};
+
 const AccountingModal = ({ show, onHide, showNotification }) => {
     const { currentEmployee, staffName, isAdmin } = useEmployeeAuth();
     const allowed = useAccountingAccess(isAdmin);
+    const { isClassic } = useSiteMode();
     const [section, setSection] = useState(null);
 
     useEffect(() => { if (show) setSection(null); }, [show]);
 
-    const current = SECTIONS.find((entry) => entry.key === section) || null;
+    const sections = isClassic ? [DUE_SECTION, ...SECTIONS] : SECTIONS;
+    const current = sections.find((entry) => entry.key === section) || null;
     const actorName = staffName || currentEmployee?.email || '';
     const log = (categoryName) => (action, details) => logAdminAction({ email: currentEmployee?.email, action, details, categoryName, actorLabel: 'Comptabilité' });
 
@@ -45,7 +55,7 @@ const AccountingModal = ({ show, onHide, showNotification }) => {
                 <>
                     <p className="text-muted">Choisissez ce que vous voulez consulter ou modifier.</p>
                     <div className="acc-choices">
-                        {SECTIONS.map((entry) => (
+                        {sections.map((entry) => (
                             <button type="button" key={entry.key} className="acc-choice" onClick={() => setSection(entry.key)}>
                                 <i className={`fas ${entry.icon}`} aria-hidden="true"></i>
                                 <strong>{entry.label}</strong>
@@ -59,6 +69,7 @@ const AccountingModal = ({ show, onHide, showNotification }) => {
                 <div className="acc-body admin-dashboard-container">
                     <div className="acc-content">
                         <Button size="sm" variant="outline-secondary" className="mb-3" onClick={() => setSection(null)}><i className="fas fa-arrow-left me-2"></i>Comptabilité</Button>
+                        {current.key === 'dueInvoices' && <DueInvoicesManager showNotification={showNotification} />}
                         {current.key === 'pricing' && <PricingManager showNotification={showNotification} onLogAction={log(current.log)} />}
                         {current.key === 'transparency' && <TransparencyManager showNotification={showNotification} adminName={actorName} onLogAction={log(current.log)} />}
                     </div>

@@ -32,9 +32,12 @@ const generateEmail = (formData) => {
     } = f;
 
     const requestFee = formatMoney(getPrice('fraisDemandeAutopsie')); // tarif modifiable dans le panneau admin
-    const paymentInstructions = autopsyPaymentLink
-        ? `Cliquez sur le lien suivant pour régler les frais de ${requestFee} via Fleeca : [url=${autopsyPaymentLink}]Payer ${requestFee} via Fleeca[/url]`
-        : `Veuillez contacter le ${DMEC_DEPARTMENT} du PHMC pour obtenir un lien de paiement Fleeca.`;
+    // Version classique du site (f.paiementEnJeu, posé par le formulaire) : pas de lien Fleeca, les frais se règlent en jeu.
+    const paymentInstructions = f.paiementEnJeu === true
+        ? `Les frais de ${requestFee} sont à régler en jeu, auprès du ${DMEC_DEPARTMENT} du PHMC.`
+        : autopsyPaymentLink
+            ? `Cliquez sur le lien suivant pour régler les frais de ${requestFee} via Fleeca : [url=${autopsyPaymentLink}]Payer ${requestFee} via Fleeca[/url]`
+            : `Veuillez contacter le ${DMEC_DEPARTMENT} du PHMC pour obtenir un lien de paiement Fleeca.`;
 
     const agencyName = agencyDataStore && agencyDataStore[department] ? agencyDataStore[department].fullName : department;
     const recipient = [requestingOfficer, agencyName].map((part) => String(part || '').trim()).filter(Boolean).join(' - ');

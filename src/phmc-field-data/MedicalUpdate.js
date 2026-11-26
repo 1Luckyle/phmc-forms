@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import BodyMeasureFields from './shared/BodyMeasureFields';
 import { Form } from 'react-bootstrap';
 import Select from 'react-select';
-import FleecaPaymentPanel from '../components/FleecaPaymentPanel';
+import SitePaymentPanel from '../components/SitePaymentPanel';
 import StaffBillingNotice from '../components/StaffBillingNotice';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { buildCivilianAutofillValues, applyCivilianAutofill } from '../utils/civilianAutofill';
@@ -16,6 +16,7 @@ import PresetTextField from './shared/PresetTextField';
 import NameFields from './shared/NameFields';
 import { HISTORY_PRESETS } from '../constants/historyPresets';
 import DossierStateBanner from '../components/DossierStateBanner';
+import { isClassicNow } from '../utils/siteModeNow';
 
 const ATTORNEY_FIELDS = { full: 'attorneyName', first: 'attorneyFirstName', middle: 'attorneyMiddleName', last: 'attorneyLastName', title: 'attorneyTitle' };
 
@@ -475,13 +476,14 @@ const MedicalRelease = ({
                         }}
                     />
                     <span className="helper-text">
-                        Cochez cette case pour générer un lien de paiement Fleeca. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).
+                        {isClassicNow() ? 'Le paiement se fait en jeu, auprès du personnel du PHMC : une facture « à payer » est créée à votre nom à l’enregistrement.' :'Cochez cette case pour générer un lien de paiement Fleeca. Si vous enregistrez sans avoir payé, une facture à votre nom est créée (rappels par mail).'}
                     </span>
                 </Form.Group>
             )}
 
             {!filledByStaff && (formData.payNow === true || formData.payNow === 'true') && approximateCost > 0 && (
-                <FleecaPaymentPanel
+                <SitePaymentPanel
+                    formData={formData} setFormData={setFormData}
                     amount={approximateCost}
                     description={`Mise à jour du dossier médical${formData.patientName ? ' - ' + formData.patientName : ''}`}
                     paymentId={formData.fleecaPaymentId}

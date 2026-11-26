@@ -240,12 +240,13 @@
     },
 
     // IDENTIFIANTS TEMPORAIRES (DMEC) : identifiantsTemporaires/{TMP-XXXXX}: { nom, creeLe, uid, par?, statut: 'temporaire' | 'attribue', idReel?, attribueLe?, attribuePar? }.
-    // Un défunt sans ID patient reçoit un ID temporaire pour que plusieurs rapports DMEC puissent être liés à la même personne. Créé par le DMEC (ou un admin), jamais écrasé ;
+    // Un défunt sans ID patient reçoit un ID temporaire pour que plusieurs rapports DMEC puissent être liés à la même personne ; en version classique, aussi un patient sans compte
+    // soigné par le personnel (formulaires de soins, dossiers, notes). Créé par le DMEC, tout membre du personnel (staffUIDs) ou un admin, jamais écrasé ;
     // seul un ADMIN l'attribue (statut « attribue » + idReel : les rapports sont alors transférés sur l'ID réel) ou le supprime. Lecture : le personnel.
     "identifiantsTemporaires": {
       ".read": "auth != null && ((!root.child('civilians').child(auth.uid).exists() || root.child('staffUIDs').child(auth.uid).val() === true) || root.child('adminUIDs').child(auth.uid).val() === true)",
       "$id": {
-        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || (root.child('dmecUIDs').child(auth.uid).val() === true && !data.exists() && newData.child('uid').val() === auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
+        ".write": "(auth != null && (root.child('adminUIDs').child(auth.uid).val() === true || ((root.child('dmecUIDs').child(auth.uid).val() === true || root.child('staffUIDs').child(auth.uid).val() === true) && !data.exists() && newData.child('uid').val() === auth.uid))) && (auth == null || root.child('adminUIDs').child(auth.uid).val() === true || ((!root.child('civilians').child(auth.uid).child('patientID').exists() || !root.child('patientsDecedes').child(root.child('civilians').child(auth.uid).child('patientID').val()).exists()) && (!root.child('idsPatientParCompte').child(auth.uid).exists() || !root.child('patientsDecedes').child(root.child('idsPatientParCompte').child(auth.uid).val()).exists())))",
         ".validate": "!newData.exists() || ($id.matches(/^TMP-[A-Z2-9]{5}$/) && newData.hasChildren(['nom', 'creeLe', 'uid', 'statut']) && newData.child('nom').isString() && newData.child('nom').val().length <= 160 && newData.child('creeLe').isNumber() && newData.child('uid').isString() && (newData.child('statut').val() === 'temporaire' || (newData.child('statut').val() === 'attribue' && newData.child('idReel').isString())))"
       }
     },
@@ -593,6 +594,15 @@
     "adminSettings": {
       ".read":  true,
       ".write": "root.child('adminUIDs').child(auth.uid).val() === true",
+      // VERSION DU SITE (src/constants/siteMode.js) : { mode: 'gtaw' | 'classique', majLe, majPar }. Écriture : admins (règle du dessus). Lue aussi par les
+      // Cloud Functions (readSiteMode), qui refusent ce qui n'appartient pas à la version active. Absente = version GTA World.
+      "siteMode": {
+        ".validate": "newData.hasChildren(['mode'])",
+        "mode": { ".validate": "newData.val() === 'gtaw' || newData.val() === 'classique'" },
+        "majLe": { ".validate": "newData.isNumber()" },
+        "majPar": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "$other": { ".validate": false }
+      },
       // COMPTABILITÉ (outil de la Boîte à outils) : les tarifs des formulaires, la page Transparence et sa grille salariale se modifient aussi par la
       // Directrice et l'Assistante de Direction (drapeau comptabiliteGestionnaires, posé par la fonction syncCctvAccess d'après le rôle), pas seulement
       // par les admins. La lecture reste publique (ces valeurs s'affichent à tous).
@@ -668,6 +678,13 @@
     },
 
     // ─── Demandes de création de compte en attente ────────────────────────────
+    // CONNEXION DISCORD (version classique, functions/discordCore.js) : nœuds écrits et lus par les Cloud Functions SEULEMENT.
+    //   discordPersonnages/{discordId}/{persoId} : personnages d'un compte Discord (nom, ID patient conservé, adresse fictive, compte) ;
+    //   discordTickets/{ticket} : preuve d'identité Discord valable 30 minutes ; discordDemandes/{clé} : lien demande de compte → personnage.
+    // Aucun accès depuis le navigateur : l'identifiant Discord ne doit jamais pouvoir être lu, forgé ni rattaché à un autre compte.
+    "discordPersonnages": { ".read": false, ".write": false },
+    "discordTickets": { ".read": false, ".write": false, ".indexOn": ["exp"] },
+    "discordDemandes": { ".read": false, ".write": false },
     // Écriture PUBLIQUE : la demande est soumise AVANT la création du compte
     // Firebase Auth (flux onboarding pré-authentification).
     // Lecture : admins uniquement.

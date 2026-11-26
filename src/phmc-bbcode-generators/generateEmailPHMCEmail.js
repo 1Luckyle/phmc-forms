@@ -1,3 +1,4 @@
+import { phmcContactEmail, isClassicNow } from '../utils/siteModeNow';
 // Placeholder utilisé pour les informations attendues mais non renseignées,
 // afin que ça ressorte clairement dans le document généré (plutôt qu'un blanc
 // silencieux qui pourrait passer pour un bug d'affichage).
@@ -37,10 +38,10 @@ ${internalEmailSenderDepartment}
 [b]Pillbox Hill Medical Center[/b]
 [size=85]Elgin Avenue/Strawberry Avenue, Pillbox Hill, Los Santos, SA
 Téléphone: 50056
-Courriel: info.phmc@mail.eyefind.fr
+Courriel: ${phmcContactEmail()}
 Site web: [url=https://phmc-tools.com]phmc-tools.com[/url]
 
-Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hill.Medical.Center?ref=qs]Pillbox Hill Medical Center[/url][/size]
+${isClassicNow() ? "" : "Suivez-nous sur Facebrowser: [url=https://facebrowser.gta.world/pages/Pillbox.Hill.Medical.Center?ref=qs]Pillbox Hill Medical Center[/url]"}[/size]
 
 [size=70][i]Le contenu de ce message et de toute pièce jointe est confidentiel. Ils sont destinés uniquement au(x) destinataire(s) nommé(s). Si vous avez reçu ce courriel par erreur, veuillez en informer l'expéditeur immédiatement et ne pas divulguer le contenu à quiconque ni en faire de copies.[/i][/size][/divbox] 
 `

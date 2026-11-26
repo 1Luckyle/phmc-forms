@@ -23,6 +23,7 @@ import {
     APPLICATION_FIELDS, EDUCATION_LEVELS, CITIZENSHIP_OPTIONS, LOCATION_OPTIONS, MAJOR_PRESETS, LANGUAGE_PRESETS, NO_OTHER_LANGUAGE, MAX_JOBS,
     MIN_APPLICATION_AGE, emptyJob, jobsOf, licenseOf, applicantDisplayName, applicantAge, timezoneOptions, timezoneLabel, browserTimezone, migrateApplicationData,
 } from '../../utils/applicationForm';
+import { exampleEmail } from '../../utils/siteModeNow';
 
 const DRAFT_EXPIRY_MS = 5 * 24 * 60 * 60 * 1000; // brouillon conservé sur l'appareil 5 jours
 
@@ -289,7 +290,7 @@ const ApplicationFields = ({ formData, handleChange, setFormData, positionDetail
             <Field label="Coordonnées">
                 <div style={row}>
                     <div style={cell(200)}><Form.Control type="text" name="applicantPhone" value={formData.applicantPhone || ''} onChange={handleChange} placeholder="Numéro de téléphone" className="form-control" /></div>
-                    <div style={cell(260)}><Form.Control type="email" name="applicantEmail" value={formData.applicantEmail || ''} onChange={handleChange} placeholder="Adresse e-mail (ex. prenomnom@mail.eyefind.fr)" className="form-control" /></div>
+                    <div style={cell(260)}><Form.Control type="email" name="applicantEmail" value={formData.applicantEmail || ''} onChange={handleChange} placeholder={`Adresse e-mail (ex. ${exampleEmail()})`} className="form-control" /></div>
                 </div>
             </Field>
             <Field label="Citoyenneté">

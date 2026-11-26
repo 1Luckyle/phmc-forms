@@ -1,6 +1,7 @@
 // src/utils/temporaryIds.js
 //
-// IDENTIFIANTS TEMPORAIRES des défunts du DMEC. Beaucoup de rapports de médecine légale n'ont pas d'ID patient (corps non identifié, joueur sans dossier) : sans ID, rien ne les relie entre eux ni à un dossier.
+// IDENTIFIANTS TEMPORAIRES des défunts du DMEC et, en version classique du site (constants/siteMode.js), de toute personne sans compte soignée par le personnel
+// (formulaires de soins, dossiers, notes : TemporaryIdPicker sous le champ « ID patient »). Quand la personne ouvre son compte, un admin lui attribue son ID. Beaucoup de rapports de médecine légale n'ont pas d'ID patient (corps non identifié, joueur sans dossier) : sans ID, rien ne les relie entre eux ni à un dossier.
 // Le DMEC donne alors à la personne un ID temporaire « TMP-XXXXX » : il se saisit dans le champ « ID patient » et fonctionne comme un vrai ID (index des dossiers, titres, blocage du dossier).
 // Plusieurs rapports portent le même ID temporaire = la même personne. Quand l'ID réel est connu (ou que la personne ouvre son compte), un ADMINISTRATEUR attribue l'ID réel : tous les rapports sont transférés
 // sur l'ID réel (assignTemporaryId) et l'ID temporaire reste dans le registre comme alias (statut « attribue »).
@@ -41,19 +42,22 @@ export const generateTemporaryId = (random = Math.random) => {
 const words = (name) => String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
 export const nameKey = (name) => [...new Set(words(name))].sort().join(' ');
 
-/** ID temporaires encore ouverts dont le nom correspond : mêmes mots (dans n'importe quel ordre), ou tous les mots du nom le plus court (deux au moins) retrouvés dans l'autre. [{ id, nom, creeLe }], les plus récents d'abord. */
+/** Même personne ? Mêmes mots (dans n'importe quel ordre), ou tous les mots du nom le plus court (deux au moins) retrouvés dans l'autre. Même règle côté serveur (functions/discordCore.js). */
+export const namesMatch = (a, b) => {
+    const first = new Set(words(a));
+    const second = new Set(words(b));
+    if (!first.size || !second.size) return false;
+    const [small, large] = first.size <= second.size ? [first, second] : [second, first];
+    const contained = [...small].every((word) => large.has(word));
+    return contained && (small.size === large.size || small.size >= 2);
+};
+
+/** ID temporaires encore ouverts dont le nom correspond (namesMatch). [{ id, nom, creeLe }], les plus récents d'abord. */
 export const findTemporaryIdsByName = (registry = {}, name = '') => {
-    const wanted = new Set(words(name));
-    if (!wanted.size) return [];
+    if (!words(name).length) return [];
     return Object.entries(registry || {})
         .filter(([, entry]) => entry && entry.statut !== 'attribue' && entry.nom)
-        .filter(([, entry]) => {
-            const other = new Set(words(entry.nom));
-            if (!other.size) return false;
-            const [small, large] = wanted.size <= other.size ? [wanted, other] : [other, wanted];
-            const contained = [...small].every((word) => large.has(word));
-            return contained && (small.size === large.size || small.size >= 2);
-        })
+        .filter(([, entry]) => namesMatch(name, entry.nom))
         .map(([id, entry]) => ({ id, nom: entry.nom, creeLe: Number(entry.creeLe) || 0 }))
         .sort((a, b) => b.creeLe - a.creeLe);
 };
@@ -222,12 +226,40 @@ export async function assignTemporaryId({ tempId, realId, byName = '' }) {
     Object.entries(published.val() || {}).forEach(([key, value]) => { if (value && canonicalPatientId(value.patientID) === temp) { publicUpdates[`rapportsPublics/${key}/patientID`] = real; publics += 1; } });
     if (publics) await update(ref(database), publicUpdates);
 
+    // Dossier médical ouvert sous l'ID temporaire (formulaires remplis par le personnel pour une personne sans compte) : il passe sur l'ID réel
+    // si celui-ci n'en a pas encore ; sinon le dossier de l'ID réel prime et celui de l'ID temporaire reste en place (signalé).
+    let dossier = '';
+    const tempDossier = await get(ref(database, `dossiersPatients/${temp}`));
+    if (tempDossier.exists()) {
+        const realDossier = await get(ref(database, `dossiersPatients/${real}`));
+        if (realDossier.exists()) {
+            dossier = 'conserve';
+        } else {
+            await set(ref(database, `dossiersPatients/${real}`), tempDossier.val());
+            await remove(ref(database, `dossiersPatients/${temp}`));
+            dossier = 'transfere';
+        }
+    }
+    // Factures encore dues (ou sans paiement) : transférées pour que la personne les retrouve dans son compte. Les factures déjà payées
+    // restent sous l'ID temporaire (historique ; un paiement ne se réécrit pas).
+    let invoices = 0;
+    let paidLeft = 0;
+    const tempInvoices = (await get(ref(database, `facturesPatients/${temp}`))).val() || {};
+    for (const [key, invoice] of Object.entries(tempInvoices)) {
+        if (!invoice) continue;
+        if (invoice.statut === 'paye') { paidLeft += 1; continue; }
+        const target = ref(database, `facturesPatients/${real}/${key}`);
+        if (!(await get(target)).exists()) await set(target, { ...invoice, ...(invoice.patientID ? { patientID: real } : {}) });
+        await remove(ref(database, `facturesPatients/${temp}/${key}`));
+        invoices += 1;
+    }
+
     await update(ref(database, `identifiantsTemporaires/${temp}`), { statut: 'attribue', idReel: real, attribueLe: Date.now(), attribuePar: String(byName || '').slice(0, 120) });
     logActivity({
         category: 'rapports', action: 'temp_id_assigned', severity: 'warning', summary: `ID temporaire ${temp} attribué à ${real}`,
-        details: `Rapports transférés : ${moved}${frozen.length ? `\nIgnorés (gel judiciaire) : ${frozen.length}` : ''}\nPar : ${byName || 'admin'}`, target: real,
+        details: `Rapports transférés : ${moved}${frozen.length ? `\nIgnorés (gel judiciaire) : ${frozen.length}` : ''}${dossier ? `\nDossier médical : ${dossier === 'transfere' ? 'transféré' : 'conservé sous l\'ID temporaire (l\'ID réel a déjà le sien)'}` : ''}${invoices ? `\nFactures transférées : ${invoices}` : ''}${paidLeft ? `\nFactures payées laissées sous l'ID temporaire : ${paidLeft}` : ''}\nPar : ${byName || 'admin'}`, target: real,
     });
-    return { moved, frozen, publics, deathMarker };
+    return { moved, frozen, publics, deathMarker, dossier, invoices, paidLeft };
 }
 
 /**

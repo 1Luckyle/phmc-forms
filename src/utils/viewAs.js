@@ -14,6 +14,7 @@
 //     vrai compte est administrateur.
 import { getRoleInfo, familiesOfMember, canManageFireSafety, canManageDiscipline } from '../constants/ranks';
 import { getFormAccess, summarizeFormAccess } from './formAccess';
+import { testEmail } from './siteModeNow';
 
 const KEY = 'debugViewAs';
 
@@ -50,7 +51,7 @@ export const TEST_PATIENT_VIEW = {
     profile: {
         firstName: 'Jean', middleName: 'Michel', lastName: 'Testard', patientID: 'PHMC-99999',
         dateOfBirth: '1990-05-17', gender: 'Male', address: '1234 Vinewood Blvd, Los Santos', zip: '90001',
-        phone: '555-0142', email: 'jean.testard@eyefind.info', discord: 'jean.testard',
+        phone: '555-0142', email: testEmail('jean', 'testard'), discord: 'jean.testard',
     },
 };
 

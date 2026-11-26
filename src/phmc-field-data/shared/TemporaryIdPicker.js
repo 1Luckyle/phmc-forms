@@ -1,7 +1,8 @@
 // src/phmc-field-data/shared/TemporaryIdPicker.js
 //
 // Sous le champ « ID patient » des formulaires du DMEC (rapports de médecine légale, certificat de décès, autopsie, rapport public) : un défunt sans ID patient reçoit un ID TEMPORAIRE (TMP-XXXXX) pour que ses
-// rapports soient enregistrés par ID et liés à la même personne (voir utils/temporaryIds.js).
+// rapports soient enregistrés par ID et liés à la même personne (voir utils/temporaryIds.js). En version classique du site, aussi sous l'ID patient des formulaires du
+// personnel (CarePatientTemporaryId) : un patient sans compte reçoit un ID temporaire, attribué à son vrai ID quand il ouvre son compte.
 //   • champ vide             : « Générer un ID temporaire », ou réutiliser un ID temporaire déjà créé pour le même nom ;
 //   • ID temporaire saisi    : rappel, et demande d'attribution de l'ID réel aux administrateurs quand il est connu ;
 //   • ID réel                : rien.
@@ -15,7 +16,8 @@ const decedentName = (formData) => [formData.decedentFirstName, formData.deceden
 
 // Par défaut le sélecteur agit sur l'ID patient du formulaire (formData.patientID). Pour une AUTRE personne du même rapport (défunt n°2 d'un rapport de masse, ID supplémentaire d'un courriel),
 // `value` (son ID), `onChange(nouvelId)` et `personName` (son nom) remplacent le champ du formulaire.
-const TemporaryIdPicker = ({ formData = {}, setFormData, value, onChange, personName }) => {
+// context : 'dmec' (défunts, par défaut) ou 'care' (patient sans compte, formulaires du personnel en version classique) — seul le texte d'aide change.
+const TemporaryIdPicker = ({ formData = {}, setFormData, value, onChange, personName, context = 'dmec' }) => {
     const { staffName } = useEmployeeAuth();
     const own = typeof onChange === 'function';
     const id = canonicalPatientId(own ? value : formData.patientID);
@@ -65,7 +67,9 @@ const TemporaryIdPicker = ({ formData = {}, setFormData, value, onChange, person
     return (
         <div className="small mt-2" data-no-tip="1">
             <div className="d-flex gap-2 flex-wrap align-items-center">
-                <Button size="sm" variant="outline-secondary" disabled={busy} onClick={generate} title="Pour un défunt sans ID patient : un ID temporaire relie ses rapports, et sera remplacé par l'ID réel plus tard">
+                <Button size="sm" variant="outline-secondary" disabled={busy} onClick={generate} title={context === 'care'
+                    ? "Pour un patient qui n'a pas encore de compte : un ID temporaire relie ses rapports et son dossier ; quand il ouvre son compte, un administrateur lui attribue son ID et tout est transféré"
+                    : "Pour un défunt sans ID patient : un ID temporaire relie ses rapports, et sera remplacé par l'ID réel plus tard"}>
                     <i className="fas fa-id-badge me-1"></i>Pas d'ID patient : générer un ID temporaire
                 </Button>
                 {matches.length > 0 && <span className="text-muted">ou réutiliser :</span>}

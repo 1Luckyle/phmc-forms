@@ -11,6 +11,7 @@ import { sendDiscordErrorWebhook } from './index';
 import MainApp from './MainApp';
 import GtaLogin from './components/Auth/GtaLogin';
 import GtaCallback from './components/Auth/GtaCallback';
+import DiscordCallback from './components/Auth/DiscordCallback';
 import Admin from './components/Admin/Admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import PasswordResetHandler from './components/Auth/PasswordResetHandler';
@@ -311,6 +312,7 @@ const initialFormData = {
                                     <Route path="/candidature/:uid/:id" element={<DeepLinkPage kind="candidature" />} />
                                     <Route path="/login" element={<GtaLogin />} />
                                     <Route path="/auth/gta/callback" element={<GtaCallback />} />
+                                    <Route path="/auth/discord/callback" element={<DiscordCallback />} />
                                     <Route path="/admin" element={<ProtectedRoute><Admin formData={formData} setFormData={setFormData} showNotification={showNotification} /></ProtectedRoute>} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>

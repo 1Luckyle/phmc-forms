@@ -21,6 +21,7 @@ import { logActivity } from './activityLog';
 import { notifyUser } from './notifications';
 import { assertNotLocked } from './lockdownGuard';
 import { normalizeEstablishment } from '../constants/establishments';
+import { isClassicNow } from './siteModeNow';
 
 // ───────────────────────────── Catalogue ─────────────────────────────
 
@@ -78,7 +79,7 @@ const COMMON_FIELDS = [
     { key: 'preavisJours', label: 'Préavis de résiliation (jours)', type: 'number', group: 'Durée', help: 'Stipulation de l\'accord : la Loi ne fixe pas de préavis.', placeholder: 'ex. 30' },
     { key: 'montant', label: 'Montant ($)', type: 'number', group: 'Prix', help: 'Laisser vide si aucun paiement en argent n\'est prévu.', placeholder: 'ex. 15000' },
     { key: 'periodicite', label: 'Périodicité du paiement', type: 'select', options: PERIODICITIES, group: 'Prix', visible: (c) => Number(c.montant) > 0 },
-    { key: 'modalitesPaiement', label: 'Modalités de paiement', type: 'textarea', group: 'Prix', visible: (c) => Number(c.montant) > 0, placeholder: 'Virement Fleeca à la livraison, facture à 15 jours…' },
+    { key: 'modalitesPaiement', label: 'Modalités de paiement', type: 'textarea', group: 'Prix', visible: (c) => Number(c.montant) > 0, get placeholder() { return isClassicNow() ? 'Paiement en jeu à la livraison, facture à 15 jours…' : 'Virement Fleeca à la livraison, facture à 15 jours…'; } },
     { key: 'penaliteForfaitaire', label: 'Indemnité forfaitaire en cas de manquement ($)', type: 'number', group: 'Prix', help: 'Doit rester une estimation raisonnable du préjudice, pas une pénalité (Code Civil, art. 215).', placeholder: 'ex. 500' },
     { key: 'obligationsPhmc', label: 'Obligations du PHMC', type: 'textarea', group: 'Engagements', placeholder: 'ex. Paiement sous 15 jours, accès au quai de livraison…' },
     { key: 'obligationsPartie', label: 'Obligations de la Partie', type: 'textarea', group: 'Engagements', placeholder: 'ex. Livraison conforme, respect des délais, information en cas de retard…' },

@@ -76,6 +76,12 @@ export const staffPaymentLine = (bbCodeVersion, formData = {}) => {
     if (exemptPending) return 'Rempli par le personnel PHMC — exemption de paiement demandée, en attente de traitement.';
     if (exempt) return 'Rempli par le personnel PHMC — patient exempté de paiement.';
     if (baseAmount <= 0) return 'Rempli par le personnel PHMC — aucun paiement à régler.';
+    // Version classique du site (SitePaymentPanel) : paiement en jeu, auprès du personnel.
+    if (isTrue(formData.paiementEnJeu)) {
+        return isTrue(formData.regleSurPlace)
+            ? `Rempli par le personnel PHMC — ${formatMoney(amount)} réglés sur place.`
+            : `Rempli par le personnel PHMC — montant à régler par le patient : ${formatMoney(amount)} (en jeu, auprès du personnel du PHMC).`;
+    }
     return `Rempli par le personnel PHMC — montant à régler par le patient : ${formatMoney(amount)} (paiement via Fleeca, depuis son dossier patient).`;
 };
 

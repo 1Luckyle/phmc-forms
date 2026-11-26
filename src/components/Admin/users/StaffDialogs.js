@@ -18,6 +18,7 @@ import { canonicalPatientId } from '../../../utils/patientId';
 import EmailChangeFlow from '../../EmailChangeFlow';
 
 import ZipCityField from '../../ZipCityField';
+import { isClassicNow } from '../../../utils/siteModeNow';
 const DigitsInput = ({ value, onChange, ...rest }) => (
     <Form.Control
         inputMode="numeric"
@@ -163,7 +164,7 @@ export const StaffEditDialog = ({ show, onHide, member, defaultFamily = 'soignan
                         <Form.Label>{isEdit ? 'ID employé (badge) — non modifiable' : 'ID employé / badge (4 ou 5 chiffres)'}</Form.Label>
                         {isEdit ? (
                             <Form.Control value={buildBadge(service, form.rank || member.rank, form.badge)} disabled
-                                title="L'ID employé est unique (lié à l'UCP). C'est aussi l'ID patient PHMC-{ID} de la personne." />
+                                title={isClassicNow() ? "L'ID employé (badge) est unique." : "L'ID employé est unique (lié à l'UCP). C'est aussi l'ID patient PHMC-{ID} de la personne."} />
                         ) : (
                             <DigitsInput name="badge" required value={form.badge} onChange={(v) => setForm((p) => ({ ...p, badge: v }))} placeholder="00000" />
                         )}
@@ -295,7 +296,7 @@ export const ConvertToCivilDialog = ({ show, onHide, member, hasCivilProfile, ad
     useEffect(() => {
         if (!show || !member) return;
         setError('');
-        setPatientID(member.gtawCharacterId != null ? `PHMC-${member.gtawCharacterId}` : '');
+        setPatientID(member.patientID || (member.gtawCharacterId != null ? `PHMC-${member.gtawCharacterId}` : ''));
     }, [show, member, setError]);
     if (!member) return null;
     const needsId = !hasCivilProfile && !patientID.trim();
