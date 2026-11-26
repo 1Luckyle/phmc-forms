@@ -113,8 +113,22 @@ export const applyMeds = (prev, meds, overwrite = false, { prescribed = false, p
  * Le patient rentre-t-il chez lui ? Urgences : orientation de sortie « Retour à domicile » ; consultation : patient non admis (« Non »). Jamais pour un patient décédé.
  * Sert à appliquer ou retirer AUTOMATIQUEMENT l'ordonnance de sortie composée par l'assistant (ClinicalAssistant).
  */
-export const isGoingHome = (formData, mode = 'emergency') => !isDeceased(formData)
-    && (mode === 'consult' ? formData.admission === 'No' : formData.dischargeDestination === 'Home');
+export const isGoingHome = (formData, mode = 'emergency') => homeStatus(formData, mode) === 'home';
+
+/**
+ * 'home' : le patient rentre chez lui ; 'away' : il ne rentre pas (gardé, admis, opéré, transféré, décédé) ; 'unknown' : rien n'est encore choisi.
+ * Règle PERMANENTE de l'ordonnance de sortie (ClinicalAssistant) : 'away' → les lignes posées par l'assistant sont retirées, quel que soit le moment où elles ont été posées.
+ */
+export const homeStatus = (formData, mode = 'emergency') => {
+    if (isDeceased(formData)) return 'away';
+    const value = mode === 'consult' ? formData.admission : formData.dischargeDestination;
+    if (value === undefined || value === null || value === '') return 'unknown';
+    if (mode === 'consult') return value === 'No' ? 'home' : 'away';
+    return value === 'Home' ? 'home' : 'away';
+};
+
+/** Des lignes d'ordonnance posées par l'assistant (`autoHome`) sont-elles présentes ? */
+export const hasHomePrescription = (formData) => medEntries(formData).some((entry) => entry?.autoHome && entry.prescribed);
 
 /** Ajoute l'ordonnance de sortie (lignes marquées `autoHome`), sans doublon d'une ligne déjà sur l'ordonnance (même médicament, même voie). */
 export const withHomePrescription = (prev, entries = []) => {

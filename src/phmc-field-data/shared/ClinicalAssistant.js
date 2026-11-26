@@ -15,7 +15,7 @@ import { SEVERITIES } from '../../clinical/vitals';
 import { patientFromForm, buildSuggestions, conditionsOf, contextTags, historySuggestions } from '../../clinical/engine';
 import { MEDICATION_BY_ID } from '../../clinical/medications';
 import { vitalsFromForm } from '../../clinical/vitals';
-import { sectionsFor, applySection, applyAll, applyPatch, isGoingHome, withHomePrescription, withoutHomePrescription } from '../../clinical/apply';
+import { sectionsFor, applySection, applyAll, applyPatch, homeStatus, hasHomePrescription, withHomePrescription, withoutHomePrescription } from '../../clinical/apply';
 import { buildDeathSuggestion } from '../../clinical/death';
 import { currentTime, pickNumericOption } from '../../clinical/context';
 
@@ -46,16 +46,20 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
     );
     const tags = useMemo(() => contextTags(conditionsOf(ids)), [ids]);
 
-    // Ordonnance de sortie AUTOMATIQUE : le patient rentre chez lui (urgences : « Retour à domicile » ; consultation : non admis) → elle s'ajoute ; il ne rentre plus
-    // (admis, opéré, transféré, décédé) → les lignes posées par l'assistant (autoHome) sont retirées. Seul un CHANGEMENT déclenche l'action : un brouillon rouvert n'est pas touché.
-    const goingHome = isGoingHome(formData, mode);
-    const wasGoingHome = useRef(goingHome);
+    // Ordonnance de sortie AUTOMATIQUE (urgences : orientation « Retour à domicile » ; consultation : patient non admis) :
+    //   • le patient PASSE à « rentre chez lui » → l'ordonnance proposée s'ajoute (un brouillon rouvert déjà « chez lui » n'est pas modifié) ;
+    //   • il NE RENTRE PAS (gardé, box, hospitalisé, opéré, transféré, décédé) → règle permanente : les lignes posées par l'assistant (autoHome) sont retirées, même si
+    //     elles ont été ajoutées par « Médicaments » ou « Tout appliquer » alors que l'orientation était déjà choisie. Les lignes ajoutées à la main restent.
+    const status = homeStatus(formData, mode);
+    const previousStatus = useRef(status);
+    const autoHomeLines = hasHomePrescription(formData);
     useEffect(() => {
-        if (wasGoingHome.current === goingHome) return;
-        wasGoingHome.current = goingHome;
-        setFormData((prev) => (goingHome ? withHomePrescription(prev, (suggestions && suggestions.homePrescription) || []) : withoutHomePrescription(prev)));
+        const previous = previousStatus.current;
+        previousStatus.current = status;
+        if (status === 'away' && autoHomeLines) { setFormData((prev) => withoutHomePrescription(prev)); return; }
+        if (status === 'home' && previous !== 'home') setFormData((prev) => withHomePrescription(prev, (suggestions && suggestions.homePrescription) || []));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [goingHome]);
+    }, [status, autoHomeLines]);
     const history = useMemo(() => historySuggestions(ids, patient), [ids, patient]);
     const addChronic = (item) => setFormData((prev) => ({ ...prev, patientChronicDiseases: [String(prev.patientChronicDiseases || '').trim(), item].filter(Boolean).join(' ; ') }));
     const vitals = useMemo(() => vitalsFromForm(formData), [formData]);

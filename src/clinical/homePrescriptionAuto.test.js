@@ -64,6 +64,28 @@ describe('ordonnance de sortie automatique : dans le formulaire des urgences', (
         expect(autoLines()).toHaveLength(again);
     });
 
+    test('orientation déjà « Box de surveillance » : une ordonnance de sortie posée ensuite (« Médicaments », « Tout appliquer ») est retirée d’office', () => {
+        render(<Harness initial={{ date: '2026-11-26', patientAgeYears: '35', clinicalConditions: ['fracture_fermee'], clinicalMeds: [], dischargeDestination: 'ObservationBox' }} />);
+        act(() => latest.setFormData((prev) => applyMeds(prev, [], false, { prescription: [para] })));
+        expect(autoLines()).toHaveLength(0);
+        // Une ligne mise à la main sur l'ordonnance reste.
+        act(() => latest.setFormData((prev) => ({ ...prev, clinicalMeds: [...prev.clinicalMeds, { ...para, prescribed: true }] })));
+        expect(latest.formData.clinicalMeds).toHaveLength(1);
+    });
+
+    test('brouillon rouvert « Box de surveillance » avec une ordonnance de sortie de l’assistant : elle est retirée', () => {
+        render(<Harness initial={{ date: '2026-11-26', clinicalConditions: ['fracture_fermee'], clinicalMeds: [{ ...para, prescribed: true, autoHome: true }], dischargeDestination: 'ObservationBox' }} />);
+        expect(autoLines()).toHaveLength(0);
+    });
+
+    test('orientation pas encore choisie : l’ordonnance posée par « Médicaments » reste', () => {
+        render(<Harness initial={{ date: '2026-11-26', clinicalConditions: ['fracture_fermee'], clinicalMeds: [] }} />);
+        act(() => latest.setFormData((prev) => applyMeds(prev, [], false, { prescription: [para] })));
+        expect(autoLines()).toHaveLength(1);
+        setDestination('Ward');
+        expect(autoLines()).toHaveLength(0);
+    });
+
     test('un brouillon rouvert déjà orienté « Retour à domicile » n’est pas modifié à l’ouverture', () => {
         render(<Harness initial={{ date: '2026-11-26', patientAgeYears: '35', clinicalConditions: ['fracture_fermee'], clinicalMeds: [], dischargeDestination: 'Home' }} />);
         expect(latest.formData.clinicalMeds).toEqual([]);
