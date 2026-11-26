@@ -76,6 +76,7 @@ export const PRECISION_CARE = {
     'Plaie pénétrante': ['now', "Plaie pénétrante : ne rien retirer ni explorer au doigt, pansement adapté, eFAST, chirurgien prévenu."],
     "Orifice d'entrée seul": ['assess', "Orifice d'entrée seul : le projectile est encore dans le corps, radiographie de face et de profil pour le localiser."],
     "Orifices d'entrée et de sortie": ['assess', "Entrée et sortie : panser les deux orifices, imaginer le trajet entre les deux pour lister les organes menacés."],
+    'Tir tangentiel (effleurement)': ['treat', "Tir tangentiel : plaie en sillon, traitée comme une plaie contuse et brûlée (lavage, parage, pansement)."],
     'Balle logée palpable': ['treat', "Balle palpable sous la peau : ne pas l'extraire aux urgences, repérage et retrait au bloc ; projectile remis aux autorités."],
     'Tir à bout portant': ['assess', "Tir à bout portant : dégâts profonds plus étendus que l'orifice (brûlure, poudre), parage chirurgical large ; constatations notées pour l'enquête."],
     'Éclats de projectile': ['assess', "Éclats : radiographie élargie, tous les éclats ne sont pas retirés ; surveillance des vaisseaux et des nerfs."],

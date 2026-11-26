@@ -1427,3 +1427,6 @@ textarea:disabled {
 .form-container form .preset-field + .form-section-title,
 .form-container form div:has(> .preset-field:last-child) + .form-section-title { margin-top: 0.6rem; }
 .form-container form .preset-field + .form-label:not(.form-section-title) { margin-top: 0.1rem; }
+
+/* Précisions sur les blessures : les listes à choix (react-select) ont leur propre cadre ; sans boîte « form-control » autour, elles s'alignent exactement sur les menus voisins. */
+.form-container form .injury-select { padding: 0; border: 0; background: transparent; box-shadow: none; }

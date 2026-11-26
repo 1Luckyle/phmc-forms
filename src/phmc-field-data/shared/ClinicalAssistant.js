@@ -42,7 +42,7 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
         () => buildSuggestions({ conditionIds: ids, severity, patient, seed, formData }),
         // formData ne sert qu'aux contrôles des médicaments proposés ; les champs lus (constantes saisies) sont couverts par `patient` et la graine à ce stade.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [ids, severity, patient, seed, formData.injuryDetails, formData.injuryMutilations, formData.injuryNote],
+        [ids, severity, patient, seed, formData.injuryDetails, formData.injuryMutilations, formData.injuryNote, formData.dischargeDestination],
     );
     const tags = useMemo(() => contextTags(conditionsOf(ids)), [ids]);
     const history = useMemo(() => historySuggestions(ids, patient), [ids, patient]);
@@ -121,6 +121,12 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                     <div className="small text-muted" style={{ marginBottom: 6 }}>
                         {suggestions.meds.length > 0 ? `Médicaments proposés : ${suggestions.meds.map((m) => MEDICATION_BY_ID[m.medId]?.name || m.medId).join(', ')}.` : 'Aucun médicament proposé pour ce motif.'}
                         {suggestions.prescription.length > 0 && <div style={{ marginTop: 2 }}>Ordonnance de sortie proposée : {suggestions.prescription.map((m) => `${MEDICATION_BY_ID[m.medId]?.name || m.medId} (${m.days} j)`).join(', ')}.</div>}
+                        {suggestions.prescription.length === 0 && (suggestions.homePrescription || []).length > 0 && (
+                            <div style={{ marginTop: 2 }}>
+                                Ordonnance si le patient rentre chez lui (non appliquée : il est admis ou opéré) : {suggestions.homePrescription.map((m) => `${MEDICATION_BY_ID[m.medId]?.name || m.medId} (${m.days} j)`).join(', ')}.
+                                {' '}Choisissez « Retour à domicile » dans l'orientation de sortie, puis « Médicaments », pour l'appliquer.
+                            </div>
+                        )}
                         {suggestions.skipped.length > 0 && <span style={{ color: '#e3b341' }}> Non proposés : {suggestions.skipped.map((s) => `${MEDICATION_BY_ID[s.medId]?.name || s.medId} (${s.reasons[0]})`).join(' ; ')}</span>}
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

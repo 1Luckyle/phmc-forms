@@ -133,3 +133,23 @@ describe('Pilou applique l’ordonnance séparément des soins administrés', ()
         expect(applyMeds({ date: '2026-11-11' }, [entry]).clinicalMeds[0].prescribed).toBeUndefined();
     });
 });
+
+describe('ordonnance composée même pour un patient admis ou opéré', () => {
+    const { buildSuggestions, patientFromForm } = require('./engine');
+    const patient = patientFromForm({ patientAgeYears: '30', patientWeight: '75', patientSex: 'Male' });
+    const base = { conditionIds: ['plaie_arme_feu'], severity: 'Severe', patient, seed: 'x' };
+    test('opéré : l’ordonnance est composée à titre d’information, mais pas appliquée', () => {
+        const s = buildSuggestions({ ...base, formData: {} });
+        expect(s.destination).not.toBe('Home');
+        expect(s.prescription).toEqual([]);
+        expect(s.homeApplies).toBe(false);
+        expect(s.homePrescription.length).toBeGreaterThan(0);
+    });
+    test('orientation de sortie changée en « Retour à domicile » : la même ordonnance devient celle à appliquer', () => {
+        const away = buildSuggestions({ ...base, formData: {} });
+        const home = buildSuggestions({ ...base, formData: { dischargeDestination: 'Home' } });
+        expect(home.homeApplies).toBe(true);
+        expect(home.prescription).toEqual(away.homePrescription);
+        expect(home.prescription.length).toBeGreaterThan(0);
+    });
+});

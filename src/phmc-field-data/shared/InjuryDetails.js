@@ -10,7 +10,7 @@ import CreatableSelect from 'react-select/creatable';
 import { darkSelectStyles } from './selectStyles';
 import { ASSISTANT_LABEL } from '../../clinical/assistantName';
 import { CONDITION_BY_ID } from '../../clinical/conditions';
-import { INJURY_CONDITIONS, isInjuryCondition, BODY_REGION_GROUPS, REGION_LABEL, SIDES, COUNTS, TRAJECTORIES, MUTILATIONS, MUTILATION_BY_VALUE, precisionOptions } from '../../clinical/injuries';
+import { INJURY_CONDITIONS, isInjuryCondition, BODY_REGION_GROUPS, REGION_LABEL, SIDES, COUNTS, MUTILATIONS, MUTILATION_BY_VALUE, precisionOptions } from '../../clinical/injuries';
 import { INJURY_GRADES, suggestedGrade, gradeLabel } from '../../clinical/gameplay';
 
 // Champs alignés par le bas : un libellé plus long ou une liste plus haute ne décale plus les autres ; libellés sur une ligne (titre complet au survol).
@@ -71,7 +71,7 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                                         <div style={cell(240)}>
                                             {position === 0 && <Form.Label className="small mb-1" style={headLabel}>Zone du corps</Form.Label>}
                                             <Select
-                                                options={BODY_REGION_GROUPS} value={region} isClearable styles={zoneSelectStyles} className="form-control p-0" placeholder="Où sur le corps ? (main, cuisse, thorax…)" noOptionsMessage={() => 'Aucune zone trouvée'}
+                                                options={BODY_REGION_GROUPS} value={region} isClearable styles={zoneSelectStyles} className="injury-select" placeholder="Où sur le corps ? (main, cuisse, thorax…)" noOptionsMessage={() => 'Aucune zone trouvée'}
                                                 onChange={(selected) => updateRow(conditionId, position, { region: selected ? selected.value : '' })}
                                             />
                                         </div>
@@ -89,15 +89,6 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                                                 {COUNTS.map((count) => <option key={count.value} value={count.value}>{count.label}</option>)}
                                             </Form.Select>
                                         </div>
-                                        {config.trajectory && (
-                                            <div style={cell(200)}>
-                                                {position === 0 && <Form.Label className="small mb-1" style={headLabel}>Trajet du projectile</Form.Label>}
-                                                <Form.Select name={`injuryTrajectory-${suffix}`} value={entry.trajectory || ''} onChange={(e) => updateRow(conditionId, position, { trajectory: e.target.value })} className="form-control">
-                                                    <option value="">Non précisé</option>
-                                                    {TRAJECTORIES.map((trajectory) => <option key={trajectory.value} value={trajectory.value}>{trajectory.label}</option>)}
-                                                </Form.Select>
-                                            </div>
-                                        )}
                                         <div style={cell(190)}>
                                             {position === 0 && <Form.Label className="small mb-1" style={headLabel}>Gravité</Form.Label>}
                                             {/* Vide = gravité proposée d'après le motif, la zone et les précisions (balle à la tête ou au cou : critique…), voir clinical/gameplay.js. */}
@@ -114,13 +105,13 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                                     </div>
                                     {strict ? (
                                         <Select
-                                            isMulti isClearable closeMenuOnSelect={false} options={precisionOptions(conditionId)} styles={darkSelectStyles} className="form-control p-0" placeholder="Précisions sur cette zone" noOptionsMessage={() => 'Aucun autre choix'}
+                                            isMulti isClearable closeMenuOnSelect={false} options={precisionOptions(conditionId)} styles={darkSelectStyles} className="injury-select" placeholder="Précisions sur cette zone" noOptionsMessage={() => 'Aucun autre choix'}
                                             value={(Array.isArray(entry.precisions) ? entry.precisions : []).map((label) => ({ value: label, label }))}
                                             onChange={(selected) => updateRow(conditionId, position, { precisions: (selected || []).map((option) => option.value) })}
                                         />
                                     ) : (
                                         <CreatableSelect
-                                            isMulti isClearable options={precisionOptions(conditionId)} styles={darkSelectStyles} className="form-control p-0" placeholder="Précisions sur cette zone : choisissez ou saisissez" noOptionsMessage={() => 'Saisissez une précision'}
+                                            isMulti isClearable options={precisionOptions(conditionId)} styles={darkSelectStyles} className="injury-select" placeholder="Précisions sur cette zone : choisissez ou saisissez" noOptionsMessage={() => 'Saisissez une précision'}
                                             formatCreateLabel={(text) => `Ajouter « ${text} »`} value={(Array.isArray(entry.precisions) ? entry.precisions : []).map((label) => ({ value: label, label }))}
                                             onChange={(selected) => updateRow(conditionId, position, { precisions: (selected || []).map((option) => option.value) })}
                                         />
@@ -135,7 +126,7 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
             })}
             <Form.Label className="small mb-1">Mutilations et atteintes associées</Form.Label>
             <Select
-                isMulti options={strict ? MUTILATIONS.filter((mutilation) => mutilation.care) : MUTILATIONS} styles={darkSelectStyles} className="form-control p-0" placeholder="Perte de dents, atteinte de l'œil ou de l'oreille, amputation… (choix multiple)" noOptionsMessage={() => 'Aucune atteinte trouvée'}
+                isMulti options={strict ? MUTILATIONS.filter((mutilation) => mutilation.care) : MUTILATIONS} styles={darkSelectStyles} className="injury-select" placeholder="Perte de dents, atteinte de l'œil ou de l'oreille, amputation… (choix multiple)" noOptionsMessage={() => 'Aucune atteinte trouvée'}
                 value={mutilations.map((value) => ({ value, label: (MUTILATION_BY_VALUE[value] || {}).label || value }))}
                 onChange={(selected) => setFormData((prev) => ({ ...prev, injuryMutilations: (selected || []).map((option) => option.value) }))}
             />

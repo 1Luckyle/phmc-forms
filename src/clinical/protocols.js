@@ -269,6 +269,8 @@ export const buildCase = (input = {}) => {
         vitals: suggestions.vitals.values,
         meds: suggestions.meds.map((entry) => ({ ...medLine(entry, entryText(entry)), regimenId: entry.regimenId })),
         prescription: suggestions.prescription.map((entry) => medLine(entry, prescriptionText(entry))),
+        // Ordonnance composée même si le patient est admis ou opéré : à n'utiliser que s'il rentre chez lui.
+        prescriptionIfHome: suggestions.homeApplies ? [] : (suggestions.homePrescription || []).map((entry) => medLine(entry, prescriptionText(entry))),
         skipped: suggestions.skipped.map((item) => ({ name: MEDICATION_BY_ID[item.medId]?.name || item.medId, reasons: item.reasons || [] })),
         exams: [...suggestions.imaging.map((key) => IMAGING_LABELS[key] || key)],
         routineCare: suggestions.routineCare.map((key) => ROUTINE_LABELS[key] || key),

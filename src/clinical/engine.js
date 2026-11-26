@@ -5,7 +5,7 @@
 import { MEDICATION_BY_ID, regimenOf, PENICILLIN_ALLERGY, CEPHALOSPORIN_ALLERGY } from './medications';
 import { CONDITION_BY_ID, HISTORY_HINTS } from './conditions';
 import { injuryLines, mutilationLabels, mutilationCareSteps } from './injuries';
-import { gameplayCareSteps, gameplayRoutineCare, prescriptionLimitMessages, intakeHoursPhrase } from './gameplay';
+import { gameplayCareSteps, gameplayRoutineCare, prescriptionLimitMessages, intakeHoursPhrase, bleedingFromInjuries } from './gameplay';
 import { estimateVitals, categorizeVitals, vitalsFormFields, severityOf, vitalsFromForm } from './vitals';
 import { ageOn } from '../utils/flightCertificate';
 import { missingBackgroundItems } from '../utils/dossierCore';
@@ -381,9 +381,11 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
         });
     });
 
-    // Ordonnance de sortie : seulement si le patient rentre chez lui.
-    const home = destination === 'Home' ? buildHomePrescription({ conditions, severityIndex: sev.index, patient, checkCtx }) : { entries: [], skipped: [] };
-    home.skipped.forEach((item) => { if (!skipped.some((other) => other.medId === item.medId)) skipped.push(item); });
+    // Ordonnance de sortie : toujours composée (`homePrescription`), mais appliquée seulement si le patient rentre chez lui — d'après la suggestion de Pilou, ou parce que le soignant a choisi
+    // « Retour à domicile » comme orientation de sortie (formData.dischargeDestination). Admis ou opéré : elle reste proposée à titre d'information, à appliquer si l'orientation change.
+    const home = buildHomePrescription({ conditions, severityIndex: sev.index, patient, checkCtx });
+    const homeApplies = destination === 'Home' || formData.dischargeDestination === 'Home';
+    if (homeApplies) home.skipped.forEach((item) => { if (!skipped.some((other) => other.medId === item.medId)) skipped.push(item); });
 
     // Résultats d'examens : seuls ceux des examens suggérés (imagerie) et de laboratoire.
     const exams = examResultsFor(conditions.map((c) => c.id), sev.index);
@@ -411,11 +413,11 @@ export const buildSuggestions = ({ conditionIds, severity, patient, seed = '', f
     return {
         conditions, severity: sev,
         vitals: { values, categories, fields: vitalsFormFields(values) },
-        text, findings, imaging, routineCare, exams, patientPatch, notices,
+        text, findings, imaging, routineCare, exams, patientPatch, notices, bleeding: bleedingFromInjuries(formData),
         arrivalMode: arrivalModeFor(sev.index, tags),
         igu: sev.igu, admission: admitted ? 'Yes' : 'No',
         followup: conditions.some((c) => c.followup === 'Recommended') ? 'Recommended' : 'AsNeeded',
-        destination, meds, prescription: home.entries, skipped,
+        destination, meds, prescription: homeApplies ? home.entries : [], homePrescription: home.entries, homeApplies, skipped,
     };
 };
 

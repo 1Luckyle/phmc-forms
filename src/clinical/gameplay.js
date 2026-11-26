@@ -43,7 +43,7 @@ export const suggestedGrade = (conditionId, row = {}) => {
         case 'plaie_arme_feu':
             if (has(row, VEST_PRECISION)) return 'Light';
             if (isHeadOrNeck(region)) return 'Critical';
-            if (row.trajectory === 'Graze' && !multiple(row)) return 'Moderate';
+            if ((has(row, 'Tir tangentiel (effleurement)') || row.trajectory === 'Graze') && !multiple(row)) return 'Moderate';
             return 'Severe';
         case 'plaie_arme_blanche':
             if (NECK.includes(region)) return 'Critical';
@@ -100,6 +100,22 @@ const BLEEDING_PRECISIONS = ['Saignement actif'];
 /** Hémorragie active : déclarée, ou précisée sur une blessure (« Saignement actif ») sans être déclarée contrôlée. */
 export const hasActiveBleeding = (formData) => formData?.bleedingState === 'Active'
     || (formData?.bleedingState !== 'Controlled' && formData?.bleedingState !== 'None' && rowsOf(formData).some((row) => has(row, ...BLEEDING_PRECISIONS)));
+
+// Hémorragie déduite des blessures renseignées : « Saignement actif » (ou saignement artériel / veineux, ou motif « hémorragie externe » sans rien de contrôlé) → active ; saignement contrôlé, garrot ou
+// pansement compressif posé → contrôlée, avec le moyen d'arrêt. Rien de renseigné sur le saignement : on ne devine pas (état vide). → { state: 'Active' | 'Controlled' | '', control: ['Tourniquet', 'Dressing'] }
+const ACTIVE_BLEEDING = ['Saignement actif', 'Artériel (pulsatile)', 'Veineux (en nappe)'];
+const CONTROLLED_BLEEDING = ['Saignement contrôlé', 'Saignement contrôlé par compression', 'Garrot posé', 'Pansement compressif'];
+export const bleedingFromInjuries = (formData) => {
+    const rows = rowsOf(formData);
+    const active = rows.some((row) => has(row, ...ACTIVE_BLEEDING));
+    const controlled = rows.some((row) => has(row, ...CONTROLLED_BLEEDING));
+    const motif = Array.isArray(formData?.clinicalConditions) && formData.clinicalConditions.includes('hemorragie_externe');
+    const state = active || (motif && !controlled) ? 'Active' : (controlled ? 'Controlled' : '');
+    const control = state === 'Controlled'
+        ? [rows.some((row) => has(row, 'Garrot posé')) ? 'Tourniquet' : '', rows.some((row) => has(row, 'Pansement compressif', 'Saignement contrôlé par compression')) ? 'Dressing' : ''].filter(Boolean)
+        : [];
+    return { state, control };
+};
 
 // ───────────── Gestes et convalescence ─────────────
 const REGION_WORD = { epaule: 'épaule', bras: 'bras', coude: 'coude', avant_bras: 'avant-bras', poignet: 'poignet', main: 'main', doigts: 'doigts', cuisse: 'cuisse', genou: 'genou', jambe: 'jambe', cheville: 'cheville', pied: 'pied', orteils: 'orteils' };

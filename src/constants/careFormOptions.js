@@ -115,7 +115,6 @@ export const BLOOD_TYPES = list(['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-
 // ── Rendez-vous de suivi (urgences, consultation générale) : dans les 14 jours, dans un des hôpitaux, à la caserne du LSFD ou chez le patient ──
 export const FOLLOWUP_PLACES = list([
     ['PillboxHill', 'Pillbox Hill Medical Center'],
-    ['SandyShores', 'Centre médical de Sandy Shores'],
     ['PaletoBay', 'Clinique de Paleto Bay'],
     ['LsfdStation', 'Caserne du LSFD'],
     ['Home', 'Domicile du patient'],

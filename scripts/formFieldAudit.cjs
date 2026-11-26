@@ -28,8 +28,8 @@ const IGNORE_IN_CODE = {
     8: ['decedentOOC'],
     11: ['evidenceLocker', 'decedentTitle', 'decedentOOC', 'patientID', 'pronouncedTimeOfDeath', 'typeOfDeath', 'mannerOfDeath', 'probableCauseOfDeath', 'scenePhotos', 'additionalImages'], // lignes de défunts
     19: ['XrayResults', 'ctResults', 'mriResults', 'ultrasoundResults'],    // valeurs stockées derrière « Résultats d'imagerie »
-    20: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased', 'patientNotes', 'paletoClinicDepartment'],   // patientNotes et paletoClinicDepartment : consultation de la clinique de Paleto Bay (21) seulement
-    21: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased'],
+    20: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased', 'dischargeDestination', 'patientNotes', 'paletoClinicDepartment'],   // patientNotes et paletoClinicDepartment : consultation de la clinique de Paleto Bay (21) seulement
+    21: ['injuryDetails', 'injuryMutilations', 'injuryNote', 'careDeceased', 'dischargeDestination'],
     24: ['releaseReports', 'releasePractitionerAuto', 'phmcEmployee'],
     26: ['patientDateOfBirth'],   // lue (âge pour l'IMC) par les champs de poids et de taille ; le champ du formulaire est patientDateOfBirthNew   // praticien déduit des rapports retenus, pas un champ de saisie
     35: ['appointmentTime'], 41: ['appointmentTime'],

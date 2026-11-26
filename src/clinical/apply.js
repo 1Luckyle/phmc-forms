@@ -14,7 +14,7 @@ export const SECTIONS = [
     { key: 'vitals', label: 'Constantes vitales', hint: 'Valeurs mesurées et catégories (température, pouls, respiration, tension, oxygène sanguin).' },
     { key: 'arrival', label: 'Arrivée', modes: ['emergency'], hint: "Mode d'arrivée, heure d'arrivée et heure de prise en charge." },
     { key: 'anamnesis', label: 'Plainte et gravité', hint: 'Plainte principale, mécanisme et indice de gravité d\'urgence.' },
-    { key: 'findings', label: 'Constatations', hint: 'État général, poumons, pupilles, blessures, ECG, échographie (sans particularité quand le motif ne précise rien).' },
+    { key: 'findings', label: 'Constatations', hint: 'État général, poumons, pupilles, blessures, ECG, échographie (sans particularité quand le motif ne précise rien) ; en urgence, l\'hémorragie déduite des blessures renseignées.' },
     { key: 'exams', label: 'Examens', hint: 'Imagerie et résultats probables, résultats de laboratoire (en consultation : examens à prescrire).' },
     { key: 'diagnosis', label: 'Diagnostic', hint: 'Diagnostic principal et secondaire.' },
     { key: 'procedure', label: 'Procédure et soins', hint: 'Procédures et soins systématiques.' },
@@ -44,7 +44,8 @@ export const sectionPatch = (key, s, mode = 'emergency', extra = {}) => {
             return clean({ arrivalMode: s.arrivalMode, arrivalTime: arrival, careStartTime: addMinutes(arrival, s.severity.index >= 2 ? 2 : 10) });
         }
         case 'anamnesis': return clean(consult ? { patientChiefComplaint: s.text.complaint } : { patientChiefComplaint: s.text.complaint, patientInjuryMechanism: s.text.mechanism, painLevel: s.igu });
-        case 'findings': return clean(s.findings);
+        // Protocole d'urgence : l'hémorragie se déduit aussi des blessures renseignées (saignement actif, garrot, pansement compressif…).
+        case 'findings': return clean(consult ? s.findings : { ...s.findings, bleedingState: s.bleeding?.state, bleedingControl: s.bleeding?.control });
         case 'exams': {
             if (consult) {
                 const ordered = [...new Set([...s.imaging.map((type) => EXAM_OF_IMAGING[type]).filter(Boolean), ...((s.exams.lab || []).length ? ['Blood'] : [])])];

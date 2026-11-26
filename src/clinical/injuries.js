@@ -46,15 +46,22 @@ export const COUNTS = [{ value: '1', label: '1' }, { value: '2', label: '2' }, {
 export const TRAJECTORIES = [{ value: 'Through', label: 'Transfixiante (orifice d\'entrée et de sortie)' }, { value: 'Lodged', label: 'Balle logée' }, { value: 'Graze', label: 'Tangentielle (effleurement)' }];
 const TRAJECTORY_PHRASE = { Through: 'transfixiante', Lodged: 'balle logée', Graze: 'tangentielle' };
 
+// Trajet d'une balle : les anciens rapports le portaient dans un champ à part (`trajectory`) ; il se choisit maintenant parmi les précisions, comme tout le reste.
+export const TANGENTIAL_PRECISION = 'Tir tangentiel (effleurement)';
+export const TRAJECTORY_PRECISION = { Through: "Orifices d'entrée et de sortie", Lodged: 'Balle logée palpable', Graze: TANGENTIAL_PRECISION };
+
 // Précisions PROPOSÉES par motif (choix multiple, plus rapide que d'écrire) ; le soignant peut aussi en saisir une autre.
-const WOUND_PRECISIONS = ['Plaie nette', 'Bords irréguliers / contuse', 'Superficielle', 'Profonde (plan musculaire)', 'Saignement actif', 'Saignement contrôlé', 'Plaie souillée', 'Corps étranger', 'Atteinte tendineuse suspectée', 'Atteinte nerveuse suspectée', 'Atteinte vasculaire suspectée'];
+// Profondeur (« Superficielle », « Profonde ») : déjà donnée par le motif « plaie superficielle » ou « plaie profonde », donc proposée seulement pour une plaie par arme blanche (qui n'a pas de profondeur dans son motif).
+const WOUND_COMMON = ['Plaie nette', 'Bords irréguliers / contuse', 'Saignement actif', 'Saignement contrôlé', 'Plaie souillée', 'Corps étranger', 'Atteinte tendineuse suspectée', 'Atteinte nerveuse suspectée', 'Atteinte vasculaire suspectée'];
+const WOUND_PRECISIONS = WOUND_COMMON;
+const BLADE_PRECISIONS = [...WOUND_COMMON.slice(0, 2), 'Superficielle', 'Profonde (plan musculaire)', ...WOUND_COMMON.slice(2), 'Plaie pénétrante'];
 const FRACTURE_PRECISIONS = ['Non déplacée', 'Déplacée', 'Déformation visible', 'Comminutive', 'Gonflement important', 'Hématome', 'Pouls distal présent', 'Pouls distal absent', 'Sensibilité conservée', 'Atteinte nerveuse suspectée'];
 const BLUNT_PRECISIONS = ['Contusion', 'Hématome', 'Ecchymose', 'Douleur à la palpation', 'Plaie pénétrante', 'Saignement actif', 'Emphysème sous-cutané', 'Volet costal', 'Défense abdominale'];
 export const PRECISIONS = {
     plaie_superficielle: WOUND_PRECISIONS,
     plaie_profonde: WOUND_PRECISIONS,
-    plaie_arme_blanche: [...WOUND_PRECISIONS, 'Plaie pénétrante'],
-    plaie_arme_feu: ["Orifice d'entrée seul", "Orifices d'entrée et de sortie", 'Balle logée palpable', 'Tir à bout portant', 'Éclats de projectile', 'Saignement actif', 'Saignement contrôlé', 'Atteinte osseuse suspectée', 'Atteinte vasculaire suspectée', 'Atteinte nerveuse suspectée', GUNSHOT_VEST_PRECISION],
+    plaie_arme_blanche: BLADE_PRECISIONS,
+    plaie_arme_feu: ["Orifice d'entrée seul", "Orifices d'entrée et de sortie", 'Balle logée palpable', 'Tir à bout portant', TANGENTIAL_PRECISION, 'Éclats de projectile', 'Saignement actif', 'Saignement contrôlé', 'Atteinte osseuse suspectée', 'Atteinte vasculaire suspectée', 'Atteinte nerveuse suspectée', GUNSHOT_VEST_PRECISION],
     fracture_fermee: FRACTURE_PRECISIONS,
     fracture_ouverte: ['Os visible', 'Plaie souillée', 'Saignement actif', 'Déplacée', 'Comminutive', 'Pouls distal absent', 'Atteinte nerveuse suspectée', 'Garrot posé'],
     entorse_luxation: ['Gonflement', 'Hématome', 'Instabilité', 'Déformation', 'Luxation réduite', 'Appui impossible', 'Pouls distal présent'],
@@ -63,7 +70,7 @@ export const PRECISIONS = {
     trauma_thoracique: BLUNT_PRECISIONS,
     trauma_abdominal: BLUNT_PRECISIONS,
     polytraumatisme: ['Saignement actif', 'Garrot posé', 'Fracture associée', 'Plaie pénétrante', 'Déformation visible', 'Hématome'],
-    hemorragie_externe: ['Saignement actif', 'Garrot posé', 'Pansement compressif', 'Saignement contrôlé par compression', 'Artériel (pulsatile)', 'Veineux (en nappe)'],
+    hemorragie_externe: ['Garrot posé', 'Pansement compressif', 'Saignement contrôlé par compression', 'Artériel (pulsatile)', 'Veineux (en nappe)'],
 };
 export const precisionOptions = (conditionId) => (PRECISIONS[conditionId] || []).map((label) => ({ value: label, label }));
 
@@ -118,7 +125,7 @@ const rowPhrase = (conditionId, row) => {
     return [
         head,
         grade ? `gravité ${grade.toLowerCase()}` : '',
-        INJURY_CONDITIONS[conditionId].trajectory && TRAJECTORY_PHRASE[row.trajectory] ? TRAJECTORY_PHRASE[row.trajectory] : '',
+        INJURY_CONDITIONS[conditionId].trajectory && TRAJECTORY_PHRASE[row.trajectory] && !asList(row.precisions).includes(TRAJECTORY_PRECISION[row.trajectory]) ? TRAJECTORY_PHRASE[row.trajectory] : '',
         ...asList(row.precisions).map((precision) => String(precision || '').trim()),
         String(row.note || '').trim(),
     ].filter(Boolean).join(', ');

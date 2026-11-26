@@ -129,3 +129,34 @@ describe('rapports', () => {
         expect(bb).toContain('seul le rapport d\'intervention');
     });
 });
+
+describe('hémorragie déduite des blessures renseignées', () => {
+    const { bleedingFromInjuries } = require('./gameplay');
+    const form = (rows, conditions = ['plaie_arme_feu']) => ({ clinicalConditions: conditions, injuryDetails: rows.map((row) => ({ conditionId: conditions[0], region: 'cuisse', ...row })) });
+    test('« Saignement actif » : hémorragie active', () => {
+        expect(bleedingFromInjuries(form([{ precisions: ['Saignement actif'] }]))).toEqual({ state: 'Active', control: [] });
+    });
+    test('garrot ou pansement compressif posé : hémorragie contrôlée, avec son moyen d’arrêt', () => {
+        expect(bleedingFromInjuries(form([{ precisions: ['Garrot posé'] }, { precisions: ['Pansement compressif'] }]))).toEqual({ state: 'Controlled', control: ['Tourniquet', 'Dressing'] });
+        expect(bleedingFromInjuries(form([{ precisions: ['Saignement contrôlé'] }]))).toEqual({ state: 'Controlled', control: [] });
+    });
+    test('un saignement actif l’emporte sur un saignement contrôlé ailleurs ; le motif « hémorragie externe » seul est actif', () => {
+        expect(bleedingFromInjuries(form([{ precisions: ['Saignement actif'] }, { precisions: ['Garrot posé'] }])).state).toBe('Active');
+        expect(bleedingFromInjuries({ clinicalConditions: ['hemorragie_externe'] }).state).toBe('Active');
+        expect(bleedingFromInjuries({ clinicalConditions: ['hemorragie_externe'], injuryDetails: [{ conditionId: 'hemorragie_externe', precisions: ['Garrot posé'] }] }).state).toBe('Controlled');
+    });
+    test('rien de renseigné sur le saignement : on ne devine pas', () => {
+        expect(bleedingFromInjuries(form([{ precisions: ['Balle logée palpable'] }]))).toEqual({ state: '', control: [] });
+        expect(bleedingFromInjuries({})).toEqual({ state: '', control: [] });
+    });
+});
+
+describe('« Constatations » de Pilou : hémorragie', () => {
+    const { sectionPatch } = require('./apply');
+    const suggestion = { findings: { findings: 'Altéré' }, bleeding: { state: 'Controlled', control: ['Tourniquet'] } };
+    test('protocole d’urgence : l’état et le moyen d’arrêt de l’hémorragie sont posés ; consultation : jamais', () => {
+        expect(sectionPatch('findings', suggestion, 'emergency')).toEqual({ findings: 'Altéré', bleedingState: 'Controlled', bleedingControl: ['Tourniquet'] });
+        expect(sectionPatch('findings', suggestion, 'consult')).toEqual({ findings: 'Altéré' });
+        expect(sectionPatch('findings', { findings: { findings: 'Altéré' }, bleeding: { state: '', control: [] } }, 'emergency')).toEqual({ findings: 'Altéré' });
+    });
+});

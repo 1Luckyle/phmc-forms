@@ -524,16 +524,17 @@ describe('urgences : précisions sur les blessures, sous les motifs et avant Pil
         expect(screen.getByText("Fracture fermée d'un membre", { selector: 'strong' })).toBeTruthy();
         expect(screen.getByTitle("Nombre d'impacts")).toBeTruthy(); // libellé court « Nombre », intitulé complet au survol
         expect(screen.getByTitle('Nombre de fractures')).toBeTruthy();
-        // Le trajet du projectile ne concerne que la balle.
-        expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(1);
+        // Plus de champ « trajet du projectile » : le trajet se choisit parmi les précisions.
+        expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(0);
         expect(screen.getByText('Mutilations et atteintes associées')).toBeTruthy();
     });
 
-    test('une zone du corps par ligne : nombre, côté, trajet et précision se saisissent par ligne ; les mutilations et la précision libre sont enregistrées', async () => {
+    test('une zone du corps par ligne : nombre, côté et précisions (trajet du projectile compris) se saisissent par ligne ; les mutilations et la précision libre sont enregistrées', async () => {
         render(<Harness Component={EmergencyForm} initial={{ ...base, clinicalConditions: ['plaie_arme_feu'] }} extra={emergencyProps} />);
         await act(async () => { fireEvent.change(document.querySelector('select[name="injuryCount-plaie_arme_feu-0"]'), { target: { value: '2' } }); });
         await act(async () => { fireEvent.change(document.querySelector('select[name="injurySide-plaie_arme_feu-0"]'), { target: { value: 'Right' } }); });
-        await act(async () => { fireEvent.change(document.querySelector('select[name="injuryTrajectory-plaie_arme_feu-0"]'), { target: { value: 'Lodged' } }); });
+        // Plus de champ « Trajet du projectile » : il se choisit parmi les précisions.
+        expect(document.querySelector('select[name="injuryTrajectory-plaie_arme_feu-0"]')).toBeNull();
         // Précisions : des choix prêts à cocher (liste déroulante à choix multiple), sans avoir à écrire.
         await act(async () => { fireEvent.keyDown(screen.getByText(/Précisions sur cette zone/), { key: 'ArrowDown', keyCode: 40 }); });
         await act(async () => { fireEvent.click(screen.getByText('Saignement actif')); });
@@ -542,7 +543,8 @@ describe('urgences : précisions sur les blessures, sous les motifs et avant Pil
         await act(async () => { fireEvent.change(document.querySelector('input[name="injuryNote"]'), { target: { value: 'Agression au bar.' } }); });
         const rows = stateOf().injuryDetails.filter((e) => e.conditionId === 'plaie_arme_feu');
         expect(rows).toHaveLength(1);
-        expect(rows[0]).toMatchObject({ count: '2', side: 'Right', trajectory: 'Lodged', precisions: ['Saignement actif', "Orifice d'entrée seul"] });
+        expect(rows[0]).toMatchObject({ count: '2', side: 'Right', precisions: ['Saignement actif', "Orifice d'entrée seul"] });
+        expect(rows[0].trajectory).toBeUndefined();
         expect(stateOf().injuryNote).toBe('Agression au bar.');
     });
 
@@ -563,8 +565,8 @@ describe('urgences : précisions sur les blessures, sous les motifs et avant Pil
         const shots = stateOf().injuryDetails.filter((e) => e.conditionId === 'plaie_arme_feu');
         expect(shots.map((e) => e.side)).toEqual(['Right', 'Left']);
         expect(shots[1].count).toBe('1');
-        // Le trajet de la balle se règle sur chaque ligne ; la fracture n'en a pas.
-        expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(2);
+        // Le trajet de la balle n'a plus de champ à part : il se choisit parmi les précisions de chaque ligne.
+        expect(document.querySelectorAll('select[name^="injuryTrajectory-"]')).toHaveLength(0);
         // Ajouter une zone à un autre motif ne mélange pas les lignes.
         await act(async () => { screen.getAllByText('Ajouter une zone')[1].click(); });
         expect(document.querySelectorAll('select[name^="injurySide-fracture_fermee-"]')).toHaveLength(2);

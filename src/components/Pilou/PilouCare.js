@@ -275,12 +275,13 @@ const PilouCare = ({ state, setState, onReset, onOpenLesson, showNotification })
                         </div>
 
                         {/* Tous les médicaments du cas, d'un coup d'œil ; chacun est aussi affiché sur l'étape du parcours qui le demande. */}
-                        {(result.meds.length > 0 || result.skipped.length > 0 || result.prescription.length > 0) && (
+                        {(result.meds.length > 0 || result.skipped.length > 0 || result.prescription.length > 0 || (result.prescriptionIfHome || []).length > 0) && (
                             <details className="pl-medlist">
                                 <summary><i className="fas fa-pills"></i>Médicaments et doses pour ce patient ({result.meds.length})</summary>
                                 {result.meds.length === 0 && <small className="text-muted">Aucun médicament proposé à cette gravité.</small>}
                                 {result.meds.map((med) => <Dose key={`${med.medId}-${med.text}`} med={{ ...med, shared: '' }} />)}
                                 {result.prescription.length > 0 && <div className="pl-medlist-sub"><strong>Ordonnance de sortie :</strong> {result.prescription.map((med) => med.text).join(' ; ')}</div>}
+                                {(result.prescriptionIfHome || []).length > 0 && <div className="pl-medlist-sub"><strong>Ordonnance si le patient rentre chez lui</strong> (admis ou opéré : non prescrite) : {result.prescriptionIfHome.map((med) => med.text).join(' ; ')}</div>}
                                 {result.skipped.length > 0 && <div className="pl-medlist-sub"><strong>Écartés :</strong> {result.skipped.map((item) => `${item.name}${item.reasons.length ? ` (${item.reasons.join(' ; ')})` : ''}`).join(' — ')}</div>}
                             </details>
                         )}

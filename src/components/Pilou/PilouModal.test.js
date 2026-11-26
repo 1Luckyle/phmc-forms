@@ -96,12 +96,14 @@ describe('aide à la prise en charge', () => {
         await chooseCondition('Plaie par arme à feu');
         expect(screen.getByText('Précisions sur les blessures')).toBeTruthy();
         expect(screen.getByText('Zone du corps')).toBeTruthy();
-        expect(screen.getByText('Trajet du projectile')).toBeTruthy();
+        expect(screen.queryByText('Trajet du projectile')).toBeNull(); // le trajet se choisit parmi les précisions
         expect(screen.getByText('Mutilations et atteintes associées')).toBeTruthy();
         expect(document.querySelector('input[name="injuryNote"]')).toBeNull(); // pas de champ libre dans Pilou
-        expect(screen.queryByText('Balle logée', { selector: '.pl-step-title' })).toBeNull();
-        pick('injuryTrajectory-plaie_arme_feu-0', 'Lodged');
-        expect(screen.getByText('Balle logée', { selector: '.pl-step-title' })).toBeTruthy();
+        expect(screen.queryByText(/Balle palpable sous la peau/)).toBeNull();
+        // Le trajet de la balle se choisit parmi les précisions de la ligne.
+        await act(async () => { fireEvent.keyDown(screen.getByText('Précisions sur cette zone'), { key: 'ArrowDown', keyCode: 40 }); });
+        await act(async () => { fireEvent.click(screen.getByText('Balle logée palpable')); });
+        expect(screen.getAllByText(/Balle palpable sous la peau/).length).toBeGreaterThan(0);
         expect(screen.getByText('Lésions renseignées')).toBeTruthy();
         pick('injuryCount-plaie_arme_feu-0', '3');
         expect(screen.getByText(/^Lésions multiples \(3 impacts de balle\)/)).toBeTruthy();
