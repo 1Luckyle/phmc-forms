@@ -100,12 +100,37 @@ export const applyMeds = (prev, meds, overwrite = false, { prescribed = false, p
     const current = Array.isArray(prev.clinicalMeds) ? prev.clinicalMeds : [];
     const given = meds.map(({ forCondition, ...entry }) => (prescribed ? prescribeEntry(entry, current, prev.date) : entry));
     // La date de début d'un traitement de sortie tient compte de ce qui vient d'être administré (le même médicament : début le lendemain).
-    const outgoing = prescription.map(({ forCondition, ...entry }) => prescribeEntry(entry, [...(overwrite ? [] : current), ...given], prev.date));
+    // `autoHome` : ligne de l'ordonnance de sortie posée par l'assistant — retirée d'office si le patient ne rentre finalement plus chez lui (withoutHomePrescription).
+    const outgoing = prescription.map(({ forCondition, ...entry }) => ({ ...prescribeEntry(entry, [...(overwrite ? [] : current), ...given], prev.date), autoHome: true }));
     const incoming = [...given, ...outgoing];
     if (overwrite) return { ...prev, clinicalMeds: incoming };
     // Doublon : même médicament, même voie ET même statut (administré / sur l'ordonnance).
     const added = incoming.filter((entry) => !current.some((c) => c.medId === entry.medId && c.regimenId === entry.regimenId && !!c.prescribed === !!entry.prescribed));
     return { ...prev, clinicalMeds: [...current, ...added] };
+};
+
+/**
+ * Le patient rentre-t-il chez lui ? Urgences : orientation de sortie « Retour à domicile » ; consultation : patient non admis (« Non »). Jamais pour un patient décédé.
+ * Sert à appliquer ou retirer AUTOMATIQUEMENT l'ordonnance de sortie composée par l'assistant (ClinicalAssistant).
+ */
+export const isGoingHome = (formData, mode = 'emergency') => !isDeceased(formData)
+    && (mode === 'consult' ? formData.admission === 'No' : formData.dischargeDestination === 'Home');
+
+/** Ajoute l'ordonnance de sortie (lignes marquées `autoHome`), sans doublon d'une ligne déjà sur l'ordonnance (même médicament, même voie). */
+export const withHomePrescription = (prev, entries = []) => {
+    const current = medEntries(prev);
+    const added = entries
+        .filter((entry) => !current.some((c) => c.prescribed && c.medId === entry.medId && c.regimenId === entry.regimenId))
+        .map(({ forCondition, ...entry }) => ({ ...prescribeEntry(entry, current, prev.date), autoHome: true }));
+    return added.length ? { ...prev, clinicalMeds: [...current, ...added] } : prev;
+};
+
+/** Retire l'ordonnance de sortie posée par l'assistant (lignes `autoHome`) ; les lignes ajoutées à la main restent. */
+export const withoutHomePrescription = (prev) => {
+    const current = medEntries(prev);
+    // Une ligne repassée en « administré » par le soignant n'est plus une ligne d'ordonnance : elle reste.
+    const kept = current.filter((entry) => !(entry?.autoHome && entry.prescribed));
+    return kept.length === current.length ? prev : { ...prev, clinicalMeds: kept };
 };
 
 /** Applique UNE section. Le patient (identité, antécédents) n'est jamais remplacé, même avec `overwrite` : seuls ses champs vides sont complétés. */

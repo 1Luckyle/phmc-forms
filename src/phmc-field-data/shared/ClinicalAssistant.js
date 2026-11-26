@@ -2,7 +2,7 @@
 //
 // « Assistant clinique » du protocole d'urgence : on choisit un ou plusieurs motifs de prise en charge et une gravité, et le site propose constantes vitales, plainte, diagnostic, procédure, médicaments (doses
 // calculées pour l'âge et le poids du patient) et orientation. Rien n'est écrit sans clic ; un champ déjà rempli n'est pas écrasé sauf demande ; tout reste modifiable. Moteur : src/clinical/.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import Select from 'react-select';
 import { darkSelectStyles } from './selectStyles';
@@ -15,7 +15,7 @@ import { SEVERITIES } from '../../clinical/vitals';
 import { patientFromForm, buildSuggestions, conditionsOf, contextTags, historySuggestions } from '../../clinical/engine';
 import { MEDICATION_BY_ID } from '../../clinical/medications';
 import { vitalsFromForm } from '../../clinical/vitals';
-import { sectionsFor, applySection, applyAll, applyPatch } from '../../clinical/apply';
+import { sectionsFor, applySection, applyAll, applyPatch, isGoingHome, withHomePrescription, withoutHomePrescription } from '../../clinical/apply';
 import { buildDeathSuggestion } from '../../clinical/death';
 import { currentTime, pickNumericOption } from '../../clinical/context';
 
@@ -45,6 +45,17 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
         [ids, severity, patient, seed, formData.injuryDetails, formData.injuryMutilations, formData.injuryNote, formData.dischargeDestination],
     );
     const tags = useMemo(() => contextTags(conditionsOf(ids)), [ids]);
+
+    // Ordonnance de sortie AUTOMATIQUE : le patient rentre chez lui (urgences : « Retour à domicile » ; consultation : non admis) → elle s'ajoute ; il ne rentre plus
+    // (admis, opéré, transféré, décédé) → les lignes posées par l'assistant (autoHome) sont retirées. Seul un CHANGEMENT déclenche l'action : un brouillon rouvert n'est pas touché.
+    const goingHome = isGoingHome(formData, mode);
+    const wasGoingHome = useRef(goingHome);
+    useEffect(() => {
+        if (wasGoingHome.current === goingHome) return;
+        wasGoingHome.current = goingHome;
+        setFormData((prev) => (goingHome ? withHomePrescription(prev, (suggestions && suggestions.homePrescription) || []) : withoutHomePrescription(prev)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [goingHome]);
     const history = useMemo(() => historySuggestions(ids, patient), [ids, patient]);
     const addChronic = (item) => setFormData((prev) => ({ ...prev, patientChronicDiseases: [String(prev.patientChronicDiseases || '').trim(), item].filter(Boolean).join(' ; ') }));
     const vitals = useMemo(() => vitalsFromForm(formData), [formData]);
@@ -124,7 +135,9 @@ const ClinicalAssistant = ({ formData, setFormData, handleChange, mode = 'emerge
                         {suggestions.prescription.length === 0 && (suggestions.homePrescription || []).length > 0 && (
                             <div style={{ marginTop: 2 }}>
                                 Ordonnance si le patient rentre chez lui (non appliquée : il est admis ou opéré) : {suggestions.homePrescription.map((m) => `${MEDICATION_BY_ID[m.medId]?.name || m.medId} (${m.days} j)`).join(', ')}.
-                                {' '}Choisissez « Retour à domicile » dans l'orientation de sortie, puis « Médicaments », pour l'appliquer.
+                                {' '}{mode === 'consult'
+                                    ? 'Elle s\'ajoute d\'elle-même à l\'ordonnance si le patient n\'est pas admis, et se retire s\'il l\'est finalement.'
+                                    : 'Elle s\'ajoute d\'elle-même à l\'ordonnance si vous choisissez « Retour à domicile », et se retire si le patient est finalement gardé.'}
                             </div>
                         )}
                         {suggestions.skipped.length > 0 && <span style={{ color: '#e3b341' }}> Non proposés : {suggestions.skipped.map((s) => `${MEDICATION_BY_ID[s.medId]?.name || s.medId} (${s.reasons[0]})`).join(' ; ')}</span>}

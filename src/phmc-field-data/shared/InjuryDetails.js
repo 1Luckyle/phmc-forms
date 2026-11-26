@@ -13,12 +13,13 @@ import { CONDITION_BY_ID } from '../../clinical/conditions';
 import { INJURY_CONDITIONS, isInjuryCondition, BODY_REGION_GROUPS, REGION_LABEL, SIDES, COUNTS, MUTILATIONS, MUTILATION_BY_VALUE, precisionOptions } from '../../clinical/injuries';
 import { INJURY_GRADES, suggestedGrade, gradeLabel } from '../../clinical/gameplay';
 
-// Champs alignés par le bas : un libellé plus long ou une liste plus haute ne décale plus les autres ; libellés sur une ligne (titre complet au survol).
-const row = { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.5rem' };
+// Une ligne = une GRILLE (zone, côté, nombre, gravité, et le bouton de retrait s'il y a plusieurs lignes) : les colonnes ne passent jamais à la ligne et les champs sont alignés
+// par le bas. Les menus perdent la marge basse que App.css donne à tout <select> (16 px), absente de la liste « Zone du corps » : c'est elle qui décalait les champs.
+const rowGrid = (withRemove) => ({ display: 'grid', gridTemplateColumns: `minmax(0, 1.8fr) minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.4fr)${withRemove ? ' auto' : ''}`, gap: 10, alignItems: 'end', marginBottom: '0.5rem' });
+const noMargin = { marginBottom: 0 };
 const headLabel = { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
-// Liste « Zone du corps » à la hauteur des menus voisins (ligne de 1,5 em + marges intérieures des champs du formulaire, App.css).
-const zoneSelectStyles = { ...darkSelectStyles, control: (base, state) => ({ ...darkSelectStyles.control(base, state), minHeight: 'calc(1.5em + 1.1rem)' }) };
-const cell = (basis) => ({ flex: `1 1 ${basis}px`, minWidth: 0 });
+// Liste « Zone du corps » à la hauteur des menus voisins (ligne de 1,5 em + marges intérieures + bordures des menus du formulaire, App.css).
+const zoneSelectStyles = { ...darkSelectStyles, control: (base, state) => ({ ...darkSelectStyles.control(base, state), minHeight: 'calc(1.5em + 1.1rem + 2px)' }) };
 const emptyRow = (conditionId) => ({ conditionId, region: '', side: '', count: '', grade: '', precisions: [], note: '' });
 
 // strict : outil Pilou de la Boîte à outils — tout se choisit dans les listes (pas de précision saisie librement, pas de champ « Autres précisions »), car Pilou ne tire une conduite à tenir que de ses propres choix.
@@ -67,38 +68,38 @@ const InjuryDetails = ({ formData, setFormData, ids = [], strict = false }) => {
                             const region = entry.region ? { value: entry.region, label: REGION_LABEL[entry.region] || entry.region } : null;
                             return (
                                 <div key={suffix} style={{ marginBottom: '0.6rem' }}>
-                                    <div style={row}>
-                                        <div style={cell(240)}>
+                                    <div style={rowGrid(rows.length > 1)}>
+                                        <div style={{ minWidth: 0 }}>
                                             {position === 0 && <Form.Label className="small mb-1" style={headLabel}>Zone du corps</Form.Label>}
                                             <Select
                                                 options={BODY_REGION_GROUPS} value={region} isClearable styles={zoneSelectStyles} className="injury-select" placeholder="Où sur le corps ? (main, cuisse, thorax…)" noOptionsMessage={() => 'Aucune zone trouvée'}
                                                 onChange={(selected) => updateRow(conditionId, position, { region: selected ? selected.value : '' })}
                                             />
                                         </div>
-                                        <div style={cell(140)}>
+                                        <div style={{ minWidth: 0 }}>
                                             {position === 0 && <Form.Label className="small mb-1" style={headLabel}>Côté</Form.Label>}
-                                            <Form.Select name={`injurySide-${suffix}`} value={entry.side || ''} onChange={(e) => updateRow(conditionId, position, { side: e.target.value })} className="form-control">
+                                            <Form.Select name={`injurySide-${suffix}`} value={entry.side || ''} onChange={(e) => updateRow(conditionId, position, { side: e.target.value })} className="form-control" style={noMargin}>
                                                 <option value="">Non précisé</option>
                                                 {SIDES.map((side) => <option key={side.value} value={side.value}>{side.label}</option>)}
                                             </Form.Select>
                                         </div>
-                                        <div style={cell(120)}>
+                                        <div style={{ minWidth: 0 }}>
                                             {position === 0 && <Form.Label className="small mb-1" style={headLabel} title={config.countLabel}>Nombre</Form.Label>}
-                                            <Form.Select name={`injuryCount-${suffix}`} value={entry.count || ''} onChange={(e) => updateRow(conditionId, position, { count: e.target.value })} className="form-control">
+                                            <Form.Select name={`injuryCount-${suffix}`} value={entry.count || ''} onChange={(e) => updateRow(conditionId, position, { count: e.target.value })} className="form-control" style={noMargin}>
                                                 <option value="">Non précisé</option>
                                                 {COUNTS.map((count) => <option key={count.value} value={count.value}>{count.label}</option>)}
                                             </Form.Select>
                                         </div>
-                                        <div style={cell(190)}>
+                                        <div style={{ minWidth: 0 }}>
                                             {position === 0 && <Form.Label className="small mb-1" style={headLabel}>Gravité</Form.Label>}
                                             {/* Vide = gravité proposée d'après le motif, la zone et les précisions (balle à la tête ou au cou : critique…), voir clinical/gameplay.js. */}
-                                            <Form.Select name={`injuryGrade-${suffix}`} value={entry.grade || ''} onChange={(e) => updateRow(conditionId, position, { grade: e.target.value })} className="form-control" title="Légère, modérée, grave ou critique : proposée d'après le motif, la zone et les précisions">
+                                            <Form.Select name={`injuryGrade-${suffix}`} value={entry.grade || ''} onChange={(e) => updateRow(conditionId, position, { grade: e.target.value })} className="form-control" style={noMargin} title="Légère, modérée, grave ou critique : proposée d'après le motif, la zone et les précisions">
                                                 <option value="">{suggestedGrade(conditionId, entry) ? `${gradeLabel(suggestedGrade(conditionId, entry))} (proposée)` : 'Non précisée'}</option>
                                                 {INJURY_GRADES.map((grade) => <option key={grade.value} value={grade.value}>{grade.label}</option>)}
                                             </Form.Select>
                                         </div>
                                         {rows.length > 1 && (
-                                            <div style={{ flex: '0 0 auto', alignSelf: position === 0 ? 'flex-end' : 'center' }}>
+                                            <div>
                                                 <Button variant="outline-danger" size="sm" onClick={() => removeRow(conditionId, position)} aria-label="Retirer cette ligne" title="Retirer cette ligne"><i className="fas fa-xmark"></i></Button>
                                             </div>
                                         )}
