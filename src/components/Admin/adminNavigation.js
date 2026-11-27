@@ -62,7 +62,7 @@ export const ADMIN_SECTION_GROUPS = [
             {
                 key: 'authMethods', icon: 'fa-key', label: 'Méthodes de connexion',
                 description: 'Méthodes de connexion et de création de compte proposées au personnel.',
-                keywords: 'login gta world email mot de passe',
+                keywords: 'login connexion discord email mot de passe',
             },
         ],
     },

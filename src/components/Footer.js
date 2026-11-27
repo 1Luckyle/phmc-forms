@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 import LegalNoticeModal from './LegalNoticeModal';
+import { useSiteMode } from '../contexts/SiteConfigContext';
 
 const Footer = () => {
+    const { isClassic } = useSiteMode();
     const [isPrivacyPolicyModalOpen, setPrivacyPolicyModalOpen] = useState(false);
     const [isLegalNoticeOpen, setLegalNoticeOpen] = useState(false);
 
@@ -14,7 +16,8 @@ const Footer = () => {
         <div className="header-info-wrapper">
             <div className="header-info">
                 <span className="contact-info">
-                    FOURNI À GTA WORLD (EU). ICÔNES FOURNIES PAR FLATICON.
+                    {/* Version classique du site : aucune mention de GTA World. */}
+                    {isClassic ? 'PILLBOX HILL MEDICAL CENTER. ICÔNES FOURNIES PAR FLATICON.' : 'FOURNI À GTA WORLD (EU). ICÔNES FOURNIES PAR FLATICON.'}
                 </span>
                 <div className="footer-links">
                     <button onClick={togglePrivacyPolicyModal} className="privacy-policy-button">Voir la politique de confidentialité</button>
